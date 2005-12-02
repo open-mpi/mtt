@@ -1,0 +1,139 @@
+Copyright (c) 2004-2005 The Trustees of Indiana University and Indiana
+                        University Research and Technology
+                        Corporation.  All rights reserved.
+Copyright (c) 2004-2005 The University of Tennessee and The University
+                        of Tennessee Research Foundation.  All rights
+                        reserved.
+Copyright (c) 2004-2005 High Performance Computing Center Stuttgart, 
+                        University of Stuttgart.  All rights reserved.
+Copyright (c) 2004-2005 The Regents of the University of California.
+                        All rights reserved.
+$COPYRIGHT$
+
+Additional copyrights may follow
+
+$HEADER$
+
+
+What is this software?
+----------------------
+
+This is the MPI Testing Tool (MTT) software package.  It is a
+standalone tool for testing the correctness and performance of
+arbitrary MPI implementations.
+
+The MTT is an attempt to create a single tool to download and build a
+variety of different MPI implementations, and then compile and run any
+number of test suites against each of the MPI installations, storing
+the results in a back-end database that then becomes available for
+historical data mining.  The test suites can be for both correctness
+and performance analysis (e.g., tests such as nightly snapshot compile
+results as well as the latency of MPI_SEND can be historically
+archives with this tool).
+
+The MTT is basically a front-end to the excellent Perfbase tool (see
+http://perfbase.tigris.org/) for storing all the results and creating
+reports from the data.  The value-added for the MTT is all the glue to
+download, compile, and run the tests, then submitting all the data to
+a centralized Perfbase install.  Simply put, this is a common
+infrastructure that can be distributed to many different sites to run
+a common set of tests against a group of MPI implementations that all
+feed into a common Perfbase database of results.
+
+The main (loose) requirements that we had for the MTT are:
+
+- Use the Perfbase software for the back-end database / archival
+  system.
+- Ability to obtain arbitrary MPI implementations from a variety of
+  sources (web/FTP download, filesystem copy, Subversion export,
+  etc.).
+- Ability to install the obtained MPI implementations, regardless of
+  whether they are source or binary distributions.  For source
+  distributions, include the ability to compile each MPI
+  implementation in a variety of different ways (e.g., with different
+  compilers and/or compile flags).
+- Ability to obtain arbitrary test suites from a variety of sources
+  (web/FTP download, filesystem copy, Subversion export, etc.).
+- Ability to build each of the obtained test suites against each of
+  the MPI implementation installations (e.g., for source MPI
+  distributions, there may be more than one installation).
+- Ability to run each of the built test suites.
+- Ability to record the output from each of the steps above and
+  submit securely them to a centralized Perfbase database.
+- Ability to run each of the steps above on physically different
+  machines.  For example, some sites may require running the
+  obtain/download steps on machines that have general internet access,
+  running the compile/install steps on dedicated compile servers,
+  running the MPI tests on dedicated parallel resources, and then
+  running the final submit steps on machines that have general
+  internet access.
+- Use a component-based system (i.e., plugins) for the above steps so
+  that extending the system to download (for example) a new MPI
+  implementation is simply a matter of writing a new module with a
+  well-defined interface.
+
+
+Current status
+--------------
+
+This tool was initially developed by the Open MPI team for nightly and
+periodic compile and regression testing.  However, enough other
+parties have expressed [significant] intrest that we have open-sourced
+the tool and are eagerly accepting input from others.  Indeed, having
+a common tool to help objectively evaluate MPI implementations may be
+an enormous help to the High Performance Computing (HPC) community at
+large.
+
+We have no illusions of MTT becoming the be-all/end-all tool for
+testing software -- we do want to keep it somewhat focused on the
+needs and requires of testing MPI implementations.  As such, the usage
+flow is somewhat structured towards that bias.
+
+As of December 2005, the software is nowhere near release quality.
+Until this point, it has been developed internally to the Open MPI
+project by two of its team members with no input from anyone else.  It
+more-or-less does what we need it to do, but is lacking:
+
+- a significant amount of polish
+- documentation
+- testing in a wide variety of environments
+- plugins for a wide variety of MPI implementations and test suites
+- input from others
+
+Hence, long before we reach 1.0, we have reached a somewhat-stable
+point and now want to open this project up to external input and
+contributions.
+
+
+License
+-------
+
+Because we want MTT to be a valuable resource to the entire HPC
+community, the MTT uses the new BSD license -- see the LICENSE file in
+the MTT distribution for details.
+
+
+Get involved
+------------
+
+We *want* your feedback.  We *want* you to get involved.
+
+The main web site for the MTT is:
+
+    http://www.open-mpi.org/software/mtt/
+
+The best way to report bugs, send comments, ask questions, and
+generally get involved is to sign up on the MPI Testing Tool mailing
+list:
+
+     mtt@open-mpi.org
+
+Because of spam, only subscribers are allowed to post to this list
+(ensure that you subscribe with and post from exactly the same e-mail
+address -- joe@example.com is considered different than
+joe@mycomputer.example.com!).  Visit this page to subscribe to the
+list:
+
+     http://www.open-mpi.org/mailman/listinfo.cgi/mtt
+
+Thanks for your time.

@@ -1,0 +1,64 @@
+- add pre_hook and post_hook to all sub modules that run before the
+  main action and after the main action; intent is to [optionally]
+  give some arguments sufficient to launch another engine.pl in the
+  next phase (e.g., have a post_hook to BuildMPI that runs engline.pl
+  in the BuildTests phase).
+
+- make centralized database download set of constants for the db
+  (e.g., how many lines of stderr to report, etc.)
+
+- figure out "get" phase better to determine if we need a new MPI
+  source or not
+  - some can tell immediately
+  - some cannot tell without remote access
+  would be better to put all the nasty compare logic up in Get.pm
+  directly instead of in each module
+
+- audit test builds / data in, out, reported, saved
+
+- need a lockfile to protect all the XML files in case multiple
+  engines running simultaneously
+
+- add trimming functionality
+
+- test build source is not cached like MPI source
+  --> have to go get it for every build (e.g., from svn), which won't
+      necessarily work on compute nodes
+
+
+Reporter http output (* = optional field)
+
+---------------------------------------
+username: string
+platform ID: string (designated by user, e.g., "IU odin cluster")
+platform type: (whatami -t)
+platform hardware: (whatami -m)
+os name: string (whatami -n)
+os version: string (whatami -r)
+hostname: string (fqdn)
+timestamp: string (ctime format: Thu Nov  3 06:38:49 EST 2005)
+name: string (name of test, typically of form "phase: name", such as
+              BuildMPI: Open MPI, BuildTests: Intel_ompi_tests, 
+              BuildTests: IMB_ompi_tests, ...)
+success: logical
+compiler name: string (e.g., gnu, portland, intel, ...)
+compiler version: string
+flags: string (configure flags for MPI builds, compiler flags or
+               whatever for test builds)
+result message: string
+vpath mode*: string (none, relative, combined, or not specified)
+mpi name*: string (e.g., Open MPI, LAM/MPI, ...)
+mpi version* string
+stdout_stderr_combined: logical
+environment*:
+...one or more lines of output followed by a blank line...
+...leave this whole block out if there is no stdout to report...
+
+stdout*:
+...one or more lines of output followed by a blank line...
+...leave this whole block out if there is no stdout to report...
+
+stderr*:
+...one or more lines of output followed by a blank line...
+...leave this whole block out if there is no stdout to report...
+---------------------------------------
