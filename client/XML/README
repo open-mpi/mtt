@@ -1,6 +1,3 @@
-(this file from the XML::Simple distribution from search.cpean.org:
- http://search.cpan.org/~grantm/XML-Simple-2.14/lib/XML/Simple.pm)
-
 DESCRIPTION
 
   XML::Simple - Easy API to read/write XML (esp config files)
