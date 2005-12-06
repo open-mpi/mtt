@@ -63,7 +63,27 @@ if (! @file_arg) {
 if (!$ok || $help_arg) {
     print("Command line error\n") 
         if (!$ok);
-    print "Usage: $0 --file|-f filename\n";
+    print "Options:
+--file|-f <config_file>       Specify the configuration file
+--scratch|-s <dir_name>       Scratch directory (where all work is done)
+--help|-h                     This message
+--debug|-d                    Output lots of debug messages
+--verbose|-v                  Output some status / verbose messages
+                              while processing
+--force|-f                    Do steps even if they would not normally 
+                              be executed
+--get-mpi                     Do the \"Get MPI\" step
+--install-mpi                 Do the \"Install MPI\" step
+--build-tests                 Do the \"Build tests\" step
+--run-tests                   Do the \"Run tests\" step
+
+If no options other than --file (or -f) are specified, the MTT will
+default to trying to make as much progress as possible (i.e., running
+each of the steps as necessary).  If any of the step options are
+provided (--get-mpi, --install-mpi, --build-tests, or --run-tests),
+then only the steps that are explicitly specified will be attempted to
+be run.\n";
+
     exit($ok);
 }
 
