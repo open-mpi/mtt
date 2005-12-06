@@ -19,9 +19,17 @@ package MTT::FindProgram;
 
 use strict;
 use File::Basename;
+use Cwd;
 use vars qw(@EXPORT);
 use base qw(Exporter);
 @EXPORT = qw(FindProgram FindZeroDir);
+
+#--------------------------------------------------------------------------
+
+# Cached zero dir
+my $zero_dir;
+
+#--------------------------------------------------------------------------
 
 # find a program from a list and load it into the target variable
 sub FindProgram {
@@ -44,20 +52,31 @@ sub FindProgram {
 
 sub FindZeroDir {
 
+    # See if we found it already and cached it
+    return $zero_dir 
+        if ($zero_dir);
+
     # First check $0 itself to see if it gives any clues
+
+    my $start = cwd();
 
     my $dir = dirname($0);
     my $cmd = basename($0);
     if (-x "$dir/$cmd") {
-        return $dir;
+        chdir($dir);
+        $zero_dir = cwd();
+        chdir($start);
+        return $zero_dir;
     }
 
-    # If $0 has not /'s in it, then search the PATH for $0 and
-    # where we find it, look for whatami/whatami.
+    # If $0 has not /'s in it, then search the PATH for $0
     if ($0 !~ /\//) {
         foreach my $p (split(/:/, $ENV{PATH})) {
             if (-x "$p/$0") {
-                return $p;
+                chdir($p);
+                $zero_dir = cwd();
+                chdir($start);
+                return $zero_dir;
             }
         }
     }

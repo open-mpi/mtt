@@ -29,6 +29,7 @@ use MTT::Messages;
 use MTT::INI;
 use MTT::Reporter;
 use MTT::Constants;
+use MTT::FindProgram;
 
 my @file_arg;
 my $scratch_arg;
@@ -93,6 +94,8 @@ my $debug = ($debug_arg ? 1 : 0);
 my $verbose = ($verbose_arg ? 1 : $debug);
 Debug("Debug is $debug, Verbose is $verbose\n");
 Messages($debug, $verbose);
+
+FindZeroDir();
 
 ########################################################################
 # Params
