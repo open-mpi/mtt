@@ -94,6 +94,7 @@ sub Install {
 
     # Ensure LD_LIBRARY_PATH points to our shared libraries
 
+    $ret->{installdir} = "$config->{installdir}";
     $ret->{bindir} = "$config->{installdir}/bin";
     $ret->{libdir} = "$config->{installdir}/lib";
     if (exists($ENV{LD_LIBRARY_PATH})) {

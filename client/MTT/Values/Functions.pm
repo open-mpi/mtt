@@ -324,6 +324,15 @@ sub test_np {
 
 #--------------------------------------------------------------------------
 
+# Return the current prefix value from a running test
+sub test_prefix {
+    Debug("&test_prefix returning: $MTT::Test::Run::test_prefix\n");
+
+    return $MTT::Test::Run::test_prefix;
+}
+
+#--------------------------------------------------------------------------
+
 # Return the current executable value from a running test
 sub test_executable {
     Debug("&test_executable returning: $MTT::Test::Run::test_executable\n");

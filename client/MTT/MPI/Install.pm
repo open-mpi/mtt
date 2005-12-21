@@ -60,9 +60,9 @@ package MTT::MPI::Install;
 # Other fields:
 # -------------
 # section_dir (IN) => top-level directory for each build/install
-# installdir (IN) => --prefix location; MPI will be installed there
 # compiler_name (IN) => name of the compiler (from ini file)
 # compiler_version (IN) => version of the compiler (from the ini file)
+# installdir (OUT) => --prefix location; MPI will be installed there
 # bindir (OUT) => location of MPI binaries such as mpicc, mpirun, etc.
 # libdir (OUT) => location of MPI libraries that need to be in
 #     LD_LIBRARY_PATH to run MPI apps

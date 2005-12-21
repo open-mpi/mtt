@@ -29,6 +29,9 @@ use Data::Dumper;
 # Exported current number of processes in the test
 our $test_np;
 
+# Exported current prefix of the MPI under test
+our $test_prefix;
+
 # Exported current executable under text
 our $test_executable;
 
@@ -129,6 +132,7 @@ sub _do_run {
     
     # Get some details about running with this MPI
     my $mpi_details;
+    $test_prefix = $mpi_install->{prefix};
     $mpi_details->{before_any_exec} = 
         MTT::Values::Value($ini, $mpi_details_section, "before_any_exec");
     $mpi_details->{before_each_exec} = 
