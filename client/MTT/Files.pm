@@ -243,7 +243,7 @@ sub svn_checkout {
     if ($pw) {
         $str .= "--password $pw ";
     }
-    if ("0" == $pw_cache) {
+    if ("0" eq $pw_cache) {
         $str .= "--no-auth-cache ";
     }
     $str .= $url;
