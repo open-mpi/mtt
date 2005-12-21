@@ -1,3 +1,7 @@
+- be able to handle case where svn checkouts go badly and svn
+  ends up waiting for input (E.g., username or password).  Should be
+  able to detect this somehow and know to kill it.
+
 - add pre_hook and post_hook to all sub modules that run before the
   main action and after the main action; intent is to [optionally]
   give some arguments sufficient to launch another engine.pl in the
