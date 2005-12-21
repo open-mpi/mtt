@@ -171,6 +171,9 @@ sub _do_build {
     $source->{tarball} = Value($ini, $section, "source_tarball");
     $source->{copydir} = Value($ini, $section, "source_copydir");
     $source->{svn} = Value($ini, $section, "source_svn");
+    $source->{svn_username} = Value($ini, $section, "source_svn_username");
+    $source->{svn_password} = Value($ini, $section, "source_svn_password");
+    $source->{svn_password_cache} = Value($ini, $section, "source_svn_password_cache");
     if (!$source->{tarball} && 
         !$source->{copydir} &&
         !$source->{svn}) {
@@ -191,8 +194,11 @@ sub _do_build {
             MTT::Files::unpack_tarball($source->{tarball}, 1);
     } elsif ($source->{svn}) {
         Debug("BuildTests: got source SVN: $source->{svn}\n");
+        Debug("BuildTests: got source SVN username: $source->{svn_username}\n");
+        Debug("BuildTests: got source SVN password: $source->{svn_password}\n");
+        Debug("BuildTests: got source SVN password_cache: $source->{svn_password_cache}\n");
         my ($srcdir, $r) =
-            MTT::Files::svn_checkout($source->{svn}, 1, 1);
+            MTT::Files::svn_checkout($source->{svn}, $source->{svn_username}, $source->{svn_password}, $source->{svn_password_cache}, 1, 1);
         $config->{srcdir} = $srcdir;
     } elsif ($source->{copydir}) {
         Debug("BuildTests: got source tree: $source->{copydir}\n");

@@ -223,7 +223,7 @@ sub unpack_tarball {
 
 # do a svn checkout
 sub svn_checkout {
-    my ($url, $delete_first, $export) = @_;
+    my ($url, $username, $pw, $pw_cache, $delete_first, $export) = @_;
 
     Debug("SVN checkout: $url\n");
 
@@ -231,10 +231,23 @@ sub svn_checkout {
     MTT::DoCommand::Cmd(1, "rm -rf $b")
         if ($delete_first);
 
-    my $cmd = "co";
-    $cmd = "export"
-        if ($export);
-    my $ret = MTT::DoCommand::Cmd(1, "svn $cmd $url");
+    my $str = "svn ";
+    if ($export) {
+        $str .= "export "
+    } else {
+        $str .= "co "
+    }
+    if ($username) {
+        $str .= "--username $username ";
+    }
+    if ($pw) {
+        $str .= "--password $pw ";
+    }
+    if ("0" == $pw_cache) {
+        $str .= "--no-auth-cache ";
+    }
+    $str .= $url;
+    my $ret = MTT::DoCommand::Cmd(1, $str);
     if (0 != $ret->{status}) {
         Warning("Could not SVN checkout $url: $@\n");
         return undef;
