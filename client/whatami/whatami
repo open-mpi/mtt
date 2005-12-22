@@ -165,15 +165,8 @@ get_linux_type()
                 
                 elif [ -n "`egrep 'Fedora Core release [0-9]+' /etc/issue`" ]; then
                         distro_brand=fedora_core
-                        release_num=`grep 'Fedora Core' /etc/issue | sed -e 's/Fedora Core release \([0-9]*\) (\([A-Za-z]*\)).*/\1/' `
-                        release_name=`grep 'Fedora Core' /etc/issue | sed -e 's/Fedora Core release \([0-9]*\) (\([A-Za-z]*\)).*/\2/' `
-                        distro=${distro_brand}_${release_num}_${release_name}
-
-                elif [ -n "`egrep 'Fedora Core 3' /etc/issue`" ]; then
-                        distro=fedora_core_3
-
-                elif [ -n "`egrep 'Fedora Core 2' /etc/issue`" ]; then
-                        distro=fedora_core_2
+                        release_num=`grep 'Fedora Core' /etc/issue | sed -e 's/Fedora Core release \([0-9]*\).*/\1/' `
+                        distro=${distro_brand}_${release_num}
 
                 elif [ -n "`egrep 'Red Hat Linux release 9 ' /etc/issue`" ]; then
                         distro=redhat_9
