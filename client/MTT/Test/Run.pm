@@ -241,7 +241,7 @@ sub _do_run {
                 _run_one_np($run, $mpi_details, $all_np);
             } else {
                 foreach my $this_np (@$all_np) {
-                    _run_one_np($run, $mpi_details, $all_np);
+                    _run_one_np($run, $mpi_details, $this_np);
                 }
             }
         }
