@@ -167,7 +167,8 @@ sub Install {
                         # Test incrementally so that it doesn't create
                         # each intermediate key.
                         Debug("Checking for $mpi_name [$mpi_section_key] / [$mpi_source->{section_name}] / $section\n");
-                        if (exists($MTT::MPI::installs->{$mpi_section_key}) &&
+                        if (!$force &&
+                            exists($MTT::MPI::installs->{$mpi_section_key}) &&
                             exists($MTT::MPI::installs->{$mpi_section_key}->{$mpi_unique_key}) &&
                             exists($MTT::MPI::installs->{$mpi_section_key}->{$mpi_unique_key}->{$section})) {
                             Verbose("   Already have an install for $mpi_name [$mpi_source->{section_name}]\n");

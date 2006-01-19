@@ -22,6 +22,7 @@ use Cwd;
 use File::Basename;
 use MTT::Messages;
 use MTT::Values;
+use MTT::Reporter;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -265,7 +266,7 @@ sub _run_one_np {
     if ($ok) {
 
         # Yes, it is.  See if we need to run the before_all step.
-        if (! exists($mpi_details->{before_any_ran})) {
+        if (! exists($mpi_details->{ran_some_tests})) {
             _run_step($mpi_details, "before_any");
         }
         $mpi_details->{ran_some_tests} = 1;

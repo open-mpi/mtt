@@ -151,7 +151,7 @@ sub unpack_tarball {
 
     # Examine the tarball and see what it puts in the cwd
 
-    open(TAR, "tar tf $tarball|");
+    open(TAR, "$unpacker -c $tarball | tar tf - |");
     my @entries = <TAR>;
     close(TAR);
     my $dirs;

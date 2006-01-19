@@ -106,7 +106,8 @@ sub Build {
                         # this MPI installation.  Test incrementally
                         # so that it doesn't create each intermediate
                         # key.
-                        if (exists($MTT::Test::builds->{$mpi_section_key}) &&
+                        if (!$force &&
+                            exists($MTT::Test::builds->{$mpi_section_key}) &&
                             exists($MTT::Test::builds->{$mpi_section_key}->{$mpi_unique_key}) &&
                             exists($MTT::Test::builds->{$mpi_section_key}->{$mpi_unique_key}->{$mpi_install_key}) &&
                             exists($MTT::Test::builds->{$mpi_section_key}->{$mpi_unique_key}->{$mpi_install_key}->{$section})) {

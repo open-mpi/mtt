@@ -22,9 +22,11 @@ use Cwd;
 use POSIX qw(strftime);
 use MTT::Messages;
 use MTT::Values;
+use MTT::Files;
 use Data::Dumper;
 
-# filename to write to
+# directory and file to write to
+my $dirname;
 my $filename;
 
 # separator between entries in the file
@@ -52,9 +54,14 @@ sub Init {
     # there.
 
     if ($filename ne "-") {
-        $filename = cwd() . "/$filename"
-            if ($filename !~ /\//);
-        Debug("File reporter initialized ($filename)\n");
+        if ($filename !~ /\//) {
+            $dirname = cwd();
+            $filename = "$filename";
+        } else {
+            $dirname = dirname($filename);
+            $filename = basename($filename);
+        }
+        Debug("File reporter initialized ($dirname/$filename)\n");
     } else {
         Debug("File reporter initialized (<stdout>)\n");
     }
@@ -75,10 +82,12 @@ sub Submit {
     my $date = strftime("%m%d%Y", localtime);
     my $time = strftime("%H%M%S", localtime);
     my $mpi_name = $report->{mpi_name} ? $report->{mpi_name} : "Unknown-MPI";
+    my $mpi_section = $report->{mpi_section_name} ? $report->{mpi_section_name} : "Unknown-MPI-section";
     my $mpi_version = $report->{mpi_version} ? $report->{mpi_version} : "Unknown-MPI-Version";
     my $file;
-    my $e = "\$file = \"$filename\";";
+    my $e = "\$file = MTT::Files::make_safe_filename(\"$filename\");";
     eval $e;
+    $file = "$dirname/$file";
     Debug("Writing to text file: $file\n");
 
     # If we have not yet written to the file in this run, then whack

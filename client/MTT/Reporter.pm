@@ -136,7 +136,7 @@ sub Init {
 
     foreach my $section ($ini->Sections()) {
         if ($section =~ /^reporter:/) {
-            my $m = Value($ini, $section, "module");
+            my $m = MTT::Values::Value($ini, $section, "module");
             if (!$m) {
                 Warning(">> Reporter [$section] has no module; skipping\n");
                 next;

@@ -315,6 +315,29 @@ sub iterate {
 
 #--------------------------------------------------------------------------
 
+# First argument is the lower bound, second argument is upper bound,
+# third [optional] argument is the stride (is 1 if not specified).
+# Return a reference to all values starting with $lower and <=$upper
+# with the given $stride.  E.g., &step(3, 10, 2) returns 3, 5, 7, 9.
+sub step {
+    Debug("&step got: @_\n");
+
+    my @ret;
+    my $lower = shift;
+    my $upper = shift;
+    my $step = shift;
+    $step = 1
+        if (!$step);
+
+    while ($lower <= $upper) {
+        push(@ret, $lower);
+        $lower += $step;
+    }
+    return \@ret;
+}
+
+#--------------------------------------------------------------------------
+
 # Return the current np value from a running test.
 sub test_np {
     Debug("&test_np returning: $MTT::Test::Run::test_np\n");
