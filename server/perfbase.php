@@ -9,45 +9,42 @@
 # $HEADER$
 #
 
-	# First thing, do a dumb authentication check
-	define("USERNAME", "afriedle");
-	define("PASSWORD", "135w00t");
+# POST variables:
+# PBUSER - username for us to authenticate
+# PBPASS - password for us to auth (these are not postgres user/pass)
+# PBXML - name of xml file to use for input parsing
+# PBINPUT - big variable, of data for perfbase to parse.
+	
+#foreach (array('PBUSER','PBPASS','PBXML','PBINPUT') as $var) {
+foreach (array('PBXML','PBINPUT') as $var) {
+    if(!isset($_POST[$var])) {
+        printf("ERROR: %s not specified", $var);
+        return;
+    }
 
-	# POST variables:
-	# PBUSER - username for us to authenticate
-	# PBPASS - password for us to auth (these are not postgres user/pass)
-	# PBXML - name of xml file to use for input parsing
-	# PBINPUT - big variable, of data for perfbase to parse.
+    printf("%s %s<br>\n", $var, $_POST[$var]);
+}
 
-	foreach (array('PBUSER','PBPASS','PBXML','PBINPUT') as $var) {
-		if(!isset($_POST[$var])) {
-			printf("ERROR: $var not specified");
-			return;
-		}
+# Push the input data out to a file
+$filename = tempnam("", "");
+chmod($filename, 0644);
+$file = fopen($filename, "w");
 
-		printf("%s %s<br>\n", $var, $_POST[$var]);
-	}
+fwrite($file, $_POST['PBINPUT']);
+fclose($file);
 
-	# Authenticate the user - really dumb method, right now.
-#   if(USERNAME != $_POST['PBUSER'] || PASSWORD != $_POST['PBPASS']) {
-#		printf("ERROR: authentication failed");
-#		return;
-#	}
+# Run perfbase to import the data
+# TODO - hardcoding this is BAD, make it not suck.
+#$cmd = sprintf("pb-bin/perfbase input -u -d %s %s 2>&1",
+#        $_POST['PBXML'], $filename);
+$cmd = sprintf("./perfbase.sh %s %s", $_POST['PBXML'], $filename);
+printf("cmd: %s<br>\n", $cmd);
+$output = "foo";
+$ret = exec($cmd, $output, $code);
+printf("returned %d: %s<br>\n", $code, $ret);
+print_r($output);
 
-	# Push the input data out to a file
-#	$filename = tempnam("", "");
-#	$file = fopen($filename, "w");
+# Get rid of our temp file
+#unlink($filename);
 
-#	fwrite($file, $_POST['PBINPUT']);
-#	fclose($file);
-
-	# Run perfbase to import the data
-	# TODO - hardcoding this is BAD, make it not suck.
-#$cmd = sprintf("/u/afriedle/pb-bin/perfbase input -u -d %s %s",
-#			$_POST['PBXML'], $filename);
-#	printf("cmd: %s<br>\n", $cmd);
-#	system($cmd);
-
-	# Get rid of our temp file
-#	unlink($filename);
 ?>
