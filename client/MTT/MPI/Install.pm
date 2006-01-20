@@ -369,6 +369,7 @@ sub _do_install {
             stdout_stderr_combined => $ret->{std_combined},
             environment => "filled in below",
 
+            perfbase_xml => Value($ini, $section, "perfbase_xml"),
             start_timestamp => $start,
             stop_timestamp => $stop,
             mpi_name => $mpi->{mpi_name},

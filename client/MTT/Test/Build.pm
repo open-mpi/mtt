@@ -266,6 +266,7 @@ sub _do_build {
             result_message => $ret->{result_message},
             environment => "filled in below",
             stdout => "filled in below",
+            perfbase_xml => Value($ini, $section, "perfbase_xml"),
 
             mpi_name => $mpi_install->{mpi_name},
             mpi_section_name => $mpi_install->{section_name},

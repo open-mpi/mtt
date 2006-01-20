@@ -74,7 +74,7 @@ sub Run {
                     foreach my $section ($ini->Sections()) {
                         if ($section =~ /^\s*test run:/) {
                             my $target_test = 
-                                MTT::Values::Value($ini, $section, "test");
+                                MTT::Values::Value($ini, $section, "test_build");
 
                             if ($target_test eq $test_name) {
                                 Debug("Found a match! $target_test [$section]\n");
@@ -190,7 +190,7 @@ sub _do_run {
     # they supplied their own.  Don't use Value for all of them; some
     # we need to delay the evaluation.
     $config->{np} = $ini->val($section, "np");
-    $config->{np} = "1"
+    $config->{np} = "2"
         if (!$config->{np});
     $config->{np_ok} = $ini->val($section, "np_ok");
     $config->{np_ok} = "1"
@@ -201,9 +201,14 @@ sub _do_run {
     $config->{pass} = $ini->val($section, "pass");
     $config->{pass} = "&eq(&test_exit_status(), 0)"
         if (!$config->{pass});
-    $config->{save_stdout} = $ini->val($section, "save_stdout");
-    $config->{save_stdout} = "0"
-        if (!$config->{save_stdout});
+    $config->{save_output_on_pass} = 
+        $ini->val($section, "save_output_on_pass");
+    $config->{save_stdout_on_pass} = "0"
+        if (!$config->{save_stdout_on_pass});
+    $config->{separate_stdout_stderr} = 
+        $ini->val($section, "separate_stdout_stderr");
+    $config->{separate_stdout_stderr} = "0"
+        if (!$config->{separate_stdout_stderr});
     $config->{timeout} = $ini->val($section, "timeout");
     $config->{timeout} = "30"
         if (!$config->{timeout});
@@ -231,7 +236,7 @@ sub _do_run {
                 if ($ret->{perfbase_xml});
             $run->{section} = $section;
             $run->{executable} = $test->{executable};
-            foreach my $key (qw(np np_ok argv pass save_stdout timeout)) {
+            foreach my $key (qw(np np_ok argv pass save_stdout_on_pass timeout)) {
                 my $str = "\$run->{$key} = exists(\$test->{$key}) ? \$test->{$key} : \$config->{$key}";
                 eval $str;
             }
@@ -302,9 +307,10 @@ sub _run_one_test {
     _run_step($mpi_details, "before_each");
 
     my $timeout = MTT::Values::EvaluateString($run->{timeout});
+    my $separate = MTT::Values::EvaluateString($run->{separate_stdout_stderr});
     my $start_time = time;
     my $start = localtime;
-    my $x = MTT::DoCommand::Cmd(1, $cmd, $timeout);
+    my $x = MTT::DoCommand::Cmd(!$separate, $cmd, $timeout);
     my $stop = localtime;
     my $stop_time = time;
     $test_exit_status = $x->{status};
@@ -328,10 +334,11 @@ sub _run_one_test {
         test_pass => $pass,
         test_name => $name,
         test_command => $cmd,
-        test_stdout => $x->{stdout},
     };
+    my $want_output;
     if (!$pass) {
         Warning("Test failed: $name\n");
+        $want_output = 1;
         if ($stop_time - $start_time > $timeout) {
             $report->{test_message} = "Timeout expired ($timeout seconds)";
         } else {
@@ -340,6 +347,11 @@ sub _run_one_test {
     } else {
         Verbose("Test passed: $name\n");
         $report->{test_message} = "Passed";
+        $want_output = $run->{save_output_on_pass};
+    }
+    if ($want_output) {
+        $report->{test_stdout} = $x->{stdout};
+        $report->{test_stderr} = $x->{stderr};
     }
     MTT::Reporter::QueueAdd("Test Run", $run->{section}, $report);
 
