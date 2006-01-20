@@ -42,6 +42,8 @@ sub Init {
         return undef;
     }
     $sep = Value($ini, $section, "separator");
+    $sep = "============================================================================"
+        if (!$sep);
 
     # Make it an absolute filename, because there's oodles of
     # chdir()'s within the testing.  Whack the file if it's already
@@ -105,13 +107,18 @@ sub Submit {
             print "$sep\n"
                 if ($want_sep);
             print $str;
+            Verbose(">> Reported to stdout\n")
+                if (!exists($written_files->{$file}));
         } else {
             open(OUT, ">>$file");
             print OUT "$sep\n"
                 if ($want_sep);
             print OUT $str;
             close(OUT);
+            Verbose(">> Reported to text file $file\n")
+                if (!exists($written_files->{$file}));
         }
+        $written_files->{$file} = 1;
     }
 }
 

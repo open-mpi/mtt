@@ -24,6 +24,7 @@ sub Run {
     my $ret;
 
     $ret->{success} = 0;
+    $ret->{perfbase_xml} = Value($ini, $section, "perfbase_xml");
 
     # Look up the tests value.  Handle if we get an ARRAY back or a
     # string of whitespace delimited executables

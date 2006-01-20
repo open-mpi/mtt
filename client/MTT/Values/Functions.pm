@@ -316,15 +316,15 @@ sub iterate {
 sub step {
     Debug("&step got: @_\n");
 
-    my @ret;
     my $lower = shift;
     my $upper = shift;
     my $step = shift;
     $step = 1
         if (!$step);
 
+    my @ret;
     while ($lower <= $upper) {
-        push(@ret, $lower);
+        push(@ret, "$lower");
         $lower += $step;
     }
     return \@ret;

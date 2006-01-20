@@ -362,8 +362,8 @@ sub _do_install {
             phase => "MPI Install",
 
             section_name => $config->{section_name},
-            compiler_name => $ret->{compiler_name},
-            compiler_version => $ret->{compiler_version},
+            compiler_name => $config->{compiler_name},
+            compiler_version => $config->{compiler_version},
             flags => $ret->{configure_args},
             vpath_mode => $ret->{vpath_mode},
             stdout_stderr_combined => $ret->{std_combined},

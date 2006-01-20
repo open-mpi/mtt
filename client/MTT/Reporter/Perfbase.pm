@@ -82,31 +82,44 @@ sub Submit {
 
     Debug("Perfbase reporter\n");
 
+    my $successes = 0;
+    my @success_outputs;
+    my $fails = 0;
+    my @fail_reasons;
     foreach my $entry (@$entries) {
         my $phase = $entry->{phase};
         my $section = $entry->{section};
         my $report = $entry->{report};
 
         $report->{platform_id} = $platform;
+        my $xml = $report->{perfbase_xml};
+        if ($xml) {
 
-        # JMS: Right now we're assuming two HTTP form fields:
-        # value: the big old string
-        # xml: the name of the xml file to use in perfbase
-        # Need to coordinate with BA on this...
-        my $form = {
-            value => MTT::Reporter::MakeReportString($report),
-            # totally bogus value
-            xml => "compile.xml",
-        };
+            # JMS: Right now we're assuming two HTTP form fields:
+            # value: the big old string
+            # xml: the name of the xml file to use in perfbase
+            my $form = {
+                value => MTT::Reporter::MakeReportString($report),
+                xml => $xml,
+            };
 
-        # Do the post and get the response.
+            # Do the post and get the response.
 
-        my $response = $ua->post($url, $form);
-        if ($response->is_success()) {
-            print "Success!\n";
-            print $response->content;
-        } else {
-            print "Failure: " . $response->status_line . "\n";
+            my $response = $ua->post($url, $form);
+            if ($response->is_success()) {
+                ++$successes;
+                push(@success_outputs, $response->content);
+            } else {
+                Verbose(">> Failed to report to perfbase: " .
+                        $response->status_line . "\n");
+            }
+        }
+    }
+
+    if ($successes > 0) {
+        if ($fails == 0) {
+            Verbose(">> Reported $successes outputs to perfbase\n");
+            Debug(@success_outputs);
         }
     }
 }

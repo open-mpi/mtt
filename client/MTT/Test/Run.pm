@@ -148,6 +148,10 @@ sub _do_run {
     }
     Debug("Got final exec: $exec\n");
     $mpi_details->{exec} = $exec;
+    $mpi_details->{name} = $mpi_install->{mpi_name};
+    $mpi_details->{unique_id} = $mpi_install->{mpi_unique_id};
+    $mpi_details->{section_name} = $mpi_install->{mpi_section_name};
+    $mpi_details->{version} = $mpi_install->{mpi_version};
 
     # Go to the right dir
     chdir($test_build->{srcdir});
@@ -162,7 +166,8 @@ sub _do_run {
     }
     if ($mpi_install->{libdir}) {
         if (exists($ENV{LD_LIBRARY_PATH})) {
-            $ENV{LD_LIBRARY_PATH} = "$mpi_install->{libdir}:" . $ENV{LD_LIBRARY_PATH};
+            $ENV{LD_LIBRARY_PATH} = "$mpi_install->{libdir}:" . 
+                $ENV{LD_LIBRARY_PATH};
         } else {
             $ENV{LD_LIBRARY_PATH} = $mpi_install->{libdir};
         }
@@ -176,7 +181,8 @@ sub _do_run {
     my $config;
     $config->{setenv} = MTT::Values::Value($ini, $section, "setenv");
     $config->{unsetenv} = MTT::Values::Value($ini, $section, "unsetenv");
-    $config->{prepend_path} = MTT::Values::Value($ini, $section, "prepend_path");
+    $config->{prepend_path} = 
+        MTT::Values::Value($ini, $section, "prepend_path");
     $config->{append_path} = MTT::Values::Value($ini, $section, "append_path");
     MTT::Values::ProcessEnvKeys($config, \@save_env);
 
@@ -207,7 +213,8 @@ sub _do_run {
                                "Run", $ini, $section, $test_build,
                                $mpi_install, $config);
 
-    # Analyze the return -- should give us a list of tests to run
+    # Analyze the return -- should give us a list of tests to run and
+    # potentially a Perfbase XML file to analyze the results with
     if ($ret && $ret->{success}) {
         my $test_results;
 
@@ -220,6 +227,9 @@ sub _do_run {
 
             # Get the values for this test
             my $run;
+            $run->{perfbase_xml} = $ret->{perfbase_xml}
+                if ($ret->{perfbase_xml});
+            $run->{section} = $section;
             $run->{executable} = $test->{executable};
             foreach my $key (qw(np np_ok argv pass save_stdout timeout)) {
                 my $str = "\$run->{$key} = exists(\$test->{$key}) ? \$test->{$key} : \$config->{$key}";
@@ -292,31 +302,46 @@ sub _run_one_test {
     _run_step($mpi_details, "before_each");
 
     my $timeout = MTT::Values::EvaluateString($run->{timeout});
+    my $start_time = time;
     my $start = localtime;
     my $x = MTT::DoCommand::Cmd(1, $cmd, $timeout);
     my $stop = localtime;
+    my $stop_time = time;
     $test_exit_status = $x->{status};
     my $pass = MTT::Values::EvaluateString($run->{pass});
-    if (!$pass) {
-        Warning("Test failed: $name\n");
-    } else {
-        Verbose("Test passed: $name\n");
-    }
 
     # Queue up a report on this test
     my $report = {
         phase => "Test Run",
                 
-        start_timestamp => $start,
-        stop_timestamp => $stop,
-        mpi_name => $mpi_details->{mpi_name},
+        mpi_name => $mpi_details->{name},
         mpi_section_name => $mpi_details->{section_name},
         mpi_version => $mpi_details->{version},
         mpi_unique_id => $mpi_details->{unique_id},
-        
-#        section_name => $config->{section_name},
+
+        perfbase_xml => $run->{perfbase_xml},
+
+        test_start_timestamp => $start,
+        test_stop_timestamp => $stop,
+        test_np => $test_np,
+        test_section => $run->{section},
+        test_pass => $pass,
+        test_name => $name,
+        test_command => $cmd,
+        test_stdout => $x->{stdout},
     };
-    MTT::Reporter::QueueAdd($report);
+    if (!$pass) {
+        Warning("Test failed: $name\n");
+        if ($stop_time - $start_time > $timeout) {
+            $report->{test_message} = "Timeout expired ($timeout seconds)";
+        } else {
+            $report->{test_message} = "Exit status: $x->{status}";
+        }
+    } else {
+        Verbose("Test passed: $name\n");
+        $report->{test_message} = "Passed";
+    }
+    MTT::Reporter::QueueAdd("Test Run", $run->{section}, $report);
 
     # If there is an after_each step, run it
     _run_step($mpi_details, "after_each");

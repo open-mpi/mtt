@@ -33,6 +33,9 @@ my $mail_agent;
 # cache a copy of the environment
 my %ENV_original;
 
+# separator line
+my $sep;
+
 #--------------------------------------------------------------------------
 
 sub Init {
@@ -48,6 +51,9 @@ sub Init {
     $subject = Value($ini, $section, "subject");
     $subject = "MPI test results"
         if (!$subject);
+    $sep = Value($ini, $section, "separator");
+    $sep = "============================================================================"
+        if (!$sep);
 
     # Find a mail agent
 
@@ -95,12 +101,19 @@ sub Submit {
 
     Debug("E-mail reporter\n");
 
+    # Assume that entries are grouped such that we can just combine
+    # the reports into a single body and send it in a single mail
+
+    my $s;
+    my $body;
     foreach my $entry (@$entries) {
         my $phase = $entry->{phase};
         my $section = $entry->{section};
         my $report = $entry->{report};
 
-        my $body = MTT::Reporter::MakeReportString($report);
+        $body .= "$sep\n"
+            if ($body);
+        $body .= MTT::Reporter::MakeReportString($report);
 
         # Trivial e-mail reporter now -- we could do something much
         # prettier later...
@@ -110,12 +123,14 @@ sub Submit {
         my $mpi_name = $report->{mpi_name} ? $report->{mpi_name} : "Unknown-MPI";
         my $mpi_version = $report->{mpi_version} ? $report->{mpi_version} : "Unknown-MPI-Version";
 
-        my $s;
         my $str = "\$s = \"$subject\"";
         eval $str;
-
-        _invoke_mail_agent($s, $to, $body);
     }
+
+    # Now send it
+    
+    _invoke_mail_agent($s, $to, $body);
+    Verbose(">> Reported to $to\n");
 }
 
 1;

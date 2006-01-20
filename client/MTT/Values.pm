@@ -23,6 +23,7 @@ use base qw(Exporter);
 
 sub EvaluateString {
     my ($str) = @_;
+    Debug("Evaluating: $str\n");
 
     # Loop until there are no more &functions(...)
     while ($str =~ /\&(\w+)\(([^&\(]*?)\)/) {
@@ -46,19 +47,35 @@ sub EvaluateString {
         if (ref($ret) eq "") {
             # Substitute in the $ret in place of the &function(...)
             $str =~ s/(\&\w+\([^&\(]*?\))/$ret/;
+            Debug("String now: $str\n");
 
             # Now loop around and see if there are any more
             # &function(...)s
             next;
         }
 
+        # Otherwise, we get an array back, recursively call back
+        # through for each item in the array.  Not efficient, but it
+        # gets the job done.  However, we may have gotten an *empty*
+        # array back, in which case we still need to substitute in
+        # nothing into the string and continue looping around.
+
+        if ($#{@$ret} < 0) {
+            # Put an empty string in the return value's place in the
+            # original string
+            $str =~ s/(\&\w+\([^&\(]*?\))/""/;
+            Debug("String now: $str\n");
+
+            # Now loop around and see if there are any more
+            # &function(...)s
+            next;
+        }
+
+        # Now we handle all the array values that came back.
+
         # --- If you're trying to figure out the logic here, note that
         # --- beyond this point, we're not looping any more -- we'll
         # --- simply return.
-
-        # Otherwise, we get an array back, recursively call back
-        # through for each item in the array.  Not efficient, but it
-        # gets the job done.
 
         my @ret;
         foreach my $s (@$ret) {

@@ -248,7 +248,7 @@ sub _do_build {
         $ret->{mpi_name} = $mpi_install->{mpi_name};
         $ret->{mpi_section_name} = $mpi_install->{section_name};
         $ret->{mpi_version} = $mpi_install->{version};
-        $ret->{mpi_unique_id} = $mpi_install->{unique_id};
+        $ret->{mpi_unique_id} = $mpi_install->{mpi_unique_id};
 
         # Save the results in an ini file
         Debug("Writing built file: $config->{srcdir}/$built_file\n");

@@ -90,7 +90,6 @@ sub Submit {
 
         if (!exists($written_files->{$file})) {
             unlink($file);
-            $written_files->{$file} = 1;
         }
 
         # Write the file; append if it's already there
@@ -104,6 +103,9 @@ sub Submit {
         }
         $ini->WriteConfig($file);
         $ini->Delete();
+        Verbose(">> Reported to INI file: $file\n")
+            if (!exists($written_files->{$file}));
+        $written_files->{$file} = 1;
     }
 }
 

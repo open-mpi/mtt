@@ -36,6 +36,8 @@ my $install_mpi_arg;
 my $build_tests_arg;
 my $run_tests_arg;
 
+my @SAVE_ARGV = @ARGV;
+
 &Getopt::Long::Configure("bundling", "require_order");
 my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
                                   "scratch|s=s" => \$scratch_arg,
@@ -86,9 +88,9 @@ be run.\n";
 
 my $debug = ($debug_arg ? 1 : 0);
 my $verbose = ($verbose_arg ? 1 : $debug);
-Debug("MTT invoked with: $0 @ARGV\n");
-Debug("Debug is $debug, Verbose is $verbose\n");
 Messages($debug, $verbose);
+Debug("Debug is $debug, Verbose is $verbose\n");
+Verbose("*** MTT: $0 @SAVE_ARGV\n");
 
 FindZeroDir();
 
