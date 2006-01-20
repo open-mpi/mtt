@@ -1,12 +1,6 @@
 #!/usr/bin/env perl
 #
-# Copyright (c) 2004-2005 The Trustees of Indiana University.
-#                         All rights reserved.
-# Copyright (c) 2004-2005 The Trustees of the University of Tennessee.
-#                         All rights reserved.
-# Copyright (c) 2004-2005 High Performance Computing Center Stuttgart, 
-#                         University of Stuttgart.  All rights reserved.
-# Copyright (c) 2004-2005 The Regents of the University of California.
+# Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # $COPYRIGHT$
 # 
@@ -72,45 +66,52 @@ sub Init {
 #--------------------------------------------------------------------------
 
 sub Submit {
-    my ($phase, $section, $info, $report) = @_;
+    my ($info, $entries) = @_;
 
     Debug("File reporter\n");
-    my $str = MTT::Reporter::MakeReportString($report);
 
-    # Substitute in the filename
+    foreach my $entry (@$entries) {
+        my $phase = $entry->{phase};
+        my $section = $entry->{section};
+        my $report = $entry->{report};
 
-    my $date = strftime("%m%d%Y", localtime);
-    my $time = strftime("%H%M%S", localtime);
-    my $mpi_name = $report->{mpi_name} ? $report->{mpi_name} : "Unknown-MPI";
-    my $mpi_section = $report->{mpi_section_name} ? $report->{mpi_section_name} : "Unknown-MPI-section";
-    my $mpi_version = $report->{mpi_version} ? $report->{mpi_version} : "Unknown-MPI-Version";
-    my $file;
-    my $e = "\$file = MTT::Files::make_safe_filename(\"$filename\");";
-    eval $e;
-    $file = "$dirname/$file";
-    Debug("Writing to text file: $file\n");
+        my $str = MTT::Reporter::MakeReportString($report);
 
-    # If we have not yet written to the file in this run, then whack
-    # the file.
+        # Substitute in the filename
 
-    my $want_sep = 1;
-    if (!exists($written_files->{$file})) {
-        unlink($file);
-        $want_sep = 0;
-    }
+        my $date = strftime("%m%d%Y", localtime);
+        my $time = strftime("%H%M%S", localtime);
+        my $mpi_name = $report->{mpi_name} ? $report->{mpi_name} : "Unknown-MPI";
+        my $mpi_section = $report->{mpi_section_name} ? $report->{mpi_section_name} : "Unknown-MPI-section";
+        my $mpi_version = $report->{mpi_version} ? $report->{mpi_version} : "Unknown-MPI-Version";
+        my $file;
+        my $e = "\$file = MTT::Files::make_safe_filename(\"$filename\");";
+        eval $e;
+        $file = "$dirname/$file";
+        Debug("Writing to text file: $file\n");
 
-    # Write to stdout or append to the file
+        # If we have not yet written to the file in this run, then
+        # whack the file.
 
-    if ($file eq "-") {
-        print "$sep\n"
-            if ($want_sep);
-        print $str;
-    } else {
-        open(OUT, ">>$file");
-        print OUT "$sep\n"
-            if ($want_sep);
-        print OUT $str;
-        close(OUT);
+        my $want_sep = 1;
+        if (!exists($written_files->{$file})) {
+            unlink($file);
+            $want_sep = 0;
+        }
+
+        # Write to stdout or append to the file
+
+        if ($file eq "-") {
+            print "$sep\n"
+                if ($want_sep);
+            print $str;
+        } else {
+            open(OUT, ">>$file");
+            print OUT "$sep\n"
+                if ($want_sep);
+            print OUT $str;
+            close(OUT);
+        }
     }
 }
 

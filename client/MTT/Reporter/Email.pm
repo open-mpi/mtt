@@ -1,12 +1,6 @@
 #!/usr/bin/env perl
 #
-# Copyright (c) 2004-2005 The Trustees of Indiana University.
-#                         All rights reserved.
-# Copyright (c) 2004-2005 The Trustees of the University of Tennessee.
-#                         All rights reserved.
-# Copyright (c) 2004-2005 High Performance Computing Center Stuttgart, 
-#                         University of Stuttgart.  All rights reserved.
-# Copyright (c) 2004-2005 The Regents of the University of California.
+# Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # $COPYRIGHT$
 # 
@@ -97,24 +91,31 @@ sub _invoke_mail_agent {
 #--------------------------------------------------------------------------
 
 sub Submit {
-    my ($phase, $section, $info, $report) = @_;
+    my ($info, $entries) = @_;
 
     Debug("E-mail reporter\n");
-    my $body = MTT::Reporter::MakeReportString($report);
 
-    # Trivial e-mail reporter now -- we could do something much
-    # prettier later...
+    foreach my $entry (@$entries) {
+        my $phase = $entry->{phase};
+        my $section = $entry->{section};
+        my $report = $entry->{report};
 
-    my $date = strftime("%m%d%Y", localtime);
-    my $time = strftime("%H%M%S", localtime);
-    my $mpi_name = $report->{mpi_name} ? $report->{mpi_name} : "Unknown-MPI";
-    my $mpi_version = $report->{mpi_version} ? $report->{mpi_version} : "Unknown-MPI-Version";
+        my $body = MTT::Reporter::MakeReportString($report);
 
-    my $s;
-    my $str = "\$s = \"$subject\"";
-    eval $str;
+        # Trivial e-mail reporter now -- we could do something much
+        # prettier later...
 
-    _invoke_mail_agent($s, $to, $body);
+        my $date = strftime("%m%d%Y", localtime);
+        my $time = strftime("%H%M%S", localtime);
+        my $mpi_name = $report->{mpi_name} ? $report->{mpi_name} : "Unknown-MPI";
+        my $mpi_version = $report->{mpi_version} ? $report->{mpi_version} : "Unknown-MPI-Version";
+
+        my $s;
+        my $str = "\$s = \"$subject\"";
+        eval $str;
+
+        _invoke_mail_agent($s, $to, $body);
+    }
 }
 
 1;

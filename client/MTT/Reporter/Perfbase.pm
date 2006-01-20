@@ -1,12 +1,6 @@
 #!/usr/bin/env perl
 #
-# Copyright (c) 2004-2005 The Trustees of Indiana University.
-#                         All rights reserved.
-# Copyright (c) 2004-2005 The Trustees of the University of Tennessee.
-#                         All rights reserved.
-# Copyright (c) 2004-2005 High Performance Computing Center Stuttgart, 
-#                         University of Stuttgart.  All rights reserved.
-# Copyright (c) 2004-2005 The Regents of the University of California.
+# Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # $COPYRIGHT$
 # 
@@ -84,29 +78,36 @@ sub Init {
 #--------------------------------------------------------------------------
 
 sub Submit {
-    my ($phase, $section, $info, $report) = @_;
+    my ($info, $entries) = @_;
 
     Debug("Perfbase reporter\n");
-    $report->{platform_id} = $platform;
 
-    # JMS: Right now we're assuming two HTTP form fields:
-    # value: the big old string
-    # xml: the name of the xml file to use in perfbase
-    # Need to coordinate with BA on this...
-    my $form = {
-        value => MTT::Reporter::MakeReportString($report),
-        # totally bogus value
-        xml => "compile.xml",
-    };
+    foreach my $entry (@$entries) {
+        my $phase = $entry->{phase};
+        my $section = $entry->{section};
+        my $report = $entry->{report};
 
-    # Do the post and get the response.
+        $report->{platform_id} = $platform;
 
-    my $response = $ua->post($url, $form);
-    if ($response->is_success()) {
-        print "Success!\n";
-        print $response->content;
-    } else {
-        print "Failure: " . $response->status_line . "\n";
+        # JMS: Right now we're assuming two HTTP form fields:
+        # value: the big old string
+        # xml: the name of the xml file to use in perfbase
+        # Need to coordinate with BA on this...
+        my $form = {
+            value => MTT::Reporter::MakeReportString($report),
+            # totally bogus value
+            xml => "compile.xml",
+        };
+
+        # Do the post and get the response.
+
+        my $response = $ua->post($url, $form);
+        if ($response->is_success()) {
+            print "Success!\n";
+            print $response->content;
+        } else {
+            print "Failure: " . $response->status_line . "\n";
+        }
     }
 }
 

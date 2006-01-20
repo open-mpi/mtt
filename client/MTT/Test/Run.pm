@@ -1,12 +1,6 @@
 #!/usr/bin/env perl
 #
-# Copyright (c) 2004-2005 The Trustees of Indiana University.
-#                         All rights reserved.
-# Copyright (c) 2004-2005 The Trustees of the University of Tennessee.
-#                         All rights reserved.
-# Copyright (c) 2004-2005 High Performance Computing Center Stuttgart, 
-#                         University of Stuttgart.  All rights reserved.
-# Copyright (c) 2004-2005 The Regents of the University of California.
+# Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # $COPYRIGHT$
 # 
@@ -215,6 +209,7 @@ sub _do_run {
 
     # Analyze the return -- should give us a list of tests to run
     if ($ret && $ret->{success}) {
+        my $test_results;
 
         # Loop through all the tests
         foreach my $test (@{$ret->{tests}}) {
@@ -238,17 +233,22 @@ sub _do_run {
 
             # Just one np, or an array of np values?
             if (ref($all_np) eq "") {
-                _run_one_np($run, $mpi_details, $all_np);
+                $test_results->{$all_np} =
+                    _run_one_np($run, $mpi_details, $all_np);
             } else {
                 foreach my $this_np (@$all_np) {
-                    _run_one_np($run, $mpi_details, $this_np);
+                    $test_results->{$this_np} =
+                        _run_one_np($run, $mpi_details, $this_np);
                 }
             }
         }
 
-        # If we ran any tests at all, then run the after_all setp
+        # If we ran any tests at all, then run the after_all step and
+        # submit the results to the Reporter
         if (exists($mpi_details->{ran_some_tests})) {
             _run_step($mpi_details, "after_all");
+
+            MTT::Reporter::QueueSubmit();
         }
     }
 }
@@ -292,7 +292,9 @@ sub _run_one_test {
     _run_step($mpi_details, "before_each");
 
     my $timeout = MTT::Values::EvaluateString($run->{timeout});
+    my $start = localtime;
     my $x = MTT::DoCommand::Cmd(1, $cmd, $timeout);
+    my $stop = localtime;
     $test_exit_status = $x->{status};
     my $pass = MTT::Values::EvaluateString($run->{pass});
     if (!$pass) {
@@ -300,6 +302,21 @@ sub _run_one_test {
     } else {
         Verbose("Test passed: $name\n");
     }
+
+    # Queue up a report on this test
+    my $report = {
+        phase => "Test Run",
+                
+        start_timestamp => $start,
+        stop_timestamp => $stop,
+        mpi_name => $mpi_details->{mpi_name},
+        mpi_section_name => $mpi_details->{section_name},
+        mpi_version => $mpi_details->{version},
+        mpi_unique_id => $mpi_details->{unique_id},
+        
+#        section_name => $config->{section_name},
+    };
+    MTT::Reporter::QueueAdd($report);
 
     # If there is an after_each step, run it
     _run_step($mpi_details, "after_each");

@@ -1,12 +1,6 @@
 #!/usr/bin/env perl
 #
-# Copyright (c) 2004-2005 The Trustees of Indiana University.
-#                         All rights reserved.
-# Copyright (c) 2004-2005 The Trustees of the University of Tennessee.
-#                         All rights reserved.
-# Copyright (c) 2004-2005 High Performance Computing Center Stuttgart, 
-#                         University of Stuttgart.  All rights reserved.
-# Copyright (c) 2004-2005 The Regents of the University of California.
+# Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # $COPYRIGHT$
 # 
@@ -68,43 +62,49 @@ sub Init {
 #--------------------------------------------------------------------------
 
 sub Submit {
-    my ($phase, $section, $id, $report) = @_;
+    my ($id, $entries) = @_;
 
     Debug("INIFile reporter\n");
 
-    # Substitute in the filename
+    foreach my $entry (@$entries) {
+        my $phase = $entry->{phase};
+        my $section = $entry->{section};
+        my $report = $entry->{report};
 
-    my $date = strftime("%m%d%Y", localtime);
-    my $time = strftime("%H%M%S", localtime);
-    my $mpi_name = $report->{mpi_name} ? $report->{mpi_name} : "Unknown-MPI-name";
-    my $mpi_section = $report->{mpi_section_name} ? $report->{mpi_section_name} : "Unknown-MPI-section";
-    my $mpi_version = $report->{mpi_version} ? $report->{mpi_version} : "Unknown-MPI-Version";
+        # Substitute in the filename
 
-    my $file;
-    my $e = "\$file = MTT::Files::make_safe_filename(\"$filename\");";
-    eval $e;
-    $file = "$dirname/$file";
-    Debug("Writing to INI file: $file\n");
+        my $date = strftime("%m%d%Y", localtime);
+        my $time = strftime("%H%M%S", localtime);
+        my $mpi_name = $report->{mpi_name} ? $report->{mpi_name} : "Unknown-MPI-name";
+        my $mpi_section = $report->{mpi_section_name} ? $report->{mpi_section_name} : "Unknown-MPI-section";
+        my $mpi_version = $report->{mpi_version} ? $report->{mpi_version} : "Unknown-MPI-Version";
 
-    # If we have not yet written to the file in this run, then whack
-    # the file.
+        my $file;
+        my $e = "\$file = MTT::Files::make_safe_filename(\"$filename\");";
+        eval $e;
+        $file = "$dirname/$file";
+        Debug("Writing to INI file: $file\n");
 
-    if (!exists($written_files->{$file})) {
-        unlink($file);
-        $written_files->{$file} = 1;
+        # If we have not yet written to the file in this run, then
+        # whack the file.
+
+        if (!exists($written_files->{$file})) {
+            unlink($file);
+            $written_files->{$file} = 1;
+        }
+
+        # Write the file; append if it's already there
+
+        my $ini = new Config::IniFiles();
+        my $section = "Section $written_files->{$file}";
+        $ini->AddSection($section);
+        $ini->SetSectionComment($section, "This file automatically created by engine.pl.  Any changes made manually are likely to be lost!");
+        foreach my $k (keys(%$report)) {
+            $ini->newval($section, lc($k), $report->{$k});
+        }
+        $ini->WriteConfig($file);
+        $ini->Delete();
     }
-
-    # Write the file; append if it's already there
-
-    my $ini = new Config::IniFiles();
-    my $section = "Section $written_files->{$file}";
-    $ini->AddSection($section);
-    $ini->SetSectionComment($section, "This file automatically created by engine.pl.  Any changes made manually are likely to be lost!");
-    foreach my $k (keys(%$report)) {
-        $ini->newval($section, lc($k), $report->{$k});
-    }
-    $ini->WriteConfig($file);
-    $ini->Delete();
 }
 
 1;

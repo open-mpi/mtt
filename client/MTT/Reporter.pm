@@ -1,12 +1,6 @@
 #!/usr/bin/env perl
 #
-# Copyright (c) 2004-2005 The Trustees of Indiana University.
-#                         All rights reserved.
-# Copyright (c) 2004-2005 The Trustees of the University of Tennessee.
-#                         All rights reserved.
-# Copyright (c) 2004-2005 High Performance Computing Center Stuttgart, 
-#                         University of Stuttgart.  All rights reserved.
-# Copyright (c) 2004-2005 The Regents of the University of California.
+# Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # $COPYRIGHT$
 # 
@@ -26,6 +20,9 @@ use Data::Dumper;
 
 # Cache of info about the system
 my $cache;
+
+# Queued requests
+my @queue;
 
 # cache of the ini file
 my $ini;
@@ -161,13 +158,53 @@ sub Submit {
     _fill_cache()
         if (!$cache);
 
+    # Make the common report entry
+
+    my $entry = {
+        phase => $phase,
+        section => $section,
+        report => $report,
+    };
+    my @entries;
+    push(@entries, $entry);
+
     # Call all the reporters
 
     $cache->{submit_timestamp} = localtime;
     foreach my $m (@modules) {
-        MTT::Module::Run("MTT::Reporter::$m", "Submit", 
-                         $phase, $section, $cache, $report);
+        MTT::Module::Run("MTT::Reporter::$m", "Submit", $cache, \@entries);
     }
+}
+
+#--------------------------------------------------------------------------
+
+sub QueueAdd {
+    my ($phase, $section, $report) = @_;
+
+    my $entry = {
+        phase => $phase,
+        section => $section,
+        report => $report,
+    };
+    push(@queue, $entry);
+}
+
+#--------------------------------------------------------------------------
+
+sub QueueSubmit {
+    _fill_cache()
+        if (!$cache);
+
+    # Call all the reporters
+
+    $cache->{submit_timestamp} = localtime;
+    foreach my $m (@modules) {
+        MTT::Module::Run("MTT::Reporter::$m", "Submit", $cache, \@queue);
+    }
+
+    # Empty the queue
+
+    @queue = ();
 }
 
 1;
