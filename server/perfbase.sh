@@ -1,4 +1,13 @@
 #!/bin/sh
+#
+# Copyright (c) 2005-2006 The Trustees of Indiana University.
+#                         All rights reserved.
+# $COPYRIGHT$
+# 
+# Additional copyrights may follow
+# 
+# $HEADER$
+#
 
 export LOCAL=/u/afriedle/local
 export PB_DBUSER="postgres"

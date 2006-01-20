@@ -1,4 +1,14 @@
 <?php
+#
+# Copyright (c) 2005-2006 The Trustees of Indiana University.
+#                         All rights reserved.
+# $COPYRIGHT$
+# 
+# Additional copyrights may follow
+# 
+# $HEADER$
+#
+
 	# First thing, do a dumb authentication check
 	define("USERNAME", "afriedle");
 	define("PASSWORD", "135w00t");

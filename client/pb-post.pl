@@ -1,12 +1,6 @@
 #!/usr/bin/env perl
 #
-# Copyright (c) 2004-2005 The Trustees of Indiana University.
-#                         All rights reserved.
-# Copyright (c) 2004-2005 The Trustees of the University of Tennessee.
-#                         All rights reserved.
-# Copyright (c) 2004-2005 High Performance Computing Center Stuttgart, 
-#                         University of Stuttgart.  All rights reserved.
-# Copyright (c) 2004-2005 The Regents of the University of California.
+# Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # $COPYRIGHT$
 # 
@@ -44,8 +38,8 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \$file_arg,
 if (!$file_arg || !$xml_arg || !$user_arg || !$pass_arg || $help_arg || !$ok) {
     print "Usage: $0 --file|-f filename\n";
     print "\t--xml|-x xmlfile\n";
-    print "\t--username|-u username\n";
-    print "\t--password|-p password\n";
+    print "\t--username|-u username (HTTP auth)\n";
+    print "\t--password|-p password (HTTP auth)\n";
     print "\t[--url|-l url]\n";
     print "\t[--debug|-d]\n";
     print "\t[--help|-h]\n";
