@@ -203,8 +203,8 @@ sub _do_run {
         if (!$config->{pass});
     $config->{save_output_on_pass} = 
         $ini->val($section, "save_output_on_pass");
-    $config->{save_stdout_on_pass} = "0"
-        if (!$config->{save_stdout_on_pass});
+    $config->{save_output_on_pass} = "0"
+        if (!$config->{save_output_on_pass});
     $config->{separate_stdout_stderr} = 
         $ini->val($section, "separate_stdout_stderr");
     $config->{separate_stdout_stderr} = "0"
@@ -236,7 +236,7 @@ sub _do_run {
                 if ($ret->{perfbase_xml});
             $run->{section} = $section;
             $run->{executable} = $test->{executable};
-            foreach my $key (qw(np np_ok argv pass save_stdout_on_pass timeout)) {
+            foreach my $key (qw(np np_ok argv pass save_output_on_pass separate_stdout_stderr timeout)) {
                 my $str = "\$run->{$key} = exists(\$test->{$key}) ? \$test->{$key} : \$config->{$key}";
                 eval $str;
             }
