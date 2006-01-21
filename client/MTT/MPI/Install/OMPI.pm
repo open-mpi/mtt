@@ -43,7 +43,7 @@ sub Install {
     
     # Run configure
 
-    $x = MTT::DoCommand::Cmd(1, "$config->{configdir}/configure $config->{configure_args} --prefix=$config->{installdir}");
+    $x = MTT::DoCommand::Cmd(1, "$config->{configdir}/configure $config->{configure_arguments} --prefix=$config->{installdir}");
     if ($x->{status} != 0) {
         $ret->{result_message} = "Configure failed -- skipping this build\n";
         $ret->{stdout} = $x->{stdout};
@@ -53,9 +53,9 @@ sub Install {
 
     # Build it
 
-    $x = MTT::DoCommand::Cmd($config->{std_combined}, "make $config->{make_all_args} all");
+    $x = MTT::DoCommand::Cmd($config->{std_combined}, "make $config->{make_all_arguments} all");
     if ($x->{status} != 0) {
-        $ret->{result_message} = "Failed to build: make $config->{make_all_args} all\n";
+        $ret->{result_message} = "Failed to build: make $config->{make_all_arguments} all\n";
         $ret->{stdout} = $x->{stdout};
         $ret->{stderr} = $x->{stderr};
         return $ret;

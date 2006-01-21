@@ -27,7 +27,7 @@ package MTT::MPI::Install;
 # success (OUT) => 0 or 1; whether the build succeeded or not
 # result_message (OUT) => a message describing the result
 # section_name (IN) => name of the INI file section for this build
-# configure_args (IN) => arguments passed to configure when built
+# configure_arguments (IN) => arguments passed to configure when built
 # configure_stdout (OUT) => stdout and stderr from running configure
 # vpath_mode (IN) => none, relative, absolute
 # configdir (IN) => where configure was invoked relative to the source
@@ -39,7 +39,7 @@ package MTT::MPI::Install;
 #     successful)
 # std_combined (IN) => 0 or 1; whether stdout was combined with stderr
 #     or not
-# make_all_args (IN) => arguments passed to "make all"
+# make_all_arguments (IN) => arguments passed to "make all"
 # make_all_stdout (OUT) => stdout from "make all" (or stdout and
 #     stderr if std_combined == 1)
 # make_all_stderr (OUT) => stderr from "make all" (blank if
@@ -214,9 +214,9 @@ sub _do_install {
     my $val;
     my $config = {
         # Possibly filled in by ini files
-        configure_args => "",
+        configure_arguments => "",
         vpath_mode => "none",
-        make_all_args => "",
+        make_all_arguments => "",
         make_check => 1,
         module => "",
         std_combined => 0,
@@ -272,12 +272,12 @@ sub _do_install {
     my @save_env;
     ProcessEnvKeys($config, \@save_env);
     
-    # configure_args
-    $config->{configure_args} =
-        Value($ini, $section, "configure_args");
+    # configure_arguments
+    $config->{configure_arguments} =
+        Value($ini, $section, "configure_arguments");
     
     # vpath
-    $config->{vpath_mode} = lc(Value($ini, $section, "vpath"));
+    $config->{vpath_mode} = lc(Value($ini, $section, "vpath_mode"));
     if ($config->{vpath_mode}) {
         if ($config->{vpath_mode} eq "none" ||
             $config->{vpath_mode} eq "absolute" ||
@@ -285,17 +285,19 @@ sub _do_install {
             ;
         } else {
             Warning("Unrecognized vpath mode: $val -- ignored\n");
-            delete $config->{vpath_mode};
+            $config->{vpath_mode} = "none";
         }
+    } else {
+        $config->{vpath_mode} = "none";
     }
     
     # separate stdout/stderr
-    $config->{std_combined} = 
-        ! Logical($ini, $section, "separate_stdout_stderr");
+    my $tmp = Logical($ini, $section, "separate_stdout_stderr");
+    $config->{std_combined} = $tmp ? "0" : "1";
     
-    # make all args
-    $config->{make_all_args} = 
-        Value($ini, $section, "make_all_args");
+    # make all arguments
+    $config->{make_all_arguments} = 
+        Value($ini, $section, "make_all_arguments");
     
     # make check
     $config->{make_check} = 
@@ -323,10 +325,11 @@ sub _do_install {
     chdir($config->{srcdir});
     $config->{abs_srcdir} = cwd();
     
-    # configdir and builddir
+    # vpath mode (error checking was already done above)
     
     if (!$config->{vpath_mode} || $config->{vpath_mode} eq "" ||
         $config->{vpath_mode} eq "none") {
+        $config->{vpath_mode} eq "none";
         $config->{configdir} = ".";
         $config->{builddir} = $config->{abs_srcdir};
     } else {
@@ -364,9 +367,9 @@ sub _do_install {
             section_name => $config->{section_name},
             compiler_name => $config->{compiler_name},
             compiler_version => $config->{compiler_version},
-            flags => $ret->{configure_args},
-            vpath_mode => $ret->{vpath_mode},
-            stdout_stderr_combined => $ret->{std_combined},
+            configure_arguments => $config->{configure_arguments},
+            vpath_mode => $config->{vpath_mode},
+            stdout_stderr_combined => "$config->{std_combined}",
             environment => "filled in below",
 
             perfbase_xml => Value($ini, $section, "perfbase_xml"),
@@ -432,7 +435,7 @@ sub _do_install {
         $ret->{timestamp} = $report->{timestamp} = strftime("%j%Y-%H%M%S", localtime);
         $ret->{compiler_name} = $config->{compiler_name};
         $ret->{compiler_version} = $config->{compiler_version};
-        $ret->{configure_args} = $config->{configure_args};
+        $ret->{configure_arguments} = $config->{configure_arguments};
         $ret->{vpath_mode} = $config->{vpath_mode};
         $ret->{std_combined} = $config->{std_combined};
         $ret->{setenv} = $config->{setenv};
