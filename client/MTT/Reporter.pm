@@ -74,20 +74,23 @@ sub GetID {
 #--------------------------------------------------------------------------
 
 sub MakeReportString {
-    my ($report) = @_;
+    my ($report, $delimiter) = @_;
 
     my $str;
-    _stringify(\$str, $cache);
-    _stringify(\$str, $report);
+    _stringify(\$str, $cache, $delimiter);
+    _stringify(\$str, $report, $delimiter);
     return $str;
 }
 
 sub _stringify {
-    my ($str, $hash) = @_;
+    my ($str, $hash, $delimiter) = @_;
+
+    $delimiter = ":"
+        if (!$delimiter);
 
     my @to_delete;
     foreach my $k (sort(keys(%$hash))) {
-        $$str .= "$k:";
+        $$str .= "$k$delimiter";
         my $val = $hash->{$k};
 
         # Huersitic: if there are any newlines in the original string,

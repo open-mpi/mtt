@@ -95,12 +95,14 @@ sub Submit {
         my $xml = $report->{perfbase_xml};
         if ($xml) {
 
-            # JMS: Right now we're assuming two HTTP form fields:
-            # value: the big old string
-            # xml: the name of the xml file to use in perfbase
+            # Make the string to send, using ": " as the delimiter
+            # (this is important -- the server-side XML files are
+            # setup to use these ***2*** characters as the delimiter
+            # between the field and the data
+
             my $form = {
-                value => MTT::Reporter::MakeReportString($report),
-                xml => $xml,
+                PBINPUT => MTT::Reporter::MakeReportString($report, ": "),
+                PBXML => $xml,
             };
 
             # Do the post and get the response.
