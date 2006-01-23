@@ -112,7 +112,7 @@ sub _do_get {
         $ret->{unique_id} = $unique_id
             if (!$ret->{unique_id});
         $ret->{module_name} = "MTT::MPI::Get::$module";
-        $ret->{timestamp} = strftime("%j%Y-%H%M%S", localtime);
+        $ret->{get_timestamp} = strftime("%j%Y-%H%M%S", localtime);
 
         # Add this into the $MPI::sources hash
         $MTT::MPI::sources->{$section}->{$ret->{unique_id}} = $ret;
