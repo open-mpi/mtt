@@ -55,12 +55,6 @@
   </parameter>
 
   <parameter occurence="once">
-    <name>submit_timestamp</name>
-    <synopsis>date and time the build results were submitted</synopsis>
-    <datatype>timestamp</datatype>
-  </parameter>
-
-  <parameter occurence="once">
     <name>compiler_name</name>
     <synopsis>compiler name</synopsis>
     <datatype>string</datatype>
@@ -161,6 +155,12 @@
     <datatype>string</datatype>
   </result>
   
+  <result occurence="once">
+    <name>submit_timestamp</name>
+    <synopsis>date and time the build results were submitted</synopsis>
+    <datatype>timestamp</datatype>
+  </result>
+
   <result occurence="once">
     <name>start_timestamp</name>
     <synopsis>date and time the MPI build was started</synopsis>
