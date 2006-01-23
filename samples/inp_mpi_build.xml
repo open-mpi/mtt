@@ -122,22 +122,22 @@
     </tabular_value>
   </tabular_location>
 
-  <named_location>
+  <named_location len="0">
     <name>submit_timestamp</name>
     <match>submit_timestamp: </match>
   </named_location>
 
-  <named_location>
+  <named_location len="0">
     <name>start_timestamp</name>
     <match>start_timestamp: </match>
   </named_location>
 
-  <named_location>
+  <named_location len="0">
     <name>stop_timestamp</name>
     <match>stop_timestamp: </match>
   </named_location>
 
-  <named_location>
+  <named_location len="0">
     <name>timestamp</name>
     <match>timestamp: </match>
   </named_location>
