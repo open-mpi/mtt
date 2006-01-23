@@ -2,7 +2,7 @@
 <!DOCTYPE experiment SYSTEM "../../dtd/pb_experiment.dtd">
 
 <experiment>
-  <name>engine_build</name>
+  <name>mtt_test_run</name>
 
   <!-- *** -->
   <!-- *** general information on the experiment -->
