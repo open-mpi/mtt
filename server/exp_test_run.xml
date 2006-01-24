@@ -59,20 +59,6 @@
   </parameter>
 
   <parameter occurence="once">
-    <name>compiler_name</name>
-    <synopsis>compiler name</synopsis>
-    <default>not specified</default>
-    <datatype>string</datatype>
-  </parameter>
-
-  <parameter occurence="once">
-    <name>compiler_version</name>
-    <synopsis>compiler version</synopsis>
-    <default>not specified</default>
-    <datatype>string</datatype>
-  </parameter>
-
-  <parameter occurence="once">
     <name>mpi_name</name>
     <synopsis>MPI name</synopsis>
     <datatype>string</datatype>
@@ -157,12 +143,6 @@
     <synopsis>test section</synopsis>
     <default>not specified</default>
     <datatype>string</datatype>
-  </result>
-
-  <result occurence="once">
-    <name>success</name>
-    <synopsis>true if build was successful</synopsis>
-    <datatype>boolean</datatype>
   </result>
 
   <result occurence="multiple">
