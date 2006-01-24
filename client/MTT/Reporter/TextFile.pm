@@ -77,7 +77,11 @@ sub Submit {
         my $section = $entry->{section};
         my $report = $entry->{report};
 
-        my $str = MTT::Reporter::MakeReportString($report);
+        # Use ": " as a delimiter because this file may be fed to
+        # Perfbase (e.g., in a disconnected scenario this file is
+        # later read and fed to Perfbase).
+
+        my $str = MTT::Reporter::MakeReportString($report, ": ");
 
         # Substitute in the filename
 
