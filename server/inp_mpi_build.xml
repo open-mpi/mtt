@@ -8,105 +8,105 @@
   <!-- *** summary parameters -->
   <!-- *** -->
 
-  <named_location>
+  <named_location len="0">
     <name>hostname</name>
     <match>hostname: </match>
   </named_location>
 
-  <named_location>
+  <named_location len="0">
     <name>os_name</name>
     <match>os name: </match>
   </named_location>
 
-  <named_location>
+  <named_location len="0">
     <name>os_version</name>
     <match>os version: </match>
   </named_location>
 
-  <named_location>
+  <named_location len="0">
     <name>platform_hardware</name>
     <match>platform_hardware: </match>
   </named_location>
 
-  <named_location>
+  <named_location len="0">
     <name>platform_type</name>
     <match>platform_type: </match>
   </named_location>
 
-  <named_location>
+  <named_location len="0">
     <name>compiler_name</name>
     <match>compiler name: </match>
   </named_location>
 
-  <named_location>
+  <named_location len="0">
     <name>compiler_version</name>
     <match>compiler version: </match>
   </named_location>
 
-  <named_location>
+  <named_location len="0">
     <name>configure_arguments</name>
     <match>configure_arguments: </match>
   </named_location>
 
   <tabular_location columns="1">
     <match>environment</match>
-    <tabular_value>
+    <tabular_value len="0">
       <name>environment</name>
       <pos>0</pos>
     </tabular_value>
   </tabular_location>
 
-  <named_location>
+  <named_location len="0">
     <name>mpi_name</name>
     <match>mpi name: </match>
   </named_location>
 
-  <named_location>
+  <named_location len="0">
     <name>mpi_section_name</name>
     <match>mpi_section_name: </match>
   </named_location>
 
-  <named_location>
+  <named_location len="0">
     <name>mpi_unique_id</name>
     <match>mpi_unique_id: </match>
   </named_location>
 
-  <named_location>
+  <named_location len="0">
     <name>mpi_version</name>
     <match>mpi version: </match>
   </named_location>
 
-  <named_location>
+  <named_location len="0">
     <name>platform_id</name>
     <match>platform_id: </match>
   </named_location>
 
-  <named_location>
+  <named_location len="0">
     <name>section_name</name>
     <match>section_name: </match>
   </named_location>
   
-  <named_location>
+  <named_location len="0">
     <name>stdout_stderr_combined</name>
     <match>stdout_stderr_combined: </match>
   </named_location>
 
-  <named_location>
+  <named_location len="0">
     <name>vpath_mode</name>
     <match>vpath mode: </match>
   </named_location>
   
-  <named_location>
+  <named_location len="0">
     <name>success</name>
     <match>success: </match>
   </named_location>
 
-  <named_location>
+  <named_location len="0">
     <name>result_message</name>
     <match>result message: </match>
   </named_location>
 
-  <tabular_location columns="1">
+  <tabular_location columns="1" len="0">
     <match>stderr:</match>
     <tabular_value>
       <name>stderr</name>
@@ -135,11 +135,6 @@
   <named_location len="0">
     <name>stop_timestamp</name>
     <match>stop_timestamp: </match>
-  </named_location>
-
-  <named_location len="0">
-    <name>timestamp</name>
-    <match>timestamp: </match>
   </named_location>
 
 </input>

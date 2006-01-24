@@ -27,103 +27,120 @@
   <parameter occurence="once">
     <name>hostname</name>
     <synopsis>host name</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
   <parameter occurence="once">
     <name>os_name</name>
     <synopsis>operating system name</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
   <parameter occurence="once">
     <name>os_version</name>
     <synopsis>operating system version</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
   <parameter occurence="once">
     <name>platform_hardware</name>
     <synopsis>platform architecture</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
   <parameter occurence="once">
     <name>platform_type</name>
     <synopsis>platform os/architecture</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
   <parameter occurence="once">
     <name>compiler_name</name>
     <synopsis>compiler name</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
   <parameter occurence="once">
     <name>compiler_version</name>
     <synopsis>compiler version</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
   <parameter occurence="once">
     <name>configure_arguments</name>
     <synopsis>arguments that were given to ./configure or equivalent</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
   <parameter occurence="multiple">
     <name>environment</name>
     <synopsis>environment the build was performed in</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
   
   <parameter occurence="once">
     <name>mpi_name</name>
     <synopsis>MPI name</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
   <parameter occurence="once">
     <name>mpi_section_name</name>
     <synopsis>MPI section name</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
   <parameter occurence="once">
     <name>mpi_unique_id</name>
     <synopsis>MPI unique identifier</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
   <parameter occurence="once">
     <name>mpi_version</name>
     <synopsis>MPI version</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
   <parameter occurence="once">
     <name>platform_id</name>
     <synopsis>platform identifier</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
   <parameter occurence="once">
     <name>section_name</name>
     <synopsis>section name</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
   <parameter occurence="once">
     <name>stdout_stderr_combined</name>
     <synopsis>true if stdout and stderr are combined output</synopsis>
+    <default>false</default>
     <datatype>boolean</datatype>
   </parameter>
   
   <parameter occurence="once">
     <name>vpath_mode</name>
     <synopsis>whether this is a VPATH build or not</synopsis>
-    <datatype>boolean</datatype>
+    <default>not specified</default>
+    <datatype>string</datatype>
   </parameter>
 
 
@@ -146,12 +163,14 @@
   <result occurence="multiple">
     <name>stderr</name>
     <synopsis>stderr output from build</synopsis>
+    <default>no output generated</default>
     <datatype>string</datatype>
   </result>
 
   <result occurence="multiple">
     <name>stdout</name>
     <synopsis>stdout output from build</synopsis>
+    <default>no output generated</default>
     <datatype>string</datatype>
   </result>
   
@@ -173,12 +192,6 @@
     <datatype>timestamp</datatype>
   </result>
   
-  <result occurence="once">
-    <name>timestamp</name>
-    <synopsis>date and time the build was performed</synopsis>
-    <datatype>timestamp</datatype>
-  </result>
-
 </experiment>
 
 
