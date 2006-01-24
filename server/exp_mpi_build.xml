@@ -27,7 +27,6 @@
   <parameter occurence="once">
     <name>hostname</name>
     <synopsis>host name</synopsis>
-    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
@@ -90,7 +89,6 @@
   <parameter occurence="once">
     <name>mpi_name</name>
     <synopsis>MPI name</synopsis>
-    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
@@ -104,14 +102,12 @@
   <parameter occurence="once">
     <name>mpi_unique_id</name>
     <synopsis>MPI unique identifier</synopsis>
-    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
   <parameter occurence="once">
     <name>mpi_version</name>
     <synopsis>MPI version</synopsis>
-    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
@@ -144,7 +140,6 @@
   </parameter>
 
 
-
   <!-- *** -->
   <!-- *** results -->
   <!-- *** -->
@@ -164,14 +159,14 @@
     <name>stderr</name>
     <synopsis>stderr output from build</synopsis>
     <default>no output generated</default>
-    <datatype>string</datatype>
+    <datatype>text</datatype>
   </result>
 
   <result occurence="multiple">
     <name>stdout</name>
     <synopsis>stdout output from build</synopsis>
     <default>no output generated</default>
-    <datatype>string</datatype>
+    <datatype>text</datatype>
   </result>
   
   <result occurence="once">

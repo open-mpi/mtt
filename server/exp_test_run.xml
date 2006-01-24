@@ -33,42 +33,42 @@
   <parameter occurence="once">
     <name>os_name</name>
     <synopsis>operating system name</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
   <parameter occurence="once">
     <name>os_version</name>
     <synopsis>operating system version</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
   <parameter occurence="once">
     <name>platform_hardware</name>
     <synopsis>platform architecture</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
   <parameter occurence="once">
     <name>platform_type</name>
     <synopsis>platform os/architecture</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
-  </parameter>
-
-  <parameter occurence="once">
-    <name>submit_timestamp</name>
-    <synopsis>date and time the build results were submitted</synopsis>
-    <datatype>timestamp</datatype>
   </parameter>
 
   <parameter occurence="once">
     <name>compiler_name</name>
     <synopsis>compiler name</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
   <parameter occurence="once">
     <name>compiler_version</name>
     <synopsis>compiler version</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
@@ -81,6 +81,7 @@
   <parameter occurence="once">
     <name>mpi_section_name</name>
     <synopsis>MPI section name</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
@@ -99,46 +100,8 @@
   <parameter occurence="once">
     <name>platform_id</name>
     <synopsis>platform identifier</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
-  </parameter>
-
-  <parameter occurence="once">
-    <name>section_name</name>
-    <synopsis>section name</synopsis>
-    <datatype>string</datatype>
-  </parameter>
-
-  <parameter occurence="once">
-    <name>start_timestamp</name>
-    <synopsis>date and time the MPI build was started</synopsis>
-    <datatype>timestamp</datatype>
-  </parameter>
-
-  <parameter occurence="once">
-    <name>stop_timestamp</name>
-    <synopsis>date and time the MPI build finished</synopsis>
-    <datatype>timestamp</datatype>
-  </parameter>
-
-
-
-
-  <parameter occurence="once">
-    <name>build_name</name>
-    <synopsis>name of the software being built</synopsis>
-    <datatype>string</datatype>
-  </parameter>
-
-  <parameter occurence="once">
-    <name>flags</name>
-    <synopsis>flags that were given to ./configure or equivalent</synopsis>
-    <datatype>string</datatype>
-  </parameter>
-
-  <parameter occurence="once">
-    <name>vpath_mode</name>
-    <synopsis>whether this is a VPATH build or not</synopsis>
-    <datatype>boolean</datatype>
   </parameter>
 
   <parameter occurence="once">
@@ -152,39 +115,84 @@
     <synopsis>environment the build was performed in</synopsis>
     <datatype>string</datatype>
   </parameter>
-  
-  <parameter occurence="once">
-    <name>timestamp</name>
-    <synopsis>date and time the build was performed</synopsis>
-    <datatype>timestamp</datatype>
-  </parameter>
-
+ 
 
   <!-- *** -->
   <!-- *** results -->
   <!-- *** -->
+  <result occurence="once">
+    <name>test_command</name>
+    <synopsis>full mpirun command line for this test</synopsis>
+    <default>not specified</default>
+    <datatype>string</datatype>
+  </result>
+
+  <result occurence="once">
+    <name>test_message</name>
+    <synopsis>test result message</synopsis>
+    <default>not specified</default>
+    <datatype>string</datatype>
+  </result>
+
+  <result occurence="once">
+    <name>test_name</name>
+    <synopsis>name of test being run</synopsis>
+    <datatype>string</datatype>
+  </result>
+
+  <result occurence="once">
+    <name>test_np</name>
+    <synopsis>number of processing elements used for test</synopsis>
+    <datatype>integer</datatype>
+  </result>
+
+  <result occurence="once">
+    <name>test_pass</name>
+    <synopsis>whether or not the test passed</synopsis>
+    <datatype>boolean</datatype>
+  </result>
+
+  <result occurence="once">
+    <name>test_section</name>
+    <synopsis>test section</synopsis>
+    <default>not specified</default>
+    <datatype>string</datatype>
+  </result>
+
   <result occurence="once">
     <name>success</name>
     <synopsis>true if build was successful</synopsis>
     <datatype>boolean</datatype>
   </result>
 
-  <result occurence="once">
-    <name>result_message</name>
-    <synopsis>one-line summary of build result</synopsis>
-    <datatype>string</datatype>
-  </result>
-
   <result occurence="multiple">
     <name>stderr</name>
     <synopsis>stderr output from build</synopsis>
-    <datatype>string</datatype>
+    <datatype>text</datatype>
   </result>
 
   <result occurence="multiple">
     <name>stdout</name>
     <synopsis>stdout output from build</synopsis>
-    <datatype>string</datatype>
+    <datatype>text</datatype>
+  </result>
+  
+  <result occurence="once">
+    <name>submit_timestamp</name>
+    <synopsis>date and time the build results were submitted</synopsis>
+    <datatype>timestamp</datatype>
+  </result>
+
+  <result occurence="once">
+    <name>test_start_timestamp</name>
+    <synopsis>date and time the MPI build was started</synopsis>
+    <datatype>timestamp</datatype>
+  </result>
+
+  <result occurence="once">
+    <name>test_stop_timestamp</name>
+    <synopsis>date and time the MPI build finished</synopsis>
+    <datatype>timestamp</datatype>
   </result>
 
 </experiment>
