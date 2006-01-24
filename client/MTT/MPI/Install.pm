@@ -432,7 +432,6 @@ sub _do_install {
         # Some additional values
         $ret->{section_name} = $config->{section_name};
         $ret->{test_status} = "installed";
-        $ret->{install_timestamp} = $report->{install_timestamp} = strftime("%j%Y-%H%M%S", localtime);
         $ret->{compiler_name} = $config->{compiler_name};
         $ret->{compiler_version} = $config->{compiler_version};
         $ret->{configure_arguments} = $config->{configure_arguments};
