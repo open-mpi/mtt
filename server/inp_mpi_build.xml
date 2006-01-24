@@ -15,12 +15,12 @@
 
   <named_location len="0">
     <name>os_name</name>
-    <match>os name: </match>
+    <match>os_name: </match>
   </named_location>
 
   <named_location len="0">
     <name>os_version</name>
-    <match>os version: </match>
+    <match>os_version: </match>
   </named_location>
 
   <named_location len="0">
@@ -35,12 +35,12 @@
 
   <named_location len="0">
     <name>compiler_name</name>
-    <match>compiler name: </match>
+    <match>compiler_name: </match>
   </named_location>
 
   <named_location len="0">
     <name>compiler_version</name>
-    <match>compiler version: </match>
+    <match>compiler_version: </match>
   </named_location>
 
   <named_location len="0">
@@ -58,7 +58,7 @@
 
   <named_location len="0">
     <name>mpi_name</name>
-    <match>mpi name: </match>
+    <match>mpi_name: </match>
   </named_location>
 
   <named_location len="0">
@@ -73,7 +73,7 @@
 
   <named_location len="0">
     <name>mpi_version</name>
-    <match>mpi version: </match>
+    <match>mpi_version: </match>
   </named_location>
 
   <named_location len="0">
@@ -93,7 +93,7 @@
 
   <named_location len="0">
     <name>vpath_mode</name>
-    <match>vpath mode: </match>
+    <match>vpath_mode: </match>
   </named_location>
   
   <named_location len="0">
@@ -103,7 +103,7 @@
 
   <named_location len="0">
     <name>result_message</name>
-    <match>result message: </match>
+    <match>result_message: </match>
   </named_location>
 
   <tabular_location columns="1" len="0">
