@@ -26,7 +26,7 @@ package MTT::MPI::Install;
 # module (IN) => name of the module that built the MPI
 # success (OUT) => 0 or 1; whether the build succeeded or not
 # result_message (OUT) => a message describing the result
-# section_name (IN) => name of the INI file section for this build
+# mpi_get_section_name (IN) => name of the INI file section for this build
 # configure_arguments (IN) => arguments passed to configure when built
 # configure_stdout (OUT) => stdout and stderr from running configure
 # vpath_mode (IN) => none, relative, absolute
@@ -149,35 +149,35 @@ sub Install {
             }
 
             # For each MPI source
-            foreach my $mpi_section_key (keys(%{$MTT::MPI::sources})) {
+            foreach my $mpi_get_section_key (keys(%{$MTT::MPI::sources})) {
                 # For each unique instance of that source
-                my $mpi_section = $MTT::MPI::sources->{$mpi_section_key};
-                foreach my $mpi_unique_key (keys(%{$mpi_section})) {
-                    my $mpi_source = $mpi_section->{$mpi_unique_key};
-                    if ($mpi_source->{mpi_name} = $mpi_name) {
+                my $mpi_get_section = $MTT::MPI::sources->{$mpi_get_section_key};
+                foreach my $mpi_unique_key (keys(%{$mpi_get_section})) {
+                    my $mpi_get = $mpi_get_section->{$mpi_unique_key};
+                    if ($mpi_get->{mpi_name} = $mpi_name) {
 
                         # We found a corresponding MPI source.  Now
                         # check to see if it has already been built.
                         # Test incrementally so that it doesn't create
                         # each intermediate key.
-                        Debug("Checking for $mpi_name [$mpi_section_key] / [$mpi_source->{section_name}] / $section\n");
+                        Debug("Checking for $mpi_name [$mpi_get_section_key] / [$mpi_get->{section_name}] / $section\n");
                         if (!$force &&
-                            exists($MTT::MPI::installs->{$mpi_section_key}) &&
-                            exists($MTT::MPI::installs->{$mpi_section_key}->{$mpi_unique_key}) &&
-                            exists($MTT::MPI::installs->{$mpi_section_key}->{$mpi_unique_key}->{$section})) {
-                            Verbose("   Already have an install for $mpi_name [$mpi_source->{section_name}]\n");
+                            exists($MTT::MPI::installs->{$mpi_get_section_key}) &&
+                            exists($MTT::MPI::installs->{$mpi_get_section_key}->{$mpi_unique_key}) &&
+                            exists($MTT::MPI::installs->{$mpi_get_section_key}->{$mpi_unique_key}->{$section})) {
+                            Verbose("   Already have an install for $mpi_name [$mpi_get->{section_name}]\n");
                         } else {
-                            Verbose("   Installing MPI: $mpi_name / [$mpi_source->{section_name}]...\n");
+                            Verbose("   Installing MPI: $mpi_name / [$mpi_get->{section_name}]...\n");
 
                             chdir($install_base);
-                            my $mpi_dir = _make_safe_dir($mpi_source->{section_name});
+                            my $mpi_dir = _make_safe_dir($mpi_get->{section_name});
                             chdir($mpi_dir);
-                            $mpi_dir = _make_safe_dir($mpi_source->{unique_id});
+                            $mpi_dir = _make_safe_dir($mpi_get->{unique_id});
                             chdir($mpi_dir);
                             
                             # Install and restore the environment
                             _do_install($section, $ini,
-                                        $mpi_source, $mpi_dir, $force);
+                                        $mpi_get, $mpi_dir, $force);
                             %ENV = %ENV_SAVE;
                             Verbose("   Completed MPI install\n");
                         }
@@ -206,7 +206,7 @@ sub _prepare_source {
 
 # Install an MPI from sources
 sub _do_install {
-    my ($section, $ini, $mpi, $this_install_base, $force) = @_;
+    my ($section, $ini, $mpi_get, $this_install_base, $force) = @_;
 
     # Loop through all the configuration values in this
     # section (with defaults)
@@ -321,7 +321,7 @@ sub _do_install {
     
     # Unpack the source and find out the subdirectory
     # name it created
-    $config->{srcdir} = _prepare_source($mpi);
+    $config->{srcdir} = _prepare_source($mpi_get);
     chdir($config->{srcdir});
     $config->{abs_srcdir} = cwd();
     
@@ -375,10 +375,10 @@ sub _do_install {
             perfbase_xml => Value($ini, $section, "perfbase_xml"),
             start_timestamp => $start,
             stop_timestamp => $stop,
-            mpi_name => $mpi->{mpi_name},
-            mpi_section_name => $mpi->{section_name},
-            mpi_version => $mpi->{version},
-            mpi_unique_id => $mpi->{unique_id},
+            mpi_name => $mpi_get->{mpi_name},
+            mpi_get_section_name => $mpi_get->{section_name},
+            mpi_version => $mpi_get->{version},
+            mpi_unique_id => $mpi_get->{unique_id},
 
             success => $ret->{success},
             result_message => $ret->{result_message},
@@ -404,18 +404,22 @@ sub _do_install {
             # If we have at least $error_lines, then save
             # only the last $error_lines.  Perl is so ugly
             # it's pretty!
-            if ($report->{stdout}) {
+            if ($ret->{stdout}) {
                 $report->{stdout} = "$ret->{stdout}\n";
                 if ($report->{stdout} =~ m/((.*\n){$MTT::Constants::error_lines_mpi_install})$/) {
                     $report->{stdout} = $1;
                 }
+            } else {
+                delete $report->{stdout};
             }
             # Ditto for stderr
-            if ($report->{stderr}) {
+            if ($ret->{stderr}) {
                 $report->{stderr} = "$ret->{stderr}\n";
                 if ($report->{stderr} =~ m/((.*\n){$MTT::Constants::error_lines_mpi_install})$/) {
                     $report->{stderr} = $1;
                 }
+            } else {
+                delete $report->{stderr};
             }
         }
         # Did we have any environment?
@@ -424,10 +428,10 @@ sub _do_install {
             $report->{environment} .= "$e\n";
         }
         # Fill in which MPI we used
-        $ret->{mpi_name} = $mpi->{mpi_name};
-        $ret->{mpi_section_name} = $mpi->{section_name};
-        $ret->{mpi_version} = $mpi->{version};
-        $ret->{mpi_unique_id} = $mpi->{unique_id};
+        $ret->{mpi_name} = $mpi_get->{mpi_name};
+        $ret->{mpi_get_section_name} = $mpi_get->{section_name};
+        $ret->{mpi_version} = $mpi_get->{version};
+        $ret->{mpi_unique_id} = $mpi_get->{unique_id};
 
         # Some additional values
         $ret->{section_name} = $config->{section_name};
@@ -481,7 +485,7 @@ sub _do_install {
             }
 
             # Add the data in the global $MTT::MPI::installs table
-            $MTT::MPI::installs->{$mpi->{section_name}}->{$mpi->{unique_id}}->{$section} = $ret;
+            $MTT::MPI::installs->{$mpi_get->{section_name}}->{$mpi_get->{unique_id}}->{$section} = $ret;
             MTT::MPI::SaveInstalls($install_base);
         } else {
             Warning("Failed to install [$section]: $ret->{result_message}\n");

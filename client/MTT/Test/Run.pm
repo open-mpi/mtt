@@ -39,7 +39,7 @@ our $test_exit_status;
 #--------------------------------------------------------------------------
 
 sub Run {
-    my ($ini, $build_dir, $force) = @_;
+    my ($ini, $top_dir, $force) = @_;
 
     # Save the environment
     my %ENV_SAVE = %ENV;
@@ -81,7 +81,7 @@ sub Run {
                                 my $mpi_install = $MTT::MPI::installs->{$mpi_section_key}->{$mpi_unique_key}->{$install_section_key};
 
                                 _do_run($ini, $section, $test_build, 
-                                        $mpi_install);
+                                        $mpi_install, $top_dir);
                                 %ENV = %ENV_SAVE;
                             }
                         }
@@ -97,7 +97,7 @@ sub Run {
 #--------------------------------------------------------------------------
 
 sub _do_run {
-    my ($ini, $section, $test_build, $mpi_install) = @_;
+    my ($ini, $section, $test_build, $mpi_install, $top_dir) = @_;
 
     # Check for the module
     my $module = MTT::Values::Value($ini, $section, "module");
@@ -150,7 +150,8 @@ sub _do_run {
     $mpi_details->{exec} = $exec;
     $mpi_details->{name} = $mpi_install->{mpi_name};
     $mpi_details->{unique_id} = $mpi_install->{mpi_unique_id};
-    $mpi_details->{section_name} = $mpi_install->{mpi_section_name};
+    $mpi_details->{mpi_section_name} = $mpi_install->{mpi_section_name};
+    $mpi_details->{section_name} = $mpi_install->{section_name};
     $mpi_details->{version} = $mpi_install->{mpi_version};
 
     # Go to the right dir
@@ -249,11 +250,11 @@ sub _do_run {
             # Just one np, or an array of np values?
             if (ref($all_np) eq "") {
                 $test_results->{$all_np} =
-                    _run_one_np($run, $mpi_details, $all_np);
+                    _run_one_np($top_dir, $run, $mpi_details, $all_np);
             } else {
                 foreach my $this_np (@$all_np) {
                     $test_results->{$this_np} =
-                        _run_one_np($run, $mpi_details, $this_np);
+                        _run_one_np($top_dir, $run, $mpi_details, $this_np);
                 }
             }
         }
@@ -269,7 +270,7 @@ sub _do_run {
 }
 
 sub _run_one_np {
-    my ($run, $mpi_details, $np) = @_;
+    my ($top_dir, $run, $mpi_details, $np) = @_;
 
     my $name = basename($test_executable);
 
@@ -291,17 +292,17 @@ sub _run_one_np {
 
         # If we just got one, run it.  Otherwise, loop over running them.
         if (ref($execs) eq "") {
-            _run_one_test($run, $mpi_details, $execs, $name);
+            _run_one_test($top_dir, $run, $mpi_details, $execs, $name);
         } else {
             foreach my $e (@$execs) {
-                _run_one_test($run, $mpi_details, $e, $name);
+                _run_one_test($top_dir, $run, $mpi_details, $e, $name);
             }
         }
     }
 }
 
 sub _run_one_test {
-    my ($run, $mpi_details, $cmd, $name) = @_;
+    my ($top_dir, $run, $mpi_details, $cmd, $name) = @_;
 
     # If there is a before_each step, run it
     _run_step($mpi_details, "before_each");
@@ -348,11 +349,16 @@ sub _run_one_test {
         Verbose("Test passed: $name\n");
         $report->{test_message} = "Passed";
         $want_output = $run->{save_output_on_pass};
+
+        print Dumper($run);
+        print Dumper($mpi_details);
     }
     if ($want_output) {
         $report->{test_stdout} = $x->{stdout};
         $report->{test_stderr} = $x->{stderr};
     }
+    $MTT::Test::runs->{$mpi_details->{mpi_section_name}}->{$mpi_details->{mpi_unique_id}}->{$mpi_details->{section_name}}->{$run->{section}} = $report;
+    MTT::Test::SaveRuns($top_dir);
     MTT::Reporter::QueueAdd("Test Run", $run->{section}, $report);
 
     # If there is an after_each step, run it
