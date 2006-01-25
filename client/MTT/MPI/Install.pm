@@ -149,22 +149,22 @@ sub Install {
             }
 
             # For each MPI source
-            foreach my $mpi_get_section_key (keys(%{$MTT::MPI::sources})) {
+            foreach my $mpi_get_key (keys(%{$MTT::MPI::sources})) {
                 # For each unique instance of that source
-                my $mpi_get_section = $MTT::MPI::sources->{$mpi_get_section_key};
-                foreach my $mpi_unique_key (keys(%{$mpi_get_section})) {
-                    my $mpi_get = $mpi_get_section->{$mpi_unique_key};
+                my $mpi_get = $MTT::MPI::sources->{$mpi_get_key};
+                foreach my $mpi_unique_key (keys(%{$mpi_get})) {
+                    my $mpi_get = $mpi_get->{$mpi_unique_key};
                     if ($mpi_get->{mpi_name} = $mpi_name) {
 
                         # We found a corresponding MPI source.  Now
                         # check to see if it has already been built.
                         # Test incrementally so that it doesn't create
                         # each intermediate key.
-                        Debug("Checking for $mpi_name [$mpi_get_section_key] / [$mpi_get->{section_name}] / $section\n");
+                        Debug("Checking for $mpi_name [$mpi_get_key] / [$mpi_get->{section_name}] / $section\n");
                         if (!$force &&
-                            exists($MTT::MPI::installs->{$mpi_get_section_key}) &&
-                            exists($MTT::MPI::installs->{$mpi_get_section_key}->{$mpi_unique_key}) &&
-                            exists($MTT::MPI::installs->{$mpi_get_section_key}->{$mpi_unique_key}->{$section})) {
+                            exists($MTT::MPI::installs->{$mpi_get_key}) &&
+                            exists($MTT::MPI::installs->{$mpi_get_key}->{$mpi_unique_key}) &&
+                            exists($MTT::MPI::installs->{$mpi_get_key}->{$mpi_unique_key}->{$section})) {
                             Verbose("   Already have an install for $mpi_name [$mpi_get->{section_name}]\n");
                         } else {
                             Verbose("   Installing MPI: $mpi_name / [$mpi_get->{section_name}]...\n");
