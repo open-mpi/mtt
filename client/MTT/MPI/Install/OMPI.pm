@@ -40,8 +40,6 @@ sub Install {
 
     my $ret;
     $ret->{success} = 0;
-
-    $ret->{success} = 1;
     
     # Run configure
 
