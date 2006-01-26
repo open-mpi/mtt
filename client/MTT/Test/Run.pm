@@ -320,6 +320,9 @@ sub _run_one_test {
 
     # Queue up a report on this test
     my $report = {
+        start_timestamp => $start,
+        stop_timestamp => $stop,
+
         mpi_name => $mpi_details->{name},
         mpi_section_name => $mpi_details->{section_name},
         mpi_version => $mpi_details->{version},
@@ -327,10 +330,8 @@ sub _run_one_test {
 
         perfbase_xml => $run->{perfbase_xml},
 
-        test_build_section_name => $run->{test_buildsection_name},
+        test_build_section_name => $run->{test_build_section_name},
         test_run_section_name => $run->{section_name},
-        test_start_timestamp => $start,
-        test_stop_timestamp => $stop,
         test_np => $test_np,
         test_pass => $pass,
         test_name => $name,
@@ -349,9 +350,6 @@ sub _run_one_test {
         Verbose("Test passed: $name\n");
         $report->{test_message} = "Passed";
         $want_output = $run->{save_output_on_pass};
-
-        print Dumper($run);
-        print Dumper($mpi_details);
     }
     if ($want_output) {
         $report->{test_stdout} = $x->{stdout};
