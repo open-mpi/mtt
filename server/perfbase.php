@@ -78,7 +78,7 @@ fclose($file);
 
 
 # Set up our shell command
-$cmd = escapeshellcmd(sprintf("perfbase input -u -d %s %s",
+$cmd = escapeshellcmd(sprintf("perfbase input -v -u -d %s %s",
         $_POST['PBXML'], $filename));
 
 if(MTT_DEBUG) {
