@@ -1,5 +1,15 @@
 <?xml version="1.0"?>
 <!DOCTYPE experiment SYSTEM "../../dtd/pb_experiment.dtd">
+<!--
+  Copyright (c) 2005-2006 The Trustees of Indiana University.
+                          All rights reserved.
+  $COPYRIGHT$
+  
+  Additional copyrights may follow
+  
+  $HEADER$
+ 
+-->
 
 <experiment>
   <name>mtt_test_run</name>
@@ -17,6 +27,18 @@
     </description>
   </info>
 
+
+  <parameter occurence="once">
+    <name>mtt_version_major</name>
+    <synopsis>MTT major version</synopsis>
+    <datatype>integer</datatype>
+  </parameter>
+
+  <parameter occurence="once">
+    <name>mtt_version_minor</name>
+    <synopsis>MTT minor version</synopsis>
+    <datatype>integer</datatype>
+  </parameter>
 
   <parameter occurence="once">
     <name>mtt_version</name>
@@ -65,8 +87,15 @@
   </parameter>
 
   <parameter occurence="once">
-    <name>mpi_section_name</name>
-    <synopsis>MPI section name</synopsis>
+    <name>mpi_get_section_name</name>
+    <synopsis>MPI get section name</synopsis>
+    <default>not specified</default>
+    <datatype>string</datatype>
+  </parameter>
+
+  <parameter occurence="once">
+    <name>mpi_install_section_name</name>
+    <synopsis>MPI install section name</synopsis>
     <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
@@ -137,12 +166,19 @@
     <datatype>boolean</datatype>
   </result>
 
-  <result occurence="once">
-    <name>test_section</name>
-    <synopsis>test section</synopsis>
+  <parameter occurence="once">
+    <name>test_run_section_name</name>
+    <synopsis>test run section name</synopsis>
     <default>not specified</default>
     <datatype>string</datatype>
-  </result>
+  </parameter>
+
+  <parameter occurence="once">
+    <name>test_build_section_name</name>
+    <synopsis>test build section name</synopsis>
+    <default>not specified</default>
+    <datatype>string</datatype>
+  </parameter>
 
   <result occurence="multiple">
     <name>stderr</name>

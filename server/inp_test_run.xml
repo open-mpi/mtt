@@ -1,5 +1,15 @@
 <?xml version="1.0"?>
 <!DOCTYPE input SYSTEM "../../dtd/pb_input.dtd">
+<!--
+  Copyright (c) 2005-2006 The Trustees of Indiana University.
+                          All rights reserved.
+  $COPYRIGHT$
+  
+  Additional copyrights may follow
+  
+  $HEADER$
+ 
+-->
 
 <input>
   <experiment>mtt_test_build</experiment>
@@ -8,10 +18,15 @@
     <match>============================================================================</match>
   </set_separation>
 
-  <fixed_value>
-    <name>mtt_version</name>
-    <content>0.5</content>
-  </fixed_value>
+  <named_value>
+    <name>mtt_version_major</name>
+    <match>mtt_version_major: </match>
+  </named_value>
+  
+  <named_value>
+    <name>mtt_version_minor</name>
+    <match>mtt_version_minor: </match>
+  </named_value>
   
   <named_location len="0">
     <name>hostname</name>
@@ -52,8 +67,13 @@
   </named_location>
 
   <named_location len="0">
-    <name>mpi_section_name</name>
-    <match>mpi_section_name: </match>
+    <name>mpi_get_section_name</name>
+    <match>mpi_get_section_name: </match>
+  </named_location>
+
+  <named_location len="0">
+    <name>mpi_install_section_name</name>
+    <match>mpi_install_section_name: </match>
   </named_location>
 
   <named_location len="0">
@@ -91,19 +111,24 @@
     <match>test_name: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location>
     <name>test_np</name>
     <match>test_np: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location>
     <name>test_pass</name>
     <match>test_pass: </match>
   </named_location>
 
   <named_location len="0">
-    <name>test_section</name>
-    <match>test_section: </match>
+    <name>test_run_section</name>
+    <match>test_run_section: </match>
+  </named_location>
+
+  <named_location len="0">
+    <name>test_build_section</name>
+    <match>test_build_section: </match>
   </named_location>
 
   <tabular_location columns="1" len="0">

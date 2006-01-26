@@ -1,5 +1,15 @@
 <?xml version="1.0"?>
 <!DOCTYPE experiment SYSTEM "../../dtd/pb_experiment.dtd">
+<!--
+  Copyright (c) 2005-2006 The Trustees of Indiana University.
+                          All rights reserved.
+  $COPYRIGHT$
+  
+  Additional copyrights may follow
+  
+  $HEADER$
+ 
+-->
 
 <experiment>
   <name>mtt_test_build</name>
@@ -19,9 +29,15 @@
 
 
   <parameter occurence="once">
-    <name>mtt_version</name>
-    <synopsis>MTT version</synopsis>
-    <datatype>string</datatype>
+    <name>mtt_version_major</name>
+    <synopsis>MTT major version</synopsis>
+    <datatype>integer</datatype>
+  </parameter>
+
+  <parameter occurence="once">
+    <name>mtt_version_minor</name>
+    <synopsis>MTT minor version</synopsis>
+    <datatype>integer</datatype>
   </parameter>
 
   <parameter occurence="once">
@@ -79,15 +95,22 @@
   </parameter>
 
   <parameter occurence="once">
+    <name>test_build_section_name</name>
+    <synopsis>test build section name</synopsis>
+    <default>not specified</default>
+    <datatype>string</datatype>
+  </parameter>
+
+  <parameter occurence="once">
     <name>mpi_get_section_name</name>
-    <synopsis>MPI section name</synopsis>
+    <synopsis>MPI get section name</synopsis>
     <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
 
   <parameter occurence="once">
     <name>mpi_install_section_name</name>
-    <synopsis>MPI section name</synopsis>
+    <synopsis>MPI install section name</synopsis>
     <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
