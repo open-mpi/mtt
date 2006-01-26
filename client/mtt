@@ -11,6 +11,7 @@
 
 use strict;
 use Cwd;
+# JMS need something better here -- to find the MTT library stuff
 use lib cwd();
 
 use Data::Dumper;

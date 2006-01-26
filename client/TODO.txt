@@ -1,3 +1,7 @@
+- make it so you can invoke mtt from anywhere, not just "./mtt" (i.e.,
+  it currenty runs "use cwd()/lib;".  Need a more sensible way to find
+  the MTT perl libraries.
+
 - be able to handle case where svn checkouts go badly and svn
   ends up waiting for input (E.g., username or password).  Should be
   able to detect this somehow and know to kill it.
