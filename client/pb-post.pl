@@ -20,6 +20,8 @@ my $xml_arg;
 my $url_arg;
 my $user_arg;
 my $pass_arg;
+my $ver_major = "0";
+my $ver_minor = "5";
 my $debug_arg;
 my $help_arg;
 
@@ -30,16 +32,20 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \$file_arg,
                                    "xml|x=s" => \$xml_arg,
                                    "username|u=s" => \$user_arg,
                                    "password|p=s" => \$pass_arg,
+                                   "version-major" => \$ver_major,
+                                   "version-minor" => \$ver_minor,
                                    "url|l=s" => \$url_arg,
                                    "debug|d" => \$debug_arg,
                                    "help|h" => \$help_arg
                                    );
 
-if (!$file_arg || !$xml_arg || !$user_arg || !$pass_arg || $help_arg || !$ok) {
+if(!$file_arg || !$xml_arg || !$user_arg || !$pass_arg || $help_arg || !$ok) {
     print "Usage: $0 --file|-f filename\n";
     print "\t--xml|-x xmlfile\n";
     print "\t--username|-u username (HTTP auth)\n";
     print "\t--password|-p password (HTTP auth)\n";
+    print "\t--version-major major (debugging use only)\n";
+    print "\t--version-minor minor (debugging use only)\n";
     print "\t[--url|-l url]\n";
     print "\t[--debug|-d]\n";
     print "\t[--help|-h]\n";
@@ -47,7 +53,7 @@ if (!$file_arg || !$xml_arg || !$user_arg || !$pass_arg || $help_arg || !$ok) {
     exit($ok);
 }
 
-if (!$url_arg) {
+if(!$url_arg) {
     $url_arg = $URL;
 }
 
@@ -55,7 +61,7 @@ my $debug = ($debug_arg ? 1 : 0);
 print "Debugging enabled!\n" if ($debug);
 
 # Read in the file.
-if (!open(DAT, $file_arg))
+if(!open(DAT, $file_arg))
 {
     print "ERROR: could not open file $file_arg\n";
     exit(-1);
@@ -79,12 +85,15 @@ if($url_arg =~ m#http(s|)://([^/]*)#) {
 
 my $response = $browser->post($url_arg,
         [ 'PBXML' => $xml_arg,
-          'PBINPUT' => $data ]);
+          'PBINPUT' => $data,
+          'MTTVERSION_MAJOR' => $ver_major,
+          'MTTVERSION_MINOR' => $ver_minor ]);
 
-if (!$response->is_success) {
+if(!$response->is_success) {
     print "ERROR: POST to $url_arg failed\n";
+    print $response->content;
     exit(-1);
+} elsif($debug) {
+    print $response->content;
 }
-
-print $response->content if ($debug);
 
