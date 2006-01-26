@@ -18,15 +18,15 @@
     <match>============================================================================</match>
   </set_separation>
 
-  <named_value>
+  <named_location>
     <name>mtt_version_major</name>
     <match>mtt_version_major: </match>
-  </named_value>
+  </named_location>
   
-  <named_value>
+  <named_location>
     <name>mtt_version_minor</name>
     <match>mtt_version_minor: </match>
-  </named_value>
+  </named_location>
   
   <named_location len="0">
     <name>hostname</name>
