@@ -122,13 +122,13 @@
   </named_location>
 
   <named_location len="0">
-    <name>test_run_section</name>
-    <match>test_run_section: </match>
+    <name>test_run_section_name</name>
+    <match>test_run_section_name: </match>
   </named_location>
 
   <named_location len="0">
-    <name>test_build_section</name>
-    <match>test_build_section: </match>
+    <name>test_build_section_name</name>
+    <match>test_build_section_name: </match>
   </named_location>
 
   <tabular_location columns="1" len="0">
