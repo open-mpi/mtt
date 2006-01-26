@@ -8,6 +8,11 @@
     <match>============================================================================</match>
   </set_separation>
 
+  <fixed_value>
+    <name>mtt_version</name>
+    <content>0.5</content>
+  </fixed_value>
+  
   <named_location len="0">
     <name>hostname</name>
     <match>hostname: </match>

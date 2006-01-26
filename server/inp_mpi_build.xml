@@ -3,6 +3,11 @@
 
 <input>
   <experiment>mtt_mpi_build</experiment>
+
+  <fixed_value>
+    <name>mtt_version</name>
+    <content>0.5</content>
+  </fixed_value>
   
   <named_location len="0">
     <name>hostname</name>
