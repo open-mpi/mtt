@@ -12,7 +12,7 @@
 -->
 
 <input>
-  <experiment>mtt_test_build</experiment>
+  <experiment>mtt_test_run</experiment>
   
   <set_separation>
     <match>============================================================================</match>
