@@ -12,7 +12,7 @@
 -->
 
 <experiment>
-  <name>mtt_mpi_build</name>
+  <name>mtt_mpi_install</name>
 
   <info>
     <performed_by> 

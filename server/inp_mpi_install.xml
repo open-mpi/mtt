@@ -12,7 +12,7 @@
 -->
 
 <input>
-  <experiment>mtt_mpi_build</experiment>
+  <experiment>mtt_mpi_install</experiment>
 
   <named_value>
     <name>mtt_version_major</name>
