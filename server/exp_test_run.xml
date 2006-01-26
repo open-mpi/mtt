@@ -128,7 +128,7 @@
   
   <parameter occurence="multiple">
     <name>environment</name>
-    <synopsis>environment the build was performed in</synopsis>
+    <synopsis>environment the run was performed in</synopsis>
     <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
@@ -182,33 +182,33 @@
 
   <result occurence="multiple">
     <name>stderr</name>
-    <synopsis>stderr output from build</synopsis>
+    <synopsis>stderr output from run</synopsis>
     <default>not specified</default>
     <datatype>text</datatype>
   </result>
 
   <result occurence="multiple">
     <name>stdout</name>
-    <synopsis>stdout output from build</synopsis>
+    <synopsis>stdout output from run</synopsis>
     <default>not specified</default>
     <datatype>text</datatype>
   </result>
   
   <result occurence="once">
     <name>submit_timestamp</name>
-    <synopsis>date and time the build results were submitted</synopsis>
+    <synopsis>date and time the run results were submitted</synopsis>
     <datatype>timestamp</datatype>
   </result>
 
   <result occurence="once">
-    <name>test_start_timestamp</name>
-    <synopsis>date and time the MPI build was started</synopsis>
+    <name>start_timestamp</name>
+    <synopsis>date and time the MPI run was started</synopsis>
     <datatype>timestamp</datatype>
   </result>
 
   <result occurence="once">
-    <name>test_stop_timestamp</name>
-    <synopsis>date and time the MPI build finished</synopsis>
+    <name>stop_timestamp</name>
+    <synopsis>date and time the MPI run finished</synopsis>
     <datatype>timestamp</datatype>
   </result>
 
