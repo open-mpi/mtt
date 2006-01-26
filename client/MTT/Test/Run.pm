@@ -235,7 +235,8 @@ sub _do_run {
             my $run;
             $run->{perfbase_xml} =
                 $ret->{perfbase_xml} ? $ret->{perfbase_xml} :"inp_test_run.xml";
-            $run->{section} = $section;
+            $run->{section_name} = $section;
+            $run->{test_build_section_name} = $test_build->{section_name};
             $run->{executable} = $test->{executable};
             foreach my $key (qw(np np_ok argv pass save_output_on_pass separate_stdout_stderr timeout)) {
                 my $str = "\$run->{$key} = exists(\$test->{$key}) ? \$test->{$key} : \$config->{$key}";
@@ -319,8 +320,6 @@ sub _run_one_test {
 
     # Queue up a report on this test
     my $report = {
-        phase => "Test Run",
-                
         mpi_name => $mpi_details->{name},
         mpi_section_name => $mpi_details->{section_name},
         mpi_version => $mpi_details->{version},
@@ -328,10 +327,11 @@ sub _run_one_test {
 
         perfbase_xml => $run->{perfbase_xml},
 
+        test_build_section_name => $run->{test_buildsection_name},
+        test_run_section_name => $run->{section_name},
         test_start_timestamp => $start,
         test_stop_timestamp => $stop,
         test_np => $test_np,
-        test_section => $run->{section},
         test_pass => $pass,
         test_name => $name,
         test_command => $cmd,
@@ -357,9 +357,9 @@ sub _run_one_test {
         $report->{test_stdout} = $x->{stdout};
         $report->{test_stderr} = $x->{stderr};
     }
-    $MTT::Test::runs->{$mpi_details->{mpi_section_name}}->{$mpi_details->{mpi_unique_id}}->{$mpi_details->{section_name}}->{$run->{section}} = $report;
+    $MTT::Test::runs->{$mpi_details->{mpi_section_name}}->{$mpi_details->{mpi_unique_id}}->{$mpi_details->{section_name}}->{$run->{section_name}} = $report;
     MTT::Test::SaveRuns($top_dir);
-    MTT::Reporter::QueueAdd("Test Run", $run->{section}, $report);
+    MTT::Reporter::QueueAdd("Test Run", $run->{section_name}, $report);
 
     # If there is an after_each step, run it
     _run_step($mpi_details, "after_each");
