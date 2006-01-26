@@ -96,12 +96,21 @@ sub Submit {
         my $xml = $report->{perfbase_xml};
         if ($xml) {
 
+            # Add our version number into the report; saved for
+            # posterity with the results.
+
+            $report->{mtt_version_major} = $MTT::Version::Major;
+            $report->{mtt_version_minor} = $MTT::Version::Minor;
+
             # Make the string to send, using ": " as the delimiter
             # (this is important -- the server-side XML files are
             # setup to use these ***2*** characters as the delimiter
             # between the field and the data
 
             my $form = {
+                # Version number is also submitted as part of the HTTP
+                # form so that the server can check it directly
+                # (without understanding the perfbase XML).
                 MTTVERSION_MAJOR => $MTT::Version::Major,
                 MTTVERSION_MINOR => $MTT::Version::Minor,
                 PBINPUT => MTT::Reporter::MakeReportString($report, ": "),
