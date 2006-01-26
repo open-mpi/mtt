@@ -41,12 +41,6 @@
   </parameter>
 
   <parameter occurence="once">
-    <name>mtt_version</name>
-    <synopsis>MTT version</synopsis>
-    <datatype>string</datatype>
-  </parameter>
-
-  <parameter occurence="once">
     <name>hostname</name>
     <synopsis>host name</synopsis>
     <datatype>string</datatype>
