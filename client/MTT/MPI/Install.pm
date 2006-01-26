@@ -359,6 +359,9 @@ sub _do_install {
     # Analyze the return
     
     if ($ret) {
+        my $perfbase_xml = Value($ini, $section, "perfbase_xml"),
+        $perfbase_xml = "inp_mpi_install.xml"
+            if ($perfbase_xml);
 
         # Send the results back to the reporter
         my $report = {
@@ -372,7 +375,7 @@ sub _do_install {
             stdout_stderr_combined => "$config->{std_combined}",
             environment => "filled in below",
 
-            perfbase_xml => Value($ini, $section, "perfbase_xml"),
+            perfbase_xml => $perfbase_xml,
             start_timestamp => $start,
             stop_timestamp => $stop,
             mpi_name => $mpi_get->{mpi_name},

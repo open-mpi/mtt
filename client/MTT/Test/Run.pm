@@ -234,7 +234,7 @@ sub _do_run {
             # Get the values for this test
             my $run;
             $run->{perfbase_xml} =
-                $ret->{perfbase_xml} ? $ret->{perfbase_xml} :"test-run.xml";
+                $ret->{perfbase_xml} ? $ret->{perfbase_xml} :"inp_test_run.xml";
             $run->{section} = $section;
             $run->{executable} = $test->{executable};
             foreach my $key (qw(np np_ok argv pass save_output_on_pass separate_stdout_stderr timeout)) {

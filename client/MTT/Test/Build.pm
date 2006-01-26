@@ -251,6 +251,10 @@ sub _do_build {
         $ret->{mpi_version} = $mpi_install->{mpi_version};
         $ret->{mpi_unique_id} = $mpi_install->{mpi_unique_id};
 
+        my $perfbase_xml = Value($ini, $section, "perfbase_xml");
+        $perfbase_xml = "inp_test_build.xml"
+            if (!$perfbase_xml);
+        
         # Save the results in an ini file
         Debug("Writing built file: $config->{srcdir}/$built_file\n");
         WriteINI("$build_section_dir/$built_file",
@@ -267,7 +271,7 @@ sub _do_build {
             result_message => $ret->{result_message},
             environment => "filled in below",
             stdout => "filled in below",
-            perfbase_xml => Value($ini, $section, "perfbase_xml"),
+            perfbase_xml => $perfbase_xml,
 
             test_build_section_name => $config->{section_name},
 
