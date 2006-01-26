@@ -15,7 +15,6 @@
 # PBXML - name of xml file to use for input parsing
 # PBINPUT - big variable, of data for perfbase to parse.
 	
-#foreach (array('PBUSER','PBPASS','PBXML','PBINPUT') as $var) {
 foreach (array('PBXML','PBINPUT') as $var) {
     if(!isset($_POST[$var])) {
         printf("ERROR: %s not specified", $var);
@@ -24,6 +23,28 @@ foreach (array('PBXML','PBINPUT') as $var) {
 
     printf("%s %s<br>\n", $var, $_POST[$var]);
 }
+
+# Extend the environment with the site-specific config
+include("config.php");
+
+foreach($mtt_pb_config as $key => $value) {
+    # Expand any environment variables in the value
+    if(preg_match_all("/\\\$([a-zA-Z_][a-zA-Z_0-9]*)/",
+            $value, $matches, PREG_SET_ORDER) > 0) {
+        foreach($matches as $var) {
+            $value = str_replace($var[0], getenv($var[1]), $value);
+        }
+    }
+
+    # Update the environment
+    putenv("$key=$value");
+    $_ENV[$key]=$value;
+    printf("config: %s => %s (%s) (%s)\n", $key, $value, getenv($key), $_ENV[$key]);
+}
+
+
+exec("/usr/bin/env", $output, $code);
+print_r($output);
 
 # Push the input data out to a file
 $filename = tempnam("", "");
@@ -34,17 +55,14 @@ fwrite($file, $_POST['PBINPUT']);
 fclose($file);
 
 # Run perfbase to import the data
-# TODO - hardcoding this is BAD, make it not suck.
-#$cmd = sprintf("pb-bin/perfbase input -u -d %s %s 2>&1",
-#        $_POST['PBXML'], $filename);
-$cmd = sprintf("./perfbase.sh %s %s", $_POST['PBXML'], $filename);
+$cmd = sprintf("perfbase input -u -d %s %s", $_POST['PBXML'], $filename);
 printf("cmd: %s<br>\n", $cmd);
-$output = "foo";
+
 $ret = exec($cmd, $output, $code);
 printf("returned %d: %s<br>\n", $code, $ret);
 print_r($output);
 
 # Get rid of our temp file
-#unlink($filename);
+unlink($filename);
 
 ?>
