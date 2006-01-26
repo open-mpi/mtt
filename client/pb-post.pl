@@ -12,6 +12,10 @@
 use strict;
 use LWP;
 use Getopt::Long;
+use lib cwd();
+use MTT::Version;
+
+# Testing code for perfbase http submits
 
 my $URL = 'https://www.osl.iu.edu/~afriedle/perfbase/';
 
@@ -20,8 +24,8 @@ my $xml_arg;
 my $url_arg;
 my $user_arg;
 my $pass_arg;
-my $ver_major = "0";
-my $ver_minor = "5";
+my $ver_major = $MTT::Version::Major;
+my $ver_minor = $MTT::Version::Minor;
 my $debug_arg;
 my $help_arg;
 

@@ -14,6 +14,7 @@ package MTT::Reporter::Perfbase;
 use strict;
 use MTT::Messages;
 use MTT::Values;
+use MTT::Version;
 use LWP::UserAgent;
 use Data::Dumper;
 
@@ -101,6 +102,8 @@ sub Submit {
             # between the field and the data
 
             my $form = {
+                MTTVERSION_MAJOR => $MTT::Version::Major,
+                MTTVERSION_MINOR => $MTT::Version::Minor,
                 PBINPUT => MTT::Reporter::MakeReportString($report, ": "),
                 PBXML => $xml,
             };

@@ -16,6 +16,7 @@ use lib cwd();
 use Data::Dumper;
 use Config::IniFiles;
 use Getopt::Long;
+use MTT::Version;
 use MTT::MPI;
 use MTT::Test;
 use MTT::Files;
@@ -35,6 +36,7 @@ my $get_mpi_arg;
 my $install_mpi_arg;
 my $build_tests_arg;
 my $run_tests_arg;
+my $version_arg;
 
 my @SAVE_ARGV = @ARGV;
 
@@ -49,10 +51,15 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
                                   "install-mpi" => \$install_mpi_arg,
                                   "build-tests" => \$build_tests_arg,
                                   "run-tests" => \$run_tests_arg,
+                                  "version" => \$version_arg,
                                   );
 
 # Everything ok?
 
+if ($version_arg) {
+    print "MTT Version $MTT::Version::Major.$MTT::Version::Minor\n";
+    exit(0);
+}
 if (! @file_arg) {
     print "Must specify at least one --file argument.\n";
     $ok = 0;
