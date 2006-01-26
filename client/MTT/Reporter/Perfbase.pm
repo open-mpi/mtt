@@ -125,7 +125,7 @@ sub Submit {
                 push(@success_outputs, $response->content);
             } else {
                 Verbose(">> Failed to report to perfbase: " .
-                        $response->status_line . "\n");
+                        $response->status_line . "\n" . $response->content);
             }
         }
     }

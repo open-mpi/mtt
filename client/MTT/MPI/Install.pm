@@ -364,7 +364,7 @@ sub _do_install {
         my $report = {
             phase => "MPI Install",
 
-            section_name => $config->{section_name},
+            mpi_install_section_name => $config->{section_name},
             compiler_name => $config->{compiler_name},
             compiler_version => $config->{compiler_version},
             configure_arguments => $config->{configure_arguments},

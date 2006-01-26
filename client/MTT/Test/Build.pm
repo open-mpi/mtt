@@ -248,7 +248,7 @@ sub _do_build {
         $ret->{mpi_name} = $mpi_install->{mpi_name};
         $ret->{mpi_get_section_name} = $mpi_install->{mpi_get_section_name};
         $ret->{mpi_install_section_name} = $mpi_install->{section_name};
-        $ret->{mpi_version} = $mpi_install->{version};
+        $ret->{mpi_version} = $mpi_install->{mpi_version};
         $ret->{mpi_unique_id} = $mpi_install->{mpi_unique_id};
 
         # Save the results in an ini file
@@ -269,11 +269,13 @@ sub _do_build {
             stdout => "filled in below",
             perfbase_xml => Value($ini, $section, "perfbase_xml"),
 
+            test_build_section_name => $config->{section_name},
+
             mpi_name => $mpi_install->{mpi_name},
             mpi_get_section_name => $mpi_install->{mpi_get_section_name},
             mpi_install_section_name => $mpi_install->{section_name},
-            mpi_version => $mpi_install->{version},
-            mpi_unique_id => $mpi_install->{unique_id},
+            mpi_version => $mpi_install->{mpi_version},
+            mpi_unique_id => $mpi_install->{mpi_unique_id},
         };
         # On a successful build, skip the stdout -- only
         # keep the stderr (which will only be there if the
