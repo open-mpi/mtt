@@ -4,9 +4,9 @@
 <input>
   <experiment>mtt_test_build</experiment>
   
-  <!-- *** -->
-  <!-- *** summary parameters -->
-  <!-- *** -->
+  <set_separation>
+    <match>============================================================================</match>
+  </set_separation>
 
   <named_location len="0">
     <name>hostname</name>

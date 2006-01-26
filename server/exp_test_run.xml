@@ -4,9 +4,6 @@
 <experiment>
   <name>mtt_test_run</name>
 
-  <!-- *** -->
-  <!-- *** general information on the experiment -->
-  <!-- *** -->
   <info>
     <performed_by> 
       <name>MTT Engine</name>
@@ -21,9 +18,6 @@
   </info>
 
 
-  <!-- *** -->
-  <!-- *** parameters -->
-  <!-- *** -->
   <parameter occurence="once">
     <name>hostname</name>
     <synopsis>host name</synopsis>
@@ -93,19 +87,18 @@
   <parameter occurence="once">
     <name>stdout_stderr_combined</name>
     <synopsis>true if stdout and stderr are combined output</synopsis>
+    <default>false</default>
     <datatype>boolean</datatype>
   </parameter>
   
   <parameter occurence="multiple">
     <name>environment</name>
     <synopsis>environment the build was performed in</synopsis>
+    <default>not specified</default>
     <datatype>string</datatype>
   </parameter>
  
 
-  <!-- *** -->
-  <!-- *** results -->
-  <!-- *** -->
   <result occurence="once">
     <name>test_command</name>
     <synopsis>full mpirun command line for this test</synopsis>
@@ -148,12 +141,14 @@
   <result occurence="multiple">
     <name>stderr</name>
     <synopsis>stderr output from build</synopsis>
+    <default>not specified</default>
     <datatype>text</datatype>
   </result>
 
   <result occurence="multiple">
     <name>stdout</name>
     <synopsis>stdout output from build</synopsis>
+    <default>not specified</default>
     <datatype>text</datatype>
   </result>
   

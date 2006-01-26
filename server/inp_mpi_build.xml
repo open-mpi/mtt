@@ -4,10 +4,6 @@
 <input>
   <experiment>mtt_mpi_build</experiment>
   
-  <!-- *** -->
-  <!-- *** summary parameters -->
-  <!-- *** -->
-
   <named_location len="0">
     <name>hostname</name>
     <match>hostname: </match>
@@ -62,8 +58,8 @@
   </named_location>
 
   <named_location len="0">
-    <name>mpi_section_name</name>
-    <match>mpi_section_name: </match>
+    <name>mpi_get_section_name</name>
+    <match>mpi_get_section_name: </match>
   </named_location>
 
   <named_location len="0">

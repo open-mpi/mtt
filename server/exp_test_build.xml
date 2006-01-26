@@ -4,9 +4,6 @@
 <experiment>
   <name>mtt_test_build</name>
 
-  <!-- *** -->
-  <!-- *** general information on the experiment -->
-  <!-- *** -->
   <info>
     <performed_by> 
       <name>MTT Engine</name>
@@ -21,9 +18,6 @@
   </info>
 
 
-  <!-- *** -->
-  <!-- *** parameters -->
-  <!-- *** -->
   <parameter occurence="once">
     <name>hostname</name>
     <synopsis>host name</synopsis>
@@ -79,7 +73,14 @@
   </parameter>
 
   <parameter occurence="once">
-    <name>mpi_section_name</name>
+    <name>mpi_get_section_name</name>
+    <synopsis>MPI section name</synopsis>
+    <default>not specified</default>
+    <datatype>string</datatype>
+  </parameter>
+
+  <parameter occurence="once">
+    <name>mpi_install_section_name</name>
     <synopsis>MPI section name</synopsis>
     <default>not specified</default>
     <datatype>string</datatype>
@@ -126,9 +127,6 @@
   </parameter>
 
 
-  <!-- *** -->
-  <!-- *** results -->
-  <!-- *** -->
   <result occurence="once">
     <name>success</name>
     <synopsis>true if build was successful</synopsis>
