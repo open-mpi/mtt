@@ -95,7 +95,7 @@ sub LoadSources {
         # Now transform this to the form suitable for
         # $MTT::MPI::sources (see comment in SaveSources)
 
-        # For each MPI source
+        # For each MPI get section
         foreach my $mpi_get_key (keys(%{$in->{mpi_get}})) {
             my $mpi_get = $in->{mpi_get}->{$mpi_get_key};
 
@@ -121,7 +121,7 @@ sub SaveSources {
     # which are the namespace identifiers in XML)
     my $transformed;
 
-    # For each MPI source
+    # For each MPI get section
     foreach my $mpi_get_key (keys(%$MTT::MPI::sources)) {
         my $mpi_get = $MTT::MPI::sources->{$mpi_get_key};
 
@@ -176,12 +176,16 @@ sub LoadInstalls {
 
         # Now transform this to the form suitable for
         # $MTT::MPI::installs (see comment in SaveSources).  Wow.
+
+        # For each MPI get section
         foreach my $mpi_get_key (keys(%{$in->{mpi_get}})) {
             my $mpi_get = $in->{mpi_get}->{$mpi_get_key};
 
+            # For each unique instance of that souce
             foreach my $mpi_unique_key (keys(%{$mpi_get->{mpi_unique}})) {
                 my $mpi_unique = $mpi_get->{mpi_unique}->{$mpi_unique_key};
 
+                # For each MPI install section
                 foreach my $mpi_install_key (keys(%{$mpi_unique->{mpi_install}})) {
                     $MTT::MPI::installs->{$mpi_get_key}->{$mpi_unique_key}->{$mpi_install_key} = 
                         $in->{mpi_get}->{$mpi_get_key}->{mpi_unique}->{$mpi_unique_key}->{mpi_install}->{$mpi_install_key};
@@ -202,6 +206,8 @@ sub SaveInstalls {
     # Transform $MTT::MPI::installs to something XML::Simple can write
     # into valid XML (see comment in SaveSources).  Wow.
     my $transformed;
+
+    # For each MPI get section
     foreach my $mpi_get_key (keys(%{$MTT::MPI::installs})) {
         my $mpi_get = $MTT::MPI::installs->{$mpi_get_key};
 
@@ -209,7 +215,7 @@ sub SaveInstalls {
         foreach my $mpi_unique_key (keys(%{$mpi_get})) {
             my $mpi_unique = $mpi_get->{$mpi_unique_key};
 
-            # For each unique instance of it
+            # For each MPI install action
             foreach my $mpi_install_key (keys(%{$mpi_unique})) {
                 my $mpi_install = $mpi_unique->{$mpi_install_key};
 

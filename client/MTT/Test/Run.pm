@@ -79,6 +79,7 @@ sub Run {
                             if ($target_test eq $test_name) {
                                 Debug("Found a match! $target_test [$section]\n");
                                 my $mpi_install = $MTT::MPI::installs->{$mpi_section_key}->{$mpi_unique_key}->{$install_section_key};
+                                Verbose(">> Test run [$section]\n");
 
                                 _do_run($ini, $section, $test_build, 
                                         $mpi_install, $top_dir);
@@ -149,9 +150,10 @@ sub _do_run {
     Debug("Got final exec: $exec\n");
     $mpi_details->{exec} = $exec;
     $mpi_details->{name} = $mpi_install->{mpi_name};
-    $mpi_details->{unique_id} = $mpi_install->{mpi_unique_id};
-    $mpi_details->{mpi_section_name} = $mpi_install->{mpi_section_name};
-    $mpi_details->{section_name} = $mpi_install->{section_name};
+    $mpi_details->{mpi_unique_id} = $mpi_install->{mpi_unique_id};
+    $mpi_details->{mpi_get_section_name} =
+        $mpi_install->{mpi_get_section_name};
+    $mpi_details->{mpi_install_section_name} = $mpi_install->{section_name};
     $mpi_details->{version} = $mpi_install->{mpi_version};
 
     # Go to the right dir
@@ -282,28 +284,50 @@ sub _run_one_np {
     my $ok = MTT::Values::EvaluateString($run->{np_ok});
     if ($ok) {
 
-        # Yes, it is.  See if we need to run the before_all step.
-        if (! exists($mpi_details->{ran_some_tests})) {
-            _run_step($mpi_details, "before_any");
-        }
-        $mpi_details->{ran_some_tests} = 1;
-
         # Get all the exec's for this one np
         my $execs = MTT::Values::EvaluateString($mpi_details->{exec});
 
         # If we just got one, run it.  Otherwise, loop over running them.
         if (ref($execs) eq "") {
-            _run_one_test($top_dir, $run, $mpi_details, $execs, $name);
+            _run_one_test($top_dir, $run, $mpi_details, $execs, $name, 1);
         } else {
+            my $variant = 1;
             foreach my $e (@$execs) {
-                _run_one_test($top_dir, $run, $mpi_details, $e, $name);
+                _run_one_test($top_dir, $run, $mpi_details, $e, $name,
+                              $variant++);
             }
         }
     }
 }
 
 sub _run_one_test {
-    my ($top_dir, $run, $mpi_details, $cmd, $name) = @_;
+    my ($top_dir, $run, $mpi_details, $cmd, $name, $variant) = @_;
+
+    # Have we run this test already?  Wow, Perl sucks sometimes -- you
+    # can't check for the entire thing because the very act of
+    # checking will bring all the intermediary hash levels into
+    # existence if they didn't already exist.
+
+    my $str = "   Test: " . basename($name) .
+        ", np=$test_np, variant=$variant:";
+
+    if (exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_unique_id}}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_unique_id}}->{$mpi_details->{mpi_install_section_name}}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_unique_id}}->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_unique_id}}->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}->{$run->{section_name}}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_unique_id}}->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}->{$run->{section_name}}->{$name}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_unique_id}}->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}->{$run->{section_name}}->{$name}->{$test_np}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_unique_id}}->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}->{$run->{section_name}}->{$name}->{$test_np}->{$cmd})) {
+        Verbose("$str Skipped (already ran)\n");
+        return;
+    }
+
+    # See if we need to run the before_all step.
+    if (! exists($mpi_details->{ran_some_tests})) {
+        _run_step($mpi_details, "before_any");
+    }
+    $mpi_details->{ran_some_tests} = 1;
 
     # If there is a before_each step, run it
     _run_step($mpi_details, "before_each");
@@ -320,13 +344,16 @@ sub _run_one_test {
 
     # Queue up a report on this test
     my $report = {
+        phase => "Test run",
+
         start_timestamp => $start,
         stop_timestamp => $stop,
 
         mpi_name => $mpi_details->{name},
-        mpi_section_name => $mpi_details->{section_name},
         mpi_version => $mpi_details->{version},
-        mpi_unique_id => $mpi_details->{unique_id},
+        mpi_get_section_name => $mpi_details->{mpi_get_section_name},
+        mpi_install_section_name => $mpi_details->{mpi_install_section_name},
+        mpi_unique_id => $mpi_details->{mpi_unique_id},
 
         perfbase_xml => $run->{perfbase_xml},
 
@@ -339,7 +366,8 @@ sub _run_one_test {
     };
     my $want_output;
     if (!$pass) {
-        Warning("Test failed: $name\n");
+        $str =~ s/^ +//;
+        Warning("$str FAILED\n");
         $want_output = 1;
         if ($stop_time - $start_time > $timeout) {
             $report->{test_message} = "Timeout expired ($timeout seconds)";
@@ -347,7 +375,7 @@ sub _run_one_test {
             $report->{test_message} = "Exit status: $x->{status}";
         }
     } else {
-        Verbose("Test passed: $name\n");
+        Verbose("$str Passed\n");
         $report->{test_message} = "Passed";
         $want_output = $run->{save_output_on_pass};
     }
@@ -355,7 +383,7 @@ sub _run_one_test {
         $report->{test_stdout} = $x->{stdout};
         $report->{test_stderr} = $x->{stderr};
     }
-    $MTT::Test::runs->{$mpi_details->{mpi_section_name}}->{$mpi_details->{mpi_unique_id}}->{$mpi_details->{section_name}}->{$run->{section_name}} = $report;
+    $MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_unique_id}}->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}->{$run->{section_name}}->{$name}->{$test_np}->{$cmd} = $report;
     MTT::Test::SaveRuns($top_dir);
     MTT::Reporter::QueueAdd("Test Run", $run->{section_name}, $report);
 

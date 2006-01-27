@@ -13,7 +13,7 @@
 # Build Tests phase
 ########################################################################
 
-# The output of this phase is the @MTT::Tests::tests
+# The output of this phase is the @MTT::Test::tests
 # array of structs, each with the following members:
 
 # Fields...
@@ -77,7 +77,7 @@ sub Build {
     chdir($build_base);
     foreach my $section ($ini->Sections()) {
         if ($section =~ /^\s*test build:/) {
-            Verbose(">> Test Build [$section]\n");
+            Verbose(">> Test build [$section]\n");
             my $skip = Logical($ini, $section, "skip");
             if ($skip) {
                 Verbose("   Skipped\n");

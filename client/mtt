@@ -160,6 +160,9 @@ MTT::MPI::LoadInstalls($install_dir);
 # Load up the built tests for each install
 MTT::Test::LoadBuilds($install_dir);
 
+# Load up the run tests for each install
+MTT::Test::LoadRuns($install_dir);
+
 
 ########################################################################
 # Read the ini file(s)

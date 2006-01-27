@@ -1,3 +1,5 @@
+- add support for some performance-oriented tests
+
 - add support for disconnected scenarios
 
 - do perfbase put better; can all the queued http put's be combined
