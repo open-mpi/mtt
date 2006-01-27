@@ -1,3 +1,25 @@
+- Add better error checking to perfbase.php
+  - Not everything needs to be 501
+  - Better, more specific error strings
+  - check for config.php
+  - check for relevant .xml file
+  - can we check to ensure that we're not inputting a duplicate result
+    into perfbase?  what happens if we input a duplicate result into
+    perfbase? 
+
+- mpi_install experiment/input does not allow stderr to be empty
+
+- rename simple.pm -> Simple.pm
+  - make all plugins have consistent capitolization
+
+- do something about mtt/MTT in same directory (OSX)
+
+- installation model: what to do?  untar and use, or some kind of
+  installation procedure?
+  - make it so you can invoke mtt from anywhere, not just "./mtt"
+    (i.e., it currenty runs "use cwd()/lib;".  Need a more sensible
+    way to find the MTT perl libraries.
+
 - Build has capability to filter (e.g., Intel filters based on what
   bindings exist), but run/simple does not.  So you can not build the
   fortran tests, but then still try to run them of "tests =
@@ -7,12 +29,8 @@
 
 - add support for disconnected scenarios
 
-- do perfbase put better; can all the queued http put's be combined
-  into a single put?
-
-- make it so you can invoke mtt from anywhere, not just "./mtt" (i.e.,
-  it currenty runs "use cwd()/lib;".  Need a more sensible way to find
-  the MTT perl libraries.
+- do perfbase http put better; can all the queued http put's be
+  combined into a single put? (i.e., make server side php smarter?)
 
 - be able to handle case where svn checkouts go badly and svn
   ends up waiting for input (E.g., username or password).  Should be
