@@ -28,7 +28,6 @@ use lib cwd();
 
 my $ret;
 eval "\$ret = require MTT::Version";
-print "First: ret $ret\n";
 if (1 != $ret) {
     my $dir = dirname($0);
     my @INC_save = @INC;
@@ -95,6 +94,7 @@ my $get_mpi_arg;
 my $install_mpi_arg;
 my $build_tests_arg;
 my $run_tests_arg;
+my $trim_arg;
 my $version_arg;
 
 my @SAVE_ARGV = @ARGV;
@@ -110,6 +110,7 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
                                   "install-mpi" => \$install_mpi_arg,
                                   "build-tests" => \$build_tests_arg,
                                   "run-tests" => \$run_tests_arg,
+                                  "trim" => \$trim_arg,
                                   "version" => \$version_arg,
                                   );
 
@@ -135,17 +136,18 @@ if (!$ok || $help_arg) {
                               while processing
 --force|-f                    Do steps even if they would not normally 
                               be executed
---get-mpi                     Do the \"Get MPI\" step
---install-mpi                 Do the \"Install MPI\" step
---build-tests                 Do the \"Build tests\" step
---run-tests                   Do the \"Run tests\" step
+--get-mpi                     Do the \"Get MPI\" phase
+--install-mpi                 Do the \"Install MPI\" phase
+--build-tests                 Do the \"Build tests\" phase
+--run-tests                   Do the \"Run tests\" phase
+--trim                        Do the \"Trim\" phase
 
 If no options other than --file (or -f) are specified, the MTT will
 default to trying to make as much progress as possible (i.e., running
 each of the steps as necessary).  If any of the step options are
-provided (--get-mpi, --install-mpi, --build-tests, or --run-tests),
-then only the steps that are explicitly specified will be attempted to
-be run.\n";
+provided (--get-mpi, --install-mpi, --build-tests, --run-tests, or
+--trim), then only the steps that are explicitly specified will be
+attempted to be run.\n";
 
     exit($ok);
 }
@@ -187,15 +189,18 @@ my $get_mpi = 1;
 my $install_mpi = 1;
 my $build_tests = 1;
 my $run_tests = 1;
+my $trim = 1;
 
 if (defined($get_mpi_arg) || defined($install_mpi_arg) ||
-    defined($build_tests_arg) || defined($run_tests_arg)) {
-    $get_mpi = $install_mpi = $build_tests = $run_tests = 0;
+    defined($build_tests_arg) || defined($run_tests_arg) ||
+    defined($trim_arg)) {
+    $get_mpi = $install_mpi = $build_tests = $run_tests = $trim = 0;
 
     $get_mpi = 1 if defined($get_mpi_arg);
     $install_mpi = 1 if defined($install_mpi_arg);
     $build_tests = 1 if defined($build_tests_arg);
     $run_tests = 1 if defined($run_tests_arg);
+    $trim = 1 if defined($trim_arg);
 }
 
 
@@ -211,19 +216,19 @@ my $install_dir =
 
 # Load up all the MPI sources that this system has previously obtained
 MTT::MPI::LoadSources($source_dir)
-    if ($get_mpi || $install_mpi);
+    if ($get_mpi || $install_mpi || $trim);
 
 # Load up all the installs of the MPI sources
 MTT::MPI::LoadInstalls($install_dir)
-    if ($install_mpi || $build_tests || $run_tests);
+    if ($install_mpi || $build_tests || $run_tests || $trim);
 
 # Load up the built tests for each install
 MTT::Test::LoadBuilds($install_dir)
-    if ($build_tests || $run_tests);
+    if ($build_tests || $run_tests || $trim);
 
 # Load up the run tests for each install
 MTT::Test::LoadRuns($install_dir)
-    if ($run_tests);
+    if ($run_tests || $trim);
 
 
 ########################################################################
@@ -231,7 +236,7 @@ MTT::Test::LoadRuns($install_dir)
 ########################################################################
 
 foreach my $file (@file_arg) {
-
+    
     # Load up the ini file
 
     MTT::Messages::Debug("Reading ini file: $file\n");
@@ -258,7 +263,8 @@ foreach my $file (@file_arg) {
 
     # Remove old sources, installs, and builds
 
-    # JMS do this...
+    MTT::Trim::Trim($ini)
+        if ($trim);
 }
 
 # That's it!
