@@ -9,7 +9,7 @@
 # $HEADER$
 #
 
-package MTT::MPI::Get::copytree;
+package MTT::MPI::Get::Copytree;
 
 use strict;
 use Cwd;

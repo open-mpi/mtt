@@ -75,9 +75,8 @@ sub Submit {
 
         my $date = strftime("%m%d%Y", localtime);
         my $time = strftime("%H%M%S", localtime);
-        my $mpi_name = $report->{mpi_name} ? $report->{mpi_name} : "Unknown-MPI-name";
-        my $mpi_section = $report->{mpi_section_name} ? $report->{mpi_section_name} : "Unknown-MPI-section";
-        my $mpi_version = $report->{mpi_version} ? $report->{mpi_version} : "Unknown-MPI-Version";
+        my $mpi_name = $report->{mpi_name} ? $report->{mpi_name} : "UnknownMPIName";
+        my $mpi_version = $report->{mpi_version} ? $report->{mpi_version} : "UnknownMPIVersion";
 
         my $file;
         my $e = "\$file = MTT::Files::make_safe_filename(\"$filename\");";

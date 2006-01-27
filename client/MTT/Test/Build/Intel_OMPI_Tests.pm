@@ -9,7 +9,7 @@
 # $HEADER$
 #
 
-package MTT::Test::Build::Intel_ompi_tests;
+package MTT::Test::Build::Intel_OMPI_Tests;
 
 use strict;
 use Cwd;

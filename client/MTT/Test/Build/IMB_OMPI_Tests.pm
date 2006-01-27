@@ -9,12 +9,12 @@
 # $HEADER$
 #
 
-package MTT::Test::Build::IBM_ompi_tests;
+package MTT::Test::Build::IMB_OMPI_Tests;
 
 use strict;
 use Cwd;
 use MTT::Messages;
-use MTT::MTT::DoCommand::Cmd;
+use MTT::DoCommand;
 
 #--------------------------------------------------------------------------
 
@@ -22,29 +22,14 @@ sub Build {
     my ($ini, $section, $mpi, $config) = @_;
     my $ret;
 
-    Debug("Building IBM_ompi_tests\n");
+    Debug("Building IMB_ompi_tests\n");
     $ret->{success} = 0;
 
-    # Run autogen.sh
-    my $x = MTT::DoCommand::Cmd(1, "./autogen.sh");
-    if ($x->{status} != 0) {
-        $ret->{result_message} = "IBM_ompi_tests: autogen.sh failed; skipping\n";
-        $ret->{stdout} = $x->{stdout};
-        return $ret;
-    }
-
-    # Run configure
-    my $x = MTT::DoCommand::Cmd(1, "./configure");
-    if ($x->{status} != 0) {
-        $ret->{result_message} = "IBM_ompi_tests: configure failed; skipping\n";
-        $ret->{stdout} = $x->{stdout};
-        return $ret;
-    }
-
     # Clean it (just to be sure)
+    chdir("src");
     my $x = MTT::DoCommand::Cmd(1, "make clean");
     if ($x->{status} != 0) {
-        $ret->{result_message} = "IBM_ompi_tests: make clean failed; skipping\n";
+        $ret->{result_message} = "IMB_ompi_tests: make clean failed; skipping\n";
         $ret->{stdout} = $x->{stdout};
         return $ret;
     }
@@ -53,7 +38,7 @@ sub Build {
     $x = MTT::DoCommand::Cmd(1, "make");
     $ret->{stdout} = $x->{stdout};
     if ($x->{status} != 0) {
-        $ret->{result_message} = "Failed to build IBM suite; skipping\n";
+        $ret->{result_message} = "Failed to build IMB suite; skipping\n";
         return $ret;
     }
 

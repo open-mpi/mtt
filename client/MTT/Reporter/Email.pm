@@ -120,8 +120,8 @@ sub Submit {
 
         my $date = strftime("%m%d%Y", localtime);
         my $time = strftime("%H%M%S", localtime);
-        my $mpi_name = $report->{mpi_name} ? $report->{mpi_name} : "Unknown-MPI";
-        my $mpi_version = $report->{mpi_version} ? $report->{mpi_version} : "Unknown-MPI-Version";
+        my $mpi_name = $report->{mpi_name} ? $report->{mpi_name} : "UnknownMPIName";
+        my $mpi_version = $report->{mpi_version} ? $report->{mpi_version} : "UnknownMPIVersion";
 
         my $str = "\$s = \"$subject\"";
         eval $str;

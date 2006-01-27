@@ -9,7 +9,7 @@
 # $HEADER$
 #
 
-package MTT::MPI::Get::svn;
+package MTT::MPI::Get::SVN;
 
 use strict;
 use Cwd;

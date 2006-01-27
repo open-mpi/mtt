@@ -9,7 +9,7 @@
 # $HEADER$
 #
 
-package MTT::Test::Build::shell;
+package MTT::Test::Build::Shell;
 
 use strict;
 use Cwd;

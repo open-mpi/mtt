@@ -9,7 +9,7 @@
 # $HEADER$
 #
 
-package MTT::MPI::Get::tarball;
+package MTT::MPI::Get::Tarball;
 
 use strict;
 use Cwd;
