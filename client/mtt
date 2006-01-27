@@ -152,16 +152,20 @@ my $install_dir =
     MTT::Files::mkdir("$scratch_arg/$MTT::Constants::install_subdir");
 
 # Load up all the MPI sources that this system has previously obtained
-MTT::MPI::LoadSources($source_dir);
+MTT::MPI::LoadSources($source_dir)
+    if ($get_mpi || $install_mpi);
 
 # Load up all the installs of the MPI sources
-MTT::MPI::LoadInstalls($install_dir);
+MTT::MPI::LoadInstalls($install_dir)
+    if ($install_mpi || $build_tests || $run_tests);
 
 # Load up the built tests for each install
-MTT::Test::LoadBuilds($install_dir);
+MTT::Test::LoadBuilds($install_dir)
+    if ($build_tests || $run_tests);
 
 # Load up the run tests for each install
-MTT::Test::LoadRuns($install_dir);
+MTT::Test::LoadRuns($install_dir)
+    if ($run_tests);
 
 
 ########################################################################
