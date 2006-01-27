@@ -63,6 +63,13 @@ sub Run {
                 # For each test build
                 foreach my $test_build_key (keys(%{$install_section})) {
                     my $test_build = $install_section->{$test_build_key};
+
+                    # Check to see if this was a successful test build
+                    if (!$test_build->{success}) {
+                        Debug("Found test build $test_build->{section_name}, but it did not have success==1\n");
+                        next;
+                    }
+
                     $test_build->{section_name} =~ m/test build:\s*(.+)\s*/;
                     my $test_name = $1;
 

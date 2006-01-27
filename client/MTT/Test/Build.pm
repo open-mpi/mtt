@@ -96,6 +96,12 @@ sub Build {
                     foreach my $mpi_install_key (keys(%{$mpi_unique})) {
                         my $mpi_install = $mpi_unique->{$mpi_install_key};
 
+                        # Ensure that this was a successful MPI install
+                        if (!$mpi_install->{success}) {
+                            Debug("Found MPI install $mpi_install->{section_name}, but it did not have success==1\n");
+                            next;
+                        }
+
                         # See if we've already got a test build for
                         # this MPI installation.  Test incrementally
                         # so that it doesn't create each intermediate
@@ -254,6 +260,8 @@ sub _do_build {
         my $perfbase_xml = Value($ini, $section, "perfbase_xml");
         $perfbase_xml = "inp_test_build.xml"
             if (!$perfbase_xml);
+        $ret->{success} = 0
+            if (!defined($ret->{success}));
         
         # Save the results in an ini file
         Debug("Writing built file: $config->{srcdir}/$built_file\n");

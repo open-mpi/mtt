@@ -27,6 +27,7 @@ sub Build {
     my $ret;
     
     Debug("Building Intel_ompi_tests\n");
+    $ret->{success} = 0;
 
     my $buildfile = Value($ini, $config->{section_name}, "buildfile");
     $buildfile = $default_buildfile
