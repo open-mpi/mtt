@@ -33,7 +33,8 @@ sub Build {
     $buildfile = $default_buildfile
         if (!$buildfile);
     if (! -f $buildfile) {
-        $ret->{result_message} = "Could not find buildfile: $buildfile; skipping\n";
+        $ret->{result_message} = "Could not find buildfile: $buildfile; skipping";
+        Warning("$ret->{result_message}\n");
         return $ret;
     }
 
@@ -44,8 +45,8 @@ sub Build {
 
     if (!$mpi_install->{c_bindings} && !$mpi_install->{f77_biindings}) {
         # Should never happen
-        $ret->{result_message} = "MPI does not have C or F77 bindings available!\n";
-        Warning($ret->{result_message});
+        $ret->{result_message} = "MPI does not have C or F77 bindings available!";
+        Warning("$ret->{result_message}\n");
         return $ret;
     } elsif ($mpi_install->{c_bindings} && $mpi_install->{f77_biindings}) {
         # Don't need to do anything
@@ -95,14 +96,14 @@ sub Build {
     my @tests = <BUILDFILE>;
     close(BUILDFILE);
     if ($#tests < 0) {
-        $ret->{result_message} = "No tests left to build after filtering!\n";
+        $ret->{result_message} = "No tests left to build after filtering!";
         return $ret;
     }
 
     # Clean it (just to be sure)
     my $x = MTT::DoCommand::Cmd(1, "make clean");
     if ($x->{status} != 0) {
-        $ret->{result_message} = "Intel_ompi_tests: make clean failed; skipping\n";
+        $ret->{result_message} = "Intel_ompi_tests: make clean failed; skipping";
         $ret->{stdout} = $x->{stdout};
         return $ret;
     }
@@ -111,7 +112,7 @@ sub Build {
     $x = MTT::DoCommand::Cmd(1, "make compile FILE=$buildfile");
     $ret->{stdout} = $x->{stdout};
     if ($x->{status} != 0) {
-        $ret->{result_message} = "Failed to build intel suite: $buildfile; skipping\n";
+        $ret->{result_message} = "Failed to build intel suite: $buildfile; skipping";
         return $ret;
     }
 
