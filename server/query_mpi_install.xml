@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+<!DOCTYPE query SYSTEM "pb_query.dtd">
+<!--
+  Copyright (c) 2005-2006 The Trustees of Indiana University.
+                          All rights reserved.
+  $COPYRIGHT$
+  
+  Additional copyrights may follow
+  
+  $HEADER$
+ 
+-->
+
+<query id="test build status report">
+  <experiment>mtt_mpi_install</experiment>
+
+  <parameter id='p.hostname'>
+    <value>hostname</value>
+    <filter>
+      <all></all>
+    </filter>
+  </parameter>
+
+  <parameter id='p.os_name'>
+    <value>os_name</value>
+    <filter>
+      <all></all>
+    </filter>
+  </parameter>
+
+  <parameter id='p.os_version'>
+    <value>os_version</value>
+    <filter>
+      <all></all>
+    </filter>
+  </parameter>
+
+  <parameter id='p.platform_type'>
+    <value>platform_type</value>
+    <filter>
+      <all></all>
+    </filter>
+  </parameter>
+
+  <parameter id='p.compiler_name'>
+    <value>compiler_name</value>
+    <filter>
+      <all></all>
+    </filter>
+  </parameter>
+
+  <parameter id='p.compiler_version'>
+    <value>compiler_version</value>
+    <filter>
+      <all></all>
+    </filter>
+  </parameter>
+
+  <parameter id='p.mpi_name'>
+    <value>mpi_name</value>
+    <filter>
+      <all></all>
+    </filter>
+  </parameter>
+
+  <parameter id='p.mpi_version'>
+    <value>mpi_version</value>
+    <filter>
+      <all></all>
+    </filter>
+  </parameter>
+
+  <source id="src.result">
+    <result>result_message</result>
+    <result>submit_timestamp</result>
+    <result>stdout</result>
+    <result>stderr</result>
+<!--    <input>p.os_name</input>
+    <input>p.os_version</input>
+    <input>p.platform_type</input>
+    <input>p.compiler_name</input>
+    <input>p.compiler_version</input>
+    <input>p.mpi_name</input>
+    <input>p.mpi_version</input> -->
+  </source>
+
+  <output target="raw_text">
+    <input>src.result</input>
+  </output>
+</query>
