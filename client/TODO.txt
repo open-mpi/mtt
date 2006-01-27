@@ -1,3 +1,8 @@
+- Build has capability to filter (e.g., Intel filters based on what
+  bindings exist), but run/simple does not.  So you can not build the
+  fortran tests, but then still try to run them of "tests =
+  src/&cat(file)" -- how can we get the filtering down there (easily)?
+
 - add support for some performance-oriented tests
 
 - add support for disconnected scenarios
