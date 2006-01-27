@@ -1,3 +1,8 @@
+- add support for disconnected scenarios
+
+- do perfbase put better; can all the queued http put's be combined
+  into a single put?
+
 - make it so you can invoke mtt from anywhere, not just "./mtt" (i.e.,
   it currenty runs "use cwd()/lib;".  Need a more sensible way to find
   the MTT perl libraries.
@@ -16,18 +21,20 @@
   (e.g., how many lines of stderr to report, etc.)
 
 - figure out "get" phase better to determine if we need a new MPI
-  source or not
-  - some can tell immediately
-  - some cannot tell without remote access
-  would be better to put all the nasty compare logic up in Get.pm
-  directly instead of in each module
+    source or not
+    - some can tell immediately
+    - some cannot tell without remote access
+    would be better to put all the nasty compare logic up in Get.pm
+    directly instead of in each module
 
 - audit test builds / data in, out, reported, saved
 
 - need a lockfile to protect all the XML files in case multiple
   engines running simultaneously
 
-- add trimming functionality
+- add trimming functionality: deleting old builds
+    - put real timestamps in saved xml; delete trees older than a
+      given date?
 
 - test build source is not cached like MPI source
   --> have to go get it for every build (e.g., from svn), which won't
