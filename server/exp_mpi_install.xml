@@ -168,14 +168,14 @@
     <datatype>string</datatype>
   </result>
 
-  <result occurence="multiple">
+  <result occurence="once">
     <name>stderr</name>
     <synopsis>stderr output from build</synopsis>
     <default>no output generated</default>
     <datatype>text</datatype>
   </result>
 
-  <result occurence="multiple">
+  <result occurence="once">
     <name>stdout</name>
     <synopsis>stdout output from build</synopsis>
     <default>no output generated</default>
