@@ -24,7 +24,7 @@ use Cwd;
 # 3. Otherwise, search $ENV[PATH] for mtt, and when you find it, add
 #    that directory to @INC and try again.
 
-use lib cwd();
+use lib cwd() . "/lib";
 
 my $ret;
 eval "\$ret = require MTT::Version";
@@ -36,7 +36,7 @@ if (1 != $ret) {
     # directory) and add the cwd() to @INC
     my $start_dir = cwd();
     chdir($dir);
-    push(@INC, cwd());
+    push(@INC, cwd() . "/lib");
     chdir($start_dir);
     eval "\$ret = require MTT::Version";
 
@@ -53,7 +53,7 @@ if (1 != $ret) {
             # see if we can "require".  If require fails, restore @INC
             # and keep trying.
             if (-x "$dir/$mtt") {
-                push(@INC, $dir);
+                push(@INC, "$dir/lib");
                 eval "\$ret = require MTT::Version";
                 if (1 == $ret) {
                     last;
