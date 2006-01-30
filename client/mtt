@@ -36,6 +36,7 @@ if (1 != $ret) {
     # directory) and add the cwd() to @INC
     my $start_dir = cwd();
     chdir($dir);
+    chdir("..");
     push(@INC, cwd() . "/lib");
     chdir($start_dir);
     eval "\$ret = require MTT::Version";
@@ -53,7 +54,10 @@ if (1 != $ret) {
             # see if we can "require".  If require fails, restore @INC
             # and keep trying.
             if (-x "$dir/$mtt") {
-                push(@INC, "$dir/lib");
+                chdir($dir);
+                chdir("..");
+                push(@INC, cwd() . "/lib");
+                chdir($start_dir);
                 eval "\$ret = require MTT::Version";
                 if (1 == $ret) {
                     last;
