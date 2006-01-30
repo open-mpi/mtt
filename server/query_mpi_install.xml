@@ -33,6 +33,8 @@
     <result>compiler_name</result>
     <result>compiler_version</result>
     <result>configure_arguments</result>
+    <result>start_timestamp</result>
+    <result>stop_timestamp</result>
     <input>p.result</input>
     <result>environment</result>
     <result>stdout</result>

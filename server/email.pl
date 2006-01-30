@@ -17,6 +17,7 @@ my $SEP = "=====================================================================
 my $LINETOKEN = "XXXXX";
 
 
+
 # Take a line of input, and if it is the column header line,
 #  return an array containing the column headers.  Otherwise, return undef.
 sub ParseHeaders {
@@ -54,19 +55,24 @@ sub GenOutput {
         "Platform Type: $results{'platform_type'}\n" .
         "Platform ID: $results{'platform_id'}\n" .
         "Compiler: $results{'compiler_name'} $results{'compiler_version'}\n" .
-        "Configure Arguments: $results{'configure_arguments'}\n\n" .
+        "Configure Arguments: $results{'configure_arguments'}\n" .
+        "Start Date: $results{'start_timestamp'}\n" .
+        "Finish Date: $results{'stop_timestamp'}\n\n" .
         "Result: $results{'result_message'}\n\n" .
         "Environment:\n$results{'environment'}\n\n" .
         "Stdout:\n$results{'stdout'}\n\n" .
         "Stderr:\n$results{'stderr'}\n";
 
-    print "output: $output\n";    
     return $output;
 }
 
 
 # Run the perfbase query
-open(PBQUERY, "$PBCMD|");
+if(!open(PBQUERY, "$PBCMD|")) {
+    print "Unable to run query!\n";
+    die;
+}
+
 my @output = <PBQUERY>;
 chomp(@output);
 close(PBQUERY);
@@ -78,9 +84,10 @@ for(@output) {
     last if defined(@columns);
 }
 
-for(@columns) {
-    print "'$_'\n";
-}
+#for(@columns) {
+#    print "'$_'\n";
+#}
+
 
 # Now we have the field names in an array.
 # Loop over each line, putting all the results for that line into a hash.
@@ -98,6 +105,7 @@ for(@output) {
     my $i = 0;
     my %results;
     for(split(/	/, $_)) {    # Literal TAB matched
+        $_ =~ s/ *$//;
         $results{$columns[$i]} = $_;
         $i++;
     }
@@ -115,9 +123,10 @@ for(@output) {
 $mailbody = "MTT MPI Install Report\n\n" .
     "Summary:\n" .
     " $successes Successful installs\n" .
-    " $failures Failed installs\n" .
+    " $failures Failed installs\n\n" .
     $mailbody;
 
+print "$mailbody\n";
 # TODO: Only show results in the past day
 # Sum up success/failure counts
 # Actually send off the email..
