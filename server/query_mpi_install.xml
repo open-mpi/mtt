@@ -14,74 +14,29 @@
 <query id="test build status report">
   <experiment>mtt_mpi_install</experiment>
 
-  <parameter id='p.hostname'>
-    <value>hostname</value>
-    <filter>
-      <all></all>
-    </filter>
-  </parameter>
-
-  <parameter id='p.os_name'>
-    <value>os_name</value>
-    <filter>
-      <all></all>
-    </filter>
-  </parameter>
-
-  <parameter id='p.os_version'>
-    <value>os_version</value>
-    <filter>
-      <all></all>
-    </filter>
-  </parameter>
-
-  <parameter id='p.platform_type'>
-    <value>platform_type</value>
-    <filter>
-      <all></all>
-    </filter>
-  </parameter>
-
-  <parameter id='p.compiler_name'>
-    <value>compiler_name</value>
-    <filter>
-      <all></all>
-    </filter>
-  </parameter>
-
-  <parameter id='p.compiler_version'>
-    <value>compiler_version</value>
-    <filter>
-      <all></all>
-    </filter>
-  </parameter>
-
-  <parameter id='p.mpi_name'>
-    <value>mpi_name</value>
-    <filter>
-      <all></all>
-    </filter>
-  </parameter>
-
-  <parameter id='p.mpi_version'>
-    <value>mpi_version</value>
+  <parameter id="p.result">
+    <value>result_message</value>
     <filter>
       <all></all>
     </filter>
   </parameter>
 
   <source id="src.result">
-    <result>result_message</result>
-    <result>submit_timestamp</result>
+    <result>success</result>
+    <result>mpi_name</result>
+    <result>mpi_version</result>
+    <result>mpi_unique_id</result>
+    <result>hostname</result>
+    <result>os_version</result>
+    <result>platform_type</result>
+    <result>platform_id</result>
+    <result>compiler_name</result>
+    <result>compiler_version</result>
+    <result>configure_arguments</result>
+    <input>p.result</input>
+    <result>environment</result>
     <result>stdout</result>
     <result>stderr</result>
-<!--    <input>p.os_name</input>
-    <input>p.os_version</input>
-    <input>p.platform_type</input>
-    <input>p.compiler_name</input>
-    <input>p.compiler_version</input>
-    <input>p.mpi_name</input>
-    <input>p.mpi_version</input> -->
   </source>
 
   <output target="raw_text">
