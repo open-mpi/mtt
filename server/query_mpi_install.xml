@@ -31,7 +31,7 @@
   <source id="src.result">
     <input>p.date</input>
     <input>p.success</input>
-    <result>mpi_name</result>
+    <result>mpi_install_pretty_name</result>
     <result>mpi_version</result>
     <result>hostname</result>
     <result>os_version</result>
