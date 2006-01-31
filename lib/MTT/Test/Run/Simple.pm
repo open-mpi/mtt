@@ -25,6 +25,7 @@ sub Run {
 
     $ret->{success} = 0;
     $ret->{perfbase_xml} = Value($ini, $section, "perfbase_xml");
+    my $exists = Value($ini, $section, "only_if_exec_exists");
 
     # Look up the tests value.  Handle if we get an ARRAY back or a
     # string of whitespace delimited executables
@@ -39,9 +40,13 @@ sub Run {
 
         # Now make a list of hashes only containing "executable"
         foreach my $t (@$tests) {
+            my $good = 1;
+            $good = 0
+                if ($exists && ! -x $t);
             push(@{$ret->{tests}}, {
                 executable => $t,
-            });
+            })
+                if ($good);
         }
 
         $ret->{success} = 1;
