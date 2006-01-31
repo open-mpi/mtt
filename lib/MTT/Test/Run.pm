@@ -89,7 +89,7 @@ sub Run {
                                 Verbose(">> Test run [$section]\n");
 
                                 _do_run($ini, $section, $test_build, 
-                                        $mpi_install, $top_dir);
+                                        $mpi_install, $top_dir, $force);
                                 %ENV = %ENV_SAVE;
                             }
                         }
@@ -105,7 +105,7 @@ sub Run {
 #--------------------------------------------------------------------------
 
 sub _do_run {
-    my ($ini, $section, $test_build, $mpi_install, $top_dir) = @_;
+    my ($ini, $section, $test_build, $mpi_install, $top_dir, $force) = @_;
 
     # Check for the module
     my $module = MTT::Values::Value($ini, $section, "module");
@@ -260,11 +260,12 @@ sub _do_run {
             # Just one np, or an array of np values?
             if (ref($all_np) eq "") {
                 $test_results->{$all_np} =
-                    _run_one_np($top_dir, $run, $mpi_details, $all_np);
+                    _run_one_np($top_dir, $run, $mpi_details, $all_np, $force);
             } else {
                 foreach my $this_np (@$all_np) {
                     $test_results->{$this_np} =
-                        _run_one_np($top_dir, $run, $mpi_details, $this_np);
+                        _run_one_np($top_dir, $run, $mpi_details, $this_np,
+                                    $force);
                 }
             }
         }
@@ -280,7 +281,7 @@ sub _do_run {
 }
 
 sub _run_one_np {
-    my ($top_dir, $run, $mpi_details, $np) = @_;
+    my ($top_dir, $run, $mpi_details, $np, $force) = @_;
 
     my $name = basename($test_executable);
 
@@ -296,19 +297,20 @@ sub _run_one_np {
 
         # If we just got one, run it.  Otherwise, loop over running them.
         if (ref($execs) eq "") {
-            _run_one_test($top_dir, $run, $mpi_details, $execs, $name, 1);
+            _run_one_test($top_dir, $run, $mpi_details, $execs, $name, 1,
+                          $force);
         } else {
             my $variant = 1;
             foreach my $e (@$execs) {
                 _run_one_test($top_dir, $run, $mpi_details, $e, $name,
-                              $variant++);
+                              $variant++, $force);
             }
         }
     }
 }
 
 sub _run_one_test {
-    my ($top_dir, $run, $mpi_details, $cmd, $name, $variant) = @_;
+    my ($top_dir, $run, $mpi_details, $cmd, $name, $variant, $force) = @_;
 
     # Have we run this test already?  Wow, Perl sucks sometimes -- you
     # can't check for the entire thing because the very act of
@@ -318,7 +320,8 @@ sub _run_one_test {
     my $str = "   Test: " . basename($name) .
         ", np=$test_np, variant=$variant:";
 
-    if (exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}) &&
+    if (!$force &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}) &&
         exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_unique_id}}) &&
         exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_unique_id}}->{$mpi_details->{mpi_install_section_name}}) &&
         exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_unique_id}}->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}) &&
