@@ -110,11 +110,11 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
 				  "debug|d" => \$debug_arg,
 				  "verbose|v" => \$verbose_arg,
                                   "force|f" => \$force_arg,
-                                  "get-mpi" => \$get_mpi_arg,
-                                  "install-mpi" => \$install_mpi_arg,
-                                  "build-tests" => \$build_tests_arg,
-                                  "run-tests" => \$run_tests_arg,
-                                  "trim" => \$trim_arg,
+                                  "get-mpi!" => \$get_mpi_arg,
+                                  "install-mpi!" => \$install_mpi_arg,
+                                  "build-tests!" => \$build_tests_arg,
+                                  "run-tests!" => \$run_tests_arg,
+                                  "trim!" => \$trim_arg,
                                   "version" => \$version_arg,
                                   );
 
@@ -140,18 +140,24 @@ if (!$ok || $help_arg) {
                               while processing
 --force|-f                    Do steps even if they would not normally 
                               be executed
---get-mpi                     Do the \"Get MPI\" phase
---install-mpi                 Do the \"Install MPI\" phase
---build-tests                 Do the \"Build tests\" phase
---run-tests                   Do the \"Run tests\" phase
---trim                        Do the \"Trim\" phase
+--[no-]get-mpi                Do the \"Get MPI\" phase
+--[no-]install-mpi            Do the \"Install MPI\" phase
+--[no-]build-tests            Do the \"Build tests\" phase
+--[no-]run-tests              Do the \"Run tests\" phase
+--[no-]trim                   Do the \"Trim\" phase
 
 If no options other than --file (or -f) are specified, the MTT will
 default to trying to make as much progress as possible (i.e., running
-each of the steps as necessary).  If any of the step options are
-provided (--get-mpi, --install-mpi, --build-tests, --run-tests, or
---trim), then only the steps that are explicitly specified will be
-attempted to be run.\n";
+each of the phases as necessary).  
+
+The phases can be specified in positive or negative form.  You can
+only specify positive or negative phases in a run; you cannot mix both
+positive and negative phases in a single MTT run.
+
+* If any phases are specified in the positive form, then only those
+  phases will be run (e.g., \"--get-mpi --install-mpi\").  
+* If negative phases are specified, then thoses phases will *not* be
+  run.\n";
 
     exit($ok);
 }
@@ -198,15 +204,31 @@ my $trim = 1;
 if (defined($get_mpi_arg) || defined($install_mpi_arg) ||
     defined($build_tests_arg) || defined($run_tests_arg) ||
     defined($trim_arg)) {
-    $get_mpi = $install_mpi = $build_tests = $run_tests = $trim = 0;
 
-    $get_mpi = 1 if defined($get_mpi_arg);
-    $install_mpi = 1 if defined($install_mpi_arg);
-    $build_tests = 1 if defined($build_tests_arg);
-    $run_tests = 1 if defined($run_tests_arg);
-    $trim = 1 if defined($trim_arg);
+    # If anything is defined as "yes", then only do those
+
+    if ($get_mpi_arg || $install_mpi_arg || 
+        $build_tests_arg || $run_tests_arg) {
+
+        $get_mpi = $install_mpi = $build_tests = $run_tests = $trim = 0;
+
+        $get_mpi = 1 if defined($get_mpi_arg) && $get_mpi_arg;
+        $install_mpi = 1 if defined($install_mpi_arg) && $install_mpi_arg;
+        $build_tests = 1 if defined($build_tests_arg) && $build_tests_arg;
+        $run_tests = 1 if defined($run_tests_arg) && $run_tests_arg;
+        $trim = 1 if defined($trim_arg) && $trim_arg;
+    } 
+
+    # Otherwise, just negate whatever option was negated
+
+    else {
+        $get_mpi = 0 if defined($get_mpi_arg) && !$get_mpi_arg;
+        $install_mpi = 0 if defined($install_mpi_arg) && !$install_mpi_arg;
+        $build_tests = 0 if defined($build_tests_arg) && !$build_tests_arg;
+        $run_tests = 0 if defined($run_tests_arg) && !$run_tests_arg;
+        $trim = 0 if defined($trim_arg) && !$trim_arg;
+    }
 }
-
 
 ########################################################################
 # Load up all old data
