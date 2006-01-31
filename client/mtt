@@ -269,6 +269,10 @@ foreach my $file (@file_arg) {
 
     MTT::Trim::Trim($ini)
         if ($trim);
+
+    # Shutdown the reporter
+
+      MTT::Reporter::Finalize();
 }
 
 # That's it!

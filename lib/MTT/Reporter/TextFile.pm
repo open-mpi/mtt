@@ -67,6 +67,15 @@ sub Init {
 
 #--------------------------------------------------------------------------
 
+sub Finalize {
+    undef $dirname;
+    undef $filename;
+    undef $sep;
+    undef $written_files;
+}
+
+#--------------------------------------------------------------------------
+
 sub Submit {
     my ($info, $entries) = @_;
 

@@ -157,6 +157,14 @@ sub Init {
 
 #--------------------------------------------------------------------------
 
+sub Finalize {
+    foreach my $m (@modules) {
+        MTT::Module::Run("MTT::Reporter::$m", "Finalize");
+    }
+}
+
+#--------------------------------------------------------------------------
+
 sub Submit {
     my ($phase, $section, $report) = @_;
 

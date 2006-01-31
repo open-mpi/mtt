@@ -78,6 +78,17 @@ sub Init {
 
 #--------------------------------------------------------------------------
 
+sub Finalize {
+    undef $username;
+    undef $password;
+    undef $realm;
+    undef $url;
+    undef $platform;
+    undef $ua;
+}
+
+#--------------------------------------------------------------------------
+
 sub Submit {
     my ($info, $entries) = @_;
 

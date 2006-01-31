@@ -28,12 +28,6 @@ my $subject;
 # any extra header lines
 my @headers;
 
-# my mail program
-my $mail_agent;
-
-# cache a copy of the environment
-my %ENV_original;
-
 # separator line
 my $sep;
 
@@ -65,6 +59,15 @@ sub Init {
     Debug("Email reporter initialized ($to, $subject)\n");
 
     1;
+}
+
+#--------------------------------------------------------------------------
+
+sub Finalize {
+    undef $to;
+    undef $subject;
+    undef @headers;
+    undef $sep;
 }
 
 #--------------------------------------------------------------------------
