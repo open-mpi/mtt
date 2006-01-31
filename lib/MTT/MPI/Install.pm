@@ -89,6 +89,7 @@ package MTT::MPI::Install;
 use strict;
 use Cwd;
 use POSIX qw(strftime);
+use Time::Local;
 use MTT::DoCommand;
 use MTT::Values;
 use MTT::INI;
@@ -351,10 +352,10 @@ sub _do_install {
     MTT::Files::mkdir($config->{installdir});
     
     # Run the module
-    my $start = localtime;
+    my $start = timegm(gmtime());
     my $ret = MTT::Module::Run("MTT::MPI::Install::$config->{module}",
                                "Install", $config);
-    my $stop = localtime;
+    my $stop = timegm(gmtime());
     
     # Analyze the return
     
@@ -448,6 +449,7 @@ sub _do_install {
         $ret->{unsetenv} = $config->{unsetenv};
         $ret->{prepend_path} = $config->{prepend_path};
         $ret->{append_path} = $config->{append_path};
+        $ret->{timestamp} = timegm(gmtime());
 
         # Delete keys with empty values
         foreach my $k (keys(%$report)) {

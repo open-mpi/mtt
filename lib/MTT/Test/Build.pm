@@ -33,6 +33,7 @@ package MTT::Test::Build;
 
 use strict;
 use Cwd;
+use Time::Local;
 use MTT::DoCommand;
 use MTT::Reporter;
 use MTT::Messages;
@@ -237,10 +238,10 @@ sub _do_build {
     ProcessEnvKeys($config, \@save_env);
 
     # Run the module
-    my $start = localtime;
+    my $start = timegm(gmtime());
     my $ret = MTT::Module::Run("MTT::Test::Build::$config->{build_module}",
                                "Build", $ini, $mpi_install, $config);
-    my $stop = localtime;
+    my $stop = timegm(gmtime());
             
     # Analyze the return
     if ($ret) {
@@ -256,6 +257,7 @@ sub _do_build {
         $ret->{mpi_install_section_name} = $mpi_install->{section_name};
         $ret->{mpi_version} = $mpi_install->{mpi_version};
         $ret->{mpi_unique_id} = $mpi_install->{mpi_unique_id};
+        $ret->{timestamp} = timegm(gmtime());
 
         my $perfbase_xml = Value($ini, $section, "perfbase_xml");
         $perfbase_xml = "inp_test_build.xml"

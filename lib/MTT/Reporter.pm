@@ -191,9 +191,8 @@ sub Submit {
     my @entries;
     push(@entries, $entry);
 
-    # Call all the reporters
-
-    $cache->{submit_timestamp} = localtime;
+    # Call all the reporters.  Use the GMT ctime() as the timestamp.
+    $cache->{submit_timestamp} = gmtime;
     foreach my $m (@modules) {
         MTT::Module::Run("MTT::Reporter::$m", "Submit", $cache, \@entries);
     }
@@ -218,9 +217,8 @@ sub QueueSubmit {
     _fill_cache()
         if (!$cache);
 
-    # Call all the reporters
-
-    $cache->{submit_timestamp} = localtime;
+    # Call all the reporters.  Use the GMT ctime() as the timestamp.
+    $cache->{submit_timestamp} = gmtime;
     foreach my $m (@modules) {
         MTT::Module::Run("MTT::Reporter::$m", "Submit", $cache, \@queue);
     }

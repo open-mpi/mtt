@@ -34,6 +34,7 @@ use strict;
 use Cwd;
 use POSIX qw(strftime);
 use File::Basename;
+use Time::Local;
 use MTT::DoCommand;
 use MTT::FindProgram;
 use MTT::Messages;
@@ -89,7 +90,7 @@ sub _do_get {
     }
     
     # Make a new unique ID
-    my $unique_id = strftime("timestamp-%m%d%Y-%H%M%S", localtime);
+    my $unique_id = strftime("timestamp-%m%d%Y-%H%M%S", gmtime);
 
     # Make a directory just for this section
     chdir($source_dir);
@@ -112,6 +113,7 @@ sub _do_get {
         $ret->{unique_id} = $unique_id
             if (!$ret->{unique_id});
         $ret->{module_name} = "MTT::MPI::Get::$module";
+        $ret->{timestamp} = timegm(gmtime());
 
         # Add this into the $MPI::sources hash
         $MTT::MPI::sources->{$section}->{$ret->{unique_id}} = $ret;
