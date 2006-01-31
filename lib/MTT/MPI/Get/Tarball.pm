@@ -25,7 +25,7 @@ use Data::Dumper;
 #--------------------------------------------------------------------------
 
 sub Get {
-    my ($ini, $section, $unique_id, $force) = @_;
+    my ($ini, $section, $force) = @_;
 
     my $ret;
     my $data;
@@ -48,26 +48,23 @@ sub Get {
         next
             if ($section ne $mpi_section);
 
-        foreach my $mpi_unique (keys(%{$MTT::MPI::sources->{$section}})) {
-            my $source = $MTT::MPI::sources->{$section}->{$mpi_unique};
-            if ($source->{module_name} eq "MTT::MPI::Get::tarball" &&
-                basename($source->{module_data}->{tarball}) eq
-                basename($data->{tarball})) {
+        my $source = $MTT::MPI::sources->{$section};
+        if ($source->{module_name} eq "MTT::MPI::Get::tarball" &&
+            basename($source->{module_data}->{tarball}) eq
+            basename($data->{tarball})) {
 
-                # If we find one of the same name, that may not be
-                # enough (e.g., "mpi-latest.tar.gz").  So check the
-                # md5sum's.
-                $md5 = MTT::Files::md5sum($source->{module_data}->{tarball});
-                if ($md5 eq $source->{module_data}->{md5sum}) {
-                    Debug(">> tarball: we already have this tarball\n");
-                    return undef
-                        if (!$force);
-
-                    Debug(">> tarball: but we're forcing, so we'll take it anyway\n");
-                    $unique_id = $ret->{unique_id} = $source->{unique_id};
-                    $found = 1;
-                    last;
-                }
+            # If we find one of the same name, that may not be
+            # enough (e.g., "mpi-latest.tar.gz").  So check the
+            # md5sum's.
+            $md5 = MTT::Files::md5sum($source->{module_data}->{tarball});
+            if ($md5 eq $source->{module_data}->{md5sum}) {
+                Debug(">> tarball: we already have this tarball\n");
+                return undef
+                    if (!$force);
+                
+                Debug(">> tarball: but we're forcing, so we'll take it anyway\n");
+                $found = 1;
+                last;
             }
         }
 
@@ -80,8 +77,7 @@ sub Get {
 
     # Copy this tarball locally
     Debug(">> tarball: caching\n");
-    my $dir = MTT::Files::mkdir($unique_id);
-    chdir($dir);
+    my $dir = cwd();
     my $x = MTT::DoCommand::Cmd(1, "cp $data->{tarball} .");
     if (0 != $x->{status}) {
         Warning("Unable to copy tarball $data->{tarball}: $@\n");

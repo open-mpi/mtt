@@ -58,12 +58,10 @@ sub Run {
 
 sub _setup_builds_xml {
     $builds_xs = new XML::Simple(KeyAttr => { mpi_get => "name",
-                                              mpi_unique => "id",
                                               mpi_install => "name",
                                               test_build => "name",
                                             },
                                    ForceArray => [ "mpi_get", 
-                                                   "mpi_unique",
                                                    "mpi_install",
                                                    "test_build",
                                                    ],
@@ -93,21 +91,16 @@ sub LoadBuilds {
         foreach my $mpi_get_key (keys(%{$in->{mpi_get}})) {
             my $mpi_get = $in->{mpi_get}->{$mpi_get_key};
 
-            # For each instance of that source
-            foreach my $mpi_unique_key (keys(%{$mpi_get->{mpi_unique}})) {
-                my $mpi_unique = $mpi_get->{mpi_unique}->{$mpi_unique_key};
+            # For each MPI install section
+            foreach my $mpi_install_key (keys(%{$mpi_get->{mpi_install}})) {
+                my $mpi_install = $mpi_get->{mpi_install}->{$mpi_install_key};
 
-                # For each MPI install section
-                foreach my $mpi_install_key (keys(%{$mpi_unique->{mpi_install}})) {
-                    my $mpi_install = $mpi_unique->{mpi_install}->{$mpi_install_key};
-
-                    # For each test build section
-                    foreach my $test_build_key (keys(%{$mpi_install->{test_build}})) {
-                        my $test_build = $mpi_install->{test_build}->{$test_build_key};
-
-                        $MTT::Test::builds->{$mpi_get_key}->{$mpi_unique_key}->{$mpi_install_key}->{$test_build_key} = 
-                            $in->{mpi_get}->{$mpi_get_key}->{mpi_unique}->{$mpi_unique_key}->{mpi_install}->{$mpi_install_key}->{test_build}->{$test_build_key};
-                    }
+                # For each test build section
+                foreach my $test_build_key (keys(%{$mpi_install->{test_build}})) {
+                    my $test_build = $mpi_install->{test_build}->{$test_build_key};
+                    
+                    $MTT::Test::builds->{$mpi_get_key}->{$mpi_install_key}->{$test_build_key} = 
+                        $in->{mpi_get}->{$mpi_get_key}->{mpi_install}->{$mpi_install_key}->{test_build}->{$test_build_key};
                 }
             }
         }
@@ -131,21 +124,16 @@ sub SaveBuilds {
     foreach my $mpi_get_key (keys(%{$MTT::Test::builds})) {
         my $mpi_get = $MTT::Test::builds->{$mpi_get_key};
 
-        # For each instance of that source
-        foreach my $mpi_unique_key (keys(%{$mpi_get})) {
-            my $mpi_unique = $mpi_get->{$mpi_unique_key};
-
-            # For each MPI install section
-            foreach my $mpi_install_key (keys(%{$mpi_unique})) {
-                my $mpi_install = $mpi_unique->{$mpi_install_key};
-
-                # For each test build section
-                foreach my $test_build_key (keys(%{$mpi_install})) {
-                    my $test_build = $mpi_install->{$test_build_key};
-
-                    $transformed->{mpi_get}->{$mpi_get_key}->{mpi_unique}->{$mpi_unique_key}->{mpi_install}->{$mpi_install_key}->{test_build}->{$test_build_key} = 
-                    $MTT::Test::builds->{$mpi_get_key}->{$mpi_unique_key}->{$mpi_install_key}->{$test_build_key};
-                }
+        # For each MPI install section
+        foreach my $mpi_install_key (keys(%{$mpi_get})) {
+            my $mpi_install = $mpi_get->{$mpi_install_key};
+            
+            # For each test build section
+            foreach my $test_build_key (keys(%{$mpi_install})) {
+                my $test_build = $mpi_install->{$test_build_key};
+                
+                $transformed->{mpi_get}->{$mpi_get_key}->{mpi_install}->{$mpi_install_key}->{test_build}->{$test_build_key} = 
+                    $MTT::Test::builds->{$mpi_get_key}->{$mpi_install_key}->{$test_build_key};
             }
         }
     }
@@ -163,7 +151,6 @@ sub SaveBuilds {
 
 sub _setup_runs_xml {
     $runs_xs = new XML::Simple(KeyAttr => { mpi_get => "name",
-                                            mpi_unique => "id",
                                             mpi_install => "name",
                                             test_build => "name",
                                             test_run => "name",
@@ -172,7 +159,6 @@ sub _setup_runs_xml {
                                             test_cmd => "argv",
                                         },
                                ForceArray => [ "mpi_get", 
-                                               "mpi_unique",
                                                "mpi_install",
                                                "test_build",
                                                "test_run",
@@ -206,37 +192,32 @@ sub LoadRuns {
         foreach my $mpi_get_key (keys(%{$in->{mpi_get}})) {
             my $mpi_get = $in->{mpi_get}->{$mpi_get_key};
 
-            # For each instance of that source
-            foreach my $mpi_unique_key (keys(%{$mpi_get->{mpi_unique}})) {
-                my $mpi_unique = $mpi_get->{mpi_unique}->{$mpi_unique_key};
+            # For each MPI install section
+            foreach my $mpi_install_key (keys(%{$mpi_get->{mpi_install}})) {
+                my $mpi_install = $mpi_get->{mpi_install}->{$mpi_install_key};
 
-                # For each MPI install section
-                foreach my $mpi_install_key (keys(%{$mpi_unique->{mpi_install}})) {
-                    my $mpi_install = $mpi_unique->{mpi_install}->{$mpi_install_key};
+                # For each test build section
+                foreach my $test_build_key (keys(%{$mpi_install->{test_build}})) {
+                    my $test_build = $mpi_install->{test_build}->{$test_build_key};
 
-                    # For each test build section
-                    foreach my $test_build_key (keys(%{$mpi_install->{test_build}})) {
-                        my $test_build = $mpi_install->{test_build}->{$test_build_key};
-
-                        # For each test run section
-                        foreach my $test_run_key (keys(%{$test_build->{test_run}})) {
-                            my $test_run = $test_build->{test_run}->{$test_run_key};
-
-                            # For each test name
-                            foreach my $test_name_key (keys(%{$test_run->{test_name}})) {
-                                my $test_name = $test_run->{test_name}->{$test_name_key};
-
-                                # For each np
-                                foreach my $test_np_key (keys(%{$test_name->{test_np}})) {
-                                    my $test_np = $test_name->{test_np}->{$test_np_key};
-
-                                    # For each test command
-                                    foreach my $test_cmd_key (keys(%{$test_np->{test_cmd}})) {
-                                        my $test_cmd = $test_np->{test_cmd}->{$test_cmd_key};
-                                        
-                                        $MTT::Test::runs->{$mpi_get_key}->{$mpi_unique_key}->{$mpi_install_key}->{$test_build_key}->{$test_run_key}->{$test_name_key}->{$test_np_key}->{$test_cmd_key} = 
-                                            $in->{mpi_get}->{$mpi_get_key}->{mpi_unique}->{$mpi_unique_key}->{mpi_install}->{$mpi_install_key}->{test_build}->{$test_build_key}->{test_run}->{$test_run_key}->{test_name}->{$test_name_key}->{test_np}->{$test_np_key}->{test_cmd}->{$test_cmd_key};
-                                    }
+                    # For each test run section
+                    foreach my $test_run_key (keys(%{$test_build->{test_run}})) {
+                        my $test_run = $test_build->{test_run}->{$test_run_key};
+                        
+                        # For each test name
+                        foreach my $test_name_key (keys(%{$test_run->{test_name}})) {
+                            my $test_name = $test_run->{test_name}->{$test_name_key};
+                            
+                            # For each np
+                            foreach my $test_np_key (keys(%{$test_name->{test_np}})) {
+                                my $test_np = $test_name->{test_np}->{$test_np_key};
+                                
+                                # For each test command
+                                foreach my $test_cmd_key (keys(%{$test_np->{test_cmd}})) {
+                                    my $test_cmd = $test_np->{test_cmd}->{$test_cmd_key};
+                                    
+                                    $MTT::Test::runs->{$mpi_get_key}->{$mpi_install_key}->{$test_build_key}->{$test_run_key}->{$test_name_key}->{$test_np_key}->{$test_cmd_key} = 
+                                        $in->{mpi_get}->{$mpi_get_key}->{mpi_install}->{$mpi_install_key}->{test_build}->{$test_build_key}->{test_run}->{$test_run_key}->{test_name}->{$test_name_key}->{test_np}->{$test_np_key}->{test_cmd}->{$test_cmd_key};
                                 }
                             }
                         }
@@ -264,37 +245,32 @@ sub SaveRuns {
     foreach my $mpi_get_key (keys(%{$MTT::Test::runs})) {
         my $mpi_get = $MTT::Test::runs->{$mpi_get_key};
 
-        # For each instance of that source
-        foreach my $mpi_unique_key (keys(%{$mpi_get})) {
-            my $mpi_unique = $mpi_get->{$mpi_unique_key};
+        # For each MPI install section
+        foreach my $mpi_install_key (keys(%{$mpi_get})) {
+            my $mpi_install = $mpi_get->{$mpi_install_key};
 
-            # For each MPI install section
-            foreach my $mpi_install_key (keys(%{$mpi_unique})) {
-                my $mpi_install = $mpi_unique->{$mpi_install_key};
-
-                # For each test build section
-                foreach my $test_build_key (keys(%{$mpi_install})) {
-                    my $test_build = $mpi_install->{$test_build_key};
-
-                    # For each test run section
-                    foreach my $test_run_key (keys(%{$test_build})) {
-                        my $test_run = $test_build->{$test_run_key};
-
-                        # For each test name
-                        foreach my $test_name_key (keys(%{$test_run})) {
-                            my $test_name = $test_run->{$test_name_key};
-
-                            # For each np
-                            foreach my $test_np_key (keys(%{$test_name})) {
-                                my $test_np = $test_name->{$test_np_key};
-
-                                # For each cmd
-                                foreach my $test_cmd_key (keys(%{$test_np})) {
-                                    my $test_cmd = $test_np->{$test_cmd_key};
-
-                                    $transformed->{mpi_get}->{$mpi_get_key}->{mpi_unique}->{$mpi_unique_key}->{mpi_install}->{$mpi_install_key}->{test_build}->{$test_build_key}->{test_run}->{$test_run_key}->{test_name}->{$test_name_key}->{test_np}->{$test_np_key}->{test_cmd}->{$test_cmd_key} = 
-                                        $MTT::Test::runs->{$mpi_get_key}->{$mpi_unique_key}->{$mpi_install_key}->{$test_build_key}->{$test_run_key}->{$test_name_key}->{$test_np_key}->{$test_cmd_key};
-                                }
+            # For each test build section
+            foreach my $test_build_key (keys(%{$mpi_install})) {
+                my $test_build = $mpi_install->{$test_build_key};
+                
+                # For each test run section
+                foreach my $test_run_key (keys(%{$test_build})) {
+                    my $test_run = $test_build->{$test_run_key};
+                    
+                    # For each test name
+                    foreach my $test_name_key (keys(%{$test_run})) {
+                        my $test_name = $test_run->{$test_name_key};
+                        
+                        # For each np
+                        foreach my $test_np_key (keys(%{$test_name})) {
+                            my $test_np = $test_name->{$test_np_key};
+                            
+                            # For each cmd
+                            foreach my $test_cmd_key (keys(%{$test_np})) {
+                                my $test_cmd = $test_np->{$test_cmd_key};
+                                
+                                $transformed->{mpi_get}->{$mpi_get_key}->{mpi_install}->{$mpi_install_key}->{test_build}->{$test_build_key}->{test_run}->{$test_run_key}->{test_name}->{$test_name_key}->{test_np}->{$test_np_key}->{test_cmd}->{$test_cmd_key} = 
+                                    $MTT::Test::runs->{$mpi_get_key}->{$mpi_install_key}->{$test_build_key}->{$test_run_key}->{$test_name_key}->{$test_np_key}->{$test_cmd_key};
                             }
                         }
                     }

@@ -120,52 +120,90 @@ sub _load_values {
 
 sub _trim_runs {
 
+    # We're actually trimming test builds here, (i.e., same as
+    # _trim_builds()), but different criteria than _test_builds().
+    # We'll only have successful or failed runs if the test builds
+    # were successful.  So here in _trim_runs(), we're determining if
+    # the *runs* were successful or failed, and using that as the
+    # criteria to determine whether to whack a test build or not.
+
+    # For each build, we declare it successful if *all* of its tests
+    # passed.  Otherwise, it's classified as failed.
+    my @successful;
+    my @failed;
+
     # For each MPI source
-    foreach my $mpi_section_key (keys(%{$MTT::Test::runs})) {
-        my $mpi_section = $MTT::Test::runs->{$mpi_section_key};
+    foreach my $mpi_get_key (keys(%{$MTT::Test::runs})) {
+        my $mpi_get = $MTT::Test::runs->{$mpi_get_key};
 
-        # For each instance of that source
-        foreach my $mpi_unique_key (keys(%{$mpi_section})) {
-            my $mpi_unique = $mpi_section->{$mpi_unique_key};
+        # For each install of that source
+        foreach my $install_section_key (keys(%{$mpi_get})) {
+            my $install_section = $mpi_get->{$install_section_key};
+            
+            # For each test build
+            foreach my $test_build_key (keys(%{$install_section})) {
+                my $test_build = $install_section->{$test_build_key};
+                my $found_failed = 0;
+                
+                # For each test run section
+                foreach my $test_run_key (keys(%{$test_build})) {
+                    my $test_run = $test_build->{$test_run_key};
+                    
+                    # Increment the refcounts
 
-            # For each install of that source
-            foreach my $install_section_key (keys(%{$mpi_unique})) {
-                my $install_section = $mpi_unique->{$install_section_key};
 
-                # For each test build
-                foreach my $test_build_key (keys(%{$install_section})) {
-                    my $test_build = $install_section->{$test_build_key};
 
-                    # For each test run section
-                    foreach my $test_run_key (keys(%{$test_build})) {
-                        my $test_run = $test_build->{$test_run_key};
+                    # JMS CONTINUE HERE
 
-                        # For each test name
-                        foreach my $test_name_key (keys(%{$test_run})) {
-                            my $test_name = $test_run->{$test_name_key};
 
-                            # For each np
-                            foreach my $test_np_key (keys(%{$test_name})) {
-                                my $test_np = $test_name->{$test_np_key};
 
-                                # For each cmd
-                                foreach my $test_cmd_key (keys(%{$test_np})) {
-                                    my $test_cmd = $test_np->{$test_cmd_key};
-
-                                    # Check to see if this was a
-                                    # successful test build
-                                    if ($test_cmd->{test_pass}) {
-#                                        print "FOUND SUCCESSFUL RUN\n";
-                                        1;
-                                    }
+                    $MTT::MPI::sources->{$mpi_get_key}->{refcount}++;
+                    
+                    # For each test name
+                    foreach my $test_name_key (keys(%{$test_run})) {
+                        my $test_name = $test_run->{$test_name_key};
+                        
+                        # For each np
+                        foreach my $test_np_key (keys(%{$test_name})) {
+                            my $test_np = $test_name->{$test_np_key};
+                            
+                            # For each cmd
+                            foreach my $test_cmd_key (keys(%{$test_np})) {
+                                my $test_cmd = $test_np->{$test_cmd_key};
+                                
+                                # Check to see if this was a
+                                # successful test build
+                                if (!$test_cmd->{test_pass}) {
+                                    $found_failed = 1;
+                                    last;
                                 }
                             }
+                            last if ($found_failed);
                         }
+                        last if ($found_failed);
                     }
+                    last if ($found_failed);
+                }
+                
+                # Is this a pass or fail?
+                if ($found_failed) {
+                    push(@failed, $test_build);
+                } else {
+                    push(@successful, $test_build);
                 }
             }
         }
     }
+
+    # Now we've got them all -- sort so that the oldest is first and
+    # the youngest is last.
+
+    print "Successful: $#successful\n";
+    print "Failed: $#failed\n";
+    sort _compare @successful;
+    _remove($save_successful_runs, "srcdir", \@successful);
+    sort _compare @failed;
+    _remove($save_failed_runs, "srcdir", \@failed);
 }
 
 #--------------------------------------------------------------------------
@@ -183,7 +221,24 @@ sub _trim_installs {
 sub _trim_gets {
 }
 
+#--------------------------------------------------------------------------
+
+sub _compare {
+    my ($a, $b) = @_;
+    return ($a->{timestamp} - $b->{timestamp});
+}
+
+#--------------------------------------------------------------------------
+
+sub _remove {
+    my ($num, $name, $entries) = @_;
+
+    print "Entries: $#$entries -- saving $num\n";
+    for (my $i = $#$entries - $num; $i >= 0; $i--) {
+        print Dumper($$entries[$i]);
+        print "$i: rm -rf " . $$entries[$i]->{$name} . "\n";
+    }
+}
+
 
 1;
-
-

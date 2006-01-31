@@ -29,7 +29,7 @@ my $latest_filename = "latest_snapshot.txt";
 #--------------------------------------------------------------------------
 
 sub Get {
-    my ($ini, $section, $unique_id, $force) = @_;
+    my ($ini, $section, $force) = @_;
 
     my $ret;
     my $data;
@@ -60,29 +60,26 @@ sub Get {
         next
             if ($section ne $mpi_section);
 
-        foreach my $mpi_unique (keys(%{$MTT::MPI::sources->{$section}})) {
-            my $source = $MTT::MPI::sources->{$section}->{$mpi_unique};
-            if ($source->{module_name} eq "MTT::MPI::Get::OMPI_Snapshot" &&
-                basename($source->{module_data}->{tarball}) eq
-                $tarball_name) {
+        my $source = $MTT::MPI::sources->{$section};
+        if ($source->{module_name} eq "MTT::MPI::Get::OMPI_Snapshot" &&
+            basename($source->{module_data}->{tarball}) eq
+            $tarball_name) {
 
-                # If we find one of the same name, that's good enough
-                # -- OMPI snapshot tarballs are named such that
-                # something of the same tarball name is guaranteed to
-                # be the same tarball
-                Debug(">> we have previously downloaded this tarball\n");
+            # If we find one of the same name, that's good enough
+            # -- OMPI snapshot tarballs are named such that
+            # something of the same tarball name is guaranteed to
+            # be the same tarball
+            Debug(">> we have previously downloaded this tarball\n");
 
-                # We have this tarball already.  If we're not forcing,
-                # return nothing.
-                return undef
-                    if (!$force);
-                Debug(">> but we're forcing, so we'll get a new one\n");
-
-                # If we are forcing, then reset to get a new copy
-                $unique_id = $ret->{unique_id} = $source->{unique_id};
-                $found = 1;
-                last;
-            }
+            # We have this tarball already.  If we're not forcing,
+            # return nothing.
+            return undef
+                if (!$force);
+            Debug(">> but we're forcing, so we'll get a new one\n");
+            
+            # If we are forcing, then reset to get a new copy
+            $found = 1;
+            last;
         }
 
         # If we found one, bail

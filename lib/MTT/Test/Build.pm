@@ -87,52 +87,43 @@ sub Build {
 
             # For each MPI source
             foreach my $mpi_get_key (keys(%{$MTT::MPI::installs})) {
-
-                # For each unique instance of that source
                 my $mpi_get = $MTT::MPI::installs->{$mpi_get_key};
-                foreach my $mpi_unique_key (keys(%{$mpi_get})) {
-                    my $mpi_unique = $mpi_get->{$mpi_unique_key};
 
-                    # For each installation of that unique instance
-                    foreach my $mpi_install_key (keys(%{$mpi_unique})) {
-                        my $mpi_install = $mpi_unique->{$mpi_install_key};
+                # For each installation of that source
+                foreach my $mpi_install_key (keys(%{$mpi_get})) {
+                    my $mpi_install = $mpi_get->{$mpi_install_key};
 
-                        # Ensure that this was a successful MPI install
-                        if (!$mpi_install->{success}) {
-                            Debug("Found MPI install $mpi_install->{section_name}, but it did not have success==1\n");
-                            next;
-                        }
-
-                        # See if we've already got a test build for
-                        # this MPI installation.  Test incrementally
-                        # so that it doesn't create each intermediate
-                        # key.
-                        if (!$force &&
-                            exists($MTT::Test::builds->{$mpi_get_key}) &&
-                            exists($MTT::Test::builds->{$mpi_get_key}->{$mpi_unique_key}) &&
-                            exists($MTT::Test::builds->{$mpi_get_key}->{$mpi_unique_key}->{$mpi_install_key}) &&
-                            exists($MTT::Test::builds->{$mpi_get_key}->{$mpi_unique_key}->{$mpi_install_key}->{$section})) {
-                            Verbose("   Already have a build for $mpi_install->{mpi_name} / [$mpi_install->{section_name}] / [$mpi_install->{mpi_get_section_name}]\n");
-                            next;
-                        }
-
-                        # We don't have a test build for this
-                        # particular unique MPI source instance.  So
-                        # cd into the MPI install tree for this
-                        # partiuclar unique MPI install.
-
-                        Verbose("   Building for $mpi_install->{mpi_name} / [$mpi_install->{section_name}] / [$mpi_install->{mpi_get_section_name}]\n");
-
-                        chdir($build_base);
-                        chdir(MTT::Files::make_safe_filename($mpi_install->{mpi_get_section_name}));
-                        chdir(MTT::Files::make_safe_filename($mpi_install->{mpi_unique_id}));
-                        chdir(MTT::Files::make_safe_filename($mpi_install->{section_name}));
-
-                        # Do the build and restore the environment
-                        _do_build($ini, $section, $build_base, $mpi_install);
-                        %ENV = %ENV_SAVE;
-                        Verbose("   Completed build\n");
+                    # Ensure that this was a successful MPI install
+                    if (!$mpi_install->{success}) {
+                        Debug("Found MPI install $mpi_install->{section_name}, but it did not have success==1\n");
+                        next;
                     }
+
+                    # See if we've already got a test build for this
+                    # MPI installation.  Test incrementally so that it
+                    # doesn't create each intermediate key.
+                    if (!$force &&
+                        exists($MTT::Test::builds->{$mpi_get_key}) &&
+                        exists($MTT::Test::builds->{$mpi_get_key}->{$mpi_install_key}) &&
+                        exists($MTT::Test::builds->{$mpi_get_key}->{$mpi_install_key}->{$section})) {
+                        Verbose("   Already have a build for $mpi_install->{mpi_name} / [$mpi_install->{section_name}] / [$mpi_install->{mpi_get_section_name}]\n");
+                        next;
+                    }
+
+                    # We don't have a test build for this particular
+                    # MPI source instance.  So cd into the MPI install
+                    # tree for this particular MPI install.
+
+                    Verbose("   Building for $mpi_install->{mpi_name} / [$mpi_install->{section_name}] / [$mpi_install->{mpi_get_section_name}]\n");
+
+                    chdir($build_base);
+                    chdir(MTT::Files::make_safe_filename($mpi_install->{mpi_get_section_name}));
+                    chdir(MTT::Files::make_safe_filename($mpi_install->{section_name}));
+
+                    # Do the build and restore the environment
+                    _do_build($ini, $section, $build_base, $mpi_install);
+                    %ENV = %ENV_SAVE;
+                    Verbose("   Completed build\n");
                 }
             }
         }
@@ -256,7 +247,6 @@ sub _do_build {
         $ret->{mpi_get_section_name} = $mpi_install->{mpi_get_section_name};
         $ret->{mpi_install_section_name} = $mpi_install->{section_name};
         $ret->{mpi_version} = $mpi_install->{mpi_version};
-        $ret->{mpi_unique_id} = $mpi_install->{mpi_unique_id};
         $ret->{timestamp} = timegm(gmtime());
 
         my $perfbase_xml = Value($ini, $section, "perfbase_xml");
@@ -289,7 +279,6 @@ sub _do_build {
             mpi_get_section_name => $mpi_install->{mpi_get_section_name},
             mpi_install_section_name => $mpi_install->{section_name},
             mpi_version => $mpi_install->{mpi_version},
-            mpi_unique_id => $mpi_install->{mpi_unique_id},
         };
         # On a successful build, skip the stdout -- only
         # keep the stderr (which will only be there if the
@@ -330,7 +319,7 @@ sub _do_build {
         
         # If it was a good build, save it
         if (1 == $ret->{success}) {
-            $MTT::Test::builds->{$mpi_install->{mpi_get_section_name}}->{$mpi_install->{mpi_unique_id}}->{$mpi_install->{section_name}}->{$section} = $ret;
+            $MTT::Test::builds->{$mpi_install->{mpi_get_section_name}}->{$mpi_install->{section_name}}->{$section} = $ret;
             MTT::Test::SaveBuilds($build_base);
         }
     }

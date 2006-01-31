@@ -151,37 +151,31 @@ sub Install {
 
             # For each MPI source
             foreach my $mpi_get_key (keys(%{$MTT::MPI::sources})) {
-                # For each unique instance of that source
                 my $mpi_get = $MTT::MPI::sources->{$mpi_get_key};
-                foreach my $mpi_unique_key (keys(%{$mpi_get})) {
-                    my $mpi_get = $mpi_get->{$mpi_unique_key};
-                    if ($mpi_get->{mpi_name} = $mpi_name) {
+                if ($mpi_get->{mpi_name} = $mpi_name) {
 
-                        # We found a corresponding MPI source.  Now
-                        # check to see if it has already been built.
-                        # Test incrementally so that it doesn't create
-                        # each intermediate key.
-                        Debug("Checking for $mpi_name [$mpi_get_key] / [$mpi_get->{section_name}] / $section\n");
-                        if (!$force &&
-                            exists($MTT::MPI::installs->{$mpi_get_key}) &&
-                            exists($MTT::MPI::installs->{$mpi_get_key}->{$mpi_unique_key}) &&
-                            exists($MTT::MPI::installs->{$mpi_get_key}->{$mpi_unique_key}->{$section})) {
-                            Verbose("   Already have an install for $mpi_name [$mpi_get->{section_name}]\n");
-                        } else {
-                            Verbose("   Installing MPI: $mpi_name / [$mpi_get->{section_name}]...\n");
+                    # We found a corresponding MPI source.  Now check
+                    # to see if it has already been built.  Test
+                    # incrementally so that it doesn't create each
+                    # intermediate key.
 
-                            chdir($install_base);
-                            my $mpi_dir = _make_safe_dir($mpi_get->{section_name});
-                            chdir($mpi_dir);
-                            $mpi_dir = _make_safe_dir($mpi_get->{unique_id});
-                            chdir($mpi_dir);
-                            
-                            # Install and restore the environment
-                            _do_install($section, $ini,
-                                        $mpi_get, $mpi_dir, $force);
-                            %ENV = %ENV_SAVE;
-                            Verbose("   Completed MPI install\n");
-                        }
+                    Debug("Checking for $mpi_name [$mpi_get_key] / [$mpi_get->{section_name}] / $section\n");
+                    if (!$force &&
+                        exists($MTT::MPI::installs->{$mpi_get_key}) &&
+                        exists($MTT::MPI::installs->{$mpi_get_key}->{$section})) {
+                        Verbose("   Already have an install for $mpi_name [$mpi_get->{section_name}]\n");
+                    } else {
+                        Verbose("   Installing MPI: $mpi_name / [$mpi_get->{section_name}]...\n");
+                        
+                        chdir($install_base);
+                        my $mpi_dir = _make_safe_dir($mpi_get->{section_name});
+                        chdir($mpi_dir);
+                        
+                        # Install and restore the environment
+                        _do_install($section, $ini,
+                                    $mpi_get, $mpi_dir, $force);
+                        %ENV = %ENV_SAVE;
+                        Verbose("   Completed MPI install\n");
                     }
                 }
             }
@@ -382,7 +376,6 @@ sub _do_install {
             mpi_name => $mpi_get->{mpi_name},
             mpi_get_section_name => $mpi_get->{section_name},
             mpi_version => $mpi_get->{version},
-            mpi_unique_id => $mpi_get->{unique_id},
 
             success => $ret->{success},
             result_message => $ret->{result_message},
@@ -435,7 +428,6 @@ sub _do_install {
         $ret->{mpi_name} = $mpi_get->{mpi_name};
         $ret->{mpi_get_section_name} = $mpi_get->{section_name};
         $ret->{mpi_version} = $mpi_get->{version};
-        $ret->{mpi_unique_id} = $mpi_get->{unique_id};
 
         # Some additional values
         $ret->{section_name} = $config->{section_name};
@@ -490,7 +482,7 @@ sub _do_install {
             }
 
             # Add the data in the global $MTT::MPI::installs table
-            $MTT::MPI::installs->{$mpi_get->{section_name}}->{$mpi_get->{unique_id}}->{$section} = $ret;
+            $MTT::MPI::installs->{$mpi_get->{section_name}}->{$section} = $ret;
             MTT::MPI::SaveInstalls($install_base);
         } else {
             Warning("Failed to install [$section]: $ret->{result_message}\n");

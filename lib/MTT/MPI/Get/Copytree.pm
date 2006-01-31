@@ -23,7 +23,7 @@ use MTT::Files;
 #--------------------------------------------------------------------------
 
 sub Get {
-    my ($ini, $section, $unique_id, $force) = @_;
+    my ($ini, $section, $force) = @_;
 
     my $ret;
     my $data;
@@ -46,29 +46,25 @@ sub Get {
         next
             if ($section ne $mpi_section);
 
-        foreach my $mpi_unique (keys(%{$MTT::MPI::sources->{$section}})) {
-            Debug(">> checking unique: $mpi_unique:\n");
-            my $source = $MTT::MPI::sources->{$section}->{$mpi_unique};
-            if ($source->{module_name} eq "MTT::MPI::Get::copytree" &&
-                $source->{module_data}->{src_directory} eq $data->{src_directory}) {
+        my $source = $MTT::MPI::sources->{$section};
+        if ($source->{module_name} eq "MTT::MPI::Get::copytree" &&
+            $source->{module_data}->{src_directory} eq $data->{src_directory}) {
 
-                # If we find a matching source directory, do a crude
-                # md5sum across the tree to see if we have an
-                # identical copy already
-                Debug(">> found matching directory\n");
-                chdir($source->{module_data}->{directory});
-                $md5 = MTT::Files::md5sum_tree(".");
-                if ($md5 eq $source->{module_data}->{md5sum}) {
-                    Debug(">> copytree: we already have this tree, and it hasn't changed\n");
-                    if ($force) {
-                        Debug(">> copytree: but we're forcing, so we'll copy it again anyway\n");
-                        $unique_id = $ret->{unique_id} = $source->{unique_id};
-                        $found = 1;
-                        last;
-                    }
-                    # If we're not forcing, then do nothing
-                    return undef;
+            # If we find a matching source directory, do a crude
+            # md5sum across the tree to see if we have an
+            # identical copy already
+            Debug(">> found matching directory\n");
+            chdir($source->{module_data}->{directory});
+            $md5 = MTT::Files::md5sum_tree(".");
+            if ($md5 eq $source->{module_data}->{md5sum}) {
+                Debug(">> copytree: we already have this tree, and it hasn't changed\n");
+                if ($force) {
+                    Debug(">> copytree: but we're forcing, so we'll copy it again anyway\n");
+                    $found = 1;
+                    last;
                 }
+                # If we're not forcing, then do nothing
+                return undef;
             }
         }
 
@@ -81,15 +77,13 @@ sub Get {
 
     # Copy the tree locally
     Debug(">> copytree: caching\n");
-    my $dir = MTT::Files::mkdir($unique_id);
-    chdir($dir);
 
     # Lie a little to PrepareForInstall (don't set pre_copy and
     # post_copy yet -- they're not relevant until we actually copy for
     # build/install).  And set "directory" to be the "src_directory".
     $data->{directory} = $data->{src_directory};
     $ret->{module_data} = $data;
-    $dir = PrepareForInstall($ret, $dir);
+    $dir = PrepareForInstall($ret, cwd());
     return undef
         if (!$dir);
     

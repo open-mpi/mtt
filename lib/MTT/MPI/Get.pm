@@ -89,9 +89,6 @@ sub _do_get {
         return;
     }
     
-    # Make a new unique ID
-    my $unique_id = strftime("timestamp-%m%d%Y-%H%M%S", gmtime);
-
     # Make a directory just for this section
     chdir($source_dir);
     my $section_dir = MTT::Files::make_safe_filename($section);
@@ -100,7 +97,7 @@ sub _do_get {
 
     # Run the module
     my $ret = MTT::Module::Run("MTT::MPI::Get::$module",
-                               "Get", $ini, $section, $unique_id, $force);
+                               "Get", $ini, $section, $force);
     
     # Did we get a source tree back?
     if ($ret) {
@@ -110,13 +107,11 @@ sub _do_get {
         # Save other values from the section
         $ret->{section_name} = $section;
         $ret->{mpi_name} = $mpi_name;
-        $ret->{unique_id} = $unique_id
-            if (!$ret->{unique_id});
         $ret->{module_name} = "MTT::MPI::Get::$module";
         $ret->{timestamp} = timegm(gmtime());
 
         # Add this into the $MPI::sources hash
-        $MTT::MPI::sources->{$section}->{$ret->{unique_id}} = $ret;
+        $MTT::MPI::sources->{$section} = $ret;
 
         # Save the data file recording all the sources
         MTT::MPI::SaveSources($source_dir);

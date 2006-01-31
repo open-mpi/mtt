@@ -23,7 +23,7 @@ use MTT::MPI::Get;
 #--------------------------------------------------------------------------
 
 sub Get {
-    my ($ini, $section, $unique_id, $force) = @_;
+    my ($ini, $section, $force) = @_;
 
     my $ret;
     my $data;
@@ -54,7 +54,6 @@ sub Get {
                 if ($force) {
                     Debug(">> We have this svn already, but we're forcing, so unconditionally re-export\n");
 
-                    $unique_id = $ret->{unique_id} = $source->{unique_id};
                     last;
                 } else {
 
@@ -65,7 +64,6 @@ sub Get {
                     my $x = MTT::DoCommand::Cmd(1, "svn log -r $source->{module_data}->{r}:HEAD $data->{url}");
                     if (0 != $x->{status}) {
                         Warning("Can't check repository properly; going to assume we need a new checkout\n");
-                        $unique_id = $ret->{unique_id} = $source->{unique_id};
                         last;
                     } else {
 
@@ -119,7 +117,7 @@ sub Get {
 
     # Cache it
     Debug(">> svn: exporting\n");
-    my $dir = MTT::Files::mkdir($unique_id);
+    my $dir = cwd();
     my $svn_username = Value($ini, $section, "svn_username");
     my $svn_password = Value($ini, $section, "svn_password");
     my $svn_password_cache = Value($ini, $section, "svn_password_cache");
