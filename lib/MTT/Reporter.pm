@@ -158,9 +158,13 @@ sub Init {
 #--------------------------------------------------------------------------
 
 sub Finalize {
+    Verbose("*** Reporter finalizing\n");
+
     foreach my $m (@modules) {
         MTT::Module::Run("MTT::Reporter::$m", "Finalize");
     }
+
+    Verbose("*** Reporter finalized\n");
 }
 
 #--------------------------------------------------------------------------
