@@ -85,7 +85,7 @@ require MTT::Messages;
 #require MTT::Reporter;
 #require MTT::Constants;
 require MTT::FindProgram;
-#require MTT::Trim;
+require MTT::DoCommand;
 
 
 my $SEP = "=====================================================================\n";
@@ -157,6 +157,17 @@ MTT::Messages::Messages($debug, $verbose);
 MTT::Messages::Debug("Debug is $debug, Verbose is $verbose\n");
 
 
+# Grab the current time/date, subtract a date, and return a string
+#  in "mmm d yyyy" format.
+sub GetYesterday {
+    my $time = time();
+
+    $time = $time() - 24 * 60 * 60; # Go back in time one day.
+    my ($seconds, $minutes, $hours, $daymonth, $month, $year) = gmtime($time);
+    return "$month-$daymonth-$year";
+}
+
+
 # Take a line of input, and if it is the column header line,
 #  return an array containing the column headers.  Otherwise, return undef.
 sub ParseHeaders {
@@ -194,7 +205,6 @@ sub MPIInstallOutput {
         "Configure Arguments: $results{'configure_arguments'}\n" .
         "Start Date: $results{'start_timestamp'}\n" .
         "Finish Date: $results{'stop_timestamp'}\n\n" .
-        "Result: $results{'result_message'}\n\n" .
         "Environment:\n$results{'environment'}\n\n" .
         "Stdout:\n$results{'stdout'}\n\n" .
         "Stderr:\n$results{'stderr'}\n";
@@ -204,12 +214,13 @@ sub MPIInstallOutput {
 
 
 # Generate a report concerning recent MPI Installs
-sub MPIInstallReport {
+sub DoReport {
     my ($xml, $outputfn) = @_;
 
     # Run the perfbase query
-    MTT::Messages::Debug("Running query: $perfbase_arg -d $xml|");
-    my %ret = MTT::DoCommand::Cmd(1, "$perfbase_arg -d $xml|", 60);
+    my $cmd = "$perfbase_arg -f f.date='" . GetYesterday() . "' -d $xml");
+    MTT::Messages::Debug("Running query: $cmd");
+    my %ret = MTT::DoCommand::Cmd(1, "$cmd|", 60);
     if($ret{status}) {
         MTT::Messages::Warning("Perfbase query failed! Aborting report\n");
         MTT::Messages::Verbose(
@@ -249,9 +260,9 @@ sub MPIInstallReport {
 }
 
 
-if($mpi_install_arg) {
-    MPIInstallReport($mpi_install_arg, MPIInstallOutput);
-}
+DoReport($mpi_install_arg, MPIInstallOutput) if($mpi_install_arg);
+DoReport($mpi_install_arg, TestBuildOutput) if($test_build_arg);
+DoReport($mpi_install_arg, TestRunOutput) if($test_run_arg);
 
 print "$mailbody\n";
 # TODO: Only show results in the past day

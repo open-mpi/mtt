@@ -24,17 +24,17 @@
     <description></description>
   </info>
 
-  <parameter occurence="once">
+  <result occurence="once">
     <name>mtt_version_major</name>
     <synopsis>MTT major version</synopsis>
     <datatype>integer</datatype>
-  </parameter>
+  </result>
 
-  <parameter occurence="once">
+  <result occurence="once">
     <name>mtt_version_minor</name>
     <synopsis>MTT minor version</synopsis>
     <datatype>integer</datatype>
-  </parameter>
+  </result>
 
   <result occurence="once">
     <name>hostname</name>
@@ -144,7 +144,6 @@
     <default>not specified</default>
     <datatype>string</datatype>
   </result>
-
 
   <parameter occurence="once">
     <name>success</name>

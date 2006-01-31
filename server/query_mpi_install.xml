@@ -42,7 +42,6 @@
     <result>configure_arguments</result>
     <result>start_timestamp</result>
     <result>stop_timestamp</result>
-    <result>result_message</result>
     <result>environment</result>
     <result>stdout</result>
     <result>stderr</result>

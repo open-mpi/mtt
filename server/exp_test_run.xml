@@ -21,140 +21,134 @@
     </performed_by> 
     <project>MPI Testing Tool</project>
     <synopsis>Results of MTT MPI test suite runs</synopsis>
-    <description>
-      We want to store the results and parameters of various MPI test suite
-      runs for later reference.
-    </description>
+    <description></description>
   </info>
 
-
-  <parameter occurence="once">
+  <result occurence="once">
     <name>mtt_version_major</name>
     <synopsis>MTT major version</synopsis>
     <datatype>integer</datatype>
-  </parameter>
+  </result>
 
-  <parameter occurence="once">
+  <result occurence="once">
     <name>mtt_version_minor</name>
     <synopsis>MTT minor version</synopsis>
     <datatype>integer</datatype>
-  </parameter>
+  </result>
 
-  <parameter occurence="once">
+  <result occurence="once">
     <name>hostname</name>
     <synopsis>host name</synopsis>
     <datatype>string</datatype>
-  </parameter>
+  </result>
 
-  <parameter occurence="once">
+  <result occurence="once">
     <name>os_name</name>
     <synopsis>operating system name</synopsis>
     <default>not specified</default>
     <datatype>string</datatype>
-  </parameter>
+  </result>
 
-  <parameter occurence="once">
+  <result occurence="once">
     <name>os_version</name>
     <synopsis>operating system version</synopsis>
     <default>not specified</default>
     <datatype>string</datatype>
-  </parameter>
+  </result>
 
-  <parameter occurence="once">
+  <result occurence="once">
     <name>platform_hardware</name>
     <synopsis>platform architecture</synopsis>
     <default>not specified</default>
     <datatype>string</datatype>
-  </parameter>
+  </result>
 
-  <parameter occurence="once">
+  <result occurence="once">
     <name>platform_type</name>
     <synopsis>platform os/architecture</synopsis>
     <default>not specified</default>
     <datatype>string</datatype>
-  </parameter>
+  </result>
 
-  <parameter occurence="once">
+  <result occurence="once">
     <name>mpi_name</name>
     <synopsis>MPI name</synopsis>
     <datatype>string</datatype>
-  </parameter>
+  </result>
 
-  <parameter occurence="once">
+  <result occurence="once">
     <name>mpi_get_section_name</name>
     <synopsis>MPI get section name</synopsis>
     <default>not specified</default>
     <datatype>string</datatype>
-  </parameter>
+  </result>
 
-  <parameter occurence="once">
+  <result occurence="once">
     <name>mpi_install_section_name</name>
     <synopsis>MPI install section name</synopsis>
     <default>not specified</default>
     <datatype>string</datatype>
-  </parameter>
+  </result>
 
-  <parameter occurence="once">
+  <result occurence="once">
     <name>mpi_version</name>
     <synopsis>MPI version</synopsis>
     <datatype>string</datatype>
-  </parameter>
+  </result>
 
-  <parameter occurence="once">
+  <result occurence="once">
     <name>platform_id</name>
     <synopsis>platform identifier</synopsis>
     <default>not specified</default>
     <datatype>string</datatype>
-  </parameter>
+  </result>
 
-  <parameter occurence="once">
+  <result occurence="once">
     <name>stdout_stderr_combined</name>
     <synopsis>true if stdout and stderr are combined output</synopsis>
     <default>false</default>
     <datatype>boolean</datatype>
-  </parameter>
+  </result>
   
-  <parameter occurence="multiple">
+  <result occurence="once">
     <name>environment</name>
     <synopsis>environment the run was performed in</synopsis>
     <default>not specified</default>
     <datatype>string</datatype>
-  </parameter>
+  </result>
  
-  <parameter occurence="once">
+  <result occurence="once">
     <name>test_run_section_name</name>
     <synopsis>test run section name</synopsis>
     <default>not specified</default>
     <datatype>string</datatype>
-  </parameter>
+  </result>
 
-  <parameter occurence="once">
+  <result occurence="once">
     <name>test_build_section_name</name>
     <synopsis>test build section name</synopsis>
     <default>not specified</default>
     <datatype>string</datatype>
-  </parameter>
+  </result>
 
-  <parameter occurence="once">
+  <result occurence="once">
     <name>test_command</name>
     <synopsis>full mpirun command line for this test</synopsis>
     <default>not specified</default>
     <datatype>string</datatype>
-  </parameter>
+  </result>
 
-  <parameter occurence="once">
+  <result occurence="once">
     <name>test_name</name>
     <synopsis>name of test being run</synopsis>
     <datatype>string</datatype>
-  </parameter>
+  </result>
 
-  <parameter occurence="once">
+  <result occurence="once">
     <name>test_np</name>
     <synopsis>number of processing elements used for test</synopsis>
     <datatype>integer</datatype>
-  </parameter>
-
-  <!--------------------------------------------------------------- -->
+  </result>
 
   <result occurence="once">
     <name>test_message</name>
@@ -163,31 +157,31 @@
     <datatype>string</datatype>
   </result>
 
-  <result occurence="once">
+  <parameter occurence="once">
     <name>test_pass</name>
     <synopsis>whether or not the test passed</synopsis>
     <datatype>boolean</datatype>
-  </result>
+  </parameter>
 
-  <result occurence="multiple">
+  <result occurence="once">
     <name>stderr</name>
     <synopsis>stderr output from run</synopsis>
     <default>not specified</default>
     <datatype>text</datatype>
   </result>
 
-  <result occurence="multiple">
+  <result occurence="once">
     <name>stdout</name>
     <synopsis>stdout output from run</synopsis>
     <default>not specified</default>
     <datatype>text</datatype>
   </result>
   
-  <result occurence="once">
+  <parameter occurence="once">
     <name>submit_timestamp</name>
     <synopsis>date and time the run results were submitted</synopsis>
     <datatype>timestamp</datatype>
-  </result>
+  </parameter>
 
   <result occurence="once">
     <name>start_timestamp</name>

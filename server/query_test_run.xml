@@ -11,11 +11,11 @@
  
 -->
 
-<query id="test build status report">
-  <experiment>mtt_test_build</experiment>
+<query id="test run status report">
+  <experiment>mtt_test_run</experiment>
 
-  <parameter id="p.success">
-    <value>success</value>
+  <parameter id="p.pass">
+    <value>test_pass</value>
     <filter>
       <equal>true</equal>
     </filter>
@@ -30,7 +30,9 @@
 
   <source id="src.result">
     <input>p.date</input>
-    <input>p.success</input>
+    <input>p.pass</input>
+    <result>test_name</result>
+    <result>test_command</result>
     <result>mpi_name</result>
     <result>mpi_version</result>
     <result>hostname</result>
