@@ -115,7 +115,7 @@ my $ok = Getopt::Long::GetOptions("mpi-install=s" => \$mpi_install_arg,
                                   "debug|d=s" => \$debug_arg,
                                   "verbose|v=s" => \$verbose_arg,
                                   "version=s" => \$version_arg,
-                                  "help=s" -> \$help_arg);
+                                  "help=s" => \$help_arg);
 
 if($version_arg) {
     print "MTT Version $MTT::Version::Major.$MTT::Version::Minor\n";
@@ -147,7 +147,7 @@ if(!$ok || $help_arg) {
 # Set up defaults
 $perfbase_arg = MTT::FindProgram::FindProgram(qw(perfbase))
     unless $perfbase_arg;
-$email_arg = "afriedle@open-mpi.org" unless $email_arg;
+$email_arg = "afriedle\@open-mpi.org" unless $email_arg;
 
 
 # Check debug
@@ -160,11 +160,13 @@ MTT::Messages::Debug("Debug is $debug, Verbose is $verbose\n");
 # Grab the current time/date, subtract a date, and return a string
 #  in "mmm d yyyy" format.
 sub GetYesterday {
-    my $time = time();
+    my @names =
+            ("jan", "feb", "mar", "april", "may", "jun", "july", "aug", "sep");
 
-    $time = $time() - 24 * 60 * 60; # Go back in time one day.
+    my $time = time() - 24 * 60 * 60; # Go back in time one day.
     my ($seconds, $minutes, $hours, $daymonth, $month, $year) = gmtime($time);
-    return "$month-$daymonth-$year";
+    $year += 1900;
+    return "$names[$month]-$daymonth-$year";
 }
 
 
@@ -218,9 +220,9 @@ sub DoReport {
     my ($xml, $outputfn) = @_;
 
     # Run the perfbase query
-    my $cmd = "$perfbase_arg -f f.date='" . GetYesterday() . "' -d $xml");
+    my $cmd = "$perfbase_arg query -f f.date='" . GetYesterday() . "' -d $xml";
     MTT::Messages::Debug("Running query: $cmd");
-    my %ret = MTT::DoCommand::Cmd(1, "$cmd|", 60);
+    my %ret = MTT::DoCommand::Cmd(1, $cmd, 60);
     if($ret{status}) {
         MTT::Messages::Warning("Perfbase query failed! Aborting report\n");
         MTT::Messages::Verbose(
@@ -260,13 +262,9 @@ sub DoReport {
 }
 
 
-DoReport($mpi_install_arg, MPIInstallOutput) if($mpi_install_arg);
-DoReport($mpi_install_arg, TestBuildOutput) if($test_build_arg);
-DoReport($mpi_install_arg, TestRunOutput) if($test_run_arg);
+my $body = DoReport($mpi_install_arg, MPIInstallOutput) if($mpi_install_arg);
+#DoReport($mpi_install_arg, TestBuildOutput) if($test_build_arg);
+#DoReport($mpi_install_arg, TestRunOutput) if($test_run_arg);
 
-print "$mailbody\n";
-# TODO: Only show results in the past day
-# Actually send off the email..
-# Get the current date in seconds since epoch
-# subtract 60*60*24 seconds from the current date
+print "$body\n";
 
