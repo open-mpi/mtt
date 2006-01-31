@@ -178,11 +178,11 @@
     <datatype>text</datatype>
   </result>
   
-  <result occurence="once">
+  <parameter occurence="once">
     <name>submit_timestamp</name>
     <synopsis>date and time the build results were submitted</synopsis>
     <datatype>timestamp</datatype>
-  </result>
+  </parameter>
 
   <result occurence="once">
     <name>start_timestamp</name>

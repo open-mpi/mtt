@@ -14,6 +14,19 @@
 <query id="test build status report">
   <experiment>mtt_mpi_install</experiment>
 
+
+  <run id="r.date">
+    <performed>
+      <to>
+        <date>
+          <day>1</day>
+          <month>Jan</month>
+          <year>2000</year>
+        </date>
+      </to>
+    </performed>
+  </run>
+
   <parameter id="p.result">
     <value>result_message</value>
     <filter>
@@ -21,7 +34,15 @@
     </filter>
   </parameter>
 
+  <parameter id="p.date">
+    <value>submit_timestamp</value>
+    <filter>
+      <greaterequal>f.date</greaterequal>
+    </filter>
+  </parameter>
+
   <source id="src.result">
+    <input>p.date</input>
     <result>success</result>
     <result>mpi_name</result>
     <result>mpi_version</result>

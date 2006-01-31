@@ -11,12 +11,107 @@
 
 use strict;
 use Data::Dumper;
+use Getopt::Long;
+use File::Basename;
+use Cwd;
+
+# Try to find the MTT files.  Assume that mtt executable is in the
+# base directory for the MTT files.  Try three methods:
+
+# 1. With no effort; see if we can just "require" and find MTT files.
+# 2. If $0 is a path, try adding that do @INC and try "require" again.
+# 3. Otherwise, search $ENV[PATH] for mtt, and when you find it, add
+#    that directory to @INC and try again.
+
+use lib cwd() . "/lib";
+
+my $ret;
+eval "\$ret = require MTT::Version";
+if (1 != $ret) {
+    my $dir = dirname($0);
+    my @INC_save = @INC;
+
+    # Change to the dir of $0 (because it might be a relative
+    # directory) and add the cwd() to @INC
+    my $start_dir = cwd();
+    chdir($dir);
+    chdir("..");
+    push(@INC, cwd() . "/lib");
+    chdir($start_dir);
+    eval "\$ret = require MTT::Version";
+
+    # If it didn't work, restore @INC and try looking for mtt in the
+    # path
+
+    if (1 != $ret) {
+        @INC = @INC_save;
+        my @dirs = split(/:/, $ENV{PATH});
+        my $mtt = basename($0);
+        foreach my $dir (@dirs) {
+
+            # If we found the mtt executable, add the dir to @INC and
+            # see if we can "require".  If require fails, restore @INC
+            # and keep trying.
+            if (-x "$dir/$mtt") {
+                chdir($dir);
+                chdir("..");
+                push(@INC, cwd() . "/lib");
+                chdir($start_dir);
+                eval "\$ret = require MTT::Version";
+                if (1 == $ret) {
+                    last;
+                } else {
+                    @INC = @INC_save;
+                }
+            }
+        }
+    }
+
+    # If we didn't find them, die.
+    die "Unable to find MTT support libraries"
+        if (0 == $ret);
+}
+
+# Must use "require" (run-time) for all of these, not "use"
+# (compile-time)
+
+require Config::IniFiles;
+require MTT::Version;
+#require MTT::MPI;
+#require MTT::Test;
+#require MTT::Files;
+require MTT::Messages;
+#require MTT::INI;
+#require MTT::Reporter;
+#require MTT::Constants;
+require MTT::FindProgram;
+#require MTT::Trim;
+
 
 my $PBCMD = "perfbase query -d query_mpi_install.xml";
 my $SEP = "=====================================================================\n";
 my $LINETOKEN = "XXXXX";
 
 
+# Let's take some command line arguments here.
+# --xml|-x          query xml file to use
+# --perfbase|-p     location of perfbase program
+# --email|-e        email address to send report to
+# --debug|-d        enable debug output
+# --verbose|-v      enable verbose output
+my $xml_arg;
+my $perfbase_arg;
+my $email_arg;
+my $debug_arg;
+my $verbose_arg;
+my $version_arg;
+
+# TODO - take the stdout_stderr_combined field into account in output
+#  make it clear that they are combined or not
+# should probably hide stdout if none is given
+
+&Getopt::Long::Configure("bundling", "require_order");
+my $ok = Getopt::Long::GetOptions("xml|x=s" => \$xml_arg
 
 # Take a line of input, and if it is the column header line,
 #  return an array containing the column headers.  Otherwise, return undef.
@@ -130,4 +225,13 @@ print "$mailbody\n";
 # TODO: Only show results in the past day
 # Sum up success/failure counts
 # Actually send off the email..
+
+# Get the current date in seconds since epoch
+# subtract 60*60*24 seconds from the current date
+# convert that to perfbase format:
+# <date>
+#  <month>x</month>
+#  <day>y</day>
+#  <year>z</year>
+# </date>
 
