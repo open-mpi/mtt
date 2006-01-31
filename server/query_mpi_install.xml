@@ -11,26 +11,13 @@
  
 -->
 
-<query id="test build status report">
+<query id="MPI install status report">
   <experiment>mtt_mpi_install</experiment>
 
-
-  <run id="r.date">
-    <performed>
-      <to>
-        <date>
-          <day>1</day>
-          <month>Jan</month>
-          <year>2000</year>
-        </date>
-      </to>
-    </performed>
-  </run>
-
-  <parameter id="p.result">
-    <value>result_message</value>
+  <parameter id="p.success">
+    <value>success</value>
     <filter>
-      <all></all>
+      <equal>true</equal>
     </filter>
   </parameter>
 
@@ -43,7 +30,7 @@
 
   <source id="src.result">
     <input>p.date</input>
-    <result>success</result>
+    <input>p.success</input>
     <result>mpi_name</result>
     <result>mpi_version</result>
     <result>mpi_unique_id</result>
@@ -56,7 +43,7 @@
     <result>configure_arguments</result>
     <result>start_timestamp</result>
     <result>stop_timestamp</result>
-    <input>p.result</input>
+    <result>result_message</result>
     <result>environment</result>
     <result>stdout</result>
     <result>stderr</result>

@@ -152,17 +152,17 @@
   </result>
 
 
-  <result occurence="once">
+  <parameter occurence="once">
     <name>success</name>
     <synopsis>true if build was successful</synopsis>
     <datatype>boolean</datatype>
-  </result>
+  </parameter>
 
-  <parameter occurence="once">
+  <result occurence="once">
     <name>result_message</name>
     <synopsis>one-line summary of build result</synopsis>
     <datatype>string</datatype>
-  </parameter>
+  </result>
 
   <result occurence="once">
     <name>stderr</name>
