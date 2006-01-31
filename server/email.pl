@@ -93,25 +93,64 @@ my $SEP = "=====================================================================
 my $LINETOKEN = "XXXXX";
 
 
-# Let's take some command line arguments here.
-# --xml|-x          query xml file to use
-# --perfbase|-p     location of perfbase program
-# --email|-e        email address to send report to
-# --debug|-d        enable debug output
-# --verbose|-v      enable verbose output
-my $xml_arg;
+my $mpi_install_arg;
+my $test_build_arg;
+my $test_run_arg;
 my $perfbase_arg;
 my $email_arg;
 my $debug_arg;
 my $verbose_arg;
 my $version_arg;
+my $help_arg;
 
 # TODO - take the stdout_stderr_combined field into account in output
 #  make it clear that they are combined or not
 # should probably hide stdout if none is given
 
 &Getopt::Long::Configure("bundling", "require_order");
-my $ok = Getopt::Long::GetOptions("xml|x=s" => \$xml_arg
+my $ok = Getopt::Long::GetOptions("mpi-install=s" => \$mpi_install_arg,
+                                  "test-build=s" => \$test_build_arg,
+                                  "test-run=s" => \$test_run_arg,
+                                  "perfbase|p=s" => \$perfbase_arg,
+                                  "email|e=s" => \$email_arg,
+                                  "debug|d=s" => \$debug_arg,
+                                  "verbose|v=s" => \$verbose_arg,
+                                  "version=s" => \$version_arg,
+                                  "help=s" -> \$help_arg);
+
+if($version_arg) {
+    print "MTT Version $MTT::Version::Major.$MTT::Version::Minor\n";
+    exit(0);
+}
+if(!$mpi_install_arg && !$test_build_arg && !$test_run_arg) {
+    print "Must specify at least one of --mpi-install, --test-build, or\n",
+          "--test-run arguments.\n";
+    $ok = 0;
+}
+
+if(!$ok || $help_arg) {
+    print("Command line error\n") if(!$ok);
+
+    print "Options:
+--mpi-install <mpi install xml>     Specify the MPI install query XML
+--test-build <test build xml>       Specify the test build query XML
+--test-run <test run xml>           Specify the test run query XML
+--perfbase <full path>              Location of perfbase binary
+--email|e <send address>            Address to email reports to
+--debug|d                           Debug mode enable
+--verbose|v                         Verbose mode enable
+--version                           MTT version information
+--help}h                            This help message\n";
+
+    exit($ok);
+}
+
+# Check debug
+my $debug = $debug_arg ? 1 : 0;
+my $verbose = $verbose_arg ? 1 : 0;
+MTT::Messages::Messages($debug, $verbose);
+MTT::Messages::Debug("Debug is $debug, Verbose is $verbose\n");
+
 
 # Take a line of input, and if it is the column header line,
 #  return an array containing the column headers.  Otherwise, return undef.
@@ -123,9 +162,9 @@ sub ParseHeaders {
     return undef unless $line =~ /^# /;
 
     # Must be column header line.. break it up!
-    $line =~ s/^# //;
+    $line =~ s/^# (.+\[\])+//;
     $line =~ s/\[\]//g;
-    @columns = split(/	/, $line);    # Literal TAB matched
+    @columns = split(/\t/, $line);
 
     return @columns;
 }
@@ -143,8 +182,7 @@ sub GenOutput {
     $results{'stderr'} =~ s/$LINETOKEN/\n/g;
 
     my $output = $SEP .
-        "MPI Name: $results{'mpi_name'} $results{'mpi_version'}\n" .
-        "MPI Unique ID: $results{'mpi_unique_id'}\n\n" .
+        "MPI Name: $results{'mpi_name'} $results{'mpi_version'}\n\n" .
         "Hostname: $results{'hostname'}\n" .
         "Operating System: $results{'os_version'}\n" .
         "Platform Type: $results{'platform_type'}\n" .
@@ -179,10 +217,6 @@ for(@output) {
     last if defined(@columns);
 }
 
-#for(@columns) {
-#    print "'$_'\n";
-#}
-
 
 # Now we have the field names in an array.
 # Loop over each line, putting all the results for that line into a hash.
@@ -199,7 +233,7 @@ for(@output) {
     print ("line: $_\n");
     my $i = 0;
     my %results;
-    for(split(/	/, $_)) {    # Literal TAB matched
+    for(split(/\t/, $_)) {
         $_ =~ s/ *$//;
         $results{$columns[$i]} = $_;
         $i++;
@@ -228,10 +262,4 @@ print "$mailbody\n";
 
 # Get the current date in seconds since epoch
 # subtract 60*60*24 seconds from the current date
-# convert that to perfbase format:
-# <date>
-#  <month>x</month>
-#  <day>y</day>
-#  <year>z</year>
-# </date>
 

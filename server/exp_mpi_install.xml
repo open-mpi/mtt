@@ -112,12 +112,6 @@
   </result>
 
   <result occurence="once">
-    <name>mpi_unique_id</name>
-    <synopsis>MPI unique identifier</synopsis>
-    <datatype>string</datatype>
-  </result>
-
-  <result occurence="once">
     <name>mpi_version</name>
     <synopsis>MPI version</synopsis>
     <datatype>string</datatype>

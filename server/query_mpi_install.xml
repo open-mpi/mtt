@@ -33,7 +33,6 @@
     <input>p.success</input>
     <result>mpi_name</result>
     <result>mpi_version</result>
-    <result>mpi_unique_id</result>
     <result>hostname</result>
     <result>os_version</result>
     <result>platform_type</result>

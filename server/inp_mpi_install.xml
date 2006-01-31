@@ -80,11 +80,6 @@
   </named_location>
 
   <named_location len="0">
-    <name>mpi_unique_id</name>
-    <match>mpi_unique_id: </match>
-  </named_location>
-
-  <named_location len="0">
     <name>mpi_version</name>
     <match>mpi_version: </match>
   </named_location>
