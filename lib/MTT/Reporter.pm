@@ -74,16 +74,16 @@ sub GetID {
 #--------------------------------------------------------------------------
 
 sub MakeReportString {
-    my ($report, $delimiter) = @_;
+    my ($report, $delimiter, $multiline_separator) = @_;
 
     my $str;
-    _stringify(\$str, $cache, $delimiter);
-    _stringify(\$str, $report, $delimiter);
+    _stringify(\$str, $cache, $delimiter, $multiline_separator);
+    _stringify(\$str, $report, $delimiter, $multiline_separator);
     return $str;
 }
 
 sub _stringify {
-    my ($str, $hash, $delimiter) = @_;
+    my ($str, $hash, $delimiter, $multiline_separator) = @_;
 
     $delimiter = ":"
         if (!$delimiter);
@@ -94,8 +94,10 @@ sub _stringify {
         my $val = $hash->{$k};
 
         # Huersitic: if there are any newlines in the original string,
-        # we want this to be a multi-line output.
-        my $want_multi = ($val =~ /\n/);
+        # we want this to be a multi-line output.  But only if we
+        # haven't defined a multi-line separator, in which case we'll
+        # be smushing the whole thing into a single line anyway.
+        my $want_multi = ($val =~ /\n/) && !defined($multiline_separator);
 
         # Trim off leading and trailing blank lines and any final \n's
         # (from perlfaq4(1))
@@ -109,6 +111,10 @@ sub _stringify {
             if ($want_multi) {
                 $$str .= "\n$val\n\n";
             } else {
+                # If we have a multi-line separator, convert all \n's
+                # to it
+                $val =~ s/\n/$multiline_separator/g
+                    if (defined($multiline_separator));
                 $$str .= "$val\n";
             }
         } else {

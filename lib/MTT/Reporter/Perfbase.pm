@@ -124,7 +124,11 @@ sub Submit {
                 # (without understanding the perfbase XML).
                 MTTVERSION_MAJOR => $MTT::Version::Major,
                 MTTVERSION_MINOR => $MTT::Version::Minor,
-                PBINPUT => MTT::Reporter::MakeReportString($report, ": "),
+                # We can't currently set multi-line outputs in
+                # perfbase (0.7.8a), so we smush them together with a
+                # non-ASCII delimiter (chr(129)).
+                PBINPUT => MTT::Reporter::MakeReportString($report, ": ",
+                                                           chr(129)),
                 PBXML => $xml,
             };
 
