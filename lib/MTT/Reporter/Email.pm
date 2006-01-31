@@ -15,6 +15,7 @@ use strict;
 use POSIX qw(strftime);
 use MTT::Messages;
 use MTT::FindProgram;
+use MTT::Mail;
 use MTT::Values;
 use Data::Dumper;
 
@@ -55,43 +56,15 @@ sub Init {
     $sep = "============================================================================"
         if (!$sep);
 
-    # Find a mail agent
-
-    $mail_agent = FindProgram(qw(Mail mailx mail));
-    if (!defined($mail_agent)) {
-        Warning("Could not find a mail agent for Email Reporter section [$section]; skipping this section");
-        return undef;
+    # Setup the mailer
+    if (!MTT::Mail::Init()) {
+        Debug("Failed to setup Email reporter\n");
+        return 0;
     }
-
-    # Save a copy of the environment; we use this later
-
-    %ENV_original = %ENV;
 
     Debug("Email reporter initialized ($to, $subject)\n");
 
     1;
-}
-
-#--------------------------------------------------------------------------
-
-sub _invoke_mail_agent {
-    my ($subject, $to, $body) = @_;
-
-    # Use our "good" environment (e.g., one with TMPDIR set properly)
-
-    my %ENV_now = %ENV;
-    %ENV = %ENV_original;
-
-    # Invoke the mail agent to send the mail
-
-    open MAIL, "|$mail_agent -s \"$subject\" \"$to\"" ||
-        die "Could not open pipe to output e-mail\n";
-    print MAIL "$body\n";
-    close MAIL;
-
-    # Restore the old environment
-
-    %ENV = %ENV_now;
 }
 
 #--------------------------------------------------------------------------
@@ -129,7 +102,7 @@ sub Submit {
 
     # Now send it
     
-    _invoke_mail_agent($s, $to, $body);
+    MTT::Mail::Send($s, $to, $body);
     Verbose(">> Reported to $to\n");
 }
 
