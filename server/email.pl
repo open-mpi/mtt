@@ -88,7 +88,6 @@ require MTT::FindProgram;
 #require MTT::Trim;
 
 
-my $PBCMD = "perfbase query -d query_mpi_install.xml";
 my $SEP = "=====================================================================\n";
 my $LINETOKEN = "XXXXX";
 
@@ -140,10 +139,16 @@ if(!$ok || $help_arg) {
 --debug|d                           Debug mode enable
 --verbose|v                         Verbose mode enable
 --version                           MTT version information
---help}h                            This help message\n";
+--help|h                            This help message\n";
 
     exit($ok);
 }
+
+# Set up defaults
+$perfbase_arg = MTT::FindProgram::FindProgram(qw(perfbase))
+    unless $perfbase_arg;
+$email_arg = "afriedle@open-mpi.org" unless $email_arg;
+
 
 # Check debug
 my $debug = $debug_arg ? 1 : 0;
@@ -171,10 +176,8 @@ sub ParseHeaders {
 
 
 # Take a hash of results and generate text output
-sub GenOutput {
+sub MPIInstallOutput {
     my (%results) = @_;
-
-    #print Dumper(%results);
 
     # Split stderr/stdout/environment back into multiple lines
     $results{'environment'} =~ s/$LINETOKEN/\n/g;
@@ -200,66 +203,59 @@ sub GenOutput {
 }
 
 
-# Run the perfbase query
-if(!open(PBQUERY, "$PBCMD|")) {
-    print "Unable to run query!\n";
-    die;
-}
+# Generate a report concerning recent MPI Installs
+sub MPIInstallReport {
+    my ($xml, $outputfn) = @_;
 
-my @output = <PBQUERY>;
-chomp(@output);
-close(PBQUERY);
-
-# Find the column header line and parse it.
-my @columns;
-for(@output) {
-    @columns = ParseHeaders($_);
-    last if defined(@columns);
-}
-
-
-# Now we have the field names in an array.
-# Loop over each line, putting all the results for that line into a hash.
-# The keys in this hash are the field names, the values are results.
-
-my $mailbody = "";
-my $successes = 0;
-my $failures = 0;
-
-for(@output) {
-    # Skip commented lines
-    next if($_ =~ /^#/);
-
-    print ("line: $_\n");
-    my $i = 0;
-    my %results;
-    for(split(/\t/, $_)) {
-        $_ =~ s/ *$//;
-        $results{$columns[$i]} = $_;
-        $i++;
+    # Run the perfbase query
+    MTT::Messages::Debug("Running query: $perfbase_arg -d $xml|");
+    my %ret = MTT::DoCommand::Cmd(1, "$perfbase_arg -d $xml|", 60);
+    if($ret{status}) {
+        MTT::Messages::Warning("Perfbase query failed! Aborting report\n");
+        MTT::Messages::Verbose(
+                "Returned $ret{status}, output follows:\n$ret{stdout}");
+        return;
+    }
+    
+    
+    # Find the column header line and parse it.
+    my @columns;
+    for(@ret{stdout}) {
+        @columns = ParseHeaders($_);
+        last if defined(@columns);
     }
 
-    if($results{'result_message'} eq "Success") {
-        $successes++;
-     } else {
-         $failures++;
-     }
-#    print Dumper(%results);
-    $mailbody .= GenOutput(%results);
+    MTT::Messages::Verbose("columns: \n" . Data::Dumper(@columns));
+
+    my $mailbody;
+
+    for(@ret{stdout}) {
+        # Skip commented lines
+        next if($_ =~ /^#/);
+
+        MTT::Messages::Debug("line: $_\n");
+        my $i = 0;
+        my %results;
+        for(split(/\t/, $_)) {
+            $_ =~ s/ *$//;
+            $results{$columns[$i]} = $_;
+            $i++;
+        }
+
+        $mailbody .= &$outputfn(%results);
+    }
+
+    MTT::Messages::Debug("Report:\n$mailbody\n");
 }
 
-# Put the header on the front of the mail body.
-$mailbody = "MTT MPI Install Report\n\n" .
-    "Summary:\n" .
-    " $successes Successful installs\n" .
-    " $failures Failed installs\n\n" .
-    $mailbody;
+
+if($mpi_install_arg) {
+    MPIInstallReport($mpi_install_arg, MPIInstallOutput);
+}
 
 print "$mailbody\n";
 # TODO: Only show results in the past day
-# Sum up success/failure counts
 # Actually send off the email..
-
 # Get the current date in seconds since epoch
 # subtract 60*60*24 seconds from the current date
 
