@@ -208,7 +208,8 @@ if (defined($get_mpi_arg) || defined($install_mpi_arg) ||
     # If anything is defined as "yes", then only do those
 
     if ($get_mpi_arg || $install_mpi_arg || 
-        $build_tests_arg || $run_tests_arg) {
+        $build_tests_arg || $run_tests_arg ||
+        $trim_arg) {
 
         $get_mpi = $install_mpi = $build_tests = $run_tests = $trim = 0;
 
