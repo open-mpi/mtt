@@ -88,6 +88,15 @@ sub _do_get {
         Warning("No mpi_name defined for MPI get [$section]; skipping");
         return;
     }
+    my $pretty_name = Value($ini, $section, "pretty_name");
+    my $mpi_installer = Value($ini, $section, "mpi_installer");
+    if (!$mpi_installer) {
+        Warning("No mpi_installer defined for MPI get [$section]; skipping");
+        return;
+    }
+    if (!$pretty_name) {
+        $pretty_name = $mpi_name;
+    }
     
     # Make a directory just for this section
     chdir($source_dir);
@@ -106,7 +115,9 @@ sub _do_get {
 
         # Save other values from the section
         $ret->{section_name} = $section;
+        $ret->{pretty_name} = $pretty_name;
         $ret->{mpi_name} = $mpi_name;
+        $ret->{mpi_installer} = $mpi_installer;
         $ret->{module_name} = "MTT::MPI::Get::$module";
         $ret->{timestamp} = timegm(gmtime());
 

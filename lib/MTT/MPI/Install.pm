@@ -148,11 +148,21 @@ sub Install {
                 Warning("No mpi_name specified in [$section]; skipping\n");
                 next;
             }
+            my $mpi_installer = Value($ini, $section, "mpi_installer");
+            if (!$mpi_installer) {
+                Warning("No mpi_installer specified in [$section]; skipping\n");
+                next;
+            }
+            my $pretty_name = Value($ini, $section, "pretty_name");
+            if (!$pretty_name) {
+                $pretty_name = $mpi_name;
+            }
 
             # For each MPI source
             foreach my $mpi_get_key (keys(%{$MTT::MPI::sources})) {
                 my $mpi_get = $MTT::MPI::sources->{$mpi_get_key};
-                if ($mpi_get->{mpi_name} = $mpi_name) {
+                if ($mpi_get->{mpi_name} eq $mpi_name &&
+                    $mpi_get->{mpi_installer} eq $mpi_installer) {
 
                     # We found a corresponding MPI source.  Now check
                     # to see if it has already been built.  Test
@@ -173,7 +183,7 @@ sub Install {
                         
                         # Install and restore the environment
                         _do_install($section, $ini,
-                                    $mpi_get, $mpi_dir, $force);
+                                    $mpi_get, $mpi_dir, $pretty_name, $force);
                         %ENV = %ENV_SAVE;
                         Verbose("   Completed MPI install\n");
                     }
@@ -201,7 +211,8 @@ sub _prepare_source {
 
 # Install an MPI from sources
 sub _do_install {
-    my ($section, $ini, $mpi_get, $this_install_base, $force) = @_;
+    my ($section, $ini, $mpi_get, $this_install_base, $pretty_name,
+        $force) = @_;
 
     # Loop through all the configuration values in this
     # section (with defaults)
@@ -348,7 +359,7 @@ sub _do_install {
     # Run the module
     my $start = timegm(gmtime());
     my $ret = MTT::Module::Run("MTT::MPI::Install::$config->{module}",
-                               "Install", $config);
+                               "Install", $ini, $section, $config);
     my $stop = timegm(gmtime());
     
     # Analyze the return
@@ -363,6 +374,7 @@ sub _do_install {
             phase => "MPI Install",
 
             mpi_install_section_name => $config->{section_name},
+            mpi_install_pretty_name => $pretty_name,
             compiler_name => $config->{compiler_name},
             compiler_version => $config->{compiler_version},
             configure_arguments => $config->{configure_arguments},
@@ -374,6 +386,7 @@ sub _do_install {
             start_timestamp => $start,
             stop_timestamp => $stop,
             mpi_name => $mpi_get->{mpi_name},
+            mpi_get_pretty_name => $mpi_get->{pretty_name},
             mpi_get_section_name => $mpi_get->{section_name},
             mpi_version => $mpi_get->{version},
 
@@ -427,10 +440,12 @@ sub _do_install {
         # Fill in which MPI we used
         $ret->{mpi_name} = $mpi_get->{mpi_name};
         $ret->{mpi_get_section_name} = $mpi_get->{section_name};
+        $ret->{mpi_get_pretty_name} = $mpi_get->{pretty_name};
         $ret->{mpi_version} = $mpi_get->{version};
 
         # Some additional values
         $ret->{section_name} = $config->{section_name};
+        $ret->{pretty_name} = $pretty_name;
         $ret->{test_status} = "installed";
         $ret->{compiler_name} = $config->{compiler_name};
         $ret->{compiler_version} = $config->{compiler_version};

@@ -9,13 +9,16 @@
 # $HEADER$
 #
 
-package MTT::MPI::Install::OMPI;
+package MTT::MPI::Install::Copytree;
 
 use strict;
 use Cwd;
+use File::Basename;
+use Data::Dumper;
 use MTT::DoCommand;
 use MTT::Messages;
-use Data::Dumper;
+use MTT::Values;
+use MTT::Files;
 
 #--------------------------------------------------------------------------
 
@@ -35,55 +38,55 @@ sub _find_bindings {
 sub Install {
     my ($ini, $section, $config) = @_;
     my $x;
+    my $val;
 
     # Prepare $ret
 
     my $ret;
     $ret->{success} = 0;
-    
-    # Run configure
 
-    $x = MTT::DoCommand::Cmd(1, "$config->{configdir}/configure $config->{configure_arguments} --prefix=$config->{installdir}");
-    if ($x->{status} != 0) {
-        $ret->{result_message} = "Configure failed -- skipping this build\n";
-        $ret->{stdout} = $x->{stdout};
-        return $ret;
+    Debug(">> copytree copying to $config->{installdir}\n");
+    if (-d $config->{installdir}) {
+        system("rm -rf $config->{installdir}");
+        MTT::Files::mkdir($config->{installdir});
     }
-    $ret->{configure_stdout} = $x->{stdout};
 
-    # Build it
-
-    $x = MTT::DoCommand::Cmd($config->{std_combined}, "make $config->{make_all_arguments} all");
-    if ($x->{status} != 0) {
-        $ret->{result_message} = "Failed to build: make $config->{make_all_arguments} all\n";
-        $ret->{stdout} = $x->{stdout};
-        $ret->{stderr} = $x->{stderr};
-        return $ret;
-    }
-    $ret->{make_all_stdout} = $x->{stdout};
-    $ret->{make_all_stderr} = $x->{stderr};
-
-    # Do we want to run "make check"?  If so, make sure a valid TMPDIR
-    # exists.
-
-    if ($config->{make_check} == 1) {
-        my %ENV_SAVE = %ENV;
-        $ENV{TMPDIR} = "$config->{installdir}/tmp";
-        mkdir($ENV{TMPDIR}, 0777);
-        delete $ENV{LD_LIBRARY_PATH};
-
-        Debug("Running make check\n");
-        $x = MTT::DoCommand::Cmd($config->{std_combined}, "make check");
-        %ENV = %ENV_SAVE;
-
-        if ($x->{status} != 0) {
-            $ret->{result_message} = "Failed to make check\n";
-            $ret->{stdout} = $x->{stdout};
-            return $ret;
+    # Pre copy
+    $val = Value($ini, $section, "pre_copy");
+    if ($val) {
+        Debug("Copytree running pre_copy command: $val\n");
+        $x = MTT::DoCommand::CmdScript(1, $val);
+        if (0 != $x->{status}) {
+            Warning("Pre-copy command failed: $@\n");
+            return undef;
         }
-        $ret->{make_check_stdout} = $x->{stdout};
-    } else {
-        Debug("Not running make check\n");
+    }
+
+    # Copy the tree
+    my $start_dir = cwd();
+    chdir($config->{installdir});
+    $x = MTT::Files::copy_tree("$config->{abs_srcdir}", 1);
+    chdir($start_dir);
+    return undef
+        if (!$x);
+
+    # copy_tree() copies the entire tree, to include the final
+    # directory name.  So we just ended up with everything copied to
+    # $config->{installdir}/basename($config->{abs_srcdir}).  So we
+    # need to move everything in that directory back one, and then
+    # rmdir the resulting empty directory.
+    my $b = basename($config->{abs_srcdir});
+    system("mv $config->{installdir}/$b/* $config->{installdir} ; rmdir $config->{installdir}/$b");
+
+    # Post copy
+    $val = Value($ini, $section, "post_copy");
+    if ($val) {
+        Debug("Copytree running pre_copy command: $val\n");
+        $x = MTT::DoCommand::CmdScript(1, $val);
+        if (0 != $x->{status}) {
+            Warning("Post-copy command failed: $@\n");
+            return undef;
+        }
     }
 
     # Ensure LD_LIBRARY_PATH points to our shared libraries
@@ -97,16 +100,7 @@ sub Install {
         $ENV{LD_LIBRARY_PATH} = $ret->{libdir};
     }
 
-    # Install it
-
-    $x = MTT::DoCommand::Cmd(1, "make install");
-    if ($x->{status} != 0) {
-        $ret->{result_message} = "Failed to make install\n";
-        $ret->{stdout} = $x->{stdout};
-        return $ret;
-    }
-
-    # Set which bindings were compiled
+    # Set which bindings were provided
 
     $ret->{c_bindings} = 1;
     $ret->{cxx_bindings} = _find_bindings($config, "cxx");
@@ -123,7 +117,7 @@ sub Install {
 
     # Try compiling and linking a simple C application
 
-    chdir($ret->{section_dir});
+    chdir($config->{section_dir});
     if (! -d "test-compile") {
         mkdir("test-compile", 0777);
         if (-d "test_compile") {
@@ -145,8 +139,9 @@ int main(int argc, char* argv[]) {
     close(C);
     $x = MTT::DoCommand::Cmd(1, "$ret->{bindir}/mpicc hello.c -o hello");
     if ($x->{status} != 0) {
-        $ret->{result_message} = "Failed to compile/link C \"hello world\" MPI app\n";
+        $ret->{result_message} = "Failed to compile/link C \"hello world\" MPI app: $@\n";
         $ret->{stdout} = $x->{stdout};
+        print "Stdout: $ret->{stdout}\n";
         return $ret;
     }
     unlink "hello.c", "hello";

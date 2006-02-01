@@ -47,7 +47,7 @@ sub Get {
             if ($section ne $mpi_section);
 
         my $source = $MTT::MPI::sources->{$section};
-        if ($source->{module_name} eq "MTT::MPI::Get::copytree" &&
+        if ($source->{module_name} eq "MTT::MPI::Get::Copytree" &&
             $source->{module_data}->{src_directory} eq $data->{src_directory}) {
 
             # If we find a matching source directory, do a crude
@@ -97,7 +97,7 @@ sub Get {
     $data->{post_copy} = Value($ini, $section, "post_copy");
 
     # Set the function pointer
-    $ret->{prepare_for_install} = "MTT::MPI::Get::copytree::PrepareForInstall";
+    $ret->{prepare_for_install} = "MTT::MPI::Get::Copytree::PrepareForInstall";
 
     # Make a best attempt to get a version number
     # 1. Try looking for name-<number> in the directory basename

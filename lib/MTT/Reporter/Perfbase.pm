@@ -101,7 +101,10 @@ sub Submit {
     foreach my $entry (@$entries) {
         my $phase = $entry->{phase};
         my $section = $entry->{section};
-        my $report = $entry->{report};
+        # Ensure to do a deep copy of the report (vs. just copying the
+        # reference) because we want to locally change some values
+        my $report;
+        %$report = %$entry->{report};
 
         $report->{platform_id} = $platform;
         my $xml = $report->{perfbase_xml};
@@ -112,6 +115,15 @@ sub Submit {
 
             $report->{mtt_version_major} = $MTT::Version::Major;
             $report->{mtt_version_minor} = $MTT::Version::Minor;
+
+            # Perbase doesn't seem to understand epoch timestamps.  So
+            # go find any field that has the word "timestamp" in it
+            # and convert it to GMT ctime.
+            foreach my $key (keys(%$report)) {
+                if ($key =~ /timestamp/ && $report->{$key} =~ /\d+/) {
+                    $report->{$key} = gmtime($report->{$key});
+                }
+            }
 
             # Make the string to send, using ": " as the delimiter
             # (this is important -- the server-side XML files are

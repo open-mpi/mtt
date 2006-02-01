@@ -82,7 +82,7 @@ sub Run {
                         
                         if ($target_test eq $test_name) {
                             Debug("Found a match! $target_test [$section]\n");
-                            my $mpi_install = $MTT::MPI::installs->{$mpi_section_key}->{$install_section_key};
+                            my $mpi_install = $MTT::MPI::installs->{$mpi_get_key}->{$install_section_key};
                             Verbose(">> Test run [$section]\n");
                             
                             _do_run($ini, $section, $test_build, 
@@ -240,6 +240,11 @@ sub _do_run {
             $run->{perfbase_xml} =
                 $ret->{perfbase_xml} ? $ret->{perfbase_xml} :"inp_test_run.xml";
             $run->{section_name} = $section;
+            $run->{pretty_name} = MTT::Values::Value($ini,
+                                                     $section,
+                                                     "pretty_name");
+            $run->{pretty_name} = $section
+                if (!$run->{pretty_name});
             $run->{test_build_section_name} = $test_build->{section_name};
             $run->{executable} = $test->{executable};
             foreach my $key (qw(np np_ok argv pass save_output_on_pass separate_stdout_stderr timeout)) {
@@ -317,12 +322,12 @@ sub _run_one_test {
 
     if (!$force &&
         exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{$mpi_details->{mpi_install_section_name}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}->{$run->{section_name}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}->{$run->{section_name}}->{$name}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}->{$run->{section_name}}->{$name}->{$test_np}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}->{$run->{section_name}}->{$name}->{$test_np}->{$cmd})) {
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_install_section_name}}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}->{$run->{section_name}}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}->{$run->{section_name}}->{$name}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}->{$run->{section_name}}->{$name}->{$test_np}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}->{$run->{section_name}}->{$name}->{$test_np}->{$cmd})) {
         Verbose("$str Skipped (already ran)\n");
         return;
     }
@@ -356,12 +361,15 @@ sub _run_one_test {
         mpi_name => $mpi_details->{name},
         mpi_version => $mpi_details->{version},
         mpi_get_section_name => $mpi_details->{mpi_get_section_name},
+        mpi_get_pretty_name => $mpi_details->{mpi_get_pretty_name},
         mpi_install_section_name => $mpi_details->{mpi_install_section_name},
+        mpi_install_pretty_name => $mpi_details->{mpi_install_pretty_name},
 
         perfbase_xml => $run->{perfbase_xml},
 
         test_build_section_name => $run->{test_build_section_name},
         test_run_section_name => $run->{section_name},
+        test_run_pretty_name => $run->{pretty_name},
         test_np => $test_np,
         test_pass => $pass,
         test_name => $name,

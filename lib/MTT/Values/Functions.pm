@@ -297,8 +297,8 @@ sub if {
 #--------------------------------------------------------------------------
 
 # Return a reference to all the strings passed in as @_
-sub iterate {
-    Debug("&iterate got: @_\n");
+sub enumerate {
+    Debug("&enumerate got: @_\n");
 
     my @ret;
     foreach my $arg (@_) {

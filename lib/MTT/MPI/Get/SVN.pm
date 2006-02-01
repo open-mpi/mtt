@@ -41,7 +41,7 @@ sub Get {
 
         foreach my $mpi_unique (keys(%{$MTT::MPI::sources->{$section}})) {
             my $source = $MTT::MPI::sources->{$section}->{$mpi_unique};
-            if ($source->{module_name} eq "MTT::MPI::Get::svn" &&
+            if ($source->{module_name} eq "MTT::MPI::Get::SVN" &&
                 $source->{module_data}->{url} eq $data->{url}) {
 
                 # Found one with the same URL.  
@@ -130,7 +130,7 @@ sub Get {
     # Set the function pointer -- note that we just re-use the
     # copytree module, since that's all we have to do (i.e., copy a
     # local tree)
-    $ret->{prepare_for_install} = "MTT::MPI::Get::copytree::PrepareForInstall";
+    $ret->{prepare_for_install} = "MTT::MPI::Get::Copytree::PrepareForInstall";
 
     # Get other values (set for copytree's PrepareForInstall)
     $data->{pre_copy} = Value($ini, $section, "pre_export");

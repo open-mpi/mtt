@@ -138,8 +138,14 @@ sub Build {
 sub _do_build {
     my ($ini, $section, $build_base, $mpi_install) = @_;
 
+    my $pretty_name = Value($ini, $section, "pretty_name");
+    if (!$pretty_name) {
+        $pretty_name = $section;
+    }
+
     my $config = {
         section_name => $section,
+        pretty_name => $pretty_name,
         srcdir => "to be filled in below",
         setenv => "to be filled in below",
         unsetenv => "to be filled in below",
@@ -238,6 +244,7 @@ sub _do_build {
     if ($ret) {
 
         $ret->{section_name} = $config->{section_name};
+        $ret->{pretty_name} = $config->{pretty_name};
         $ret->{setenv} = $config->{setenv};
         $ret->{unsetenv} = $config->{unsetenv};
         $ret->{prepend_path} = $config->{prepend_path};
@@ -245,7 +252,9 @@ sub _do_build {
         $ret->{srcdir} = $config->{srcdir};
         $ret->{mpi_name} = $mpi_install->{mpi_name};
         $ret->{mpi_get_section_name} = $mpi_install->{mpi_get_section_name};
+        $ret->{mpi_get_pretty_name} = $mpi_install->{mpi_get_pretty_name};
         $ret->{mpi_install_section_name} = $mpi_install->{section_name};
+        $ret->{mpi_install_pretty_name} = $mpi_install->{pretty_name};
         $ret->{mpi_version} = $mpi_install->{mpi_version};
         $ret->{timestamp} = timegm(gmtime());
 
@@ -274,10 +283,13 @@ sub _do_build {
             perfbase_xml => $perfbase_xml,
 
             test_build_section_name => $config->{section_name},
+            test_build_pretty_name => $pretty_name,
 
             mpi_name => $mpi_install->{mpi_name},
             mpi_get_section_name => $mpi_install->{mpi_get_section_name},
+            mpi_get_pretty_name => $mpi_install->{mpi_get_pretty_name},
             mpi_install_section_name => $mpi_install->{section_name},
+            mpi_install_pretty_name => $mpi_install->{pretty_name},
             mpi_version => $mpi_install->{mpi_version},
         };
         # On a successful build, skip the stdout -- only

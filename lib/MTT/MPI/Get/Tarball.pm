@@ -45,11 +45,10 @@ sub Get {
     my $md5;
     my $found = 0;
     foreach my $mpi_section (keys(%{$MTT::MPI::sources})) {
-        next
-            if ($section ne $mpi_section);
+        next if ($section ne $mpi_section);
 
         my $source = $MTT::MPI::sources->{$section};
-        if ($source->{module_name} eq "MTT::MPI::Get::tarball" &&
+        if ($source->{module_name} eq "MTT::MPI::Get::Tarball" &&
             basename($source->{module_data}->{tarball}) eq
             basename($data->{tarball})) {
 
@@ -93,7 +92,7 @@ sub Get {
     $data->{post_extract} = Value($ini, $section, "post_extract");
 
     # Set the final top-level return data
-    $ret->{prepare_for_install} = "MTT::MPI::Get::tarball::PrepareForInstall";
+    $ret->{prepare_for_install} = "MTT::MPI::Get::Tarball::PrepareForInstall";
     $ret->{module_data} = $data;
 
     # Make a best attempt to get a version number

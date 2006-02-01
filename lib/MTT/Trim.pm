@@ -235,7 +235,7 @@ sub _remove {
 
     print "Entries: $#$entries -- saving $num\n";
     for (my $i = $#$entries - $num; $i >= 0; $i--) {
-        print Dumper($$entries[$i]);
+#        print Dumper($$entries[$i]);
         print "$i: rm -rf " . $$entries[$i]->{$name} . "\n";
     }
 }

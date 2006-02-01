@@ -43,5 +43,5 @@ our $error_lines_mpi_install = 100;
 our $error_lines_test_build = 25;
 
 # Known compiler suite names.  These are the only ones that can 
-our @known_compiler_names = qw(gnu pgi intel kai absoft pathscale);
+our @known_compiler_names = qw(gnu pgi intel kai absoft pathscale none);
 
