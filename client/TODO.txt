@@ -1,19 +1,19 @@
+- Finish MPI/Get/Copytree.pm
+
+- Finish Test/Build/NPB.pm, Test/Run/NPB.pm
+
 - Should we save the output of the test build module (i.e., the list
   of tests) and use that (by default) in the test run module?
+  - Build has capability to filter (e.g., Intel filters based on what
+    bindings exist), but run/simple does not.  So you can not build
+    the fortran tests, but then still try to run them of "tests =
+    src/&cat(file)" -- how can we get the filtering down there
+    (easily)?
 
 - Add better error checking to perfbase.php
   - can we check to ensure that we're not inputting a duplicate result
     into perfbase?  what happens if we input a duplicate result into
     perfbase? 
-
-- mpi_install experiment/input does not allow stderr to be empty
-
-- do something about mtt/MTT in same directory (OSX)
-
-- Build has capability to filter (e.g., Intel filters based on what
-  bindings exist), but run/simple does not.  So you can not build the
-  fortran tests, but then still try to run them of "tests =
-  src/&cat(file)" -- how can we get the filtering down there (easily)?
 
 - add support for some performance-oriented tests
 
