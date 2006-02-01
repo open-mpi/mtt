@@ -69,6 +69,42 @@ sub multiply {
 
 #--------------------------------------------------------------------------
 
+# Return the product of all parameters
+sub squares {
+    Debug("&squares got: @_\n");
+
+    my ($min, $max) = @_;
+
+    my @ret;
+    my $val = $min;
+    while ($val <= $max) {
+        push(@ret, $val * $val);
+        ++$val;
+    }
+
+    return \@ret;
+}
+
+#--------------------------------------------------------------------------
+
+# Return the product of all parameters
+sub pow {
+    Debug("&pow got: @_\n");
+
+    my ($base, $min, $max) = @_;
+
+    my @ret;
+    my $val = $min;
+    while ($val <= $max) {
+        push(@ret, $base ** $val);
+        ++$val;
+    }
+
+    return \@ret;
+}
+
+#--------------------------------------------------------------------------
+
 # Return the minimum value of all parameters
 sub min {
     Debug("&min got: @_\n");
