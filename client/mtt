@@ -109,7 +109,7 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
 				  "help|h" => \$help_arg,
 				  "debug|d" => \$debug_arg,
 				  "verbose|v" => \$verbose_arg,
-                                  "force|f" => \$force_arg,
+                                  "force" => \$force_arg,
                                   "get-mpi!" => \$get_mpi_arg,
                                   "install-mpi!" => \$install_mpi_arg,
                                   "build-tests!" => \$build_tests_arg,
@@ -138,7 +138,7 @@ if (!$ok || $help_arg) {
 --debug|-d                    Output lots of debug messages
 --verbose|-v                  Output some status / verbose messages
                               while processing
---force|-f                    Do steps even if they would not normally 
+--force                       Do steps even if they would not normally 
                               be executed
 --[no-]get-mpi                Do the \"Get MPI\" phase
 --[no-]install-mpi            Do the \"Install MPI\" phase
