@@ -29,6 +29,16 @@
   </named_location>
   
   <named_location len="0">
+    <name>mpi_install_pretty_name</name>
+    <match>mpi_install_pretty_name: </match>
+  </named_location>
+
+  <named_location len="0">
+    <name>test_build_pretty_name</name>
+    <match>test_build_pretty_name: </match>
+  </named_location>
+
+  <named_location len="0">
     <name>test_run_pretty_name</name>
     <match>test_run_pretty_name: </match>
   </named_location>
