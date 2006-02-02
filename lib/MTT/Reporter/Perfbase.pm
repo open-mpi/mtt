@@ -125,6 +125,13 @@ sub Submit {
                 }
             }
 
+            # We can't currently set multi-line outputs in perfbase
+            # (0.7.8a), so we smush them together with a non-ASCII
+            # delimiter (chr(129)).
+            my $str = MTT::Reporter::MakeReportString($report, ": ",
+                                                      chr(129));
+            $str =~ s/'/\\'/g;
+
             # Make the string to send, using ": " as the delimiter
             # (this is important -- the server-side XML files are
             # setup to use these ***2*** characters as the delimiter
@@ -136,11 +143,7 @@ sub Submit {
                 # (without understanding the perfbase XML).
                 MTTVERSION_MAJOR => $MTT::Version::Major,
                 MTTVERSION_MINOR => $MTT::Version::Minor,
-                # We can't currently set multi-line outputs in
-                # perfbase (0.7.8a), so we smush them together with a
-                # non-ASCII delimiter (chr(129)).
-                PBINPUT => MTT::Reporter::MakeReportString($report, ": ",
-                                                           chr(129)),
+                PBINPUT => $str,
                 PBXML => $xml,
             };
 
