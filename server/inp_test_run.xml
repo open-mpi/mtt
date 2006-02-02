@@ -58,13 +58,10 @@
     <match>platform_type: </match>
   </named_location>
 
-  <tabular_location columns="1">
-    <match>environment</match>
-    <tabular_value len="0">
-      <name>environment</name>
-      <pos>0</pos>
-    </tabular_value>
-  </tabular_location>
+  <named_location len="0">
+    <name>environment</name>
+    <match>environment: </match>
+  </named_location>
 
   <named_location len="0">
     <name>mpi_name</name>
@@ -131,21 +128,15 @@
     <match>test_build_section_name: </match>
   </named_location>
 
-  <tabular_location columns="1" len="0">
-    <match>stderr:</match>
-    <tabular_value>
-      <name>stderr</name>
-      <pos>0</pos>
-    </tabular_value>
-  </tabular_location>
+  <named_location len="0">
+    <name>stdout</name>
+    <match>stdout: </match>
+  </named_location>
 
-  <tabular_location columns="1">
-    <match>stdout:</match>
-    <tabular_value>
-      <name>stdout</name>
-      <pos>0</pos>
-    </tabular_value>
-  </tabular_location>
+  <named_location len="0">
+    <name>stderr</name>
+    <match>stderr: </match>
+  </named_location>
 
   <named_location len="0">
     <name>submit_timestamp</name>
