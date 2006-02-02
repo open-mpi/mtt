@@ -202,7 +202,7 @@ sub _do_build {
     } elsif ($source->{copydir}) {
         Debug("BuildTests: got source tree: $source->{copydir}\n");
         $config->{srcdir} = 
-            MTT::Files::copy_dir($source->{copydir}, 1);
+            MTT::Files::copy_tree($source->{copydir}, 1);
     }
     chdir($config->{srcdir});
     $config->{srcdir} = cwd();

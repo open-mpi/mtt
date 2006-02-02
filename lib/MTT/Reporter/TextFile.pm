@@ -92,6 +92,15 @@ sub Submit {
 
         my $str = MTT::Reporter::MakeReportString($report, ": ");
 
+        # Perbase doesn't seem to understand epoch timestamps.  So
+        # go find any field that has the word "timestamp" in it
+        # and convert it to GMT ctime.
+        foreach my $key (keys(%$report)) {
+            if ($key =~ /timestamp/ && $report->{$key} =~ /\d+/) {
+                $report->{$key} = gmtime($report->{$key});
+            }
+        }
+
         # Substitute in the filename
 
         my $date = strftime("%m%d%Y", localtime);
