@@ -104,7 +104,7 @@ sub Submit {
         # Ensure to do a deep copy of the report (vs. just copying the
         # reference) because we want to locally change some values
         my $report;
-        %$report = %$entry->{report};
+        %$report = %{$entry->{report}};
 
         $report->{platform_id} = $platform;
         my $xml = $report->{perfbase_xml};
@@ -154,6 +154,8 @@ sub Submit {
                 Verbose(">> Failed to report to perfbase: " .
                         $response->status_line . "\n" . $response->content);
             }
+        } else {
+            Warning("No perfbase_xml field in the INI specification; skipping perfbase reporting!\n");
         }
     }
 
