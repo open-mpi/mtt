@@ -131,7 +131,7 @@ sub _do_run {
     
     # Get some details about running with this MPI
     my $mpi_details;
-    $test_prefix = $mpi_install->{prefix};
+    $test_prefix = $mpi_install->{installdir};
     $mpi_details->{before_any_exec} = 
         MTT::Values::Value($ini, $mpi_details_section, "before_any_exec");
     $mpi_details->{before_each_exec} = 
