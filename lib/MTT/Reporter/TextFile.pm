@@ -17,6 +17,7 @@ use POSIX qw(strftime);
 use MTT::Messages;
 use MTT::Values;
 use MTT::Files;
+use MTT::Version;
 use Data::Dumper;
 
 # directory and file to write to
@@ -86,11 +87,11 @@ sub Submit {
         my $section = $entry->{section};
         my $report = $entry->{report};
 
-        # Use ": " as a delimiter because this file may be fed to
-        # Perfbase (e.g., in a disconnected scenario this file is
-        # later read and fed to Perfbase).
+        # Add our version number into the report; saved for
+        # posterity with the results.
 
-        my $str = MTT::Reporter::MakeReportString($report, ": ");
+        $report->{mtt_version_major} = $MTT::Version::Major;
+        $report->{mtt_version_minor} = $MTT::Version::Minor;
 
         # Perbase doesn't seem to understand epoch timestamps.  So
         # go find any field that has the word "timestamp" in it
@@ -100,6 +101,11 @@ sub Submit {
                 $report->{$key} = gmtime($report->{$key});
             }
         }
+
+        # Use ": " as a delimiter because this file may be fed to
+        # Perfbase (e.g., in a disconnected scenario this file is
+        # later read and fed to Perfbase).
+        my $str = MTT::Reporter::MakeReportString($report, ": ");
 
         # Substitute in the filename
 
