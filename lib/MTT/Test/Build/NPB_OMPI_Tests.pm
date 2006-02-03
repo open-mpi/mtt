@@ -32,7 +32,7 @@ sub Build {
     chdir("NPB2.3-MPI");
     my $x = MTT::DoCommand::Cmd(1, "make clean");
     if ($x->{status} != 0) {
-        $ret->{result_message} = "NPB_ompi_tests: make clean failed; skipping\n";
+        $ret->{result_message} = "NPB_ompi_tests: make clean failed; skipping";
         $ret->{stdout} = $x->{stdout};
         return $ret;
     }
@@ -96,7 +96,7 @@ sub _build {
                 if ($x->{status} != 0) {
                     $ret->{success} = 0;
                     $ret->{result_message} =
-                        "NPB_ompi_tests: $cmd failed; aborting\n";
+                        "NPB_ompi_tests: $cmd failed; aborting";
                     $ret->{stdout} = $x->{stdout};
                     return $ret;
                 }
