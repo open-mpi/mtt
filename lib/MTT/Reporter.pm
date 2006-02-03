@@ -85,7 +85,7 @@ sub MakeReportString {
 sub _stringify {
     my ($str, $hash, $delimiter, $multiline_separator) = @_;
 
-    $delimiter = ":"
+    $delimiter = ": "
         if (!$delimiter);
 
     my @to_delete;
@@ -109,6 +109,9 @@ sub _stringify {
         # Double check that we have anything left in the string
         if ($val ne "") {
             if ($want_multi) {
+                my $ch = chr(129);
+                #$val =~ s/\n\n/\nfoo\n/g;
+                $val =~ s/\n/$ch/g;
                 $$str .= "\n$val\n\n";
             } else {
                 # If we have a multi-line separator, convert all \n's
