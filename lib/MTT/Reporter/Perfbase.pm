@@ -128,10 +128,11 @@ sub Submit {
             # We can't currently set multi-line outputs in perfbase
             # (0.7.8a), so we smush them together with a non-ASCII
             # delimiter (chr(129)).
+            # AWF - Disabled use of the ascii delimiter now.
+            #       Data should go through with only ' escaped.
             my $str = MTT::Reporter::MakeReportString($report, ": ");
                                                      #chr(129));
             $str =~ s/'/\\'/g;
-            $str =~ s/\n\n/\nfoo\n/g;
 
             # Make the string to send, using ": " as the delimiter
             # (this is important -- the server-side XML files are
