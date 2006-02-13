@@ -1,3 +1,5 @@
+- Add an option to have MTT only report results, and do nothing else.
+
 - Finish MPI/Get/Copytree.pm
 
 - Finish Test/Build/NPB.pm, Test/Run/NPB.pm
