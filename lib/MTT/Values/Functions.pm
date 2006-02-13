@@ -345,6 +345,17 @@ sub enumerate {
 
 #--------------------------------------------------------------------------
 
+# Return a reference to all the strings passed in as @_
+sub split {
+    Debug("&split got: @_\n");
+    my $str = shift;
+
+    my @ret = split(/ /, $str);
+    return \@ret;
+}
+
+#--------------------------------------------------------------------------
+
 # First argument is the lower bound, second argument is upper bound,
 # third [optional] argument is the stride (is 1 if not specified).
 # Return a reference to all values starting with $lower and <=$upper
