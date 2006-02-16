@@ -1,3 +1,22 @@
+- From code review:
+  - make the version number that perfbase.php checks be the same
+    version number that the client uses to send -- e.g., check it in a
+    file somewhere
+  - brian's point about fork/exec in php code -- perhaps we should use
+    apache as a proxy to a standalone process that is not running as
+    apache.  two issues:
+    - helps performance, because we don't fork/exec
+    - don't run as apache, so that if our php or perfbase has a bug,
+      that user will have limited
+  - other things can print to php/stderr:
+    - getcwd()
+    - fclose()
+    - putenv()
+    - proc_open() (?)
+    --> should we turn off all error reporting (based on a config
+        variable)?
+  - MTT_DEBUG should be ditched -- change to $debug
+
 - Add an option to have MTT only report results, and do nothing else.
 
 - Finish MPI/Get/Copytree.pm
