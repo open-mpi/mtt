@@ -1,3 +1,7 @@
+- In the email script running behind perfbase:
+  - Summarize how many installs/builds/runs failed
+  - Give a different subject if anything failed
+
 - From code review:
   - make the version number that perfbase.php checks be the same
     version number that the client uses to send -- e.g., check it in a
