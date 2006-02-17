@@ -19,7 +19,7 @@ use MTT::DoCommand;
 #--------------------------------------------------------------------------
 
 sub Build {
-    my ($ini, $section, $mpi, $config) = @_;
+    my ($ini, $mpi_install, $config) = @_;
     my $ret;
 
     Debug("Building IMB_ompi_tests\n");
