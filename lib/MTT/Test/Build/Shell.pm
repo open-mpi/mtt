@@ -21,14 +21,14 @@ use MTT::Values;
 #--------------------------------------------------------------------------
 
 sub Build {
-    my ($ini, $section, $mpi, $config) = @_;
+    my ($ini, $mpi_install, $config) = @_;
     my $ret;
 
-    Debug("Building Shell: [$section]\n");
+    Debug("Building Shell\n");
     $ret->{success} = 0;
 
     # Now run that file -- remove it when done, regardless of the outcome
-    my $cmd = Value($ini, $section, "build_command");
+    my $cmd = Value($ini, $config->{section_name}, "build_command");
     my $x = MTT::DoCommand::CmdScript(1, $cmd);
     if ($x->{status} != 0) {
         $ret->{result_message} = "Shell: command failed \"$cmd\"\n";
