@@ -17,6 +17,20 @@
         variable)?
   - MTT_DEBUG should be ditched -- change to $debug
 
+- Ideas from working with Rainer in Houston:
+  - Allow use of environment variables in the INI - an &env() function?
+  - Add &split()
+  - Allow for compiling the MPI with one compiler, but compiling the test suites
+    with another compiler.  I believe we can do this already, by using &shell()
+    for the test suite build and linking by hand.  If anything, we need a way
+    of gettting good path information to do it.
+  - Support for other schedulers
+    - More specifically, killing off jobs.  If we qsub to do an mpirun, how do
+      we kill it?
+  - IF any failures occure, have MTT generate an INI file which can then be
+    fed back into MTT, and only reproduce the work leading to the failures.
+  - Optimize vpath - have multiple builds off of one source tree
+
 - Add an option to have MTT only report results, and do nothing else.
 
 - Finish MPI/Get/Copytree.pm
@@ -35,6 +49,8 @@
   - can we check to ensure that we're not inputting a duplicate result
     into perfbase?  what happens if we input a duplicate result into
     perfbase? 
+    - Perfbase reports an error if duplicate data is given.  Make sure the
+      client handles the error correctly.
 
 - add support for some performance-oriented tests
 
