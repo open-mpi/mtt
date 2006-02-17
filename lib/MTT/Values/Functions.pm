@@ -12,6 +12,7 @@
 package MTT::Values::Functions;
 
 use strict;
+use File::Find;
 use MTT::Messages;
 use MTT::Test::Run;
 
@@ -446,10 +447,45 @@ sub cat {
 
 #--------------------------------------------------------------------------
 
+# Traverse a tree (or a bunch of trees) and return all the executables
+# found
+my @find_executables_data;
+sub find_executables {
+    Debug("&find_executables got @_\n");
+
+    @find_executables_data = ();
+    find(\&find_executables_sub, @_);
+
+    Debug("&find_exectuables returning: @find_executables_data\n");
+}    return \@find_executables_data;
+
+sub find_executables_sub {
+    # Don't process directories and links, and don't recurse down
+    # "special" directories
+    if ( -l $_ ) { return; }
+    if ( -d $_ ) { 
+        if ((/\.svn/) || (/\.deps/) || (/\.libs/) || (/autom4te\.cache/)) {
+            $File::Find::prune = 1;
+        }
+        return;
+    }
+
+    # $File::Find::name is the path relative to the starting point.
+    # $_ contains the file's basename.  The code automatically changes
+    # to the processed directory, so we want to examine $_.
+    push(@find_executables_data, $File::Find::name)
+        if (-x $_);
+}
+
+
+#--------------------------------------------------------------------------
+
 # Check various resource managers; if we find that we're running in an
 # RM job, return the max number of processes that we can run.  If not,
 # just return "2".
 sub rm_max_procs {
+    Debug("&rm_max_procs\n");
+
     # Are we running in a SLURM job?
     return slurm_max_procs()
         if slurm_job();
@@ -462,6 +498,8 @@ sub rm_max_procs {
 
 # Return "1" if we're running in a SLURM job; "0" otherwise.
 sub slurm_job {
+    Debug("&test_executable returning: $MTT::Test::Run::slurm_job\n");
+
     return ((exists($ENV{SLURM_JOBID}) &&
              exists($ENV{SLURM_TASKS_PER_NODE})) ? "1" : "0");
 }
@@ -471,6 +509,8 @@ sub slurm_job {
 # If in a SLURM job, return the max number of processes we can run.
 # Otherwise, return 0.
 sub slurm_max_procs {
+    Debug("&test_executable returning: $MTT::Test::Run::slurm_max_procs\n");
+
     return "0"
         if (!slurm_job());
 
