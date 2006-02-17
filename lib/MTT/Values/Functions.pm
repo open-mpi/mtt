@@ -446,11 +446,33 @@ sub cat {
 
 #--------------------------------------------------------------------------
 
+# Check various resource managers; if we find that we're running in an
+# RM job, return the max number of processes that we can run.  If not,
+# just return "2".
+sub rm_max_procs {
+    # Are we running in a SLURM job?
+    return slurm_max_procs()
+        if slurm_job();
+
+    # Not running under anything; just return 2.
+    return "2";
+}
+
+#--------------------------------------------------------------------------
+
+# Return "1" if we're running in a SLURM job; "0" otherwise.
+sub slurm_job {
+    return ((exists($ENV{SLURM_JOBID}) &&
+             exists($ENV{SLURM_TASKS_PER_NODE})) ? "1" : "0");
+}
+
+#--------------------------------------------------------------------------
+
 # If in a SLURM job, return the max number of processes we can run.
 # Otherwise, return 0.
 sub slurm_max_procs {
     return "0"
-        if (!exists($ENV{SLURM_JOBID}));
+        if (!slurm_job());
 
     # The SLURM env variable SLURM_TASKS_PER_NODE is a comma-delimited
     # list of strings.  Each string is of the form:
