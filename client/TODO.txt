@@ -21,13 +21,31 @@
         variable)?
   - MTT_DEBUG should be ditched -- change to $debug
 
+- Rainer mentioned that we're requiring a bunch of Perl modules that
+  aren't necessarily installed by default on some older machines
+  (e.g., his).  He installed them to make it work, but it might be
+  nice if we can cut down on the number of requirements --
+  particularly when running on MTT on parallel compute nodes, where
+  perl installs are likely to be minimal (i.e,. all we need to do is
+  run thests and dump output to files there; no need for fancy
+  downloading perl modules, etc.).  From a mail from Rainer:
+
+    it seems that quite a few packets are required to build the 
+    ParallelUserAgent-2.56
+    libwww-perl-5.803   /* which is considered to be too new */
+      -> depends on Compress-Zlib-2.000_05
+    URI-1.35
+    HTML-Parser
+      -> depends on HTML-Tagset-3.10
+
 - Ideas from working with Rainer in Houston:
   - Allow use of environment variables in the INI - an &env() function?
   - Add &split()
-  - Allow for compiling the MPI with one compiler, but compiling the test suites
-    with another compiler.  I believe we can do this already, by using &shell()
-    for the test suite build and linking by hand.  If anything, we need a way
-    of gettting good path information to do it.
+  - Allow for compiling the MPI with one compiler, but compiling the
+    test suites with another compiler.  I believe we can do this
+    already, by using &shell() for the test suite build and linking by
+    hand.  If anything, we need a way of gettting good path
+    information to do it.
   - Support for other schedulers
     - More specifically, killing off jobs.  If we qsub to do an mpirun, how do
       we kill it?
