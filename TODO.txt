@@ -21,6 +21,69 @@
         variable)?
   - MTT_DEBUG should be ditched -- change to $debug
 
+- The way we do the Intel tests for the tests that aren't supposed to
+  pass isn't so great right now -- we have to have a section INI file
+  section with a different "pass" rule.  It would be nice to be able
+  to handle all the Intel tests in a single section -- the question
+  is: how?  We talked about a few options, but it always got
+  complicated -- either in the .ini file and/or in the
+  implementation.  Here's some of the options we talked about:
+
+  1. one global expression, and individual overrides
+
+     pass = some_general_expression
+     MPI_Abort_c_pass = some_other_expression
+     MPI_Abort_f_pass = some_other_expression
+     ...
+
+     This is the Automake-ish way, but isn't super-scalable (i.e., we
+     have to explcitily list each test that is different).
+
+  2. give pass a list of tuples -- paring test names with expressions
+     to check for success, something like:
+
+     pass = &enumerate( \
+       &tuple(&remove(&tests, @nonzero_tests@), ..check for 0...) \
+       &tuple(@nonzero_tests@, ..check for non-0...) \
+     )
+
+     This, unfortunately, has some problems:
+     - &tuple() could be implemented, but it is effectively a new
+       datatype and may require some thought
+     - see the discussion below about &remove() and lists in general
+     - the current parsing engine expands from inside-out.  So the
+       above expression would evaluate the "...check for 0..." during
+       the initial expansion.  It would not result in a list of
+       tuples, where the second element of the tuple is an expression
+       that can be evaluated later.  Possible solution for this is to put
+       the "...check for 0..." expression in a string, but that feels
+       kinda icky...?
+
+- It would be nice to be able to have a &remove() function that would
+  take one list and remove elements from it, e.g.:
+
+    &remove(&some_big_list(), "foo", "bar", "baz")
+
+  But right now, this will first expand &some_big_list() and therefore
+  make N instances of &remove().  It would still give the Right
+  answer, but be horribly inefficient (i.e., if "foo" appears in
+  &some_big_list(), then one of the instances will be "&remove("foo",
+  "foo", "bar", "baz")" and its return will be empty -- so the union
+  of answers from all the &remove instances will not have "foo" in
+  it).  Even worse:
+
+    &remove(&some_big_list(), &enumerate("foo", "bar", "baz"))
+
+  Will make the combinatorial of N and 3 instances of &remove(), which
+  will definitely result in the wrong answer (because we'll have 3
+  copies of every item from &some_big_list() that is not "foo", "bar",
+  or "baz" -- and two copies of "foo", etc.)
+
+  It would seem like we should be able to pass lists around -- not do
+  the default expansion and just be able to pass an explicit list.
+  Perhaps we should explore using "@" in the syntax...?
+  (hypothetically still allowing a perl "eval"...?)
+
 - Rainer mentioned that we're requiring a bunch of Perl modules that
   aren't necessarily installed by default on some older machines
   (e.g., his).  He installed them to make it work, but it might be
