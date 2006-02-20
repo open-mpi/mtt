@@ -381,9 +381,9 @@ sub _run_one_test {
         Warning("$str FAILED\n");
         $want_output = 1;
         if ($stop_time - $start_time > $timeout) {
-            $report->{test_message} = "Timeout expired ($timeout seconds)";
+            $report->{test_message} = "Failed; timeout expired ($timeout seconds)";
         } else {
-            $report->{test_message} = "Exit status: $x->{status}";
+            $report->{test_message} = "Failed; exit status: $x->{status}";
         }
     } else {
         Verbose("$str Passed\n");
