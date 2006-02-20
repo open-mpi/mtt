@@ -52,13 +52,13 @@ sub Init {
 
     my $port;
     my $host = $url;
-    if ($host =~ /http:\/\/([a-zA-Z0-9.]+):(\d+)/) {
+    if ($host =~ /http:\/\/([-a-zA-Z0-9.]+):(\d+)/) {
         $host = $1;
         $port = $2;
-    } elsif ($host =~ /http:\/\/([a-zA-Z0-9.]+)/) {
+    } elsif ($host =~ /http:\/\/([-a-zA-Z0-9.]+)/) {
         $host = $1;
         $port = 80;
-    } elsif ($host =~ /https:\/\/([a-zA-Z0-9.]+)/) {
+    } elsif ($host =~ /https:\/\/([-a-zA-Z0-9.]+)/) {
         $host = $1;
         $port = 443;
     } else {
