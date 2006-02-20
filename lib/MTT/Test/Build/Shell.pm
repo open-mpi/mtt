@@ -29,15 +29,20 @@ sub Build {
 
     # Now run that file -- remove it when done, regardless of the outcome
     my $cmd = Value($ini, $config->{section_name}, "build_command");
-    my $x = MTT::DoCommand::CmdScript(1, $cmd);
+    my $x = MTT::DoCommand::CmdScript(!$config->{separate_stdout_stderr};
+                                      $cmd);
     if ($x->{status} != 0) {
         $ret->{result_message} = "Shell: command failed \"$cmd\"\n";
         $ret->{stdout} = $x->{stdout};
+        $ret->{stderr} = $x->{stderr}
+            if ($x->{stderr});
+        $ret->{result_message} = "Failed";
         return $ret;
     }
 
     # All done
     $ret->{stdout} = $x->{stdout};
+    $ret->{stderr} = $x->{stderr};
     $ret->{success} = 1;
     $ret->{result_message} = "Success";
     return $ret;
