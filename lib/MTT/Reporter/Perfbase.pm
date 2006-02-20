@@ -69,7 +69,10 @@ sub Init {
 
     $ua = LWP::UserAgent->new({ env_proxy => 1 });
     $ua->agent("MPI Test Perfbase Reporter");
-    $ua->credentials("$host:$port", $realm, $username, $password);
+    if ($realm && $username && $password) {
+        Verbose("   Set HTTP credentials for real $realm\n");
+        $ua->credentials("$host:$port", $realm, $username, $password);
+    }
 
     Debug("Perfbase reporter initialized ($realm, $username, XXXXXX, $url, $platform)\n");
 
