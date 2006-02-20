@@ -40,7 +40,7 @@ our $error_lines_mpi_install = 100;
 
 # How many lines of stderr/stdout to show upon error (i.e., report the
 # last $error_lines of the output) when building a test suite.
-our $error_lines_test_build = 25;
+our $error_lines_test_build = 100;
 
 # Known compiler suite names.  These are the only ones that can 
 our @known_compiler_names = qw(gnu pgi intel kai absoft pathscale none);
