@@ -41,7 +41,6 @@ use MTT::Messages;
 use MTT::Files;
 use MTT::INI;
 use MTT::MPI;
-use MTT::Constants;
 use MTT::Values;
 use Data::Dumper;
 

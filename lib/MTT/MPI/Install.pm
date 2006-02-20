@@ -97,7 +97,7 @@ use MTT::Messages;
 use MTT::Module;
 use MTT::Reporter;
 use MTT::MPI;
-use MTT::Constants;
+use MTT::Defaults;
 use Data::Dumper;
 use File::Basename;
 
@@ -218,42 +218,42 @@ sub _do_install {
     # section (with defaults)
 
     my $val;
-    my $config = {
-        # Possibly filled in by ini files
-        configure_arguments => "",
-        vpath_mode => "none",
-        make_all_arguments => "",
-        make_check => 1,
-        module => "",
-        std_combined => 0,
+    my $config;
+    %$config = %$MTT::Defaults::MPI_get;
+    # Possibly filled in by ini files
+    $config->{configure_arguments} = "";
+    $config->{vpath_mode} = "none";
+    $config->{make_all_arguments} = "";
+    $config->{make_check} = 1;
+    $config->{module} = "";
+    $config->{std_combined} = 0;
         
-        # Filled in automatically below
-        ident => "to be filled in below",
-        section_dir => "to be filled in below",
-        srcdir => "to be filled in below",
-        abs_srcdir => "to be filled in below",
-        configdir => "to be filled in below",
-        builddir => "to be filled in below",
-        installdir => "to be filled in below",
-        setenv => "to be filled in below",
-        unsetenv => "to be filled in below",
-        prepend_path => "to be filled in below",
-        append_path => "to be filled in below",
+    # Filled in automatically below
+    $config->{ident} = "to be filled in below";
+    $config->{section_dir} = "to be filled in below";
+    $config->{srcdir} = "to be filled in below";
+    $config->{abs_srcdir} = "to be filled in below";
+    $config->{configdir} = "to be filled in below";
+    $config->{builddir} = "to be filled in below";
+    $config->{installdir} = "to be filled in below";
+    $config->{setenv} = "to be filled in below";
+    $config->{unsetenv} = "to be filled in below";
+    $config->{prepend_path} = "to be filled in below";
+    $config->{append_path} = "to be filled in below";
         
-        # Filled in by the module
-        success => 0,
-        result_message => "",
-        bindir => "",
-        libdir => "",
-        configure_stdout => "",
-        make_all_stdout => "",
-        make_all_stderr => "",
-        make_check_stdout => "",
-        c_bindings => 0,
-        cxx_bindings => 0,
-        f77_bindings => 0,
-        f90_bindings => 0,
-    };
+    # Filled in by the module
+    $config->{success} = 0;
+    $config->{result_message} = "";
+    $config->{bindir} = "";
+    $config->{libdir} = "";
+    $config->{configure_stdout} = "";
+    $config->{make_all_stdout} = "";
+    $config->{make_all_stderr} = "";
+    $config->{make_check_stdout} = "";
+    $config->{c_bindings} = 0;
+    $config->{cxx_bindings} = 0;
+    $config->{f77_bindings} = 0;
+    $config->{f90_bindings} = 0;
     
     $config->{section_name} = $section;
 
@@ -302,14 +302,16 @@ sub _do_install {
         Value($ini, $section, "make_all_arguments");
     
     # make check
-    $config->{make_check} = 
-        Logical($ini, $section, "make_check");
+    my $tmp;
+    $tmp = Logical($ini, $section, "make_check");
+    $config->{make_check} = $tmp
+        if (defined($tmp));
     
     # compiler name and version
     $config->{compiler_name} =
         Value($ini, $section, "compiler_name");
-    if (join(' ', @MTT::Constants::known_compiler_names) !~ /$config->{compiler_name}/) {
-        Warning("Unrecognized compiler name in [$section] ($config->{compiler_name}); the only permitted names are: \"@MTT::Constants::known_compiler_names\"; skipped\n");
+    if (join(' ', @MTT::Defaults::System_config->{known_compiler_names}) !~ /$config->{compiler_name}/) {
+        Warning("Unrecognized compiler name in [$section] ($config->{compiler_name}); the only permitted names are: \"@MTT::Defaults::System_config->{known_compiler_names}\"; skipped\n");
         return;
     }
     $config->{compiler_version} =
@@ -318,15 +320,17 @@ sub _do_install {
     # What to do with stdout/stderr?
     my $tmp;
     $tmp = Logical($ini, $section, "save_stdout_on_success");
-    $config->{save_stdout_on_success} = $tmp ? 1 : 0;
+    $config->{save_stdout_on_success} = $tmp
+        if (defined($tmp));
     $tmp = Logical($ini, $section, "separate_stdout_stderr");
-    $config->{separate_stdout_stderr} = $tmp ? 1 : 0;
+    $config->{separate_stdout_stderr} = $tmp
+        if (defined($tmp));
     $tmp = Value($ini, $section, "stderr_save_lines");
-    $config->{stderr_save_lines} = $tmp ? $tmp : 
-        $MTT::Constants::error_lines_mpi_install;
+    $config->{stderr_save_lines} = $tmp
+        if (defined($tmp));
     $tmp = Value($ini, $section, "stdout_save_lines");
-    $config->{stdout_save_lines} = $tmp ? $tmp : 
-        $MTT::Constants::error_lines_mpi_install;
+    $config->{stdout_save_lines} = $tmp
+        if (defined($tmp));
     
     # We're in the section directory.  Make a subdir for
     # the source and build.

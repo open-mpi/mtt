@@ -41,6 +41,7 @@ use MTT::INI;
 use MTT::Module;
 use MTT::Values;
 use MTT::Files;
+use MTT::Defaults;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -143,20 +144,20 @@ sub _do_build {
         $pretty_name = $section;
     }
 
-    my $config = {
-        section_name => $section,
-        pretty_name => $pretty_name,
-        srcdir => "to be filled in below",
-        setenv => "to be filled in below",
-        unsetenv => "to be filled in below",
-        prepend_path => "to be filled in below",
-        append_path => "to be filled in below",
+    my $config;
+    %$config = %$MTT::Defaults::Test_build;
+    $config->{section_name} = $section;
+    $config->{pretty_name} = $pretty_name;
+    $config->{srcdir} = "to be filled in below";
+    $config->{setenv} = "to be filled in below";
+    $config->{unsetenv} = "to be filled in below";
+    $config->{prepend_path} = "to be filled in below";
+    $config->{append_path} = "to be filled in below";
         
-        # Filled in by the module
-        success => 0,
-        msg => "",
-        stdout => "",
-    };
+    # Filled in by the module
+    $config->{success} = 0;
+    $config->{msg} = "";
+    $config->{stdout} = "";
 
     # Find the build module
     $config->{build_module} = Value($ini, $section, "module");
@@ -210,15 +211,17 @@ sub _do_build {
     # What to do with stdout/stderr?
     my $tmp;
     $tmp = Logical($ini, $section, "save_stdout_on_success");
-    $config->{save_stdout_on_success} = $tmp ? 1 : 0;
+    $config->{save_stdout_on_success} = $tmp
+        if (defined($tmp));
     $tmp = Logical($ini, $section, "separate_stdout_stderr");
-    $config->{separate_stdout_stderr} = $tmp ? 1 : 0;
+    $config->{separate_stdout_stderr} = $tmp
+        if (defined($tmp));
     $tmp = Value($ini, $section, "stderr_save_lines");
-    $config->{stderr_save_lines} = $tmp ? $tmp : 
-        $MTT::Constants::error_lines_test_build;
+    $config->{stderr_save_lines} = $tmp
+        if (defined($tmp));
     $tmp = Value($ini, $section, "stdout_save_lines");
-    $config->{stdout_save_lines} = $tmp ? $tmp : 
-        $MTT::Constants::error_lines_test_build;
+    $config->{stdout_save_lines} = $tmp
+        if (defined($tmp));
 
     # Set the PATH and LD_LIBRARY_PATH
     if ($mpi_install->{bindir}) {

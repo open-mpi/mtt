@@ -104,6 +104,8 @@ sub Value {
     my ($ini, $section, $name) = @_;
 
     my $val = $ini->val($section, $name);
+    return undef
+        if (!defined($val));
     return EvaluateString($val);
 }
 
@@ -115,6 +117,8 @@ sub Logical {
     my ($ini, $section, $name) = @_;
 
     my $val = Value($ini, $section, $name);
+    return undef
+        if (!defined($val));
     if (!$val || 
         $val == 0 || 
         $val eq "0" ||

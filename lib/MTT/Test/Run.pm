@@ -18,6 +18,7 @@ use Time::Local;
 use MTT::Messages;
 use MTT::Values;
 use MTT::Reporter;
+use MTT::Defaults;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -184,6 +185,7 @@ sub _do_run {
     my @save_env;
     MTT::Values::ProcessEnvKeys($mpi_install, \@save_env);
     my $config;
+    %$config = %$MTT::Defaults::Test_run;
     $config->{setenv} = MTT::Values::Value($ini, $section, "setenv");
     $config->{unsetenv} = MTT::Values::Value($ini, $section, "unsetenv");
     $config->{prepend_path} = 

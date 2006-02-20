@@ -17,6 +17,7 @@ use File::Basename;
 use MTT::Messages;
 use MTT::DoCommand;
 use MTT::FindProgram;
+use MTT::Defaults;
 use Data::Dumper;
 
 # How many old builds to keep
@@ -376,7 +377,7 @@ sub http_get {
 
     # figure out what download command to use
     if (!$http_agent) {
-        $http_agent = FindProgram(@MTT::Constants::http_agents);
+        $http_agent = FindProgram(@MTT::Defaults::System_config->{http_agents});
     }
     Abort("Cannot find downloading program -- aborting in despair\n")
         if (!defined($http_agent));
