@@ -229,6 +229,41 @@ int main(int argc, char* argv[]) {
     chdir("..");
     MTT::DoCommand::Cmd(1, "rm -rf test-compile");
 
+    # If we wanted to save stdout even on success, then catenate all
+    # the stdout's and stderr's together
+
+    if ($config->{save_stdout_on_success}) {
+        my $tmp;
+
+        delete $ret->{stdout};
+        $tmp = "";
+        $tmp .= "--- Configure output ---\n" . 
+            $ret->{configure_stdout} . "\n"
+            if ($ret->{configure_stdout});
+        $tmp .= "--- \"make all\" output ---\n" . 
+            $ret->{make_all_stdout} . "\n"
+            if ($ret->{make_all_stdout});
+        $tmp .= "--- \"make check\" output ---\n" . 
+            $ret->{make_check_stdout} . "\n"
+            if ($ret->{make_check_stdout});
+        $ret->{stdout} = $tmp
+            if ($tmp);
+
+        delete $ret->{stderr};
+        $tmp = "";
+        $tmp .= "--- Configure output ---\n" . 
+            $ret->{configure_stderr} . "\n"
+            if ($ret->{configure_stderr});
+        $tmp .= "--- \"make all\" output ---\n" . 
+            $ret->{make_all_stderr} . "\n"
+            if ($ret->{make_all_stderr});
+        $tmp .= "--- \"make check\" output ---\n" . 
+            $ret->{make_check_stderr} . "\n"
+            if ($ret->{make_check_stderr});
+        $ret->{stderr} = $tmp
+            if ($tmp);
+    }
+
     # Dump $ret into a file in this directory in case we are not
     # building the tests now
 

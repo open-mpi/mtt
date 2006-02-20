@@ -29,7 +29,7 @@ sub Build {
 
     # Now run that file -- remove it when done, regardless of the outcome
     my $cmd = Value($ini, $config->{section_name}, "build_command");
-    my $x = MTT::DoCommand::CmdScript(!$config->{separate_stdout_stderr};
+    my $x = MTT::DoCommand::CmdScript(!$config->{separate_stdout_stderr},
                                       $cmd);
     if ($x->{status} != 0) {
         $ret->{result_message} = "Shell: command failed \"$cmd\"\n";

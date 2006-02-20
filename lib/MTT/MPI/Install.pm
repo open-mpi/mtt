@@ -297,10 +297,6 @@ sub _do_install {
         $config->{vpath_mode} = "none";
     }
     
-    # separate stdout/stderr
-    my $tmp = Logical($ini, $section, "separate_stdout_stderr");
-    $config->{std_combined} = $tmp ? "0" : "1";
-    
     # make all arguments
     $config->{make_all_arguments} = 
         Value($ini, $section, "make_all_arguments");
@@ -318,6 +314,19 @@ sub _do_install {
     }
     $config->{compiler_version} =
         Value($ini, $section, "compiler_version");
+
+    # What to do with stdout/stderr?
+    my $tmp;
+    $tmp = Logical($ini, $section, "save_stdout_on_success");
+    $config->{save_stdout_on_success} = $tmp ? 1 : 0;
+    $tmp = Logical($ini, $section, "separate_stdout_stderr");
+    $config->{separate_stdout_stderr} = $tmp ? 1 : 0;
+    $tmp = Value($ini, $section, "stderr_save_lines");
+    $config->{stderr_save_lines} = $tmp ? $tmp : 
+        $MTT::Constants::error_lines_mpi_install;
+    $tmp = Value($ini, $section, "stdout_save_lines");
+    $config->{stdout_save_lines} = $tmp ? $tmp : 
+        $MTT::Constants::error_lines_mpi_install;
     
     # We're in the section directory.  Make a subdir for
     # the source and build.
@@ -395,43 +404,55 @@ sub _do_install {
             stdout => "filled in below",
             stderr => "filled in below",
         };
-        # On a successful build, skip the stdout -- only keep the last
-        # $error_lines of stderr (which will only be there if the
-        # builder separated it out, and if there were any compile/link
-        # warnings)
+
+        # See if we want to save the stdout
+        my $want_save = 1;
         if (1 == $ret->{success}) {
-            delete $report->{stdout};
-            if ($ret->{make_all_stderr}) {
-                $report->{stderr} = "$ret->{make_all_stderr}\n";
-                if ($report->{stderr} =~ m/((.*\n){$MTT::Constants::error_lines_mpi_install})$/) {
-                    $report->{stderr} = $1;
-                }
+            if (!$config->{save_stdout_on_success}) {
+                $want_save = 0;
             }
+        } elsif (!$ret->{stdout}) {
+            $want_save = 0;
         }
-        # On an unsuccessful build, only fill in the last
-        # bunch of lines in stdout / stderr.
-        else {
-            # If we have at least $error_lines, then save
-            # only the last $error_lines.  Perl is so ugly
-            # it's pretty!
-            if ($ret->{stdout}) {
+
+        # If we want to save, see how many lines we want to save
+        if ($want_save) {
+            if ($config->{stdout_save_lines} == -1) {
                 $report->{stdout} = "$ret->{stdout}\n";
-                if ($report->{stdout} =~ m/((.*\n){$MTT::Constants::error_lines_mpi_install})$/) {
-                    $report->{stdout} = $1;
-                }
-            } else {
+            } elsif ($config->{stdout_save_lines} == 0) {
                 delete $report->{stdout};
-            }
-            # Ditto for stderr
-            if ($ret->{stderr}) {
-                $report->{stderr} = "$ret->{stderr}\n";
-                if ($report->{stderr} =~ m/((.*\n){$MTT::Constants::error_lines_mpi_install})$/) {
-                    $report->{stderr} = $1;
-                }
             } else {
-                delete $report->{stderr};
+                if ($ret->{stdout} =~ m/((.*\n){$config->{stdout_save_lines}})$/) {
+                    $report->{stdout} = $1;
+                } else {
+                    # There were less lines available than we asked
+                    # for, so just take them all
+                    $report->{stdout} = $ret->{stdout};
+                }
             }
+        } else {
+            delete $report->{stdout};
         }
+
+        # Always fill in the last bunch of lines for stderr
+        if ($ret->{stderr}) {
+            if ($config->{stderr_save_lines} == -1) {
+                $report->{stderr} = "$ret->{stderr}\n";
+            } elsif ($config->{stderr_save_lines} == 0) {
+                delete $report->{stderr};
+            } else {
+                if ($ret->{stderr} =~ m/((.*\n){$config->{stderr_save_lines}})$/) {
+                    $report->{stderr} = $1;
+                } else {
+                    # There were less lines available than we asked
+                    # for, so just take them all
+                    $report->{stderr} = $ret->{stderr};
+                }
+            }
+        } else {
+            delete $report->{stderr};
+        }
+
         # Did we have any environment?
         $report->{environment} = undef;
         foreach my $e (@save_env) {

@@ -206,7 +206,20 @@ sub _do_build {
     }
     chdir($config->{srcdir});
     $config->{srcdir} = cwd();
-    
+
+    # What to do with stdout/stderr?
+    my $tmp;
+    $tmp = Logical($ini, $section, "save_stdout_on_success");
+    $config->{save_stdout_on_success} = $tmp ? 1 : 0;
+    $tmp = Logical($ini, $section, "separate_stdout_stderr");
+    $config->{separate_stdout_stderr} = $tmp ? 1 : 0;
+    $tmp = Value($ini, $section, "stderr_save_lines");
+    $config->{stderr_save_lines} = $tmp ? $tmp : 
+        $MTT::Constants::error_lines_test_build;
+    $tmp = Value($ini, $section, "stdout_save_lines");
+    $config->{stdout_save_lines} = $tmp ? $tmp : 
+        $MTT::Constants::error_lines_test_build;
+
     # Set the PATH and LD_LIBRARY_PATH
     if ($mpi_install->{bindir}) {
         if (exists($ENV{PATH})) {
@@ -280,6 +293,7 @@ sub _do_build {
             result_message => $ret->{result_message},
             environment => "filled in below",
             stdout => "filled in below",
+            stderr => "filled in below",
             perfbase_xml => $perfbase_xml,
 
             test_build_section_name => $config->{section_name},
@@ -292,24 +306,55 @@ sub _do_build {
             mpi_install_pretty_name => $mpi_install->{pretty_name},
             mpi_version => $mpi_install->{mpi_version},
         };
-        # On a successful build, skip the stdout -- only
-        # keep the stderr (which will only be there if the
-        # builder separated it out, and if there were any
-        # compile/link warnings)
+
+        # See if we want to save the stdout
+        my $want_save = 1;
         if (1 == $ret->{success}) {
+            if (!$config->{save_stdout_on_success}) {
+                $want_save = 0;
+            }
+        } elsif (!$ret->{stdout}) {
+            $want_save = 0;
+        }
+
+        # If we want to save, see how many lines we want to save
+        if ($want_save) {
+            if ($config->{stdout_save_lines} == -1) {
+                $report->{stdout} = "$ret->{stdout}\n";
+            } elsif ($config->{stdout_save_lines} == 0) {
+                delete $report->{stdout};
+            } else {
+                if ($ret->{stdout} =~ m/((.*\n){$config->{stdout_save_lines}})$/) {
+                    $report->{stdout} = $1;
+                } else {
+                    # There were less lines available than we asked
+                    # for, so just take them all
+                    $report->{stdout} = $ret->{stdout};
+                }
+            }
+        } else {
             delete $report->{stdout};
         }
-        # On an unsuccessful build, only fill in the last
-        # bunch of lines in stdout / stderr.
-        else {
-            # If we have at least $error_lines, then save
-            # only the last $error_lines.  Perl is so ugly
-            # it's pretty!
-            $report->{stdout} = "$ret->{stdout}\n";
-            if ($report->{stdout} =~ m/((.*\n){$MTT::Constants::error_lines_test_build})$/) {
-                $report->{stdout} = $1;
+
+        # Always fill in the last bunch of lines for stderr
+        if ($ret->{stderr}) {
+            if ($config->{stderr_save_lines} == -1) {
+                $report->{stderr} = "$ret->{stderr}\n";
+            } elsif ($config->{stderr_save_lines} == 0) {
+                delete $report->{stderr};
+            } else {
+                if ($ret->{stderr} =~ m/((.*\n){$config->{stderr_save_lines}})$/) {
+                    $report->{stderr} = $1;
+                } else {
+                    # There were less lines available than we asked
+                    # for, so just take them all
+                    $report->{stderr} = $ret->{stderr};
+                }
             }
+        } else {
+            delete $report->{stderr};
         }
+
         # Did we have any environment?
         $report->{environment} = undef;
         foreach my $e (@save_env) {
@@ -328,6 +373,7 @@ sub _do_build {
         # It's been saved to a file, so reclaim potentially a good
         # chunk of memory...
         delete $ret->{stdout};
+        delete $ret->{stderr};
         
         # If it was a good build, save it
         if (1 == $ret->{success}) {
