@@ -14,6 +14,7 @@ package MTT::Files;
 use strict;
 use Cwd;
 use File::Basename;
+use File::Find;
 use MTT::Messages;
 use MTT::DoCommand;
 use MTT::FindProgram;
@@ -315,29 +316,6 @@ sub md5sum {
     return $1;
 }
 
-sub md5sum_tree {
-    my ($dir) = @_;
-
-    _find_md5sum()
-        if (!$md5sum_searched);
-    # If we already searched and didn't find then, then just return undef
-    return undef
-        if (!$md5sum_path && $md5sum_searched);
-    return undef
-        if (! -d $dir);
-
-    # Can't use DoCommand here because we need to use |
-    my $x = `tar cf - $dir | $md5sum_path`;
-    my $status = $?;
-    chomp($x);
-    if (0 != $status) {
-        Warning("md5sum unable to run properly\n");
-        return undef;
-    }
-    $x =~ m/^(\w{32})/;
-    return $1;
-}
-
 #--------------------------------------------------------------------------
 
 my $sha1sum_path;
@@ -368,6 +346,37 @@ sub sha1sum {
     }
     $x->{stdout} =~ m/^(\w{40})/;
     return $1;
+}
+
+#--------------------------------------------------------------------------
+
+my $mtime_max;
+
+sub _do_mtime {
+    # don't process special directories or links, and dont' recurse
+    # down "special" directories
+    if ( -l $_ ) { return; }
+    if ( -d $_  && 
+         ((/\.svn/) || (/\.deps/) || (/\.libs/))) {
+        $File::Find::prune = 1;
+        return;
+    }
+
+    # $File::Find::name is the path relative to the starting point.
+    # $_ contains the file's basename.  The code automatically changes
+    # to the processed directory, so we want to open / close $_.
+    my @stat_info = stat($_);
+    $mtime_max = $stat_info[9]
+        if ($stat_info[9] > $mtime_max);
+}
+
+sub mtime_tree {
+    my ($dir) = @_;
+
+    $mtime_max = -1;
+    find(\&_do_mtime, $dir);
+
+    return $mtime_max;
 }
 
 #--------------------------------------------------------------------------

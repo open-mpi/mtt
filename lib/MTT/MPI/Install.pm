@@ -40,16 +40,10 @@ package MTT::MPI::Install;
 # merge_stdout_stderr (IN) => 0 or 1; whether stdout was combined with stderr
 #     or not
 # make_all_arguments (IN) => arguments passed to "make all"
-# make_all_stdout (OUT) => stdout from "make all" (or stdout and
+# stdout (OUT) => stdout from the installation process (or stdout and
 #     stderr if merge_stdout_stderr == 1)
-# make_all_stderr (OUT) => stderr from "make all" (blank if
-#     merge_stdout_stderr == 1)
-# make_check (IN) => 0 or 1; whether we ran "make check" or not (only
-#     observed if the build was successful)
-# make_check_stdout (OUT) => stdout and stderr from "make check" (only
-#     if make_check == 1)
-# test_compile_stdout (OUT) => stdout and stderr from trivial test
-#     compile/links from the build, only exists on failure
+# stderr (OUT) => stderr from the installation process (or nonexistant
+#     if merge_stdout_stderr == 1)
 
 # Other fields:
 # -------------
@@ -142,12 +136,6 @@ sub Install {
                 next;
             }
 
-            # Find a corresponding source for this mpi_name
-            my $mpi_name = Value($ini, $section, "mpi_name");
-            if (!$mpi_name) {
-                Warning("No mpi_name specified in [$section]; skipping\n");
-                next;
-            }
             my $mpi_installer = Value($ini, $section, "mpi_installer");
             if (!$mpi_installer) {
                 Warning("No mpi_installer specified in [$section]; skipping\n");
@@ -155,27 +143,27 @@ sub Install {
             }
             my $pretty_name = Value($ini, $section, "pretty_name");
             if (!$pretty_name) {
-                $pretty_name = $mpi_name;
+                Warning("No pretty_name specified in [$section]; skipping\n");
+                next;
             }
 
             # For each MPI source
             foreach my $mpi_get_key (keys(%{$MTT::MPI::sources})) {
                 my $mpi_get = $MTT::MPI::sources->{$mpi_get_key};
-                if ($mpi_get->{mpi_name} eq $mpi_name &&
-                    $mpi_get->{mpi_installer} eq $mpi_installer) {
+                if ($mpi_get->{mpi_installer} eq $mpi_installer) {
 
                     # We found a corresponding MPI source.  Now check
                     # to see if it has already been built.  Test
                     # incrementally so that it doesn't create each
                     # intermediate key.
 
-                    Debug("Checking for $mpi_name [$mpi_get_key] / [$mpi_get->{section_name}] / $section\n");
+                    Debug("Checking for [$mpi_get_key] / [$mpi_get->{section_name}] / $section\n");
                     if (!$force &&
                         exists($MTT::MPI::installs->{$mpi_get_key}) &&
                         exists($MTT::MPI::installs->{$mpi_get_key}->{$section})) {
-                        Verbose("   Already have an install for $mpi_name [$mpi_get->{section_name}]\n");
+                        Verbose("   Already have an install for [$mpi_get->{section_name}]\n");
                     } else {
-                        Verbose("   Installing MPI: $mpi_name / [$mpi_get->{section_name}]...\n");
+                        Verbose("   Installing MPI: [$mpi_get->{section_name}]...\n");
                         
                         chdir($install_base);
                         my $mpi_dir = _make_safe_dir($mpi_get->{section_name});
@@ -214,11 +202,11 @@ sub _do_install {
     my ($section, $ini, $mpi_get, $this_install_base, $pretty_name,
         $force) = @_;
 
-    # Loop through all the configuration values in this
-    # section (with defaults)
+    # Loop through all the configuration values in this section
 
     my $val;
     my $config;
+    %$config = %$MTT::Defaults::MPI_install;
     # Possibly filled in by ini files
     $config->{module} = "";
         
@@ -434,19 +422,28 @@ sub _do_install {
             delete $report->{stdout};
         }
 
-        # Always fill in the last bunch of lines for stderr
+        # $ret->{stderr} will be filled in on error.  If there was no
+        # error, then take $ret->{make_all_stderr}.
+        my $stderr;
         if ($ret->{stderr}) {
+            $stderr = $ret->{stderr};
+        } else {
+            $stderr = $ret->{make_all_stderr};
+        }
+
+        # Always fill in the last bunch of lines for stderr
+        if ($stderr) {
             if ($config->{stderr_save_lines} == -1) {
-                $report->{stderr} = "$ret->{stderr}\n";
+                $report->{stderr} = "$stderr\n";
             } elsif ($config->{stderr_save_lines} == 0) {
                 delete $report->{stderr};
             } else {
-                if ($ret->{stderr} =~ m/((.*\n){$config->{stderr_save_lines}})$/) {
+                if ($stderr =~ m/((.*\n){$config->{stderr_save_lines}})$/) {
                     $report->{stderr} = $1;
                 } else {
                     # There were less lines available than we asked
                     # for, so just take them all
-                    $report->{stderr} = $ret->{stderr};
+                    $report->{stderr} = $stderr;
                 }
             }
         } else {

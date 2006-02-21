@@ -9,7 +9,7 @@
 # $HEADER$
 #
 
-package MTT::MPI::Get::SVN;
+package MTT::Test::Get::SVN;
 
 use strict;
 use MTT::Values;
@@ -32,16 +32,16 @@ sub Get {
 
     # If we're not forcing, do we have a svn with the same URL already?
     if (!$force) {
-        foreach my $mpi_section (keys(%{$MTT::MPI::sources})) {
+        foreach my $test_section (keys(%{$MTT::Test::sources})) {
             next
-                if ($section ne $mpi_section);
+                if ($section ne $test_section);
             
-            my $source = $MTT::MPI::sources->{$section};
-            if ($source->{module_name} eq "MTT::MPI::Get::SVN" &&
+            my $source = $MTT::Test::sources->{$section};
+            if ($source->{module_name} eq "MTT::Test::Get::SVN" &&
                 $source->{module_data}->{url} eq $url) {
-                
+
                 # We found it
-                
+
                 $previous_r = $source->{module_data}->{r};
                 last;
             }
@@ -50,6 +50,6 @@ sub Get {
 
     # Call the back-end function
     return MTT::Common::SVN::Get($ini, $section, $previous_r);
-} 
+}
 
 1;

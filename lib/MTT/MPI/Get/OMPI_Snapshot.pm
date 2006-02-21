@@ -33,10 +33,15 @@ sub Get {
 
     my $ret;
     my $data;
+    $ret->{success} = 0;
 
     # See if we got a url in the ini section
     my $url = $ini->val($section, "url");
-    return undef if (!$url);
+    if (!$url) {
+        $ret->{result_message} = "No URL specified in [$section]; skipping";
+        Warning("$ret->{result_message}\n");
+        return $ret;
+    }
     Debug(">> OMPI_Snapshot got url: $url\n");
 
     # Make some dirs
@@ -73,8 +78,12 @@ sub Get {
 
             # We have this tarball already.  If we're not forcing,
             # return nothing.
-            return undef
-                if (!$force);
+            if (!$force) {
+                $ret->{success} = 1;
+                $ret->{have_new} = 0;
+                $ret->{result_message} = "Snapshot tarball has not changed (did not re-download)";
+                return $ret;
+            }
             Debug(">> but we're forcing, so we'll get a new one\n");
             
             # If we are forcing, then reset to get a new copy
@@ -88,6 +97,7 @@ sub Get {
     }
     Debug(">> we have not previously downloaded this tarball\n")
         if (!$found);
+    $ret->{have_new} = 1;
 
     # Download the tarball
     chdir($tarball_dir);
@@ -126,6 +136,8 @@ sub Get {
 
     # All done
     Debug(">> OMPI_Snapshot complete\n");
+    $ret->{success} = 1;
+    $ret->{result_message} = "Success";
     return $ret;
 } 
 

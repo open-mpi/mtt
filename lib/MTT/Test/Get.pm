@@ -10,25 +10,10 @@
 #
 
 ########################################################################
-# MPI get phase
+# Test get phase
 ########################################################################
 
-# The output of this phase is the @MTT::MPI::sources array of
-# structs, each with the following members:
-
-# section_name (IN) => name of this MPI's [section] in the INI file
-# version (OUT) => string version of the MPI
-# tarball (OUT) => absolute pathname of the tarball
-# svn (OUT) => url of SVN repository to checkout
-# directory (OUT) => root of directory tree to copy
-# prepare_for_build (OUT) => the name of the routine to invoke to take
-#     the sources and prepare them for building in another directory
-
-# One of tarball, svn, or directory must be supplied.
-
-########################################################################
-
-package MTT::MPI::Get;
+package MTT::Test::Get;
 
 use strict;
 use Cwd;
@@ -40,7 +25,7 @@ use MTT::FindProgram;
 use MTT::Messages;
 use MTT::Files;
 use MTT::INI;
-use MTT::MPI;
+use MTT::Test;
 use MTT::Values;
 use Data::Dumper;
 
@@ -49,14 +34,14 @@ use Data::Dumper;
 sub Get {
     my ($ini, $source_dir, $force) = @_;
 
-    Verbose("*** MPI get phase starting\n");
+    Verbose("*** Test get phase starting\n");
 
     # Go through all the sections in the ini file looking for section
-    # names that begin with "MPI Get:"
+    # names that begin with "Test Get:"
     chdir($source_dir);
     foreach my $section ($ini->Sections()) {
-        if ($section =~ /^\s*mpi get:/) {
-            Verbose(">> MPI get: [$section]\n");
+        if ($section =~ /^\s*test get:/) {
+            Verbose(">> Test get: [$section]\n");
             my $skip = Logical($ini, $section, "skip");
             if ($skip) {
                 Verbose("   Skipped\n");
@@ -66,7 +51,7 @@ sub Get {
         }
     }
 
-    Verbose("*** MPI get phase complete\n");
+    Verbose("*** Test get phase complete\n");
 }
 
 #--------------------------------------------------------------------------
@@ -75,26 +60,17 @@ sub Get {
 sub _do_get {
     my ($section, $ini, $source_dir, $force) = @_;
 
-    Verbose("   Checking for new MPI sources...\n");
+    Verbose("   Checking for new test sources...\n");
 
     my $module = Value($ini, $section, "module");
     if (!$module) {
-        Warning("No module defined for MPI get [$section]; skipping");
+        Warning("No module defined for test get [$section]; skipping");
         return;
     }
-    my $mpi_name = Value($ini, $section, "mpi_name");
-    if (!$mpi_name) {
-        Warning("No mpi_name defined for MPI get [$section]; skipping");
+    my $test_name = Value($ini, $section, "test_name");
+    if (!$test_name) {
+        Warning("No test_name defined for test get [$section]; skipping");
         return;
-    }
-    my $pretty_name = Value($ini, $section, "pretty_name");
-    my $mpi_installer = Value($ini, $section, "mpi_installer");
-    if (!$mpi_installer) {
-        Warning("No mpi_installer defined for MPI get [$section]; skipping");
-        return;
-    }
-    if (!$pretty_name) {
-        $pretty_name = $mpi_name;
     }
     
     # Make a directory just for this section
@@ -104,30 +80,28 @@ sub _do_get {
     chdir($section_dir);
 
     # Run the module
-    my $ret = MTT::Module::Run("MTT::MPI::Get::$module",
+    my $ret = MTT::Module::Run("MTT::Test::Get::$module",
                                "Get", $ini, $section, $force);
     
     # Did we get a source tree back?
     if ($ret->{success}) {
         if ($ret->{have_new}) {
 
-            Verbose("   Got new MPI sources\n");
+            Verbose("   Got new test sources\n");
 
             # Save other values from the section
             $ret->{section_name} = $section;
-            $ret->{pretty_name} = $pretty_name;
-            $ret->{mpi_name} = $mpi_name;
-            $ret->{mpi_installer} = $mpi_installer;
-            $ret->{module_name} = "MTT::MPI::Get::$module";
+            $ret->{test_name} = $test_name;
+            $ret->{module_name} = "MTT::Test::Get::$module";
             $ret->{timestamp} = timegm(gmtime());
-            
-            # Add this into the $MPI::sources hash
-            $MTT::MPI::sources->{$section} = $ret;
 
+            # Add this into the $Test::sources hash
+            $MTT::Test::sources->{$section} = $ret;
+            
             # Save the data file recording all the sources
-            MTT::MPI::SaveSources($source_dir);
+            MTT::Test::SaveSources($source_dir);
         } else {
-            Verbose("   No new MPI sources\n");
+            Verbose("   No new test sources\n");
         }
     } else {
         Verbose("   Failed to get new test sources: $ret->{result_message}\n");

@@ -9,7 +9,7 @@
 # $HEADER$
 #
 
-package MTT::MPI::Get::Tarball;
+package MTT::Test::Get::Tarball;
 
 use strict;
 use File::Basename;
@@ -21,6 +21,7 @@ use MTT::Common::Tarball;
 
 sub Get {
     my ($ini, $section, $force) = @_;
+
     my $ret;
     my $previous_md5;
 
@@ -33,18 +34,17 @@ sub Get {
     }
 
     # Do we have a tarball of the same name already?  Search through
-    # $MTT::MPI::sources to see if we do.
-    foreach my $mpi_section (keys(%{$MTT::MPI::sources})) {
-        next if ($section ne $mpi_section);
+    # $MTT::Test::sources to see if we do.
+    foreach my $test_section (keys(%{$MTT::Test::sources})) {
+        next if ($section ne $test_section);
 
-        my $source = $MTT::MPI::sources->{$section};
-        if ($source->{module_name} eq "MTT::MPI::Get::Tarball" &&
+        my $source = $MTT::Test::sources->{$section};
+        if ($source->{module_name} eq "MTT::Test::Get::Tarball" &&
             basename($source->{module_data}->{tarball}) eq
             basename($tarball)) {
 
-            # If we find one of the same name, that may not be
-            # enough (e.g., "mpi-latest.tar.gz").  So check the
-            # md5sum's.
+            # If we find one of the same name, that may not be enough
+            # (e.g., "test-latest.tar.gz").  So check the md5sum's.
 
             $previous_md5 = $source->{module_data}->{md5sum};
             last;

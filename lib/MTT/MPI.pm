@@ -21,12 +21,6 @@ use Data::Dumper;
 
 #--------------------------------------------------------------------------
 
-# Exported subdir where [downloaded / not-expanded] MPI sources are kept
-our $source_subdir = "sources";
-
-# Exported subdir where builds are kept
-our $install_subdir = "installs";
-
 # Exported MPI sources handle
 our $sources;
 

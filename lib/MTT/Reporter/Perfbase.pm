@@ -41,8 +41,16 @@ sub Init {
     $password = Value($ini, $section, "password");
     $url = Value($ini, $section, "url");
     $realm = Value($ini, $section, "realm");
-    if (!$username || !$password || !$url || !$realm) {
-        Warning("Not enough information in Perfbase Reporter section [$section]; must have username, password, url, and realm; skipping this section");
+    if (!$url) {
+        Warning("Need URL in Perfbase Reporter section [$section]\n");
+        return undef;
+    }
+    my $count = 0;
+    ++$count if ($username);
+    ++$count if ($password);
+    ++$count if ($realm);
+    if ($count > 0 && $count != 3) {
+        Warning("Perfbase Reporter section [$section]: if password, username, or relam is specified, they all must be specified.\n");
         return undef;
     }
     $platform = Value($ini, $section, "platform");

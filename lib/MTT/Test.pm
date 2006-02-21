@@ -12,11 +12,15 @@
 package MTT::Test;
 
 use strict;
+use MTT::Test::Get;
 use MTT::Test::Build;
 use MTT::Test::Run;
 use XML::Simple;
 
 #--------------------------------------------------------------------------
+
+# Exported sources tests handle
+our $sources;
 
 # Exported build tests handle
 our $tests;
@@ -25,6 +29,12 @@ our $tests;
 our $runs;
 
 #--------------------------------------------------------------------------
+
+# Filename where list of test sources information is kept
+my $sources_data_filename = "test_sources.xml";
+
+# XML options for the test builds
+my $sources_xs;
 
 # Filename where list of test build information is kept
 my $builds_data_filename = "test_builds.xml";
@@ -41,6 +51,14 @@ my $runs_xs;
 #--------------------------------------------------------------------------
 
 # This function exists solely so that we don't have to invoke
+# MTT::Test::Get::Get in the top level
+sub Get {
+    return MTT::Test::Get::Get(@_);
+}
+
+#--------------------------------------------------------------------------
+
+# This function exists solely so that we don't have to invoke
 # MTT::Test::Build::Build in the top level
 sub Build {
     return MTT::Test::Build::Build(@_);
@@ -52,6 +70,74 @@ sub Build {
 # MTT::Test::Run::Run in the top level
 sub Run {
     return MTT::Test::Run::Run(@_);
+}
+
+#--------------------------------------------------------------------------
+
+sub _setup_sources_xml {
+    $sources_xs = new XML::Simple(KeyAttr => { test_get => "name",
+                                           },
+                                  ForceArray => [ "test_get", 
+                                                  ],
+                                  AttrIndent => 1,
+                                  RootName => "test_sources",
+                                  );
+}
+
+#--------------------------------------------------------------------------
+
+sub LoadSources {
+    my ($dir) = @_;
+
+    # Explicitly delete anything that was there
+    $MTT::Test::sources = undef;
+
+    _setup_sources_xml()
+        if (!$sources_xs);
+    
+    # If the file exists, read it in
+    if (-f "$dir/$sources_data_filename") {
+        my $in = $sources_xs->XMLin("$dir/$sources_data_filename");
+
+        # Now transform this to the form suitable for
+        # $MTT::Test::sources (see comment in SaveSources)
+
+        # For each Test get section
+        foreach my $test_get_key (keys(%{$in->{test_get}})) {
+            my $test_get = $in->{test_get}->{$test_get_key};
+
+            $MTT::Test::sources->{$test_get_key} = $test_get;
+        }
+    }
+}
+
+#--------------------------------------------------------------------------
+
+sub SaveSources {
+    my ($dir) = @_;
+
+    _setup_sources_xml()
+        if (!$sources_xs);
+
+    # Transform $MTT::Test::sources to something XML::Simple can write
+    # into valid XML (since our values can [and will] contain :'s,
+    # which are the namespace identifiers in XML)
+    my $transformed;
+
+    # For each Test get section
+    foreach my $test_get_key (keys(%$MTT::Test::sources)) {
+        my $test_get = $MTT::Test::sources->{$test_get_key};
+
+        $transformed->{test_get}->{$test_get_key} = $test_get;
+    }
+
+    # Write out the file
+    my $xml = $sources_xs->XMLout($transformed);
+    my $file = "$dir/$sources_data_filename";
+    open(FILE, ">$file.new");
+    print FILE $xml;
+    close(FILE);
+    system("mv $file.new $file");
 }
 
 #--------------------------------------------------------------------------

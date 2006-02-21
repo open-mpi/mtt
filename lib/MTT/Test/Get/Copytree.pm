@@ -9,7 +9,7 @@
 # $HEADER$
 #
 
-package MTT::MPI::Get::Copytree;
+package MTT::Test::Get::Copytree;
 
 use strict;
 use MTT::Values;
@@ -31,18 +31,16 @@ sub Get {
         return $ret;
     }
 
-    # Do we have the tree already?  Search through $MTT::MPI::sources
+    # Do we have the tree already?  Search through $MTT::Test::sources
     # to see if we do.
-    foreach my $mpi_section (keys(%{$MTT::MPI::sources})) {
+    foreach my $test_section (keys(%{$MTT::Test::sources})) {
         next
-            if ($section ne $mpi_section);
+            if ($section ne $test_section);
 
-        my $source = $MTT::MPI::sources->{$section};
-        if ($source->{module_name} eq "MTT::MPI::Get::Copytree" &&
+        my $source = $MTT::Test::sources->{$section};
+        if ($source->{module_name} eq "MTT::Test::Get::Copytree" &&
             $source->{module_data}->{src_directory} eq $src_directory) {
             $previous_mtime = $source->{module_data}->{mtime};
-            $previous_mtime = -1
-                if (!$previous_mtime);
             last;
         }
     }

@@ -96,6 +96,7 @@ my $verbose_arg;
 my $force_arg;
 my $get_mpi_arg;
 my $install_mpi_arg;
+my $get_tests_arg;
 my $build_tests_arg;
 my $run_tests_arg;
 my $trim_arg;
@@ -112,6 +113,7 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
                                   "force" => \$force_arg,
                                   "get-mpi!" => \$get_mpi_arg,
                                   "install-mpi!" => \$install_mpi_arg,
+                                  "get-tests!" => \$get_tests_arg,
                                   "build-tests!" => \$build_tests_arg,
                                   "run-tests!" => \$run_tests_arg,
                                   "trim!" => \$trim_arg,
@@ -142,6 +144,7 @@ if (!$ok || $help_arg) {
                               be executed
 --[no-]get-mpi                Do the \"Get MPI\" phase
 --[no-]install-mpi            Do the \"Install MPI\" phase
+--[no-]get-tests              Do the \"Get tests\" phase
 --[no-]build-tests            Do the \"Build tests\" phase
 --[no-]run-tests              Do the \"Run tests\" phase
 --[no-]trim                   Do the \"Trim\" phase
@@ -197,24 +200,26 @@ MTT::Messages::Debug("Scratch resolved: $scratch_arg\n");
 
 my $get_mpi = 1;
 my $install_mpi = 1;
+my $get_tests = 1;
 my $build_tests = 1;
 my $run_tests = 1;
 my $trim = 1;
 
 if (defined($get_mpi_arg) || defined($install_mpi_arg) ||
-    defined($build_tests_arg) || defined($run_tests_arg) ||
-    defined($trim_arg)) {
+    defined($get_tests_arg) || defined($build_tests_arg) || 
+    defined($run_tests_arg) || defined($trim_arg)) {
 
     # If anything is defined as "yes", then only do those
 
     if ($get_mpi_arg || $install_mpi_arg || 
-        $build_tests_arg || $run_tests_arg ||
+        $get_tests_arg || $build_tests_arg || $run_tests_arg ||
         $trim_arg) {
 
-        $get_mpi = $install_mpi = $build_tests = $run_tests = $trim = 0;
+        $get_mpi = $install_mpi = $get_tests = $build_tests = $run_tests = $trim = 0;
 
         $get_mpi = 1 if defined($get_mpi_arg) && $get_mpi_arg;
         $install_mpi = 1 if defined($install_mpi_arg) && $install_mpi_arg;
+        $get_tests = 1 if defined($get_tests_arg) && $get_tests_arg;
         $build_tests = 1 if defined($build_tests_arg) && $build_tests_arg;
         $run_tests = 1 if defined($run_tests_arg) && $run_tests_arg;
         $trim = 1 if defined($trim_arg) && $trim_arg;
@@ -225,6 +230,7 @@ if (defined($get_mpi_arg) || defined($install_mpi_arg) ||
     else {
         $get_mpi = 0 if defined($get_mpi_arg) && !$get_mpi_arg;
         $install_mpi = 0 if defined($install_mpi_arg) && !$install_mpi_arg;
+        $get_tests = 0 if defined($get_tests_arg) && !$get_tests_arg;
         $build_tests = 0 if defined($build_tests_arg) && !$build_tests_arg;
         $run_tests = 0 if defined($run_tests_arg) && !$run_tests_arg;
         $trim = 0 if defined($trim_arg) && !$trim_arg;
@@ -248,6 +254,10 @@ MTT::MPI::LoadSources($source_dir)
 # Load up all the installs of the MPI sources
 MTT::MPI::LoadInstalls($install_dir)
     if ($install_mpi || $build_tests || $run_tests || $trim);
+
+# Load up the built tests for each install
+MTT::Test::LoadSources($source_dir)
+    if ($get_tests || $build_tests || $run_tests || $trim);
 
 # Load up the built tests for each install
 MTT::Test::LoadBuilds($install_dir)
@@ -283,6 +293,8 @@ foreach my $file (@file_arg) {
         if ($get_mpi);
     MTT::MPI::Install($ini, $install_dir, $force_arg)
         if ($install_mpi);
+    MTT::Test::Get($ini, $source_dir, $force_arg)
+        if ($get_tests);
     MTT::Test::Build($ini, $install_dir, $force_arg)
         if ($build_tests);
     MTT::Test::Run($ini, $install_dir, $force_arg)
