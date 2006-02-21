@@ -377,7 +377,8 @@ sub http_get {
 
     # figure out what download command to use
     if (!$http_agent) {
-        $http_agent = FindProgram(@MTT::Defaults::System_config->{http_agents});
+        my @agents = split(/ /, $MTT::Defaults::System_config->{http_agents});
+        $http_agent = FindProgram(@agents);
     }
     Abort("Cannot find downloading program -- aborting in despair\n")
         if (!defined($http_agent));

@@ -53,7 +53,7 @@ sub Install {
 
     # Build it
 
-    $x = MTT::DoCommand::Cmd($config->{std_combined}, "make $config->{make_all_arguments} all");
+    $x = MTT::DoCommand::Cmd($config->{merge_stdout_stderr}, "make $config->{make_all_arguments} all");
     if ($x->{status} != 0) {
         $ret->{result_message} = "Failed to build: make $config->{make_all_arguments} all\n";
         $ret->{stdout} = $x->{stdout};
@@ -73,7 +73,7 @@ sub Install {
         delete $ENV{LD_LIBRARY_PATH};
 
         Debug("Running make check\n");
-        $x = MTT::DoCommand::Cmd($config->{std_combined}, "make check");
+        $x = MTT::DoCommand::Cmd($config->{merge_stdout_stderr}, "make check");
         %ENV = %ENV_SAVE;
 
         if ($x->{status} != 0) {

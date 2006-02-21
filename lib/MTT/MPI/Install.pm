@@ -37,13 +37,13 @@ package MTT::MPI::Install;
 # srcdir (IN) => (relative) source tree
 # abs_srcdir (IN) => absolute source tree (will not exist if build was
 #     successful)
-# std_combined (IN) => 0 or 1; whether stdout was combined with stderr
+# merge_stdout_stderr (IN) => 0 or 1; whether stdout was combined with stderr
 #     or not
 # make_all_arguments (IN) => arguments passed to "make all"
 # make_all_stdout (OUT) => stdout from "make all" (or stdout and
-#     stderr if std_combined == 1)
+#     stderr if merge_stdout_stderr == 1)
 # make_all_stderr (OUT) => stderr from "make all" (blank if
-#     std_combined == 1)
+#     merge_stdout_stderr == 1)
 # make_check (IN) => 0 or 1; whether we ran "make check" or not (only
 #     observed if the build was successful)
 # make_check_stdout (OUT) => stdout and stderr from "make check" (only
@@ -219,14 +219,8 @@ sub _do_install {
 
     my $val;
     my $config;
-    %$config = %$MTT::Defaults::MPI_get;
     # Possibly filled in by ini files
-    $config->{configure_arguments} = "";
-    $config->{vpath_mode} = "none";
-    $config->{make_all_arguments} = "";
-    $config->{make_check} = 1;
     $config->{module} = "";
-    $config->{std_combined} = 0;
         
     # Filled in automatically below
     $config->{ident} = "to be filled in below";
@@ -279,11 +273,15 @@ sub _do_install {
     ProcessEnvKeys($config, \@save_env);
     
     # configure_arguments
-    $config->{configure_arguments} =
-        Value($ini, $section, "configure_arguments");
+    my $tmp;
+    $tmp = Value($ini, $section, "configure_arguments");
+    $config->{configure_arguments} = $tmp
+        if (defined($tmp));
     
     # vpath
-    $config->{vpath_mode} = lc(Value($ini, $section, "vpath_mode"));
+    $tmp = lc(Value($ini, $section, "vpath_mode"));
+    $config->{vpath_mode} = $tmp
+        if (defined($tmp));
     if ($config->{vpath_mode}) {
         if ($config->{vpath_mode} eq "none" ||
             $config->{vpath_mode} eq "absolute" ||
@@ -293,16 +291,14 @@ sub _do_install {
             Warning("Unrecognized vpath mode: $val -- ignored\n");
             $config->{vpath_mode} = "none";
         }
-    } else {
-        $config->{vpath_mode} = "none";
     }
     
     # make all arguments
-    $config->{make_all_arguments} = 
-        Value($ini, $section, "make_all_arguments");
+    $tmp = Value($ini, $section, "make_all_arguments");
+    $config->{make_all_arguments} = $tmp
+        if (defined($tmp));
     
     # make check
-    my $tmp;
     $tmp = Logical($ini, $section, "make_check");
     $config->{make_check} = $tmp
         if (defined($tmp));
@@ -310,8 +306,8 @@ sub _do_install {
     # compiler name and version
     $config->{compiler_name} =
         Value($ini, $section, "compiler_name");
-    if (join(' ', @MTT::Defaults::System_config->{known_compiler_names}) !~ /$config->{compiler_name}/) {
-        Warning("Unrecognized compiler name in [$section] ($config->{compiler_name}); the only permitted names are: \"@MTT::Defaults::System_config->{known_compiler_names}\"; skipped\n");
+    if ($MTT::Defaults::System_config->{known_compiler_names} !~ /$config->{compiler_name}/) {
+        Warning("Unrecognized compiler name in [$section] ($config->{compiler_name}); the only permitted names are: \"$MTT::Defaults::System_config->{known_compiler_names}\"; skipped\n");
         return;
     }
     $config->{compiler_version} =
@@ -392,7 +388,7 @@ sub _do_install {
             compiler_version => $config->{compiler_version},
             configure_arguments => $config->{configure_arguments},
             vpath_mode => $config->{vpath_mode},
-            stdout_stderr_combined => "$config->{std_combined}",
+            merge_stdout_stderr => "$config->{merge_stdout_stderr}",
             environment => "filled in below",
 
             perfbase_xml => $perfbase_xml,
@@ -476,7 +472,7 @@ sub _do_install {
         $ret->{compiler_version} = $config->{compiler_version};
         $ret->{configure_arguments} = $config->{configure_arguments};
         $ret->{vpath_mode} = $config->{vpath_mode};
-        $ret->{std_combined} = $config->{std_combined};
+        $ret->{merge_stdout_stderr} = $config->{merge_stdout_stderr};
         $ret->{setenv} = $config->{setenv};
         $ret->{unsetenv} = $config->{unsetenv};
         $ret->{prepend_path} = $config->{prepend_path};

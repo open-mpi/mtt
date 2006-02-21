@@ -22,9 +22,9 @@ our $System_config = {
     source_subdir => "sources",
     install_subdir => "installs",
 
-    http_agents => qw(wget lynx curl),
+    http_agents => "wget lynx curl",
 
-    known_compiler_names => qw(gnu pgi intel kai absoft pathscale none),
+    known_compiler_names => "gnu pgi intel kai absoft pathscale none",
 };
 
 # User-defined configuration
@@ -43,7 +43,7 @@ our $MPI_install = {
     make_all_arguments => "",
     configure_arguments => "",
     save_stdout_on_success => 0,
-    separate_stdout_stderr => 1,
+    merge_stdout_stderr => 0,
     stdout_save_lines => 0,
     stderr_save_lines => -1,
     make_check => 0,
@@ -54,7 +54,7 @@ our $MPI_install = {
 our $Test_build = {
     perfbase_xml => "inp_test_build.xml",
     save_stdout_on_success => 0,
-    separate_stdout_stderr => 1,
+    merge_stdout_stderr => 0,
     stdout_save_lines => 0,
     stderr_save_lines => -1,
 };
@@ -69,7 +69,7 @@ our $Test_run = {
     timeout => 30,
 
     save_stdout_on_pass => 0,
-    separate_stdout_stderr => 1,
+    merge_stdout_stderr => 1,
     stdout_save_lines => 0,
     stderr_save_lines => -1,
 };

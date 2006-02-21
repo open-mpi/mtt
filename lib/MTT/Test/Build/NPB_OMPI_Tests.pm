@@ -30,10 +30,11 @@ sub Build {
 
     # Clean it (just to be sure)
     chdir("NPB2.3-MPI");
-    my $x = MTT::DoCommand::Cmd(1, "make clean");
+    my $x = MTT::DoCommand::Cmd($config->{merge_stdout_stderr}, "make clean");
     if ($x->{status} != 0) {
         $ret->{result_message} = "NPB_ompi_tests: make clean failed; skipping";
         $ret->{stdout} = $x->{stdout};
+        $ret->{stderr} = $x->{stderr};
         return $ret;
     }
     MTT::Files::mkdir("bin") if (! -x "bin");
@@ -47,11 +48,15 @@ sub Build {
     if ($npbs) {
         # Did we get a single string, or an array?
         if (ref($npbs) eq "") {
-            $x = _build($ini, $config->{section_name}, "benchmarks_$npbs",
+            $x = _build($ini, $config->{section_name}, 
+                        $config->{merge_stdout_stderr},
+                        "benchmarks_$npbs",
                         "classes_$npbs", "nprocs_$npbs");
         } else {
             foreach my $n (@$npbs) {
-                $x = _build($ini, $config->{section_name}, "benchmarks_$n",
+                $x = _build($ini, $config->{section_name},
+                            $config->{merge_stdout_stderr},
+                            "benchmarks_$n",
                             "classes_$n", "nprocs_$n");
                 if (0 == $x->{status}) {
                     last;
@@ -62,6 +67,7 @@ sub Build {
         # There was no "npbs" field, so just use the naked field names
         # with no suffix
         $x = _build($ini, $config->{section_name}, 
+                    $config->{merge_stdout_stderr},
                     "benchmarks", "classes", "nprocs");
     }
     if (0 == $x->{status}) {
@@ -76,7 +82,7 @@ sub Build {
 } 
 
 sub _build {
-    my ($ini, $section, $bm_arg, $cl_arg, $np_arg) = @_;
+    my ($ini, $section, $merge, $bm_arg, $cl_arg, $np_arg) = @_;
 
     my $ret;
     my $benchmarks = Value($ini, $section, $bm_arg);
@@ -92,7 +98,7 @@ sub _build {
         foreach my $cl (@$classes) {
             foreach my $np (@$nprocs) {
                 my $cmd = "make $bm CLASS=$cl NPROCS=$np";
-                my $x = MTT::DoCommand::Cmd(1, $cmd);
+                my $x = MTT::DoCommand::Cmd($merge, $cmd);
                 if ($x->{status} != 0) {
                     $ret->{success} = 0;
                     $ret->{result_message} =

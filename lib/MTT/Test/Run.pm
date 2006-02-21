@@ -196,29 +196,28 @@ sub _do_run {
     # Get global values that apply to each test executable, unless
     # they supplied their own.  Don't use Value for all of them; some
     # we need to delay the evaluation.
-    $config->{np} = $ini->val($section, "np");
-    $config->{np} = "2"
-        if (!$config->{np});
-    $config->{np_ok} = $ini->val($section, "np_ok");
-    $config->{np_ok} = "1"
-        if (!$config->{np_ok});
-    $config->{argv} = $ini->val($section, "argv");
-    $config->{argv} = ""
-        if (!$config->{argv});
-    $config->{pass} = $ini->val($section, "pass");
-    $config->{pass} = "&eq(&test_exit_status(), 0)"
-        if (!$config->{pass});
-    $config->{save_output_on_pass} = 
-        $ini->val($section, "save_output_on_pass");
-    $config->{save_output_on_pass} = "0"
-        if (!$config->{save_output_on_pass});
-    $config->{separate_stdout_stderr} = 
-        $ini->val($section, "separate_stdout_stderr");
-    $config->{separate_stdout_stderr} = "0"
-        if (!$config->{separate_stdout_stderr});
-    $config->{timeout} = $ini->val($section, "timeout");
-    $config->{timeout} = "30"
-        if (!$config->{timeout});
+    my $tmp;
+    $tmp = $ini->val($section, "np");
+    $config->{np} = $tmp
+        if (defined($tmp));
+    $tmp = $ini->val($section, "np_ok");
+    $config->{np_ok} = $tmp
+        if (defined($tmp));
+    $tmp = $ini->val($section, "argv");
+    $config->{argv} = $tmp
+        if (defined($tmp));
+    $tmp = $ini->val($section, "pass");
+    $config->{pass} = $tmp
+        if (defined($tmp));
+    $tmp = $ini->val($section, "save_output_on_pass");
+    $config->{save_output_on_pass} = $tmp
+        if (defined($tmp));
+    $tmp = $ini->val($section, "merge_stdout_stderr");
+    $config->{merge_stdout_stderr} = $tmp
+        if (defined($tmp));
+    $tmp = $ini->val($section, "timeout");
+    $config->{timeout} = $tmp
+        if (defined($tmp));
 
     # Run the module to get a list of tests to run
     my $ret = MTT::Module::Run("MTT::Test::Run::$module",
