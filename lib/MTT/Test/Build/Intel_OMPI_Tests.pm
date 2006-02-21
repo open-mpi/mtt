@@ -23,6 +23,9 @@ my $default_buildfile = "all_tests_no_perf";
 #--------------------------------------------------------------------------
 
 sub Build {
+
+    # JMS: WARNING: this has been deprecated and may well be removed
+
     my ($ini, $mpi_install, $config) = @_;
     my $ret;
     
