@@ -94,11 +94,11 @@ my $help_arg;
 my $debug_arg;
 my $verbose_arg;
 my $force_arg;
-my $get_mpi_arg;
-my $install_mpi_arg;
-my $get_tests_arg;
-my $build_tests_arg;
-my $run_tests_arg;
+my $mpi_get_arg;
+my $mpi_install_arg;
+my $test_get_arg;
+my $test_build_arg;
+my $test_run_arg;
 my $trim_arg;
 my $version_arg;
 
@@ -111,11 +111,11 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
 				  "debug|d" => \$debug_arg,
 				  "verbose|v" => \$verbose_arg,
                                   "force" => \$force_arg,
-                                  "get-mpi!" => \$get_mpi_arg,
-                                  "install-mpi!" => \$install_mpi_arg,
-                                  "get-tests!" => \$get_tests_arg,
-                                  "build-tests!" => \$build_tests_arg,
-                                  "run-tests!" => \$run_tests_arg,
+                                  "mpi-get!" => \$mpi_get_arg,
+                                  "mpi-install!" => \$mpi_install_arg,
+                                  "test-get!" => \$test_get_arg,
+                                  "test-build!" => \$test_build_arg,
+                                  "test-run!" => \$test_run_arg,
                                   "trim!" => \$trim_arg,
                                   "version" => \$version_arg,
                                   );
@@ -142,11 +142,11 @@ if (!$ok || $help_arg) {
                               while processing
 --force                       Do steps even if they would not normally 
                               be executed
---[no-]get-mpi                Do the \"Get MPI\" phase
---[no-]install-mpi            Do the \"Install MPI\" phase
---[no-]get-tests              Do the \"Get tests\" phase
---[no-]build-tests            Do the \"Build tests\" phase
---[no-]run-tests              Do the \"Run tests\" phase
+--[no-]mpi-get                Do the \"MPI get\" phase
+--[no-]mpi-install            Do the \"MPI install\" phase
+--[no-]test-get               Do the \"Test get\" phase
+--[no-]test-build             Do the \"Test build\" phase
+--[no-]test-run               Do the \"Test run\" phase
 --[no-]trim                   Do the \"Trim\" phase
 
 If no options other than --file (or -f) are specified, the MTT will
@@ -158,7 +158,7 @@ only specify positive or negative phases in a run; you cannot mix both
 positive and negative phases in a single MTT run.
 
 * If any phases are specified in the positive form, then only those
-  phases will be run (e.g., \"--get-mpi --install-mpi\").  
+  phases will be run (e.g., \"--mpi-get --mpi-install\").  
 * If negative phases are specified, then thoses phases will *not* be
   run.\n";
 
@@ -198,41 +198,41 @@ MTT::Messages::Debug("Scratch resolved: $scratch_arg\n");
 # --run-tests are specified, then their defaults all go to 0.
 # Otherwise, if none are specified, they all default to 1.
 
-my $get_mpi = 1;
-my $install_mpi = 1;
-my $get_tests = 1;
-my $build_tests = 1;
-my $run_tests = 1;
+my $mpi_get = 1;
+my $mpi_install = 1;
+my $test_get = 1;
+my $test_build = 1;
+my $test_run = 1;
 my $trim = 1;
 
-if (defined($get_mpi_arg) || defined($install_mpi_arg) ||
-    defined($get_tests_arg) || defined($build_tests_arg) || 
-    defined($run_tests_arg) || defined($trim_arg)) {
+if (defined($mpi_get_arg) || defined($mpi_install_arg) ||
+    defined($test_get_arg) || defined($test_build_arg) || 
+    defined($test_run_arg) || defined($trim_arg)) {
 
     # If anything is defined as "yes", then only do those
 
-    if ($get_mpi_arg || $install_mpi_arg || 
-        $get_tests_arg || $build_tests_arg || $run_tests_arg ||
+    if ($mpi_get_arg || $mpi_install_arg || 
+        $test_get_arg || $test_build_arg || $test_run_arg ||
         $trim_arg) {
 
-        $get_mpi = $install_mpi = $get_tests = $build_tests = $run_tests = $trim = 0;
+        $mpi_get = $mpi_install = $test_get = $test_build = $test_run = $trim = 0;
 
-        $get_mpi = 1 if defined($get_mpi_arg) && $get_mpi_arg;
-        $install_mpi = 1 if defined($install_mpi_arg) && $install_mpi_arg;
-        $get_tests = 1 if defined($get_tests_arg) && $get_tests_arg;
-        $build_tests = 1 if defined($build_tests_arg) && $build_tests_arg;
-        $run_tests = 1 if defined($run_tests_arg) && $run_tests_arg;
+        $mpi_get = 1 if defined($mpi_get_arg) && $mpi_get_arg;
+        $mpi_install = 1 if defined($mpi_install_arg) && $mpi_install_arg;
+        $test_get = 1 if defined($test_get_arg) && $test_get_arg;
+        $test_build = 1 if defined($test_build_arg) && $test_build_arg;
+        $test_run = 1 if defined($test_run_arg) && $test_run_arg;
         $trim = 1 if defined($trim_arg) && $trim_arg;
     } 
 
     # Otherwise, just negate whatever option was negated
 
     else {
-        $get_mpi = 0 if defined($get_mpi_arg) && !$get_mpi_arg;
-        $install_mpi = 0 if defined($install_mpi_arg) && !$install_mpi_arg;
-        $get_tests = 0 if defined($get_tests_arg) && !$get_tests_arg;
-        $build_tests = 0 if defined($build_tests_arg) && !$build_tests_arg;
-        $run_tests = 0 if defined($run_tests_arg) && !$run_tests_arg;
+        $mpi_get = 0 if defined($mpi_get_arg) && !$mpi_get_arg;
+        $mpi_install = 0 if defined($mpi_install_arg) && !$mpi_install_arg;
+        $test_get = 0 if defined($test_get_arg) && !$test_get_arg;
+        $test_build = 0 if defined($test_build_arg) && !$test_build_arg;
+        $test_run = 0 if defined($test_run_arg) && !$test_run_arg;
         $trim = 0 if defined($trim_arg) && !$trim_arg;
     }
 }
@@ -249,23 +249,23 @@ my $install_dir =
 
 # Load up all the MPI sources that this system has previously obtained
 MTT::MPI::LoadSources($source_dir)
-    if ($get_mpi || $install_mpi || $trim);
+    if ($mpi_get || $mpi_install || $trim);
 
 # Load up all the installs of the MPI sources
 MTT::MPI::LoadInstalls($install_dir)
-    if ($install_mpi || $build_tests || $run_tests || $trim);
+    if ($mpi_install || $test_build || $test_run || $trim);
 
 # Load up the built tests for each install
 MTT::Test::LoadSources($source_dir)
-    if ($get_tests || $build_tests || $run_tests || $trim);
+    if ($test_get || $test_build || $test_run || $trim);
 
 # Load up the built tests for each install
 MTT::Test::LoadBuilds($install_dir)
-    if ($build_tests || $run_tests || $trim);
+    if ($test_build || $test_run || $trim);
 
 # Load up the run tests for each install
 MTT::Test::LoadRuns($install_dir)
-    if ($run_tests || $trim);
+    if ($test_run || $trim);
 
 
 ########################################################################
@@ -290,15 +290,15 @@ foreach my $file (@file_arg) {
     MTT::Reporter::Init($ini);
 
     MTT::MPI::Get($ini, $source_dir, $force_arg)
-        if ($get_mpi);
+        if ($mpi_get);
     MTT::MPI::Install($ini, $install_dir, $force_arg)
-        if ($install_mpi);
+        if ($mpi_install);
     MTT::Test::Get($ini, $source_dir, $force_arg)
-        if ($get_tests);
+        if ($test_get);
     MTT::Test::Build($ini, $install_dir, $force_arg)
-        if ($build_tests);
+        if ($test_build);
     MTT::Test::Run($ini, $install_dir, $force_arg)
-        if ($run_tests);
+        if ($test_run);
 
     # Remove old sources, installs, and builds
 
@@ -307,7 +307,7 @@ foreach my $file (@file_arg) {
 
     # Shutdown the reporter
 
-      MTT::Reporter::Finalize();
+    MTT::Reporter::Finalize();
 }
 
 # That's it!

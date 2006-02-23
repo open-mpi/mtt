@@ -69,7 +69,7 @@ sub Run {
                 }
 
                 $test_build->{section_name} =~ m/test build:\s*(.+)\s*/;
-                my $test_name = $1;
+                my $test_build_section_name = $1;
 
                 # Now that we've got a single test build, run through
                 # the INI file and find all "test run:" section that
@@ -81,7 +81,7 @@ sub Run {
                         my $target_test = 
                             MTT::Values::Value($ini, $section, "test_build");
                         
-                        if ($target_test eq $test_name) {
+                        if ($target_test eq $test_build_section_name) {
                             Debug("Found a match! $target_test [$section]\n");
                             my $mpi_install = $MTT::MPI::installs->{$mpi_get_key}->{$install_section_key};
                             Verbose(">> Test run [$section]\n");

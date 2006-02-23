@@ -1,3 +1,8 @@
+- A lot of the parameters / report fields in the MPI install phase
+  seem to assume that the MPI is built from source.  This assumption
+  should be removed, and only report such fields from MPI install
+  modules that need them.
+
 - In the email script running behind perfbase:
   - Summarize how many installs/builds/runs failed
   - Give a different subject if anything failed

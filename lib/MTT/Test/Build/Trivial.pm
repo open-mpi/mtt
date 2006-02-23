@@ -17,20 +17,17 @@ use File::Temp qw(tempfile);
 use MTT::Messages;
 use MTT::DoCommand;
 use MTT::Values;
+use Data::Dumper;
 
 #--------------------------------------------------------------------------
 
 sub _do_compile {
-    my ($wrapper, $in_name, $out_name, $body) = @_;
-
-    # Write out the file
-    open FILE, ">$in_name";
-    print FILE $body;
-    close FILE;
+    my ($wrapper, $in_name, $out_name) = @_;
 
     # Do the compile
-    my $x = MTT::DoCommand::Cmd(1, "$mpi_install->{bindir}/$wrapper $in_name -o $out_name");
+    my $x = MTT::DoCommand::Cmd(1, "$wrapper $in_name -o $out_name");
     if ($x->{status} != 0) {
+        my $ret;
         $ret->{result_message} = "Failed to compile/link $out_name\n";
         $ret->{stdout} = $x->{stdout};
         return $ret;
@@ -55,9 +52,10 @@ sub Build {
     if ($mpi_install->{c_bindings}) {
         Debug("Test compile/link sample C MPI application\n");
         $x = _do_compile("mpicc", "hello.c", "c_hello");
-        $ret->{stdout} .= "--- C hello world ---\n$x->{stdout}\n";
-        return $x
-            if ($x);
+        if (defined($x)) {
+            $ret->{stdout} .= "--- C hello world ---\n$x->{stdout}\n";
+            return $x;
+        }
     } else {
         Debug("MPI C bindings unavailable; skipping simple compile/link test\n");
     }
@@ -68,9 +66,10 @@ sub Build {
     if ($mpi_install->{cxx_bindings}) {
         Debug("Test compile/link sample C++ MPI application\n");
         $x = _do_compile("mpic++", "hello.cc", "cxx_hello");
-        $ret->{stdout} .= "--- C++ hello world ---\n$x->{stdout}\n";
-        return $x
-            if ($x);
+        if (defined($x)) {
+            $ret->{stdout} .= "--- C++ hello world ---\n$x->{stdout}\n";
+            return $x;
+        }
     } else {
         Debug("MPI C++ bindings unavailable; skipping simple compile/link test\n");
     }
@@ -81,9 +80,10 @@ sub Build {
     if ($mpi_install->{f77_bindings}) {
         Debug("Test compile/link sample F77 MPI application\n");
         $x = _do_compile("mpif77", "hello.f", "f77_hello");
-        $ret->{stdout} .= "--- F77 hello world ---\n$x->{stdout}\n";
-        return $x
-            if ($x);
+        if (defined($x)) {
+            $ret->{stdout} .= "--- F77 hello world ---\n$x->{stdout}\n";
+            return $x;
+        }
     } else {
         Debug("MPI F77 bindings unavailable; skipping simple compile/link test\n");
     }
@@ -94,9 +94,10 @@ sub Build {
     if ($mpi_install->{f90_bindings}) {
         Debug("Test compile/link sample F90 MPI application\n");
         $x = _do_compile("mpif90", "hello.f90", "f90_hello");
-        $ret->{stdout} .= "--- F90 hello world ---\n$x->{stdout}\n";
-        return $x
-            if ($x);
+        if (defined($x)) {
+            $ret->{stdout} .= "--- F90 hello world ---\n$x->{stdout}\n";
+            return $x;
+        }
     } else {
         Debug("MPI F90 bindings unavailable; skipping simple compile/link test\n");
     }

@@ -315,9 +315,14 @@ sub _do_install {
     $tmp = Value($ini, $section, "stdout_save_lines");
     $config->{stdout_save_lines} = $tmp
         if (defined($tmp));
-    
-    # We're in the section directory.  Make a subdir for
-    # the source and build.
+
+    # XML
+    $tmp = Value($ini, $section, "perfbase_xml");
+    $config->{perfbase_xml} = $tmp
+        if (defined($tmp));
+
+    # We're in the section directory.  Make a subdir for wthe source
+    # and build.
     MTT::DoCommand::Cmd(1, "rm -rf source");
     my $source_dir = MTT::Files::mkdir("source");
     chdir($source_dir);
@@ -362,10 +367,6 @@ sub _do_install {
     # Analyze the return
     
     if ($ret) {
-        my $perfbase_xml = Value($ini, $section, "perfbase_xml");
-        $perfbase_xml = "inp_mpi_install.xml"
-            if ($perfbase_xml);
-
         # Send the results back to the reporter
         my $report = {
             phase => "MPI Install",
@@ -379,7 +380,7 @@ sub _do_install {
             merge_stdout_stderr => "$config->{merge_stdout_stderr}",
             environment => "filled in below",
 
-            perfbase_xml => $perfbase_xml,
+            perfbase_xml => $config->{perfbase_xml},
             start_timestamp => $start,
             stop_timestamp => $stop,
             mpi_name => $mpi_get->{mpi_name},

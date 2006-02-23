@@ -126,6 +126,8 @@ end program main\n");
     # All done
     $ret->{success} = 1;
     $ret->{have_new} = $have_new;
+    $ret->{prepare_for_install} = "MTT::Common::Copytree::PrepareForInstall";
+    $ret->{module_data}->{directory} = cwd();
     $ret->{result_message} = "Success";
     return $ret;
 } 

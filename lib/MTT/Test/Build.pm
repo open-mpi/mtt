@@ -86,45 +86,64 @@ sub Build {
                 next;
             }
 
-            # For each MPI source
-            foreach my $mpi_get_key (keys(%{$MTT::MPI::installs})) {
-                my $mpi_get = $MTT::MPI::installs->{$mpi_get_key};
+            # Ensure that we have a test get name
+            my $test_get_section_name = Value($ini, $section, "test_get");
+            if (!$test_get_section_name) {
+                Warning("No test_get specified in [$section]; skipping\n");
+                next;
+            }
 
-                # For each installation of that source
-                foreach my $mpi_install_key (keys(%{$mpi_get})) {
-                    my $mpi_install = $mpi_get->{$mpi_install_key};
+            # Find a matching test source
+            foreach my $test_get_key (keys(%{$MTT::Test::sources})) {
+                my $test_get = $MTT::Test::sources->{$test_get_key};
+                $test_get->{section_name} =~ m/test get:\s*(.+)\s*/;
+                if ($1 eq $test_get_section_name) {
+            
+                    # For each MPI source
+                    foreach my $mpi_get_key (keys(%{$MTT::MPI::installs})) {
+                        my $mpi_get = $MTT::MPI::installs->{$mpi_get_key};
 
-                    # Ensure that this was a successful MPI install
-                    if (!$mpi_install->{success}) {
-                        Debug("Found MPI install $mpi_install->{section_name}, but it did not have success==1\n");
-                        next;
+                        # For each installation of that source
+                        foreach my $mpi_install_key (keys(%{$mpi_get})) {
+                            my $mpi_install = $mpi_get->{$mpi_install_key};
+
+                            # Ensure that this was a successful MPI
+                            # install
+                            if (!$mpi_install->{success}) {
+                                Debug("Found MPI install $mpi_install->{section_name}, but it did not have success==1\n");
+                                next;
+                            }
+
+                            # See if we've already got a test build
+                            # for this MPI installation.  Test
+                            # incrementally so that it doesn't create
+                            # each intermediate key.
+
+                            if (!$force &&
+                                exists($MTT::Test::builds->{$mpi_get_key}) &&
+                                exists($MTT::Test::builds->{$mpi_get_key}->{$mpi_install_key}) &&
+                                exists($MTT::Test::builds->{$mpi_get_key}->{$mpi_install_key}->{$section})) {
+                                Verbose("   Already have a build for $mpi_install->{mpi_name} / [$mpi_install->{section_name}] / [$mpi_install->{mpi_get_section_name}]\n");
+                                next;
+                            }
+
+                            # We don't have a test build for this
+                            # particular MPI source instance.  So cd
+                            # into the MPI install tree for this
+                            # particular MPI install.
+
+                            Verbose("   Building for $mpi_install->{mpi_name} / [$mpi_install->{section_name}] / [$mpi_install->{mpi_get_section_name}]\n");
+
+                            chdir($build_base);
+                            chdir(MTT::Files::make_safe_filename($mpi_install->{mpi_get_section_name}));
+                            chdir(MTT::Files::make_safe_filename($mpi_install->{section_name}));
+
+                            # Do the build and restore the environment
+                            _do_build($ini, $section, $build_base, $test_get, $mpi_install);
+                            %ENV = %ENV_SAVE;
+                            Verbose("   Completed build\n");
+                        }
                     }
-
-                    # See if we've already got a test build for this
-                    # MPI installation.  Test incrementally so that it
-                    # doesn't create each intermediate key.
-                    if (!$force &&
-                        exists($MTT::Test::builds->{$mpi_get_key}) &&
-                        exists($MTT::Test::builds->{$mpi_get_key}->{$mpi_install_key}) &&
-                        exists($MTT::Test::builds->{$mpi_get_key}->{$mpi_install_key}->{$section})) {
-                        Verbose("   Already have a build for $mpi_install->{mpi_name} / [$mpi_install->{section_name}] / [$mpi_install->{mpi_get_section_name}]\n");
-                        next;
-                    }
-
-                    # We don't have a test build for this particular
-                    # MPI source instance.  So cd into the MPI install
-                    # tree for this particular MPI install.
-
-                    Verbose("   Building for $mpi_install->{mpi_name} / [$mpi_install->{section_name}] / [$mpi_install->{mpi_get_section_name}]\n");
-
-                    chdir($build_base);
-                    chdir(MTT::Files::make_safe_filename($mpi_install->{mpi_get_section_name}));
-                    chdir(MTT::Files::make_safe_filename($mpi_install->{section_name}));
-
-                    # Do the build and restore the environment
-                    _do_build($ini, $section, $build_base, $mpi_install);
-                    %ENV = %ENV_SAVE;
-                    Verbose("   Completed build\n");
                 }
             }
         }
@@ -136,8 +155,20 @@ sub Build {
 
 #--------------------------------------------------------------------------
 
+sub _prepare_source {
+    my ($test) = @_;
+
+    $test->{prepare_for_install} =~ m/(.+)::(\w+)$/;
+    my $module = $1;
+    my $method = $2;
+
+    return MTT::Module::Run($module, $method, $test, cwd());
+}
+
+#--------------------------------------------------------------------------
+
 sub _do_build {
-    my ($ini, $section, $build_base, $mpi_install) = @_;
+    my ($ini, $section, $build_base, $test_get, $mpi_install) = @_;
 
     my $pretty_name = Value($ini, $section, "pretty_name");
     if (!$pretty_name) {
@@ -148,6 +179,7 @@ sub _do_build {
     %$config = %$MTT::Defaults::Test_build;
     $config->{section_name} = $section;
     $config->{pretty_name} = $pretty_name;
+    $config->{test_nme} = $test_get->{test_name};
     $config->{srcdir} = "to be filled in below";
     $config->{setenv} = "to be filled in below";
     $config->{unsetenv} = "to be filled in below";
@@ -166,45 +198,15 @@ sub _do_build {
         return;
     }
 
-    # Find the tests source
-    my $source;
-    $source->{tarball} = Value($ini, $section, "source_tarball");
-    $source->{copydir} = Value($ini, $section, "source_copydir");
-    $source->{svn} = Value($ini, $section, "source_svn");
-    $source->{svn_username} = Value($ini, $section, "source_svn_username");
-    $source->{svn_password} = Value($ini, $section, "source_svn_password");
-    $source->{svn_password_cache} = Value($ini, $section, "source_svn_password_cache");
-    if (!$source->{tarball} && 
-        !$source->{copydir} &&
-        !$source->{svn}) {
-        Warning("No source specified (source_tarball, source_copydir, or source_svn) for [$section]; skipping\n");
-        return;
-    }
-
     # Make a directory just for this ini section
     my $tests_dir = MTT::Files::mkdir("tests");
     chdir($tests_dir);
     my $build_section_dir = _make_safe_dir($section);
     chdir($build_section_dir);
-            
-    # Handle the source
-    if ($source->{tarball}) {
-        Debug("BuildTests: got source tarball: $source->{tarball}\n");
-        $config->{srcdir} =
-            MTT::Files::unpack_tarball($source->{tarball}, 1);
-    } elsif ($source->{svn}) {
-        Debug("BuildTests: got source SVN: $source->{svn}\n");
-        Debug("BuildTests: got source SVN username: $source->{svn_username}\n");
-        Debug("BuildTests: got source SVN password: $source->{svn_password}\n");
-        Debug("BuildTests: got source SVN password_cache: $source->{svn_password_cache}\n");
-        my ($srcdir, $r) =
-            MTT::Files::svn_checkout($source->{svn}, $source->{svn_username}, $source->{svn_password}, $source->{svn_password_cache}, 1, 1);
-        $config->{srcdir} = $srcdir;
-    } elsif ($source->{copydir}) {
-        Debug("BuildTests: got source tree: $source->{copydir}\n");
-        $config->{srcdir} = 
-            MTT::Files::copy_tree($source->{copydir}, 1);
-    }
+
+    # Unpack the source and find out the subdirectory name it created
+
+    $config->{srcdir} = _prepare_source($test_get);
     chdir($config->{srcdir});
     $config->{srcdir} = cwd();
 
