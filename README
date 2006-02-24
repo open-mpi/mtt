@@ -29,7 +29,7 @@ the results in a back-end database that then becomes available for
 historical data mining.  The test suites can be for both correctness
 and performance analysis (e.g., tests such as nightly snapshot compile
 results as well as the latency of MPI_SEND can be historically
-archives with this tool).
+archived with this tool).
 
 The MTT is basically a front-end to the excellent Perfbase tool (see
 http://perfbase.tigris.org/) for storing all the results and creating
