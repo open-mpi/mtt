@@ -42,12 +42,7 @@ sub Get {
     foreach my $section ($ini->Sections()) {
         if ($section =~ /^\s*test get:/) {
             Verbose(">> Test get: [$section]\n");
-            my $skip = Logical($ini, $section, "skip");
-            if ($skip) {
-                Verbose("   Skipped\n");
-            } else {
-                _do_get($section, $ini, $source_dir, $force);
-            }
+            _do_get($section, $ini, $source_dir, $force);
         }
     }
 

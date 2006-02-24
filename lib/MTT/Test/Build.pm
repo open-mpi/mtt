@@ -80,11 +80,6 @@ sub Build {
     foreach my $section ($ini->Sections()) {
         if ($section =~ /^\s*test build:/) {
             Verbose(">> Test build [$section]\n");
-            my $skip = Logical($ini, $section, "skip");
-            if ($skip) {
-                Verbose("   Skipped\n");
-                next;
-            }
 
             # Ensure that we have a test get name
             my $test_get_section_name = Value($ini, $section, "test_get");

@@ -130,11 +130,6 @@ sub Install {
     foreach my $section ($ini->Sections()) {
         if ($section =~ /^\s*mpi install:/) {
             Verbose(">> MPI install [$section]\n");
-            my $skip = Logical($ini, $section, "skip");
-            if ($skip) {
-                Verbose("   Skipped\n");
-                next;
-            }
 
             my $mpi_installer = Value($ini, $section, "mpi_installer");
             if (!$mpi_installer) {
