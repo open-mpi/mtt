@@ -122,15 +122,15 @@ sub Logical {
     if (!$val || 
         $val == 0 || 
         $val eq "0" ||
-        lc($val eq "no") ||
-        lc($val eq "false") ||
-        lc($val eq "off")) {
+        lc($val) eq "no" ||
+        lc($val) eq "false" ||
+        lc($val) eq "off") {
         return 0;
     } elsif ($val == 1 ||
              $val eq "1" ||
-             lc($val eq "yes") ||
-             lc($val eq "true") ||
-             lc($val eq "on")) {
+             lc($val) eq "yes" ||
+             lc($val) eq "true" ||
+             lc($val) eq "on") {
         return 1;
     }
 
