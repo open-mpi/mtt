@@ -1,3 +1,130 @@
+Notes from the first MTT developer's conference!
+
+MTT Design goals:
+ - Simple, easy to use INI file
+ - Provide many hooks to provide support for everything, but not necessarily
+   implementing the support directly.
+ - MTT 1.0 file format may not be compatible MTT 2.0
+ - For 1.0, focus on test suites the Open MPI group cares about
+   - Correctness first, then performance, then other MPIs
+
+
+Task list for 1.0/0.5:
+
+BA
+
+Finish up perfbase backend development
+ - Finish perfbase xml output support
+ - Figure out how to make perfbase escape ' properly for postgres
+ - Look at organizing perfbase so that one run is a test suite, not one test
+ - Finish email.pl to complete the perfbase reporting backend
+Split reporter into formatting/data collection and transport
+ - Transport - text, perfbase, psi, rsync, scp
+ - Data collection - report mpi install, test build, test results
+
+
+Jeff:
+
+--developer switch - run MTT against a current install
+Active & Passive report mode - make reporting a phase?
+ - Use cron for pushing reports through disconnected setups
+   - Checking for new results to report every 10 mins
+   - Gets daily before builds occur
+   - Build daily on compile side, followed by a qsub to start compute nodes
+   - Assume compile and compute nodes share filesystem
+MTT global params:
+ [MTT]
+ name_delimiter=, # delimiter between names of references in name= field
+ run_if_partial_build_fail=1 # run tests that DID build if test build fails
+
+Implement trim phase
+New syntax linkage between MPI and Test phases:
+ [MPI Get: OMPI trunk]
+ mpi_details=OMPI
+
+ [MPI Get: OMPI branch]
+ mpi_details=OMPI
+
+ [MPI Install: optimized]
+ mpi_get=OMPI trunk,OMPI branch
+
+ [MPI Install: debug]
+ mpi_get=OMPI trunk,OMPI branch
+
+ [MPI Details: OMPI]
+
+Implement 'test specify' phase - replaces current test run INI stuff
+ - Should generate a list of tuples, which is:
+   - exec - binary to execute
+   - argv
+   - np
+   - pass - success return code
+   - timeout
+   - before_any
+   - before_each
+   - after_each
+   - after_all
+ - Test run phase should then accept this list
+ - INI file looks like this:
+    [test specify: intel]
+    test_build = intel
+    module = intel
+
+   [test_build: intel]
+   test_get = intel
+   module = intel
+   intel_buildfile=coll
+
+
+Jim:
+
+Disconnected scenarios - mpi/test get proxies
+ - Support different protocols - via module?  need rsync, scp, ...
+ - Stage parameters:
+   - force
+   - retry
+   - timeout
+ - 
+Split reporter into formatting and transport
+Support for these test suites:
+ intel
+ ibm - Brian will check all tests compile/run under make/make check
+ imb
+ npb
+ netpipe
+ mpich - Brian may set up an OMPI version
+Support for 'tcl' modules via perl bindings
+
+
+Someone needs to write a 'simple' test specify module:
+ module = simple
+ simple_np = ...
+ simple_exec = ...
+ simple_argv = ...
+ simple_pass = ...
+ simple_timeout = ...
+
+behavior should be combinatorial for the np, exec, and argv, if some sort of
+lists are provided all combinations should be generated. pass and timeout are
+considered constant, and should only have one value.
+
+
+
+Features NOT to worry about for 1.0:
+
+ - Expand stages beyond test build - specify - run
+ - Support for gromacs and other complicated output
+ - Expanded disconnected support
+ - Less reliance on user to develop cron jobs and such
+ - Support more test suites, MPIs
+   - HPL
+- Finer grained control when forcing stages to rerun - rather than rerunning a
+  whole stage, let's select which INI section we want to rerun
+
+
+
+
+
 - A lot of the parameters / report fields in the MPI install phase
   seem to assume that the MPI is built from source.  This assumption
   should be removed, and only report such fields from MPI install
