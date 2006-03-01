@@ -78,9 +78,10 @@
     <match>configure_arguments: </match>
   </named_location>
 
-  <named_location lines="0" len="0">
+  <named_location len="0">
     <name>environment</name>
-    <match>environment: </match>
+    <match marker="begin" skip="1">ENVIRONMENT_BEGIN</match>
+    <match marker="end">ENVIRONMENT_END</match>
   </named_location>
 
   <named_location len="0">
@@ -128,14 +129,16 @@
     <match>result_message: </match>
   </named_location>
 
-  <named_location lines="0" len="0">
+  <named_location len="0">
     <name>stderr</name>
-    <match>stderr: </match>
+    <match marker="begin" skip="1">STDERR_BEGIN</match>
+    <match marker="end">STDERR_END</match>
   </named_location>
 
-  <named_location lines="0" len="0">
+  <named_location len="0">
     <name>stdout</name>
-    <match>stdout: </match>
+    <match marker="begin" skip="1">STDOUT_BEGIN</match>
+    <match marker="end">STDOUT_BEGIN</match>
   </named_location>
 
   <named_location len="0">
