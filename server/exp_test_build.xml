@@ -154,7 +154,7 @@
     <name>environment</name>
     <synopsis>environment the build was performed in</synopsis>
     <default>not specified</default>
-    <datatype>string</datatype>
+    <datatype>text</datatype>
   </result>
 
   <parameter occurence="once">

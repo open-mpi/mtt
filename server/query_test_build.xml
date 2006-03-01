@@ -48,7 +48,7 @@
     <result>stderr</result>
   </source>
 
-  <output target="raw_text">
+  <output target="xml">
     <input>src.result</input>
   </output>
 </query>
