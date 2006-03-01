@@ -77,15 +77,10 @@ if (1 != $ret) {
 
 require Config::IniFiles;
 require MTT::Version;
-#require MTT::MPI;
-#require MTT::Test;
-#require MTT::Files;
 require MTT::Messages;
-#require MTT::INI;
-#require MTT::Reporter;
-#require MTT::Constants;
 require MTT::FindProgram;
 require MTT::DoCommand;
+require MTT::Mail;
 
 
 my $SEP = "=====================================================================\n";
@@ -112,10 +107,10 @@ my $ok = Getopt::Long::GetOptions("mpi-install=s" => \$mpi_install_arg,
                                   "test-run=s" => \$test_run_arg,
                                   "perfbase|p=s" => \$perfbase_arg,
                                   "email|e=s" => \$email_arg,
-                                  "debug|d=s" => \$debug_arg,
-                                  "verbose|v=s" => \$verbose_arg,
-                                  "version=s" => \$version_arg,
-                                  "help=s" => \$help_arg);
+                                  "debug|d" => \$debug_arg,
+                                  "verbose|v" => \$verbose_arg,
+                                  "version" => \$version_arg,
+                                  "help" => \$help_arg);
 
 if($version_arg) {
     print "MTT Version $MTT::Version::Major.$MTT::Version::Minor\n";
@@ -177,10 +172,10 @@ sub ParseHeaders {
     my @columns;
 
     # We key on '# ' to determine if this is a column header line.
-    return undef unless $line =~ /^# /;
+    return undef unless $line =~ /^# (.+\[\][\t ]+)+/;
 
     # Must be column header line.. break it up!
-    $line =~ s/^# (.+\[\])+//;
+    $line =~ s/^# //;
     $line =~ s/\[\]//g;
     @columns = split(/\t/, $line);
 
@@ -198,7 +193,8 @@ sub MPIInstallOutput {
     $results{'stderr'} =~ s/$LINETOKEN/\n/g;
 
     my $output = $SEP .
-        "MPI Name: $results{'mpi_name'} $results{'mpi_version'}\n\n" .
+        "MPI Name: $results{'mpi_install_pretty_name'} " .
+            "$results{'mpi_version'}\n\n" .
         "Hostname: $results{'hostname'}\n" .
         "Operating System: $results{'os_version'}\n" .
         "Platform Type: $results{'platform_type'}\n" .
@@ -211,6 +207,37 @@ sub MPIInstallOutput {
         "Stdout:\n$results{'stdout'}\n\n" .
         "Stderr:\n$results{'stderr'}\n";
 
+    MTT::Messages::Debug("***** MPIInstallOutput\n$output\n******\n");
+    return $output;
+}
+
+
+# Take a hash of results and generate text output
+sub TestBuildOutput {
+    my (%results) = @_;
+
+    # Split stderr/stdout/environment back into multiple lines
+    $results{'environment'} =~ s/$LINETOKEN/\n/g;
+    $results{'stdout'} =~ s/$LINETOKEN/\n/g;
+    $results{'stderr'} =~ s/$LINETOKEN/\n/g;
+
+    my $output = $SEP .
+        "Test Suite: $results{'test_build_pretty_name'}\n" .
+        "MPI Name: $results{'mpi_install_pretty_name'} " .
+            "$results{'mpi_version'}\n\n" .
+        "Hostname: $results{'hostname'}\n" .
+        "Operating System: $results{'os_version'}\n" .
+        "Platform Type: $results{'platform_type'}\n" .
+        "Platform ID: $results{'platform_id'}\n" .
+        "Compiler: $results{'compiler_name'} $results{'compiler_version'}\n" .
+        "Configure Arguments: $results{'configure_arguments'}\n" .
+        "Start Date: $results{'start_timestamp'}\n" .
+        "Finish Date: $results{'stop_timestamp'}\n\n" .
+        "Environment:\n$results{'environment'}\n\n" .
+        "Stdout:\n$results{'stdout'}\n\n" .
+        "Stderr:\n$results{'stderr'}\n";
+
+    MTT::Messages::Debug("***** TestBuildOutput\n$output\n******\n");
     return $output;
 }
 
@@ -220,29 +247,30 @@ sub DoReport {
     my ($xml, $outputfn) = @_;
 
     # Run the perfbase query
-    my $cmd = "$perfbase_arg query -f f.date='" . GetYesterday() . "' -d $xml";
+    my $cmd = "$perfbase_arg query -f f.date=" . GetYesterday() . " -d $xml";
     MTT::Messages::Debug("Running query: $cmd");
-    my %ret = MTT::DoCommand::Cmd(1, $cmd, 60);
-    if($ret{status}) {
+    my $ret = MTT::DoCommand::Cmd(1, $cmd, 60);
+    if($ret->{status}) {
         MTT::Messages::Warning("Perfbase query failed! Aborting report\n");
-        MTT::Messages::Verbose(
-                "Returned $ret{status}, output follows:\n$ret{stdout}");
+        MTT::Messages::Debug(
+                "Returned $ret->{status}, output follows:\n$ret->{stdout}");
         return;
     }
     
-    
+    my @lines = split(/\n/, $ret->{stdout});
+
     # Find the column header line and parse it.
     my @columns;
-    for(@ret{stdout}) {
+    for(@lines) {
+        print("COLUMNS: $_\n\n\n");
         @columns = ParseHeaders($_);
         last if defined(@columns);
     }
 
-    MTT::Messages::Verbose("columns: \n" . Data::Dumper(@columns));
+    MTT::Messages::Verbose("columns: \n" . Dumper(@columns));
+    my $mailbody = "";
 
-    my $mailbody;
-
-    for(@ret{stdout}) {
+    for(@lines) {
         # Skip commented lines
         next if($_ =~ /^#/);
 
@@ -259,12 +287,16 @@ sub DoReport {
     }
 
     MTT::Messages::Debug("Report:\n$mailbody\n");
+    return $mailbody;
 }
 
 
-my $body = DoReport($mpi_install_arg, MPIInstallOutput) if($mpi_install_arg);
-#DoReport($mpi_install_arg, TestBuildOutput) if($test_build_arg);
-#DoReport($mpi_install_arg, TestRunOutput) if($test_run_arg);
+my $body;
+$body .= DoReport($mpi_install_arg, \&MPIInstallOutput) if($mpi_install_arg);
+$body .= DoReport($test_build_arg, \&TestBuildOutput) if($test_build_arg);
+$body .= DoReport($mpi_install_arg, TestRunOutput) if($test_run_arg);
 
-print "$body\n";
+print "Body:$body\n";
+
+MTT::Mail::Send("MTT Report!", $email_arg, $body);
 
