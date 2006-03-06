@@ -69,6 +69,11 @@
   </named_location>
 
   <named_location len="0">
+    <name>platform_id</name>
+    <match>platform_id: </match>
+  </named_location>
+
+  <named_location len="0">
     <name>environment</name>
     <match marker="begin" skip="1">ENVIRONMENT_BEGIN</match>
     <match marker="end">ENVIRONMENT_END</match>
@@ -77,6 +82,11 @@
   <named_location len="0">
     <name>mpi_name</name>
     <match>mpi_name: </match>
+  </named_location>
+
+  <named_location len="0">
+    <name>mpi_version</name>
+    <match>mpi_version: </match>
   </named_location>
 
   <named_location len="0">
@@ -90,13 +100,13 @@
   </named_location>
 
   <named_location len="0">
-    <name>mpi_version</name>
-    <match>mpi_version: </match>
+    <name>test_build_section_name</name>
+    <match>test_build_section_name: </match>
   </named_location>
 
   <named_location len="0">
-    <name>platform_id</name>
-    <match>platform_id: </match>
+    <name>test_run_section_name</name>
+    <match>test_run_section_name: </match>
   </named_location>
 
   <named_location len="0">
@@ -127,16 +137,6 @@
   <named_location>
     <name>test_pass</name>
     <match>test_pass: </match>
-  </named_location>
-
-  <named_location len="0">
-    <name>test_run_section_name</name>
-    <match>test_run_section_name: </match>
-  </named_location>
-
-  <named_location len="0">
-    <name>test_build_section_name</name>
-    <match>test_build_section_name: </match>
   </named_location>
 
   <named_location len="0">

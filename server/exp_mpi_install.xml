@@ -51,56 +51,56 @@
   <result occurence="once">
     <name>os_name</name>
     <synopsis>operating system name</synopsis>
-    <default>not specified</default>
+    <default>N/A</default>
     <datatype>string</datatype>
   </result>
 
   <result occurence="once">
     <name>os_version</name>
     <synopsis>operating system version</synopsis>
-    <default>not specified</default>
+    <default>N/A</default>
     <datatype>string</datatype>
   </result>
 
   <result occurence="once">
     <name>platform_hardware</name>
     <synopsis>platform architecture</synopsis>
-    <default>not specified</default>
+    <default>N/A</default>
     <datatype>string</datatype>
   </result>
 
   <result occurence="once">
     <name>platform_type</name>
     <synopsis>platform os/architecture</synopsis>
-    <default>not specified</default>
+    <default>N/A</default>
     <datatype>string</datatype>
   </result>
 
   <result occurence="once">
     <name>compiler_name</name>
     <synopsis>compiler name</synopsis>
-    <default>not specified</default>
+    <default>N/A</default>
     <datatype>string</datatype>
   </result>
 
   <result occurence="once">
     <name>compiler_version</name>
     <synopsis>compiler version</synopsis>
-    <default>not specified</default>
+    <default>N/A</default>
     <datatype>string</datatype>
   </result>
 
   <result occurence="once">
     <name>configure_arguments</name>
     <synopsis>arguments that were given to ./configure or equivalent</synopsis>
-    <default>not specified</default>
+    <default>N/A</default>
     <datatype>string</datatype>
   </result>
 
   <result occurence="once">
     <name>environment</name>
     <synopsis>environment the build was performed in</synopsis>
-    <default>not specified</default>
+    <default>N/A</default>
     <datatype>text</datatype>
   </result>
   
@@ -113,7 +113,7 @@
   <result occurence="once">
     <name>mpi_get_section_name</name>
     <synopsis>MPI section name</synopsis>
-    <default>not specified</default>
+    <default>N/A</default>
     <datatype>string</datatype>
   </result>
 
@@ -126,14 +126,14 @@
   <result occurence="once">
     <name>platform_id</name>
     <synopsis>platform identifier</synopsis>
-    <default>not specified</default>
+    <default>N/A</default>
     <datatype>string</datatype>
   </result>
 
   <result occurence="once">
     <name>mpi_install_section_name</name>
     <synopsis>mpi_install_section name</synopsis>
-    <default>not specified</default>
+    <default>N/A</default>
     <datatype>string</datatype>
   </result>
 
@@ -147,7 +147,7 @@
   <result occurence="once">
     <name>vpath_mode</name>
     <synopsis>whether this is a VPATH build or not</synopsis>
-    <default>not specified</default>
+    <default>N/A</default>
     <datatype>string</datatype>
   </result>
 
@@ -166,14 +166,14 @@
   <result occurence="once">
     <name>stderr</name>
     <synopsis>stderr output from build</synopsis>
-    <default>no output generated</default>
+    <default>N/A</default>
     <datatype>text</datatype>
   </result>
 
   <result occurence="once">
     <name>stdout</name>
     <synopsis>stdout output from build</synopsis>
-    <default>no output generated</default>
+    <default>N/A</default>
     <datatype>text</datatype>
   </result>
   
