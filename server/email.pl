@@ -81,7 +81,7 @@ require MTT::Messages;
 require MTT::FindProgram;
 require MTT::DoCommand;
 require MTT::Mail;
-
+require XML::Simple;
 
 my $SEP = "=====================================================================\n";
 my $LINETOKEN = "XXXXX";
@@ -165,47 +165,42 @@ sub GetYesterday {
 }
 
 
-# Take a line of input, and if it is the column header line,
-#  return an array containing the column headers.  Otherwise, return undef.
-sub ParseHeaders {
-    my ($line) = @_;
-    my @columns;
+# Take a dataset XML hash structure and return a 'flattened' version.
+#  $dataset->{'values'}->{$key}->{'content'} becomes $dataset->{$key}
+sub FlattenDataset {
+    my ($dataset) = @_;
 
-    # We key on '# ' to determine if this is a column header line.
-    return undef unless $line =~ /^# (.+\[\][\t ]+)+/;
+    print "flatten\n";
+    print Dumper($dataset);
+    print "foo\n";
+    my $flat;
+    for(keys(%{$dataset->{'value'}})) {
+        print "flattening $_\n";
+        $flat->{$_} = $dataset->{'value'}->{$_}->{'content'};
+    }
 
-    # Must be column header line.. break it up!
-    $line =~ s/^# //;
-    $line =~ s/\[\]//g;
-    @columns = split(/\t/, $line);
-
-    return @columns;
+    return $flat;
 }
 
 
 # Take a hash of results and generate text output
 sub MPIInstallOutput {
-    my (%results) = @_;
-
-    # Split stderr/stdout/environment back into multiple lines
-    $results{'environment'} =~ s/$LINETOKEN/\n/g;
-    $results{'stdout'} =~ s/$LINETOKEN/\n/g;
-    $results{'stderr'} =~ s/$LINETOKEN/\n/g;
+    my ($results) = @_;
 
     my $output = $SEP .
-        "MPI Name: $results{'mpi_install_pretty_name'} " .
-            "$results{'mpi_version'}\n\n" .
-        "Hostname: $results{'hostname'}\n" .
-        "Operating System: $results{'os_version'}\n" .
-        "Platform Type: $results{'platform_type'}\n" .
-        "Platform ID: $results{'platform_id'}\n" .
-        "Compiler: $results{'compiler_name'} $results{'compiler_version'}\n" .
-        "Configure Arguments: $results{'configure_arguments'}\n" .
-        "Start Date: $results{'start_timestamp'}\n" .
-        "Finish Date: $results{'stop_timestamp'}\n\n" .
-        "Environment:\n$results{'environment'}\n\n" .
-        "Stdout:\n$results{'stdout'}\n\n" .
-        "Stderr:\n$results{'stderr'}\n";
+        "MPI Name: $results->{'mpi_install_pretty_name'} " .
+            "$results->{'mpi_version'}\n\n" .
+        "Hostname: $results->{'hostname'}\n" .
+        "Operating System: $results->{'os_version'}\n" .
+        "Platform Type: $results->{'platform_type'}\n" .
+        "Platform ID: $results->{'platform_id'}\n" .
+        "Compiler: $results->{'compiler_name'} $results->{'compiler_version'}\n" .
+        "Configure Arguments: $results->{'configure_arguments'}\n" .
+        "Start Date: $results->{'start_timestamp'}\n" .
+        "Finish Date: $results->{'stop_timestamp'}\n\n" .
+        "Environment:\n$results->{'environment'}\n\n" .
+        "Stdout:\n$results->{'stdout'}\n\n" .
+        "Stderr:\n$results->{'stderr'}\n";
 
     MTT::Messages::Debug("***** MPIInstallOutput\n$output\n******\n");
     return $output;
@@ -247,7 +242,8 @@ sub DoReport {
     my ($xml, $outputfn) = @_;
 
     # Run the perfbase query
-    my $cmd = "$perfbase_arg query -f f.date=" . GetYesterday() . " -d $xml";
+    #my $cmd = "$perfbase_arg query -f f.date=" . GetYesterday() . " -d $xml";
+    my $cmd = "$perfbase_arg query -f f.date=jan-1-2006 -d $xml";
     MTT::Messages::Debug("Running query: $cmd");
     my $ret = MTT::DoCommand::Cmd(1, $cmd, 60);
     if($ret->{status}) {
@@ -256,47 +252,38 @@ sub DoReport {
                 "Returned $ret->{status}, output follows:\n$ret->{stdout}");
         return;
     }
-    
-    my @lines = split(/\n/, $ret->{stdout});
+   
+    my $xml = XML::Simple::XMLin($ret->{stdout});
+    print Dumper($xml);
 
-    # Find the column header line and parse it.
-    my @columns;
-    for(@lines) {
-        print("COLUMNS: $_\n\n\n");
-        @columns = ParseHeaders($_);
-        last if defined(@columns);
+    # Make sure we have a data hash inside
+    if(ref($xml->{'data'} ne "HASH")) {
+        MTT::Messages::Error("Invalid XML format! Aborting report\n");
+        return;
     }
 
-    MTT::Messages::Verbose("columns: \n" . Dumper(@columns));
+    # If there is only one dataset, it's a hash, otherwise we have an array.
     my $mailbody = "";
-
-    for(@lines) {
-        # Skip commented lines
-        next if($_ =~ /^#/);
-
-        MTT::Messages::Debug("line: $_\n");
-        my $i = 0;
-        my %results;
-        for(split(/\t/, $_)) {
-            $_ =~ s/ *$//;
-            $results{$columns[$i]} = $_;
-            $i++;
+    my $type = ref($xml->{'data'}->{'dataset'});
+    if($type eq "HASH") {
+        $mailbody .= &$outputfn(FlattenDataset($xml->{'data'}->{'dataset'}));
+    } elsif ($type eq "ARRAY") {
+        for(@$xml->{'data'}->{'dataset'}) {
+            $mailbody .= &$outputfn(FlattenDataset($_));
         }
-
-        $mailbody .= &$outputfn(%results);
+    } else {
+        MTT::Messages::Error("Invalid XML format! Aborting report\n");
+        return;
     }
-
-    MTT::Messages::Debug("Report:\n$mailbody\n");
-    return $mailbody;
 }
 
 
 my $body;
 $body .= DoReport($mpi_install_arg, \&MPIInstallOutput) if($mpi_install_arg);
-$body .= DoReport($test_build_arg, \&TestBuildOutput) if($test_build_arg);
-$body .= DoReport($mpi_install_arg, TestRunOutput) if($test_run_arg);
+#$body .= DoReport($test_build_arg, \&TestBuildOutput) if($test_build_arg);
+#$body .= DoReport($mpi_install_arg, \&TestRunOutput) if($test_run_arg);
 
 print "Body:$body\n";
 
-MTT::Mail::Send("MTT Report!", $email_arg, $body);
+#MTT::Mail::Send("MTT Report!", $email_arg, $body);
 
