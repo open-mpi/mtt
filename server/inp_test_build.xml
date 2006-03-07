@@ -115,8 +115,8 @@
   </named_location>
 
   <named_location>
-    <name>stdout_stderr_combined</name>
-    <match>stdout_stderr_combined: </match>
+    <name>merge_stdout_stderr</name>
+    <match>merge_stdout_stderr: </match>
   </named_location>
 
   <named_location>

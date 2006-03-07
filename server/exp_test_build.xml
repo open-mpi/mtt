@@ -144,8 +144,8 @@
   </result>
 
   <result occurence="once">
-    <name>stdout_stderr_combined</name>
-    <synopsis>true if stdout and stderr are combined output</synopsis>
+    <name>merge_stdout_stderr</name>
+    <synopsis>true if stdout and stderr are merged</synopsis>
     <default>false</default>
     <datatype>boolean</datatype>
   </result>

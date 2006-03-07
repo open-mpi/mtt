@@ -45,6 +45,7 @@
     <result>configure_arguments</result>
     <result>start_timestamp</result>
     <result>stop_timestamp</result>
+    <result>merge_stdout_stderr</result>
     <result>environment</result>
     <result>stdout</result>
     <result>stderr</result>
