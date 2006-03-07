@@ -36,7 +36,7 @@
     <result>hostname</result>
     <result>os_version</result>
     <result>platform_type</result>
-    <result>platform_id</result>
+    <result>platform_hardware</result>
     <result>compiler_name</result>
     <result>compiler_version</result>
     <result>configure_arguments</result>

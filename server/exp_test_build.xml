@@ -83,6 +83,13 @@
   </result>
 
   <result occurence="once">
+    <name>platform_id</name>
+    <synopsis>platform identifier</synopsis>
+    <default>N/A</default>
+    <datatype>string</datatype>
+  </result>
+
+  <result occurence="once">
     <name>compiler_name</name>
     <synopsis>compiler name</synopsis>
     <default>N/A</default>
@@ -126,13 +133,6 @@
   <result occurence="once">
     <name>mpi_version</name>
     <synopsis>MPI version</synopsis>
-    <datatype>string</datatype>
-  </result>
-
-  <result occurence="once">
-    <name>platform_id</name>
-    <synopsis>platform identifier</synopsis>
-    <default>N/A</default>
     <datatype>string</datatype>
   </result>
 

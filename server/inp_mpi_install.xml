@@ -100,7 +100,7 @@
     <match>mpi_install_section_name: </match>
   </named_location>
   
-  <named_location len="0">
+  <named_location>
     <name>merge_stdout_stderr</name>
     <match>merge_stdout_stderr: </match>
   </named_location>

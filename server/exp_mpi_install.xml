@@ -77,6 +77,13 @@
   </result>
 
   <result occurence="once">
+    <name>platform_id</name>
+    <synopsis>platform identifier</synopsis>
+    <default>N/A</default>
+    <datatype>string</datatype>
+  </result>
+
+  <result occurence="once">
     <name>compiler_name</name>
     <synopsis>compiler name</synopsis>
     <default>N/A</default>
@@ -124,13 +131,6 @@
   </result>
 
   <result occurence="once">
-    <name>platform_id</name>
-    <synopsis>platform identifier</synopsis>
-    <default>N/A</default>
-    <datatype>string</datatype>
-  </result>
-
-  <result occurence="once">
     <name>mpi_install_section_name</name>
     <synopsis>mpi_install_section name</synopsis>
     <default>N/A</default>
@@ -140,8 +140,8 @@
   <result occurence="once">
     <name>merge_stdout_stderr</name>
     <synopsis>true if stdout and stderr are merged</synopsis>
-    <default>false</default>
-    <datatype>boolean</datatype>
+    <default>0</default>
+    <datatype>integer</datatype>
   </result>
   
   <result occurence="once">
