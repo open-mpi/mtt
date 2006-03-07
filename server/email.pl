@@ -84,7 +84,6 @@ require MTT::Mail;
 require XML::Simple;
 
 my $SEP = "=====================================================================\n";
-my $LINETOKEN = "XXXXX";
 
 
 my $mpi_install_arg;
@@ -170,12 +169,10 @@ sub GetYesterday {
 sub FlattenDataset {
     my ($dataset) = @_;
 
-    print "flatten\n";
-    print Dumper($dataset);
-    print "foo\n";
+    #print Dumper($dataset);
     my $flat;
     for(keys(%{$dataset->{'value'}})) {
-        print "flattening $_\n";
+        MTT::Messages::Debug("Flattening $_\n");
         $flat->{$_} = $dataset->{'value'}->{$_}->{'content'};
     }
 
@@ -193,14 +190,23 @@ sub MPIInstallOutput {
         "Hostname: $results->{'hostname'}\n" .
         "Operating System: $results->{'os_version'}\n" .
         "Platform Type: $results->{'platform_type'}\n" .
-        "Platform ID: $results->{'platform_id'}\n" .
+        "Platform Hardware: $results->{'platform_hardware'}\n" .
         "Compiler: $results->{'compiler_name'} $results->{'compiler_version'}\n" .
         "Configure Arguments: $results->{'configure_arguments'}\n" .
         "Start Date: $results->{'start_timestamp'}\n" .
-        "Finish Date: $results->{'stop_timestamp'}\n\n" .
-        "Environment:\n$results->{'environment'}\n\n" .
-        "Stdout:\n$results->{'stdout'}\n\n" .
-        "Stderr:\n$results->{'stderr'}\n";
+        "Finish Date: $results->{'stop_timestamp'}\n\n";
+
+    $output .= "Environment:\n$results->{'environment'}\n\n"
+        if($results->{'environment'} ne "N/A");
+    if($results->{'merge_stdout_stderr'} == 0) {
+        $output .= "Stdout (separated):\n$results->{'stdout'}\n\n"
+            if($results->{'stdout'} ne "N/A");
+        $output .= "Stderr (separated):\n$results->{'stderr'}\n\n"
+            if($results->{'stderr'} ne "N/A");
+    } else {
+        $output .= "Merged stdout/stderr:\n$results->{'stderr'}\n\n"
+            if($results->{'stderr'} ne "N/A");
+    }
 
     MTT::Messages::Debug("***** MPIInstallOutput\n$output\n******\n");
     return $output;
@@ -211,11 +217,6 @@ sub MPIInstallOutput {
 sub TestBuildOutput {
     my (%results) = @_;
 
-    # Split stderr/stdout/environment back into multiple lines
-    $results{'environment'} =~ s/$LINETOKEN/\n/g;
-    $results{'stdout'} =~ s/$LINETOKEN/\n/g;
-    $results{'stderr'} =~ s/$LINETOKEN/\n/g;
-
     my $output = $SEP .
         "Test Suite: $results{'test_build_pretty_name'}\n" .
         "MPI Name: $results{'mpi_install_pretty_name'} " .
@@ -223,7 +224,7 @@ sub TestBuildOutput {
         "Hostname: $results{'hostname'}\n" .
         "Operating System: $results{'os_version'}\n" .
         "Platform Type: $results{'platform_type'}\n" .
-        "Platform ID: $results{'platform_id'}\n" .
+        "Platform Hardware: $results{'platform_hardware'}\n" .
         "Compiler: $results{'compiler_name'} $results{'compiler_version'}\n" .
         "Configure Arguments: $results{'configure_arguments'}\n" .
         "Start Date: $results{'start_timestamp'}\n" .
@@ -268,13 +269,21 @@ sub DoReport {
     if($type eq "HASH") {
         $mailbody .= &$outputfn(FlattenDataset($xml->{'data'}->{'dataset'}));
     } elsif ($type eq "ARRAY") {
-        for(@$xml->{'data'}->{'dataset'}) {
+        for(@{$xml->{'data'}->{'dataset'}}) {
+
+            if(ref($_) ne "HASH") {
+                MTT::Messages::Error("Invalid XML format! Aborting report\n");
+                return;
+            }
+
             $mailbody .= &$outputfn(FlattenDataset($_));
         }
     } else {
         MTT::Messages::Error("Invalid XML format! Aborting report\n");
         return;
     }
+
+    return $mailbody;
 }
 
 
