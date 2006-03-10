@@ -85,6 +85,10 @@ require XML::Simple;
 
 my $SEP = "=====================================================================\n";
 
+my $fail_total = 0;
+my $fail_mpi_install = 0;
+my $fail_test_build = 0;
+my $fail_test_run = 0;
 
 my $mpi_install_arg;
 my $test_build_arg;
@@ -184,8 +188,11 @@ sub FlattenDataset {
 sub MPIInstallOutput {
     my ($results) = @_;
 
-    my $output = $SEP .
-        "MPI Name: $results->{'mpi_install_pretty_name'} " .
+    $fail_total++;
+    $fail_mpi_install++;
+
+    my $output = "$SEP\nMPI Install failure\n\n" .
+        "MPI Name: $results->{'mpi_install_section_name'} " .
             "$results->{'mpi_version'}\n\n" .
         "Hostname: $results->{'hostname'}\n" .
         "Operating System: $results->{'os_version'}\n" .
@@ -215,23 +222,35 @@ sub MPIInstallOutput {
 
 # Take a hash of results and generate text output
 sub TestBuildOutput {
-    my (%results) = @_;
+    my ($results) = @_;
 
-    my $output = $SEP .
-        "Test Suite: $results{'test_build_pretty_name'}\n" .
-        "MPI Name: $results{'mpi_install_pretty_name'} " .
-            "$results{'mpi_version'}\n\n" .
-        "Hostname: $results{'hostname'}\n" .
-        "Operating System: $results{'os_version'}\n" .
-        "Platform Type: $results{'platform_type'}\n" .
-        "Platform Hardware: $results{'platform_hardware'}\n" .
-        "Compiler: $results{'compiler_name'} $results{'compiler_version'}\n" .
-        "Configure Arguments: $results{'configure_arguments'}\n" .
-        "Start Date: $results{'start_timestamp'}\n" .
-        "Finish Date: $results{'stop_timestamp'}\n\n" .
-        "Environment:\n$results{'environment'}\n\n" .
-        "Stdout:\n$results{'stdout'}\n\n" .
-        "Stderr:\n$results{'stderr'}\n";
+    $fail_total++;
+    $fail_test_build++;
+
+    my $output = "$SEP\nTest Build failure\n\n" .
+        "Test Suite: $results->{'test_build_section_name'}\n" .
+        "MPI Name: $results->{'mpi_install_section_name'} " .
+            "$results->{'mpi_version'}\n\n" .
+        "Hostname: $results->{'hostname'}\n" .
+        "Operating System: $results->{'os_version'}\n" .
+        "Platform Type: $results->{'platform_type'}\n" .
+        "Platform Hardware: $results->{'platform_hardware'}\n" .
+        "Compiler: $results->{'compiler_name'} $results->{'compiler_version'}\n" .
+        "Configure Arguments: $results->{'configure_arguments'}\n" .
+        "Start Date: $results->{'start_timestamp'}\n" .
+        "Finish Date: $results->{'stop_timestamp'}\n\n";
+
+    $output .= "Environment:\n$results->{'environment'}\n\n"
+        if($results->{'environment'} ne "N/A");
+    if($results->{'merge_stdout_stderr'} == 0) {
+        $output .= "Stdout (separated):\n$results->{'stdout'}\n\n"
+            if($results->{'stdout'} ne "N/A");
+        $output .= "Stderr (separated):\n$results->{'stderr'}\n\n"
+            if($results->{'stderr'} ne "N/A");
+    } else {
+        $output .= "Merged stdout/stderr:\n$results->{'stderr'}\n\n"
+            if($results->{'stderr'} ne "N/A");
+    }
 
     MTT::Messages::Debug("***** TestBuildOutput\n$output\n******\n");
     return $output;
@@ -294,5 +313,16 @@ $body .= DoReport($mpi_install_arg, \&MPIInstallOutput) if($mpi_install_arg);
 
 print "Body:$body\n";
 
-#MTT::Mail::Send("MTT Report!", $email_arg, $body);
+my $msg = "\nTotal failures: $fail_total\n" .
+                "MPI Install failures: $fail_mpi_install\n" .
+                "MPI Test Build failures: $fail_test_build\n" .
+                "MPI Test Run failures: $fail_test_run\n\n";
+$msg .= $body;        
+
+#Set a subject based on number of failures
+if($fail_total == 0) {
+    MTT::Mail::Send("MTT Report - success", $email_arg, $msg);
+} else {
+    MTT::Mail::Send("MTT Report - $fail_total failures", $email_arg, $msg);
+}
 

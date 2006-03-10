@@ -37,18 +37,6 @@
   </result>
 
   <result occurence="once">
-    <name>test_build_pretty_name</name>
-    <synopsis>human readable name</synopsis>
-    <datatype>string</datatype>
-  </result>
-
-  <result occurence="once">
-    <name>mpi_install_pretty_name</name>
-    <synopsis>human readable name</synopsis>
-    <datatype>string</datatype>
-  </result>
-
-  <result occurence="once">
     <name>hostname</name>
     <synopsis>host name</synopsis>
     <datatype>string</datatype>

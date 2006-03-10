@@ -31,9 +31,9 @@
   <source id="src.result">
     <input>p.date</input>
     <input>p.pass</input>
-    <result>test_run_pretty_name</result>
-    <result>test_build_pretty_name</result>
-    <result>mpi_install_pretty_name</result>
+    <result>test_run_section_name</result>
+    <result>test_build_section_name</result>
+    <result>mpi_install_section_name</result>
     <result>test_command</result>
     <result>mpi_version</result>
     <result>hostname</result>
