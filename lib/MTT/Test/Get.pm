@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -57,14 +58,13 @@ sub _do_get {
 
     Verbose("   Checking for new test sources...\n");
 
+    # Simple section name
+    my $simple_section = $section;
+    $simple_section =~ s/^\s*test get:\s*//;
+
     my $module = Value($ini, $section, "module");
     if (!$module) {
         Warning("No module defined for test get [$section]; skipping");
-        return;
-    }
-    my $test_name = Value($ini, $section, "test_name");
-    if (!$test_name) {
-        Warning("No test_name defined for test get [$section]; skipping");
         return;
     }
     
@@ -85,13 +85,13 @@ sub _do_get {
             Verbose("   Got new test sources\n");
 
             # Save other values from the section
-            $ret->{section_name} = $section;
-            $ret->{test_name} = $test_name;
+            $ret->{full_section_name} = $section;
+            $ret->{simple_section_name} = $simple_section;
             $ret->{module_name} = "MTT::Test::Get::$module";
             $ret->{timestamp} = timegm(gmtime());
 
             # Add this into the $Test::sources hash
-            $MTT::Test::sources->{$section} = $ret;
+            $MTT::Test::sources->{$simple_section} = $ret;
             
             # Save the data file recording all the sources
             MTT::Test::SaveSources($source_dir);

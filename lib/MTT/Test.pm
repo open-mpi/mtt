@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -23,7 +24,7 @@ use XML::Simple;
 our $sources;
 
 # Exported build tests handle
-our $tests;
+our $builds;
 
 # Exported run tests handle
 our $runs;
@@ -75,7 +76,7 @@ sub Run {
 #--------------------------------------------------------------------------
 
 sub _setup_sources_xml {
-    $sources_xs = new XML::Simple(KeyAttr => { test_get => "name",
+    $sources_xs = new XML::Simple(KeyAttr => { test_get => "simple_section_name",
                                            },
                                   ForceArray => [ "test_get", 
                                                   ],
@@ -107,6 +108,7 @@ sub LoadSources {
             my $test_get = $in->{test_get}->{$test_get_key};
 
             $MTT::Test::sources->{$test_get_key} = $test_get;
+            $MTT::Test::sources->{$test_get_key}->{simple_section_name} = $test_get_key;
         }
     }
 }
@@ -143,9 +145,9 @@ sub SaveSources {
 #--------------------------------------------------------------------------
 
 sub _setup_builds_xml {
-    $builds_xs = new XML::Simple(KeyAttr => { mpi_get => "name",
-                                              mpi_install => "name",
-                                              test_build => "name",
+    $builds_xs = new XML::Simple(KeyAttr => { mpi_get => "simple_section_name",
+                                              mpi_install => "simple_section_name",
+                                              test_build => "simple_section_name",
                                             },
                                    ForceArray => [ "mpi_get", 
                                                    "mpi_install",
@@ -187,6 +189,7 @@ sub LoadBuilds {
                     
                     $MTT::Test::builds->{$mpi_get_key}->{$mpi_install_key}->{$test_build_key} = 
                         $in->{mpi_get}->{$mpi_get_key}->{mpi_install}->{$mpi_install_key}->{test_build}->{$test_build_key};
+                    $MTT::Test::builds->{$mpi_get_key}->{$mpi_install_key}->{$test_build_key}->{simple_section_name} = $test_build_key;
                 }
             }
         }
@@ -236,10 +239,10 @@ sub SaveBuilds {
 #--------------------------------------------------------------------------
 
 sub _setup_runs_xml {
-    $runs_xs = new XML::Simple(KeyAttr => { mpi_get => "name",
-                                            mpi_install => "name",
-                                            test_build => "name",
-                                            test_run => "name",
+    $runs_xs = new XML::Simple(KeyAttr => { mpi_get => "simple_section_name",
+                                            mpi_install => "simple_section_name",
+                                            test_build => "simple_section_name",
+                                            test_run => "simple_section_name",
                                             test_name => "name",
                                             test_np => "nprocs",
                                             test_cmd => "argv",

@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -17,6 +18,7 @@ use File::Temp qw(tempfile);
 use MTT::Messages;
 use MTT::DoCommand;
 use MTT::Values;
+use Data::Dumper;
 
 #--------------------------------------------------------------------------
 
@@ -28,7 +30,7 @@ sub Build {
     $ret->{success} = 0;
 
     # Now run that file -- remove it when done, regardless of the outcome
-    my $cmd = Value($ini, $config->{section_name}, "build_command");
+    my $cmd = Value($ini, $config->{full_section_name}, "build_command");
     my $x = MTT::DoCommand::CmdScript(!$config->{separate_stdout_stderr},
                                       $cmd);
     if ($x->{status} != 0) {

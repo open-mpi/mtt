@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -72,26 +73,21 @@ sub _do_get {
 
     Verbose("   Checking for new MPI sources...\n");
 
+    # Simple section name
+    my $simple_section = $section;
+    $simple_section =~ s/^\s*mpi get:\s*//;
+
     my $module = Value($ini, $section, "module");
     if (!$module) {
         Warning("No module defined for MPI get [$section]; skipping");
         return;
     }
-    my $mpi_name = Value($ini, $section, "mpi_name");
-    if (!$mpi_name) {
-        Warning("No mpi_name defined for MPI get [$section]; skipping");
+    my $mpi_details = Value($ini, $section, "mpi_details");
+    if (!$mpi_details) {
+        Warning("No mpi_details defined for MPI get [$section]; skipping");
         return;
     }
-    my $pretty_name = Value($ini, $section, "pretty_name");
-    my $mpi_installer = Value($ini, $section, "mpi_installer");
-    if (!$mpi_installer) {
-        Warning("No mpi_installer defined for MPI get [$section]; skipping");
-        return;
-    }
-    if (!$pretty_name) {
-        $pretty_name = $mpi_name;
-    }
-    
+
     # Make a directory just for this section
     chdir($source_dir);
     my $section_dir = MTT::Files::make_safe_filename($section);
@@ -109,15 +105,14 @@ sub _do_get {
             Verbose("   Got new MPI sources\n");
 
             # Save other values from the section
-            $ret->{section_name} = $section;
-            $ret->{pretty_name} = $pretty_name;
-            $ret->{mpi_name} = $mpi_name;
-            $ret->{mpi_installer} = $mpi_installer;
+            $ret->{full_section_name} = $section;
+            $ret->{simple_section_name} = $simple_section;
+            $ret->{mpi_details} = $mpi_details;
             $ret->{module_name} = "MTT::MPI::Get::$module";
             $ret->{timestamp} = timegm(gmtime());
             
             # Add this into the $MPI::sources hash
-            $MTT::MPI::sources->{$section} = $ret;
+            $MTT::MPI::sources->{$simple_section} = $ret;
 
             # Save the data file recording all the sources
             MTT::MPI::SaveSources($source_dir);

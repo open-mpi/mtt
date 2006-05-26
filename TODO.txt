@@ -8,10 +8,12 @@ MTT Design goals:
  - For 1.0, focus on test suites the Open MPI group cares about
    - Correctness first, then performance, then other MPIs
 
+============================================================================
 
 Task list for 1.0/0.5:
 
-BA
+Andrew Friedley
+---------------
 
 Finish up perfbase backend development
  - Finish perfbase xml output support
@@ -23,35 +25,46 @@ Split reporter into formatting/data collection and transport
  - Data collection - report mpi install, test build, test results
 
 
-Jeff:
+Jeff Squyres
+------------
 
+>>> DONE:
+New syntax linkage between MPI and Test phases:
+    [MPI Get: OMPI trunk]
+    mpi_details=OMPI
+
+    [MPI Get: OMPI branch]
+    mpi_details=OMPI
+
+    [MPI Install: optimized]
+    mpi_get=OMPI trunk,OMPI branch
+
+    [MPI Install: debug]
+    mpi_get=OMPI trunk,OMPI branch
+
+    [MPI Details: OMPI]
+
+New "reverse" linkage between all phases
+
+Implement "Trivial" plugins for "hello world" tests
+
+
+>>> NOT DONE:
 --developer switch - run MTT against a current install
+
 Active & Passive report mode - make reporting a phase?
  - Use cron for pushing reports through disconnected setups
    - Checking for new results to report every 10 mins
    - Gets daily before builds occur
    - Build daily on compile side, followed by a qsub to start compute nodes
    - Assume compile and compute nodes share filesystem
+
 MTT global params:
  [MTT]
  name_delimiter=, # delimiter between names of references in name= field
  run_if_partial_build_fail=1 # run tests that DID build if test build fails
 
 Implement trim phase
-New syntax linkage between MPI and Test phases:
- [MPI Get: OMPI trunk]
- mpi_details=OMPI
-
- [MPI Get: OMPI branch]
- mpi_details=OMPI
-
- [MPI Install: optimized]
- mpi_get=OMPI trunk,OMPI branch
-
- [MPI Install: debug]
- mpi_get=OMPI trunk,OMPI branch
-
- [MPI Details: OMPI]
 
 Implement 'test specify' phase - replaces current test run INI stuff
  - Should generate a list of tuples, which is:
@@ -76,7 +89,8 @@ Implement 'test specify' phase - replaces current test run INI stuff
    intel_buildfile=coll
 
 
-Jim:
+Jim Barker
+----------
 
 Disconnected scenarios - mpi/test get proxies
  - Support different protocols - via module?  need rsync, scp, ...
@@ -84,7 +98,7 @@ Disconnected scenarios - mpi/test get proxies
    - force
    - retry
    - timeout
- - 
+
 Split reporter into formatting and transport
 Support for these test suites:
  intel
@@ -108,7 +122,7 @@ behavior should be combinatorial for the np, exec, and argv, if some sort of
 lists are provided all combinations should be generated. pass and timeout are
 considered constant, and should only have one value.
 
-
+============================================================================
 
 Features NOT to worry about for 1.0:
 

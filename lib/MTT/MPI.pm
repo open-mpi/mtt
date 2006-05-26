@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -60,7 +61,7 @@ sub Install {
 #--------------------------------------------------------------------------
 
 sub _setup_sources_xml {
-    $sources_xs = new XML::Simple(KeyAttr => { mpi_get => "name",
+    $sources_xs = new XML::Simple(KeyAttr => { mpi_get => "simple_section_name",
                                            },
                                   ForceArray => [ "mpi_get", 
                                                   ],
@@ -92,6 +93,7 @@ sub LoadSources {
             my $mpi_get = $in->{mpi_get}->{$mpi_get_key};
 
             $MTT::MPI::sources->{$mpi_get_key} = $mpi_get;
+            $MTT::MPI::sources->{$mpi_get_key}->{simple_section_name} = $mpi_get_key;
         }
     }
 }
@@ -128,8 +130,8 @@ sub SaveSources {
 #--------------------------------------------------------------------------
 
 sub _setup_installs_xml {
-    $installs_xs = new XML::Simple(KeyAttr => { mpi_get => "name",
-                                                mpi_install => "name",
+    $installs_xs = new XML::Simple(KeyAttr => { mpi_get => "simple_section_name",
+                                                mpi_install => "simple_section_name",
                                             },
                                    ForceArray => [ "mpi_get", 
                                                    "mpi_install",
@@ -165,6 +167,7 @@ sub LoadInstalls {
             foreach my $mpi_install_key (keys(%{$mpi_get->{mpi_install}})) {
                 $MTT::MPI::installs->{$mpi_get_key}->{$mpi_install_key} = 
                     $in->{mpi_get}->{$mpi_get_key}->{mpi_install}->{$mpi_install_key};
+                $MTT::MPI::installs->{$mpi_get_key}->{$mpi_install_key}->{simple_section_name} = $mpi_install_key;
             }
         }
     }

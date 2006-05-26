@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -20,23 +21,23 @@ use Data::Dumper;
 #--------------------------------------------------------------------------
 
 sub _find_bindings {
-    my ($config, $lang) = @_;
+    my ($bindir, $libdir, $lang) = @_;
 
     my %ENV_SAVE = %ENV;
     if (exists($ENV{LD_LIBRARY_PATH})) {
-        $ENV{LD_LIBRARY_PATH} .= ":$config->{libdir}";
+        $ENV{LD_LIBRARY_PATH} .= ":$libdir";
     } else {
-        $ENV{LD_LIBRARY_PATH} = "$config->{libdir}";
+        $ENV{LD_LIBRARY_PATH} = "$libdir";
     }
 
-    open INFO, "$config->{bindir}/ompi_info --parsable|";
+    open INFO, "$bindir/ompi_info --parsable|";
     my @have = grep { /^bindings:$lang:/ } <INFO>;
     chomp @have;
     close INFO;
 
     %ENV = %ENV_SAVE;
 
-    return ($have[0] eq "bindings:${lang}:yes");
+    return ($have[0] =~ /^bindings:${lang}:yes/) ? "1" : "0";
 }
 
 #--------------------------------------------------------------------------
@@ -52,8 +53,12 @@ sub Install {
 
     # Run configure
 
-    $x = MTT::DoCommand::Cmd(1, "$config->{configdir}/configure $config->{configure_arguments} --prefix=$config->{installdir}");
-    $ret->{stdout} = "--- Configure stdout/stderr ---\n$x->{stdout}"
+    $ret->{installdir} = $config->{installdir};
+    $ret->{bindir} = "$ret->{installdir}/bin";
+    $ret->{libdir} = "$ret->{installdir}/lib";
+
+    $x = MTT::DoCommand::Cmd(1, "$config->{configdir}/configure $config->{configure_arguments} --prefix=$ret->{installdir}");
+    $ret->{configure_stdout} = "--- Configure stdout/stderr ---\n$x->{stdout}"
         if ($x->{stdout});
     if ($x->{status} != 0) {
         $ret->{result_message} = "Configure failed -- skipping this build\n";
@@ -63,11 +68,11 @@ sub Install {
     # Build it
 
     $x = MTT::DoCommand::Cmd($config->{merge_stdout_stderr}, "make $config->{make_all_arguments} all");
-    $ret->{stdout} .= "--- \"make all\" stdout" .
+    $ret->{make_all_stdout} .= "--- \"make all\" stdout" .
         ($config->{merge_stdout_stderr} ? "/stderr" : "") .
         " ---\n$x->{stdout}"
         if ($x->{stdout});
-    $ret->{stderr} .= "--- \"make all\" stderr ---\n$x->{stderr}"
+    $ret->{make_all_stderr} .= "--- \"make all\" stderr ---\n$x->{stderr}"
         if ($x->{stderr});
     if ($x->{status} != 0) {
         $ret->{result_message} = "Failed to build: make $config->{make_all_arguments} all\n";
@@ -81,8 +86,18 @@ sub Install {
 
     if ($config->{make_check} == 1) {
         my %ENV_SAVE = %ENV;
-        $ENV{TMPDIR} = "$config->{installdir}/tmp";
+        $ENV{TMPDIR} = "$ret->{installdir}/tmp";
         mkdir($ENV{TMPDIR}, 0777);
+        # We may need to revisit this later -- there are definitely
+        # cases where simply deleting the entire LD_LIBRARY_PATH is
+        # not a Good Thing (e.g., if there are libraries in there
+        # necessary for the compiler that are not in the default ld.so
+        # search path).  The intent here is just to ensure that the
+        # LD_LIBRARY_PATH in the environment does not point to shared
+        # libraries outside of MTT's scope that would interfere with
+        # "make check" (e.g., another libmpi.so outside of MTT).  I
+        # don't quite know how to do that, though, so we just
+        # currently delete the whole thing.  :-)
         delete $ENV{LD_LIBRARY_PATH};
 
         Debug("Running make check\n");
@@ -90,7 +105,7 @@ sub Install {
         %ENV = %ENV_SAVE;
 
         if ($x->{status} != 0) {
-            $ret->{stdout} .= "--- \"make check\" stdout ---\n$x->{stdout}"
+            $ret->{make_check_stdout} .= "--- \"make check\" stdout ---\n$x->{stdout}"
                 if ($x->{stdout});
             $ret->{result_message} = "Failed to make check\n";
             return $ret;
@@ -116,9 +131,12 @@ sub Install {
     # Set which bindings were compiled
 
     $ret->{c_bindings} = 1;
-    $ret->{cxx_bindings} = _find_bindings($config, "cxx");
-    $ret->{f77_bindings} = _find_bindings($config, "f77");
-    $ret->{f90_bindings} = _find_bindings($config, "f90");
+    $ret->{cxx_bindings} = _find_bindings($ret->{bindir},
+                                          $ret->{libdir}, "cxx");
+    $ret->{f77_bindings} = _find_bindings($ret->{bindir},
+                                          $ret->{libdir}, "f77");
+    $ret->{f90_bindings} = _find_bindings($ret->{bindir},
+                                          $ret->{libdir}, "f90");
 
     # All done
 

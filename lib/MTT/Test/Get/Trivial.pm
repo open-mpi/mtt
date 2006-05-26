@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -60,15 +61,23 @@ sub Get {
     # We're in the source tree, so just write out some files
 
     $have_new = $ret->{have_new} = 0;
-    $x = _do_write($force, "hello.c", "#include <stdio.h>
+    $x = _do_write($force, "hello.c", "/*
+ * This program is automatically generated via the \"Trivial\" Test::Get
+ * module of the MPI Testing Tool (MTT).  Any changes you make here may
+ * get lost!
+ *
+ * Copyrights and licenses of this file are the same as for the MTT.
+ */
+
+#include <stdio.h>
 #include <mpi.h>
 int main(int argc, char* argv[]) {
     int rank, size;
     MPI_Init(&argc, &argv);
-    MPI_Finalize();
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
-    printf(\"Hello, world!  I am %d of %d\\n\", rank, size);
+    printf(\"Hello, C world!  I am %d of %d\\n\", rank, size);
+    MPI_Finalize();
     return 0;
 }\n");
     if ($x) {
@@ -76,16 +85,24 @@ int main(int argc, char* argv[]) {
         return $ret;
     }
 
-    $x = _do_write($force, "hello.cc", "#include <iostream>
+    $x = _do_write($force, "hello.cc", "//
+// This program is automatically generated via the \"Trivial\" Test::Get
+// module of the MPI Testing Tool (MTT).  Any changes you make here may
+// get lost!
+//
+// Copyrights and licenses of this file are the same as for the MTT.
+//
+
+#include <iostream>
 #include <mpi.h>
 using namespace std;
 int main(int argc, char* argv[]) {
     int rank, size;
     MPI::Init(argc, argv);
-    MPI::Finalize();
     rank = MPI::COMM_WORLD.Get_rank();
     size = MPI::COMM_WORLD.Get_size();
-    cout << \"Hello, world!  I am \" << rank << \" of \" << size << endl;   
+    cout << \"Hello, C++ world!  I am \" << rank << \" of \" << size << endl;
+    MPI::Finalize();
     return 0;
 }\n");
     if ($x) {
@@ -94,29 +111,44 @@ int main(int argc, char* argv[]) {
     }
 
     $x = _do_write($force, "hello.f", "C
+C This program is automatically generated via the \"Trivial\" Test::Get
+C module of the MPI Testing Tool (MTT).  Any changes you make here may
+C get lost!
+C
+C Copyrights and licenses of this file are the same as for the MTT.
+C
+
         program main
         implicit none
         include 'mpif.h'
         integer rank, size, ierr
         call MPI_INIT(ierr)
-        call MPI_FINALIZE(ierr)
         call MPI_COMM_RANK(MPI_COMM_WORLD, rank, ierr)
         call MPI_COMM_SIZE(MPI_COMM_WORLD, size, ierr)
-        print *, 'Hello Fortran world, I am ', rank, ' of ', size
+        print *, 'Hello, Fortran 77 world, I am ', rank, ' of ', size
+        call MPI_FINALIZE(ierr)
         end program main\n");
     if ($x) {
         $ret->{result_message} = $x->{result_message};
         return $ret;
     }
 
-    $x = _do_write($force, "hello.f90", "program main
+    $x = _do_write($force, "hello.f90", "!
+! This program is automatically generated via the \"Trivial\" Test::Get
+! module of the MPI Testing Tool (MTT).  Any changes you make here may
+! get lost!
+!
+! Copyrights and licenses of this file are the same as for the MTT.
+!
+
+program main
     use mpi
     integer rank, size, ierr
     call MPI_INIT(ierr)
-    call MPI_FINALIZE(ierr)
     call MPI_COMM_RANK(MPI_COMM_WORLD, rank, ierr)
     call MPI_COMM_SIZE(MPI_COMM_WORLD, size, ierr)
-    print *, 'Hello Fortran world, I am ', rank, ' of ', size
+    print *, 'Hello, Fortran 90 world, I am ', rank, ' of ', size
+    call MPI_FINALIZE(ierr)
 end program main\n");
     if ($x) {
         $ret->{result_message} = $x->{result_message};

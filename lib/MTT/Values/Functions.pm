@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -70,7 +71,7 @@ sub multiply {
 
 #--------------------------------------------------------------------------
 
-# Return the product of all parameters
+# Return all the squares
 sub squares {
     Debug("&squares got: @_\n");
 
@@ -88,7 +89,7 @@ sub squares {
 
 #--------------------------------------------------------------------------
 
-# Return the product of all parameters
+# Return all the powers of a given base from [base^min, base^max]
 sub pow {
     Debug("&pow got: @_\n");
 
@@ -457,7 +458,8 @@ sub find_executables {
     find(\&find_executables_sub, @_);
 
     Debug("&find_exectuables returning: @find_executables_data\n");
-}    return \@find_executables_data;
+    return \@find_executables_data;
+}
 
 sub find_executables_sub {
     # Don't process directories and links, and don't recurse down

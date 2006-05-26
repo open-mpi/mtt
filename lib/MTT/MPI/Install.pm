@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -131,44 +132,50 @@ sub Install {
         if ($section =~ /^\s*mpi install:/) {
             Verbose(">> MPI install [$section]\n");
 
-            my $mpi_installer = Value($ini, $section, "mpi_installer");
-            if (!$mpi_installer) {
-                Warning("No mpi_installer specified in [$section]; skipping\n");
+            # Simple section name
+            my $simple_section = $section;
+            $simple_section =~ s/^\s*mpi install:\s*//;
+
+            my $mpi_get_value = Value($ini, $section, "mpi_get");
+            if (!$mpi_get_value) {
+                Warning("No mpi_get specified in [$section]; skipping\n");
                 next;
             }
-            my $pretty_name = Value($ini, $section, "pretty_name");
-            if (!$pretty_name) {
-                Warning("No pretty_name specified in [$section]; skipping\n");
-                next;
-            }
 
-            # For each MPI source
-            foreach my $mpi_get_key (keys(%{$MTT::MPI::sources})) {
-                my $mpi_get = $MTT::MPI::sources->{$mpi_get_key};
-                if ($mpi_get->{mpi_installer} eq $mpi_installer) {
+            # Iterate through all the mpi_get values
+            my @mpi_gets = split(/,/, $mpi_get_value);
+            foreach my $mpi_get_name (@mpi_gets) {
+                # Strip whitespace
+                $mpi_get_name =~ s/^\s*(.*?)\s*/\1/;
 
-                    # We found a corresponding MPI source.  Now check
-                    # to see if it has already been built.  Test
-                    # incrementally so that it doesn't create each
-                    # intermediate key.
+                # For each MPI source
+                foreach my $mpi_get_key (keys(%{$MTT::MPI::sources})) {
+                    if ($mpi_get_key eq $mpi_get_name) {
+                        my $mpi_get = $MTT::MPI::sources->{$mpi_get_key};
 
-                    Debug("Checking for [$mpi_get_key] / [$mpi_get->{section_name}] / $section\n");
-                    if (!$force &&
-                        exists($MTT::MPI::installs->{$mpi_get_key}) &&
-                        exists($MTT::MPI::installs->{$mpi_get_key}->{$section})) {
-                        Verbose("   Already have an install for [$mpi_get->{section_name}]\n");
-                    } else {
-                        Verbose("   Installing MPI: [$mpi_get->{section_name}]...\n");
-                        
-                        chdir($install_base);
-                        my $mpi_dir = _make_safe_dir($mpi_get->{section_name});
-                        chdir($mpi_dir);
-                        
-                        # Install and restore the environment
-                        _do_install($section, $ini,
-                                    $mpi_get, $mpi_dir, $pretty_name, $force);
-                        %ENV = %ENV_SAVE;
-                        Verbose("   Completed MPI install\n");
+                        # We found a corresponding MPI source.  Now
+                        # check to see if it has already been
+                        # installed.  Test incrementally so that it
+                        # doesn't create each intermediate key.
+
+                        Debug("Checking for [$mpi_get_key] / [$simple_section]\n");
+                        if (!$force &&
+                            exists($MTT::MPI::installs->{$mpi_get_key}) &&
+                            exists($MTT::MPI::installs->{$mpi_get_key}->{$simple_section})) {
+                            Verbose("   Already have an install for [$simple_section]\n");
+                        } else {
+                            Verbose("   Installing MPI: [$simple_section]...\n");
+                            
+                            chdir($install_base);
+                            my $mpi_dir = _make_safe_dir($mpi_get->{simple_section_name});
+                            chdir($mpi_dir);
+                            
+                            # Install and restore the environment
+                            _do_install($section, $ini,
+                                        $mpi_get, $mpi_dir, $force);
+                            %ENV = %ENV_SAVE;
+                            Verbose("   Completed MPI install\n");
+                        }
                     }
                 }
             }
@@ -194,10 +201,11 @@ sub _prepare_source {
 
 # Install an MPI from sources
 sub _do_install {
-    my ($section, $ini, $mpi_get, $this_install_base, $pretty_name,
-        $force) = @_;
+    my ($section, $ini, $mpi_get, $this_install_base, $force) = @_;
 
-    # Loop through all the configuration values in this section
+    # Simple section name
+    my $simple_section = $section;
+    $simple_section =~ s/^\s*mpi install:\s*//;
 
     my $val;
     my $config;
@@ -220,19 +228,14 @@ sub _do_install {
         
     # Filled in by the module
     $config->{success} = 0;
-    $config->{result_message} = "";
-    $config->{bindir} = "";
-    $config->{libdir} = "";
-    $config->{configure_stdout} = "";
-    $config->{make_all_stdout} = "";
-    $config->{make_all_stderr} = "";
-    $config->{make_check_stdout} = "";
+    $config->{result_message} = "to be filled in by module";
     $config->{c_bindings} = 0;
     $config->{cxx_bindings} = 0;
     $config->{f77_bindings} = 0;
     $config->{f90_bindings} = 0;
     
-    $config->{section_name} = $section;
+    $config->{full_section_name} = $section;
+    $config->{simple_section_name} = $simple_section;
 
     # module
     $config->{module} = Value($ini, $section, "module");
@@ -243,7 +246,7 @@ sub _do_install {
     
     # Make a directory just for this section
     chdir($this_install_base);
-    $config->{section_dir} = _make_safe_dir($section);
+    $config->{section_dir} = _make_safe_dir($simple_section);
     chdir($config->{section_dir});
     
     # Process setenv, unsetenv, prepend_path, and
@@ -366,8 +369,7 @@ sub _do_install {
         my $report = {
             phase => "MPI Install",
 
-            mpi_install_section_name => $config->{section_name},
-            mpi_install_pretty_name => $pretty_name,
+            mpi_install_section_name => $config->{simple_section_name},
             compiler_name => $config->{compiler_name},
             compiler_version => $config->{compiler_version},
             configure_arguments => $config->{configure_arguments},
@@ -378,9 +380,8 @@ sub _do_install {
             perfbase_xml => $config->{perfbase_xml},
             start_timestamp => $start,
             stop_timestamp => $stop,
-            mpi_name => $mpi_get->{mpi_name},
-            mpi_get_pretty_name => $mpi_get->{pretty_name},
-            mpi_get_section_name => $mpi_get->{section_name},
+            mpi_details => $mpi_get->{mpi_details},
+            mpi_name => $mpi_get->{simple_section_name},
             mpi_version => $mpi_get->{version},
 
             success => $ret->{success},
@@ -406,7 +407,7 @@ sub _do_install {
             } elsif ($config->{stdout_save_lines} == 0) {
                 delete $report->{stdout};
             } else {
-                if ($ret->{stdout} =~ m/((.*\n){$config->{stdout_save_lines}})$/) {
+        if ($ret->{stdout} =~ m/((.*\n){$config->{stdout_save_lines}})$/) {
                     $report->{stdout} = $1;
                 } else {
                     # There were less lines available than we asked
@@ -452,14 +453,14 @@ sub _do_install {
             $report->{environment} .= "$e\n";
         }
         # Fill in which MPI we used
-        $ret->{mpi_name} = $mpi_get->{mpi_name};
-        $ret->{mpi_get_section_name} = $mpi_get->{section_name};
-        $ret->{mpi_get_pretty_name} = $mpi_get->{pretty_name};
+        $ret->{mpi_details} = $mpi_get->{mpi_details};
+        $ret->{mpi_get_full_section_name} = $mpi_get->{full_section_name};
+        $ret->{mpi_get_simple_section_name} = $mpi_get->{simple_section_name};
         $ret->{mpi_version} = $mpi_get->{version};
 
         # Some additional values
-        $ret->{section_name} = $config->{section_name};
-        $ret->{pretty_name} = $pretty_name;
+        $ret->{full_section_name} = $config->{full_section_name};
+        $ret->{simple_section_name} = $config->{simple_section_name};
         $ret->{test_status} = "installed";
         $ret->{compiler_name} = $config->{compiler_name};
         $ret->{compiler_version} = $config->{compiler_version};
@@ -494,12 +495,15 @@ sub _do_install {
         delete $ret->{make_check_stdout};
         
         # Submit to the reporter
-        MTT::Reporter::Submit("MPI install", $section, $report);
+        MTT::Reporter::Submit("MPI install", $simple_section, $report);
 
         # Successful build?
         if (1 == $ret->{success}) {
             # If it was successful, there's no need for
             # the source or build trees anymore
+            # JMS: this is not right -- if there is a problem with
+            # (for example) test build, then we might want the MPI
+            # source around (e.g., running a debugger)
             
             if (exists $ret->{abs_srcdir}) {
                 Verbose("Removing source dir: $ret->{abs_srcdir}\n");
@@ -511,7 +515,7 @@ sub _do_install {
             }
 
             # Add the data in the global $MTT::MPI::installs table
-            $MTT::MPI::installs->{$mpi_get->{section_name}}->{$section} = $ret;
+            $MTT::MPI::installs->{$mpi_get->{simple_section_name}}->{$simple_section} = $ret;
             MTT::MPI::SaveInstalls($install_base);
         } else {
             Warning("Failed to install [$section]: $ret->{result_message}\n");

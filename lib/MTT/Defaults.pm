@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -30,10 +31,7 @@ our $System_config = {
 # User-defined configuration
 our $User_config = {
     save_successful => 1,
-    save_failed_gets => 1,
-    save_failed_installs => 3,
-    save_failed_builds => 1,
-    save_failed_runs => 1,
+    save_failures => 3,
 };
 
 # MPI install phase
@@ -53,6 +51,7 @@ our $MPI_install = {
 # Test build phase
 our $Test_build = {
     perfbase_xml => "inp_test_build.xml",
+    mpi_install => "all",
     save_stdout_on_success => 0,
     merge_stdout_stderr => 0,
     stdout_save_lines => 0,

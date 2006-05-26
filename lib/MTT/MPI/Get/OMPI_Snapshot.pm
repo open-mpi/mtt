@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -60,12 +61,12 @@ sub Get {
     # see if we need to download the tarball
     my $tarball_name = "openmpi-$ret->{version}.tar.gz";
     my $found = 0;
-    foreach my $mpi_section (keys(%{$MTT::MPI::sources})) {
-        Debug(">> checking section: [$section]\n");
+    foreach my $mpi_get_key (keys(%{$MTT::MPI::sources})) {
+        my $source = $MTT::MPI::sources->{$mpi_get_key};
+        Debug(">> checking section: [$section] vs. $source->{full_section_name}\n");
         next
-            if ($section ne $mpi_section);
+            if ($section ne $source->{full_section_name});
 
-        my $source = $MTT::MPI::sources->{$section};
         if ($source->{module_name} eq "MTT::MPI::Get::OMPI_Snapshot" &&
             basename($source->{module_data}->{tarball}) eq
             $tarball_name) {

@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -48,47 +49,46 @@ sub Run {
 
     Verbose("*** Run test phase starting\n");
 
-    # We want to run through every test build and run it with its
-    # target MPI.
-    # For each MPI source
-    foreach my $mpi_get_key (keys(%{$MTT::Test::builds})) {
-        my $mpi_get = $MTT::Test::builds->{$mpi_get_key};
+    # Go through all the sections in the ini file looking for section
+    # names that begin with "Test run:"
+    foreach my $section ($ini->Sections()) {
+        if ($section =~ /^\s*test run:/) {
+            Verbose(">> Test run [$section]\n");
 
-        # For each install of that source
-        foreach my $install_section_key (keys(%{$mpi_get})) {
-            my $install_section = $mpi_get->{$install_section_key};
+            # Simple section name
+            my $simple_section = $section;
+            $simple_section =~ s/^\s*test run:\s*//;
 
-            # For each test build
-            foreach my $test_build_key (keys(%{$install_section})) {
-                my $test_build = $install_section->{$test_build_key};
+            # Ensure that we have a test build name
+            my $test_build_value = MTT::Values::Value($ini, $section, "test_build");
+            if (!$test_build_value) {
+                Warning("No test_build specified in [$section]; skipping\n");
+                next;
+            }
 
-                # Check to see if this was a successful test build
-                if (!$test_build->{success}) {
-                    Debug("Found test build $test_build->{section_name}, but it did not have success==1\n");
-                    next;
-                }
+            # Iterate through all the test_build values
+            my @test_builds = split(/,/, $test_build_value);
+            foreach my $test_build_name (@test_builds) {
+                # Strip whitespace
+                $test_build_name =~ s/^\s*(.*?)\s*/\1/;
 
-                $test_build->{section_name} =~ m/test build:\s*(.+)\s*/;
-                my $test_build_section_name = $1;
+                # Find the matching test build.  Test builds are
+                # indexed on (in order): MPI Get simple section name,
+                # MPI Install simple section name, Test Build simple
+                # section name
+                foreach my $mpi_get_key (keys(%{$MTT::Test::builds})) {
+                    foreach my $mpi_install_key (keys(%{$MTT::Test::builds->{$mpi_get_key}})) {
+                        foreach my $test_build_key (keys(%{$MTT::Test::builds->{$mpi_get_key}->{$mpi_install_key}})) {
 
-                # Now that we've got a single test build, run through
-                # the INI file and find all "test run:" section that
-                # have a "test" attribute that matches this test
-                # build's section name.
-
-                foreach my $section ($ini->Sections()) {
-                    if ($section =~ /^\s*test run:/) {
-                        my $target_test = 
-                            MTT::Values::Value($ini, $section, "test_build");
-                        
-                        if ($target_test eq $test_build_section_name) {
-                            Debug("Found a match! $target_test [$section]\n");
-                            my $mpi_install = $MTT::MPI::installs->{$mpi_get_key}->{$install_section_key};
-                            Verbose(">> Test run [$section]\n");
-                            
-                            _do_run($ini, $section, $test_build, 
-                                    $mpi_install, $top_dir, $force);
-                            %ENV = %ENV_SAVE;
+                            if ($test_build_key eq $test_build_name) {
+                                my $test_build = $MTT::Test::builds->{$mpi_get_key}->{$mpi_install_key}->{$test_build_key};
+                                Debug("Found a match! $test_build_key [$simple_section");
+                                my $mpi_install = $MTT::MPI::installs->{$mpi_get_key}->{$mpi_install_key};
+                                
+                                _do_run($ini, $section, $test_build, 
+                                        $mpi_install, $top_dir, $force);
+                                %ENV = %ENV_SAVE;
+                            }
                         }
                     }                        
                 }
@@ -132,7 +132,7 @@ sub _do_run {
     
     # Get some details about running with this MPI
     my $mpi_details;
-    $test_prefix = $mpi_install->{installdir};
+    $MTT::Test::Run::test_prefix = $mpi_install->{installdir};
     $mpi_details->{before_any_exec} = 
         MTT::Values::Value($ini, $mpi_details_section, "before_any_exec");
     $mpi_details->{before_each_exec} = 
@@ -154,9 +154,10 @@ sub _do_run {
     Debug("Got final exec: $exec\n");
     $mpi_details->{exec} = $exec;
     $mpi_details->{name} = $mpi_install->{mpi_name};
-    $mpi_details->{mpi_get_section_name} =
-        $mpi_install->{mpi_get_section_name};
-    $mpi_details->{mpi_install_section_name} = $mpi_install->{section_name};
+    $mpi_details->{mpi_get_simple_section_name} =
+        $mpi_install->{mpi_get_simple_section_name};
+    $mpi_details->{mpi_install_simple_section_name} = 
+        $mpi_install->{simple_section_name};
     $mpi_details->{version} = $mpi_install->{mpi_version};
 
     # Go to the right dir
@@ -184,6 +185,7 @@ sub _do_run {
     # file that we're building.
     my @save_env;
     MTT::Values::ProcessEnvKeys($mpi_install, \@save_env);
+    # JMS: Do we need to grab from Test::Build as well?
     my $config;
     %$config = %$MTT::Defaults::Test_run;
     $config->{setenv} = MTT::Values::Value($ini, $section, "setenv");
@@ -239,14 +241,14 @@ sub _do_run {
             # Get the values for this test
             my $run;
             $run->{perfbase_xml} =
-                $ret->{perfbase_xml} ? $ret->{perfbase_xml} :"inp_test_run.xml";
-            $run->{section_name} = $section;
-            $run->{pretty_name} = MTT::Values::Value($ini,
-                                                     $section,
-                                                     "pretty_name");
-            $run->{pretty_name} = $section
-                if (!$run->{pretty_name});
-            $run->{test_build_section_name} = $test_build->{section_name};
+                $ret->{perfbase_xml} ? $ret->{perfbase_xml} :
+                $MTT::Defaults::Test_run->{perfbase_xml};
+            $run->{full_section_name} = $section;
+            $run->{simple_section_name} = $section;
+            $run->{simple_section_name} = $section;
+            $run->{simple_section_name} =~ s/^\s*test run:\s*//;
+
+            $run->{test_build_simple_section_name} = $test_build->{simple_section_name};
             $run->{executable} = $test->{executable};
             foreach my $key (qw(np np_ok argv pass save_output_on_pass separate_stdout_stderr timeout)) {
                 my $str = "\$run->{$key} = exists(\$test->{$key}) ? \$test->{$key} : \$config->{$key}";
@@ -322,13 +324,13 @@ sub _run_one_test {
         ", np=$test_np, variant=$variant:";
 
     if (!$force &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_install_section_name}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}->{$run->{section_name}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}->{$run->{section_name}}->{$name}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}->{$run->{section_name}}->{$name}->{$test_np}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}->{$run->{section_name}}->{$name}->{$test_np}->{$cmd})) {
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{mpi_install_simple_section_name}}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$test_np}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$test_np}->{$cmd})) {
         Verbose("$str Skipped (already ran)\n");
         return;
     }
@@ -361,16 +363,13 @@ sub _run_one_test {
 
         mpi_name => $mpi_details->{name},
         mpi_version => $mpi_details->{version},
-        mpi_get_section_name => $mpi_details->{mpi_get_section_name},
-        mpi_get_pretty_name => $mpi_details->{mpi_get_pretty_name},
-        mpi_install_section_name => $mpi_details->{mpi_install_section_name},
-        mpi_install_pretty_name => $mpi_details->{mpi_install_pretty_name},
+        mpi_name => $mpi_details->{mpi_get_simple_section_name},
+        mpi_install_section_name => $mpi_details->{mpi_install_simple_section_name},
 
         perfbase_xml => $run->{perfbase_xml},
 
-        test_build_section_name => $run->{test_build_section_name},
-        test_run_section_name => $run->{section_name},
-        test_run_pretty_name => $run->{pretty_name},
+        test_build_section_name => $run->{test_build_simple_section_name},
+        test_run_section_name => $run->{simple_section_name},
         test_np => $test_np,
         test_pass => $pass,
         test_name => $name,
@@ -395,9 +394,9 @@ sub _run_one_test {
         $report->{test_stdout} = $x->{stdout};
         $report->{test_stderr} = $x->{stderr};
     }
-    $MTT::Test::runs->{$mpi_details->{mpi_get_section_name}}->{$mpi_details->{mpi_install_section_name}}->{$run->{test_build_section_name}}->{$run->{section_name}}->{$name}->{$test_np}->{$cmd} = $report;
+    $MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$test_np}->{$cmd} = $report;
     MTT::Test::SaveRuns($top_dir);
-    MTT::Reporter::QueueAdd("Test Run", $run->{section_name}, $report);
+    MTT::Reporter::QueueAdd("Test Run", $run->{simple_section_name}, $report);
 
     # If there is an after_each step, run it
     _run_step($mpi_details, "after_each");
@@ -411,6 +410,8 @@ sub _run_step {
     $step .= "_exec";
     if (exists($mpi_details->{$step})) {
         my $x = MTT::DoCommand::Cmd(1, $mpi_details->{$step}, 10);
+        #JMS should be checking return status here and in who invoked
+        #_run_step.
     }
 }
 
