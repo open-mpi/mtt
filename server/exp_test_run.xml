@@ -130,8 +130,8 @@
   <result occurence="once">
     <name>merge_stdout_stderr</name>
     <synopsis>true if stdout and stderr are merged</synopsis>
-    <default>false</default>
-    <datatype>boolean</datatype>
+    <default>0</default>
+    <datatype>integer</datatype>
   </result>
   
   <result occurence="once">
@@ -179,7 +179,7 @@
   <parameter occurence="multiple">
     <name>test_pass</name>
     <synopsis>whether or not the test passed</synopsis>
-    <datatype>boolean</datatype>
+    <datatype>integer</datatype>
   </parameter>
 
   <result occurence="multiple">

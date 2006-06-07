@@ -134,8 +134,8 @@
   <result occurence="once">
     <name>merge_stdout_stderr</name>
     <synopsis>true if stdout and stderr are merged</synopsis>
-    <default>false</default>
-    <datatype>boolean</datatype>
+    <default>0</default>
+    <datatype>integer</datatype>
   </result>
   
   <result occurence="once">
@@ -148,7 +148,7 @@
   <parameter occurence="once">
     <name>success</name>
     <synopsis>true if build was successful</synopsis>
-    <datatype>boolean</datatype>
+    <datatype>integer</datatype>
   </parameter>
 
   <result occurence="once">

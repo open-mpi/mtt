@@ -14,13 +14,6 @@
 <query id="test run status report">
   <experiment>mtt_test_run</experiment>
 
-  <parameter id="p.pass">
-    <value>test_pass</value>
-    <filter>
-      <equal>true</equal>
-    </filter>
-  </parameter>
-
   <parameter id="p.date">
     <value>submit_timestamp</value>
     <filter>
@@ -30,7 +23,7 @@
 
   <source id="src.result">
     <input>p.date</input>
-    <input>p.pass</input>
+    <result>pass</result>
     <result>test_run_section_name</result>
     <result>test_build_section_name</result>
     <result>mpi_install_section_name</result>

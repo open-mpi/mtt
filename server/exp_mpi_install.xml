@@ -148,7 +148,7 @@
   <parameter occurence="once">
     <name>success</name>
     <synopsis>true if build was successful</synopsis>
-    <datatype>boolean</datatype>
+    <datatype>integer</datatype>
   </parameter>
 
   <result occurence="once">
