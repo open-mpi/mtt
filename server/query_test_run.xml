@@ -23,7 +23,7 @@
 
   <source id="src.result">
     <input>p.date</input>
-    <result>pass</result>
+    <result>test_pass</result>
     <result>test_run_section_name</result>
     <result>test_build_section_name</result>
     <result>mpi_install_section_name</result>
@@ -33,9 +33,6 @@
     <result>os_version</result>
     <result>platform_type</result>
     <result>platform_id</result>
-    <result>compiler_name</result>
-    <result>compiler_version</result>
-    <result>configure_arguments</result>
     <result>start_timestamp</result>
     <result>stop_timestamp</result>
     <result>merge_stdout_stderr</result>

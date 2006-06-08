@@ -28,7 +28,7 @@ function mtt_error($status, $str) {
 
 function mtt_debug($str) {
     if (MTT_DEBUG) {
-        printf($str);
+        print($str);
     }
 }
 
