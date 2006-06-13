@@ -74,30 +74,31 @@ sub GetID {
 #--------------------------------------------------------------------------
 
 sub MakeReportString {
-    my ($report, $delimiter, $multiline_separator) = @_;
+    my ($report, $delimiter) = @_;
 
     my $str;
-    _stringify(\$str, $cache, $delimiter, $multiline_separator);
-    _stringify(\$str, $report, $delimiter, $multiline_separator);
+    _stringify(\$str, $cache, $delimiter);
+    _stringify(\$str, $report, $delimiter);
     return $str;
 }
 
 sub _stringify {
-    my ($str, $hash, $delimiter, $multiline_separator) = @_;
+    my ($str, $hash, $delimiter) = @_;
 
     $delimiter = ": "
         if (!$delimiter);
 
     my @to_delete;
     foreach my $k (sort(keys(%$hash))) {
-        $$str .= "$k$delimiter";
-        my $val = $hash->{$k};
-
         # Huersitic: if there are any newlines in the original string,
-        # we want this to be a multi-line output.  But only if we
-        # haven't defined a multi-line separator, in which case we'll
-        # be smushing the whole thing into a single line anyway.
-        my $want_multi = ($val =~ /\n/) && !defined($multiline_separator);
+        # we want this to be a multi-line output.  
+        my $val = $hash->{$k};
+        my $want_multi = ($val =~ /\n/);
+
+        # We currently have 2 conventions (bonk!) for field names --
+        # lower case (i.e., as-is) for single-line fields and upper
+        # case for multi-line fields.
+        $$str .= ($want_multi ? uc($k) . "_BEGIN" : $k . $delimiter);
 
         # Trim off leading and trailing blank lines and any final \n's
         # (from perlfaq4(1))
@@ -109,12 +110,12 @@ sub _stringify {
         # Double check that we have anything left in the string
         if ($val ne "") {
             if ($want_multi) {
-                $$str .= "\n$val\n\n";
+                $$str .= "\n$val\n";
+                # If we are multi-line, then be sure to end the text
+                # with a "END" marker (same upper case rule as above)
+                $$str .= uc($k) . "_END\n"
+                    if ($want_multi);
             } else {
-                # If we have a multi-line separator, convert all \n's
-                # to it
-                $val =~ s/\n/$multiline_separator/g
-                    if (defined($multiline_separator));
                 $$str .= "$val\n";
             }
         } else {
