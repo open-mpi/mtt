@@ -79,12 +79,12 @@ sub _do_get {
 
     my $module = Value($ini, $section, "module");
     if (!$module) {
-        Warning("No module defined for MPI get [$section]; skipping");
+        Warning("No module defined for MPI get [$section]; skipping\n");
         return;
     }
     my $mpi_details = Value($ini, $section, "mpi_details");
     if (!$mpi_details) {
-        Warning("No mpi_details defined for MPI get [$section]; skipping");
+        Warning("No mpi_details defined for MPI get [$section]; skipping\n");
         return;
     }
 
