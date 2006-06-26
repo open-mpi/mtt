@@ -17,7 +17,6 @@ Andrew Friedley
 
 Finish up perfbase backend development
  - Finish perfbase xml output support
- - Figure out how to make perfbase escape ' properly for postgres
  - Look at organizing perfbase so that one run is a test suite, not one test
  - Finish email.pl to complete the perfbase reporting backend
 Split reporter into formatting/data collection and transport
@@ -52,6 +51,12 @@ Implement "Trivial" plugins for "hello world" tests
 >>> NOT DONE:
 --developer switch - run MTT against a current install
 
+- audit output fields from MTT client for all phases so that they
+  match the field names and types expected by the server
+
+- make test results be output in a single output rather than reporting
+  glumps of tests at a time
+
 Active & Passive report mode - make reporting a phase?
  - Use cron for pushing reports through disconnected setups
    - Checking for new results to report every 10 mins
@@ -64,7 +69,7 @@ MTT global params:
  name_delimiter=, # delimiter between names of references in name= field
  run_if_partial_build_fail=1 # run tests that DID build if test build fails
 
-Implement trim phase
+Finish implementing trim phase
 
 Implement 'test specify' phase - replaces current test run INI stuff
  - Should generate a list of tuples, which is:
