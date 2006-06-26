@@ -12,6 +12,7 @@
 use strict;
 use LWP;
 use Getopt::Long;
+use Cwd;
 use lib cwd();
 use MTT::Version;
 
@@ -28,6 +29,7 @@ my $ver_major = $MTT::Version::Major;
 my $ver_minor = $MTT::Version::Minor;
 my $debug_arg;
 my $help_arg;
+my $realm_arg = "perfbase";
 
 # TODO - do i need this?
 #&Getopt::Long::Configure("bundling", "require_order");
@@ -36,6 +38,7 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \$file_arg,
                                    "xml|x=s" => \$xml_arg,
                                    "username|u=s" => \$user_arg,
                                    "password|p=s" => \$pass_arg,
+                                   "realm|r=s" => \$realm_arg,
                                    "version-major" => \$ver_major,
                                    "version-minor" => \$ver_minor,
                                    "url|l=s" => \$url_arg,
@@ -48,6 +51,7 @@ if(!$file_arg || !$xml_arg || !$user_arg || !$pass_arg || $help_arg || !$ok) {
     print "\t--xml|-x xmlfile\n";
     print "\t--username|-u username (HTTP auth)\n";
     print "\t--password|-p password (HTTP auth)\n";
+    print "\t--realm|-r realm (HTTP auth)\n";
     print "\t--version-major major (debugging use only)\n";
     print "\t--version-minor minor (debugging use only)\n";
     print "\t[--url|-l url]\n";
@@ -81,7 +85,7 @@ if($url_arg =~ m#http(s|)://([^/]*)#) {
     my $port = "80";
     $port = "443" if $1 eq "s";
 
-    $browser->credentials("$2:$port", "perfbase", $user_arg => $pass_arg);
+    $browser->credentials("$2:$port", $realm_arg, $user_arg => $pass_arg);
 } else {
     print "ERROR: invalid url format in $url_arg\n";
     exit(-1);
@@ -98,6 +102,7 @@ if(!$response->is_success) {
     print $response->content;
     exit(-1);
 } elsif($debug) {
+    print "SUCCESS\n";
     print $response->content;
 }
 
