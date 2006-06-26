@@ -45,6 +45,8 @@ sub _find_bindings {
 sub Install {
     my ($ini, $section, $config) = @_;
     my $x;
+    my $stdout;
+    my $stderr;
 
     # Prepare $ret
 
@@ -58,26 +60,43 @@ sub Install {
     $ret->{libdir} = "$ret->{installdir}/lib";
 
     $x = MTT::DoCommand::Cmd(1, "$config->{configdir}/configure $config->{configure_arguments} --prefix=$ret->{installdir}");
-    $ret->{configure_stdout} = "--- Configure stdout/stderr ---\n$x->{stdout}"
-        if ($x->{stdout});
+    $stdout = $x->{stdout} ? "--- Configure stdout/stderr ---\n$x->{stdout}" :
+        undef;
     if ($x->{status} != 0) {
         $ret->{result_message} = "Configure failed -- skipping this build\n";
+        # Put the output of the failure into $ret so that it gets
+        # reported (stdout/stderr was combined into just stdout)
+        $ret->{stdout} = $stdout;
         return $ret;
     }
+    # We don't need this in the main stdout
+    $ret->{configure_stdout} = $stdout;
 
     # Build it
 
     $x = MTT::DoCommand::Cmd($config->{merge_stdout_stderr}, "make $config->{make_all_arguments} all");
-    $ret->{make_all_stdout} .= "--- \"make all\" stdout" .
-        ($config->{merge_stdout_stderr} ? "/stderr" : "") .
-        " ---\n$x->{stdout}"
-        if ($x->{stdout});
-    $ret->{make_all_stderr} .= "--- \"make all\" stderr ---\n$x->{stderr}"
-        if ($x->{stderr});
+    $stdout = undef;
+    if ($x->{stdout}) {
+        $stdout = "--- \"make all ";
+        $stdout .= "stdout"
+            if ($x->{stdout});
+        $stdout .= "/stderr"
+            if ($config->{merge_stdout_stderr});
+        $stdout .= " ---\n$x->{stdout}";
+    }
+    $stderr = $x->{stderr} ? "--- \"make all\" stderr ---\n$x->{stderr}" : 
+        undef;
     if ($x->{status} != 0) {
         $ret->{result_message} = "Failed to build: make $config->{make_all_arguments} all\n";
+        # Put the output of the failure into $ret so that it gets
+        # reported (stdout/stderr *may* be separated, so assign them
+        # both -- if they were combined, then $stderr will be empty)
+        $ret->{stdout} = $stdout;
+        $ret->{stderr} = $stderr;
         return $ret;
     }
+    $ret->{make_all_stdout} = $stdout;
+    $ret->{make_all_stderr} = $stderr;
 
     # Do we want to run "make check"?  If so, make sure a valid TMPDIR
     # exists.  Also, merge the stdout/stderr because we really only
@@ -104,13 +123,16 @@ sub Install {
         $x = MTT::DoCommand::Cmd(1, "make check");
         %ENV = %ENV_SAVE;
 
+        $stdout = "--- \"make check\" stdout ---\n$x->{stdout}"
+            if ($x->{stdout});
         if ($x->{status} != 0) {
-            $ret->{make_check_stdout} .= "--- \"make check\" stdout ---\n$x->{stdout}"
-                if ($x->{stdout});
             $ret->{result_message} = "Failed to make check\n";
+            # Put the output of the failure into $ret so that it gets
+            # reported (stdout/stderr were combined)
+            $ret->{stdout} = $x->{stdout};
             return $ret;
         }
-        $ret->{make_check_stdout} = $x->{stdout};
+        $ret->{make_check_stdout} = $stdout;
     } else {
         Debug("Not running make check\n");
     }
@@ -125,23 +147,32 @@ sub Install {
         $ret->{stdout} .= "--- \"make install\" stdout ---\n$x->{stdout}"
             if ($x->{stdout});
         $ret->{result_message} = "Failed to make install\n";
+        # Put the output of the failure into $ret so that it gets
+        # reported (stdout/stderr were combined)
+        $ret->{stdout} = $x->{stdout};
         return $ret;
     }
+    $ret->{make_install_stdout} = $stdout;
 
     # Set which bindings were compiled
 
     $ret->{c_bindings} = 1;
+    Debug("Have C bindings: 1\n");
     $ret->{cxx_bindings} = _find_bindings($ret->{bindir},
                                           $ret->{libdir}, "cxx");
+    Debug("Have C++ bindings: $ret->{cxx_bindings}\n"); 
     $ret->{f77_bindings} = _find_bindings($ret->{bindir},
                                           $ret->{libdir}, "f77");
+    Debug("Have F77 bindings: $ret->{cxx_bindings}\n"); 
     $ret->{f90_bindings} = _find_bindings($ret->{bindir},
                                           $ret->{libdir}, "f90");
+    Debug("Have F90 bindings: $ret->{cxx_bindings}\n"); 
 
     # All done
 
     $ret->{success} = 1;
     $ret->{result_message} = "Success";
+    Debug("Build was a success\n");
     return $ret;
 } 
 

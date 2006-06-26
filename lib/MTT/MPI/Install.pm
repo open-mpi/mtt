@@ -493,6 +493,7 @@ sub _do_install {
         delete $ret->{make_all_stdout};
         delete $ret->{make_all_stderr};
         delete $ret->{make_check_stdout};
+        delete $ret->{make_install_stdout};
         
         # Submit to the reporter
         MTT::Reporter::Submit("MPI install", $simple_section, $report);
