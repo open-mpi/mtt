@@ -163,10 +163,10 @@ sub Install {
     Debug("Have C++ bindings: $ret->{cxx_bindings}\n"); 
     $ret->{f77_bindings} = _find_bindings($ret->{bindir},
                                           $ret->{libdir}, "f77");
-    Debug("Have F77 bindings: $ret->{cxx_bindings}\n"); 
+    Debug("Have F77 bindings: $ret->{f77_bindings}\n"); 
     $ret->{f90_bindings} = _find_bindings($ret->{bindir},
                                           $ret->{libdir}, "f90");
-    Debug("Have F90 bindings: $ret->{cxx_bindings}\n"); 
+    Debug("Have F90 bindings: $ret->{f90_bindings}\n"); 
 
     # All done
 
