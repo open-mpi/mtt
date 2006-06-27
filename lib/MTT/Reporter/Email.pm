@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -38,15 +39,15 @@ sub Init {
 
     # Extract data from the ini fields
 
-    $to = Value($ini, $section, "to");
+    $to = Value($ini, $section, "email_to");
     if (!$to) {
         Warning("Not enough information in Email Reporter section [$section]; must have to; skipping this section");
         return undef;
     }
-    $subject = Value($ini, $section, "subject");
+    $subject = Value($ini, $section, "email_subject");
     $subject = "MPI test results"
         if (!$subject);
-    $sep = Value($ini, $section, "separator");
+    $sep = Value($ini, $section, "email_separator");
     $sep = "============================================================================"
         if (!$sep);
 

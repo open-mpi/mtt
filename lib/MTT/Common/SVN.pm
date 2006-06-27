@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -30,7 +31,7 @@ sub Get {
     Debug(">> in SVN get\n");
     $ret->{success} = 0;
     # See if we got a url in the ini section
-    $data->{url} = Value($ini, $section, "url");
+    $data->{url} = Value($ini, $section, "svn_url");
     if (!$data->{url}) {
         $ret->{result_message} = "No URL specified in [$section]; skipping";
         Warning("$ret->{result_message}\n");
@@ -114,8 +115,8 @@ sub Get {
     $ret->{prepare_for_install} = "MTT::Common::Copytree::PrepareForInstall";
 
     # Get other values (set for copytree's PrepareForInstall)
-    $data->{pre_copy} = Value($ini, $section, "pre_export");
-    $data->{post_copy} = Value($ini, $section, "post_export");
+    $data->{pre_copy} = Value($ini, $section, "svn_pre_export");
+    $data->{post_copy} = Value($ini, $section, "svn_post_export");
 
     # Make a best attempt to get a version number
     # 1. Try looking for name-<number> in the directory basename

@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -31,7 +32,7 @@ sub Get {
     my $src_md5;
 
     # See if we got a tarball in the ini section
-    $data->{tarball} = Value($ini, $section, "tarball");
+    $data->{tarball} = Value($ini, $section, "tarball_filename");
     if (!$data->{tarball}) {
         $ret->{result_message} = "No tarball specified in [$section]; skipping";
         Warning("$ret->{result_message}\n");
@@ -74,8 +75,8 @@ sub Get {
     $data->{md5sum} = defined($src_md5) ? $src_md5 : MTT::Files::md5sum($data->{tarball});
 
     # Get other module-data values
-    $data->{pre_extract} = Value($ini, $section, "pre_extract");
-    $data->{post_extract} = Value($ini, $section, "post_extract");
+    $data->{pre_extract} = Value($ini, $section, "tarball_pre_extract");
+    $data->{post_extract} = Value($ini, $section, "tarball_post_extract");
 
     # Set the final top-level return data
     $ret->{prepare_for_install} = "MTT::Common::Tarball::PrepareForInstall";

@@ -174,7 +174,6 @@ sub Install {
                             _do_install($section, $ini,
                                         $mpi_get, $mpi_dir, $force);
                             %ENV = %ENV_SAVE;
-                            Verbose("   Completed MPI install\n");
                         }
                     }
                 }
@@ -518,9 +517,13 @@ sub _do_install {
             # Add the data in the global $MTT::MPI::installs table
             $MTT::MPI::installs->{$mpi_get->{simple_section_name}}->{$simple_section} = $ret;
             MTT::MPI::SaveInstalls($install_base);
+            Verbose("   Completed MPI install successfully\n");
         } else {
             Warning("Failed to install [$section]: $ret->{result_message}\n");
+            Verbose("   Completed MPI install unsuccessfully\n");
         }
+    } else {
+        Verbose("   Skipped MPI install\n");
     }
 }
 

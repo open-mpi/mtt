@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -23,16 +24,19 @@ my $default_buildfile = "all_tests_no_perf";
 #--------------------------------------------------------------------------
 
 sub Build {
-
-    # JMS: WARNING: this has been deprecated and may well be removed
-
     my ($ini, $mpi_install, $config) = @_;
     my $ret;
-    
-    Debug("Building Intel_ompi_tests\n");
+    my $x;
+
+    Debug("Building Intel OMPI tests (Intel tests from ompi-tests SVN repository)\n");
     $ret->{success} = 0;
 
-    my $buildfile = Value($ini, $config->{section_name}, "buildfile");
+    my $cflags = Value($ini, $config->{full_section_name}, 
+                       "intel_ompi_tests_cflags");
+    my $fflags = Value($ini, $config->{full_section_name}, 
+                       "intel_ompi_tests_fflags");
+    my $buildfile = Value($ini, $config->{full_section_name}, 
+                          "intel_ompi_tests_buildfile");
     $buildfile = $default_buildfile
         if (!$buildfile);
     if (! -f $buildfile) {
@@ -46,22 +50,27 @@ sub Build {
     # test.  So filter the buildfile according to what bindings are
     # available.
 
-    if (!$mpi_install->{c_bindings} && !$mpi_install->{f77_biindings}) {
+    if (!$mpi_install->{c_bindings} && !$mpi_install->{f77_bindings}) {
         # Should never happen
         $ret->{result_message} = "MPI does not have C or F77 bindings available!";
         Warning("$ret->{result_message}\n");
         return $ret;
-    } elsif ($mpi_install->{c_bindings} && $mpi_install->{f77_biindings}) {
-        # Don't need to do anything
+    } elsif ($mpi_install->{c_bindings} && $mpi_install->{f77_bindings}) {
+        # Don't need to do anything -- we have both C and F77
+        # bindings, so whatever buildfile was selected, we're good.
         Debug("MPI has both C and F77 bindings\n");
     } elsif (!$mpi_install->{c_bindings}) {
+        Warning("MPI does not have C bindings!  This is pretty unusual...\n");
         # Filter out the C tests, if any.  Since this is our own
         # private copy of the intel tests, we can just overwrite the
-        # buildfile.
+        # buildfile if we need to snip the C tests.
         Debug("MPI does not have C bindings -- filtering\n");
         open(BUILDFILE, $buildfile);
         my @c_tests = grep { /_c$/ } <BUILDFILE>;
         close(BUILDFILE);
+
+        # If there were any tests to snip, then re-write the buildfile
+        # with just the Fortran tests
         if ($#c_tests >= 0) {
             open(BUILDFILE, $buildfile);
             my @f_tests = grep { /_f$/ } <BUILDFILE>;
@@ -76,11 +85,14 @@ sub Build {
     } elsif (!$mpi_install->{f77_bindings}) {
         # Filter out the F77 tests, if any.  Since this is our own
         # private copy of the intel tests, we can just overwrite the
-        # buildfile.
+        # buildfile if we need to snip the F77 tests.
         Debug("MPI does not have F77 bindings -- filtering\n");
         open(BUILDFILE, $buildfile);
         my @f_tests = grep { /_f$/ } <BUILDFILE>;
         close(BUILDFILE);
+
+        # If there were any tests to snip, then re-write the buildfile
+        # with just the C tests
         if ($#f_tests >= 0) {
             open(BUILDFILE, $buildfile);
             my @c_tests = grep { /_c$/ } <BUILDFILE>;
@@ -112,7 +124,12 @@ sub Build {
     }
 
     # Build the test suite.
-    $x = MTT::DoCommand::Cmd(1, "make compile FILE=$buildfile");
+    my $cmd = "make compile FILE=$buildfile";
+    $cmd .= " \"CFLAGS=$cflags\""
+        if ($cflags);
+    $cmd .= " \"FFLAGS=$fflags\""
+        if ($fflags);
+    $x = MTT::DoCommand::Cmd(1, $cmd);
     $ret->{stdout} = $x->{stdout};
     if ($x->{status} != 0) {
         $ret->{result_message} = "Failed to build intel suite: $buildfile; skipping";

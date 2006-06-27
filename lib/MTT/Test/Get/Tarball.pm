@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -26,7 +27,7 @@ sub Get {
     my $previous_md5;
 
     # See if we got a tarball in the ini section
-    my $tarball = Value($ini, $section, "tarball");
+    my $tarball = Value($ini, $section, "tarball_filename");
     if (!$tarball) {
         $ret->{result_message} = "No tarball specified in [$section]; skipping";
         Warning("$ret->{result_message}\n");

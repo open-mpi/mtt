@@ -49,6 +49,16 @@ Implement "Trivial" plugins for "hello world" tests
 
 
 >>> NOT DONE:
+
+- finish fixing NPB build .pm to preoperly prefix all ini fieldnames
+  and overall work properly
+
+- SVN "get" method doesn't properly detect where there is nothing new
+
+- fix up sample.ini to match new linkage and module field names
+
+
+
 --developer switch - run MTT against a current install
 
 - audit output fields from MTT client for all phases so that they

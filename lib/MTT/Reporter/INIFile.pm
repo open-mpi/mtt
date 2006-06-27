@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -33,7 +34,7 @@ sub Init {
 
     # Extract data from the ini fields
 
-    $filename = Value($ini, $section, "file");
+    $filename = Value($ini, $section, "inifile_filename");
     if (!$filename) {
         Warning("Not enough information in INIFile Reporter section [$section]; must have filename; skipping this section");
         return undef;

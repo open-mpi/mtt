@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -44,7 +45,7 @@ sub Build {
     # "nprocs_<suffix>", "skip_<suffix>".  If it doesn't exist, only
     # look for "benchmarks", "classes", "nprocs", and "skip".
 
-    my $npbs = Value($ini, $config->{section_name}, "npbs");
+    my $npbs = Value($ini, $config->{section_name}, "npb_ompi_tests");
     if ($npbs) {
         # Did we get a single string, or an array?
         if (ref($npbs) eq "") {

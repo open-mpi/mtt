@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -37,10 +38,10 @@ sub Init {
 
     # Extract data from the ini fields
 
-    $username = Value($ini, $section, "username");
-    $password = Value($ini, $section, "password");
-    $url = Value($ini, $section, "url");
-    $realm = Value($ini, $section, "realm");
+    $username = Value($ini, $section, "perfbase_username");
+    $password = Value($ini, $section, "perfbase_password");
+    $url = Value($ini, $section, "perfbase_url");
+    $realm = Value($ini, $section, "perfbase_realm");
     if (!$url) {
         Warning("Need URL in Perfbase Reporter section [$section]\n");
         return undef;
@@ -53,7 +54,7 @@ sub Init {
         Warning("Perfbase Reporter section [$section]: if password, username, or relam is specified, they all must be specified.\n");
         return undef;
     }
-    $platform = Value($ini, $section, "platform");
+    $platform = Value($ini, $section, "perfbase_platform");
 
     # Extract the host and port from the URL.  Needed for the
     # credentials section.

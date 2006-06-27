@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -24,7 +25,7 @@ sub Get {
     my $previous_mtime;
 
     # See if we got a directory in the ini section
-    my $src_directory = Value($ini, $section, "directory");
+    my $src_directory = Value($ini, $section, "copytree_directory"); 
     if (!$src_directory) {
         $ret->{result_message} = "No source directory specified in [$section]; skipping";
         Warning("$ret->{result_message}\n");

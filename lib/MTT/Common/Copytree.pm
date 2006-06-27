@@ -32,7 +32,7 @@ sub Get {
     $ret->{success} = 0;
 
     # See if we got a directory in the ini section
-    $data->{src_directory} = Value($ini, $section, "directory");
+    $data->{src_directory} = Value($ini, $section, "copytree_directory");
     if (!$data->{src_directory}) {
         $ret->{result_message} = "No source directory specified in [$section]; skipping";
         Warning("$ret->{result_message}\n");
@@ -80,8 +80,9 @@ sub Get {
     $data->{mtime} = defined($src_mtime) ? $src_mtime : MTT::Files::mtime_tree($data->{directory});
 
     # Get other values
-    $data->{pre_copy} = Value($ini, $section, "pre_copy");
-    $data->{post_copy} = Value($ini, $section, "post_copy");
+    $data->{version} = Value($ini, $section, "copytree_version");
+    $data->{pre_copy} = Value($ini, $section, "copytree_pre_copy");
+    $data->{post_copy} = Value($ini, $section, "copytree_post_copy");
 
     # Set the function pointer
     $ret->{prepare_for_install} = "MTT::Common::Copytree::PrepareForInstall";

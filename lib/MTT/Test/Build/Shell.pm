@@ -30,7 +30,7 @@ sub Build {
     $ret->{success} = 0;
 
     # Now run that file -- remove it when done, regardless of the outcome
-    my $cmd = Value($ini, $config->{full_section_name}, "build_command");
+    my $cmd = Value($ini, $config->{full_section_name}, "shell_build_command");
     my $x = MTT::DoCommand::CmdScript(!$config->{separate_stdout_stderr},
                                       $cmd);
     if ($x->{status} != 0) {

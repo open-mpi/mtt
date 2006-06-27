@@ -18,6 +18,7 @@ use File::Basename;
 use MTT::Messages;
 use MTT::Files;
 use MTT::FindProgram;
+use MTT::Values;
 use Data::Dumper;
 
 # Checksum filenames
@@ -37,7 +38,7 @@ sub Get {
     $ret->{success} = 0;
 
     # See if we got a url in the ini section
-    my $url = $ini->val($section, "url");
+    my $url = Value($ini, $section, "ompi_snapshot_url");
     if (!$url) {
         $ret->{result_message} = "No URL specified in [$section]; skipping";
         Warning("$ret->{result_message}\n");

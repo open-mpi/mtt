@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -52,7 +53,7 @@ sub Install {
     }
 
     # Pre copy
-    $val = Value($ini, $section, "pre_copy");
+    $val = Value($ini, $section, "copytree_pre_copy");
     if ($val) {
         Debug("Copytree running pre_copy command: $val\n");
         $x = MTT::DoCommand::CmdScript(1, $val);
@@ -79,7 +80,7 @@ sub Install {
     system("mv $config->{installdir}/$b/* $config->{installdir} ; rmdir $config->{installdir}/$b");
 
     # Post copy
-    $val = Value($ini, $section, "post_copy");
+    $val = Value($ini, $section, "copytree_post_copy");
     if ($val) {
         Debug("Copytree running pre_copy command: $val\n");
         $x = MTT::DoCommand::CmdScript(1, $val);

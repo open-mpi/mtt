@@ -26,12 +26,12 @@ sub Run {
 
     $ret->{success} = 0;
     $ret->{perfbase_xml} = Value($ini, $section, "perfbase_xml");
-    my $exists = Value($ini, $section, "only_if_exec_exists");
+    my $exists = Value($ini, $section, "simple_only_if_exec_exists");
 
     # Look up the tests value.  Handle if we get an ARRAY back or a
     # string of whitespace delimited executables
 
-    my $tests = Value($ini, $section, "tests");
+    my $tests = Value($ini, $section, "simple_tests");
     if ($tests) {
         # Split it up if it's a string
         if (ref($tests) eq "") {

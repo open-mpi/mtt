@@ -140,7 +140,6 @@ sub Build {
                                 # Do the build and restore the environment
                                 _do_build($ini, $section, $build_base, $test_get, $mpi_install);
                                 %ENV = %ENV_SAVE;
-                                Verbose("   Completed build\n");
                             }
                         }
                     }
@@ -377,7 +376,13 @@ sub _do_build {
         if (1 == $ret->{success}) {
             $MTT::Test::builds->{$mpi_install->{mpi_get_simple_section_name}}->{$mpi_install->{simple_section_name}}->{$simple_section} = $ret;
             MTT::Test::SaveBuilds($build_base);
+            Verbose("   Completed test build successfully\n");
+        } else {
+            Warning("Failed to build test [$section]: $ret->{result_message}\n");
+            Verbose("   Completed test build unsuccessfully\n");
         }
+    } else {
+            Verbose("   Skipped test build\n");
     }
 }
 
