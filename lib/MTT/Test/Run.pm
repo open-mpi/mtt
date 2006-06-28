@@ -408,7 +408,7 @@ sub _run_step {
     my ($mpi_details, $step) = @_;
 
     $step .= "_exec";
-    if (exists($mpi_details->{$step})) {
+    if (exists($mpi_details->{$step}) && $mpi_details->{$step}) {
         my $x = MTT::DoCommand::Cmd(1, $mpi_details->{$step}, 10);
         #JMS should be checking return status here and in who invoked
         #_run_step.
