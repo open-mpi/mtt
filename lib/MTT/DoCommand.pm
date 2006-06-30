@@ -69,6 +69,8 @@ sub _quote_escape {
 
     my @tokens;
 
+    # Convert \n, \r, and \\n, and \\r to " "
+    $cmd =~ s/\s*\\?\s*[\n\r]\s*/ /g;
     # Trim leading and trailing whitespace
     $cmd =~ /^(\s*)(.*)(\s*)$/;
     $cmd = $2;
