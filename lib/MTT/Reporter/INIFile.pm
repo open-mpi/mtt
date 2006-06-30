@@ -75,45 +75,55 @@ sub Submit {
 
     Debug("INIFile reporter\n");
 
-    foreach my $entry (@$entries) {
-        my $phase = $entry->{phase};
-        my $section = $entry->{section};
-        my $report = $entry->{report};
+    foreach my $phase (keys(%$entries)) {
+        my $phase_obj = $entries->{$phase};
 
-        # Substitute in the filename
+        foreach my $section (keys(%$phase_obj)) {
+            my $section_obj = $phase_obj->{$section};
 
-        my $date = strftime("%m%d%Y", localtime);
-        my $time = strftime("%H%M%S", localtime);
-        my $mpi_name = $report->{mpi_name} ? $report->{mpi_name} : "UnknownMPIName";
-        my $mpi_version = $report->{mpi_version} ? $report->{mpi_version} : "UnknownMPIVersion";
+            foreach my $report_original (@$section_obj) {
+                # Ensure to do a deep copy of the report (vs. just
+                # copying the reference) because we want to locally
+                # change some values
+                my $report;
+                %$report = %{$report_original};
 
-        my $file;
-        my $e = "\$file = MTT::Files::make_safe_filename(\"$filename\");";
-        eval $e;
-        $file = "$dirname/$file";
-        Debug("Writing to INI file: $file\n");
+                # Substitute in the filename
 
-        # If we have not yet written to the file in this run, then
-        # whack the file.
+                my $date = strftime("%m%d%Y", localtime);
+                my $time = strftime("%H%M%S", localtime);
+                my $mpi_name = $report->{mpi_name} ? $report->{mpi_name} : "UnknownMPIName";
+                my $mpi_version = $report->{mpi_version} ? $report->{mpi_version} : "UnknownMPIVersion";
+                
+                my $file;
+                my $e = "\$file = MTT::Files::make_safe_filename(\"$filename\");";
+                eval $e;
+                $file = "$dirname/$file";
+                Debug("Writing to INI file: $file\n");
 
-        if (!exists($written_files->{$file})) {
-            unlink($file);
+                # If we have not yet written to the file in this run,
+                # then whack the file.
+
+                if (!exists($written_files->{$file})) {
+                    unlink($file);
+                }
+
+                # Write the file; append if it's already there
+
+                my $ini = new Config::IniFiles();
+                my $section = "Section $written_files->{$file}";
+                $ini->AddSection($section);
+                $ini->SetSectionComment($section, "This file automatically created by engine.pl.  Any changes made manually are likely to be lost!");
+                foreach my $k (keys(%$report)) {
+                    $ini->newval($section, lc($k), $report->{$k});
+                }
+                $ini->WriteConfig($file);
+                $ini->Delete();
+                Verbose(">> Reported to INI file: $file\n")
+                    if (!exists($written_files->{$file}));
+                $written_files->{$file} = 1;
+            }
         }
-
-        # Write the file; append if it's already there
-
-        my $ini = new Config::IniFiles();
-        my $section = "Section $written_files->{$file}";
-        $ini->AddSection($section);
-        $ini->SetSectionComment($section, "This file automatically created by engine.pl.  Any changes made manually are likely to be lost!");
-        foreach my $k (keys(%$report)) {
-            $ini->newval($section, lc($k), $report->{$k});
-        }
-        $ini->WriteConfig($file);
-        $ini->Delete();
-        Verbose(">> Reported to INI file: $file\n")
-            if (!exists($written_files->{$file}));
-        $written_files->{$file} = 1;
     }
 }
 

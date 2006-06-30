@@ -50,6 +50,10 @@ Implement "Trivial" plugins for "hello world" tests
 
 >>> NOT DONE:
 
+- add --dryrun option to show what *would* happen (probably should
+  imply --verbose as well), but don't actually *do* anything (don't
+  even alter any .xml internal state)
+
 - finish fixing NPB build .pm to preoperly prefix all ini fieldnames
   and overall work properly
 
@@ -57,9 +61,7 @@ Implement "Trivial" plugins for "hello world" tests
 
 - fix up sample.ini to match new linkage and module field names
 
-
-
---developer switch - run MTT against a current install
+- add a --developer switch - run MTT against a current install
 
 - audit output fields from MTT client for all phases so that they
   match the field names and types expected by the server

@@ -83,25 +83,35 @@ sub Submit {
 
     my $s;
     my $body;
-    foreach my $entry (@$entries) {
-        my $phase = $entry->{phase};
-        my $section = $entry->{section};
-        my $report = $entry->{report};
+    foreach my $phase (keys(%$entries)) {
+        my $phase_obj = $entries->{$phase};
 
-        $body .= "$sep\n"
-            if ($body);
-        $body .= MTT::Reporter::MakeReportString($report);
+        foreach my $section (keys(%$phase_obj)) {
+            my $section_obj = $phase_obj->{$section};
 
-        # Trivial e-mail reporter now -- we could do something much
-        # prettier later...
+            foreach my $report_original (@$section_obj) {
+                # Ensure to do a deep copy of the report (vs. just
+                # copying the reference) because we want to locally
+                # change some values
+                my $report;
+                %$report = %{$report_original};
 
-        my $date = strftime("%m%d%Y", localtime);
-        my $time = strftime("%H%M%S", localtime);
-        my $mpi_name = $report->{mpi_name} ? $report->{mpi_name} : "UnknownMPIName";
-        my $mpi_version = $report->{mpi_version} ? $report->{mpi_version} : "UnknownMPIVersion";
+                $body .= "$sep\n"
+                    if ($body);
+                $body .= MTT::Reporter::MakeReportString($report);
 
-        my $str = "\$s = \"$subject\"";
-        eval $str;
+                # Trivial e-mail reporter now -- we could do something
+                # much prettier later...
+
+                my $date = strftime("%m%d%Y", localtime);
+                my $time = strftime("%H%M%S", localtime);
+                my $mpi_name = $report->{mpi_name} ? $report->{mpi_name} : "UnknownMPIName";
+                my $mpi_version = $report->{mpi_version} ? $report->{mpi_version} : "UnknownMPIVersion";
+                
+                my $str = "\$s = \"$subject\"";
+                eval $str;
+            }
+        }
     }
 
     # Now send it

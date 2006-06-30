@@ -83,70 +83,81 @@ sub Submit {
 
     Debug("File reporter\n");
 
-    foreach my $entry (@$entries) {
-        my $phase = $entry->{phase};
-        my $section = $entry->{section};
-        my $report = $entry->{report};
+    foreach my $phase (keys(%$entries)) {
+        my $phase_obj = $entries->{$phase};
 
-        # Add our version number into the report; saved for
-        # posterity with the results.
+        foreach my $section (keys(%$phase_obj)) {
+            my $section_obj = $phase_obj->{$section};
 
-        $report->{mtt_version_major} = $MTT::Version::Major;
-        $report->{mtt_version_minor} = $MTT::Version::Minor;
+            foreach my $report_original (@$section_obj) {
+                # Ensure to do a deep copy of the report (vs. just
+                # copying the reference) because we want to locally
+                # change some values
+                my $report;
+                %$report = %{$report_original};
 
-        # Perbase doesn't seem to understand epoch timestamps.  So
-        # go find any field that has the word "timestamp" in it
-        # and convert it to GMT ctime.
-        foreach my $key (keys(%$report)) {
-            if ($key =~ /timestamp/ && $report->{$key} =~ /\d+/) {
-                $report->{$key} = gmtime($report->{$key});
+                # Add our version number into the report; saved for
+                # posterity with the results.
+
+                $report->{mtt_version_major} = $MTT::Version::Major;
+                $report->{mtt_version_minor} = $MTT::Version::Minor;
+
+                # Perbase doesn't seem to understand epoch timestamps.
+                # So go find any field that has the word "timestamp"
+                # in it and convert it to GMT ctime.
+
+                foreach my $key (keys(%$report)) {
+                    if ($key =~ /timestamp/ && $report->{$key} =~ /\d+/) {
+                        $report->{$key} = gmtime($report->{$key});
+                    }
+                }
+
+                # Use ": " as a delimiter because this file may be fed
+                # to Perfbase (e.g., in a disconnected scenario this
+                # file is later read and fed to Perfbase).
+                my $str = MTT::Reporter::MakeReportString($report, ": ");
+
+                # Substitute in the filename
+
+                my $date = strftime("%m%d%Y", localtime);
+                my $time = strftime("%H%M%S", localtime);
+                my $mpi_name = $report->{mpi_name} ? $report->{mpi_name} : "UnknownMPIName";
+                my $mpi_version = $report->{mpi_version} ? $report->{mpi_version} : "UnknownMPIVersion";
+                my $file;
+                my $e = "\$file = MTT::Files::make_safe_filename(\"$filename\");";
+                eval $e;
+                $file = "$dirname/$file";
+                Debug("Writing to text file: $file\n");
+
+                # If we have not yet written to the file in this run,
+                # then whack the file.
+
+                my $want_sep = 1;
+                if (!exists($written_files->{$file})) {
+                    unlink($file);
+                    $want_sep = 0;
+                }
+
+                # Write to stdout or append to the file
+
+                if ($file eq "-") {
+                    print "$sep\n"
+                        if ($want_sep);
+                    print $str;
+                    Verbose(">> Reported to stdout\n")
+                        if (!exists($written_files->{$file}));
+                } else {
+                    open(OUT, ">>$file");
+                    print OUT "$sep\n"
+                        if ($want_sep);
+                    print OUT $str;
+                    close(OUT);
+                    Verbose(">> Reported to text file $file\n")
+                        if (!exists($written_files->{$file}));
+                }
+                $written_files->{$file} = 1;
             }
         }
-
-        # Use ": " as a delimiter because this file may be fed to
-        # Perfbase (e.g., in a disconnected scenario this file is
-        # later read and fed to Perfbase).
-        my $str = MTT::Reporter::MakeReportString($report, ": ");
-
-        # Substitute in the filename
-
-        my $date = strftime("%m%d%Y", localtime);
-        my $time = strftime("%H%M%S", localtime);
-        my $mpi_name = $report->{mpi_name} ? $report->{mpi_name} : "UnknownMPIName";
-        my $mpi_version = $report->{mpi_version} ? $report->{mpi_version} : "UnknownMPIVersion";
-        my $file;
-        my $e = "\$file = MTT::Files::make_safe_filename(\"$filename\");";
-        eval $e;
-        $file = "$dirname/$file";
-        Debug("Writing to text file: $file\n");
-
-        # If we have not yet written to the file in this run, then
-        # whack the file.
-
-        my $want_sep = 1;
-        if (!exists($written_files->{$file})) {
-            unlink($file);
-            $want_sep = 0;
-        }
-
-        # Write to stdout or append to the file
-
-        if ($file eq "-") {
-            print "$sep\n"
-                if ($want_sep);
-            print $str;
-            Verbose(">> Reported to stdout\n")
-                if (!exists($written_files->{$file}));
-        } else {
-            open(OUT, ">>$file");
-            print OUT "$sep\n"
-                if ($want_sep);
-            print OUT $str;
-            close(OUT);
-            Verbose(">> Reported to text file $file\n")
-                if (!exists($written_files->{$file}));
-        }
-        $written_files->{$file} = 1;
     }
 }
 

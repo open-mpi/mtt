@@ -24,7 +24,7 @@ use Data::Dumper;
 my $cache;
 
 # Queued requests
-my @queue;
+my $queue;
 
 # cache of the ini file
 my $ini;
@@ -184,18 +184,13 @@ sub Submit {
 
     # Make the common report entry
 
-    my $entry = {
-        phase => $phase,
-        section => $section,
-        report => $report,
-    };
-    my @entries;
-    push(@entries, $entry);
+    my $entries;
+    push(@{$entries->{$phase}->{$section}}, $report);
 
     # Call all the reporters.  Use the GMT ctime() as the timestamp.
     $cache->{submit_timestamp} = gmtime;
     foreach my $m (@modules) {
-        MTT::Module::Run("MTT::Reporter::$m", "Submit", $cache, \@entries);
+        MTT::Module::Run("MTT::Reporter::$m", "Submit", $cache, $entries);
     }
 }
 
@@ -204,12 +199,7 @@ sub Submit {
 sub QueueAdd {
     my ($phase, $section, $report) = @_;
 
-    my $entry = {
-        phase => $phase,
-        section => $section,
-        report => $report,
-    };
-    push(@queue, $entry);
+    push(@{$queue->{$phase}->{$section}}, $report);
 }
 
 #--------------------------------------------------------------------------
@@ -221,12 +211,12 @@ sub QueueSubmit {
     # Call all the reporters.  Use the GMT ctime() as the timestamp.
     $cache->{submit_timestamp} = gmtime;
     foreach my $m (@modules) {
-        MTT::Module::Run("MTT::Reporter::$m", "Submit", $cache, \@queue);
+        MTT::Module::Run("MTT::Reporter::$m", "Submit", $cache, $queue);
     }
 
     # Empty the queue
 
-    @queue = ();
+    $queue = undef;
 }
 
 1;

@@ -13,6 +13,7 @@
 package MTT::Reporter::Perfbase;
 
 use strict;
+use Cwd;
 use MTT::Messages;
 use MTT::Values;
 use MTT::Version;
@@ -31,6 +32,10 @@ my $platform;
 # LWP user agent
 my $ua;
 
+# Do we want debugging?
+my $debug_filename;
+my $debug_index;
+
 #--------------------------------------------------------------------------
 
 sub Init {
@@ -42,6 +47,8 @@ sub Init {
     $password = Value($ini, $section, "perfbase_password");
     $url = Value($ini, $section, "perfbase_url");
     $realm = Value($ini, $section, "perfbase_realm");
+    $debug_filename = Value($ini, $section, "perfbase_debug_filename");
+    $debug_index = 0;
     if (!$url) {
         Warning("Need URL in Perfbase Reporter section [$section]\n");
         return undef;
@@ -83,6 +90,17 @@ sub Init {
         $ua->credentials("$host:$port", $realm, $username, $password);
     }
 
+    # If we have a debug filename, make it an absolute filename,
+    # because there's oodles of chdir()'s within the testing.  Whack
+    # the file if it's already there.
+
+    if ($debug_filename) {
+        if ($debug_filename !~ /\//) {
+            $debug_filename = cwd() . "/$debug_filename";
+        }
+        Debug("Perfbase reporter writing to debug file ($debug_filename)\n");
+    }
+
     Debug("Perfbase reporter initialized ($realm, $username, XXXXXX, $url, $platform)\n");
 
     1;
@@ -97,6 +115,8 @@ sub Finalize {
     undef $url;
     undef $platform;
     undef $ua;
+    undef $debug_filename;
+    undef $debug_index;
 }
 
 #--------------------------------------------------------------------------
@@ -110,64 +130,94 @@ sub Submit {
     my @success_outputs;
     my $fails = 0;
     my @fail_reasons;
-    foreach my $entry (@$entries) {
-        my $phase = $entry->{phase};
-        my $section = $entry->{section};
-        # Ensure to do a deep copy of the report (vs. just copying the
-        # reference) because we want to locally change some values
-        my $report;
-        %$report = %{$entry->{report}};
 
-        $report->{platform_id} = $platform;
-        my $xml = $report->{perfbase_xml};
-        if ($xml) {
+    foreach my $phase (keys(%$entries)) {
+        my $phase_obj = $entries->{$phase};
 
-            # Add our version number into the report; saved for
-            # posterity with the results.
+        foreach my $section (keys(%$phase_obj)) {
+            my $section_obj = $phase_obj->{$section};
 
-            $report->{mtt_version_major} = $MTT::Version::Major;
-            $report->{mtt_version_minor} = $MTT::Version::Minor;
+            foreach my $report_original (@$section_obj) {
+                # Ensure to do a deep copy of the report (vs. just
+                # copying the reference) because we want to locally
+                # change some values
+                my $report;
+                %$report = %{$report_original};
 
-            # Perbase doesn't seem to understand epoch timestamps.  So
-            # go find any field that has the word "timestamp" in it
-            # and convert it to GMT ctime.
-            foreach my $key (keys(%$report)) {
-                if ($key =~ /timestamp/ && $report->{$key} =~ /\d+/) {
-                    $report->{$key} = gmtime($report->{$key});
+                $report->{platform_id} = $platform;
+                my $xml = $report->{perfbase_xml};
+                if ($xml) {
+
+                    # Add our version number into the report; saved
+                    # for posterity with the results.
+
+                    $report->{mtt_version_major} = $MTT::Version::Major;
+                    $report->{mtt_version_minor} = $MTT::Version::Minor;
+
+                    # Perbase doesn't seem to understand epoch
+                    # timestamps.  So go find any field that has the
+                    # word "timestamp" in it and convert it to GMT
+                    # ctime.
+                    foreach my $key (keys(%$report)) {
+                        if ($key =~ /timestamp/ && $report->{$key} =~ /\d+/) {
+                            $report->{$key} = gmtime($report->{$key});
+                        }
+                    }
+
+                    # Make a big string.  We only need to escape the
+                    # use of '.
+                    my $str = MTT::Reporter::MakeReportString($report, ": ");
+                    $str =~ s/'/\\'/g;
+
+                    # Make the string to send, using ": " as the
+                    # delimiter (this is important -- the server-side
+                    # XML files are setup to use these ***2***
+                    # characters as the delimiter # between the field
+                    # and the data
+                    my $form = {
+                        # Version number is also submitted as part of
+                        # the HTTP form so that the server can check
+                        # it directly (without understanding the
+                        # perfbase XML).
+
+                        MTTVERSION_MAJOR => $MTT::Version::Major,
+                        MTTVERSION_MINOR => $MTT::Version::Minor,
+                        PBINPUT => $str,
+                        PBXML => $xml,
+                    };
+                    
+                    if (0 && !$debug_filename) {
+                        # Do the post and get the response.
+                        
+                        Debug("Submitting to perbase...\n");
+                        my $response = $ua->post($url, $form);
+                        if ($response->is_success()) {
+                            ++$successes;
+                            push(@success_outputs, $response->content);
+                        } else {
+                            Verbose(">> Failed to report to perfbase: " .
+                                    $response->status_line . "\n" . $response->content);
+                        }
+                        Debug("Perfbase submit complete\n");
+                    } else {
+                        # Write out what we *would* have sent via HTTP to a
+                        # file
+                        
+                        my $f = "$debug_filename.$debug_index.txt";
+                        ++$debug_index;
+                        Debug("Writing to perfbase debug file: $f\n");
+                        open OUT, ">$f" || die "Could not open Perfbase debug output file";
+                        print OUT Dumper($form);
+                        close OUT;
+                        Debug("Debug perfbase file write complete\n");
+
+                        ++$successes;
+                        push(@success_outputs, "Wrote to file $f");
+                    }
+                } else {
+                    Warning("No perfbase_xml field in the INI specification; skipping perfbase reporting!\n");
                 }
             }
-
-            # Make a big string.  We only need to escape the use of '.
-            my $str = MTT::Reporter::MakeReportString($report, ": ");
-            $str =~ s/'/\\'/g;
-
-            # Make the string to send, using ": " as the delimiter
-            # (this is important -- the server-side XML files are
-            # setup to use these ***2*** characters as the delimiter
-            # between the field and the data
-
-            my $form = {
-                # Version number is also submitted as part of the HTTP
-                # form so that the server can check it directly
-                # (without understanding the perfbase XML).
-                MTTVERSION_MAJOR => $MTT::Version::Major,
-                MTTVERSION_MINOR => $MTT::Version::Minor,
-                PBINPUT => $str,
-                PBXML => $xml,
-            };
-
-            # Do the post and get the response.
-
-            my $response = $ua->post($url, $form);
-            if ($response->is_success()) {
-                ++$successes;
-                push(@success_outputs, $response->content);
-            } else {
-                Verbose(">> Failed to report to perfbase: " .
-                        $response->status_line . "\n" . $response->content);
-            }
-        } else {
-            Warning("No perfbase_xml field in the INI specification; skipping perfbase reporting!\n");
         }
     }
 
