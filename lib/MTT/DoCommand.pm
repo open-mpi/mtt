@@ -64,6 +64,79 @@ sub _kill_proc {
 
 #--------------------------------------------------------------------------
 
+sub _quote_escape {
+    my $cmd = shift;
+
+    my @tokens;
+
+    # Trim leading and trailing whitespace
+    $cmd =~ /^(\s*)(.*)(\s*)$/;
+    $cmd = $2;
+
+    # If we find some quote pairs, go off and handle them.  Assume
+    # that we will not have nested quotes.
+    if ($cmd =~ /\"[^\"]*\"/) {
+        # Grab the first pair of inner-most quotes
+        $cmd =~ /(.*?)\"([^\"]*)\"(.*)/;
+
+        my $prefix = $1;
+        my $middle = $2;
+        my $suffix = $3;
+
+        # If we have a prefix, go quote escape it and get a bunch of
+        # tokens back for it.  Save all of those tokens in our list of
+        # tokens.
+        if ($prefix) {
+            my $prefix_tokens = _quote_escape($prefix);
+            foreach my $token (@$prefix_tokens) {
+                push(@tokens, $token);
+            }
+        }
+
+        if ($middle) {
+
+            # If the $prefix ended in whitespace (or if there was no
+            # $prefix), then push the $middle in as its own token.  If
+            # the $prefix did not end in whitespace, then append the
+            # $middle to the last token from the $prefix.
+
+            if (($prefix && ($prefix =~ /\s$/)) ||
+                !$prefix) {
+                push(@tokens, $middle);
+            } else {
+                $tokens[$#tokens] .= $middle;
+            }
+        } else {
+            push(@tokens, "");
+        }
+
+        # If the $suffix starts with whitespace, then the $middle
+        # concluded the token.  If not, then the first token in the
+        # $suffix is part of the same token as the first token in
+        # $middle.
+        if ($suffix) {
+            my $suffix_tokens = _quote_escape($suffix);
+            if ($suffix =~ /^[^\s]/) {
+                $tokens[$#tokens] .= $$suffix_tokens[0];
+                shift @$suffix_tokens;
+            }
+            foreach my $token (@$suffix_tokens) {
+                push(@tokens, $token);
+            }
+        }
+    }
+
+    # Otherwise, if there were no quote pairs, do the simple thing
+    elsif ($cmd) {
+        push(@tokens, split(/\s/, $cmd));
+    }
+
+    # All done
+    return \@tokens;
+}
+
+#--------------------------------------------------------------------------
+
 # run a command and save the stdout / stderr
 sub Cmd {
     my ($merge_output, $cmd, $timeout) = @_;
@@ -100,36 +173,11 @@ sub Cmd {
 
         # Turn shell-quoted words ("foo bar baz") into individual tokens
 
-        my @tokens;
-        while ($cmd =~ /\".*\"/) {
-            my $prefix;
-            my $middle;
-            my $suffix;
-            
-            $cmd =~ /(.*?)\"(.*?)\"(.*)/;
-            $prefix = $1;
-            $middle = $2;
-            $suffix = $3;
-            
-            if ($prefix) {
-                foreach my $token (split(' ', $prefix)) {
-                    push(@tokens, $token);
-                }
-            }
-            if ($middle) {
-                push(@tokens, $middle);
-            } else {
-                push(@tokens, "");
-            }
-            $cmd = $suffix;
-        }
-        if ($cmd) {
-            push(@tokens, split(' ', $cmd));
-        }
+        my $tokens = _quote_escape($cmd);
 
         # Run it!
 
-        exec(@tokens) ||
+        exec(@$tokens) ||
             die "Can't execute command: $cmd\n";
     }
     close OUTwrite;
