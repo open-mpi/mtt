@@ -10,6 +10,18 @@
 # $HEADER$
 #
 
+# This was started on 10 July 2006 and not finished.  It's of a lesser
+# concern because of
+# http://perfbase.tigris.org/servlets/ReadMsg?list=users&msgNo=124.
+# The issue of large uploads to apache is still a concern (e.g., a
+# single MPI_Install step could generate *huge* amounts of stdout),
+# but I think we're currently under whatever the limite is for
+# www.open-mpi.org and probably will be for at least the near future.
+# So perfbase.php will probably continue to be ok for a little while
+# -- this script can be continued when a) we are sending inputs that
+# are too big, and/or b) we decide that we do want to send test run
+# results in "groups" (vs. individually, as they are now).
+
 #--------------------------------------------------------------------------
 
 # Function to reporting errors back to the client
