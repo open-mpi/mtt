@@ -3,6 +3,7 @@
 <!--
   Copyright (c) 2005-2006 The Trustees of Indiana University.
                           All rights reserved.
+  Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
   $COPYRIGHT$
   
   Additional copyrights may follow
@@ -27,7 +28,7 @@
       <organization>The Open MPI Project</organization>
     </performed_by> 
     <project>MPI Testing Tool</project>
-    <synopsis>Results of MTT MPI test suite runs</synopsis>
+    <synopsis>Results of MTT MPI test suite runs: generic correctness tests</synopsis>
     <description></description>
   </info>
 
@@ -152,7 +153,7 @@
   
   <result occurence="multiple">
     <name>test_command</name>
-    <synopsis>full mpirun command line for this test</synopsis>
+    <synopsis>full command line for this test</synopsis>
     <default>N/A</default>
     <datatype>string</datatype>
   </result>
@@ -165,7 +166,7 @@
 
   <result occurence="multiple">
     <name>test_np</name>
-    <synopsis>number of processing elements used for test</synopsis>
+    <synopsis>number of processes used for test</synopsis>
     <datatype>integer</datatype>
   </result>
 
@@ -198,13 +199,13 @@
   
   <result occurence="multiple">
     <name>start_timestamp</name>
-    <synopsis>date and time the MPI run was started</synopsis>
+    <synopsis>date and time this test was started</synopsis>
     <datatype>timestamp</datatype>
   </result>
 
   <result occurence="multiple">
     <name>stop_timestamp</name>
-    <synopsis>date and time the MPI run finished</synopsis>
+    <synopsis>date and time this test was finished</synopsis>
     <datatype>timestamp</datatype>
   </result>
 
