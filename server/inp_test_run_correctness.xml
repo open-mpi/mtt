@@ -3,6 +3,7 @@
 <!--
   Copyright (c) 2005-2006 The Trustees of Indiana University.
                           All rights reserved.
+  Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
   $COPYRIGHT$
   
   Additional copyrights may follow
@@ -12,7 +13,7 @@
 -->
 
 <input>
-  <experiment>mtt_test_run</experiment>
+  <experiment>test_run_correctness</experiment>
   
   <set_separation>
     <match>============================================================================</match>
@@ -133,7 +134,7 @@
   <named_location len="0">
     <name>stdout</name>
     <match marker="begin" skip="1">STDOUT_BEGIN</match>
-    <match marker="end">STDOUT_BEGIN</match>
+    <match marker="end">STDOUT_END</match>
   </named_location>
 
   <named_location len="0">
