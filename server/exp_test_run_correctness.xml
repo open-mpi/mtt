@@ -13,14 +13,17 @@
 -->
 
 <!--
-  One run in the test_run experiment corresponds to a run of an entire test
-  suite.  A number of fields do not vary from test to test within a test
-  suite, so occur only once.  Other fields have specific values for each test.
-  These fields occur multiple times.
+  One run in the test_run experiment corresponds to a run of an entire
+  test suite.  A number of fields do not vary from test to test within
+  a test suite, so occur only once.  Other fields have specific values
+  for each test.  These fields occur multiple times.
+
+  Generic experiment for correctness tests (i.e., "pass" / "fail"
+  tests).
 -->
 
 <experiment>
-  <name>mtt_test_run</name>
+  <name>test_run_correctness</name>
 
   <info>
     <performed_by> 
@@ -29,7 +32,7 @@
     </performed_by> 
     <project>MPI Testing Tool</project>
     <synopsis>Results of MTT MPI test suite runs: generic correctness tests</synopsis>
-    <description></description>
+    <description>Generic experiment for correctness tests (i.e., "pass" / "fail" tests)</description>
   </info>
 
 
@@ -147,7 +150,6 @@
     <synopsis>date and time the run results were submitted</synopsis>
     <datatype>timestamp</datatype>
   </parameter>
-
 
   <!-- MULTIPLE-OCCURENCE FIELDS -->
   
