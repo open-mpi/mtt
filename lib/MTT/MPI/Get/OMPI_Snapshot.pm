@@ -120,17 +120,25 @@ sub Get {
     my $md5_file = `grep $ret->{version}.tar.gz $md5_checksums | cut -d\\  -f1`;
     chomp($md5_file);
     my $md5_actual = MTT::Files::md5sum("$tarball_dir/$tarball_name");
-    Abort("md5sum from checksum file does not match actual ($md5_file != $md5_actual)")
-        if ($md5_file ne $md5_actual);
-    Debug(">> Good md5sum\n");
+    if ($md5_actual) {
+        Abort("md5sum from checksum file does not match actual ($md5_file != $md5_actual)")
+            if ($md5_file ne $md5_actual);
+        Debug(">> Good md5sum\n");
+    } else {
+        Warning("MD5 message digests were not compared because the md5sum executable was not found\n");
+    }
 
     # compare the sha1sum
     my $sha1_file = `grep $ret->{version}.tar.gz $sha1_checksums | cut -d\\  -f1`;
     chomp($sha1_file);
     my $sha1_actual = MTT::Files::sha1sum("$tarball_dir/$tarball_name");
-    Abort("sha1sum from checksum file does not match actual ($sha1_file != $sha1_actual)")
-        if ($sha1_file ne $sha1_actual);
-    Debug(">> Good sha1sum\n");
+    if ($sha1_actual) {
+        Abort("sha1sum from checksum file does not match actual ($sha1_file != $sha1_actual)")
+            if ($sha1_file ne $sha1_actual);
+        Debug(">> Good sha1sum\n");
+    } else {
+        Warning("SHA1 message digests were not compared because the sha1sum executable was not found\n");
+    }
 
     # now adjust the tarball name to be absolute
     $ret->{module_data}->{tarball} = "$tarball_dir/$tarball_name";
