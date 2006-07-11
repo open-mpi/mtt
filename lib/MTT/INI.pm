@@ -25,7 +25,7 @@ sub WriteINI {
 
     my $cfg = new Config::IniFiles();
     $cfg->AddSection($section);
-    $cfg->SetSectionComment($section, "This file automatically created by engine.pl.  Any changes made manually are likely to be lost!");
+    $cfg->SetSectionComment($section, "This file was automatically created by Config/IniFiles.pm.  Any changes made manually are likely to be lost!");
     foreach my $k (keys(%$data)) {
         $cfg->newval($section, lc($k), $data->{$k});
     }
