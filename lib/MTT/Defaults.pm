@@ -25,7 +25,7 @@ our $System_config = {
 
     http_agents => "wget lynx curl",
 
-    known_compiler_names => "gnu pgi intel kai absoft pathscale none",
+    known_compiler_names => "gnu pgi intel kai absoft pathscale sun none",
 };
 
 # User-defined configuration
@@ -60,7 +60,7 @@ our $Test_build = {
 
 # Test run phase
 our $Test_run = {
-    perfbase_xml => "inp_test_run.xml",
+    perfbase_xml => "inp_test_run_correctness.xml",
     argv => "",
     np => 2,
     np_ok => 1,

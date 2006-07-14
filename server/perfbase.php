@@ -156,7 +156,7 @@ fclose($pipes[1]);
 $status = proc_close($process);
 if (0 != $status) {
     mtt_error("501 Perfbase exited with error",
-              "Perfbase returned with exit status $status.  Its output was:\n$output");
+              "Perfbase returned with exit status $status.  Its output was:\n$output\n");
 } else {
     mtt_debug("perfbase input: succeeded\n$output\n");
 }

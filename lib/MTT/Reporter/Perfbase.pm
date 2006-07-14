@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -25,6 +26,7 @@ my $username;
 my $password;
 my $realm;
 my $url;
+my $port;
 
 # platform common name
 my $platform;
@@ -58,7 +60,7 @@ sub Init {
     ++$count if ($password);
     ++$count if ($realm);
     if ($count > 0 && $count != 3) {
-        Warning("Perfbase Reporter section [$section]: if password, username, or relam is specified, they all must be specified.\n");
+        Warning("Perfbase Reporter section [$section]: if password, username, or realm is specified, they all must be specified.\n");
         return undef;
     }
     $platform = Value($ini, $section, "perfbase_platform");
@@ -66,24 +68,40 @@ sub Init {
     # Extract the host and port from the URL.  Needed for the
     # credentials section.
 
-    my $port;
+    my $dir;
     my $host = $url;
-    if ($host =~ /http:\/\/([-a-zA-Z0-9.]+):(\d+)/) {
+    if ($host =~ /(http:\/\/[-a-zA-Z0-9.]+):(\d+)\/(.*)$/) {
         $host = $1;
         $port = $2;
-    } elsif ($host =~ /http:\/\/([-a-zA-Z0-9.]+)/) {
+        $dir = $3;
+    } elsif ($host =~ /(http:\/\/[-a-zA-Z0-9.]+)\/(.*)$/) {
         $host = $1;
+        $dir = $2;
         $port = 80;
-    } elsif ($host =~ /https:\/\/([-a-zA-Z0-9.]+)/) {
+    } elsif ($host =~ /(https:\/\/[-a-zA-Z0-9.]+)\/(.*)$/) {
         $host = $1;
+        $dir = $2;
         $port = 443;
     } else {
         return undef;
     }
+    $url = "$host:$port/$dir";
+
+    # Look for the proxy server in the environment,
+    # and take the first one we find
+    my $proxy;
+    foreach my $p (grep(/http_proxy/i, keys %ENV)) {
+        if ($ENV{$p}) {
+            $proxy = $ENV{$p};
+            $proxy = "http://$proxy" if ($proxy !~ /https?:/);
+            last;
+        }
+    }
 
     # Create the Perl LWP stuff to setup for HTTP PUT's later
 
-    $ua = LWP::UserAgent->new({ env_proxy => 1 });
+    $ua = LWP::UserAgent->new();
+    $ua->proxy(['http', 'ftp'], $proxy);
     $ua->agent("MPI Test Perfbase Reporter");
     if ($realm && $username && $password) {
         Verbose("   Set HTTP credentials for realm \"$realm\"\n");
@@ -186,10 +204,10 @@ sub Submit {
                         PBXML => $xml,
                     };
                     
-                    if (0 && !$debug_filename) {
+                    if ($url) {
                         # Do the post and get the response.
                         
-                        Debug("Submitting to perbase...\n");
+                        Debug("Submitting to perfbase...\n");
                         my $response = $ua->post($url, $form);
                         if ($response->is_success()) {
                             ++$successes;
@@ -199,7 +217,9 @@ sub Submit {
                                     $response->status_line . "\n" . $response->content);
                         }
                         Debug("Perfbase submit complete\n");
-                    } else {
+                    }
+
+                    if ($debug_filename) {
                         # Write out what we *would* have sent via HTTP to a
                         # file
                         
@@ -212,7 +232,7 @@ sub Submit {
                         Debug("Debug perfbase file write complete\n");
 
                         ++$successes;
-                        push(@success_outputs, "Wrote to file $f");
+                        push(@success_outputs, "Wrote to file $f\n");
                     }
                 } else {
                     Warning("No perfbase_xml field in the INI specification; skipping perfbase reporting!\n");
@@ -223,7 +243,7 @@ sub Submit {
 
     if ($successes > 0) {
         if ($fails == 0) {
-            Verbose(">> Reported $successes outputs to perfbase\n");
+            Verbose(">> Reported $successes output(s) to perfbase\n");
             Debug(@success_outputs);
         }
     }

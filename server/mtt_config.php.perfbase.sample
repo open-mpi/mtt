@@ -9,17 +9,17 @@
 # $HEADER$
 #
 
-$local = "/u/jsquyres/perfbase";
+$local = $_ENV[HOME];
 
 $mtt_pb_config = array
 (
   env => array
   (
-    PATH => "$local:/opt/python-2.4/bin:" . $_ENV[PATH],
+    PATH => "$local:/opt/python-2.4/bin:/opt/perfbase-0.9.1/bin:" . $_ENV[PATH],
     PYTHONPATH => "$local/lib/python2.4:$local/lib/python2.4/site-packages" . (isset($_ENV[PYTHONPATH]) ? ":$_ENV[PYTHONPATH]" : ""),
     PB_DBUSER => "postgres",
     PB_DBPASSWD => "insert password here",
     ),
-  cwd => "/tmp",
+  cwd => ".",
   debug => 1,
   );
