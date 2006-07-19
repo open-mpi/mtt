@@ -89,6 +89,7 @@ require MTT::FindProgram;
 require MTT::Trim;
 
 my @file_arg;
+my $stdin_arg;
 my $scratch_arg;
 my $help_arg;
 my $debug_arg;
@@ -106,10 +107,11 @@ my @SAVE_ARGV = @ARGV;
 
 &Getopt::Long::Configure("bundling", "require_order");
 my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
+                                  "" => \$stdin_arg,
                                   "scratch|s=s" => \$scratch_arg,
-				  "help|h" => \$help_arg,
-				  "debug|d" => \$debug_arg,
-				  "verbose|v" => \$verbose_arg,
+                                  "help|h" => \$help_arg,
+                                  "debug|d" => \$debug_arg,
+                                  "verbose|v" => \$verbose_arg,
                                   "force" => \$force_arg,
                                   "mpi-get!" => \$mpi_get_arg,
                                   "mpi-install!" => \$mpi_install_arg,
@@ -119,16 +121,25 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
                                   "trim!" => \$trim_arg,
                                   "version" => \$version_arg,
                                   );
-
 # Everything ok?
 
 if ($version_arg) {
     print "MTT Version $MTT::Version::Major.$MTT::Version::Minor\n";
     exit(0);
 }
-if (! @file_arg) {
-    print "Must specify at least one --file argument.\n";
+
+foreach my $file (@ARGV) {
+    push(@file_arg, $file) 
+        if (-T $file and $file =~ /\.ini\s*$/);
+}
+if (! @file_arg and ! $stdin_arg) {
+    print "Must specify at least one --file argument or '-' for stdin.\n";
     $ok = 0;
+}
+if ($file_arg[0] eq "-" or $stdin_arg) {
+    $stdin_arg = 1;
+    $file_arg[0] = undef;
+    open($file_arg[0], "-");
 }
 if (!$ok || $help_arg) {
     print("Command line error\n") 
@@ -149,7 +160,7 @@ if (!$ok || $help_arg) {
 --[no-]test-run               Do the \"Test run\" phase
 --[no-]trim                   Do the \"Trim\" phase
 
-If no options other than --file (or -f) are specified, the MTT will
+If no options other than --file, -f, or '-' are specified, the MTT will
 default to trying to make as much progress as possible (i.e., running
 each of the phases as necessary).  
 
@@ -255,7 +266,7 @@ MTT::MPI::LoadSources($source_dir)
 MTT::MPI::LoadInstalls($install_dir)
     if ($mpi_install || $test_build || $test_run || $trim);
 
-# Load up the built tests for each install
+# Load up the test sources for each install
 MTT::Test::LoadSources($source_dir)
     if ($test_get || $test_build || $test_run || $trim);
 
@@ -276,7 +287,7 @@ foreach my $file (@file_arg) {
     
     # Load up the ini file
 
-    MTT::Messages::Debug("Reading ini file: $file\n");
+    MTT::Messages::Debug("Reading ini file: " . (($stdin_arg) ? "stdin" : $file) . "\n");
     my $ini = new Config::IniFiles(-file => $file, 
                                    -nocase => 1,
                                    -allowcontinue => 1);
