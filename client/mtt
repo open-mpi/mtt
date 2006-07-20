@@ -105,7 +105,7 @@ my $version_arg;
 
 my @SAVE_ARGV = @ARGV;
 
-&Getopt::Long::Configure("bundling", "require_order");
+&Getopt::Long::Configure("bundling");
 my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
                                   "" => \$stdin_arg,
                                   "scratch|s=s" => \$scratch_arg,
