@@ -54,95 +54,95 @@
     <match>platform_type: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>compiler_name</name>
     <match>compiler_name: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>compiler_version</name>
     <match>compiler_version: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>configure_arguments</name>
     <match>configure_arguments: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>environment</name>
     <match marker="begin" skip="1">ENVIRONMENT_BEGIN</match>
     <match marker="end">ENVIRONMENT_END</match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>mpi_name</name>
     <match>mpi_name: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>mpi_get_section_name</name>
     <match>mpi_get_section_name: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>mpi_install_section_name</name>
     <match>mpi_install_section_name: </match>
   </named_location>
   
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>test_build_section_name</name>
     <match>test_build_section_name: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>mpi_version</name>
     <match>mpi_version: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>platform_id</name>
     <match>platform_id: </match>
   </named_location>
 
-  <named_location>
+  <named_location mode="set">
     <name>merge_stdout_stderr</name>
     <match>merge_stdout_stderr: </match>
   </named_location>
 
-  <named_location>
+  <named_location mode="set">
     <name>success</name>
     <match>success: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>result_message</name>
     <match>result_message: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>stderr</name>
     <match marker="begin" skip="1">STDERR_BEGIN</match>
     <match marker="end">STDERR_END</match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>stdout</name>
     <match marker="begin" skip="1">STDOUT_BEGIN</match>
     <match marker="end">STDOUT_END</match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>submit_timestamp</name>
     <match>submit_timestamp: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>start_timestamp</name>
     <match>start_timestamp: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>stop_timestamp</name>
     <match>stop_timestamp: </match>
   </named_location>

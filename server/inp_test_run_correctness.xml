@@ -19,12 +19,12 @@
     <match>============================================================================</match>
   </set_separation>
 
-  <named_location>
+  <named_location len="0">
     <name>mtt_version_major</name>
     <match>mtt_version_major: </match>
   </named_location>
   
-  <named_location>
+  <named_location len="0">
     <name>mtt_version_minor</name>
     <match>mtt_version_minor: </match>
   </named_location>
@@ -85,72 +85,73 @@
     <match>mpi_install_section_name: </match>
   </named_location>
 
-  <named_location len="0">
+  <!-- MULTIPLE-occurrence FIELDS -->
+
+  <named_location mode="set" len="0">
     <name>test_build_section_name</name>
     <match>test_build_section_name: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>test_run_section_name</name>
     <match>test_run_section_name: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>merge_stdout_stderr</name>
     <match>merge_stdout_stderr: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>test_command</name>
     <match>test_command: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>test_message</name>
     <match>test_message: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>test_name</name>
     <match>test_name: </match>
   </named_location>
 
-  <named_location>
+  <named_location mode="set" len="0">
     <name>test_np</name>
     <match>test_np: </match>
   </named_location>
 
-  <named_location>
+  <named_location mode="set" len="0">
     <name>test_pass</name>
     <match>test_pass: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>stderr</name>
     <match marker="begin" skip="1">STDERR_BEGIN</match>
     <match marker="end">STDERR_END</match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>stdout</name>
     <match marker="begin" skip="1">STDOUT_BEGIN</match>
     <match marker="end">STDOUT_END</match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>submit_timestamp</name>
     <match>submit_timestamp: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>start_timestamp</name>
     <match>start_timestamp: </match>
   </named_location>
 
-  <named_location len="0">
+  <named_location mode="set" len="0">
     <name>stop_timestamp</name>
     <match>stop_timestamp: </match>
   </named_location>
 
 </input>
-
