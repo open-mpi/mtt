@@ -73,6 +73,63 @@ The main (loose) requirements that we had for the MTT are:
   implementation is simply a matter of writing a new module with a
   well-defined interface.
 
+Quick start
+-----------
+
+Edit the following in the samples/ompi-core-template.ini file.
+
+[Reporter: IU Perfbase]:
+...
+perfbase_username = postgres
+perfbase_password = <ask someone>
+perfbase_url = http://www.open-mpi.org/~em162155/perfbase.php
+perfbase_debug_filename = pb_debug
+...
+
+Make sure your enviornment is ready for MTT:
+
+$ perl -e 'use LWP::UserAgent;' (should output nothing)
+
+If you see output that says "Can't locate", do the following:
+
+If you have root access, try:
+
+$ perl -MCPAN 'install LWP::UserAgent;'
+
+If that fails:
+
+Download the tarball here:
+http://search.cpan.org/CPAN/authors/id/G/GA/GAAS/libwww-perl-5.805.tar.gz
+
+$ gzip -dc libwww-perl-5.805.tar.gz | tar xvf -
+$ cd libwww-perl-5.805
+
+If you have root access:
+
+$ perl Makefile.PL
+$ make
+$ make install
+
+If you do not have root access:
+
+$ perl Makefile.PL LIB=<your dir> PREFIX=<your dir>
+$ make
+$ make install
+
+You will then need to point PERLLIB to <your dir> to run MTT.
+
+If you require a proxy for web access, create a .wgetrc file:
+
+$ cat ~/.wgetrc
+http_proxy = <your proxy>
+
+You are ready to go ...
+
+$ client/mtt -d --force -f samples/ompi-core-template.ini
+
+For more info:
+
+$ client/mtt --help
 
 Current status
 --------------
@@ -127,7 +184,7 @@ The best way to report bugs, send comments, ask questions, and
 generally get involved is to sign up on the MPI Testing Tool mailing
 list:
 
-     mtt@open-mpi.org
+     mtt-users@open-mpi.org
 
 Because of spam, only subscribers are allowed to post to this list
 (ensure that you subscribe with and post from exactly the same e-mail
