@@ -140,6 +140,9 @@ sub Init {
 
     _fill_cache();
 
+    # Record start time for the overall MTT run
+    $cache->{start_run_timestamp} = gmtime;
+
     # Go through all the sections in the ini file looking for section
     # names that begin with "reporter:"
 
@@ -188,7 +191,7 @@ sub Submit {
     push(@{$entries->{$phase}->{$section}}, $report);
 
     # Call all the reporters.  Use the GMT ctime() as the timestamp.
-    $cache->{submit_timestamp} = gmtime;
+    $cache->{submit_test_timestamp} = gmtime;
     foreach my $m (@modules) {
         MTT::Module::Run("MTT::Reporter::$m", "Submit", $cache, $entries);
     }
@@ -209,7 +212,7 @@ sub QueueSubmit {
         if (!$cache);
 
     # Call all the reporters.  Use the GMT ctime() as the timestamp.
-    $cache->{submit_timestamp} = gmtime;
+    $cache->{submit_test_timestamp} = gmtime;
     foreach my $m (@modules) {
         MTT::Module::Run("MTT::Reporter::$m", "Submit", $cache, $queue);
     }

@@ -252,9 +252,10 @@ sub _do_build {
 
     # Run the module
     my $start = timegm(gmtime());
+    my $start_time = time();
     my $ret = MTT::Module::Run("MTT::Test::Build::$config->{build_module}",
                                "Build", $ini, $mpi_install, $config);
-    my $stop = timegm(gmtime());
+    my $duration = time() - $start_time . " seconds";
             
     # Analyze the return
     if ($ret) {
@@ -285,8 +286,8 @@ sub _do_build {
         # Send the results back to the reporter
         my $report = {
             phase => "Test Build",
-            start_timestamp => $start,
-            stop_timestamp => $stop,
+            start_test_timestamp => $start,
+            test_duration_interval => $duration,
             success => $ret->{success},
             compiler_name => $mpi_install->{compiler_name},
             compiler_version => $mpi_install->{compiler_version},

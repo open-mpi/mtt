@@ -357,9 +357,10 @@ sub _do_install {
     
     # Run the module
     my $start = timegm(gmtime());
+    my $start_time = time;
     my $ret = MTT::Module::Run("MTT::MPI::Install::$config->{module}",
                                "Install", $ini, $section, $config);
-    my $stop = timegm(gmtime());
+    my $duration = time - $start_time . " seconds";
     
     # Analyze the return
     
@@ -377,8 +378,8 @@ sub _do_install {
             environment => "filled in below",
 
             perfbase_xml => $config->{perfbase_xml},
-            start_timestamp => $start,
-            stop_timestamp => $stop,
+            start_test_timestamp => $start,
+            test_duration_interval => $duration,
             mpi_details => $mpi_get->{mpi_details},
             mpi_name => $mpi_get->{simple_section_name},
             mpi_version => $mpi_get->{version},

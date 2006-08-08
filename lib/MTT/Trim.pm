@@ -173,7 +173,7 @@ sub _trim_runs {
                                 
                                 # Check to see if this was a
                                 # successful test build
-                                if (!$test_cmd->{test_pass}) {
+                                if (!$test_cmd->{success}) {
                                     $found_failed = 1;
                                     last;
                                 }

@@ -349,8 +349,8 @@ sub _run_one_test {
     my $start_time = time;
     my $start = timegm(gmtime());
     my $x = MTT::DoCommand::Cmd(!$separate, $cmd, $timeout);
-    my $stop = timegm(gmtime());
     my $stop_time = time;
+    my $duration = $stop_time - $start_time . " seconds";
     $test_exit_status = $x->{status};
     my $pass = MTT::Values::EvaluateString($run->{pass});
 
@@ -358,8 +358,8 @@ sub _run_one_test {
     my $report = {
         phase => "Test run",
 
-        start_timestamp => $start,
-        stop_timestamp => $stop,
+        start_test_timestamp => $start,
+        test_duration_interval => $duration,
 
         mpi_name => $mpi_details->{name},
         mpi_version => $mpi_details->{version},
@@ -371,7 +371,7 @@ sub _run_one_test {
         test_build_section_name => $run->{test_build_simple_section_name},
         test_run_section_name => $run->{simple_section_name},
         test_np => $test_np,
-        test_pass => $pass,
+        success => $pass,
         test_name => $name,
         test_command => $cmd,
     };
@@ -381,13 +381,13 @@ sub _run_one_test {
         Warning("$str FAILED\n");
         $want_output = 1;
         if ($stop_time - $start_time > $timeout) {
-            $report->{test_message} = "Failed; timeout expired ($timeout seconds)";
+            $report->{result_message} = "Failed; timeout expired ($timeout seconds)";
         } else {
-            $report->{test_message} = "Failed; exit status: $x->{status}";
+            $report->{result_message} = "Failed; exit status: $x->{status}";
         }
     } else {
         Verbose("$str Passed\n");
-        $report->{test_message} = "Passed";
+        $report->{result_message} = "Passed";
         $want_output = $run->{save_output_on_pass};
     }
     if ($want_output) {
