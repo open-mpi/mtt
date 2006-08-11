@@ -72,3 +72,5 @@ our $Test_run = {
     stdout_save_lines => 0,
     stderr_save_lines => -1,
 };
+
+1;

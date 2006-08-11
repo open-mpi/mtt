@@ -85,6 +85,7 @@ require MTT::Messages;
 require MTT::INI;
 require MTT::Reporter;
 require MTT::Defaults;
+require MTT::Globals;
 require MTT::FindProgram;
 require MTT::Trim;
 
@@ -295,6 +296,10 @@ foreach my $file (@file_arg) {
         MTT::Messages::Warning("Could not read INI file: $file; skipping\n");
         next;
     }
+
+    # Examine the [MTT] global defaults section
+
+    MTT::Globals::load($ini);
 
     # Run the phases
 

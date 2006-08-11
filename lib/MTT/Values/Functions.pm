@@ -491,6 +491,10 @@ sub rm_max_procs {
     # Are we running in a SLURM job?
     return slurm_max_procs()
         if slurm_job();
+    return hostfile_max_procs()
+        if have_hostfile();
+    return hostlist_max_procs()
+        if have_hostlist();
 
     # Not running under anything; just return 2.
     return "2";
@@ -498,9 +502,55 @@ sub rm_max_procs {
 
 #--------------------------------------------------------------------------
 
+# Return "1" if we have a hostfile; "0" otherwise
+sub have_hostfile {
+    Debug("&have_hostfile\n");
+
+    my $ret = (exists $Globals::Values->{hostfile}) ? "1" : "0";
+    Debug("&have_hostfile returning $ret\n");
+    return $ret;
+}
+
+#--------------------------------------------------------------------------
+
+# If we have a hostfile, return its max procs count
+sub hostfile_max_procs {
+    Debug("&hostfile_max_procs\n");
+
+    return "0"
+        if (!have_hostfile());
+
+    Debug("&hostfile_max_procs returning $$Globals::Values->{hostfile_max_np}\n");
+    return $Globals::Values->{hostfile_max_np};
+}
+
+#--------------------------------------------------------------------------
+
+# Return "1" if we have a hostfile; "0" otherwise
+sub have_hostlist {
+    Debug("&have_hostlist\n");
+
+    return (exists $Globals::Values->{hostlist}) ? "1" : "0";
+}
+
+#--------------------------------------------------------------------------
+
+# If we have a hostlist, return its max procs count
+sub hostlist_max_procs {
+    Debug("&hostlist_max_procs\n");
+
+    return "0"
+        if (!have_hostlist());
+
+    Debug("&hostlist_max_procs returning $$Globals::Values->{hostlist_max_np}\n");
+    return $Globals::Values->{hostlist_max_np};
+}
+
+#--------------------------------------------------------------------------
+
 # Return "1" if we're running in a SLURM job; "0" otherwise.
 sub slurm_job {
-    Debug("&test_executable returning: $MTT::Test::Run::slurm_job\n");
+    Debug("&slurm_job\n");
 
     return ((exists($ENV{SLURM_JOBID}) &&
              exists($ENV{SLURM_TASKS_PER_NODE})) ? "1" : "0");
@@ -511,7 +561,7 @@ sub slurm_job {
 # If in a SLURM job, return the max number of processes we can run.
 # Otherwise, return 0.
 sub slurm_max_procs {
-    Debug("&test_executable returning: $MTT::Test::Run::slurm_max_procs\n");
+    Debug("&slurm_max_procs\n");
 
     return "0"
         if (!slurm_job());
