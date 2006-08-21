@@ -60,6 +60,25 @@ sub ReadINI {
     return undef;
 }
 
+# Override ini file params with those supplied at command-line
+sub OverrideINIParams {
+
+    my($ini, $ini_args) = @_;
+
+    foreach my $param (keys %$ini_args) {
+        my @matchers = split /,/, $ini_args->{$param}->{match};
+        my $matcher = join("\.\*", @matchers) . '|' . join("\.\*", reverse @matchers);
+        foreach my $section ($ini->Sections) {
+            if ($section =~ /$matcher/i) {
+                $ini->delval($section, $param);
+                $ini->newval($section, $param, $ini_args->{$param}->{value});
+            }
+        }
+    }
+
+    return $ini;
+}
+
 1;
 
 

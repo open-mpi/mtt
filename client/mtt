@@ -103,6 +103,7 @@ my $test_build_arg;
 my $test_run_arg;
 my $trim_arg;
 my $version_arg;
+my $ini_args;
 
 my @SAVE_ARGV = @ARGV;
 
@@ -132,6 +133,19 @@ if ($version_arg) {
 foreach my $file (@ARGV) {
     push(@file_arg, $file) 
         if (-T $file and $file =~ /\.ini\s*$/);
+}
+
+# Get command-line overridden ini params
+my $key_val_regexp = '([^=]+)\=(.*)';
+foreach my $arg (@ARGV) {
+    if ($arg =~ /([^:]+)\:$key_val_regexp$/) {
+        $ini_args->{$2}->{value} = $3; 
+        $ini_args->{$2}->{match} = $1; 
+    }
+    elsif ($arg =~ /$key_val_regexp$/) {
+        $ini_args->{$1}->{value} = $2; 
+        $ini_args->{$1}->{match} = '.'; 
+    }
 }
 if (! @file_arg and ! $stdin_arg) {
     print "Must specify at least one --file argument or '-' for stdin.\n";
@@ -292,6 +306,11 @@ foreach my $file (@file_arg) {
     my $ini = new Config::IniFiles(-file => $file, 
                                    -nocase => 1,
                                    -allowcontinue => 1);
+
+    # Override ini file params with those supplied at command-line
+
+    $ini = MTT::INI::OverrideINIParams($ini, $ini_args);
+
     if (! $ini) {
         MTT::Messages::Warning("Could not read INI file: $file; skipping\n");
         next;
