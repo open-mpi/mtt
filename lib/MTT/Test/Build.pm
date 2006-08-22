@@ -310,7 +310,7 @@ sub _do_build {
             mpi_name => $mpi_install->{mpi_get_simple_section_name},
             mpi_get_section_name => $mpi_install->{mpi_get_simple_section_name},
             mpi_install_section_name => $mpi_install->{simple_section_name},
-            mpi_version => $mpi_install->{mpi_mpi_version},
+            mpi_version => $mpi_install->{mpi_version},
         };
 
         # See if we want to save the stdout
