@@ -62,8 +62,10 @@ sub Install {
 
 sub _setup_sources_xml {
     $sources_xs = new XML::Simple(KeyAttr => { mpi_get => "simple_section_name",
+                                               mpi_version => "version",
                                            },
                                   ForceArray => [ "mpi_get", 
+                                                  "mpi_version",
                                                   ],
                                   AttrIndent => 1,
                                   RootName => "mpi_sources",
@@ -92,8 +94,13 @@ sub LoadSources {
         foreach my $mpi_get_key (keys(%{$in->{mpi_get}})) {
             my $mpi_get = $in->{mpi_get}->{$mpi_get_key};
 
-            $MTT::MPI::sources->{$mpi_get_key} = $mpi_get;
-            $MTT::MPI::sources->{$mpi_get_key}->{simple_section_name} = $mpi_get_key;
+            # For each version
+            foreach my $mpi_version_key (keys(%{$mpi_get->{mpi_version}})) {
+                my $mpi_version = $mpi_get->{mpi_version}->{$mpi_version_key};
+                
+                $MTT::MPI::sources->{$mpi_get_key}->{$mpi_version_key} = $mpi_version;
+                $MTT::MPI::sources->{$mpi_get_key}->{$mpi_version_key}->{simple_section_name} = $mpi_get_key;
+            }
         }
     }
 }
@@ -115,7 +122,12 @@ sub SaveSources {
     foreach my $mpi_get_key (keys(%$MTT::MPI::sources)) {
         my $mpi_get = $MTT::MPI::sources->{$mpi_get_key};
 
-        $transformed->{mpi_get}->{$mpi_get_key} = $mpi_get;
+        # For each version
+        foreach my $mpi_version_key (keys(%$mpi_get)) {
+            my $mpi_version = $mpi_get->{$mpi_version_key};
+
+            $transformed->{mpi_get}->{$mpi_get_key}->{mpi_version}->{$mpi_version_key} = $mpi_version;
+        }
     }
 
     # Write out the file
@@ -131,9 +143,11 @@ sub SaveSources {
 
 sub _setup_installs_xml {
     $installs_xs = new XML::Simple(KeyAttr => { mpi_get => "simple_section_name",
+                                                mpi_version => "version",
                                                 mpi_install => "simple_section_name",
                                             },
                                    ForceArray => [ "mpi_get", 
+                                                   "mpi_version",
                                                    "mpi_install",
                                                    ],
                                    AttrIndent => 1,
@@ -163,11 +177,16 @@ sub LoadInstalls {
         foreach my $mpi_get_key (keys(%{$in->{mpi_get}})) {
             my $mpi_get = $in->{mpi_get}->{$mpi_get_key};
 
-            # For each MPI install section
-            foreach my $mpi_install_key (keys(%{$mpi_get->{mpi_install}})) {
-                $MTT::MPI::installs->{$mpi_get_key}->{$mpi_install_key} = 
-                    $in->{mpi_get}->{$mpi_get_key}->{mpi_install}->{$mpi_install_key};
-                $MTT::MPI::installs->{$mpi_get_key}->{$mpi_install_key}->{simple_section_name} = $mpi_install_key;
+            # For each version of each MPI get
+            foreach my $mpi_version_key (keys(%{$mpi_get->{mpi_version}})) {
+                my $mpi_version = $mpi_get->{mpi_version}->{$mpi_version_key};
+
+                # For each MPI install section
+                foreach my $mpi_install_key (keys(%{$mpi_version->{mpi_install}})) {
+                    $MTT::MPI::installs->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key} = 
+                        $in->{mpi_get}->{$mpi_get_key}->{mpi_version}->{$mpi_version_key}->{mpi_install}->{$mpi_install_key};
+                    $MTT::MPI::installs->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key}->{simple_section_name} = $mpi_install_key;
+                }
             }
         }
     }
@@ -188,13 +207,18 @@ sub SaveInstalls {
     # For each MPI get section
     foreach my $mpi_get_key (keys(%{$MTT::MPI::installs})) {
         my $mpi_get = $MTT::MPI::installs->{$mpi_get_key};
+        
+        # For each version of that get
+        foreach my $mpi_version_key (keys(%{$mpi_get})) {
+            my $mpi_version = $mpi_get->{$mpi_version_key};
 
-        # For each MPI install action
-        foreach my $mpi_install_key (keys(%{$mpi_get})) {
-            my $mpi_install = $mpi_get->{$mpi_install_key};
+            # For each MPI install action
+            foreach my $mpi_install_key (keys(%{$mpi_version})) {
+                my $mpi_install = $mpi_version->{$mpi_install_key};
 
-            $transformed->{mpi_get}->{$mpi_get_key}->{mpi_install}->{$mpi_install_key} = 
-                $mpi_get->{$mpi_install_key};
+                $transformed->{mpi_get}->{$mpi_get_key}->{mpi_version}->{$mpi_version_key}->{mpi_install}->{$mpi_install_key} = 
+                    $mpi_install;
+            }
         }
     }
 

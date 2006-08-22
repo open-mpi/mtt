@@ -41,7 +41,8 @@ sub make_safe_filename {
 sub mkdir {
     my ($dir) = @_;
 
-    Debug("Making dir: $dir\n");
+    my $c = cwd();
+    Debug("Making dir: $dir (cwd: $c)\n");
     my @parts = split(/\//, $dir);
 
     my $str;

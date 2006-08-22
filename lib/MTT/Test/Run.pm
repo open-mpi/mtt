@@ -77,17 +77,18 @@ sub Run {
                 # MPI Install simple section name, Test Build simple
                 # section name
                 foreach my $mpi_get_key (keys(%{$MTT::Test::builds})) {
-                    foreach my $mpi_install_key (keys(%{$MTT::Test::builds->{$mpi_get_key}})) {
-                        foreach my $test_build_key (keys(%{$MTT::Test::builds->{$mpi_get_key}->{$mpi_install_key}})) {
-
-                            if ($test_build_key eq $test_build_name) {
-                                my $test_build = $MTT::Test::builds->{$mpi_get_key}->{$mpi_install_key}->{$test_build_key};
-                                Debug("Found a match! $test_build_key [$simple_section");
-                                my $mpi_install = $MTT::MPI::installs->{$mpi_get_key}->{$mpi_install_key};
+                    foreach my $mpi_version_key (keys(%{$MTT::Test::builds->{$mpi_get_key}})) {
+                        foreach my $mpi_install_key (keys(%{$MTT::Test::builds->{$mpi_get_key}->{$mpi_version_key}})) {
+                            foreach my $test_build_key (keys(%{$MTT::Test::builds->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key}})) {
                                 
-                                _do_run($ini, $section, $test_build, 
-                                        $mpi_install, $top_dir, $force);
-                                %ENV = %ENV_SAVE;
+                                if ($test_build_key eq $test_build_name) {
+                                    my $test_build = $MTT::Test::builds->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key}->{$test_build_key};
+                                    Debug("Found a match! $test_build_key [$simple_section");
+                                    my $mpi_install = $MTT::MPI::installs->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key};
+                                    _do_run($ini, $section, $test_build, 
+                                            $mpi_install, $top_dir, $force);
+                                    %ENV = %ENV_SAVE;
+                                }
                             }
                         }
                     }                        
@@ -325,12 +326,13 @@ sub _run_one_test {
 
     if (!$force &&
         exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{mpi_install_simple_section_name}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$test_np}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$test_np}->{$cmd})) {
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$test_np}) &&
+        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$test_np}->{$cmd})) {
         Verbose("$str Skipped (already ran)\n");
         return;
     }
@@ -394,7 +396,7 @@ sub _run_one_test {
         $report->{test_stdout} = $x->{stdout};
         $report->{test_stderr} = $x->{stderr};
     }
-    $MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$test_np}->{$cmd} = $report;
+    $MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$test_np}->{$cmd} = $report;
     MTT::Test::SaveRuns($top_dir);
     MTT::Reporter::QueueAdd("Test Run", $run->{simple_section_name}, $report);
 

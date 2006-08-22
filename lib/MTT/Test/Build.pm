@@ -108,38 +108,46 @@ sub Build {
                         foreach my $mpi_get_key (keys(%{$MTT::MPI::installs})) {
                             my $mpi_get = $MTT::MPI::installs->{$mpi_get_key};
 
-                            # For each installation of that source
-                            foreach my $mpi_install_key (keys(%{$mpi_get})) {
-                                my $mpi_install = $mpi_get->{$mpi_install_key};
+                            # For each version of that source
+                            foreach my $mpi_version_key (keys(%{$mpi_get})) {
+                                my $mpi_version = $mpi_get->{$mpi_version_key};
 
-                                # See if we've already got a
-                                # successful test build for this MPI
-                                # installation.  Test incrementally
-                                # so that it doesn't create each
-                                # intermediate key.
+                                # For each installation of that version
+                                foreach my $mpi_install_key (keys(%{$mpi_version})) {
+                                    my $mpi_install = $mpi_version->{$mpi_install_key};
 
-                                if (!$force &&
-                                    exists($MTT::Test::builds->{$mpi_get_key}) &&
-                                    exists($MTT::Test::builds->{$mpi_get_key}->{$mpi_install_key}) &&
-                                    exists($MTT::Test::builds->{$mpi_get_key}->{$mpi_install_key}->{$simple_section})) {
-                                    Verbose("   Already have a build for [$mpi_get_key] / [$mpi_install_key] / [$simple_section]\n");
-                                    next;
+                                    # See if we've already got a
+                                    # successful test build for this
+                                    # MPI installation.  Test
+                                    # incrementally so that it doesn't
+                                    # create each intermediate key.
+
+                                    if (!$force &&
+                                        exists($MTT::Test::builds->{$mpi_get_key}) &&
+                                        exists($MTT::Test::builds->{$mpi_get_key}->{$mpi_version_key}) &&
+                                        exists($MTT::Test::builds->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key}) &&
+                                        exists($MTT::Test::builds->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key}->{$simple_section})) {
+                                        Verbose("   Already have a build for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section]\n");
+                                        next;
+                                    }
+
+                                    # We don't have a test build for
+                                    # this particular MPI source
+                                    # instance.  So cd into the MPI
+                                    # install tree for this particular
+                                    # MPI install.
+
+                                    Verbose("   Building for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section]\n");
+                                    
+                                    chdir($build_base);
+                                    chdir(MTT::Files::make_safe_filename($mpi_install->{mpi_get_simple_section_name}));
+                                    chdir(MTT::Files::make_safe_filename($mpi_install->{simple_section_name}));
+                                    chdir(MTT::Files::make_safe_filename($mpi_install->{mpi_version}));
+                                    
+                                    # Do the build and restore the environment
+                                    _do_build($ini, $section, $build_base, $test_get, $mpi_install);
+                                    %ENV = %ENV_SAVE;
                                 }
-
-                                # We don't have a test build for this
-                                # particular MPI source instance.  So
-                                # cd # into the MPI install tree for
-                                # this # particular MPI install.
-
-                                Verbose("   Building for [$mpi_get_key] / [$mpi_install_key] / [$simple_section]\n");
-                                
-                                chdir($build_base);
-                                chdir(MTT::Files::make_safe_filename($mpi_install->{mpi_get_simple_section_name}));
-                                chdir(MTT::Files::make_safe_filename($mpi_install->{simple_section_name}));
-
-                                # Do the build and restore the environment
-                                _do_build($ini, $section, $build_base, $test_get, $mpi_install);
-                                %ENV = %ENV_SAVE;
                             }
                         }
                     }
@@ -302,7 +310,7 @@ sub _do_build {
             mpi_name => $mpi_install->{mpi_get_simple_section_name},
             mpi_get_section_name => $mpi_install->{mpi_get_simple_section_name},
             mpi_install_section_name => $mpi_install->{simple_section_name},
-            mpi_version => $mpi_install->{mpi_version},
+            mpi_version => $mpi_install->{mpi_mpi_version},
         };
 
         # See if we want to save the stdout
@@ -375,7 +383,7 @@ sub _do_build {
         
         # If it was a good build, save it
         if (1 == $ret->{success}) {
-            $MTT::Test::builds->{$mpi_install->{mpi_get_simple_section_name}}->{$mpi_install->{simple_section_name}}->{$simple_section} = $ret;
+            $MTT::Test::builds->{$mpi_install->{mpi_get_simple_section_name}}->{$mpi_install->{mpi_version}}->{$mpi_install->{simple_section_name}}->{$simple_section} = $ret;
             MTT::Test::SaveBuilds($build_base);
             Verbose("   Completed test build successfully\n");
         } else {

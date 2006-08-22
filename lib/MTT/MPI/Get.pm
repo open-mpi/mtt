@@ -102,7 +102,7 @@ sub _do_get {
     if ($ret->{success}) {
         if ($ret->{have_new}) {
 
-            Verbose("   Got new MPI sources\n");
+            Verbose("   Got new MPI sources: version $ret->{version}\n");
 
             # Save other values from the section
             $ret->{full_section_name} = $section;
@@ -112,7 +112,7 @@ sub _do_get {
             $ret->{timestamp} = timegm(gmtime());
             
             # Add this into the $MPI::sources hash
-            $MTT::MPI::sources->{$simple_section} = $ret;
+            $MTT::MPI::sources->{$simple_section}->{$ret->{version}} = $ret;
 
             # Save the data file recording all the sources
             MTT::MPI::SaveSources($source_dir);
