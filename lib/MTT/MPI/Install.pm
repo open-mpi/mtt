@@ -174,8 +174,6 @@ sub Install {
                                 chdir($install_base);
                                 my $mpi_dir = _make_safe_dir($mpi_version->{simple_section_name});
                                 chdir($mpi_dir);
-                            print Dumper($MTT::MPI::installs);
-                            exit(0);
                             
                                 # Install and restore the environment
                                 _do_install($section, $ini,
