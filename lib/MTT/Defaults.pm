@@ -25,7 +25,7 @@ our $System_config = {
 
     http_agents => "wget lynx curl",
 
-    known_compiler_names => "gnu pgi intel kai absoft pathscale sun none",
+    known_compiler_names => "gnu pgi ibm intel kai absoft pathscale sun none",
 };
 
 # User-defined configuration
