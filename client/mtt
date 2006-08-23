@@ -183,12 +183,12 @@ will default to trying to make as much progress as possible (i.e.,
 running each of the phases as necessary).  For example, to set
 'save_stdout_on_success' in every section:
 
-    $ client/mtt [...] save_stdout_on_success=1
+    \$ client/mtt [...] save_stdout_on_success=1
 
 To set 'intel_ompi_tests_fflags' in only the [test build: intel]
 section (note the shell quoting to include the spaces in the value):
 
-    $ client/mtt [...] 'build,intel:intel_ompi_tests_fflags=-g -odd_ball_flag'
+    \$ client/mtt [...] 'build,intel:intel_ompi_tests_fflags=-g -odd_ball_flag'
 
 The phases can be specified in positive or negative form.  You can
 only specify positive or negative phases in a run; you cannot mix both
