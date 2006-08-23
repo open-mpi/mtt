@@ -1,3 +1,41 @@
+Jeff's list of known bugs while trac is still being setup.  These will
+shortly be added to trac and removed from here:
+
+- test-get phase needs some kind of version number in the MTT meta
+  data (just like mpi get) so that if the tests are updated and the
+  MPI is not updated, we know to re-build/re-run the tests.
+
+- need to properly handle the tests that are supposed to fail,
+  particularly in the case where a set of tests is comprised of a
+  bunch of tests that are supposed to pass and a few that are supposed
+  to fail (E.g., the IBM and intel test suites).
+
+- need to put in some kind of killall orted and whack session
+  directories in the ompi core template.ini file.  Needs to be
+  portable across linux, osx, and solaris (uck!).
+
+- need to implement trim phase
+
+- finish implementing hostlist / hostfile functionality (they're
+  stored in globals; need to make them used in the .ini file and a
+  funclet to pass the value in)
+
+- add more usernames / passwords to server-side .htaccess so that
+  we're not all using the same one
+
+- have client pull down INI file from server and opt-out of certain
+  configurations (i.e., enforce a common set of tests)
+
+- ability for users to delete results (probably from PHP/server side,
+  not in mtt client)
+
+- save HTTP username with results
+
+- *always* drops a pb_debug_.* file.
+
+
+============================================================================
+
 Notes from the first MTT developer's conference!
 
 MTT Design goals:
