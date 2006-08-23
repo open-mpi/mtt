@@ -1,41 +1,3 @@
-Jeff's list of known bugs while trac is still being setup.  These will
-shortly be added to trac and removed from here:
-
-- test-get phase needs some kind of version number in the MTT meta
-  data (just like mpi get) so that if the tests are updated and the
-  MPI is not updated, we know to re-build/re-run the tests.
-
-- need to properly handle the tests that are supposed to fail,
-  particularly in the case where a set of tests is comprised of a
-  bunch of tests that are supposed to pass and a few that are supposed
-  to fail (E.g., the IBM and intel test suites).
-
-- need to put in some kind of killall orted and whack session
-  directories in the ompi core template.ini file.  Needs to be
-  portable across linux, osx, and solaris (uck!).
-
-- need to implement trim phase
-
-- finish implementing hostlist / hostfile functionality (they're
-  stored in globals; need to make them used in the .ini file and a
-  funclet to pass the value in)
-
-- add more usernames / passwords to server-side .htaccess so that
-  we're not all using the same one
-
-- have client pull down INI file from server and opt-out of certain
-  configurations (i.e., enforce a common set of tests)
-
-- ability for users to delete results (probably from PHP/server side,
-  not in mtt client)
-
-- save HTTP username with results
-
-- *always* drops a pb_debug_.* file.
-
-
-============================================================================
-
 Notes from the first MTT developer's conference!
 
 MTT Design goals:
@@ -65,29 +27,6 @@ Split reporter into formatting/data collection and transport
 Jeff Squyres
 ------------
 
->>> DONE:
-New syntax linkage between MPI and Test phases:
-    [MPI Get: OMPI trunk]
-    mpi_details=OMPI
-
-    [MPI Get: OMPI branch]
-    mpi_details=OMPI
-
-    [MPI Install: optimized]
-    mpi_get=OMPI trunk,OMPI branch
-
-    [MPI Install: debug]
-    mpi_get=OMPI trunk,OMPI branch
-
-    [MPI Details: OMPI]
-
-New "reverse" linkage between all phases
-
-Implement "Trivial" plugins for "hello world" tests
-
-
->>> NOT DONE:
-
 - add --dryrun option to show what *would* happen (probably should
   imply --verbose as well), but don't actually *do* anything (don't
   even alter any .xml internal state)
@@ -95,14 +34,7 @@ Implement "Trivial" plugins for "hello world" tests
 - finish fixing NPB build .pm to preoperly prefix all ini fieldnames
   and overall work properly
 
-- SVN "get" method doesn't properly detect where there is nothing new
-
 - fix up sample.ini to match new linkage and module field names
-
-- add a --developer switch - run MTT against a current install
-
-- audit output fields from MTT client for all phases so that they
-  match the field names and types expected by the server
 
 - make test results be output in a single output rather than reporting
   glumps of tests at a time
@@ -119,29 +51,6 @@ MTT global params:
  name_delimiter=, # delimiter between names of references in name= field
  run_if_partial_build_fail=1 # run tests that DID build if test build fails
 
-Finish implementing trim phase
-
-Implement 'test specify' phase - replaces current test run INI stuff
- - Should generate a list of tuples, which is:
-   - exec - binary to execute
-   - argv
-   - np
-   - pass - success return code
-   - timeout
-   - before_any
-   - before_each
-   - after_each
-   - after_all
- - Test run phase should then accept this list
- - INI file looks like this:
-    [test specify: intel]
-    test_build = intel
-    module = intel
-
-   [test_build: intel]
-   test_get = intel
-   module = intel
-   intel_buildfile=coll
 
 
 Jim Barker
@@ -222,86 +131,6 @@ Features NOT to worry about for 1.0:
         variable)?
   - MTT_DEBUG should be ditched -- change to $debug
 
-- The way we do the Intel tests for the tests that aren't supposed to
-  pass isn't so great right now -- we have to have a section INI file
-  section with a different "pass" rule.  It would be nice to be able
-  to handle all the Intel tests in a single section -- the question
-  is: how?  We talked about a few options, but it always got
-  complicated -- either in the .ini file and/or in the
-  implementation.  Here's some of the options we talked about:
-
-  1. one global expression, and individual overrides
-
-     pass = some_general_expression
-     MPI_Abort_c_pass = some_other_expression
-     MPI_Abort_f_pass = some_other_expression
-     ...
-
-     This is the Automake-ish way, but isn't super-scalable (i.e., we
-     have to explcitily list each test that is different).
-
-  2. give pass a list of tuples -- paring test names with expressions
-     to check for success, something like:
-
-     pass = &enumerate( \
-       &tuple(&remove(&tests, @nonzero_tests@), ..check for 0...) \
-       &tuple(@nonzero_tests@, ..check for non-0...) \
-     )
-
-     This, unfortunately, has some problems:
-     - &tuple() could be implemented, but it is effectively a new
-       datatype and may require some thought
-     - see the discussion below about &remove() and lists in general
-     - the current parsing engine expands from inside-out.  So the
-       above expression would evaluate the "...check for 0..." during
-       the initial expansion.  It would not result in a list of
-       tuples, where the second element of the tuple is an expression
-       that can be evaluated later.  Possible solution for this is to put
-       the "...check for 0..." expression in a string, but that feels
-       kinda icky...?
-
-- It would be nice to be able to have a &remove() function that would
-  take one list and remove elements from it, e.g.:
-
-    &remove(&some_big_list(), "foo", "bar", "baz")
-
-  But right now, this will first expand &some_big_list() and therefore
-  make N instances of &remove().  It would still give the Right
-  answer, but be horribly inefficient (i.e., if "foo" appears in
-  &some_big_list(), then one of the instances will be "&remove("foo",
-  "foo", "bar", "baz")" and its return will be empty -- so the union
-  of answers from all the &remove instances will not have "foo" in
-  it).  Even worse:
-
-    &remove(&some_big_list(), &enumerate("foo", "bar", "baz"))
-
-  Will make the combinatorial of N and 3 instances of &remove(), which
-  will definitely result in the wrong answer (because we'll have 3
-  copies of every item from &some_big_list() that is not "foo", "bar",
-  or "baz" -- and two copies of "foo", etc.)
-
-  It would seem like we should be able to pass lists around -- not do
-  the default expansion and just be able to pass an explicit list.
-  Perhaps we should explore using "@" in the syntax...?
-  (hypothetically still allowing a perl "eval"...?)
-
-- Rainer mentioned that we're requiring a bunch of Perl modules that
-  aren't necessarily installed by default on some older machines
-  (e.g., his).  He installed them to make it work, but it might be
-  nice if we can cut down on the number of requirements --
-  particularly when running on MTT on parallel compute nodes, where
-  perl installs are likely to be minimal (i.e,. all we need to do is
-  run thests and dump output to files there; no need for fancy
-  downloading perl modules, etc.).  From a mail from Rainer:
-
-    it seems that quite a few packets are required to build the 
-    ParallelUserAgent-2.56
-    libwww-perl-5.803   /* which is considered to be too new */
-      -> depends on Compress-Zlib-2.000_05
-    URI-1.35
-    HTML-Parser
-      -> depends on HTML-Tagset-3.10
-
 - Ideas from working with Rainer in Houston:
   - Allow use of environment variables in the INI - an &env() function?
   - Add &split()
@@ -336,10 +165,6 @@ Features NOT to worry about for 1.0:
     - Perfbase reports an error if duplicate data is given.  Make sure the
       client handles the error correctly.
 
-- add support for some performance-oriented tests
-
-- add support for disconnected scenarios
-
 - do perfbase http put better; can all the queued http put's be
   combined into a single put? (i.e., make server side php smarter?)
 
@@ -359,6 +184,3 @@ Features NOT to worry about for 1.0:
 - need a lockfile to protect all the XML files in case multiple
   engines running simultaneously
 
-- add trimming functionality: deleting old builds
-    - put real timestamps in saved xml; delete trees older than a
-      given date?
