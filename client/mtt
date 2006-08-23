@@ -166,7 +166,7 @@ if (!$ok || $help_arg) {
 --debug|-d                    Output lots of debug messages
 --verbose|-v                  Output some status / verbose messages
                               while processing
---force                       Do steps even if they would not normally 
+--force                       Do steps even if they would not normally
                               be executed
 --[no-]mpi-get                Do the \"MPI get\" phase
 --[no-]mpi-install            Do the \"MPI install\" phase
@@ -174,17 +174,28 @@ if (!$ok || $help_arg) {
 --[no-]test-build             Do the \"Test build\" phase
 --[no-]test-run               Do the \"Test run\" phase
 --[no-]trim                   Do the \"Trim\" phase
+field=value                   Replace parameter \"foo\" from the INI file
+                              with the value \"bar\" (i.e., override the
+                              INI file value)
 
-If no options other than --file, -f, or '-' are specified, the MTT will
-default to trying to make as much progress as possible (i.e., running
-each of the phases as necessary).  
+If no options other than --file, -f, or '-' are specified, the MTT
+will default to trying to make as much progress as possible (i.e.,
+running each of the phases as necessary).  For example, to set
+'save_stdout_on_success' in every section:
+
+    $ client/mtt [...] save_stdout_on_success=1
+
+To set 'intel_ompi_tests_fflags' in only the [test build: intel]
+section (note the shell quoting to include the spaces in the value):
+
+    $ client/mtt [...] 'build,intel:intel_ompi_tests_fflags=-g -odd_ball_flag'
 
 The phases can be specified in positive or negative form.  You can
 only specify positive or negative phases in a run; you cannot mix both
 positive and negative phases in a single MTT run.
 
 * If any phases are specified in the positive form, then only those
-  phases will be run (e.g., \"--mpi-get --mpi-install\").  
+  phases will be run (e.g., \"--mpi-get --mpi-install\").
 * If negative phases are specified, then thoses phases will *not* be
   run.\n";
 
