@@ -265,14 +265,14 @@ sub Cmd {
 #--------------------------------------------------------------------------
 
 sub CmdScript {
-    my ($merge_output, $cmds) = @_;
+    my ($merge_output, $cmds, $timeout) = @_;
 
     my ($fh, $filename) = tempfile();
     print $fh ":\n$cmds\n";
     close($fh);
     chmod(0700, $filename);
 
-    my $x = Cmd($merge_output, $filename);
+    my $x = Cmd($merge_output, $filename, $timeout);
     unlink($filename);
     return $x;
 }
