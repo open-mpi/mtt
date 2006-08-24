@@ -13,6 +13,7 @@ package MTT::Globals;
 use strict;
 
 use MTT::Values;
+use MTT::Messages;
 use Data::Dumper;
 
 # Global variable to hold the values
@@ -34,15 +35,20 @@ sub load {
 
     %$Values = %$_defaults;
 
-    # Max_np (do before hostfile / hostlist)
+    # Max_np (do before hostfile / hostlist) 
 
-    my $val = Value($ini, "MTT", "max_np");
+    # NOTE: We have to use the full name MTT::Values::Value() here
+    # because this file includes MTT::Value which includes
+    # MTT::Value::Functions, but MTT::Value::Functions includes this
+    # file (i.e., a circular dependency).
+
+    my $val = MTT::Values::Value($ini, "MTT", "max_np");
     $Values->{max_np} = $val
         if ($val);
 
     # Hostfile
 
-    my $val = Value($ini, "MTT", "hostfile");
+    my $val = MTT::Values::Value($ini, "MTT", "hostfile");
     if ($val) {
         $Values->{hostfile} = $val;
         parse_hostfile($val);
@@ -50,7 +56,7 @@ sub load {
 
     # Hostlist
 
-    my $val = Value($ini, "MTT", "hostlist");
+    my $val = MTT::Values::Value($ini, "MTT", "hostlist");
     if ($val) {
         $Values->{hostlist} = $val;
         parse_hostlist($val);
@@ -85,20 +91,64 @@ sub parse_hostfile {
         return;
     }
 
-    my $lines = 0;
+    # Here's how we calculte max_np
+    #
+    # - If the hostname (first token) is of the form "name:X", add X
+    #   to $max_np and continue to the next line
+    # - If any of the remaining tokens are "slots=X", add X to $max_np
+    #   and continue to the next line
+    # - If any of the remaining tokens are "max[_-]slots=X", add X to
+    #   $max_np and continue to the next line
+    # - Add 1 to $max_np
 
-    # First order-approximation -- Ethan to make this better later.
-    # Just count the number of non-empty, non-comment lines in the
-    # file.  Better would be to actually parse it, count the "cpu=X"
-    # stuff, etc.
-
+    my $max_np = 0;
     while (<FILE>) {
+        # Skip comment lines
         next
             if (/^\s*\#/ ||
                 /^\s*\n/);
-        ++$lines;
+
+        # We got a good line; so split it up into tokens
+        my @tokens = split(/\s+/);
+
+        # The first token is the hostname
+        shift @tokens;
+        if (/:(\d+)$/) {
+            Debug(">> Hostfile: Found :X = $1\n");
+            $max_np += $1;
+            next;
+        }
+
+        # Go through the rest of them looking for "slots=X"
+        my $found = 0;
+        foreach (@tokens) {
+            if (/^slots=(\d+)/) {
+                Debug(">> Hostfile: Found slots = $1\n");
+                $max_np += $1;
+                $found = 1;
+                last;
+            }
+        }
+        next
+            if ($found);
+
+        # Go through the rest of them looking for "max[-_]slots=X"
+        foreach (@tokens) {
+            if (/^max[_-]slots=(\d+)/) {
+                Debug(">> Hostfile: Found max_slots = $1\n");
+                $max_np += $1;
+                $found = 1;
+                last;
+            }
+        }
+        next
+            if ($found);
+
+        # Didn't find anything.  So just add 1 to $max_np;
+        ++$max_np;
     }
-    $Values->{hostfile_max_np} = $lines;
+    $Values->{hostfile_max_np} = $max_np;
+    Debug(">> Got default hostfile: $file, max_np: $max_np\n");
     
     close(FILE);
 }
@@ -140,6 +190,7 @@ sub parse_hostlist {
     
     $Values->{hostlist} = $hostlist;
     $Values->{hostlist_max_np} = $max_np;
+    Debug(">> Got default hostlist: $hostlist, max_np: $max_np\n");
 }
 
 1;

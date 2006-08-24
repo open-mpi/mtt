@@ -16,6 +16,7 @@ use strict;
 use File::Find;
 use MTT::Messages;
 use MTT::Test::Run;
+use MTT::Globals;
 
 #--------------------------------------------------------------------------
 
@@ -358,6 +359,19 @@ sub split {
 
 #--------------------------------------------------------------------------
 
+# Join all the strings passed into one string and return in
+sub join {
+    Debug("&join got: @_\n");
+    my $str;
+    while (@_) {
+        $str .= shift;
+    }
+    Debug("&join returning: $str\n");
+    return $str;
+}
+
+#--------------------------------------------------------------------------
+
 # First argument is the lower bound, second argument is upper bound,
 # third [optional] argument is the stride (is 1 if not specified).
 # Return a reference to all values starting with $lower and <=$upper
@@ -419,7 +433,7 @@ sub test_argv {
 
 # Return the exit status from the last test run
 sub test_exit_status {
-    Debug("&test_exit_stytus returning: $MTT::Test::Run::test_exit_status\n");
+    Debug("&test_exit_status returning: $MTT::Test::Run::test_exit_status\n");
 
     return $MTT::Test::Run::test_exit_status;
 }
@@ -479,22 +493,43 @@ sub find_executables_sub {
         if (-x $_);
 }
 
+#--------------------------------------------------------------------------
+
+# Deprecated name for env_max_procs
+sub rm_max_procs {
+    Warning("You are using a deprecated funclet name in your INI file: &rm_max_procs().  Please update to use the new functlet name: &env_max_procs().  This old name will disappear someday.\n");
+    return env_max_procs();
+}
 
 #--------------------------------------------------------------------------
 
-# Check various resource managers; if we find that we're running in an
-# RM job, return the max number of processes that we can run.  If not,
-# just return "2".
-sub rm_max_procs {
+# Find the max procs that we can run with.  Check several things in
+# order:
+#
+# - Various resource managers
+# - if a global hostfile was specified
+# - if a global hostlist was specified
+# - if a global max_np was specified
+#
+# If none of those things are found, return "2".
+sub env_max_procs {
     Debug("&rm_max_procs\n");
 
-    # Are we running in a SLURM job?
+    # Resource managers
     return slurm_max_procs()
         if slurm_job();
+
+    # Hostfile
     return hostfile_max_procs()
         if have_hostfile();
+
+    # Hostlist
     return hostlist_max_procs()
         if have_hostlist();
+
+    # Manual specification of max_np
+    return ini_max_procs()
+        if have_ini_max_procs();
 
     # Not running under anything; just return 2.
     return "2";
@@ -504,11 +539,22 @@ sub rm_max_procs {
 
 # Return "1" if we have a hostfile; "0" otherwise
 sub have_hostfile {
-    Debug("&have_hostfile\n");
-
-    my $ret = (exists $Globals::Values->{hostfile}) ? "1" : "0";
+    my $ret = (defined $MTT::Globals::Values->{hostfile}) ? "1" : "0";
     Debug("&have_hostfile returning $ret\n");
     return $ret;
+}
+
+#--------------------------------------------------------------------------
+
+# If we have a hostfile, return it.  Otherwise, return the empty string.
+sub hostfile {
+    Debug("&hostfile: $MTT::Globals::Values->{hostfile}\n");
+
+    if (have_hostfile) {
+        return $MTT::Globals::Values->{hostfile};
+    } else {
+        return "";
+    }
 }
 
 #--------------------------------------------------------------------------
@@ -520,17 +566,30 @@ sub hostfile_max_procs {
     return "0"
         if (!have_hostfile());
 
-    Debug("&hostfile_max_procs returning $$Globals::Values->{hostfile_max_np}\n");
-    return $Globals::Values->{hostfile_max_np};
+    Debug("&hostfile_max_procs returning $MTT::Globals::Values->{hostfile_max_np}\n");
+    return $MTT::Globals::Values->{hostfile_max_np};
 }
 
 #--------------------------------------------------------------------------
 
 # Return "1" if we have a hostfile; "0" otherwise
 sub have_hostlist {
-    Debug("&have_hostlist\n");
+    my $ret = (defined $MTT::Globals::Values->{hostlist}) ? "1" : "0";
+    Debug("&have_hostlist: returning $ret\n");
+    return $ret;
+}
 
-    return (exists $Globals::Values->{hostlist}) ? "1" : "0";
+#--------------------------------------------------------------------------
+
+# If we have a hostlist, return it.  Otherwise, return the empty string.
+sub hostlist {
+    Debug("&hostlist: $MTT::Globals::Values->{hostlist}\n");
+
+    if (have_hostlist) {
+        return $MTT::Globals::Values->{hostlist};
+    } else {
+        return "";
+    }
 }
 
 #--------------------------------------------------------------------------
@@ -542,8 +601,31 @@ sub hostlist_max_procs {
     return "0"
         if (!have_hostlist());
 
-    Debug("&hostlist_max_procs returning $$Globals::Values->{hostlist_max_np}\n");
-    return $Globals::Values->{hostlist_max_np};
+    Debug("&hostlist_max_procs returning $MTT::Globals::Values->{hostlist_max_np}\n");
+    return $MTT::Globals::Values->{hostlist_max_np};
+}
+
+#--------------------------------------------------------------------------
+
+# Return "1" if we have an "max_procs" setting in the globals in the
+# INI file; "0" otherwise
+sub have_ini_max_procs {
+    Debug("&have_ini_max_procs\n");
+
+    return (exists $MTT::Globals::Values->{max_np}) ? "1" : "0";
+}
+
+#--------------------------------------------------------------------------
+
+# If we have a hostlist, return its max procs count
+sub ini_max_procs {
+    Debug("&ini_max_procs\n");
+
+    return "0"
+        if (!have_ini_max_procs());
+
+    Debug("&ini_max_procs returning $MTT::Globals::Values->{max_np}\n");
+    return $MTT::Globals::Values->{max_np};
 }
 
 #--------------------------------------------------------------------------
