@@ -46,6 +46,9 @@ sub Get {
     }
     Debug(">> OMPI_Snapshot got url: $url\n");
 
+    my $simple_section = $section;
+    $simple_section =~ s/^\s*mpi get:\s*//;
+
     # Make some dirs
     my $tarball_dir = MTT::Files::mkdir("tarballs");
     my $data_dir = MTT::Files::mkdir("data");
@@ -63,34 +66,50 @@ sub Get {
     my $tarball_name = "openmpi-$ret->{version}.tar.gz";
     my $found = 0;
     foreach my $mpi_get_key (keys(%{$MTT::MPI::sources})) {
-        my $source = $MTT::MPI::sources->{$mpi_get_key};
-        Debug(">> checking section: [$section] vs. $source->{full_section_name}\n");
-        next
-            if ($section ne $source->{full_section_name});
+        my $mpi_get = $MTT::MPI::sources->{$mpi_get_key};
+        Debug(">> checking section: [$simple_section] vs. $mpi_get_key\n");
 
-        if ($source->{module_name} eq "MTT::MPI::Get::OMPI_Snapshot" &&
-            basename($source->{module_data}->{tarball}) eq
-            $tarball_name) {
+        if ($simple_section ne $mpi_get_key) {
+            Debug(">> have no snapshots from this section; need to download\n");
+            next;
+        }
 
-            # If we find one of the same name, that's good enough
-            # -- OMPI snapshot tarballs are named such that
-            # something of the same tarball name is guaranteed to
-            # be the same tarball
-            Debug(">> we have previously downloaded this tarball\n");
+        # Ok, so this is the right section.  Do we have this version
+        # already?
 
-            # We have this tarball already.  If we're not forcing,
-            # return nothing.
-            if (!$force) {
-                $ret->{success} = 1;
-                $ret->{have_new} = 0;
-                $ret->{result_message} = "Snapshot tarball has not changed (did not re-download)";
-                return $ret;
-            }
-            Debug(">> but we're forcing, so we'll get a new one\n");
+        Debug(">> have snapshots from this section; checking to see if we already have $ret->{version}\n");
+        foreach my $version_key (keys(%{$mpi_get})) {
+            my $source = $mpi_get->{$version_key};
+            Debug(">> have [$simple_section] version $version_key\n");
+
+            if ($source->{module_name} eq "MTT::MPI::Get::OMPI_Snapshot" &&
+                basename($source->{module_data}->{tarball}) eq
+                $tarball_name) {
+
+                # If we find one of the same name, that's good enough
+                # -- OMPI snapshot tarballs are named such that
+                # something of the same tarball name is guaranteed to
+                # be the same tarball
+                Debug(">> we have previously downloaded this tarball\n");
+
+                # We have this tarball already.  If we're not forcing,
+                # return nothing.
+                if (!$force) {
+                    $ret->{success} = 1;
+                    $ret->{have_new} = 0;
+                    $ret->{result_message} = "Snapshot tarball has not changed (did not re-download)";
+                    return $ret;
+                }
+                Debug(">> ...but we're forcing, so we'll get a new one\n");
             
-            # If we are forcing, then reset to get a new copy
-            $found = 1;
-            last;
+                # If we are forcing, then reset to get a new copy
+                $found = 1;
+                last;
+            }
+
+            # If we found one, bail
+            last
+                if ($found);
         }
 
         # If we found one, bail
