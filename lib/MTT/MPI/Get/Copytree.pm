@@ -34,17 +34,22 @@ sub Get {
 
     # Do we have the tree already?  Search through $MTT::MPI::sources
     # to see if we do.
-    foreach my $mpi_section (keys(%{$MTT::MPI::sources})) {
+    foreach my $mpi_get_key (keys(%{$MTT::MPI::sources})) {
         next
-            if ($section ne $mpi_section);
+            if ($section ne $mpi_get_key);
 
-        my $source = $MTT::MPI::sources->{$section};
-        if ($source->{module_name} eq "MTT::MPI::Get::Copytree" &&
-            $source->{module_data}->{src_directory} eq $src_directory) {
-            $previous_mtime = $source->{module_data}->{mtime};
-            $previous_mtime = -1
-                if (!$previous_mtime);
-            last;
+        my $mpi_get = $MTT::MPI::sources->{$mpi_get_key};
+        foreach my $version_key (keys(%{$mpi_get})) {
+            my $source = $mpi_get->{$version_key};
+            Debug(">> have [$simple_section] version $version_key\n");
+
+            if ($source->{module_name} eq "MTT::MPI::Get::Copytree" &&
+                $source->{module_data}->{src_directory} eq $src_directory) {
+                $previous_mtime = $source->{module_data}->{mtime};
+                $previous_mtime = -1
+                    if (!$previous_mtime);
+                last;
+            }
         }
     }
 

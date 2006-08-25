@@ -33,11 +33,15 @@ sub Get {
 
     # If we're not forcing, do we have a svn with the same URL already?
     if (!$force) {
-        foreach my $mpi_section (keys(%{$MTT::MPI::sources})) {
+        foreach my $mpi_get_key (keys(%{$MTT::MPI::sources})) {
             next
-                if ($section ne $mpi_section);
+                if ($section ne $mpi_get_key);
             
-            my $source = $MTT::MPI::sources->{$section};
+        my $mpi_get = $MTT::MPI::sources->{$mpi_get_key};
+        foreach my $version_key (keys(%{$mpi_get})) {
+            my $source = $mpi_get->{$version_key};
+            Debug(">> have [$simple_section] version $version_key\n");
+
             if ($source->{module_name} eq "MTT::MPI::Get::SVN" &&
                 $source->{module_data}->{url} eq $url) {
                 
