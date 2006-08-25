@@ -245,7 +245,7 @@ sub Cmd {
     # The pipes are closed, so the process should be dead.  Reap it.
 
     waitpid($pid, 0);
-    my $status = $?;
+    my $status = $? >> 8;
     Debug("Command complete, exit status: $status\n");
 
     # Return an anonymous hash containing the relevant data
