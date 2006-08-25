@@ -11,7 +11,7 @@
 # $HEADER$
 #
 
-package MTT::Reporter::Perfbase;
+package MTT::Reporter::MTTDatabase;
 
 use strict;
 use Cwd;
@@ -45,14 +45,14 @@ sub Init {
 
     # Extract data from the ini fields
 
-    $username = Value($ini, $section, "perfbase_username");
-    $password = Value($ini, $section, "perfbase_password");
-    $url = Value($ini, $section, "perfbase_url");
-    $realm = Value($ini, $section, "perfbase_realm");
-    $debug_filename = Value($ini, $section, "perfbase_debug_filename");
+    $username = Value($ini, $section, "mttdatabase_username");
+    $password = Value($ini, $section, "mttdatabase_password");
+    $url = Value($ini, $section, "mttdatabase_url");
+    $realm = Value($ini, $section, "mttdatabase_realm");
+    $debug_filename = Value($ini, $section, "mttdatabase_debug_filename");
     $debug_index = 0;
     if (!$url) {
-        Warning("Need URL in Perfbase Reporter section [$section]\n");
+        Warning("Need URL in MTTDatabase Reporter section [$section]\n");
         return undef;
     }
     my $count = 0;
@@ -60,10 +60,10 @@ sub Init {
     ++$count if ($password);
     ++$count if ($realm);
     if ($count > 0 && $count != 3) {
-        Warning("Perfbase Reporter section [$section]: if password, username, or realm is specified, they all must be specified.\n");
+        Warning("MTTDatabase Reporter section [$section]: if password, username, or realm is specified, they all must be specified.\n");
         return undef;
     }
-    $platform = Value($ini, $section, "perfbase_platform");
+    $platform = Value($ini, $section, "mttdatabase_platform");
 
     # Extract the host and port from the URL.  Needed for the
     # credentials section.
@@ -102,7 +102,7 @@ sub Init {
 
     $ua = LWP::UserAgent->new();
     $ua->proxy(['http', 'ftp'], $proxy);
-    $ua->agent("MPI Test Perfbase Reporter");
+    $ua->agent("MPI Test MTTDatabase Reporter");
     if ($realm && $username && $password) {
         Verbose("   Set HTTP credentials for realm \"$realm\"\n");
         $ua->credentials("$host:$port", $realm, $username, $password);
@@ -116,10 +116,10 @@ sub Init {
         if ($debug_filename !~ /\//) {
             $debug_filename = cwd() . "/$debug_filename";
         }
-        Debug("Perfbase reporter writing to debug file ($debug_filename)\n");
+        Debug("MTTDatabase reporter writing to debug file ($debug_filename)\n");
     }
 
-    Debug("Perfbase reporter initialized ($realm, $username, XXXXXX, $url, $platform)\n");
+    Debug("MTTDatabase reporter initialized ($realm, $username, XXXXXX, $url, $platform)\n");
 
     1;
 }
@@ -142,7 +142,7 @@ sub Finalize {
 sub Submit {
     my ($info, $entries) = @_;
 
-    Debug("Perfbase reporter\n");
+    Debug("MTTDatabase reporter\n");
 
     my $successes = 0;
     my @success_outputs;
@@ -196,7 +196,7 @@ sub Submit {
                         # Version number is also submitted as part of
                         # the HTTP form so that the server can check
                         # it directly (without understanding the
-                        # perfbase XML).
+                        # mttdatabase XML).
 
                         MTTVERSION_MAJOR => $MTT::Version::Major,
                         MTTVERSION_MINOR => $MTT::Version::Minor,
@@ -207,16 +207,16 @@ sub Submit {
                     if ($url) {
                         # Do the post and get the response.
                         
-                        Debug("Submitting to perfbase...\n");
+                        Debug("Submitting to MTTDatabase...\n");
                         my $response = $ua->post($url, $form);
                         if ($response->is_success()) {
                             ++$successes;
                             push(@success_outputs, $response->content);
                         } else {
-                            Verbose(">> Failed to report to perfbase: " .
+                            Verbose(">> Failed to report to MTTDatabase: " .
                                     $response->status_line . "\n" . $response->content);
                         }
-                        Debug("Perfbase submit complete\n");
+                        Debug("MTTDatabase submit complete\n");
                     }
 
                     if ($debug_filename) {
@@ -225,17 +225,17 @@ sub Submit {
                         
                         my $f = "$debug_filename.$debug_index.txt";
                         ++$debug_index;
-                        Debug("Writing to perfbase debug file: $f\n");
-                        open OUT, ">$f" || die "Could not open Perfbase debug output file";
+                        Debug("Writing to MTTDatabase debug file: $f\n");
+                        open OUT, ">$f" || die "Could not open MTTDatabase debug output file";
                         print OUT Dumper($form);
                         close OUT;
-                        Debug("Debug perfbase file write complete\n");
+                        Debug("Debug MTTDatabase file write complete\n");
 
                         ++$successes;
                         push(@success_outputs, "Wrote to file $f\n");
                     }
                 } else {
-                    Warning("No perfbase_xml field in the INI specification; skipping perfbase reporting!\n");
+                    Warning("No perfbase_xml field in the INI specification; skipping MTTDatabase reporting!\n");
                 }
             }
         }
@@ -243,7 +243,7 @@ sub Submit {
 
     if ($successes > 0) {
         if ($fails == 0) {
-            Verbose(">> Reported $successes output(s) to perfbase\n");
+            Verbose(">> Reported $successes output(s) to mttdatabase\n");
             Debug(@success_outputs);
         }
     }
