@@ -518,6 +518,8 @@ sub env_max_procs {
     # Resource managers
     return slurm_max_procs()
         if slurm_job();
+    return pbs_max_procs()
+        if pbs_job();
 
     # Hostfile
     return hostfile_max_procs()
@@ -671,6 +673,38 @@ sub slurm_max_procs {
 
     Debug("&slurm_max_procs returning: $max_procs\n");
     return "$max_procs";
+}
+
+#--------------------------------------------------------------------------
+
+# Return "1" if we're running in a PBS job; "0" otherwise.
+sub pbs_job {
+    Debug("&pbs_job\n");
+
+    return ((exists($ENV{PBS_JOBID}) &&
+             exists($ENV{PBS_ENVIRONMENT})) ? "1" : "0");
+}
+
+#--------------------------------------------------------------------------
+
+# If in a PBS job, return the max number of processes we can run.
+# Otherwise, return 0.
+sub pbs_max_procs {
+    Debug("&pbs_max_procs\n");
+
+    return "0"
+        if (!pbs_job());
+
+    # Just count the number of lines in the $PBS_NODEFILE
+
+    open (FILE, $ENV{PBS_NODEFILE}) || return "0";
+    my $lines = 0;
+    while (<FILE>) {
+        ++$lines;
+    }
+
+    Debug("&pbs_max_procs returning: $lines\n");
+    return "$lines";
 }
 
 1;
