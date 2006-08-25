@@ -19,6 +19,7 @@ use MTT::Messages;
 use MTT::Values;
 use MTT::Version;
 use LWP::UserAgent;
+use HTTP::Request::Common qw(POST);
 use Data::Dumper;
 
 # http credentials
@@ -105,7 +106,6 @@ sub Init {
     $ua->agent("MPI Test MTTDatabase Reporter");
     if ($realm && $username && $password) {
         Verbose("   Set HTTP credentials for realm \"$realm\"\n");
-        $ua->credentials("$host:$port", $realm, $username, $password);
     }
 
     # If we have a debug filename, make it an absolute filename,
@@ -205,10 +205,10 @@ sub Submit {
                     };
                     
                     if ($url) {
-                        # Do the post and get the response.
-                        
                         Debug("Submitting to MTTDatabase...\n");
-                        my $response = $ua->post($url, $form);
+                        my $req = POST ($url, $form);
+                        $req->authorization_basic($username, $password);
+                        my $response = $ua->request($req);
                         if ($response->is_success()) {
                             ++$successes;
                             push(@success_outputs, $response->content);
