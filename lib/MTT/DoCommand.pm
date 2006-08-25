@@ -130,7 +130,7 @@ sub _quote_escape {
 
     # Otherwise, if there were no quote pairs, do the simple thing
     elsif ($cmd) {
-        push(@tokens, split(/\s/, $cmd));
+        push(@tokens, split(/\s+/, $cmd));
     }
 
     # All done
