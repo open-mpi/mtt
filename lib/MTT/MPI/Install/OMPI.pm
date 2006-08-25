@@ -25,7 +25,7 @@ sub _find_bindings {
 
     my %ENV_SAVE = %ENV;
     if (exists($ENV{LD_LIBRARY_PATH})) {
-        $ENV{LD_LIBRARY_PATH} .= ":$libdir";
+        $ENV{LD_LIBRARY_PATH} = "$libdir:$ENV{LD_LIBRARY_PATH}";
     } else {
         $ENV{LD_LIBRARY_PATH} = "$libdir";
     }
@@ -107,17 +107,17 @@ sub Install {
         my %ENV_SAVE = %ENV;
         $ENV{TMPDIR} = "$ret->{installdir}/tmp";
         mkdir($ENV{TMPDIR}, 0777);
-        # We may need to revisit this later -- there are definitely
-        # cases where simply deleting the entire LD_LIBRARY_PATH is
-        # not a Good Thing (e.g., if there are libraries in there
-        # necessary for the compiler that are not in the default ld.so
-        # search path).  The intent here is just to ensure that the
-        # LD_LIBRARY_PATH in the environment does not point to shared
-        # libraries outside of MTT's scope that would interfere with
-        # "make check" (e.g., another libmpi.so outside of MTT).  I
-        # don't quite know how to do that, though, so we just
-        # currently delete the whole thing.  :-)
-        delete $ENV{LD_LIBRARY_PATH};
+        # The intent here is just to ensure that the LD_LIBRARY_PATH
+        # in the environment does not point to shared libraries
+        # outside of MTT's scope that would interfere with "make
+        # check" (e.g., another libmpi.so outside of MTT).  Just
+        # prepend our own $libdir to LD_LIBRARY_PATH and hope that
+        # that's Good Enough.  :-)
+        if (exists($ENV{LD_LIBRARY_PATH})) {
+            $ENV{LD_LIBRARY_PATH} = "$ret->{libdir}:$ENV{LD_LIBRARY_PATH}";
+        } else {
+            $ENV{LD_LIBRARY_PATH} = "$ret->{libdir}";
+        }
 
         Debug("Running make check\n");
         $x = MTT::DoCommand::Cmd(1, "make check");
