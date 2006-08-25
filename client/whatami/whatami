@@ -131,7 +131,7 @@ get_linux_type()
                         hardware=x86_64
                         ;;
                 *)
-                        hardware=unknown_please_send_us_a_patch
+                        hardware=unknown_hardware_please_send_us_a_patch
                         ;;
         esac
         #
@@ -150,6 +150,10 @@ get_linux_type()
                         distro_brand=debian
                         distro_version=`cat /etc/debian_version | sed 's#testing/##'`
                         distro=${distro_brand}_${distro_version}
+
+                elif [ -n "`egrep 'Scientific Linux SL release [0-9\.]+' /etc/issue`" ]; then
+                        distro_ver="`grep 'Scientific Linux' /etc/issue | sed -e 's/.*release \([0-9]*\.[0-9]*\).*/\1/'`"
+                        distro=scientificlinux_$distro_ver
 
                 elif [ -n "`egrep 'Red Hat Enterprise Linux [A-Z][A-Z] release [0-9]*' /etc/issue`" ]; then
                         distro_brand=rhel
@@ -194,7 +198,7 @@ get_linux_type()
                         distro=tao_1.0
 
                 else
-                        distro=unknown_please_send_us_a_patch
+                        distro=unknown_linux_type_please_send_us_a_patch
                 fi
         fi
         #
@@ -226,7 +230,7 @@ get_darwin_info()
         elif [ -n "`system_profiler SPHardwareDataType|egrep 'CPU Type: PowerPC 970 '`" ]; then
                 hardware=ppc64
         else
-                hardware=unknown_please_send_us_a_patch
+                hardware=unknown_darwin_hardware_please_send_us_a_patch
         fi
         #
         ############################################################################
@@ -243,7 +247,7 @@ get_darwin_info()
         distro_version=`sw_vers -productVersion`
         distro=${distro_brand}_${distro_version}
         if [ -z "$distro" ]; then
-                distro=unknown_please_send_us_a_patch
+                distro=unknown_darwin_version_please_send_us_a_patch
         fi
         #
         ############################################################################
