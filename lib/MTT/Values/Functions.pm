@@ -90,6 +90,15 @@ sub squares {
 
 #--------------------------------------------------------------------------
 
+# Returns the log of a number in base N
+sub log {
+    Debug("&log got: @_\n");
+    my ($base, $val) = @_;
+    return log($val) / log($base);
+}
+
+#--------------------------------------------------------------------------
+
 # Return all the powers of a given base from [base^min, base^max]
 sub pow {
     Debug("&pow got: @_\n");
