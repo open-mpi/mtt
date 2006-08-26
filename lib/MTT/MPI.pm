@@ -100,7 +100,7 @@ sub LoadSources {
                 
                 $MTT::MPI::sources->{$mpi_get_key}->{$mpi_version_key} = $mpi_version;
                 $MTT::MPI::sources->{$mpi_get_key}->{$mpi_version_key}->{simple_section_name} = $mpi_get_key;
-#                $MTT::MPI::sources->{$mpi_get_key}->{$mpi_version_key}->{version} = $mpi_version_key;
+                $MTT::MPI::sources->{$mpi_get_key}->{$mpi_version_key}->{version} = $mpi_version_key;
             }
         }
     }
