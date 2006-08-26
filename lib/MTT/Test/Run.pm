@@ -374,13 +374,18 @@ sub _run_one_test {
         test_run_section_name => $run->{simple_section_name},
         test_np => $test_np,
         success => $pass,
+        timed_out => $x->{timed_out},
         test_name => $name,
         test_command => $cmd,
     };
     my $want_output;
     if (!$pass) {
         $str =~ s/^ +//;
-        Warning("$str FAILED\n");
+        if ($x->{timed_out}) {
+            Warning("$str TIMED OUT (failed)\n");
+        } else {
+            Warning("$str FAILED\n");
+        }
         $want_output = 1;
         if ($stop_time - $start_time > $timeout) {
             $report->{result_message} = "Failed; timeout expired ($timeout seconds)";

@@ -148,6 +148,11 @@ sub Cmd {
     pipe ERRread, ERRwrite
         if (!$merge_output);
 
+    # Return value
+
+    my $ret;
+    $ret->{timed_out} = 0;
+
     # Child
 
     my $pid;
@@ -236,6 +241,7 @@ sub Cmd {
         if (defined($end_time) && time() > $end_time) {
             Debug("Past timeout! $end_time < " . time() . "\n");
             $killed_status = _kill_proc($pid);
+            $ret->{timed_out} = 1;
         }
     }
     close OUTerr;
@@ -250,10 +256,8 @@ sub Cmd {
 
     # Return an anonymous hash containing the relevant data
 
-    my $ret = {
-        stdout => join('', @out),
-        status => $status
-        };
+    $ret->{stdout} = join('', @out);
+    $ret->{status} = $status;
 
     # If we had stderr, return that, too
 
