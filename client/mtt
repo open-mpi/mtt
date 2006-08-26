@@ -15,6 +15,7 @@ use Data::Dumper;
 use Getopt::Long;
 use File::Basename;
 use Cwd;
+use POSIX qw(strftime);
 
 # Try to find the MTT files.  Assume that mtt executable is in the
 # base directory for the MTT files.  Try three methods:
@@ -104,6 +105,7 @@ my $test_run_arg;
 my $trim_arg;
 my $version_arg;
 my $ini_args;
+my $time_arg;
 
 my @SAVE_ARGV = @ARGV;
 
@@ -122,6 +124,7 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
                                   "test-run!" => \$test_run_arg,
                                   "trim!" => \$trim_arg,
                                   "version" => \$version_arg,
+                                  "print-time|p" => \$time_arg,
                                   );
 # Everything ok?
 
@@ -306,6 +309,89 @@ MTT::Test::LoadRuns($install_dir)
 
 
 ########################################################################
+# Timekeeping
+########################################################################
+
+my $start_timestamp_string;
+my $start_timestamp_data;
+my $start_timestamp_first_string;
+my $start_timestamp_first_data;
+sub start_time {
+    if (!defined($start_timestamp_string)) {
+        $start_timestamp_first_string = $start_timestamp_string = localtime;
+        $start_timestamp_first_data = $start_timestamp_data = time;
+    } else {
+        $start_timestamp_string = localtime;
+        $start_timestamp_data = time;
+    }
+}
+
+sub timestamp_sub {
+    my ($start, $stop) = @_;
+    my ($days, $hours, $mins, $secs);
+
+    # Constants
+    my $m = 60;
+    my $h = $m * 60;
+    my $d = $h * 24;
+
+    # Baseline difference
+    my $elapsed = $stop - $start;
+
+    # Individual components
+    if ($elapsed > $d) {
+        use integer;
+        $days = $elapsed / $d;
+        $elapsed -= $days * $d;
+    } else {
+        $days = 0;
+    }
+
+    if ($elapsed > $h) {
+        use integer;
+        $hours = $elapsed / $h;
+        $elapsed -= $hours * $h;
+    } else {
+        $hours = 0;
+    }
+
+    if ($elapsed > $m) {
+        use integer;
+        $mins = $elapsed / $m;
+        $elapsed -= $mins * $m;
+    } else {
+        $mins = 0;
+    }
+
+    my $secs = $elapsed;
+
+    my $elapsed_string = sprintf("%02d:%02d:%02d", $hours, $mins, $secs);
+    if ($days > 0) {
+        $elapsed_string = "$days days, $elapsed_string";
+    }
+    return $elapsed_string;
+}
+
+sub stop_time {
+    my $name = shift;
+    if ($time_arg) {
+        my $stop_timestamp_string = localtime;
+        my $stop_timestamp_data = time;
+
+        my $elapsed_string = timestamp_sub($start_timestamp_data, 
+                                           $stop_timestamp_data);
+        my $total_elapsed_string = timestamp_sub($start_timestamp_first_data,
+                                                 $stop_timestamp_data);
+
+        print ">> Phase: $name
+   Started:       $start_timestamp_string
+   Stopped:       $stop_timestamp_string
+   Elapsed:       $elapsed_string
+   Total elapsed: $total_elapsed_string\n";
+    }
+}
+
+########################################################################
 # Read the ini file(s)
 ########################################################################
 
@@ -335,21 +421,39 @@ foreach my $file (@file_arg) {
 
     MTT::Reporter::Init($ini);
 
-    MTT::MPI::Get($ini, $source_dir, $force_arg)
-        if ($mpi_get);
-    MTT::MPI::Install($ini, $install_dir, $force_arg)
-        if ($mpi_install);
-    MTT::Test::Get($ini, $source_dir, $force_arg)
-        if ($test_get);
-    MTT::Test::Build($ini, $install_dir, $force_arg)
-        if ($test_build);
-    MTT::Test::Run($ini, $install_dir, $force_arg)
-        if ($test_run);
+    if ($mpi_get) {
+        start_time();
+        MTT::MPI::Get($ini, $source_dir, $force_arg);
+        stop_time("MPI Get");
+    }
+    if ($mpi_install) {
+        start_time();
+        MTT::MPI::Install($ini, $install_dir, $force_arg);
+        stop_time("MPI Install");
+    }
+    if ($test_get) {
+        start_time();
+        MTT::Test::Get($ini, $source_dir, $force_arg);
+        stop_time("Test Get");
+    }
+    if ($test_build) {
+        start_time();
+        MTT::Test::Build($ini, $install_dir, $force_arg);
+        stop_time("Test Build");
+    }
+    if ($test_run) {
+        start_time();
+        MTT::Test::Run($ini, $install_dir, $force_arg);
+        stop_time("Test Run");
+    }
 
     # Remove old sources, installs, and builds
 
-    MTT::Trim::Trim($ini)
-        if ($trim);
+    if ($trim) {
+        start_time();
+        MTT::Trim::Trim($ini);
+        stop_time("Trim");
+    }
 
     # Shutdown the reporter
 
