@@ -108,6 +108,30 @@ sub Init {
         Verbose("   Set HTTP credentials for realm \"$realm\"\n");
     }
 
+    # Do a test ping to ensure that we can reach this URL
+
+    Debug("MTTDatabase testing submit URL with a ping...\n");
+    my $form = {
+        # Version number is also submitted as part of the HTTP form so
+        # that the server can check it directly (without understanding
+        # the mttdatabase XML).
+
+        MTTVERSION_MAJOR => $MTT::Version::Major,
+        MTTVERSION_MINOR => $MTT::Version::Minor,
+        PING => 1,
+    };
+    my $req = POST ($url, $form);
+    $req->authorization_basic($username, $password);
+    my $response = $ua->request($req);
+    if (! $response->is_success()) {
+        Warning(">> Failed test ping to MTTDatabase URL: $url\n");
+        Warning(">> Error was: " . $response->status_line . "\n" . 
+                $response->content);
+        Error(">> Do not want to continue with possible bad submission URL -- aborting\n");
+    }
+    Debug("MTTDatabase ping successful: " . $response->status_line . "\n" . 
+          $response->content);
+    
     # If we have a debug filename, make it an absolute filename,
     # because there's oodles of chdir()'s within the testing.  Whack
     # the file if it's already there.
