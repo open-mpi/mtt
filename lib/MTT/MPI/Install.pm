@@ -543,7 +543,7 @@ sub _do_install {
 
 PATH=$ret->{bindir}:\$PATH
 export PATH
-LD_LIBRARY_PATH=$ret->{libdir}:\$LD_LIBARY_PATH
+LD_LIBRARY_PATH=$ret->{libdir}:\$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH\n";
             close(FILE);
             chmod(0755, $file);
