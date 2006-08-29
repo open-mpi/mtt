@@ -83,6 +83,10 @@ sub Init {
         $host = $1;
         $dir = $2;
         $port = 443;
+    } elsif  ($host =~ /(https:\/\/[-a-zA-Z0-9.]+):(\d+)\/(.*)$/) {
+        $host = $1;
+        $port = $2;
+        $dir = $3;
     } else {
         return undef;
     }
