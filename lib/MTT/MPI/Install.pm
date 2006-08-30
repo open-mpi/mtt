@@ -541,6 +541,8 @@ sub _do_install {
 # on `date`.
 # DO NOT EDIT; CHANGES WILL BE LOST!
 
+MPI_ROOT=$ret->{installdir}
+export MPI_ROOT
 PATH=$ret->{bindir}:\$PATH
 export PATH
 LD_LIBRARY_PATH=$ret->{libdir}:\$LD_LIBRARY_PATH
@@ -556,6 +558,7 @@ export LD_LIBRARY_PATH\n";
 # on `date`.
 # DO NOT EDIT; CHANGES WILL BE LOST!
 
+setenv MPI_ROOT $ret->{installdir}
 set path = ($ret->{bindir} \$path)
 if (\$?LD_LIBRARY_PATH == 0) then
     setenv LD_LIBRARY_PATH $ret->{libdir}
@@ -573,6 +576,7 @@ endif\n";
 # on `date`.
 # DO NOT EDIT; CHANGES WILL BE LOST!
 
+setenv MPI_ROOT $ret->{installdir}
 prepend-path PATH $ret->{bindir}
 prepend-path LD_LIBRARY_PATH $ret->{libdir}\n";
             close(FILE);
