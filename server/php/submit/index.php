@@ -101,6 +101,14 @@ while ($lines[$i]) {
     
         # ignore these param(s) for now
     }
+    elseif (@preg_match("/^(timed_out):\s+(.*)$/", $l, $m)) {
+    
+        # ignore these param(s) for now
+    }
+    elseif (@preg_match("/^(skipped):\s+(.*)$/", $l, $m)) {
+    
+        # ignore these param(s) for now
+    }
     # Take in once params
     elseif (@preg_match("/^(" . join('|',$once_params) . "):\s*(.*)$/", $l, $m)) {
 
