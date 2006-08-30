@@ -557,7 +557,7 @@ export LD_LIBRARY_PATH\n";
 # DO NOT EDIT; CHANGES WILL BE LOST!
 
 set path = ($ret->{bindir} \$path)
-if ($?LD_LIBRARY_PATH == 0) then
+if (\$?LD_LIBRARY_PATH == 0) then
     setenv LD_LIBRARY_PATH $ret->{libdir}
 else
     setenv LD_LIBRARY_PATH $ret->{libdir}:\$LD_LIBRARY_PATH
