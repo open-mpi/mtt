@@ -94,11 +94,10 @@
 #
 
 # In case we're using this script from the command-line
+# E.g., 
+#   $ php -f %.php var1=val var2=val ...
 if ($argv) {
-    for ($i=1; $i<count($argv); $i++) {
-       $it = split("=",$argv[$i]);
-       $_GET[$it[0]] = $it[1];
-    }
+    $_GET = getoptions($argv);
 }
 
 $GLOBALS['verbose'] = $_GET['verbose'] ? $_GET['verbose'] : 0;
@@ -176,8 +175,6 @@ $style = <<<EOT
     a.lgray_ln:hover   { color: #FFFF40 } /* when mouse is over link */
 
 EOT;
-
-# $_GET['debug'] = $GLOBALS['debug'] ? 'y' : $_GET['debug'];
 
 # HTML variables
 
@@ -390,98 +387,6 @@ debug("\n<br>postgres: " . pg_last_error() . "\n" . pg_result_error());
 
 $once_db_table = "once";
 
-
-/**************************************************************
-*                                                             *
-* Will we have a config of any kind for this tool?            *
-*                                                             *
-*                                                             *
-***************************************************************
-
-#
-# The report configuration
-#
-# (The following hash would be nicer as an external config file)
-#
-
-$first_lev  = 1;
-$second_lev = 2;
-$third_lev  = 5;
-$fourth_lev = 6;
-
-if ($_GET['verbose'] == 'y') {
-    $config['show'] = array_fill(0, $num_cols, true);
-    #var_dump_html("\nconfig[show] = ", $config['show']);
-} else {
-    $config = array(
-        'show' => array(
-            $first_lev => true,
-            $second_lev => true,
-            $third_lev => true,
-            $fourth_lev => true,
-        ),
-    );
-    # filter db results for a given level
-    $config['filter'] = array(
-        $fourth_lev => array ( 'runs' => array( "success = 'f'" ) )
-    );
-}
-
-#################################
-#                               #
-#     Configuration defaults    #
-#                               #
-#################################
-
-$config['by_run'] = array(
-    $first_lev  => true,
-    $second_lev => true,
-);
-$config['label'] = array(
-    $first_lev  => "$client Executive Summary",
-    $second_lev => "$client Cluster Summary",
-    $third_lev  => "$client Test Suites Summary",
-    $fourth_lev => "$client Test Case Details",
-);
-# Add some parameters for a given level and phase
-# Note: This is jamming a square-peg into a round hole.
-# E.g., what does a section in a 'Test Build' correlate to
-# a section in an 'MPI Install' (it doesn't)
-# These all need to have the same 'as' alias so that they
-# can get selected from the tmp & run_atomic table correctly
-$config['add_params'] = array(
-    $third_lev => array (
-        'installs' => array("compiler_name as section"),
-        'builds'   => array("test_build_section_name as section"),
-        'runs'     => array("test_run_section_name as section"),
-    ),
-    $fourth_lev => array (
-        'runs'     => array("test_run_section_name as section",
-                            "test_name"),
-    ),
-);
-# Additional links
-$config['info'] = array(
-    $fourth_lev => array (
-        'runs' => array( 'name' =>
-            "$domain" . $_SERVER['PHP_SELF'] .
-            "?level=" . ($fourth_lev + 1) . "&go=up" )
-    ),
-);
-# Hide some phases for a given level?
-$config['suppress'] = array(
-    #6 => array (
-    #        'installs' => true,
-    #    ),
-    6 => array (
-            'builds' => true,
-            'installs' => true,
-        ),
-);
-# Fields for details links
-
-**************************************************************/
-
 # This var is a little silly since there is currently only one 'level' of
 # detail per invocation of this script, but maybe it will get used again
 # when/if we add a feature that breaks-up reports into seperate tables
@@ -496,6 +401,14 @@ $linked_stuff_top = array(
 $linked_stuff_bottom = array(
     "test_duration_interval",
 );
+
+
+#################################
+#                               #
+#     Configuration             #
+#                               #
+#################################
+
 
 # Additional phase-specific parameters that go in the linked table
 $config['details'] = array(
@@ -521,6 +434,7 @@ $config['details'] = array(
 # Additional phase-specific parameters that go in the main table
 # Note: installs/builds have identical 'add_params', so sometimes
 # we will be able to merge the result sets of those two phases
+# The usage of these is *broken*
 $config['add_params'] = array(
     $level => array (
         'installs' => array("compiler_name","compiler_version"),
@@ -529,8 +443,7 @@ $config['add_params'] = array(
     ),
 );
 
-# Create SQL filters
-# (Currently, we're only doing all-levels filtering on timestamp)
+# Store SQL filters
 $sql_filters['per_script'] = array();
 
 $selects['per_script']['params'] = array();
@@ -642,16 +555,21 @@ $columns["runs"] = array(
     "test_run_section_name"   => $string_filter_types,
 );
 
-$columns["installs"] = $columns["general_b"];
-$columns["builds"] = $columns["general_b"];
+$columns["installs"] = 
+    $columns["general_b"];
+$columns["builds"] = array_merge(
+    array("test_build_section_name" => $string_filter_types),
+    array($columns["general_b"])
+);
 
 # Encode cgi param name prefixes as a means to slim down the query string
 # X: Encode cgi param field names
 $cgi_abbrevs = array(
-    'menufield'   => 'mef_',
-    'mainfield'   => 'maf_',
-    'textfield'   => 'tf_',
-    'filter_types' => 'ft_',
+    'hidden_menufield' => 'hmef_',
+    'menufield'        => 'mef_',
+    'mainfield'        => 'maf_',
+    'textfield'        => 'tf_',
+    'filter_types'     => 'ft_',
 );
 
 # Populate menus with fields from db
@@ -724,7 +642,8 @@ $main_menu["phase"]["options"] = array(
     "runs",
 );
 
-# X: loop through elems in HTML 'name' attribute, instead of this absurd
+# X: This javascript is *broken* due to undefined tf_0 and ft_0 fields
+# X: Loop through elems in HTML 'name' attribute, instead of this absurd
 #    get_phase_specific_fields function
 #
 # Add some javascript actions for this menu (gray out appropriate
@@ -752,6 +671,13 @@ $main_menu["success"]["options"] = array(
 $menu = array();
 $menu = populate_menu(array_keys($columns["once"]), "once");
 
+# This field is absurd, and only so summary.php can use it
+# X: Put this in an advanced window someday
+$hidden_menu = array(
+    "test_build_section_name",
+    "test_run_section_name",
+);
+
 $by_atoms = array(
     "*by_test_case" => "By test case",
     "by_test_run" => "By test run",
@@ -760,24 +686,26 @@ $by_atoms = array(
 # --- End query screen vars
 
 # Print html head (query frame & results frame may need this script/style)
-print "\n<html>";
-print "\n<head><title>Open MPI Test Reporter</title>";
+$html_head = "";
+$html_head .= "\n<html>";
+$html_head .= "\n<head><title>Open MPI Test Reporter</title>";
 
-print "\n<script language='javascript' type='text/javascript'>";
-print $javascript;
-print "\n</script>";
+$html_head .= "\n<script language='javascript' type='text/javascript'>";
+$html_head .= "\n$javascript";
+$html_head .= "\n</script>";
 
-print "\n<style type='text/css'>";
-print $style;
-print "\n</style>";
-print "\n</head>";
+$html_head .= "\n<style type='text/css'>";
+$html_head .= "\n$style";
+$html_head .= "\n</style>";
+$html_head .= "\n</head>";
 
-$_GET['1-page'] = true;
+print $html_head;
+
+$_GET['1-page'] = isset($_GET['1-page']) ? $_GET['1-page'] : 'on';
 
 # If no parameters passed in, show the user entry panel
-if ((! isset($_GET['go']) and ! isset($_GET['just_results'])) or
-    (! $_GET) or
-    ($_GET['1-page']))
+if (((! $_GET) and ! isset($_GET['just_results'])) or
+    ($_GET['1-page'] == 'on'))
 {
     $cols = 1;
 
@@ -811,7 +739,7 @@ if ((! isset($_GET['go']) and ! isset($_GET['just_results'])) or
                                 "") .
                             ">" .
 
-                            # phases is the only labeled mainfield
+                            # Note: phases is the only labeled mainfield
                             ($phase_labels[$item] ? $phase_labels[$item] : $item);
 
             $j++;
@@ -861,6 +789,18 @@ if ((! isset($_GET['go']) and ! isset($_GET['just_results'])) or
                         (($i > 3) ? "checked" : " ") . ">";
     }
     $pulldowns .= "\n</table>";
+
+    $i = 0;
+    # Some hidden menus, to be used by summary.php
+    foreach ($hidden_menu as $field) {
+
+        # X: hidden is only a 1d array, make it 2d using populate_menu
+        foreach (array_merge(array($All), $hidden_menu[$field]) as $item) {
+            $hiddens .= "\n<input type='hidden' name='" . $cgi_abbrevs['hidden_menufield'] . $field .  "' " .
+            "value=''>";     # only a knowledgeable script can supply this param with a value
+        }
+        $hiddens .= "\n<input type='hidden' name='agg_$field' value='off'>";
+    }
 
     # X: Merge the following two foreach loops
 
@@ -930,7 +870,6 @@ if ((! isset($_GET['go']) and ! isset($_GET['just_results'])) or
     }
     $filters .= "\n</table>";
 
-
     # Other settings
 
     $other .= "\n<table width=100% align=center border=1 cellspacing=1 cellpadding=5>";
@@ -951,8 +890,9 @@ if ((! isset($_GET['go']) and ! isset($_GET['just_results'])) or
     $other .= "\n<tr><td bgcolor=$lgray>Display";
     $other .= "\n<td colspan=2><input type='checkbox' name='sql'>SQL$sp";
     $other .= "\n<input type='checkbox' name='cgi'>CGI$sp";
-    #$other .= "\n<input type='checkbox' checked name='1-page'>1-page$sp";
-    #$other .= "\n<input type='hidden' name='1-page' value='on'>1-page$sp";
+    # $other .= "\n<input type='checkbox' " .
+    #           #"\nchecked " .
+    #           "\nname='1-page'>1-page$sp";
     $other .= "\n</table>";
 
     # --- Print it all
@@ -961,7 +901,7 @@ if ((! isset($_GET['go']) and ! isset($_GET['just_results'])) or
     print "\n<body>";
 
     # 1-page option is initially spawning a new page, but shouldn't
-    print "\n<form name=$form_id target=" . (($_GET['1-page'] == 'on') ? "_self" : "_self") . ">";
+    print "\n<form name=$form_id target=" . (($_GET['1-page'] == 'on') ? "_self" : "_blank") . ">";
     print "\n<table align=center border=1 cellspacing=1 cellpadding=5 width=95%>";
     print "\n<th align=center rowspan=4 bgcolor=$dgray><font size=24pt color=$lllgray>" .
             "<a href='$domain' class='lgray_ln'>" .
@@ -976,6 +916,7 @@ if ((! isset($_GET['go']) and ! isset($_GET['just_results'])) or
     print $filters;
     print "\n<tr><td bgcolor=$lllgray>";
     print $pulldowns;
+    print $hiddens;
     print "\n<tr><td bgcolor=$lllgray>";
     print $other;
     print "\n<tr bgcolor=$gray>";
@@ -994,16 +935,16 @@ if ((! isset($_GET['go']) and ! isset($_GET['just_results'])) or
 }
 
 if (isset($_GET['go']))
-# while (1)
 {
-
     # In the query tool, there is just a single 'level' of detail per
     # invocation of the script. So we can mostly ignore nested [$level] arrays
 
     # Print a report ...
 
-    if ($_GET['cgi'] == 'on')
-        dump_cgi_params();
+    if ($_GET['cgi'] == 'on') {
+        dump_cgi_params($_GET, "GET");
+        #dump_cgi_params($_POST, "POST");
+    }
 
     # --- Hack CGI params
 
@@ -1048,17 +989,19 @@ if (isset($_GET['go']))
         $cgi_selects = array($agg_timestamp_selects[$agg_timestamp]);
 
     $cgi_selects = array_merge($cgi_selects, get_select_fields($_GET));
+    $cgi_selects = array_merge($cgi_selects, get_hidden_fields($_GET));
+
+    # Add additional information if they select only a single phase
+
+    if (sizeof($phases['per_level']) == 1)
+        $cgi_selects =
+            array_merge($cgi_selects, $config['add_params'][$level][$phases['per_level'][0]]);
 
     # Show less when they checkbox "aggregate"
     $cgi_selects = array_filter($cgi_selects, "is_not_rolled");
 
-    # Add additional information if they select only a single phase
-
-    # if (sizeof($phases['per_level']) == 1)
-    #     $cgi_selects =
-    #         array_merge($cgi_selects, $config['add_params'][$level][$phases['per_level'][0]]);
-
-    $selects['per_script']['params'] = $cgi_selects;
+    # Use array_unique as a safeguard against SELECT-ing duplicate fields
+    $selects['per_script']['params'] = array_unique($cgi_selects);
 
     $config['by_run'][$level] = strstr($_GET["by_atom"],"by_test_run") ? true : false;
 
@@ -1135,16 +1078,17 @@ if (isset($_GET['go']))
                 ($config['by_run'][$level] ?
                     $fields_run_key :
                     null),
-                (($config['add_params'][$level][$phase] and
-                 (sizeof($phases['per_level']) < 3)) ?
-                    $config['add_params'][$level][$phase] :
-                     null),
+                # (($config['add_params'][$level][$phase] and
+                #  (sizeof($phases['per_level']) < 3)) ?
+                #     $config['add_params'][$level][$phase] :
+                #      null),
 
                  $results['from_perm_tbl'][$phase],
 
                 # Give good reason to add that far right link!
                 (($config['details'][$level][$phase] and
                   ! $config['by_run'][$level] and
+                  ! isset($_GET['no_details']) and
                  (sizeof($phases['per_level']) == 1)) ?
                     $config['details'][$level][$phase] :
                      null)
@@ -1158,7 +1102,7 @@ if (isset($_GET['go']))
         $orderbys = array();
 
         # [ ] Use a combo of array_map and array_filter here
-        foreach ($selects['per_phase']['all'] as $s) {
+        foreach (array_unique($selects['per_phase']['all']) as $s) {
 
             # Do not group or sort on these two aggregates
             if (@preg_match("/test_pass|success/i", $s))
@@ -1202,7 +1146,7 @@ if (isset($_GET['go']))
 
     # Do they want to see the sql query?
     if ($_GET['sql'] == 'on')
-        print("\nSQL: <pre>" . html_to_txt($cmd) . "</pre>");
+        print("\n<br>SQL: <pre>" . html_to_txt($cmd) . "</pre>");
 
     pg_query_("\n$cmd");
 
@@ -1211,10 +1155,10 @@ if (isset($_GET['go']))
     $selects['per_level']['params'] =
         array_map('get_as_alias',
             array_merge(
-                $selects['per_level']['params'],
-                (($config['add_params'][$level] and (sizeof($phases['per_level']) < 3)) ?
-                    $config['add_params'][$level][$phases['per_level'][0]] : # blech!
-                    null)
+                $selects['per_level']['params']
+                # (($config['add_params'][$level] and (sizeof($phases['per_level']) < 3)) ?
+                #     $config['add_params'][$level][$phases['per_level'][0]] : # blech!
+                #     null)
             )
         );
     $selects['per_level']['details'] =
@@ -1224,6 +1168,7 @@ if (isset($_GET['go']))
                 # Give good reason to add that far right link!
                 (($config['details'][$level][$phase] and
                   ! $config['by_run'][$level] and
+                  ! isset($_GET['no_details']) and
                  (sizeof($phases['per_level']) == 1)) ?
                     $config['details'][$level][$phase] :
                      null)
@@ -1238,7 +1183,7 @@ if (isset($_GET['go']))
 
     # Select from the unioned tables which is now named 'tmp'
     $cmd = "\nSELECT " .
-            join(",\n", $selects['per_level']['all']) .  " " .
+            join(",\n", array_unique($selects['per_level']['all'])) .  " " .
             "\n\tFROM tmp ";
     if ($groupbys_str)
         $cmd .= "\n\tGROUP BY $groupbys_str ";
@@ -1254,9 +1199,11 @@ if (isset($_GET['go']))
 
         $cmd = "\nSELECT " .
                 join(",\n",
-                    array_merge(
-                        $selects['per_level']['params'],
-                        get_phase_result_selects($phases['per_level'], 'by_run')
+                    array_unique(
+                        array_merge(
+                            $selects['per_level']['params'],
+                            get_phase_result_selects($phases['per_level'], 'by_run')
+                        )
                     )
                 ) .
                 "\nFROM ($cmd) as $sub_query_alias " .
@@ -1265,7 +1212,7 @@ if (isset($_GET['go']))
 
     # Do they want to see the SQL query?
     if ($_GET['sql'] == 'on')
-        print("\nSQL: <pre>" . html_to_txt($cmd) . "</pre>");
+        print("\n<br>SQL: <pre>" . html_to_txt($cmd) . "</pre>");
 
     $rows = pg_query_("\n$cmd");
 
@@ -1294,7 +1241,9 @@ if (isset($_GET['go']))
         foreach ($phases['per_level'] as $ph) {
             $data_html_table .= sprintf("\n<th bgcolor='$thcolor' colspan=2>%s", $phase_labels[$ph]);
         }
-        if ($config['details'][$level] and (sizeof($phases['per_level']) == 1))
+        if ($config['details'][$level] and 
+            ! isset($_GET['no_details']) and
+            (sizeof($phases['per_level']) == 1))
             $data_html_table .= sprintf("\n<th bgcolor='$thcolor' rowspan=2>%s", "[i]");
 
         $data_html_table .= ("\n<tr>");
@@ -1311,7 +1260,10 @@ if (isset($_GET['go']))
             $details_html_table = "";
 
             # Make the row clickable if there's clickable info for this query
-            if ($config['details'][$level] and (sizeof($phases['per_level']) == 1)) {
+            # X: Stop repeating this same ole' three-way AND condition -> make it a single bool!
+            if ($config['details'][$level] and 
+                ! isset($_GET['no_details']) and
+                (sizeof($phases['per_level']) == 1)) {
 
                 $len = sizeof($selects['per_level']['details']);
                 $lf_cols = array_splice($row, sizeof($row) - $len, $len);
@@ -1351,7 +1303,7 @@ if (isset($_GET['go']))
 
             if ($details_html_table) {
 
-                $data_html_table .= "<td align=center><a href='javascript:popup(\"900\",\"750\",\"" .
+                $data_html_table .= "<td align=center bgcolor=$lgray><a href='javascript:popup(\"900\",\"750\",\"" .
                      "[" . $config['label'][$level] . "] " .
                      "$phase_labels[$phase]: Detailed Info\",\"" .
                      strip_quotes($details_html_table) . "\",\"\",\" font-family:Courier,monospace\")' " .
@@ -1361,6 +1313,12 @@ if (isset($_GET['go']))
         }
         $data_html_table .= "\n</table>";
         $rows = true;
+    }
+
+    # This block should be useful for a customized report (e.g., summary.php)
+    if (isset($_GET['just_results'])) {
+        print $data_html_table;
+        exit;
     }
 
     # Some basic info about this report's level-of-detail
@@ -1711,7 +1669,7 @@ function get_non_run_key_params($arr) {
 }
 
 # Prints an HTML table of _GET and _POST vars
-function dump_cgi_params() {
+function dump_cgi_params($params, $title) {
 
     global $lgray;
     global $dgray;
@@ -1719,23 +1677,14 @@ function dump_cgi_params() {
     $cols = 3;
 
     print "\n\n<table width=80% border=1>";
-    print "\n\n<tr><th bgcolor=$dgray colspan=" . $cols * 2 . ">_GET";
+    print "\n\n<tr><th bgcolor=$dgray colspan=" . $cols * 2 . ">$title";
 
     $i = 0;
-    foreach (array_keys($_GET) as $k) {
+    foreach (array_keys($params) as $k) {
         print "\n" . ((($i++ % $cols) == 0) ? "\n<tr>" : "") .
-            "<td bgcolor=$lgray>" . $k . "<td>$_GET[$k]";
+            "<td bgcolor=$lgray>" . $k . "<td>$params[$k]";
     }
     print "\n\n</table>";
-
-    # print "\n\n<table width=80% border=1>";
-    # print "\n\n<tr><th bgcolor=$dgray colspan=" . $cols * 2 . ">_POST";
-
-    # foreach (array_keys($_POST) as $k) {
-    #     print "\n" . ((($i++ % $cols) == 0) ? "\n<tr>" : "") .
-    #         "<td bgcolor=$lgray>" . $k . "<td>$_POST[$k]";
-    # }
-    # print "\n\n</table>";
 }
 
 # Returns a trimmed query string
@@ -1797,6 +1746,8 @@ function get_date_filter($filter) {
 
     $filters = array();
 
+    $sep = '[\s\+]';
+
     # (Currently, we're only doing all-levels filtering on timestamp)
     if (@preg_match("/past.*week/i", $filter, $m)) {
 
@@ -1809,7 +1760,7 @@ function get_date_filter($filter) {
     elseif (@preg_match("/today/i", $filter, $m)) {
         array_push($filters, "start_test_timestamp > date_trunc('day', now())");
     }
-    elseif (@preg_match("/past\s*(\w+)\s*(\w+)/i", $filter, $m)) {
+    elseif (@preg_match("/past$sep*(\w+)$sep*(\w+)/i", $filter, $m)) {
         array_push($filters, "start_test_timestamp > now() - interval '" .
                     $words_to_numerals[$m[1]] . " " . $m[2] . "'");
 
@@ -1955,7 +1906,31 @@ function get_select_fields($params) {
     foreach (array_keys($params) as $p) {
         if (preg_match("/^" . $cgi_abbrevs['menufield'] . "(\w+)$/i", $p, $m)) {
             $f = $m[1];
-            array_push($selects, ($field_clauses[$f] ? $field_clauses[$f] : $f));
+            $clause = ($field_clauses[$f] ? $field_clauses[$f] : $f);
+            array_push($selects, strtolower($clause));
+        }
+    }
+    return $selects;
+}
+
+# Return list of hidden field_ selects
+function get_hidden_fields($params) {
+
+    global $field_clauses;
+    global $cgi_abbrevs;
+
+    $selects = array();
+
+    foreach (array_keys($params) as $p) {
+
+        # '' equals false, right?
+        if (! $params[$p])
+            continue;
+
+        if (preg_match("/^" . $cgi_abbrevs['hidden_menufield'] . "(\w+)$/i", $p, $m)) {
+            $f = $m[1];
+            $clause = ($field_clauses[$f] ? $field_clauses[$f] : $f);
+            array_push($selects, strtolower($clause));
         }
     }
     return $selects;
@@ -2004,7 +1979,7 @@ function populate_menu($list, $table) {
         }
 
         if ($_GET['sql'] == 'on')
-            print("\nSQL: <pre>" . html_to_txt($cmd) . "</pre>");
+            print("\n<br>SQL: <pre>" . html_to_txt($cmd) . "</pre>");
 
         $alias = get_as_alias($field);
 
@@ -2018,6 +1993,15 @@ function populate_menu($list, $table) {
         $menu[$alias] = $rows;
     }
     return $menu;
+}
+
+# Command-line options to CGI options
+function getoptions($argv) {
+    for ($i=1; $i<count($argv); $i++) {
+       $it = split("=",$argv[$i]);
+       $_GET[$it[0]] = $it[1];
+    }
+    return $_GET;
 }
 
 ?>
