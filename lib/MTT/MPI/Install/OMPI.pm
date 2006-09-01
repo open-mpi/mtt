@@ -63,7 +63,7 @@ sub Install {
     $stdout = $x->{stdout} ? "--- Configure stdout/stderr ---\n$x->{stdout}" :
         undef;
     if ($x->{status} != 0) {
-        $ret->{result_message} = "Configure failed -- skipping this build\n";
+        $ret->{result_message} = "Configure failed -- skipping this build";
         # Put the output of the failure into $ret so that it gets
         # reported (stdout/stderr was combined into just stdout)
         $ret->{stdout} = $stdout;
@@ -87,7 +87,7 @@ sub Install {
     $stderr = $x->{stderr} ? "--- \"make all\" stderr ---\n$x->{stderr}" : 
         undef;
     if ($x->{status} != 0) {
-        $ret->{result_message} = "Failed to build: make $config->{make_all_arguments} all\n";
+        $ret->{result_message} = "Failed to build: make $config->{make_all_arguments} all";
         # Put the output of the failure into $ret so that it gets
         # reported (stdout/stderr *may* be separated, so assign them
         # both -- if they were combined, then $stderr will be empty)
@@ -126,7 +126,7 @@ sub Install {
         $stdout = "--- \"make check\" stdout ---\n$x->{stdout}"
             if ($x->{stdout});
         if ($x->{status} != 0) {
-            $ret->{result_message} = "Failed to make check\n";
+            $ret->{result_message} = "Failed to make check";
             # Put the output of the failure into $ret so that it gets
             # reported (stdout/stderr were combined)
             $ret->{stdout} = $x->{stdout};
@@ -146,7 +146,7 @@ sub Install {
     if ($x->{status} != 0) {
         $ret->{stdout} .= "--- \"make install\" stdout ---\n$x->{stdout}"
             if ($x->{stdout});
-        $ret->{result_message} = "Failed to make install\n";
+        $ret->{result_message} = "Failed to make install";
         # Put the output of the failure into $ret so that it gets
         # reported (stdout/stderr were combined)
         $ret->{stdout} = $x->{stdout};
