@@ -509,6 +509,10 @@ sub _do_install {
         # Submit to the reporter
         MTT::Reporter::Submit("MPI install", $simple_section, $report);
 
+        # Add the data in the global $MTT::MPI::installs table
+        $MTT::MPI::installs->{$mpi_get->{simple_section_name}}->{$mpi_get->{version}}->{$simple_section} = $ret;
+        MTT::MPI::SaveInstalls($install_base);
+
         # Successful build?
         if (1 == $ret->{success}) {
             # If it was successful, there's no need for
@@ -525,10 +529,6 @@ sub _do_install {
                 Verbose("Removing build dir: $ret->{builddir}\n");
                 MTT::DoCommand::Cmd(1, "rm -rf $ret->{builddir}");
             }
-
-            # Add the data in the global $MTT::MPI::installs table
-            $MTT::MPI::installs->{$mpi_get->{simple_section_name}}->{$mpi_get->{version}}->{$simple_section} = $ret;
-            MTT::MPI::SaveInstalls($install_base);
 
             # Drop some environment variable files to make this tree
             # easy to access (e.g., set PATH, LD_LIBRARY_PATH,
