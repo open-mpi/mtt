@@ -93,6 +93,8 @@ sub _stringify {
         # Huersitic: if there are any newlines in the original string,
         # we want this to be a multi-line output.  
         my $val = $hash->{$k};
+        next
+            if (!$val);
         my $want_multi = ($val =~ /\n/);
 
         # We currently have 2 conventions (bonk!) for field names --
