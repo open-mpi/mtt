@@ -1,7 +1,7 @@
 --
 -- Open MPI Test Results Tables
 --
--- Usage: $ cat schemas.sql | psql -d <dbname> -U <dbusername>
+-- Usage: $ psql -d dbname -U dbusername < this_filename
 --
 
 DROP TABLE cluster;
@@ -15,22 +15,21 @@ CREATE TABLE cluster (
        UNIQUE (os_name,os_version,platform_hardware,platform_type,platform_id)
 );
 
--- JMS: do we need a table for this?  I think PG may have a construct
--- that allows us to have an independent serial outside of a table.
+-- Serial number used for individual MTT runs
 DROP SEQUENCE serial;
 CREATE SEQUENCE serial;
 
 DROP TABLE submit;
 CREATE TABLE submit (
 	submit_id serial,
-	serial_id integer,
+	serial_id integer, --> refers to the serial sequence
 	mtt_version_major smallint,
 	mtt_version_minor smallint,
 	hostname character varying(128) NOT NULL,
 	local_username character varying(16) NOT NULL,
 	http_username character varying(16) NOT NULL,
 	tstamp timestamp without timezone,
-	-- phase will be: 1=mpi_install, 2=test_build, 3=test_run
+	-- phase value: 1=mpi_install, 2=test_build, 3=test_run
 	phase smallint,
 	-- phase_id will be an index into mpi_install, test_build, or
         -- test_run tables, depending on value of phase
@@ -81,12 +80,13 @@ CREATE TABLE test_run (
 	test_build_id --> refers to test_build table
 
 	name character varying(64) NOT NULL,
-	command text,
+	command text NOT NULL,
 	np smallint,
 
 	results_id integer, --> refers to results table
 );
 
+DROP TABLE results;
 CREATE TABLE results (
 	results_id serial,
 
@@ -96,17 +96,8 @@ CREATE TABLE results (
 	stderr text,
 	start_timestamp timestamp without timezone,
 	stop_timestamp timestamp without timezone,
-	-- Value: 1=pass, 2=fail, 3=skipped, 4=timed out
+	-- result value: 1=pass, 2=fail, 3=skipped, 4=timed out
 	result smallint,
 	-- do we want exit status?
 	exit_status smallint
 };
-
-
--- JMS do we need these?  Need to talk to Terry
-CREATE TABLE section_results (
-
-);
-CREATE TABLE mtt_invocation_results (
-
-);
