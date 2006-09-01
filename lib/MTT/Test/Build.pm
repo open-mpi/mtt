@@ -116,6 +116,12 @@ sub Build {
                                 foreach my $mpi_install_key (keys(%{$mpi_version})) {
                                     my $mpi_install = $mpi_version->{$mpi_install_key};
 
+                                    # Only take sucessful MPI installs
+                                    if (!$mpi_install->{success}) {
+                                        Verbose("   Failed build for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] -- skipping\n");
+                                        next;
+                                    }
+
                                     # See if we've already got a
                                     # successful test build for this
                                     # MPI installation.  Test
