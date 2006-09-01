@@ -83,7 +83,11 @@ sub Run {
                                 
                                 if ($test_build_key eq $test_build_name) {
                                     my $test_build = $MTT::Test::builds->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key}->{$test_build_key};
-                                    Debug("Found a match! $test_build_key [$simple_section");
+                                    Debug("Found a match! $test_build_key [$simple_section\n");
+                                    if (!$test_build->{success}) {
+                                        Debug("But that build was borked -- skipping\n");
+                                        next;
+                                    }
                                     my $mpi_install = $MTT::MPI::installs->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key};
                                     _do_run($ini, $section, $test_build, 
                                             $mpi_install, $top_dir, $force);
