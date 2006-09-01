@@ -16,8 +16,8 @@ CREATE TABLE cluster (
 );
 
 -- Serial number used for individual MTT runs
-DROP SEQUENCE serial;
-CREATE SEQUENCE serial;
+DROP SEQUENCE client_serial;
+CREATE SEQUENCE client_serial;
 
 DROP TABLE submit;
 CREATE TABLE submit (
