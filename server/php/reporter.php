@@ -93,16 +93,22 @@
 #  - Created 'Help' file
 #
 
+$GLOBALS['verbose'] = isset($_GET['verbose']) ? $_GET['verbose'] : 0;
+$GLOBALS['debug']   = isset($_GET['debug'])   ? $_GET['debug']   : 0;
+$GLOBALS['res']     = 0;
+
+# Set php trace levels
+if ($GLOBALS['verbose'])
+    error_reporting(E_ALL);
+else
+    error_reporting(E_ERROR | E_WARNING | E_PARSE);
+
 # In case we're using this script from the command-line
 # E.g., 
 #   $ php -f %.php var1=val var2=val ...
 if ($argv) {
     $_GET = getoptions($argv);
 }
-
-$GLOBALS['verbose'] = $_GET['verbose'] ? $_GET['verbose'] : 0;
-$GLOBALS['debug']   = $_GET['debug']   ? $_GET['debug']   : 0;
-$GLOBALS['res']     = 0;
 
 $form_id = "report";
 
@@ -376,8 +382,8 @@ $translate_data_cell = array(
 );
 
 # Setup db connection
-$dbname = $_GET['db']   ? $_GET['db']   : "mtt";
-$user   = $_GET['user'] ? $_GET['user'] : "mtt";
+$dbname = isset($_GET['db'])   ? $_GET['db']   : "mtt";
+$user   = isset($_GET['user']) ? $_GET['user'] : "mtt";
 $pass   = "3o4m5p6i";
 
 if (! ($GLOBALS["conn"] = pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass")))
@@ -703,6 +709,13 @@ print $html_head;
 
 $_GET['1-page'] = isset($_GET['1-page']) ? $_GET['1-page'] : 'on';
 
+# HTML input elements
+$main_pulldowns = ""; 
+$pulldowns      = ""; 
+$hiddens        = ""; 
+$advanced       = ""; 
+$filters        = ""; 
+
 # If no parameters passed in, show the user entry panel
 if (((! $_GET) and ! isset($_GET['just_results'])) or
     ($_GET['1-page'] == 'on'))
@@ -734,7 +747,7 @@ if (((! $_GET) and ! isset($_GET['just_results'])) or
             $main_pulldowns .= "\n<option " .
                             ($starred ? " selected " : "") .
                             "style='width: $menu_width;' value='$item' " .
-                            ($main_menu[$field]["javascript"][$j] ?
+                            (isset($main_menu[$field]["javascript"][$j]) ?
                                 "onclick='javascript:" . $main_menu[$field]["javascript"][$j] . "'" :
                                 "") .
                             ">" .
@@ -898,40 +911,46 @@ if (((! $_GET) and ! isset($_GET['just_results'])) or
     # --- Print it all
 
     # html body
-    print "\n<body>";
+    $query_screen .= "\n";
+    $query_screen .= "\n<body>";
 
     # 1-page option is initially spawning a new page, but shouldn't
-    print "\n<form name=$form_id target=" . (($_GET['1-page'] == 'on') ? "_self" : "_blank") . ">";
-    print "\n<table align=center border=1 cellspacing=1 cellpadding=5 width=95%>";
-    print "\n<th align=center rowspan=4 bgcolor=$dgray><font size=24pt color=$lllgray>" .
-            "<a href='$domain' class='lgray_ln'>" .
-                "<img width=55 height=55 src='./open-mpi-logo.png'>" .
-            "</a><br>" .
-            "<img width=55 height=525 src='./logo.gif'>";
-    #print "\n<th align=center colspan=2 rowspan=1 bgcolor=$dgray><font size=24pt color=$lllgray>" .
-    #       "Open MPI $br Test $br Reporter";
-    print "\n<tr><td bgcolor=$lllgray valign=top>";
-    print $main_pulldowns;
-    print "\n<td bgcolor=$lllgray rowspan=3 valign=top>";
-    print $filters;
-    print "\n<tr><td bgcolor=$lllgray>";
-    print $pulldowns;
-    print $hiddens;
-    print "\n<tr><td bgcolor=$lllgray>";
-    print $other;
-    print "\n<tr bgcolor=$gray>";
-    print "\n<td bgcolor=$gray colspan=3>";
-    print "\n<table align=center border=1 cellspacing=1 cellpadding=5>";
-    print "\n<tr>";
-    print "\n<td bgcolor=$lllgray valign=center><input type='submit' name='go' value='Table'>";
-    print "\n<td bgcolor=$lllgray valign=center><input type='reset' value='Reset'>";
-    print "\n<td bgcolor=$lgray valign=center>";
-    print "\n<a href='./reporter_help.html' class='lgray_ln' target=_blank>[Help]</a>";
-    #print "\n<td bgcolor=$lllgray valign=center><input type='submit' value='Graph'>";
-    print "\n</form>";
-    print "\n</table>";
-    print "\n</table>";
-    print "\n<br><br><br>";
+    $query_screen .= "\n<form name=$form_id target=" . (($_GET['1-page'] == 'on') ? "_self" : "_blank") . ">";
+
+    $query_screen .= carryover_cgi_params($_GET);
+
+    $query_screen .= "\n<table align=center border=1 cellspacing=1 cellpadding=5 width=100%>";
+    $query_screen .= "\n<th align=center rowspan=4 bgcolor=$dgray><font size=24pt color=$lllgray>" .
+                         "<a href='$domain' class='lgray_ln'>" .
+                             "<img width=55 height=55 src='./open-mpi-logo.png'>" .
+                         "</a><br>" .
+                         "<img width=55 height=525 src='./logo.gif'>";
+    #$query_screen .= "\n<th align=center colspan=2 rowspan=1 bgcolor=$dgray><font size=24pt color=$lllgray>" .
+    #                 "\nOpen MPI $br Test $br Reporter";
+    $query_screen .= "\n<tr><td bgcolor=$lllgray valign=top>";
+    $query_screen .= "\n$main_pulldowns";
+    $query_screen .= "\n<td bgcolor=$lllgray rowspan=3 valign=top>";
+    $query_screen .= "\n$filters";
+    $query_screen .= "\n<tr><td bgcolor=$lllgray>";
+    $query_screen .= "\n$pulldowns";
+    $query_screen .= "\n$hiddens";
+    $query_screen .= "\n<tr><td bgcolor=$lllgray>";
+    $query_screen .= "\n$other";
+    $query_screen .= "\n<tr bgcolor=$gray>";
+    $query_screen .= "\n<td bgcolor=$gray colspan=3>";
+    $query_screen .= "\n<table align=center border=1 cellspacing=1 cellpadding=5>";
+    $query_screen .= "\n<tr>";
+    $query_screen .= "\n<td bgcolor=$lllgray valign=center><input type='submit' name='go' value='Table'>";
+    $query_screen .= "\n<td bgcolor=$lllgray valign=center><input type='reset' value='Reset'>";
+    $query_screen .= "\n<td bgcolor=$lgray valign=center>";
+    $query_screen .= "\n<a href='./reporter_help.html' class='lgray_ln' target=_blank>[Help]</a>";
+    #$query_screen .= "\n<td bgcolor=$lllgray valign=center><input type='submit' value='Graph'>";
+    $query_screen .= "\n</form>";
+    $query_screen .= "\n</table>";
+    $query_screen .= "\n</table>";
+    $query_screen .= "\n<br><br><br>";
+
+    print $query_screen;
 }
 
 if (isset($_GET['go']))
@@ -1003,15 +1022,15 @@ if (isset($_GET['go']))
     # Use array_unique as a safeguard against SELECT-ing duplicate fields
     $selects['per_script']['params'] = array_unique($cgi_selects);
 
-    $config['by_run'][$level] = strstr($_GET["by_atom"],"by_test_run") ? true : false;
+    $config['by_run'][$level] = strstr($_GET["by_atom"],"by_test_run") ? true : null;
 
     # Print a title for each level-section
     $level_info = "";
-    if ($config['show'][$level]) {
-        if ($config['label'][$level]) {
+    if (isset($config['show'][$level])) {
+        if (isset($config['label'][$level])) {
             $level_info .= "\n<br><font size='+3'>" . $config['label'][$level] . "</font>";
             $level_info .= "\n<br><font size='-1'>" .
-                            ($config['by_run'][$level] ?
+                            (isset($config['by_run'][$level]) ?
                                 "(By $client test run)" :
                                 "(By $client test case)") .
                             "</font><br><br>";
@@ -1041,8 +1060,8 @@ if (isset($_GET['go']))
     # Split out selects into params and results
     $selects['per_level']['params'] =
         array_merge(
-            ($config['by_run'][$level] ?
-                array_diff($selects['per_script']['params'],$fields_run_key) :
+            (isset($config['by_run'][$level]) ?
+                array_diff($selects['per_script']['params'], $fields_run_key) :
                 $selects['per_script']['params'])
             #($config['by_run'][$level] ? $fields_run_key : null),
         );
@@ -1062,7 +1081,7 @@ if (isset($_GET['go']))
         $db_table = $phase;
 
         # Check to see if there are special filters for this level & phase
-        if ($config['filter'][$level][$phase])
+        if (isset($config['filter'][$level][$phase]))
             $sql_filters['per_phase'] =
                 array_merge($sql_filters['per_script'], $config['filter'][$level][$phase]);
         else
@@ -1072,10 +1091,10 @@ if (isset($_GET['go']))
         $selects['per_phase']['all'] = array();
         $selects['per_phase']['all'] =
             array_merge(
-                ($config['by_run'][$level] ?
-                    array_diff($selects['per_level']['params'],$fields_run_key) :
+                (isset($config['by_run'][$level]) ?
+                    array_diff($selects['per_level']['params'], $fields_run_key) :
                     $selects['per_level']['params']),
-                ($config['by_run'][$level] ?
+                (isset($config['by_run'][$level]) ?
                     $fields_run_key :
                     null),
                 # (($config['add_params'][$level][$phase] and
@@ -1087,7 +1106,7 @@ if (isset($_GET['go']))
 
                 # Give good reason to add that far right link!
                 (($config['details'][$level][$phase] and
-                  ! $config['by_run'][$level] and
+                  ! isset($config['by_run'][$level]) and
                   ! isset($_GET['no_details']) and
                  (sizeof($phases['per_level']) == 1)) ?
                     $config['details'][$level][$phase] :
@@ -1134,7 +1153,7 @@ if (isset($_GET['go']))
 
             # This setting is not used at the $sql_filters level
             "<tr><td bgcolor=$lgray>Count <td bgcolor=$llgray>" .
-            ($config['by_run'][$level] ? "By test run" : "By test case") .
+            (isset($config['by_run'][$level]) ? "By test run" : "By test case") .
             "</table><br>";
     else
         $filters_desc_html_table = null;
@@ -1145,8 +1164,9 @@ if (isset($_GET['go']))
     $cmd = "\nSELECT * INTO TEMPORARY TABLE tmp FROM (" . $cmd . ") as u;";
 
     # Do they want to see the sql query?
-    if ($_GET['sql'] == 'on')
-        print("\n<br>SQL: <pre>" . html_to_txt($cmd) . "</pre>");
+    if (isset($_GET['sql']))
+        if ($_GET['sql'] == 'on')
+            print("\n<br>SQL: <pre>" . html_to_txt($cmd) . "</pre>");
 
     pg_query_("\n$cmd");
 
@@ -1167,7 +1187,7 @@ if (isset($_GET['go']))
 
                 # Give good reason to add that far right link!
                 (($config['details'][$level][$phase] and
-                  ! $config['by_run'][$level] and
+                  ! isset($config['by_run'][$level]) and
                   ! isset($_GET['no_details']) and
                  (sizeof($phases['per_level']) == 1)) ?
                     $config['details'][$level][$phase] :
@@ -1192,7 +1212,7 @@ if (isset($_GET['go']))
 
     $sub_query_alias = 'run_atomic';
 
-    if ($config['by_run'][$level]) {
+    if (isset($config['by_run'][$level])) {
 
         $selects['per_script']['params'] =
             get_non_run_key_params($selects['per_script']['params']);
@@ -1211,8 +1231,9 @@ if (isset($_GET['go']))
     }
 
     # Do they want to see the SQL query?
-    if ($_GET['sql'] == 'on')
-        print("\n<br>SQL: <pre>" . html_to_txt($cmd) . "</pre>");
+    if (isset($_GET['sql']))
+        if ($_GET['sql'] == 'on')
+            print("\n<br>SQL: <pre>" . html_to_txt($cmd) . "</pre>");
 
     $rows = pg_query_("\n$cmd");
 
@@ -1304,7 +1325,7 @@ if (isset($_GET['go']))
             if ($details_html_table) {
 
                 $data_html_table .= "<td align=center bgcolor=$lgray><a href='javascript:popup(\"900\",\"750\",\"" .
-                     "[" . $config['label'][$level] . "] " .
+                     "[" . isset($config['label'][$level]) . "] " .
                      "$phase_labels[$phase]: Detailed Info\",\"" .
                      strip_quotes($details_html_table) . "\",\"\",\" font-family:Courier,monospace\")' " .
                         " class='lgray_ln'><font size='-2'>" .
@@ -1326,7 +1347,7 @@ if (isset($_GET['go']))
         print $level_info;
 
     # Report description (mostly echoing the user input and filters)
-    if ($filters_desc_html_table and ! $_GET['just_results']) {
+    if ($filters_desc_html_table and ! isset($_GET['just_results'])) {
         print "<a name=report></a>";
         print "<br><table width=100%><tr>";
         print "<td valign=top>$filters_desc_html_table";
@@ -1363,7 +1384,7 @@ if (isset($_GET['go']))
 
         # *broken*
         # Additional info popup
-        $details = $config['info'][$level]['runs']['name'];
+        $details = isset($config['info'][$level]['runs']['name']);
         if ($details) {
             print
               "<br><a href='$details' class='lgray_ln'><font size='-2'>" .
@@ -1687,6 +1708,15 @@ function dump_cgi_params($params, $title) {
     print "\n\n</table>";
 }
 
+# Carry input params over between invocations of the script
+function carryover_cgi_params($params) {
+
+    foreach (array_keys($params) as $k) {
+        $str .= "\n<input type='hidden' name='$k' value='$params[$k]'>";
+    }
+    return $str;
+}
+
 # Returns a trimmed query string
 function dump_cgi_params_trimnulls($params) {
 
@@ -1703,7 +1733,7 @@ function dump_cgi_params_trimnulls($params) {
             $type  = "" . $cgi_abbrevs['filter_types'] . "$f";
             $field = "" . $cgi_abbrevs['textfield'] . "$f";
 
-            if ($params[$field]) {
+            if (isset($params[$field])) {
                 $hash[$type] = $params[$type];
                 $hash[$field] = $params[$field];
             }
@@ -1723,7 +1753,7 @@ function dump_cgi_params_trimnulls($params) {
 
 # return string concatenated to itself x times
 function repeat($str, $x) {
-    print $debug;
+
     $orig = $str;
     for ($i = 0; $i < $x-1; $i++){
         $orig .= $str;
@@ -1978,8 +2008,9 @@ function populate_menu($list, $table) {
             $clause = $field;
         }
 
-        if ($_GET['sql'] == 'on')
-            print("\n<br>SQL: <pre>" . html_to_txt($cmd) . "</pre>");
+        if (isset($_GET['sql']))
+            if ($_GET['sql'] == 'on')
+                print("\n<br>SQL: <pre>" . html_to_txt($cmd) . "</pre>");
 
         $alias = get_as_alias($field);
 
