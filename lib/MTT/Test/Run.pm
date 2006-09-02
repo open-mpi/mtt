@@ -219,6 +219,12 @@ sub _do_run {
     $tmp = $ini->val($section, "save_output_on_pass");
     $config->{save_output_on_pass} = $tmp
         if (defined($tmp));
+    $tmp = $ini->val($section, "stderr_save_lines");
+    $config->{stderr_save_lines} = $tmp
+        if (defined($tmp));
+    $tmp = $ini->val($section, "stdout_save_lines");
+    $config->{stdout_save_lines} = $tmp
+        if (defined($tmp));
     $tmp = $ini->val($section, "merge_stdout_stderr");
     $config->{merge_stdout_stderr} = $tmp
         if (defined($tmp));
@@ -255,7 +261,7 @@ sub _do_run {
 
             $run->{test_build_simple_section_name} = $test_build->{simple_section_name};
             $run->{executable} = $test->{executable};
-            foreach my $key (qw(np np_ok argv pass save_output_on_pass separate_stdout_stderr timeout)) {
+            foreach my $key (qw(np np_ok argv pass save_output_on_pass stdout_save_lines stderr_save_lines merge_stdout_stderr timeout)) {
                 my $str = "\$run->{$key} = exists(\$test->{$key}) ? \$test->{$key} : \$config->{$key}";
                 eval $str;
             }
@@ -351,10 +357,13 @@ sub _run_one_test {
     _run_step($mpi_details, "before_each");
 
     my $timeout = MTT::Values::EvaluateString($run->{timeout});
-    my $separate = MTT::Values::EvaluateString($run->{separate_stdout_stderr});
+    my $out_lines = MTT::Values::EvaluateString($run->{stdout_save_lines});
+    my $err_lines = MTT::Values::EvaluateString($run->{stderr_save_lines});
+    my $merge = MTT::Values::EvaluateString($run->{merge_stdout_stderr});
     my $start_time = time;
     my $start = timegm(gmtime());
-    my $x = MTT::DoCommand::Cmd(!$separate, $cmd, $timeout);
+    my $x = MTT::DoCommand::Cmd($merge, $cmd, $timeout, 
+                                $out_lines, $err_lines);
     my $stop_time = time;
     my $duration = $stop_time - $start_time . " seconds";
     $test_exit_status = $x->{status};

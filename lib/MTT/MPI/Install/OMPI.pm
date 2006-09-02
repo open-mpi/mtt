@@ -59,7 +59,7 @@ sub Install {
     $ret->{bindir} = "$ret->{installdir}/bin";
     $ret->{libdir} = "$ret->{installdir}/lib";
 
-    $x = MTT::DoCommand::Cmd(1, "$config->{configdir}/configure $config->{configure_arguments} --prefix=$ret->{installdir}");
+    $x = MTT::DoCommand::Cmd(1, "$config->{configdir}/configure $config->{configure_arguments} --prefix=$ret->{installdir}", -1, $config->{stdout_save_lines}, $config->{stderr_save_lines});
     $stdout = $x->{stdout} ? "--- Configure stdout/stderr ---\n$x->{stdout}" :
         undef;
     if ($x->{status} != 0) {
@@ -74,7 +74,7 @@ sub Install {
 
     # Build it
 
-    $x = MTT::DoCommand::Cmd($config->{merge_stdout_stderr}, "make $config->{make_all_arguments} all");
+    $x = MTT::DoCommand::Cmd($config->{merge_stdout_stderr}, "make $config->{make_all_arguments} all", -1, $config->{stdout_save_lines});
     $stdout = undef;
     if ($x->{stdout}) {
         $stdout = "--- \"make all ";
@@ -120,7 +120,7 @@ sub Install {
         }
 
         Debug("Running make check\n");
-        $x = MTT::DoCommand::Cmd(1, "make check");
+        $x = MTT::DoCommand::Cmd(1, "make check", -1, $config->{stdout_save_lines}, $config->{stderr_save_lines});
         %ENV = %ENV_SAVE;
 
         $stdout = "--- \"make check\" stdout ---\n$x->{stdout}"
@@ -142,7 +142,7 @@ sub Install {
     # stderr are common during "make install" (e.g., notices about
     # re-linking libraries when they are installed)
 
-    $x = MTT::DoCommand::Cmd(1, "make install");
+    $x = MTT::DoCommand::Cmd(1, "make install", -1, $config->{stdout_save_lines}, $config->{stderr_save_lines});
     if ($x->{status} != 0) {
         $ret->{stdout} .= "--- \"make install\" stdout ---\n$x->{stdout}"
             if ($x->{stdout});

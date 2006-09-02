@@ -35,7 +35,6 @@ package MTT::Test::Build;
 use strict;
 use Cwd;
 use Time::Local;
-use MTT::DoCommand;
 use MTT::Reporter;
 use MTT::Messages;
 use MTT::INI;

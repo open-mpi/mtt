@@ -314,8 +314,8 @@ sub _do_install {
     $tmp = Logical($ini, $section, "save_stdout_on_success");
     $config->{save_stdout_on_success} = $tmp
         if (defined($tmp));
-    $tmp = Logical($ini, $section, "separate_stdout_stderr");
-    $config->{separate_stdout_stderr} = $tmp
+    $tmp = Logical($ini, $section, "merge_stdout_stderr");
+    $config->{merge_stdout_stderr} = $tmp
         if (defined($tmp));
     $tmp = Value($ini, $section, "stderr_save_lines");
     $config->{stderr_save_lines} = $tmp
