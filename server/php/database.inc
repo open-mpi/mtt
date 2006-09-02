@@ -19,6 +19,7 @@
 #
 
 include_once("$topdir/config.inc");
+include_once("$topdir/reporter.inc");
 
 # Setup db connection
 $dbname = isset($_GET['db'])   ? $_GET['db']   : "mtt";
@@ -31,75 +32,6 @@ $phases['per_script'] = array(
     "installs",
     "builds",
     "runs",
-);
-
-# We'll define these fields instead of fetch from information_schema
-# so that we can order them how we want
-#
-# Q: What's with general_a and general_b?
-# A: The db tables are factored down such that if a column needs to be altered
-#    it can be done to a single column, not a column in multiple tables
-$columns["general_a"] = array(
-    "stderr"                   => $string_filter_types,
-    "stdout"                   => $string_filter_types,
-    "environment"              => $string_filter_types,
-    "configure_arguments"      => $string_filter_types,
-    "result_message"           => $string_filter_types,
-    "mpi_get_section_name"     => $string_filter_types,
-    "mpi_install_section_name" => $string_filter_types,
-    #"vpath_mode"              => $string_filter_types,
-    #"start_test_timestamp"    => $string_filter_types,
-    #"submit_test_timestamp"   => $string_filter_types,
-    #"test_duration_interval"  => $string_filter_types,
-    #"merge_stdout_stderr"     => $string_filter_types,
-    #"mpi_details"             => $string_filter_types,
-);
-$columns["general_b"] = array(
-    "compiler_name"    => $string_filter_types,
-    "compiler_version" => $string_filter_types,
-);
-
-$columns["advanced"] = array(
-    "mpi_details"               => $string_filter_types,
-    "merge_stdout_stderr"       => $string_filter_types,
-    "vpath_mode"                => $string_filter_types,
-    "start_test_timestamp"      => $string_filter_types,
-    "submit_test_timestamp"     => $string_filter_types,
-    "test_duration_interval"    => $string_filter_types,
-    #"result_message"           => $string_filter_types,
-    #"environment"              => $string_filter_types,
-    #"configure_arguments"      => $string_filter_types,
-    #"mpi_get_section_name"     => $string_filter_types,
-    #"mpi_install_section_name" => $string_filter_types,
-);
-
-$columns['once'] = array(
-    "platform_hardware" => $string_filter_types,
-    "os_name"           => $string_filter_types,
-    "os_version"        => $string_filter_types,
-    "mpi_name"          => $string_filter_types,
-    "mpi_version"       => $string_filter_types,
-
-    "$cluster_field"    => $string_filter_types,
-
-    #"hostname"         => $string_filter_types,
-    #"platform_type"    => $string_filter_types,
-    #"platform_id"      => $string_filter_types,
-);
-
-$columns["runs"] = array(
-    "test_name"               => $string_filter_types,
-    "test_command"            => $string_filter_types,
-    "test_np"                 => $numeric_filter_types,
-    "test_build_section_name" => $string_filter_types,
-    "test_run_section_name"   => $string_filter_types,
-);
-
-$columns["installs"] = 
-    $columns["general_b"];
-$columns["builds"] = array_merge(
-    array("test_build_section_name" => $string_filter_types),
-    array($columns["general_b"])
 );
 
 
@@ -301,11 +233,7 @@ function get_date_filter($filter) {
     $sep = '[\s\+]';
 
     # (Currently, we're only doing all-levels filtering on timestamp)
-    if (@preg_match("/past.*week/i", $filter, $m)) {
-
-        array_push($filters, "start_test_timestamp > now() - interval '1 week'");
-    }
-    elseif (@preg_match("/yesterday/i", $filter, $m)) {
+    if (@preg_match("/yesterday/i", $filter, $m)) {
         array_push($filters, "start_test_timestamp > 'yesterday'");
 
     }
