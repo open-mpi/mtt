@@ -42,8 +42,8 @@ our $MPI_install = {
     configure_arguments => "",
     save_stdout_on_success => 0,
     merge_stdout_stderr => 0,
-    stdout_save_lines => 1000,
-    stderr_save_lines => 1000,
+    stdout_save_lines => 100,
+    stderr_save_lines => 100,
     make_check => 0,
 
 };
@@ -54,8 +54,8 @@ our $Test_build = {
     mpi_install => "all",
     save_stdout_on_success => 0,
     merge_stdout_stderr => 1,
-    stdout_save_lines => 1000,
-    stderr_save_lines => 1000,
+    stdout_save_lines => 100,
+    stderr_save_lines => 100,
 };
 
 # Test run phase
@@ -69,8 +69,8 @@ our $Test_run = {
 
     save_stdout_on_pass => 0,
     merge_stdout_stderr => 1,
-    stdout_save_lines => 1000,
-    stderr_save_lines => 1000,
+    stdout_save_lines => 100,
+    stderr_save_lines => 100,
 };
 
 1;
