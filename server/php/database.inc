@@ -32,6 +32,78 @@ $phases['per_script'] = array(
     "builds",
     "runs",
 );
+
+# We'll define these fields instead of fetch from information_schema
+# so that we can order them how we want
+#
+# Q: What's with general_a and general_b?
+# A: The db tables are factored down such that if a column needs to be altered
+#    it can be done to a single column, not a column in multiple tables
+$columns["general_a"] = array(
+    "stderr"                   => $string_filter_types,
+    "stdout"                   => $string_filter_types,
+    "environment"              => $string_filter_types,
+    "configure_arguments"      => $string_filter_types,
+    "result_message"           => $string_filter_types,
+    "mpi_get_section_name"     => $string_filter_types,
+    "mpi_install_section_name" => $string_filter_types,
+    #"vpath_mode"              => $string_filter_types,
+    #"start_test_timestamp"    => $string_filter_types,
+    #"submit_test_timestamp"   => $string_filter_types,
+    #"test_duration_interval"  => $string_filter_types,
+    #"merge_stdout_stderr"     => $string_filter_types,
+    #"mpi_details"             => $string_filter_types,
+);
+$columns["general_b"] = array(
+    "compiler_name"    => $string_filter_types,
+    "compiler_version" => $string_filter_types,
+);
+
+$columns["advanced"] = array(
+    "mpi_details"               => $string_filter_types,
+    "merge_stdout_stderr"       => $string_filter_types,
+    "vpath_mode"                => $string_filter_types,
+    "start_test_timestamp"      => $string_filter_types,
+    "submit_test_timestamp"     => $string_filter_types,
+    "test_duration_interval"    => $string_filter_types,
+    #"result_message"           => $string_filter_types,
+    #"environment"              => $string_filter_types,
+    #"configure_arguments"      => $string_filter_types,
+    #"mpi_get_section_name"     => $string_filter_types,
+    #"mpi_install_section_name" => $string_filter_types,
+);
+
+$columns['once'] = array(
+    "platform_hardware" => $string_filter_types,
+    "os_name"           => $string_filter_types,
+    "os_version"        => $string_filter_types,
+    "mpi_name"          => $string_filter_types,
+    "mpi_version"       => $string_filter_types,
+
+    "$cluster_field"    => $string_filter_types,
+
+    #"hostname"         => $string_filter_types,
+    #"platform_type"    => $string_filter_types,
+    #"platform_id"      => $string_filter_types,
+);
+
+$columns["runs"] = array(
+    "test_name"               => $string_filter_types,
+    "test_command"            => $string_filter_types,
+    "test_np"                 => $numeric_filter_types,
+    "test_build_section_name" => $string_filter_types,
+    "test_run_section_name"   => $string_filter_types,
+);
+
+$columns["installs"] = 
+    $columns["general_b"];
+$columns["builds"] = array_merge(
+    array("test_build_section_name" => $string_filter_types),
+    array($columns["general_b"])
+);
+
+
+
 $br = " ";
 $phase_labels = array(
     "installs" => "MPI" . $br . "Install",
@@ -152,38 +224,39 @@ $linked_stuff_bottom = array(
     "test_duration_interval",
 );
 
-# Additional phase-specific parameters that go in the linked table
-$config['details'] = array(
-    $level => array(
-        'runs' => array_merge(
-                        array( "test_command", "result_message",),
-                        $linked_stuff_top,
-                        $linked_stuff_bottom
-                    ),
-        'builds' => array_merge(
-                        array( "configure_arguments" ),
-                        $linked_stuff_top,
-                        $linked_stuff_bottom
-                    ),
-        'installs' => array_merge(
-                        array( "configure_arguments" ),
-                        $linked_stuff_top,
-                        $linked_stuff_bottom
-                    ),
-    ),
-);
+# pg_query_ that returns a 1D list
+function pg_query_simple($cmd, $conn) {
 
-# Additional phase-specific parameters that go in the main table
-# Note: installs/builds have identical 'add_params', so sometimes
-# we will be able to merge the result sets of those two phases
-# The usage of these is *broken*
-$config['add_params'] = array(
-    $level => array (
-        'installs' => array("compiler_name","compiler_version"),
-        'builds'   => array("compiler_name","compiler_version"),
-        'runs'     => array("test_name", "test_np", "test_run_section_name"),
-    ),
-);
+    $rows = array();
+    if ($res = pg_query($conn, $cmd)) {
+        while ($row = pg_fetch_row($res)) {
+            array_push($rows, $row);
+        }
+    }
+    else {
+        debug("\n<br>postgres: " . pg_last_error() . "\n" . pg_result_error());
+    }
+    return array_map('join',$rows);
+}
+
+# pg_query that returns a 2D list
+function pg_query_($cmd, $conn) {
+
+    $rows = array();
+    if ($res = pg_query($conn, $cmd)) {
+        while ($row = pg_fetch_row($res)) {
+            array_push($rows, $row);
+        }
+
+        # Think about the advantages in returning a hash of results
+        # versus an array (esp. wrt readability)
+        # $rows = pg_fetch_all($res);
+    }
+    else {
+        debug("\n<br>postgres: " . pg_last_error() . "\n" . pg_result_error());
+    }
+    return $rows;
+}
 
 # Take a list of phases and the type of atom, and return a list of result
 # aggregates for those phases

@@ -514,7 +514,8 @@ function prefix($prefix, $list) {
 function carryover_cgi_params($params) {
 
     foreach (array_keys($params) as $k) {
-        $str .= "\n<input type='hidden' name='$k' value='$params[$k]'>";
+        if (! $params[$k])
+            $str .= "\n<input type='hidden' name='$k' value='$params[$k]'>";
     }
     return $str;
 }

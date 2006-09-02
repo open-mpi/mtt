@@ -115,7 +115,7 @@ function which_phase_specific_filter($params) {
 
                 if (! preg_match("/^\s*$/i", $value)) {
 
-                    # X: Not liking how I use is_int (what if the key is a string?)
+                    # X: Not liking how we use is_int (what if the key is a string?)
                     if (is_int(array_search($field, array_keys($columns[$t])))) {
 
                         return $textfield_tables[$t]["phases"];

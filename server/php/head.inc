@@ -38,7 +38,7 @@ $javascript = <<<EOT
 
             // alert("list[i] = " + arguments[i]);
 
-            // Aack! How do I check to see if the val is defined!
+            // Aack! How do we check to see if the val is defined!
             // The function dies if we try to disable a single undefined object
 
             if (undefined != arguments[i]) {
