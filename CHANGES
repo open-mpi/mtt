@@ -1,0 +1,6 @@
+To announce to OMPI core testers:
+
+- Default number of lines saved (for stdout and stderr) in phases is
+  100; it used to be 100. 
+- INI file used to have "separate_stdout_stderr" as a field; this has
+  been renamed to "merge_stdout_stderr".
