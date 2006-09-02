@@ -18,6 +18,8 @@
 #
 #
 
+include_once("$topdir/config.inc");
+
 # Setup db connection
 $dbname = isset($_GET['db'])   ? $_GET['db']   : "mtt";
 $user   = isset($_GET['user']) ? $_GET['user'] : "mtt";

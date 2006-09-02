@@ -18,12 +18,12 @@
 #
 #
 
-$topdir = "..";
+$topdir = ".";
 
-include_once("$topdir/includes/reporter.inc");
-include_once("$topdir/includes/database.inc");
-include_once("$topdir/includes/http.inc");
-include_once("$topdir/includes/html.inc");
+include_once("$topdir/reporter.inc");
+include_once("$topdir/database.inc");
+include_once("$topdir/http.inc");
+include_once("$topdir/html.inc");
 
 $tables = array(
     "once",

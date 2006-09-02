@@ -7,4 +7,37 @@
 #
 #
 
+# Additional phase-specific parameters that go in the linked table
+$config['details'] = array(
+    $level => array(
+        'runs' => array_merge(
+                        array( "test_command", "result_message",),
+                        $linked_stuff_top,
+                        $linked_stuff_bottom
+                    ),
+        'builds' => array_merge(
+                        array( "configure_arguments" ),
+                        $linked_stuff_top,
+                        $linked_stuff_bottom
+                    ),
+        'installs' => array_merge(
+                        array( "configure_arguments" ),
+                        $linked_stuff_top,
+                        $linked_stuff_bottom
+                    ),
+    ),
+);
+
+# Additional phase-specific parameters that go in the main table
+# Note: installs/builds have identical 'add_params', so sometimes
+# we will be able to merge the result sets of those two phases
+# The usage of these is *broken*
+$config['add_params'] = array(
+    $level => array (
+        'installs' => array("compiler_name","compiler_version"),
+        'builds'   => array("compiler_name","compiler_version"),
+        'runs'     => array("test_name", "test_np", "test_run_section_name"),
+    ),
+);
+
 ?>

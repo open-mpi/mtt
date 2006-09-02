@@ -21,19 +21,19 @@
 #
 
 # Set php trace levels
-if ($GLOBALS['verbose'])
+if (isset($GLOBALS['verbose']))
     error_reporting(E_ALL);
 else
     error_reporting(E_ERROR | E_WARNING | E_PARSE);
 
-$topdir = "..";
-include_once("$topdir/includes/reporter.inc");
-include_once("$topdir/includes/screen.inc");
-include_once("$topdir/includes/head.inc");
-include_once("$topdir/includes/http.inc");
-include_once("$topdir/includes/html.inc");
-include_once("$topdir/includes/config.inc");
-include_once("$topdir/includes/database.inc");
+$topdir = ".";
+include_once("$topdir/reporter.inc");
+include_once("$topdir/screen.inc");
+include_once("$topdir/head.inc");
+include_once("$topdir/http.inc");
+include_once("$topdir/html.inc");
+include_once("$topdir/config.inc");
+include_once("$topdir/database.inc");
 
 $GLOBALS['verbose'] = isset($_GET['verbose']) ? $_GET['verbose'] : 0;
 $GLOBALS['debug']   = isset($_GET['debug'])   ? $_GET['debug']   : 0;
