@@ -79,6 +79,7 @@ CREATE TABLE test_run (
 	test_run_id serial,
 	test_build_id --> refers to test_build table
 
+	variant smallint,
 	name character varying(64) NOT NULL,
 	command text NOT NULL,
 	np smallint,
