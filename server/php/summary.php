@@ -187,7 +187,7 @@ print <<<EOT
 <center>
 <table width='1%' rules='rows' border=2 cellpadding=10>
     <tr><td width='1%'>
-        <a href='$domain/mtt'><img src='open-mpi-logo.png' border=0></a>
+        <a href='$domain/mtt'><img src='$topdir/images/open-mpi-logo.png' border=0></a>
     <td width='1%'>
         <font size='+7'>Open&nbsp;MPI Test&nbsp;Results</font>
         <br>

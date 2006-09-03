@@ -19,7 +19,6 @@
 #
 
 $topdir = ".";
-
 include_once("$topdir/reporter.inc");
 include_once("$topdir/database.inc");
 include_once("$topdir/http.inc");
@@ -456,7 +455,7 @@ $query_screen .= "\n<tr>";
 $query_screen .= "\n<td bgcolor=$lllgray valign=center><input type='submit' name='go' value='Table'>";
 $query_screen .= "\n<td bgcolor=$lllgray valign=center><input type='reset' value='Reset'>";
 $query_screen .= "\n<td bgcolor=$lgray valign=center>";
-$query_screen .= "\n<a href='./reporter_help.html' class='lgray_ln' target=_blank>[Help]</a>";
+$query_screen .= "\n<a href='$topdir/html/reporter_help.html' class='lgray_ln' target=_blank>[Help]</a>";
 #$query_screen .= "\n<td bgcolor=$lllgray valign=center><input type='submit' value='Graph'>";
 $query_screen .= "\n</form>";
 $query_screen .= "\n</table>";
