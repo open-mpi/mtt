@@ -7,6 +7,21 @@
 #
 #
 
+# This var is a little silly since there is currently only one 'level' of
+# detail per invocation of this script, but maybe it will get used again
+# when/if we add a feature that breaks-up reports into seperate tables
+$level = -1;
+
+$linked_stuff_top = array(
+    "stdout",
+    "stderr",
+    "environment",
+);
+
+$linked_stuff_bottom = array(
+    "test_duration_interval",
+);
+
 # Additional phase-specific parameters that go in the linked table
 $config['details'] = array(
     $level => array(

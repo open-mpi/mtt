@@ -61,17 +61,19 @@ $html_head .= "\n</head>";
 
 print $html_head;
 
-$_GET['1-page'] = isset($_GET['1-page']) ? $_GET['1-page'] : 'on';
+$_GET['1-page'] = isset($_GET['1-page']) ? $_GET['1-page'] : 'off';
 
-# If no parameters passed in, show the query screen
-if (((! $_GET) and ! isset($_GET['just_results'])) or
+# If no parameter is passed in, show the query screen
+if (((! isset($_GET['go'])) and ! isset($_GET['just_results'])) or
     ($_GET['1-page'] == 'on')) {
 
     print dump_query_screen();
 }
 
-if (isset($_GET['go'])) {
-
+if (isset($_GET['just_results'])) {
+    print dump_results_only();
+}
+elseif (isset($_GET['go'])) {
     print dump_report();
 }
 

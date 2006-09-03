@@ -26,49 +26,28 @@
 #
 #
 
-#
-# todo:
-#
-# [ ] Create reporter.inc which will contain
-#     shared variables/functions for summary.php and reporter.php 
-#
+$topdir = ".";
+include_once("$topdir/curl_get.inc");
+include_once("$topdir/http.inc");
+include_once("$topdir/reporter.inc");
 
 # In case we're using this script from the command-line
-if ($argv) {
-    for ($i=1; $i<count($argv); $i++) {
-       $it = split("=",$argv[$i]);
-       $_GET[$it[0]] = $it[1];
-    }
-}
+if ($argv)
+    $_GET = getoptions($argv);
 
 $GLOBALS['verbose'] = isset($_GET['verbose']) ? $_GET['verbose'] : 0;
 $GLOBALS['debug']   = isset($_GET['debug'])   ? $_GET['debug']   : 0;
-$GLOBALS['res']     = 0;
 
-# Encode cgi param name prefixes as a means to slim down the query string
-# X: Encode cgi param field names
-$cgi_abbrevs = array(
-    'hidden_menufield' => 'hmef_',
-    'menufield'        => 'mef_',
-    'mainfield'        => 'maf_',
-    'textfield'        => 'tf_',
-    'filter_types'     => 'ft_',
-);
-
-$topdir = "/l/osl/www/www.open-mpi.org";
-include_once("$topdir/includes/curl_get.inc");
-
-$domain_en = 'http://www.open-mpi.org';
-$domain    = 'http://www.open-mpi.org';
-$domain    = "129.79.245.239";
-$dir       = '~em162155/test';
-$tool      = 'reporter.php';
-
+$domain       = 'http://www.open-mpi.org';
 $default_date = 'Yesterday';
+
+$self = $_SERVER['PHP_SELF'];
+$url  = preg_replace('/summary.php/', 'reporter.php', $self);
+$url  = "$domain$url";
 
 # Note: the ordering of this query string is irrelevant,
 # but be careful to not put a '&' after the opening '?'
-$url_template = "$domain/$dir/$tool" .  '?' .
+$url_template = $url .  '?' .
 
     # settings
     "&cgi=off" .
@@ -202,15 +181,13 @@ $config['description'] = array(
     "just_failures, second-by-second",
 );
 
-# var_dump_html("[main] config: ", $config);
-
 # Display webpage title
 $sp = '&nbsp;';
 print <<<EOT
 <center>
 <table width='1%' rules='rows' border=2 cellpadding=10>
     <tr><td width='1%'>
-        <a href='$domain_en/mtt'><img src='open-mpi-logo.png' border=0></a>
+        <a href='$domain/mtt'><img src='open-mpi-logo.png' border=0></a>
     <td width='1%'>
         <font size='+7'>Open&nbsp;MPI Test&nbsp;Results</font>
         <br>
@@ -239,7 +216,7 @@ for ($i = 0; $i < count($config['label']); $i++) {
     print "\n</font>";
 
     print "\n<br><font size='-1'>";
-    print "\n(" . get_query_string_param($config["by_atom"][$i]) . ")";
+    print "\n(" . get_query_string_param_value($config["by_atom"][$i]) . ")";
     print "\n</font>";
 
     if ($config["description"][$i]) {
@@ -248,26 +225,15 @@ for ($i = 0; $i < count($config['label']); $i++) {
         print "\n</font>";
     }
 
-    debug("\n<br>url: " . $url . "<br>");
+    debug("\n<br>url: <a href='" . $url . "'>\$url</a><br>");
 
     print "\n<br><br><br>" . do_curl_get($url);
 }
 
 exit;
 
-# Actually see the nice identation var_dump provides
-function var_dump_html($desc,$var) {
-    if ($GLOBALS['verbose'])
-        var_dump("\n<br><pre>$desc",$var,"</pre>");
-}
-
-function debug($str) {
-    if ($GLOBALS['debug'] or $GLOBALS['verbose'])
-        print("\n$str");
-}
-
-# Take "field as f", return f
-function get_query_string_param($str) {
+# Take "&param=val", return "val"
+function get_query_string_param_value($str) {
 
     if (preg_match("/\w+=(\w+)/i", $str, $m)) {
         return $m[1];

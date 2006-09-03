@@ -141,21 +141,6 @@ $translate_data_cell = array(
 
 $once_db_table = "once";
 
-# This var is a little silly since there is currently only one 'level' of
-# detail per invocation of this script, but maybe it will get used again
-# when/if we add a feature that breaks-up reports into seperate tables
-$level = -1;
-
-$linked_stuff_top = array(
-    "stdout",
-    "stderr",
-    "environment",
-);
-
-$linked_stuff_bottom = array(
-    "test_duration_interval",
-);
-
 # pg_query_ that returns a 1D list
 function pg_query_simple($cmd, $conn) {
 

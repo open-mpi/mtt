@@ -210,7 +210,6 @@ function dump_cgi_params_trimnulls($params) {
     foreach (array_keys($params) as $k) {
 
         # Only hash these textfield-filter_type pairs if BOTH are non-null
-        # X: textfield_ shouldn't be a magic string
         if (preg_match("/" . $cgi_abbrevs['textfield'] . "(\w+)|" .
                              $cgi_abbrevs['filter_types'] . "(\w+)/i", $k, $m)) {
 

@@ -428,7 +428,7 @@ $query_screen .= "\n";
 $query_screen .= "\n<body>";
 
 # 1-page option is initially spawning a new page, but shouldn't
-$query_screen .= "\n<form name=$form_id target=" . (($_GET['1-page'] == 'on') ? "_self" : "_self") . ">";
+$query_screen .= "\n<form name=$form_id target=" . (($_GET['1-page'] == 'on') ? "_self" : "_report") . ">";
 
 $query_screen .= carryover_cgi_params($_GET);
 

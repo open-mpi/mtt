@@ -403,8 +403,7 @@ if ($rows) {
 
 # This block should be useful for a customized report (e.g., summary.php)
 if (isset($_GET['just_results'])) {
-    $report .= $data_html_table;
-    exit;
+    $just_results = $data_html_table;
 }
 
 # Some basic info about this report's level-of-detail
@@ -465,6 +464,8 @@ if (! $rows) {
     $config['show'][$level] = null;
 }
 
+var_dump_html('config: ', $config);
+
 $report .= "\n<br><br><table border=1><tr><td bgcolor=$lgray><a href='" . $domain .
         $_SERVER['PHP_SELF'] . '?' .
         dump_cgi_params_trimnulls($_GET) .
@@ -473,9 +474,16 @@ $report .= "\n<br><br><table border=1><tr><td bgcolor=$lgray><a href='" . $domai
 
 pg_close();
 
+# Dump query description, results table, and link to query
 function dump_report() {
     global $report;
     return $report;
+}
+
+# Dump only the results table
+function dump_results_only() {
+    global $just_results;
+    return $just_results;
 }
 
 ?>
