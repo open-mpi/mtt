@@ -15,6 +15,20 @@ CREATE TABLE cluster (
        UNIQUE (os_name,os_version,platform_hardware,platform_type,platform_id)
 );
 
+DROP TABLE users;
+CREATE TABLE users (
+       users_id serial,
+       address character(64) NOT NULL,
+       gecos character(32) NOT NULL,
+);
+
+DROP TABLE cluster_owner;
+CREATE TABLE cluster_owner (
+       cluster_owner_id serial,
+       cluster_id integer, --> refers to cluster table
+       users_id integer --> refers to users table
+);
+
 -- Serial number used for individual MTT runs
 DROP SEQUENCE client_serial;
 CREATE SEQUENCE client_serial;
@@ -93,12 +107,12 @@ CREATE TABLE results (
 
 	environment text,
 	merge_stdout_stderr boolean,
-	stdout text, --> what's the largest text blob we can put in PG?  Rich says default might be 8k!
-	stderr text,
+	result_stdout text, --> what is the largest text blob we can put in PG?  Rich says default might be 8k!
+	result_stderr text,
 	start_timestamp timestamp without timezone,
 	stop_timestamp timestamp without timezone,
-	-- result value: 1=pass, 2=fail, 3=skipped, 4=timed out
-	result smallint,
 	-- do we want exit status?
 	exit_status smallint
+	-- result value: 1=pass, 2=fail, 3=skipped, 4=timed out
+	result smallint,
 };
