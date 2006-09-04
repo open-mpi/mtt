@@ -73,7 +73,6 @@ if ($agg_timestamp != "-")
     $cgi_selects = array($agg_timestamp_selects[$agg_timestamp]);
 
 $cgi_selects = array_merge($cgi_selects, get_select_fields($_GET));
-$cgi_selects = array_merge($cgi_selects, get_hidden_fields($_GET));
 
 # Add additional information if they select only a single phase
 
@@ -105,19 +104,6 @@ if (isset($config['show'][$level])) {
     $level_info .= "\n<tr>";
     $level_info .= "\n<td valign='top'>";
 }
-
-#
-# if (sizeof($config['suppress'][$level])) {
-#     foreach ($phases['per_script'] as $ph) {
-#         if (! $config['suppress'][$level][$ph])
-#             array_push($phases['per_level'], $ph);
-#     }
-# }
-
-# Push another field onto "select list" each iteration
-# (This line is the critical piece to the 'level' idea)
-# if ($params['all'])
-#     array_push($selects['per_script']['params'], array_shift($params['all']));
 
 $selects['per_level']['params'] = array();
 $selects['per_level']['results'] = array();
@@ -179,9 +165,9 @@ foreach ($phases['per_level'] as $phase) {
         );
 
     # Assemble GROUP BY and ORDER BY clauses.
-    # If we do an SQL string function, trim it to just the arg
-    # (groupbys and orderbys are the same lists as selects, without the string functions
-    # and result fields)
+    # If we do an SQL string function, trim it to just the arg (groupbys and
+    # orderbys are the same lists as selects, without the string functions and
+    # result fields)
     $groupbys = array();
     $orderbys = array();
 

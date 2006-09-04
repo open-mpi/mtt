@@ -14,7 +14,7 @@
 
 #
 #
-# Variables/Functions that map-to/operate-on HTTP constructs
+# Functions that operate-on HTTP constructs
 #   (pass $_GET or $_POST to them)
 #
 #
@@ -160,29 +160,6 @@ function get_select_fields($params) {
     return $selects;
 }
 
-# Return list of hidden field_ selects
-function get_hidden_fields($params) {
-
-    global $field_clauses;
-    global $cgi_abbrevs;
-
-    $selects = array();
-
-    foreach (array_keys($params) as $p) {
-
-        # '' equals false, right?
-        if (! $params[$p])
-            continue;
-
-        if (preg_match("/^" . $cgi_abbrevs['hidden_menufield'] . "(\w+)$/i", $p, $m)) {
-            $f = $m[1];
-            $clause = ($field_clauses[$f] ? $field_clauses[$f] : $f);
-            array_push($selects, strtolower($clause));
-        }
-    }
-    return $selects;
-}
-
 # Prints an HTML table of _GET and _POST vars
 function dump_cgi_params($params, $title) {
 
@@ -240,25 +217,5 @@ function is_starred($str) {
     return preg_match('/^\s*\*/',$str);
 }
 
-# Return list of phase specific fields for each phase
-# passed in
-function get_phase_specific_fields($phases) {
-
-    global $columns;
-    global $cgi_abbrevs;
-
-    $fields = array();
-
-    $field_types = array($cgi_abbrevs["textfield"], $cgi_abbrevs["filter_types"]);
-
-    foreach ($phases as $phase) {
-        foreach (array_keys($columns[$phase]) as $f) {
-            foreach ($field_types as $ft) {
-                array_push($fields, $ft . $f);
-            }
-        }
-    }
-    return $fields;
-}
 
 ?>

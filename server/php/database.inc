@@ -34,18 +34,102 @@ $phases['per_script'] = array(
     "runs",
 );
 
+$tables = array(
+    "once",
+    "general_a",
+    "general_b",
+);
 
+$Filters = "Filters";
+$textfield_tables = array(
+    "general_a" => array( "label" => null,
+                          "phases" => array( "runs","builds","installs" ),
+                   ),
+    "runs"      => array( "label" => "Test Run $Filters",
+                          "phases" => array( "runs" ),
+                   ),
+    "general_b" => array( "label" => "MPI Install/Test Build $Filters",
+                          "phases" => array( "builds","installs" ),
+                   ),
+);
 
+$string_filter_types = array("contains","does not contain", "begins with", "ends with");
+$numeric_filter_types = array("equals","less than","greater than");
+
+$columns = array();
+
+# We'll define these fields instead of fetch from information_schema
+# so that we can order/process/categorize them how we want
+$columns["general_a"] = array(
+    "stderr"                   => $string_filter_types,
+    "stdout"                   => $string_filter_types,
+    "environment"              => $string_filter_types,
+    "configure_arguments"      => $string_filter_types,
+    "result_message"           => $string_filter_types,
+    "mpi_get_section_name"     => $string_filter_types,
+    "mpi_install_section_name" => $string_filter_types,
+    #"vpath_mode"              => $string_filter_types,
+    #"start_test_timestamp"    => $string_filter_types,
+    #"submit_test_timestamp"   => $string_filter_types,
+    #"test_duration_interval"  => $string_filter_types,
+    #"merge_stdout_stderr"     => $string_filter_types,
+    #"mpi_details"             => $string_filter_types,
+);
+$columns["general_b"] = array(
+    "compiler_name"    => $string_filter_types,
+    "compiler_version" => $string_filter_types,
+);
+
+$columns["advanced"] = array(
+    "mpi_details"               => $string_filter_types,
+    "merge_stdout_stderr"       => $string_filter_types,
+    "vpath_mode"                => $string_filter_types,
+    "start_test_timestamp"      => $string_filter_types,
+    "submit_test_timestamp"     => $string_filter_types,
+    "test_duration_interval"    => $string_filter_types,
+    #"result_message"           => $string_filter_types,
+    #"environment"              => $string_filter_types,
+    #"configure_arguments"      => $string_filter_types,
+    #"mpi_get_section_name"     => $string_filter_types,
+    #"mpi_install_section_name" => $string_filter_types,
+);
+
+$cluster_field =
+    "('<font size=-2>' || platform_id || '<br>' || hostname || '</font>') as cluster";
+
+$columns['once'] = array(
+    "platform_hardware" => $string_filter_types,
+    "os_name"           => $string_filter_types,
+    "os_version"        => $string_filter_types,
+    "mpi_name"          => $string_filter_types,
+    "mpi_version"       => $string_filter_types,
+
+    "$cluster_field"    => $string_filter_types,
+
+    #"hostname"         => $string_filter_types,
+    #"platform_type"    => $string_filter_types,
+    #"platform_id"      => $string_filter_types,
+);
+
+$columns["runs"] = array(
+    "test_name"               => $string_filter_types,
+    "test_command"            => $string_filter_types,
+    "test_np"                 => $numeric_filter_types,
+    "test_build_section_name" => $string_filter_types,
+    "test_run_section_name"   => $string_filter_types,
+);
+
+$columns["installs"] = 
+    $columns["general_b"];
+$columns["builds"] = array_merge(
+    array("test_build_section_name" => $string_filter_types),
+    array($columns["general_b"])
+);
 $br = " ";
 $phase_labels = array(
     "installs" => "MPI" . $br . "Install",
     "builds"   => "Test" . $br . "Build",
     "runs"     => "Test" . $br . "Run",
-);
-# Corresponding db tables for "MPI Install", "Test Build", and "Test Run" phases
-$atoms = array(
-    "case",
-    "run",
 );
 
 # Corresponding db tables for "MPI Install", "Test Build", and "Test Run" phases
@@ -60,9 +144,6 @@ $results_types = array(
 
 # phase => array(fields belonging to phase)
 
-$cluster_field =
-    "('<font size=-2>' || platform_id || '<br>' || hostname || '</font>') as cluster";
-
 $field_clauses = array('cluster' => $cluster_field);
 
 # run-key definition
@@ -71,6 +152,101 @@ $fields_run_key = array(
     "start_run_timestamp",
 );
 
+# Gather selectable menu items
+
+# Global timestamp
+# X: To avoid conflicting with a 'by_run' query, we use _test_timestamp
+#    and not run_timestamp. We may want to allow for either.
+$timestamp = 'start_test_timestamp';
+$main_menu[$timestamp]["options"] = array(
+    "*Today",
+    "Since Yesterday",
+);
+
+$i = 0;
+foreach (array_keys($words_to_numerals) as $n) {
+    if ($i++ > 5)
+        break;
+    array_push($main_menu[$timestamp]["options"], "Past $n Days");
+}
+$i = 0;
+foreach (array_keys($words_to_numerals) as $n) {
+    if ($i++ > 5)
+        break;
+    array_push($main_menu[$timestamp]["options"], "Past $n Weeks");
+}
+$i = 0;
+foreach (array_keys($words_to_numerals) as $n) {
+    if ($i++ > 4)
+        break;
+    array_push($main_menu[$timestamp]["options"], "Past $n Months");
+}
+array_push($main_menu[$timestamp]["options"], $All);
+
+# Timestamp is an oddball field, in that it has more than one
+# way to aggregate
+# X: Add week-by-week
+$agg_timestamp_selects = array(
+    "*-"               => null,
+    "Month-by-Month"   => "substring($timestamp from 0 for 8) as $timestamp",
+    "Day-by-Day"       => "substring($timestamp from 0 for 11) as $timestamp",
+    "Hour-by-Hour"     => "substring($timestamp from 0 for 14) || ':00' as $timestamp",
+    "Minute-by-Minute" => "substring($timestamp from 0 for 17) as $timestamp",
+    "Second-by-Second" => $timestamp,
+);
+
+$main_menu["agg_timestamp"]["options"] = array_keys($agg_timestamp_selects);
+
+# Note: 'phase' is a special key in that it is not a field in the db
+$main_menu["phase"]["options"] = array(
+    $All,
+    "installs",
+    "builds",
+    "runs",
+);
+
+# X: This javascript is *broken* due to undefined tf_0 and ft_0 fields
+# X: Loop through elems in HTML 'name' attribute, instead of this absurd
+#    get_phase_specific_fields function
+#
+# Add some javascript actions for this menu (gray out appropriate
+# phase-specific fields)
+$main_menu["phase"]["javascript"] = array(
+    # $All
+    "enable(" . join(",", get_phase_specific_fields(array("installs","builds","runs"))) . ");",
+    # installs
+    "disable(" . join(",", get_phase_specific_fields(array("runs"))) . ");" .
+    "enable(" . join(",", get_phase_specific_fields(array("installs"))) . ");",
+    # builds
+    "disable(" . join(",", get_phase_specific_fields(array("runs"))) . ");" .
+    "enable(" . join(",", get_phase_specific_fields(array("builds"))) . ");",
+    # runs
+    "disable(" . join(",", get_phase_specific_fields(array("installs","builds"))) . ");" .
+    "enable(" . join(",", get_phase_specific_fields(array("runs"))) . ");",
+);
+
+$main_menu["success"]["options"] = array(
+    $All,
+    "Pass",
+    "Fail",
+);
+
+if (! ($conn = pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass")))
+    exit_("<br><b><i>Could not connect to database server.</i></b>");
+
+$menu = array();
+$menu = populate_menu(array_keys($columns["once"]), "once");
+
+pg_close();
+
+$by_atoms = array(
+    "*by_test_case" => "By test case",
+    "by_test_run" => "By test run",
+);
+
+$domain  = "http://www.open-mpi.org";
+
+$client = "MTT";
 # Construct boolean-to-string casts for pass/fail (t/f) columns
 # We differentiate between _case fails and _run fails
 # A case is the single atomic test case (e.g., gmake foo, cc foo, or
@@ -173,6 +349,27 @@ function pg_query_($cmd, $conn) {
         debug("\n<br>postgres: " . pg_last_error() . "\n" . pg_result_error());
     }
     return $rows;
+}
+
+# Return list of phase specific fields for each phase
+# passed in
+function get_phase_specific_fields($phases) {
+
+    global $columns;
+    global $cgi_abbrevs;
+
+    $fields = array();
+
+    $field_types = array($cgi_abbrevs["textfield"], $cgi_abbrevs["filter_types"]);
+
+    foreach ($phases as $phase) {
+        foreach (array_keys($columns[$phase]) as $f) {
+            foreach ($field_types as $ft) {
+                array_push($fields, $ft . $f);
+            }
+        }
+    }
+    return $fields;
 }
 
 # Take a list of phases and the type of atom, and return a list of result
@@ -365,6 +562,36 @@ function sql_to_en($str) {
     }
 
     return $english;
+}
+
+function populate_menu($list, $table) {
+
+    global $conn;
+
+    foreach ($list as $field) {
+
+        if (preg_match("/timestamp/i", $field)) {
+            $clause = "substring($field from 0 for 11) as $field";
+        } else {
+            $clause = $field;
+        }
+
+        if (isset($_GET['sql']))
+            if ($_GET['sql'] == 'on')
+                print("\n<br>SQL: <pre>" . html_to_txt($cmd) . "</pre>");
+
+        $alias = get_as_alias($field);
+
+        $cmd = "SELECT $clause FROM $table " .
+            "GROUP BY $alias " .
+            "ORDER BY $alias ;";
+
+        $rows = array_map('html_to_txt2', pg_query_simple($cmd, $conn));
+
+        $menu[$alias] = array();
+        $menu[$alias] = $rows;
+    }
+    return $menu;
 }
 
 ?>

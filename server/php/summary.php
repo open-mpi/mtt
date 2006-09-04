@@ -146,6 +146,8 @@ $config['menufields'] = array(
     $menufields,
 );
 
+# "hidden" in the sense that these param(s) are not selectable through a
+# browser
 $config['hiddens'] = array(
     "",
     "",
