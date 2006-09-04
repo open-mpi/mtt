@@ -95,7 +95,7 @@ $columns["advanced"] = array(
 );
 
 $cluster_field =
-    "('<font size=-2>' || platform_id || '<br>' || hostname || '</font>') as cluster";
+    "platform_id as cluster";
 
 $columns['once'] = array(
     "platform_hardware" => $string_filter_types,
@@ -415,14 +415,14 @@ function get_date_filter($filter) {
     $sep = '[\s\+]';
 
     # (Currently, we're only doing all-levels filtering on timestamp)
-    if (@preg_match("/yesterday/i", $filter, $m)) {
+    if (preg_match("/yesterday/i", $filter, $m)) {
         array_push($filters, "start_test_timestamp > 'yesterday'");
 
     }
-    elseif (@preg_match("/today/i", $filter, $m)) {
+    elseif (preg_match("/today/i", $filter, $m)) {
         array_push($filters, "start_test_timestamp > date_trunc('day', now())");
     }
-    elseif (@preg_match("/past$sep*(\w+)$sep*(\w+)/i", $filter, $m)) {
+    elseif (preg_match("/past$sep*(\w+)$sep*(\w+)/i", $filter, $m)) {
         array_push($filters, "start_test_timestamp > now() - interval '" .
                     $words_to_numerals[$m[1]] . " " . $m[2] . "'");
 
@@ -433,7 +433,7 @@ function get_date_filter($filter) {
 # Take "field as f", return f
 function get_as_alias($str) {
 
-    if (@preg_match("/\s+as\s+(\w+)/i", $str, $m)) {
+    if (preg_match("/\s+as\s+(\w+)/i", $str, $m)) {
         return $m[1];
     }
     else {
@@ -469,7 +469,7 @@ function sql_to_en($str) {
 
     $english = "";
 
-    if (@preg_match("/(\w+_timestamp)/i", $str, $m)) {
+    if (preg_match("/(\w+_timestamp)/i", $str, $m)) {
 
         # E.g., start_test_timestamp > now() - interval '3 Days'
         #       start_test_timestamp > date_trunc('day', now())

@@ -175,7 +175,7 @@ foreach ($phases['per_level'] as $phase) {
     foreach (array_unique($selects['per_phase']['all']) as $s) {
 
         # Do not group or sort on these two aggregates
-        if (@preg_match("/test_pass|success/i", $s))
+        if (preg_match("/test_pass|success/i", $s))
             continue;
 
         $s = get_as_alias($s);
@@ -354,10 +354,10 @@ if ($rows) {
             $details_html_table .= "</table></body>";
         }
 
-        # Translate_data_cell result fields
+        # translate_data_cell result fields
         for ($i = 0; $i < sizeof($row); $i++) {
-            $row[$i] =
-                (! @empty($translate_data_cell[$row[$i]])) ? $translate_data_cell[$row[$i]] : $row[$i];
+            $row[$i] = 
+                (! empty($translate_data_cell[$row[$i]])) ? $translate_data_cell[$row[$i]] : $row[$i];
         }
 
         # 'pass/fail' are always in the far right cols
