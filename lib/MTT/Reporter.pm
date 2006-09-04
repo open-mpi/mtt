@@ -63,6 +63,7 @@ sub _fill_cache {
     $cache->{os_version} = `$whatami -r`;
     chomp($cache->{os_version});
     $cache->{hostname} = $hostname;
+    $cache->{submitting_local_username} = getpwuid($<);
 }
 
 #--------------------------------------------------------------------------

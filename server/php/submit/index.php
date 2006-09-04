@@ -1,20 +1,13 @@
 <?php
+# Copyright (c) 2006 Cisco Systems, Inc.  All rights reserved.
 
 $dbname = isset($_GET['db']) ? $_GET['db'] : "mtt";
 $user   = "mtt";
 $pass   = "3o4m5p6i";
 
-$GLOBALS['conn'] = pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass");
-
-# TODO: Take these in from _POST
-$GLOBALS['debug'] = 0;
-$GLOBALS['verbose'] = 0;
-$GLOBALS['nosql'] = 0;
-
-$once['col'] = array();
-$mult['col'] = array();
-$once['val'] = array();
-$mult['val'] = array();
+$GLOBALS['debug'] = isset($_POST['debug']) ? $_POST['debug'] : 0;
+$GLOBALS['verbose'] = isset($_POST['verbose']) ? $_POST['verbose'] : 0;
+$GLOBALS['nosql'] = isset($_POST['nosql']) ? $_POST['nosql'] : 0;
 
 # if the PING field is set, then this was just a test.  Exit successfully.
 
@@ -23,190 +16,213 @@ if (isset($_POST['PING'])) {
     exit(0);
 }
 
-# PBINPUT - big variable, of data for perfbase to parse.
-# MTTVERSION_MAJOR - Major revision of MTT, must match server version
-# MTTVERSION_MINOR - Minor revision of MTT
+# mtt_version_major - Major revision of MTT, must match server version
+# mtt_version_minor - Minor revision of MTT
 
-if (isset($_POST['PBINPUT'])) {
-    $lines = @explode("\n", $_POST['PBINPUT']);
-}
-else {
-    mtt_error("", "\nNo PBINPUT specified.");
+# If these are not set, then exit.
+
+if (! isset($_POST['mtt_version_major']) ||
+    ! isset($_POST['mtt_version_minor'])) {
+    mtt_error(400, "\nClient version not specified.");
     exit(1);
 }
 
 # The following lists should be grabbed from the database
 
-$multiple_params = array(
-    "compiler_name",
-    "compiler_version",
-    "configure_arguments",
-    "environment",
-    "merge_stdout_stderr",
-    "mpi_details",
-    "mpi_get_section_name",
-    "mpi_install_section_name",
-    "result_message",
-    "stderr",
-    "stdout",
-    "\\w+_timestamp",
-    "\\w+_interval",
-    "success",
-    "test_build_section_name",
-    "test_command",
-    "test_message",
-    "test_name",
-    "test_np",
-    "test_pass",
-    "test_run_section_name",
-    "vpath_mode",
-    #'\w+',       # wildcard unknown multiple param
-);
+# Who is submitting?
 
-$once_params = array(
-    "mtt_version_major",
-    "mtt_version_minor",
-    "platform_hardware",
-    "platform_type",
-    "platform_id",
-    "os_name",
-    "os_version",
-    "hostname",
-    "mpi_name",
-    "mpi_version",
-);
+# JMS: to be enabled later; but cannot write to $_POST, so will need to 
+# do this differently.
+#$_POST[submitting_http_username] = isset($_SERVER[PHP_AUTH_USER]) ?
+#    $_SERVER[PHP_AUTH_USER] : "anonymous";
 
-$i = 0;
+# What phase are we doing?
 
-# Parse the input from the MTT client
-while ($lines[$i]) {
+if (0 == strcasecmp($_POST['phase'], "test run")) {
+    process_test_run();
+} else if (0 == strcasecmp($_POST['phase'], "test build")) {
+    process_test_build();
+} else if (0 == strcasecmp($_POST['phase'], "mpi install")) {
+    process_mpi_install();
+} else {
+    print "ERROR: Unknown phase! ($_POST[phase])<br>\n";
+    mtt_error(400, "\nNo phase given, so I don't know which table to direct this data to.");
+    exit(1);
+}
 
-    $l = $lines[$i];
+# All done
 
-    if (@preg_match("/^(phase): (.*)$/", $l, $m)) {
+pg_close();
+exit(0);
 
-        $phase = $m[2];
+######################################################################
 
-        # Add checks for the existence of these tables
-        if (@preg_match("/test.*run/i", $phase, $m))
-            $table = "runs";
-        elseif (@preg_match("/test.*build/i", $phase, $m))
-            $table = "builds";
-        elseif (@preg_match("/mpi.*install/i", $phase, $m))
-            $table = "installs";
+function get_table_fields($table_name) {
+    $sql_cmd = "SELECT column_name FROM information_schema.columns WHERE table_name = '$table_name'";
 
-        $once_table = "once";
+    do_pg_connect();
+    debug("\nSQL: $sql_cmd\n");
+    if (! ($result = pg_query($sql_cmd))) {
+        mtt_error(100, "\npostgres: " . pg_last_error() . "\n" . 
+                  pg_result_error());
     }
-    elseif (@preg_match("/^(perfbase_xml):\s+(.*)$/", $l, $m)) {
-    
-        # ignore these param(s) for now
+    $max = pg_num_rows($result);
+    for ($i = 0; $i < $max; ++$i) {
+        $row = pg_fetch_array($result, $i, PGSQL_NUM);
+        $rows[] = $row[0];
     }
-    elseif (@preg_match("/^(timed_out):\s+(.*)$/", $l, $m)) {
-    
-        # ignore these param(s) for now
-    }
-    elseif (@preg_match("/^(skipped):\s+(.*)$/", $l, $m)) {
-    
-        # ignore these param(s) for now
-    }
-    # Take in once params
-    elseif (@preg_match("/^(" . join('|',$once_params) . "):\s*(.*)$/", $l, $m)) {
+    return $rows;
+}
 
-        array_push($once['col'], $m[1]);
-        array_push($once['val'], $m[2]);
-    }
+######################################################################
 
-    # Any multi-line data of the form _BEGIN/_END
-    elseif (@preg_match("/^.*(" . join('|',$multiple_params) . ")_BEGIN$/i", $l, $m)) {
-        
-        array_push($mult['col'], strtolower($m[1]));
-        $inp = array();
+function set_once_data() {
+    global $_POST;
 
-        while (! @preg_match('/_END$/', $lines[$i++])) {
-            array_push($inp, $lines[$i]);
+    $once_params = get_table_fields("once");
+
+    # See if this data is already in the table
+    $sql_cmd = "SELECT run_index FROM once WHERE ";
+    $first = true;
+    foreach ($once_params as $field) {
+        if (isset($_POST[$field])) {
+            $value = $_POST[$field];
+            if (preg_match("/_timestamp/", $field)) {
+                $value = unix2sql_time($value);
+            }
+            $suffix = $field . " = '" . pg_escape_string($value) . "'";
+            if (! $first) {
+                $sql_cmd .= " AND $suffix";
+            } else {
+                $sql_cmd .= $suffix;
+                $first = false;
+            }
         }
-        array_pop($inp);
-        array_push($mult['val'], join("\n", $inp));
-        $i--;   # in case the next field is a multi-line
     }
-
-    # Anything else must be a single-line multiple-param
-    elseif (@preg_match("/^(\S+):\s*(.*)$/", $l, $m)) {
-        
-        $m1 = $m[1];
-        $m2 = $m[2];
-
-        if (@preg_match("/timestamp/", $l))
-            $m2 = unix2sql_time($m2);
-            
-        array_push($mult['col'], $m1);
-        array_push($mult['val'], $m2);
-    }
-    else {
-        print "\nNot adding '$lines[$i]' to the $dbname database.";
-    }
-    $i++;
-}
-
-#var_dump("mult = ",$mult);
-#var_dump("once = ",$once);
-
-if (! $table)
-    mtt_error("\nNo phase given, so I don't know which table to direct this data to.");
-
-# Check to see if this config is in the db
-$i = 0;
-$found_match = null;
-$sql_cmd = "SELECT run_index FROM $once_table WHERE ";
-foreach ($once['col'] as $col) {
-    $sql_cmd .= "$col = '" . $once['val'][$i++] . "' AND ";
-}
-
-$sql_cmd = @preg_replace('/\s*AND\s*$/',';',$sql_cmd);
-$idx = simple_select($sql_cmd);
-
-# If there is no matching config in the db - grab the latest run_index,
-# increment it, and assign it to this config
-if ($idx == null) {
-
-    $sql_cmd = "SELECT (run_index + 1) FROM $once_table ORDER BY run_index DESC LIMIT 1;";
     $idx = simple_select($sql_cmd);
+    
+    # If there is no matching config in the db - grab the latest run_index,
+    # increment it, and assign it to this config
+    # JMS: THIS IS A RACE CONDITION THAT WILL BE ADDRESSED BY TICKET #51
+    $found_match = false;
+    if ($idx == null) {
+        $sql_cmd = "SELECT (run_index + 1) FROM once ORDER BY run_index DESC LIMIT 1;";
+        $idx = simple_select($sql_cmd);
+    } else {
+        $found_match = true;
+    }
+    # this is the first config to be inserted
+    if (! $idx) {
+        $idx = 0;
+    }
+
+    # If it was not already in the table, insert it
+    if (! $found_match) {
+        $sql_cmd = "INSERT INTO once (";
+        $values = ") VALUES (";
+        $first = true;
+        foreach ($once_params as $field) {
+            if (isset($_POST[$field])) {
+                $value = $_POST[$field];
+                if (preg_match("/_timestamp/", $field)) {
+                    $value = unix2sql_time($value);
+                }
+                if (! $first) {
+                    $sql_cmd .= ",";
+                    $values .= ",";
+                }
+                $sql_cmd .= $field;
+                $values .= "'" . pg_escape_string($value) . "'";
+                $first = false;
+            }
+        }
+
+        $sql_cmd = "$sql_cmd, run_index$values, $idx)";
+        do_pg_query($sql_cmd);
+    }
+
+    # Return the run index
+    return $idx;
 }
-else {
-    $found_match = 1;
+
+######################################################################
+
+function set_multiple_data($run_idx, $table_name) {
+    global $_POST;
+
+    $db_fields = get_table_fields($table_name);
+    $submitted_fields = explode(",", $_POST['fields']);
+    foreach ($submitted_fields as $s_field) {
+        foreach ($db_fields as $db_field) {
+            if (0 == strcmp($s_field, $db_field)) {
+                $good_fields[] = $s_field;
+            }
+        }
+    }
+
+    $n = $_POST['number_of_results'];
+    for ($i = 1; $i <= $n; ++$i) {
+        $sql_cmd = "INSERT INTO $table_name (run_index, ";
+        $values = ") VALUES ('$run_idx',";
+        $first = true;
+        foreach ($good_fields as $field) {
+            $name = $field . "_" . $i;
+            if (isset($_POST[$name])) {
+                $v = $_POST[$name];
+            } else {
+                $v = "";
+            }
+            if (preg_match("/_timestamp/", $field)) {
+                $v = unix2sql_time($v);
+            }
+            if (! $first) {
+                $sql_cmd .= ",";
+                $values .= ",";
+            }
+            $sql_cmd .= $field;
+            $values .= "'" . pg_escape_string($_POST[$name]) . "'";
+            $first = false;
+        }
+
+        $sql_cmd .= $values . ")";
+        do_pg_query($sql_cmd);
+    }
 }
 
-# this is the first config to be inserted
-if (! $idx)
-    $idx = 0;
+######################################################################
 
-# Insert the new config
-array_push($once['col'], "run_index");
-array_push($once['val'], $idx);
-array_push($mult['col'], "run_index");
-array_push($mult['val'], $idx);
-
-if (! $found_match) {
-    $sql_cmd = "INSERT INTO $once_table (" . join(",", $once['col']) .
-               ") VALUES (" . join(",", array_map("quote", $once['val'])) . ");";
-    pg_query_($sql_cmd);
+function process_test_run() {
+    $run_idx = set_once_data();
+    set_multiple_data($run_idx, "runs");
 }
 
-# Insert the data row for this test case
-$sql_cmd = "INSERT INTO $table (" . join(",", $mult['col']) . 
-           ") VALUES (" . join(",", array_map("quote", $mult['val'])) . ");";
-pg_query_($sql_cmd);
+function process_test_build() {
+    $run_idx = set_once_data();
+    set_multiple_data($run_idx, "builds");
+}
 
-print "\n\n";
+function process_mpi_install() {
+    $run_idx = set_once_data();
+    set_multiple_data($run_idx, "installs");
+}
 
-@pg_close();
-exit;
+######################################################################
 
-# ---
+function do_pg_connect() {
+    global $dbname;
+    global $user;
+    global $pass;
+    static $connected = false;
+
+    if (!$connected) {
+        $GLOBALS['conn'] = pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass");
+        $connected = true;
+    }
+}
 
 # select a field in the db and return it
 function simple_select($cmd) {
-
+    do_pg_connect();
     $fetched = null;
 
     debug("\nSQL: $cmd");
@@ -217,9 +233,10 @@ function simple_select($cmd) {
     return $fetched;
 }
 
-function pg_query_($cmd) {
+function do_pg_query($cmd) {
+    do_pg_connect();
 
-    debug("\nSQL: $cmd");
+    debug("\nSQL: $cmd\n");
     if (! ($db_res = pg_query($cmd))) {
         debug("\npostgres: " . pg_last_error() . "\n" . pg_result_error());
     }
@@ -230,9 +247,7 @@ function unix2sql_time($str) {
     return @preg_replace('/(Mon|Tue|Wed|Thu|Fri|Sat|Sun) /','',$str);
 }
 
-function quote($str) {
-    return "'" . $str . "'";
-}
+######################################################################
 
 # Function to reporting errors back to the client
 function mtt_error($status, $str) {
@@ -245,13 +260,14 @@ function mtt_error($status, $str) {
     exit(0);
 }
 
-function debug($arg) {
-    if (! $GLOBALS['verbose'] and ! $GLOBALS['debug'] and 
-        (!isset($_GET['debug']) or ! $_GET['debug']))
-        return;
+######################################################################
 
-    if (is_string($arg))
-        print("\n$arg");
-    else
-        var_dump("\n$arg");
+function debug($arg) {
+    if ($GLOBALS['debug'] || $GLOBALS['verbose']) {
+        if (is_string($arg)) {
+            print("\n$arg");
+        } else {
+            print_r("\n$arg");
+        }
+    }
 }

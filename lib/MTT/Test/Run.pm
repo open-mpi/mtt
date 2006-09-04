@@ -411,8 +411,8 @@ sub _run_one_test {
         $want_output = $run->{save_output_on_pass};
     }
     if ($want_output) {
-        $report->{test_stdout} = $x->{stdout};
-        $report->{test_stderr} = $x->{stderr};
+        $report->{stdout} = $x->{stdout};
+        $report->{stderr} = $x->{stderr};
     }
     $MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$test_np}->{$cmd} = $report;
     MTT::Test::SaveRuns($top_dir);

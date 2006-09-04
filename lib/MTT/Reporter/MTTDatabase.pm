@@ -116,12 +116,6 @@ sub Init {
 
     Debug("MTTDatabase testing submit URL with a ping...\n");
     my $form = {
-        # Version number is also submitted as part of the HTTP form so
-        # that the server can check it directly (without understanding
-        # the mttdatabase XML).
-
-        MTTVERSION_MAJOR => $MTT::Version::Major,
-        MTTVERSION_MINOR => $MTT::Version::Minor,
         PING => 1,
     };
     my $req = POST ($url, $form);
@@ -175,106 +169,142 @@ sub Submit {
     my $successes = 0;
     my @success_outputs;
     my $fails = 0;
-    my @fail_reasons;
+    my @fail_outputs;
+    my $num_results = 0;
 
+    # Get a bunch of information about this host
+    my $id = MTT::Reporter::GetID();
+
+    # Make a default form that will be used to seed all the forms that
+    # will be sent
+    my $default_form = {
+        mtt_version_major => $MTT::Version::Major,
+        mtt_version_minor => $MTT::Version::Minor,
+    };
+    foreach my $k (keys %{$id}) {
+        $default_form->{$k} = $id->{$k};
+    }
+
+    # Now iterate through all the records that were given to submit
     foreach my $phase (keys(%$entries)) {
         my $phase_obj = $entries->{$phase};
 
         foreach my $section (keys(%$phase_obj)) {
             my $section_obj = $phase_obj->{$section};
 
-            foreach my $report_original (@$section_obj) {
-                # Ensure to do a deep copy of the report (vs. just
-                # copying the reference) because we want to locally
-                # change some values
-                my $report;
-                %$report = %{$report_original};
+            # Each section of a phase gets its own report to the
+            # database.  Make a deep copy of the default form to start
+            # with.
+            my $form;
+            %$form = %{$default_form};
 
-                $report->{platform_id} = $platform;
-                my $xml = $report->{perfbase_xml};
-                if ($xml) {
+            # How many results are we submitting?
+            $form->{number_of_results} = $#{$section_obj} + 1;
+            $form->{platform_id} = $platform;
 
-                    # Add our version number into the report; saved
-                    # for posterity with the results.
-
-                    $report->{mtt_version_major} = $MTT::Version::Major;
-                    $report->{mtt_version_minor} = $MTT::Version::Minor;
-
-                    # Perbase doesn't seem to understand epoch
-                    # timestamps.  So go find any field that has the
-                    # word "timestamp" in it and convert it to GMT
-                    # ctime.
-                    foreach my $key (keys(%$report)) {
-                        if ($key =~ /timestamp/ && $report->{$key} =~ /\d+/) {
-                            $report->{$key} = gmtime($report->{$key});
-                        }
-                    }
-
-                    # Make a big string.  We only need to escape the
-                    # use of '.
-                    my $str = MTT::Reporter::MakeReportString($report, ": ");
-                    $str =~ s/'/\\'/g;
-
-                    # Make the string to send, using ": " as the
-                    # delimiter (this is important -- the server-side
-                    # XML files are setup to use these ***2***
-                    # characters as the delimiter # between the field
-                    # and the data
-                    my $form = {
-                        # Version number is also submitted as part of
-                        # the HTTP form so that the server can check
-                        # it directly (without understanding the
-                        # mttdatabase XML).
-
-                        MTTVERSION_MAJOR => $MTT::Version::Major,
-                        MTTVERSION_MINOR => $MTT::Version::Minor,
-                        PBINPUT => $str,
-                        PBXML => $xml,
-                    };
-                    
-                    if ($url) {
-                        Debug("Submitting to MTTDatabase...\n");
-                        my $req = POST ($url, $form);
-                        $req->authorization_basic($username, $password);
-                        my $response = $ua->request($req);
-                        if ($response->is_success()) {
-                            ++$successes;
-                            push(@success_outputs, $response->content);
-                        } else {
-                            Verbose(">> Failed to report to MTTDatabase: " .
-                                    $response->status_line . "\n" . $response->content);
-                        }
-                        Debug("MTTDatabase submit complete\n");
-                    }
-
-                    if ($debug_filename) {
-                        # Write out what we *would* have sent via HTTP to a
-                        # file
-                        
-                        my $f = "$debug_filename.$debug_index.txt";
-                        ++$debug_index;
-                        Debug("Writing to MTTDatabase debug file: $f\n");
-                        open OUT, ">$f" || die "Could not open MTTDatabase debug output file";
-                        print OUT Dumper($form);
-                        close OUT;
-                        Debug("Debug MTTDatabase file write complete\n");
-
-                        ++$successes;
-                        push(@success_outputs, "Wrote to file $f\n");
-                    }
-                } else {
-                    Warning("No perfbase_xml field in the INI specification; skipping MTTDatabase reporting!\n");
+            # First, go through and union all the field names to come
+            # up with a comprehensive list of fields that we're
+            # submitting
+            my $fields;
+            foreach my $result (@$section_obj) {
+                foreach my $key (keys(%$result)) {
+                    $fields->{$key} = 1;
                 }
+            }
+            $form->{fields} = join(',', sort(keys(%$fields)));
+            # JMS: Current brokenness on the server's db scehema:
+            # these fields are recorded per result rather than in the
+            # "once" table.
+            $form->{fields} .= ",start_run_timestamp,submit_test_timestamp";
+            $form->{phase} = $phase;
+
+            # Now go through and actually attach all the result to
+            # fields in the form
+            my $count = 1;
+            foreach my $result (@$section_obj) {
+
+                # Go through all the keys in the results
+                foreach my $key (keys(%$result)) {
+                    # If the field that has the word "timestamp" in it
+                    # and convert it to GMT ctime.
+                    my $name = $key . "_" . $count;
+                    if ($key =~ /timestamp/ && $result->{$key} =~ /\d+/) {
+                        $form->{$name} = gmtime($result->{$key});
+                    } 
+
+                    # We can skip the phase key because it's already
+                    # in the top.  Also skip the perfbase_xml field,
+                    # too -- we'll come back to performance results
+                    # someday.
+                    elsif ($key eq "phase" || $key eq "perfbase_xml") {
+                        next;
+                    }
+
+                    # mpi_name and mpi_version are currently submitted
+                    # in the common block at the top of the form
+                    # because they're currently in the "once" table on
+                    # the server.  This will eventually be fixed.
+                    elsif($key eq "mpi_name" || $key eq "mpi_version") {
+                        $form->{$key} = $result->{key};
+                    }
+
+                    # Otherwise, just add it unmodified to the form
+                    else {
+                        $form->{$name} = $result->{$key};
+                    }
+                }
+
+                # Some other brokenness with the current schema on the
+                # server: these fields are recorded with each entry
+                # rather than in the once table.  This will also
+                # someday be fixed.
+                my $name = "start_run_timestamp_$count";
+                $form->{$name} = $form->{start_run_timestamp};
+                $name = "submit_test_timestamp_$count";
+                $form->{$name} = $form->{submit_test_timestamp};
+
+                # Increment and repeat for all results
+                ++$count;
+            }
+
+            Debug("Submitting to MTTDatabase...\n");
+            my $req = POST ($url, $form);
+            $req->authorization_basic($username, $password);
+            my $response = $ua->request($req);
+            if ($response->is_success()) {
+                ++$successes;
+                push(@success_outputs, $response->content);
+            } else {
+                Verbose(">> Failed to report to MTTDatabase: " .
+                        $response->status_line . "\n" . $response->content);
+                ++$fails;
+                push(@fail_outputs, $response->content);
+            }
+            $num_results += ($count - 1);
+            Debug("MTTDatabase submit complete\n");
+            
+            if ($debug_filename) {
+                # Write out what we *would* have sent via HTTP to a
+                # file
+                my $f = "$debug_filename.$debug_index.txt";
+                ++$debug_index;
+                Debug("Writing to MTTDatabase debug file: $f\n");
+                open OUT, ">$f" || die "Could not open MTTDatabase debug output file";
+                print OUT Dumper($form);
+                close OUT;
+                Debug("Debug MTTDatabase file write complete\n");
+                
+                push(@success_outputs, "Wrote to file $f\n");
             }
         }
     }
 
-    if ($successes > 0) {
-        if ($fails == 0) {
-            Verbose(">> Reported $successes output(s) to mttdatabase\n");
-            Debug(@success_outputs);
-        }
-    }
+    Verbose(">> $successes successful submit" . plural($successes) . ", $fails failed submit" . plural($fails) . " (total of $num_results result" . plural($num_results) . ")\n");
+}
+
+sub plural {
+    my $val = shift;
+    ($val == 1) ? "" : "s";
 }
 
 1;
