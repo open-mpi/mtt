@@ -2,6 +2,10 @@
 # Copyright (c) 2006 Cisco Systems, Inc.  All rights reserved.
 
 $dbname = isset($_GET['db']) ? $_GET['db'] : "mtt";
+# JMS: This should someday be replaced with an include_once of 
+# database.inc, or something with just the username/password in it (not 
+# sure if current database.in contains more than we need right now or 
+# not).
 $user   = "mtt";
 $pass   = "3o4m5p6i";
 
