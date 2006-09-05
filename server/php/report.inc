@@ -401,7 +401,9 @@ if ($filters_desc_html_table and ! isset($_GET['just_results'])) {
     $report .= "<a name=report></a>";
     $report .= "<br><table width=100%><tr>";
     $report .= "<td valign=top>$filters_desc_html_table";
-    $report .= "<td valign=top align='right'><a href='$domain'><img src='$topdir/images/open-mpi-logo.png' border=0 height=75></a>";
+    $report .= "<td valign=top align='right'><a href='$domain'>" .
+               "<img src='$topdir/images/open-mpi-logo.png' border=0 height=75 " .
+               "alt='www.open-mpi.org/mtt'></a>";
     $report .= "</table><br>";
 }
 

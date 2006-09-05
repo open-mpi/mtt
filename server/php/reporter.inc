@@ -190,9 +190,9 @@ function debug($str) {
         print("\n$str");
 }
 
-function var_dump_($a) {
+function var_dump_($desc, $a) {
     if ($GLOBALS['verbose'])
-        var_dump("\n<br>$a");
+        var_dump("\n$desc",$a);
 }
 
 # actually see the nice identation var_dump provides
