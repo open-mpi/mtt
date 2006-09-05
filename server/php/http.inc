@@ -19,6 +19,8 @@
 #
 #
 
+include_once("$topdir/reporter.inc");
+
 # Return list of WHERE filters
 function get_menu_filters($params) {
 
@@ -30,7 +32,7 @@ function get_menu_filters($params) {
     foreach (array_keys($params) as $p) {
         if (preg_match("/^" . $cgi_abbrevs['menufield'] . "(\w+)$/i", $p, $m)) {
             $value = $params[$p];
-            if ($value != $All)
+            if ($value != $All and $value != null)
                 array_push($filters, $m[1] . " = '" . $value . "'");
         }
     }
@@ -194,7 +196,7 @@ function dump_cgi_params_trimnulls($params) {
             $type  = "" . $cgi_abbrevs['filter_types'] . "$f";
             $field = "" . $cgi_abbrevs['textfield'] . "$f";
 
-            if (isset($params[$field])) {
+            if ($params[$field]) {
                 $hash[$type] = $params[$type];
                 $hash[$field] = $params[$field];
             }
