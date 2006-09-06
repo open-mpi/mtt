@@ -21,6 +21,9 @@
 include_once("$topdir/config.inc");
 include_once("$topdir/reporter.inc");
 
+# MTT uses time zone independent timestamps
+putenv("PGTZ=GMT");
+
 # Setup db connection
 $dbname = isset($_GET['db'])   ? $_GET['db']   : "mtt";
 $user   = isset($_GET['user']) ? $_GET['user'] : "mtt";
@@ -417,14 +420,14 @@ function get_date_filter($filter) {
     # (Currently, we're only doing all-levels filtering on timestamp)
     if (preg_match("/yesterday/i", $filter, $m)) {
         array_push($filters, "start_test_timestamp > 'yesterday'");
-
     }
     elseif (preg_match("/today/i", $filter, $m)) {
         array_push($filters, "start_test_timestamp > date_trunc('day', now())");
     }
     elseif (preg_match("/past$sep*(\w+)$sep*(\w+)/i", $filter, $m)) {
         array_push($filters, "start_test_timestamp > now() - interval '" .
-                    $words_to_numerals[$m[1]] . " " . $m[2] . "'");
+                    (preg_match("/\d/", $m[1]) ? $m[1] : $words_to_numerals[$m[1]]) . " " .
+                    $m[2] . "'");
 
     }
     return $filters;
@@ -480,18 +483,54 @@ function sql_to_en($str) {
             $num = $m[2];
             $units = $m[3];
 
-            if (preg_match("/day/i", $units))
-                $days = 1 * $num;
-            elseif (preg_match("/week/i", $units))
-                $days = 7 * $num;
-            elseif (preg_match("/month/i", $units))
-                $days = 30 * $num;          # Doh, not all months are 30!
-            elseif (preg_match("/year/i", $units))
-                $days = 365 * $num;
+            $days = 1;
+            $hours = 1;
+            $mins = 1;
+            $secs = 1;
+
+            if (preg_match("/year/i", $units)) {
+                $days  = 365 * $num;
+                $hours = 24;
+                $mins  = 60;
+                $secs  = 60;
+            }
+            elseif (preg_match("/month/i", $units)) {
+                $days  = 30 * $num;          # Doh, not all months are 30!
+                $hours = 24;
+                $mins  = 60;
+                $secs  = 60;
+            }
+            elseif (preg_match("/week/i", $units)) {
+                $days  = 7 * $num;
+                $hours = 24;
+                $mins  = 60;
+                $secs  = 60;
+            }
+            elseif (preg_match("/day/i", $units)) {
+                $days  = 1 * $num;
+                $hours = 24;
+                $mins  = 60;
+                $secs  = 60;
+            }
+            elseif (preg_match("/hour/i", $units)) {
+                $hours = $num;
+                $mins  = 60;
+                $secs  = 60;
+            }
+            elseif (preg_match("/minute/i", $units)) {
+                $mins = $num;
+                $secs = 60;
+            }
+            elseif (preg_match("/second/i", $units)) {
+                $secs = $num;
+            }
+
+            $format = $date_format . " " . $time_format;
 
             $english .=
-                  date($date_format, time() - ($days * 24 * 60 * 60)) . " 00:00:00 " . $dash .
-                  date($date_format . " " . $time_format);
+                  date($format,
+                        time() - ($days * $hours * $mins * $secs)) . " " . $dash .
+                  date($format);
         }
         # Yesterday in postgres means yesterday at 12:00 am
         elseif (preg_match("/yesterday/i", $str, $m)) {
