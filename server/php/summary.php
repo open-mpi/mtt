@@ -45,14 +45,13 @@ $self = $_SERVER['PHP_SELF'];
 $url  = preg_replace('/summary.php/', 'reporter.php', $self);
 $url  = "$domain$url";
 
-# Note: the ordering of this query string is irrelevant,
-# but be careful to not put a '&' after the opening '?'
 $url_template = $url .  '?' .
 
     # settings
     "&cgi=off" .
     "&go=Table" .
     "&just_results" .
+    "&no_help" .
     "&1-page=off" .
 
     # by atom
@@ -173,7 +172,7 @@ $config['details'] = array(
     "",
     "",
     "&no_details",
-    "",
+    "&no_details",
 );
 
 $config['description'] = array(

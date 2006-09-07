@@ -112,16 +112,13 @@ $cgi_abbrevs = array(
     'filter_types'     => 'ft_',
 );
 
-# Command-line options to CGI options
-function getoptions($argv) {
-    for ($i=1; $i<count($argv); $i++) {
-       $it = split("=",$argv[$i]);
-       $_GET[$it[0]] = $it[1];
-    }
-    return $_GET;
-}
+#########################################
+#                                       #
+#  String Processing Functions          #
+#                                       #
+#########################################
 
-# return string concatenated to itself x times
+# Return string concatenated to itself x times
 function repeat($str, $x) {
 
     $orig = $str;
@@ -129,12 +126,6 @@ function repeat($str, $x) {
         $orig .= $str;
     }
     return $orig;
-}
-
-# Print a message and exit
-function exit_($str) {
-    print $str;
-    exit;
 }
 
 # sprintf for arrays. Return the entire array sent through
@@ -185,6 +176,26 @@ function html_to_txt2($str) {
     return $str;
 }
 
+# ' = 047 x27
+# " = 042 x22
+# Strip quotes from html.
+# Needed for sending 'content' argument to a javascript popup function
+function strip_quotes($str) {
+    return preg_replace('/\x22|\x27/','',$str);
+}
+
+# Useful for preventing browser text-wrapping
+function ascii_sp_to_html_sp($str) {
+    $str = preg_replace('/\s+/','&nbsp;',$str);
+    return $str;
+}
+
+#########################################
+#                                       #
+#  Developer & User Help Functions      #
+#                                       #
+#########################################
+
 function debug($str) {
     if ($GLOBALS['debug'] or $GLOBALS['verbose'])
         print("\n$str");
@@ -195,18 +206,33 @@ function var_dump_($desc, $a) {
         var_dump("\n$desc",$a);
 }
 
-# actually see the nice identation var_dump provides
+# Actually see the nice identation var_dump provides
 function var_dump_html($desc,$var) {
     if ($GLOBALS['verbose'])
         var_dump("\n<br><pre>$desc",$var,"</pre>");
 }
 
-# ' = 047 x27
-# " = 042 x22
-# Strip quotes from html.
-# Needed for sending 'content' argument to a javascript popup function
-function strip_quotes($str) {
-    return preg_replace('/\x22|\x27/','',$str);
+# Show help text
+function help($str) {
+    if (! isset($_GET['no_help']))
+        return $str;
+    else
+        return null;
+}
+
+# Command-line options to CGI options
+function getoptions($argv) {
+    for ($i=1; $i<count($argv); $i++) {
+       $it = split("=",$argv[$i]);
+       $_GET[$it[0]] = $it[1];
+    }
+    return $_GET;
+}
+
+# Print a message and exit
+function exit_($str) {
+    print $str;
+    exit;
 }
 
 ?>

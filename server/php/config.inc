@@ -55,4 +55,7 @@ $config['add_params'] = array(
     ),
 );
 
+$config['filter'][$level] = array();
+$config['by_run'][$level] = strstr($_GET["by_atom"], "by_test_run") ? true : null;
+
 ?>

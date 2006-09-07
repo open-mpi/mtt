@@ -7,11 +7,12 @@
 #
 
 $topdir = ".";
+include_once("$topdir/reporter.inc");
 include_once("$topdir/database.inc");
 include_once("$topdir/http.inc");
 include_once("$topdir/config.inc");
 include_once("$topdir/html.inc");
-include_once("$topdir/reporter.inc");
+include_once("$topdir/help.inc");
 
 if (! ($conn = pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass")))
     exit_("<br><b><i>Could not connect to database server.</i></b>");
@@ -59,8 +60,6 @@ $sql_filters = array_merge($sql_filters, get_textfield_filters($_GET));
 
 $sql_filters['per_script'] = $sql_filters;
 
-$config['filter'][$level] = array();
-
 # Blech - We'll use this gnarly config var to filter on 'success'
 foreach ($phases['per_level'] as $phase)
     $config['filter'][$level][$phase] = $res_filter;
@@ -85,25 +84,6 @@ $cgi_selects = array_filter($cgi_selects, "is_not_rolled");
 
 # Use array_unique as a safeguard against SELECT-ing duplicate fields
 $selects['per_script']['params'] = array_unique($cgi_selects);
-
-$config['by_run'][$level] = strstr($_GET["by_atom"],"by_test_run") ? true : null;
-
-# Print a title for each level-section
-$level_info = "";
-if (isset($config['show'][$level])) {
-    if (isset($config['label'][$level])) {
-        $level_info .= "\n<br><font size='+3'>" . $config['label'][$level] . "</font>";
-        $level_info .= "\n<br><font size='-1'>" .
-                        (isset($config['by_run'][$level]) ?
-                            "(By $client test run)" :
-                            "(By $client test case)") .
-                        "</font><br><br>";
-    }
-    #$level_info .= "\n<br><i>$level</i><br>";
-    $level_info .= "\n<table border='0' width='100%'>";
-    $level_info .= "\n<tr>";
-    $level_info .= "\n<td valign='top'>";
-}
 
 $selects['per_level']['params'] = array();
 $selects['per_level']['results'] = array();
@@ -198,14 +178,27 @@ foreach ($phases['per_level'] as $phase) {
 }   # foreach ($phases['per_level'] as $phase)
 
 # Create a plain-english description of the filters
-if (sizeof($sql_filters['per_script']) > 0)
-    $filters_desc_html_table = "<table border=1><tr><th bgcolor=$lgray colspan=2>Query Description" .
-        sprintf_("\n<tr>%s", array_map('sql_to_en', $sql_filters['per_script'])) .
+if (sizeof($sql_filters['per_script']) > 0) {
+    $filters_desc_html_table = "<table border=1 width=60%><tr>" .
+        "<th bgcolor=$lgray colspan=2>Query Description";
 
-        # This setting is not used at the $sql_filters level
+    foreach ($sql_filters['per_script'] as $filter) {
+        $tuple = sql_to_en($filter);
+        $filters_desc_html_table .=
+            sprintf("\n<tr><td bgcolor=$lgray>%s<td bgcolor=$llgray>%s",
+                ascii_sp_to_html_sp($tuple[0]), 
+                ascii_sp_to_html_sp($tuple[1]));
+    }
+    $count = (isset($config['by_run'][$level]) ? "By test run" : "By test case");
+    $filters_desc_html_table .= 
+        # The 'Count' setting is not used at the $sql_filters level
         "<tr><td bgcolor=$lgray>Count <td bgcolor=$llgray>" .
-        (isset($config['by_run'][$level]) ? "By test run" : "By test case") .
-        "</table><br>";
+        $count . " *" .
+        "<tr><td colspan=2 bgcolor=$lllgray><i><font size=-2>*" . 
+            $help[$count] . "</font></i>" .
+        "</table><br>" .
+        "";
+}
 else
     $filters_desc_html_table = null;
 
@@ -308,10 +301,12 @@ if ($rows) {
     $data_html_table .= "\n\n<$align><table border=1 width='100%'>";
 
     # Display headers
-    $data_html_table .= sprintf_("\n<th bgcolor='$thcolor' rowspan=2>%s", $headers['params']);
+    $data_html_table .= 
+        sprintf_("\n<th bgcolor='$thcolor' rowspan=2>%s", $headers['params']);
 
     foreach ($phases['per_level'] as $ph) {
-        $data_html_table .= sprintf("\n<th bgcolor='$thcolor' colspan=2>%s", $phase_labels[$ph]);
+        $data_html_table .= 
+            sprintf("\n<th bgcolor='$thcolor' colspan=2>%s", $phase_labels[$ph] . help("<sup>[1]"));
     }
     if ($config['details'][$level] and 
         ! isset($_GET['no_details']) and
@@ -392,10 +387,6 @@ if (isset($_GET['just_results'])) {
     $just_results = $data_html_table;
 }
 
-# Some basic info about this report's level-of-detail
-if ($level_info)
-    $report .= $level_info;
-
 # Report description (mostly echoing the user input and filters)
 if ($filters_desc_html_table and ! isset($_GET['just_results'])) {
     $report .= "<a name=report></a>";
@@ -447,18 +438,18 @@ if (! $rows) {
     $report .= $data_html_table;
     $report .= "\n</table>";
     $report .= "\n\n<!-- report_end -->\n\n";
-
-    # Mark this level as 'shown'
-    $config['show'][$level] = null;
 }
 
-var_dump_html('config: ', $config);
+$report .= "\n<div align=left><br><br><table border=1><tr><td bgcolor=$lgray><a href='" . $domain .
+            $_SERVER['PHP_SELF'] . '?' .
+            dump_cgi_params_trimnulls($_GET) .
+            "' class='lgray_ln'><font size='-1'>[Link to this query]</a>" .
+            "</table>";
 
-$report .= "\n<br><br><table border=1><tr><td bgcolor=$lgray><a href='" . $domain .
-        $_SERVER['PHP_SELF'] . '?' .
-        dump_cgi_params_trimnulls($_GET) .
-        "' class='lgray_ln'><font size='-1'>[Link to this query]</a>" .
-        "</table>";
+$report .= help("\n<div align=left><br>" .
+                "\n<table border=0 width=40%><tr><td>" .
+                "\n<i><font size=-2><b><sup>[1]</b> " . $help['Phase'] . "</font></i>" .
+                "\n</table>");
 
 pg_close();
 

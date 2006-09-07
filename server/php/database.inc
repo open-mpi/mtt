@@ -20,6 +20,7 @@
 
 include_once("$topdir/config.inc");
 include_once("$topdir/reporter.inc");
+include_once("$topdir/html.inc");
 
 # MTT uses time zone independent timestamps
 putenv("PGTZ=GMT");
@@ -474,6 +475,8 @@ function sql_to_en($str) {
 
     if (preg_match("/(\w+_timestamp)/i", $str, $m)) {
 
+        $field = "Date Range";
+
         # E.g., start_test_timestamp > now() - interval '3 Days'
         #       start_test_timestamp > date_trunc('day', now())
         # X: Cover other comparisons for timestamps
@@ -527,7 +530,7 @@ function sql_to_en($str) {
 
             $format = $date_format . " " . $time_format;
 
-            $english .=
+            $filter .=
                   date($format,
                         time() - ($days * $hours * $mins * $secs)) . " " . $dash .
                   date($format);
@@ -535,7 +538,7 @@ function sql_to_en($str) {
         # Yesterday in postgres means yesterday at 12:00 am
         elseif (preg_match("/yesterday/i", $str, $m)) {
 
-            $english .=
+            $filter .=
                   date($date_format, time() - (1 * 24 * 60 * 60)) . " 00:00:00 " .  $dash .
                   date($date_format . " " . $time_format);
         }
@@ -544,21 +547,18 @@ function sql_to_en($str) {
         # Watch out for them darn parenthesees, they need to be escaped
         elseif (preg_match("/date_trunc\(\s*$q"."day"."$q/i", $str)) {
 
-            $english .=
+            $filter .=
                   date($date_format, time()) . " 00:00:00 " . $dash .
                   date($date_format . " " . $time_format);
         }
-        $english .= date(" O");
-        $english = "<td bgcolor=$lgray>Date Range<td bgcolor=$llgray>" . $english;
+        $filter .= date(" O");
     }
     # success = 't|f'
     elseif (preg_match("/(test_pass|success)\s*=\s*$q(\w+)$q/i", $str, $m)) {
 
-        $what   = $m[1];
+        $field  = $m[1];
         $filter = $m[2];
         $filter = $translate_data_cell[$filter] ? $translate_data_cell[$filter] : $filter;
-
-        $english .= "<td bgcolor=$lgray>$what <td bgcolor=$llgray>$oq$filter$cq";
     }
     # field = 'value'
     elseif (preg_match("/(\w+)\s*([=<>])\s*$q([^$qs]+)$q/i", $str, $m)) {
@@ -568,14 +568,12 @@ function sql_to_en($str) {
         $filter = $m[3];
         $field  = $field_labels[$field] ? $field_labels[$field] : $field;
 
-        $english .= "<td bgcolor=$lgray>$field <td bgcolor=$llgray>$oq$filter$cq";
-
         if ($op == '=')
-            $english .= " (equals)";
+            $filter .= " (equals)";
         elseif ($op == '<')
-            $english .= " (less than)";
+            $filter .= " (less than)";
         elseif ($op == '>')
-            $english .= " (greater than)";
+            $filter .= " (greater than)";
     }
     # field ~ value
     elseif (preg_match("/(\w+)\s*\\!?~\s*$q$ca?([^$qs$ds]+)$ds?$q/i", $str, $m)) {
@@ -593,14 +591,21 @@ function sql_to_en($str) {
         else
             $type  = " (contains)";
 
-        $english .= "<td bgcolor=$lgray>$field <td bgcolor=$llgray>$oq$filter$cq $type";
+        $filter .= $type;
     }
     # unclassified filter
     else {
-        $english = "<td bgcolor=$lgray>Filter<td bgcolor=$llgray>$str";
+        $field = "Filter".
+        $filter = $str;
     }
 
-    return $english;
+    $tuple[0] = array();
+    $tuple[0] = $field;
+    $tuple[1] = $filter;
+
+    var_dump_html("sql_to_en returning: ", $tuple);
+
+    return $tuple;
 }
 
 function populate_menu($list, $table) {
