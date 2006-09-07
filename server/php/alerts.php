@@ -22,6 +22,7 @@ $topdir = ".";
 include_once("$topdir/curl_get.inc");
 include_once("$topdir/ini.inc");
 include_once("$topdir/reporter.inc");
+include_once("$topdir/html.inc");
 
 # In case we are using this script from the command-line
 if ($argv)
@@ -39,7 +40,7 @@ debug($ini);
 # Reference:
 #   http://www.zend.com/zend/trick/html-email.php
 
-$headers  = "From: mtt-results\@open-mpi.org\r\n";
+$headers  = "From: mtt-results\r\n";
 $headers .= "MIME-Version: 1.0\r\n";
 $boundary = uniqid("MTTREPORT");
 $headers .= "Content-Type: multipart/alternative" .

@@ -446,6 +446,25 @@ $report .= "\n<div align=left><br><br><table border=1><tr><td bgcolor=$lgray><a 
             "' class='lgray_ln'><font size='-1'>[Link to this query]</a>" .
             "</table>";
 
+# Point user to more info ...
+if (isset($_GET['info_links'])) {
+
+    $self    = $_SERVER['PHP_SELF'];
+    $customs = preg_replace('/reporter.php.*$/', 'reporter.php', $self);
+    $summary = preg_replace('/reporter.php.*$/', 'summary.php', $self);
+
+    $report .= "\n<div align=left><br>" .
+               "\n<table border=1><tr><td bgcolor=$lgray><a href='" . 
+               # Note: do *not* put a slash between domain and path
+               $domain  . $summary . "' class='lgray_ln'><font size='-1'>[Summary report]</a>" .
+               "</table>";
+
+    $report .= "\n<div align=left><br>" .
+               "\n<table border=1><tr><td bgcolor=$lgray><a href='" . 
+               $domain . $customs . "' class='lgray_ln'><font size='-1'>[Custom reports]</a>" .
+               "</table>";
+}
+
 $report .= help("\n<div align=left><br>" .
                 "\n<table border=0 width=40%><tr><td>" .
                 "\n<i><font size=-2><b><sup>[1]</b> " . $help['Phase'] . "</font></i>" .
