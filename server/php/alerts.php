@@ -1,3 +1,5 @@
+#! /usr/bin/php
+
 <!--
 
  Copyright (c) 2006 Sun Microsystems, Inc.
@@ -24,18 +26,14 @@ include_once("$topdir/ini.inc");
 include_once("$topdir/reporter.inc");
 include_once("$topdir/html.inc");
 
-# In case we are using this script from the command-line
-if ($argv)
-    $_GET = getoptions($argv);
+$options = getopt("f:dv");
 
-$GLOBALS['verbose'] = isset($_GET['verbose']) ? $_GET['verbose'] : 0;
-$GLOBALS['debug']   = isset($_GET['debug'])   ? $_GET['debug']   : 0;
+$GLOBALS['verbose'] = isset($options['v']) ? true : false;
+$GLOBALS['debug']   = isset($options['d']) ? true : false;
 
 # Parse with sections
-$alerts_file = "alerts.ini";
-$ini         = parse_ini_file($alerts_file, true);
-
-debug($ini);
+$ini_file = ($options['f'] ? $options['f'] : "alerts.ini");
+$ini      = parse_ini_file($ini_file, true);
 
 # Reference:
 #   http://www.zend.com/zend/trick/html-email.php
@@ -70,7 +68,7 @@ foreach (array_keys($ini) as $section) {
         $ini[$section]['last_alerted'] = time();
 }
 
-write_ini_file($alerts_file, $ini);
+write_ini_file($ini_file, $ini);
 
 exit;
 
