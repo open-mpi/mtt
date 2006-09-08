@@ -1,5 +1,15 @@
 <?php
 
+#
+# Copyright (c) 2006 Sun Microsystems, Inc.
+#                         All rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
+
 # Make these a $colors array for easier globalizing in functions
 $gray    = "#A0A0A0";
 $dgray   = "#808080";

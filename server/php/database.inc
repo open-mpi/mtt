@@ -1,16 +1,14 @@
-<!--
-
- Copyright (c) 2006 Sun Microsystems, Inc.
-                         All rights reserved.
- $COPYRIGHT$
-
- Additional copyrights may follow
-
- $HEADER$
-
--->
-
 <?php
+
+#
+# Copyright (c) 2006 Sun Microsystems, Inc.
+#                         All rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
 
 #
 #
@@ -25,11 +23,6 @@ include_once("$topdir/html.inc");
 # MTT uses time zone independent timestamps
 putenv("PGTZ=GMT");
 
-# Setup db connection
-$dbname = isset($_GET['db'])   ? $_GET['db']   : "mtt";
-$user   = isset($_GET['user']) ? $_GET['user'] : "mtt";
-$pass   = "3o4m5p6i";
-
 # Corresponding db tables for "MPI Install", "Test Build", and "Test Run" phases
 # X: better as 'table' => 'phase label' ?
 $phases['per_script'] = array(
@@ -43,6 +36,8 @@ $tables = array(
     "general_a",
     "general_b",
 );
+
+$once_db_table = "once";
 
 $Filters = "Filters";
 $textfield_tables = array(
@@ -235,6 +230,11 @@ $main_menu["success"]["options"] = array(
     "Fail",
 );
 
+# Setup db connection
+$dbname = isset($_GET['db'])   ? $_GET['db']   : "mtt";
+$user   = isset($_GET['user']) ? $_GET['user'] : "mtt";
+$pass   = "3o4m5p6i";
+
 if (! ($conn = pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass")))
     exit_("<br><b><i>Could not connect to database server.</i></b>");
 
@@ -251,6 +251,10 @@ $by_atoms = array(
 $domain  = "http://www.open-mpi.org";
 
 $client = "MTT";
+
+$results['from_perm_tbl'] = array();
+$results['from_tmp_tbl'] = array();
+
 # Construct boolean-to-string casts for pass/fail (t/f) columns
 # We differentiate between _case fails and _run fails
 # A case is the single atomic test case (e.g., gmake foo, cc foo, or
@@ -318,8 +322,6 @@ $translate_data_cell = array(
     'ompi-nightly-v1.3' => 'Open MPI v1.3',
     'ompi-nightly-trunk' => 'Open MPI trunk',
 );
-
-$once_db_table = "once";
 
 # pg_query_ that returns a 1D list
 function pg_query_simple($cmd, $conn) {
@@ -472,6 +474,8 @@ function sql_to_en($str) {
     $ds = '\$'; # dollar sign
 
     $english = "";
+    $field = "";
+    $filter = "";
 
     if (preg_match("/(\w+_timestamp)/i", $str, $m)) {
 
@@ -603,8 +607,6 @@ function sql_to_en($str) {
     $tuple[0] = $field;
     $tuple[1] = $filter;
 
-    var_dump_html("sql_to_en returning: ", $tuple);
-
     return $tuple;
 }
 
@@ -620,15 +622,13 @@ function populate_menu($list, $table) {
             $clause = $field;
         }
 
-        if (isset($_GET['sql']))
-            if ($_GET['sql'] == 'on')
-                print("\n<br>SQL: <pre>" . html_to_txt($cmd) . "</pre>");
-
         $alias = get_as_alias($field);
 
         $cmd = "SELECT $clause FROM $table " .
             "GROUP BY $alias " .
             "ORDER BY $alias ;";
+
+        sql($cmd);
 
         $rows = array_map('html_to_txt2', pg_query_simple($cmd, $conn));
 

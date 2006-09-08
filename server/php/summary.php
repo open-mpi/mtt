@@ -1,15 +1,3 @@
-<!--
-
- Copyright (c) 2006 Sun Microsystems, Inc.
-                         All rights reserved.
- $COPYRIGHT$
-
- Additional copyrights may follow
-
- $HEADER$
-
--->
-
 <html>
 <head>
     <title>Open MPI Test Results Summary</title>
@@ -18,6 +6,16 @@
 <center>
 
 <?php
+
+#
+# Copyright (c) 2006 Sun Microsystems, Inc.
+#                         All rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
 
 #
 #
@@ -172,7 +170,7 @@ $config['details'] = array(
     "",
     "",
     "&no_details",
-    "&no_details",
+    "",
 );
 
 $config['description'] = array(

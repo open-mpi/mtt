@@ -1,16 +1,14 @@
-<!--
-
- Copyright (c) 2006 Sun Microsystems, Inc.
-                         All rights reserved.
- $COPYRIGHT$
-
- Additional copyrights may follow
-
- $HEADER$
-
--->
-
 <?php
+
+#
+# Copyright (c) 2006 Sun Microsystems, Inc.
+#                         All rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
 
 #
 #
@@ -20,6 +18,17 @@
 #
 #
 
+# Set debug levels
+if (isset($_GET['verbose']) or isset($_GET['debug'])) {
+    $GLOBALS['verbose'] = 1;
+    $GLOBALS['debug']   = 1;
+    $_GET['cgi']        = 'on';
+    $_GET['sql']        = 'on';
+} else {
+    $GLOBALS['verbose'] = 0;
+    $GLOBALS['debug']   = 0;
+}
+
 # Set php trace levels
 if (isset($GLOBALS['verbose']))
     error_reporting(E_ALL);
@@ -28,16 +37,13 @@ else
 
 # X: which .inc's do we really need?
 $topdir = ".";
+include_once("$topdir/reporter.inc");
 include_once("$topdir/screen.inc");
 include_once("$topdir/report.inc");
 include_once("$topdir/head.inc");
 include_once("$topdir/http.inc");
 include_once("$topdir/html.inc");
 include_once("$topdir/database.inc");
-include_once("$topdir/reporter.inc");
-
-$GLOBALS['verbose'] = isset($_GET['verbose']) ? $_GET['verbose'] : 0;
-$GLOBALS['debug']   = isset($_GET['debug'])   ? $_GET['debug']   : 0;
 
 # In case we're using this script from the command-line
 if ($argv)
@@ -70,10 +76,7 @@ if (((! isset($_GET['go'])) and ! isset($_GET['just_results'])) or
     print dump_query_screen();
 }
 
-if (isset($_GET['just_results'])) {
-    print dump_results_only();
-}
-elseif (isset($_GET['go'])) {
+if (isset($_GET['go'])) {
     print dump_report();
 }
 

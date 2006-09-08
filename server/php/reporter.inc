@@ -1,16 +1,14 @@
-<!--
-
- Copyright (c) 2006 Sun Microsystems, Inc.
-                         All rights reserved.
- $COPYRIGHT$
-
- Additional copyrights may follow
-
- $HEADER$
-
--->
-
 <?php
+
+#
+# Copyright (c) 2006 Sun Microsystems, Inc.
+#                         All rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
 
 #
 #
@@ -210,6 +208,13 @@ function var_dump_($desc, $a) {
 function var_dump_html($desc,$var) {
     if ($GLOBALS['verbose'])
         var_dump("\n<br><pre>$desc",$var,"</pre>");
+}
+
+# Print SQL if they want it
+function sql($cmd) {
+    if (isset($_GET['sql']))
+        if ($_GET['sql'] == 'on')
+            print("\n<br>SQL: <pre>" . html_to_txt($cmd) . "</pre>");
 }
 
 # Show help text

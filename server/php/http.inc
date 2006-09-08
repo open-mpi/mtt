@@ -1,16 +1,14 @@
-<!--
-
- Copyright (c) 2006 Sun Microsystems, Inc.
-                         All rights reserved.
- $COPYRIGHT$
-
- Additional copyrights may follow
-
- $HEADER$
-
--->
-
 <?php
+
+#
+# Copyright (c) 2006 Sun Microsystems, Inc.
+#                         All rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
 
 #
 #
@@ -40,14 +38,16 @@ function get_menu_filters($params) {
 }
 
 # Return list of test results (pass/fail)
-function get_results_filter($param) {
+function get_results_filter($params) {
+
+    global $cgi_abbrevs;
 
     $filters = array();
 
-    if (preg_match("/pass/i", $param)) {
+    if (preg_match("/pass/i", $params[$cgi_abbrevs['mainfield'] . 'success'])) {
         array_push($filters, "success = 't'");
     }
-    elseif (preg_match("/fail/i", $param)) {
+    elseif (preg_match("/fail/i", $params[$cgi_abbrevs['mainfield'] . 'success'])) {
         array_push($filters, "success = 'f'");
     }
 
@@ -128,7 +128,7 @@ function which_phase_specific_filter($params) {
     }
 
     # return all the phases by default
-    return $textfield_tables["general_a"]["phases"];
+    return null;
 }
 
 # Are we grouping on $field?
