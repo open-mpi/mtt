@@ -58,24 +58,18 @@ function dump_report() {
     global $thcolor, $gray, $dgray, $lgray, $llgray, 
            $lllgray, $lred, $lgreen, $lyellow, $white;
 
-    $null_rows_msg = "<b><i>No data available for the specified query.</i></b>";
-
     if (! ($conn = pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass")))
         exit_("<br><b><i>Could not connect to database server.</i></b>");
 
     debug("\n<br>postgres: " . pg_last_error() . "\n" . pg_result_error());
 
-    # In the query tool, there is just a single 'level' of detail per
-    # invocation of the script. So we can mostly ignore nested [$level] arrays
+    # In the query tool, there is just a single '$level' of detail per
+    # invocation of the script
 
-    if ($_GET['cgi'] == 'on') {
+    if ($_GET['cgi'] == 'on')
         debug_cgi($_GET, "GET");
-        #debug_cgi($_POST, "POST");
-    }
 
     # --- Hack CGI params
-
-    # mainfield_ params are a little quirkier than the others
 
     $phases['per_level'] = get_phase_selection($_GET);
 
@@ -108,8 +102,6 @@ function dump_report() {
     foreach ($phases['per_level'] as $phase) {
         array_push($unioned_queries, create_phase_level_query($phase));
     }
-
-    $filters_desc_html_table = filters_description($filters);
 
     # Concat the results from the three phases
     $cmd = join("\n UNION ALL \n", $unioned_queries);
@@ -199,70 +191,31 @@ function dump_report() {
 
     # This block should be useful for a customized report (e.g., summary.php)
     if (isset($_GET['just_results'])) {
-
-        if (! $rows)
-            print $null_rows_msg;
-        else
-            dump_data_table($headers, $rows);
+        dump_data_table($headers, $rows);
         return;
     }
 
-    $pre_report = "";
-    $post_report = "";
+    $filters_desc_html_table = filters_description($filters);
 
-    # Report description (mostly echoing the user input and filters)
+    # Report description (echo user input)
     if ($filters_desc_html_table and ! isset($_GET['just_results'])) {
-        $pre_report .= "<a name=report></a>";
-        $pre_report .= "<br><table width=100%><tr>";
-        $pre_report .= "<td valign=top>$filters_desc_html_table";
-        $pre_report .= "<td valign=top align='right'><a href='$domain'>" .
-                   "<img src='$topdir/images/open-mpi-logo.png' border=0 height=75 " .
-                   "alt='$domain/mtt'></a>";
-        $pre_report .= "</table><br>";
-    }
+        $filters_desc_html_table = "<a name=report></a>" .
+                                   "<br><table width=100%><tr>" .
+                                   "<td valign=top>$filters_desc_html_table" .
+                                   "<td valign=top align='right'><a href='$domain'>" .
+                                   "<img src='$topdir/images/open-mpi-logo.png' border=0 height=75 " .
+                                   "alt='$domain/mtt'></a>" .
+                                   "</table><br>";
+    } else
+        $filters_desc_html_table = null;
 
-    # Do not show a blank table
-    if (! $rows) {
 
-        $pre_report .= $null_rows_msg;
-
-    } else {
-
-        # Insert useful information on the left-hand side?
-        $pre_report .= "\n\n<div align=center>" .
-              "\n\n<!-- report_start -->\n\n" .
-              "<table width='100%' cellpadding=5>" .
-              "<tr>" .
-              #"<th bgcolor='$lgray' rowspan=2 colspan=2 valign='top' width=0px>[insert link here]" .
-              #"<font size='+2'>Level: " . $level . "</font>" .
-              "";
-
-        $pre_report .= "<td bgcolor='$lgray'>";
-
-        $post_report .= "\n</table>";
-        $post_report .= "\n\n<!-- report_end -->\n\n";
-    }
-
-    $post_report .= info_pointers();
-
-    $i = 1;
-    $phases_help = "\n<div align=left><br>" .
-                   "\n<table border=0 width=40%><tr><td>" .
-                   "\n<br><i><font size=-2>" . $help['Phase'] . "</font></i><br>";
-
-    foreach ($phases['per_level'] as $ph) {
-        $phases_help .= 
-            "\n<br><i><font size=-2><strong><sup>[" . $i++ . "]</strong> " . $help[$ph] . "</font></i>";
-    }
-    $phases_help .= "\n</table>";
-
-    $post_report .= help($phases_help);
-
-    print $pre_report;
+    print $filters_desc_html_table;
 
     dump_data_table($headers, $rows);
 
-    print $post_report;
+    print info_pointers();
+    print help(phases_help($phases));
 
     pg_close();
 }
@@ -280,9 +233,21 @@ function dump_data_table($headers, $rows) {
            $lllgray, $lred, $lgreen, $lyellow, $white;
 
     # Do not print an empty table
-    if (! $rows)
+    if (! $rows) {
+        print "<b><i>No data available for the specified query.</i></b>";
         return;
+    }
     
+    # Insert useful information on the left-hand side?
+    print "\n\n<div align=center>" .
+          "\n\n<!-- report_start -->\n\n" .
+          "<table width='100%' cellpadding=5>" .
+          "<tr>" .
+          #"<th bgcolor='$lgray' rowspan=2 colspan=2 valign='top' width=0px>[insert link here]" .
+          "";
+
+    print "\n<td bgcolor='$lgray'>";
+
     print "\n\n<div align=center><table border=1 width='100%'>";
 
     # Display headers
@@ -360,7 +325,10 @@ function dump_data_table($headers, $rows) {
                   "[i]</font><a>";
         }
     }
+
     print "\n</table>";
+    print "\n</table>";
+    print "\n\n<!-- report_end -->\n\n";
 }
 
 # Return an HTML table describing the SQL filters used in $filters
@@ -559,6 +527,25 @@ function info_pointers() {
                    "</table>";
     }
     return $links;
+}
+
+# Return HTML string displaying explanation of phases
+function phases_help($phases) {
+
+    global $help;
+
+    $i = 1;
+    $phases_help = "\n<div align=left><br>" .
+                   "\n<table border=0 width=40%><tr><td>" .
+                   "\n<br><i><font size=-2>" . $help['Phase'] . "</font></i><br>";
+
+    foreach ($phases['per_level'] as $ph) {
+        $phases_help .= 
+            "\n<br><i><font size=-2><strong><sup>[" . $i++ . "]</strong> " . $help[$ph] . "</font></i>";
+    }
+    $phases_help .= "\n</table>";
+
+    return $phases_help;
 }
 
 ?>
