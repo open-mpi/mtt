@@ -211,7 +211,7 @@ function var_dump_html($desc,$var) {
 }
 
 # Print SQL if they want it
-function sql($cmd) {
+function debug_sql($cmd) {
     if (isset($_GET['sql']))
         if ($_GET['sql'] == 'on')
             print("\n<br>SQL: <pre>" . html_to_txt($cmd) . "</pre>");

@@ -628,7 +628,7 @@ function populate_menu($list, $table) {
             "GROUP BY $alias " .
             "ORDER BY $alias ;";
 
-        sql($cmd);
+        debug_sql($cmd);
 
         $rows = array_map('html_to_txt2', pg_query_simple($cmd, $conn));
 

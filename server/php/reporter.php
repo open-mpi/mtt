@@ -30,7 +30,7 @@ if (isset($_GET['verbose']) or isset($_GET['debug'])) {
 }
 
 # Set php trace levels
-if (isset($GLOBALS['verbose']))
+if ($GLOBALS['verbose'])
     error_reporting(E_ALL);
 else
     error_reporting(E_ERROR | E_WARNING | E_PARSE);

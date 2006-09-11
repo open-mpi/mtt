@@ -163,7 +163,7 @@ function get_select_fields($params) {
 }
 
 # Prints an HTML table of _GET and _POST vars
-function dump_cgi_params($params, $title) {
+function debug_cgi($params, $title) {
 
     global $lgray;
     global $dgray;
@@ -182,7 +182,7 @@ function dump_cgi_params($params, $title) {
 }
 
 # Returns a trimmed query string
-function dump_cgi_params_trimnulls($params) {
+function dump_query_string($params) {
 
     global $cgi_abbrevs;
 

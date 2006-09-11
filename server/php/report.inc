@@ -39,10 +39,11 @@ $selects['per_phase']['all']     = array();
 $filters = array();
 
 # Dump query description, results table, and link to query
-function dump_report()
-{
+function dump_report() {
+
     # global declarations
     global $dbname, $user, $pass;
+    global $domain;
     global $phases, $phase_labels;
     global $selects, $filters;
     global $results_types;
@@ -54,7 +55,10 @@ function dump_report()
     global $groupbys_str, $orderbys_str, $selects_str;
     global $cgi_abbrevs;
     global $timestamp;
-    global $thcolor, $gray, $dgray, $lgray, $llgray, $lllgray, $lred, $lgreen, $lyellow, $white;
+    global $thcolor, $gray, $dgray, $lgray, $llgray, 
+           $lllgray, $lred, $lgreen, $lyellow, $white;
+
+    $null_rows_msg = "<b><i>No data available for the specified query.</i></b>";
 
     if (! ($conn = pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass")))
         exit_("<br><b><i>Could not connect to database server.</i></b>");
@@ -65,8 +69,8 @@ function dump_report()
     # invocation of the script. So we can mostly ignore nested [$level] arrays
 
     if ($_GET['cgi'] == 'on') {
-        dump_cgi_params($_GET, "GET");
-        #dump_cgi_params($_POST, "POST");
+        debug_cgi($_GET, "GET");
+        #debug_cgi($_POST, "POST");
     }
 
     # --- Hack CGI params
@@ -88,9 +92,9 @@ function dump_report()
             (isset($config['by_run'][$level]) ?
                 array_diff($selects['per_script']['params'], $fields_run_key) :
                 $selects['per_script']['params'])
-            #($config['by_run'][$level] ? $fields_run_key : null),
         );
-    var_dump_html("[dump_report 106] selects:", $selects);
+
+    var_dump_html("[dump_report " . __LINE__ . "] selects:", $selects);
 
     # We always need to get the first table by case, before aggregating
     # runs from that result set
@@ -112,7 +116,7 @@ function dump_report()
 
     $cmd = "\nSELECT * INTO TEMPORARY TABLE tmp FROM (" . $cmd . ") as u;";
 
-    sql($cmd);
+    debug_sql($cmd);
 
     pg_query_("\n$cmd", $conn);
 
@@ -176,7 +180,7 @@ function dump_report()
                 "\nGROUP BY $sub_query_alias.". join(",\n$sub_query_alias.",$selects['per_level']['params']);
     }
 
-    sql($cmd);
+    debug_sql($cmd);
 
     $rows = pg_query_("\n$cmd", $conn);
 
@@ -193,119 +197,39 @@ function dump_report()
         array_push($headers['params'], $header);
     }
 
-    print "";
-
-    if ($rows) {
-
-        $data_html_table .= "\n\n<div align=center><table border=1 width='100%'>";
-
-        # Display headers
-        $data_html_table .= 
-            sprintf_("\n<th bgcolor='$thcolor' rowspan=2>%s", $headers['params']);
-
-        foreach ($phases['per_level'] as $ph) {
-            $data_html_table .= 
-                sprintf("\n<th bgcolor='$thcolor' colspan=2>%s", $phase_labels[$ph] . help("<sup>[1]"));
-        }
-        if ($config['details'][$level] and 
-            ! isset($_GET['no_details']) and
-            (sizeof($phases['per_level']) == 1))
-            $data_html_table .= sprintf("\n<th bgcolor='$thcolor' rowspan=2>%s", "[i]");
-
-        $data_html_table .= ("\n<tr>");
-
-        # Yucky hard-coding, but will it ever be anything but pass/fail here?
-        foreach ($phases['per_level'] as $p) {
-            $data_html_table .= sprintf("\n<th bgcolor='$thcolor'>%s", 'Pass');
-            $data_html_table .= sprintf("\n<th bgcolor='$thcolor'>%s", 'Fail');
-        }
-
-        # Display data rows
-        while ($row = array_shift($rows)) {
-
-            $details_html_table = "";
-
-            # Make the row clickable if there's clickable info for this query
-            # X: Stop repeating this same ole' three-way AND condition -> make it a single bool!
-            if ($config['details'][$level] and 
-                ! isset($_GET['no_details']) and
-                (sizeof($phases['per_level']) == 1)) {
-
-                $len = sizeof($selects['per_level']['details']);
-                $lf_cols = array_splice($row, sizeof($row) - $len, $len);
-
-                $details_html_table = "\n\n" .
-                    "<table border=1 width=100%><tr><th bgcolor=$thcolor>Details" .
-                    "<tr><td bgcolor=$lllgray width=100%>";
-
-                for ($i = 0; $i < $len; $i++) {
-                    $field = $selects['per_level']['details'][$i];
-                    $field  = $field_labels[$field] ? $field_labels[$field] : $field;
-                    $details_html_table .= "\n<br><b>" .
-                            $field . "</b>:<br>" .
-                            "<tt>" . txt_to_html($lf_cols[$i]) . "</tt><br>";
-                }
-                $details_html_table .= "</table></body>";
-            }
-
-            # translate_data_cell result fields
-            for ($i = 0; $i < sizeof($row); $i++) {
-                $row[$i] = 
-                    (! empty($translate_data_cell[$row[$i]])) ? $translate_data_cell[$row[$i]] : $row[$i];
-            }
-
-            # 'pass/fail' are always in the far right cols
-            $len = sizeof($phases['per_level']) * sizeof($results_types);
-            $result_cols = array_splice($row, sizeof($row) - $len, $len);
-
-            $data_html_table .= "\n<tr>" . sprintf_("\n<td bgcolor=$white>%s", $row);
-
-            for ($i = 0; $i < sizeof($result_cols); $i += 2) {
-                    $data_html_table .= "\n<td align='right' bgcolor='" .
-                            (($result_cols[$i] > 0) ? $lgreen : $lgray) . "'>$result_cols[$i]";
-                    $data_html_table .= "\n<td align='right' bgcolor='" .
-                            (($result_cols[$i + 1] > 0) ? $lred : $lgray) . "'>" . $result_cols[$i + 1];
-            }
-
-            if ($details_html_table) {
-
-                $data_html_table .= "<td align=center bgcolor=$lgray><a href='javascript:popup(\"900\",\"750\",\"" .
-                     "[" . isset($config['label'][$level]) . "] " .
-                     "$phase_labels[$phase]: Detailed Info\",\"" .
-                     strip_quotes($details_html_table) . "\",\"\",\" font-family:Courier,monospace\")' " .
-                        " class='lgray_ln'><font size='-2'>" .
-                     "[i]</font><a>";
-            }
-        }
-        $data_html_table .= "\n</table>";
-        $rows = true;
-    }
-
     # This block should be useful for a customized report (e.g., summary.php)
     if (isset($_GET['just_results'])) {
-        return $data_html_table;
+
+        if (! $rows)
+            print $null_rows_msg;
+        else
+            dump_data_table($headers, $rows);
+        return;
     }
+
+    $pre_report = "";
+    $post_report = "";
 
     # Report description (mostly echoing the user input and filters)
     if ($filters_desc_html_table and ! isset($_GET['just_results'])) {
-        $report .= "<a name=report></a>";
-        $report .= "<br><table width=100%><tr>";
-        $report .= "<td valign=top>$filters_desc_html_table";
-        $report .= "<td valign=top align='right'><a href='$domain'>" .
+        $pre_report .= "<a name=report></a>";
+        $pre_report .= "<br><table width=100%><tr>";
+        $pre_report .= "<td valign=top>$filters_desc_html_table";
+        $pre_report .= "<td valign=top align='right'><a href='$domain'>" .
                    "<img src='$topdir/images/open-mpi-logo.png' border=0 height=75 " .
-                   "alt='www.open-mpi.org/mtt'></a>";
-        $report .= "</table><br>";
+                   "alt='$domain/mtt'></a>";
+        $pre_report .= "</table><br>";
     }
 
     # Do not show a blank table
     if (! $rows) {
 
-        $report .= "<b><i>No data available for the specified query.</i></b>";
+        $pre_report .= $null_rows_msg;
 
     } else {
 
         # Insert useful information on the left-hand side?
-        $report .= "\n\n<div align=center>" .
+        $pre_report .= "\n\n<div align=center>" .
               "\n\n<!-- report_start -->\n\n" .
               "<table width='100%' cellpadding=5>" .
               "<tr>" .
@@ -313,22 +237,130 @@ function dump_report()
               #"<font size='+2'>Level: " . $level . "</font>" .
               "";
 
-        $report .= "<td bgcolor='$lgray'>";
-        $report .= $data_html_table;
-        $report .= "\n</table>";
-        $report .= "\n\n<!-- report_end -->\n\n";
+        $pre_report .= "<td bgcolor='$lgray'>";
+
+        $post_report .= "\n</table>";
+        $post_report .= "\n\n<!-- report_end -->\n\n";
     }
 
-    $report .= info_pointers();
+    $post_report .= info_pointers();
 
-    $report .= help("\n<div align=left><br>" .
-                    "\n<table border=0 width=40%><tr><td>" .
-                    "\n<i><font size=-2><b><sup>[1]</b> " . $help['Phase'] . "</font></i>" .
-                    "\n</table>");
+    $i = 1;
+    $phases_help = "\n<div align=left><br>" .
+                   "\n<table border=0 width=40%><tr><td>" .
+                   "\n<br><i><font size=-2>" . $help['Phase'] . "</font></i><br>";
+
+    foreach ($phases['per_level'] as $ph) {
+        $phases_help .= 
+            "\n<br><i><font size=-2><strong><sup>[" . $i++ . "]</strong> " . $help[$ph] . "</font></i>";
+    }
+    $phases_help .= "\n</table>";
+
+    $post_report .= help($phases_help);
+
+    print $pre_report;
+
+    dump_data_table($headers, $rows);
+
+    print $post_report;
 
     pg_close();
+}
 
-    return $report;
+# void function to print out html data table
+function dump_data_table($headers, $rows) {
+
+    # global declarations
+    global $phases, $phase_labels;
+    global $selects;
+    global $field_labels;
+    global $results_types;
+    global $translate_data_cell;
+    global $thcolor, $gray, $dgray, $lgray, $llgray, 
+           $lllgray, $lred, $lgreen, $lyellow, $white;
+
+    # Do not print an empty table
+    if (! $rows)
+        return;
+    
+    print "\n\n<div align=center><table border=1 width='100%'>";
+
+    # Display headers
+    print 
+        sprintf_("\n<th bgcolor='$thcolor' rowspan=2>%s", $headers['params']);
+
+    $i = 1;
+    foreach ($phases['per_level'] as $ph) {
+        print 
+            sprintf("\n<th bgcolor='$thcolor' colspan=2>%s", 
+                $phase_labels[$ph] . help("<sup>[" . $i++ . "]"));
+    }
+    if ($selects['per_level']['details'])
+        print sprintf("\n<th bgcolor='$thcolor' rowspan=2>%s", "[i]");
+
+    print "\n<tr>";
+
+    # Yucky hard-coding, but will it ever be anything but pass/fail here?
+    foreach ($phases['per_level'] as $p) {
+        print sprintf("\n<th bgcolor='$thcolor'>%s", 'Pass');
+        print sprintf("\n<th bgcolor='$thcolor'>%s", 'Fail');
+    }
+
+    # Display data rows
+    while ($row = array_shift($rows)) {
+
+        $details_html_table = "";
+
+        # Make the row clickable if there's clickable info for this query
+        if ($selects['per_level']['details']) {
+
+            $len = sizeof($selects['per_level']['details']);
+            $linked_field_cols = array_splice($row, sizeof($row) - $len, $len);
+
+            $details_html_table = "\n\n" .
+                "<table border=1 width=100%><tr><th bgcolor=$thcolor>Details" .
+                "<tr><td bgcolor=$lllgray width=100%>";
+
+            for ($i = 0; $i < $len; $i++) {
+                $field = $selects['per_level']['details'][$i];
+                $field = $field_labels[$field] ? $field_labels[$field] : $field;
+                $details_html_table .= "\n<br><b>" .
+                        $field . "</b>:<br>" .
+                        "<tt>" . txt_to_html($linked_field_cols[$i]) . "</tt><br>";
+            }
+            $details_html_table .= "</table></body>";
+        }
+
+        # translate_data_cell result fields
+        for ($i = 0; $i < sizeof($row); $i++) {
+            $row[$i] = 
+                (! empty($translate_data_cell[$row[$i]])) ? $translate_data_cell[$row[$i]] : $row[$i];
+        }
+
+        # 'pass/fail' are always in the far right cols
+        $len = sizeof($phases['per_level']) * sizeof($results_types);
+        $result_cols = array_splice($row, sizeof($row) - $len, $len);
+
+        print "\n<tr>" . sprintf_("\n<td bgcolor=$white>%s", $row);
+
+        for ($i = 0; $i < sizeof($result_cols); $i += 2) {
+            print "\n<td align='right' bgcolor='" .
+                    (($result_cols[$i] > 0) ? $lgreen : $lgray) . "'>$result_cols[$i]";
+            print "\n<td align='right' bgcolor='" .
+                    (($result_cols[$i + 1] > 0) ? $lred : $lgray) . "'>" . $result_cols[$i + 1];
+        }
+
+        if ($details_html_table) {
+
+            print "<td align=center bgcolor=$lgray>" .
+                  "<a href='javascript:popup(\"900\",\"750\",\"" .
+                  "$phase_labels[$phase]: Detailed Info\",\"" .
+                  strip_quotes($details_html_table) . "\",\"\",\" font-family:Courier,monospace\")' " .
+                     " class='lgray_ln'><font size='-2'>" .
+                  "[i]</font><a>";
+        }
+    }
+    print "\n</table>";
 }
 
 # Return an HTML table describing the SQL filters used in $filters
@@ -468,7 +500,6 @@ function create_phase_level_query($phase) {
     return $cmd;
 }
 
-
 # Use implicit selection, as well as process of elimination to determine which
 # phases should be shown
 function get_phase_selection($params) {
@@ -500,11 +531,13 @@ function get_phase_selection($params) {
 # Show links to point user to more info ...
 function info_pointers() {
 
-    global $thcolor, $gray, $dgray, $lgray, $llgray, $lllgray, $lred, $lgreen, $lyellow, $white;
+    global $thcolor, $gray, $dgray, $lgray, $llgray, 
+           $lllgray, $lred, $lgreen, $lyellow, $white;
+    global $domain;
 
     $links = "\n<div align=left><br><br><table border=1><tr><td bgcolor=$lgray><a href='" . $domain .
                 $_SERVER['PHP_SELF'] . '?' .
-                dump_cgi_params_trimnulls($_GET) .
+                dump_query_string($_GET) .
                 "' class='lgray_ln'><font size='-1'>[Link to this query]</a>" .
                 "</table>";
 

@@ -1,16 +1,14 @@
-<!--
-
- Copyright (c) 2006 Sun Microsystems, Inc.
-                         All rights reserved.
- $COPYRIGHT$
-
- Additional copyrights may follow
-
- $HEADER$
-
--->
-
 <?php
+
+#
+# Copyright (c) 2006 Sun Microsystems, Inc.
+#                         All rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
 
 $help['Main Menu'] = <<<EOT
 
@@ -38,29 +36,36 @@ MTT submits results to the database on three of its phases. The column
 headers above the pass/fail columns map to the following ini section
 names:
 
-<ol>
+EOT;
 
-    <a name=installs_help>
-    <li> <b>MPI Install</b> <br>
+$help['installs'] = <<<EOT
 
-    The configuring and building of the MPI library.
+<a name=installs_help>
+<strong>MPI Install</strong> <br>
 
-    <a name=builds_help>
-    <li> <b>Test Build</b> <br>
+The configuring and building of the MPI library.
 
-    The compiling of the individual tests with the Open MPI wrapper
-    compilers. (Whether tests are compiled in batches or individually
-    may vary from test suite to test suite. Thus, a single failed Test
-    Build may indicate that more than one test resulted in a compilation
-    error.)
+EOT;
 
-    <a name=runs_help>
-    <li> <b>Test Run</b> <br>
+$help['builds'] = <<<EOT
 
-    The running of the individual tests using <tt>mpirun</tt> or your
-    chosen resource manager.
+<a name=builds_help>
+<strong>Test Build</strong> <br>
 
-</ol>
+The compiling of the individual tests with the Open MPI wrapper
+compilers. (Whether tests are compiled in batches or individually may
+vary from test suite to test suite. Thus, a single failed Test Build may
+indicate that more than one test resulted in a compilation error.)
+
+EOT;
+
+$help['runs'] = <<<EOT
+
+<a name=runs_help>
+<strong>Test Run</strong> <br>
+
+The running of the individual tests using <tt>mpirun</tt> or your chosen
+resource manager.
 
 EOT;
 
