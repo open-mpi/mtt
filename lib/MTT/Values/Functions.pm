@@ -723,7 +723,7 @@ sub pbs_max_procs {
 sub loadleveler_job {
     Debug("&loadleveler_job\n");
 
-    return (exists($ENV{LOADL_PROCESSOR_LIST}) ? "1" : "0");
+    return (exists($ENV{LOADLBATCH}) ? "1" : "0");
 }
 
 #--------------------------------------------------------------------------
@@ -738,10 +738,15 @@ sub loadleveler_max_procs {
 
     # Just count the number of tokens in $LOADL_PROCESSOR_LIST
 
-    my @hosts = split(/ /, $ENV{LOADL_PROCESSOR_LIST});
+    my $ret = 2;
+    if (exists($ENV{LOADL_PROCESSOR_LIST}) && 
+	$ENV{LOADL_PROCESSOR_LIST} ne "") {
+      my @hosts = split(/ /, $ENV{LOADL_PROCESSOR_LIST});
+      $ret = $#hosts + 1;
+    }
 
-    Debug("&loadleveler_max_procs returning: " . ($#hosts + 1) . "\n");
-    return ($#hosts + 1);
+    Debug("&loadleveler_max_procs returning: $ret\n");
+    return $ret;
 }
 
 1;
