@@ -529,6 +529,8 @@ sub env_max_procs {
         if slurm_job();
     return pbs_max_procs()
         if pbs_job();
+    return loadleveler_max_procs()
+        if loadleveler_job();
 
     # Hostfile
     return hostfile_max_procs()
