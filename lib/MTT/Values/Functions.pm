@@ -717,4 +717,31 @@ sub pbs_max_procs {
     return "$lines";
 }
 
+#--------------------------------------------------------------------------
+
+# Return "1" if we're running in a Load Leveler job; "0" otherwise.
+sub loadleveler_job {
+    Debug("&loadleveler_job\n");
+
+    return (exists($ENV{LOADL_PROCESSOR_LIST}) ? "1" : "0");
+}
+
+#--------------------------------------------------------------------------
+
+# If in a Load Leveler job, return the max number of processes we can
+# run.  Otherwise, return 0.
+sub loadleveler_max_procs {
+    Debug("&loadleveler_max_procs\n");
+
+    return "0"
+        if (!loadleveler_job());
+
+    # Just count the number of tokens in $LOADL_PROCESSOR_LIST
+
+    my @hosts = split(/ /, $ENV{LOADL_PROCESSOR_LIST});
+
+    Debug("&loadleveler_max_procs returning: " . ($#hosts + 1) . "\n");
+    return ($#hosts + 1);
+}
+
 1;
