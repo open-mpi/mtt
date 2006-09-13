@@ -30,8 +30,6 @@ EOT;
 
 $help['Phase'] = <<<EOT
 
-<a name=phase_help>
-
 MTT submits results to the database on three of its phases. The column
 headers above the pass/fail columns map to the following ini section
 names:
@@ -40,8 +38,7 @@ EOT;
 
 $help['installs'] = <<<EOT
 
-<a name=installs_help>
-<strong>MPI Install</strong> <br>
+<b>MPI Install</b> <br>
 
 The configuring and building of the MPI library.
 
@@ -49,8 +46,7 @@ EOT;
 
 $help['builds'] = <<<EOT
 
-<a name=builds_help>
-<strong>Test Build</strong> <br>
+<b>Test Build</b> <br>
 
 The compiling of the individual tests with the Open MPI wrapper
 compilers. (Whether tests are compiled in batches or individually may
@@ -61,8 +57,7 @@ EOT;
 
 $help['runs'] = <<<EOT
 
-<a name=runs_help>
-<strong>Test Run</strong> <br>
+<b>Test Run</b> <br>
 
 The running of the individual tests using <tt>mpirun</tt> or your chosen
 resource manager.

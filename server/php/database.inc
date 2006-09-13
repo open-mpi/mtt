@@ -230,10 +230,12 @@ $main_menu["success"]["options"] = array(
     "Fail",
 );
 
+$dbname = 'mtt';
+
 # Setup db connection
-$dbname = isset($_GET['db'])   ? $_GET['db']   : "mtt";
-$user   = isset($_GET['user']) ? $_GET['user'] : "mtt";
-$pass   = "3o4m5p6i";
+if (isset($_GET['db']))
+    if (preg_match("/mtt/i", $_GET['db']))
+        $dbname = $_GET['db'];
 
 if (! ($conn = pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass")))
     exit_("<br><b><i>Could not connect to database server.</i></b>");
@@ -327,34 +329,25 @@ $translate_data_cell = array(
 function pg_query_simple($cmd, $conn) {
 
     $rows = array();
-    if ($res = pg_query($conn, $cmd)) {
-        while ($row = pg_fetch_row($res)) {
+    if ($resource = pg_query($conn, $cmd)) {
+        while ($row = pg_fetch_row($resource)) {
             array_push($rows, $row);
         }
     }
     else {
         debug("\n<br>postgres: " . pg_last_error() . "\n" . pg_result_error());
     }
-    return array_map('join',$rows);
+    return array_map('join', $rows);
 }
 
-# pg_query that returns a 2D list
+# pg_query that returns a pgsql resource
+# (return a resource instead of a 2D list to save memory)
 function pg_query_($cmd, $conn) {
 
-    $rows = array();
-    if ($res = pg_query($conn, $cmd)) {
-        while ($row = pg_fetch_row($res)) {
-            array_push($rows, $row);
-        }
-
-        # Think about the advantages in returning a hash of results
-        # versus an array (esp. wrt readability)
-        # $rows = pg_fetch_all($res);
-    }
-    else {
+    if ($resource = pg_query($conn, $cmd))
+        return $resource;
+    else
         debug("\n<br>postgres: " . pg_last_error() . "\n" . pg_result_error());
-    }
-    return $rows;
 }
 
 # Return list of phase specific fields for each phase
@@ -448,11 +441,8 @@ function get_as_alias($str) {
 }
 
 # Take an sql filter and explain it in plain-english
-# Clean this up - too many regexps that could be consolidated
+# X: Clean this up - too many regexps that could be consolidated
 # Would it make more sense to go cgi_to_en?
-# X: have this return a 2-element array, vs. a string
-#    field => filter
-# X: regexps
 function sql_to_en($str) {
 
     global $translate_data_cell;
@@ -610,6 +600,7 @@ function sql_to_en($str) {
     return $tuple;
 }
 
+# Fetch all values in database for each item in list
 function populate_menu($list, $table) {
 
     global $conn;

@@ -38,6 +38,8 @@ $selects['per_phase']['all']     = array();
 
 $filters = array();
 
+$sfont = "-0";
+
 # Dump query description, results table, and link to query
 function dump_report() {
 
@@ -57,6 +59,7 @@ function dump_report() {
     global $timestamp;
     global $thcolor, $gray, $dgray, $lgray, $llgray, 
            $lllgray, $lred, $lgreen, $lyellow, $white;
+    global $sfont;
 
     if (! ($conn = pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass")))
         exit_("<br><b><i>Could not connect to database server.</i></b>");
@@ -174,7 +177,7 @@ function dump_report() {
 
     debug_sql($cmd);
 
-    $rows = pg_query_("\n$cmd", $conn);
+    $resource = pg_query_("\n$cmd", $conn);
 
     # Create a new temp table for every level
     $cmd = "\nDROP TABLE tmp;";
@@ -191,7 +194,7 @@ function dump_report() {
 
     # This block should be useful for a customized report (e.g., summary.php)
     if (isset($_GET['just_results'])) {
-        dump_data_table($headers, $rows);
+        dump_data_table($headers, $resource);
         return;
     }
 
@@ -209,10 +212,9 @@ function dump_report() {
     } else
         $filters_desc_html_table = null;
 
-
     print $filters_desc_html_table;
 
-    dump_data_table($headers, $rows);
+    dump_data_table($headers, $resource);
 
     print info_pointers();
     print help(phases_help($phases));
@@ -221,7 +223,7 @@ function dump_report() {
 }
 
 # void function to print out html data table
-function dump_data_table($headers, $rows) {
+function dump_data_table($headers, $resource) {
 
     # global declarations
     global $phases, $phase_labels;
@@ -233,7 +235,7 @@ function dump_data_table($headers, $rows) {
            $lllgray, $lred, $lgreen, $lyellow, $white;
 
     # Do not print an empty table
-    if (! $rows) {
+    if (! $resource) {
         print "<b><i>No data available for the specified query.</i></b>";
         return;
     }
@@ -258,7 +260,7 @@ function dump_data_table($headers, $rows) {
     foreach ($phases['per_level'] as $ph) {
         print 
             sprintf("\n<th bgcolor='$thcolor' colspan=2>%s", 
-                $phase_labels[$ph] . help("<sup>[" . $i++ . "]"));
+                $phase_labels[$ph] . help("<sup>[" . $i++ . "]</sup>"));
     }
     if ($selects['per_level']['details'])
         print sprintf("\n<th bgcolor='$thcolor' rowspan=2>%s", "[i]");
@@ -272,7 +274,7 @@ function dump_data_table($headers, $rows) {
     }
 
     # Display data rows
-    while ($row = array_shift($rows)) {
+    while ($row = pg_fetch_row($resource)) {
 
         $details_html_table = "";
 
@@ -320,8 +322,8 @@ function dump_data_table($headers, $rows) {
             print "<td align=center bgcolor=$lgray>" .
                   "<a href='javascript:popup(\"900\",\"750\",\"" .
                   "$phase_labels[$phase]: Detailed Info\",\"" .
-                  strip_quotes($details_html_table) . "\",\"\",\" font-family:Courier,monospace\")' " .
-                     " class='lgray_ln'><font size='-2'>" .
+                  htmlentities(strip_quotes($details_html_table)) . "\",\"\",\" font-family:Courier,monospace\")' " .
+                     " class='lgray_ln'><font size='$sfont'>" .
                   "[i]</font><a>";
         }
     }
@@ -335,8 +337,10 @@ function dump_data_table($headers, $rows) {
 function filters_description($filters) {
 
     global $config, $level;
-    global $thcolor, $gray, $dgray, $lgray, $llgray, $lllgray, $lred, $lgreen, $lyellow, $white;
+    global $thcolor, $gray, $dgray, $lgray, $llgray, 
+           $lllgray, $lred, $lgreen, $lyellow, $white;
     global $help;
+    global $sfont;
 
     # Create a plain-english description of the filters
     if (sizeof($filters) > 0) {
@@ -355,8 +359,8 @@ function filters_description($filters) {
             # The 'Count' setting is not used at the $filters level
             "<tr><td bgcolor=$lgray>Count <td bgcolor=$llgray>" .
             $count . " *" .
-            "<tr><td colspan=2 bgcolor=$lllgray><i><font size=-2>*" . 
-                $help[$count] . "</font></i>" .
+                help("<tr><td colspan=2 bgcolor=$lllgray><i><font size='$sfont'>*" .
+                    $help[$count] . "</font></i>") .
             "</table><br>" .
             "";
     }
@@ -502,12 +506,14 @@ function info_pointers() {
     global $thcolor, $gray, $dgray, $lgray, $llgray, 
            $lllgray, $lred, $lgreen, $lyellow, $white;
     global $domain;
+    global $sfont;
 
     $links = "\n<div align=left><br><br><table border=1><tr><td bgcolor=$lgray><a href='" . $domain .
                 $_SERVER['PHP_SELF'] . '?' .
                 dump_query_string($_GET) .
-                "' class='lgray_ln'><font size='-1'>[Link to this query]</a>" .
-                "</table>";
+                "' class='lgray_ln'><font size='$sfont'>[Link to this query]</font></a>" .
+                "</table>" .
+                "</div>";
 
     if (isset($_GET['info_links'])) {
 
@@ -518,13 +524,15 @@ function info_pointers() {
         $links .= "\n<div align=left><br>" .
                    "\n<table border=1><tr><td bgcolor=$lgray><a href='" . 
                    # Note: do *not* put a slash between domain and path
-                   $domain  . $summary . "' class='lgray_ln'><font size='-1'>[Summary report]</a>" .
-                   "</table>";
+                   $domain  . $summary . "' class='lgray_ln'><font size='$sfont'>[Summary report]</font></a>" .
+                   "</table>" .
+                   "</div>";
 
         $links .= "\n<div align=left><br>" .
                    "\n<table border=1><tr><td bgcolor=$lgray><a href='" . 
-                   $domain . $customs . "' class='lgray_ln'><font size='-1'>[Custom reports]</a>" .
-                   "</table>";
+                   $domain . $customs . "' class='lgray_ln'><font size='$sfont'>[Custom reports]</font></a>" .
+                   "</table>" .
+                   "</div>";
     }
     return $links;
 }
@@ -532,18 +540,20 @@ function info_pointers() {
 # Return HTML string displaying explanation of phases
 function phases_help($phases) {
 
-    global $help;
+    global $help, $sfont;
 
     $i = 1;
     $phases_help = "\n<div align=left><br>" .
                    "\n<table border=0 width=40%><tr><td>" .
-                   "\n<br><i><font size=-2>" . $help['Phase'] . "</font></i><br>";
+                   "\n<i><font size='$sfont'>" . 
+                   "\n" . $help['Phase'] . "</font><br>";
 
     foreach ($phases['per_level'] as $ph) {
         $phases_help .= 
-            "\n<br><i><font size=-2><strong><sup>[" . $i++ . "]</strong> " . $help[$ph] . "</font></i>";
+            "\n<br><b><font size='$sfont'><sup>[" . $i++ . "]</sup></b> " . $help[$ph] . "</font>";
     }
-    $phases_help .= "\n</table>";
+    $phases_help .= "\n</i></table>" .
+                    "\n</div>";
 
     return $phases_help;
 }

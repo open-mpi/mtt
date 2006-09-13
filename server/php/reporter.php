@@ -37,6 +37,7 @@ else
 
 # X: which .inc's do we really need?
 $topdir = ".";
+include_once("/l/osl/www/doc/www.open-mpi.org/dbpassword.inc");
 include_once("$topdir/reporter.inc");
 include_once("$topdir/screen.inc");
 include_once("$topdir/report.inc");
