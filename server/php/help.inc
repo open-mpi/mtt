@@ -38,29 +38,24 @@ EOT;
 
 $help['installs'] = <<<EOT
 
-<b>MPI Install</b> <br>
-
-The configuring and building of the MPI library.
+<b>MPI Install:</b> The configuring and building of the MPI library.
 
 EOT;
 
 $help['builds'] = <<<EOT
 
-<b>Test Build</b> <br>
-
-The compiling of the individual tests with the Open MPI wrapper
-compilers. (Whether tests are compiled in batches or individually may
-vary from test suite to test suite. Thus, a single failed Test Build may
-indicate that more than one test resulted in a compilation error.)
+<b>Test Build:</b> The compiling of the individual tests with the Open
+MPI wrapper compilers. (Whether tests are compiled in batches or
+individually may vary from test suite to test suite. Thus, a single
+failed Test Build may indicate that more than one test resulted in a
+compilation error.)
 
 EOT;
 
 $help['runs'] = <<<EOT
 
-<b>Test Run</b> <br>
-
-The running of the individual tests using <tt>mpirun</tt> or your chosen
-resource manager.
+<b>Test Run:</b> The running of the individual tests using
+<tt>mpirun</tt> or your chosen resource manager.
 
 EOT;
 

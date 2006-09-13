@@ -60,6 +60,7 @@ function dump_report() {
     global $thcolor, $gray, $dgray, $lgray, $llgray, 
            $lllgray, $lred, $lgreen, $lyellow, $white;
     global $sfont;
+    global $mpi_logo_path, $mpi_logo_url, $url_basename;
 
     if (! ($conn = pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass")))
         exit_("<br><b><i>Could not connect to database server.</i></b>");
@@ -200,14 +201,18 @@ function dump_report() {
 
     $filters_desc_html_table = filters_description($filters);
 
+    list($width, $height, $type, $attr) = getimagesize($mpi_logo_path);
+
     # Report description (echo user input)
     if ($filters_desc_html_table and ! isset($_GET['just_results'])) {
         $filters_desc_html_table = "<a name=report></a>" .
                                    "<br><table width=100%><tr>" .
                                    "<td valign=top>$filters_desc_html_table" .
-                                   "<td valign=top align='right'><a href='$domain'>" .
-                                   "<img src='$topdir/images/open-mpi-logo.png' border=0 height=75 " .
-                                   "alt='$domain/mtt'></a>" .
+                                   "<td valign=top align='right'><a href='$url_basename'> " .
+                                   "<img src='$mpi_logo_url' border=0 " .
+                                   "height=" . $height * 0.6 . " " .
+                                   "width=" . $width * 0.6 . " " .
+                                   "alt='$url_basename'></a>" .
                                    "</table><br>";
     } else
         $filters_desc_html_table = null;
@@ -544,9 +549,9 @@ function phases_help($phases) {
 
     $i = 1;
     $phases_help = "\n<div align=left><br>" .
-                   "\n<table border=0 width=40%><tr><td>" .
+                   "\n<table border=0 width=100%><tr><td>" .
                    "\n<i><font size='$sfont'>" . 
-                   "\n" . $help['Phase'] . "</font><br>";
+                   "\n" . $help['Phase'] . "</font>";
 
     foreach ($phases['per_level'] as $ph) {
         $phases_help .= 

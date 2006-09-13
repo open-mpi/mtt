@@ -250,8 +250,6 @@ $by_atoms = array(
     "by_test_run" => "By test run",
 );
 
-$domain  = "http://www.open-mpi.org";
-
 $client = "MTT";
 
 $results['from_perm_tbl'] = array();

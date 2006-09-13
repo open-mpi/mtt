@@ -213,12 +213,17 @@ $query_screen .= "\n<form name=$form_id target=" . (($_GET['1-page'] == 'on') ? 
 
 $query_screen .= carryover_cgi_params($_GET);
 
+list($width, $height, $type, $attr) = getimagesize($mpi_logo_path);
+
 $query_screen .= "\n<table align=center border=1 cellspacing=1 cellpadding=5 width=100%>";
 $query_screen .= "\n<th align=center rowspan=4 bgcolor=$dgray><font size=24pt color=$lllgray>" .
                      "<a href='$domain' class='lgray_ln'>" .
-                         "<img width=55 height=55 src='$topdir/images/open-mpi-logo.png'>" .
+                     "<img src='$mpi_logo_url' " .
+                         "width=" . $width * 0.4 . " height=" . $height * 0.4 . ">" .
                      "</a><br>" .
-                     "<img width=55 height=525 src='$topdir/images/reporter_logo.gif'>";
+                     "<img src='$reporter_logo_url' " .
+                         "width=55 height=525>";
+
 #$query_screen .= "\n<th align=center colspan=2 rowspan=1 bgcolor=$dgray><font size=24pt color=$lllgray>" .
 #                 "\nOpen MPI $br Test $br Reporter";
 $query_screen .= "\n<tr><td bgcolor=$lllgray valign=top>";
