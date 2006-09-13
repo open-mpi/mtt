@@ -20,7 +20,7 @@ $javascript = <<<EOT
 
     function popup(width,height,title,content,style) {
 
-        newwindow2=window.open('','name','height=' + height + ',width=' + width + ' scrollbars=yes');
+        newwindow2=window.open('','name','height=' + height + ',width=' + width + ',scrollbars=yes');
         var tmp = newwindow2.document;
         tmp.write('<html><head><title>' + title + '</title>');
         tmp.write('<body ' + style + '>' + content + '</body></html>');
