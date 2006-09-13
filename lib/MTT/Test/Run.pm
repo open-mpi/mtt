@@ -347,6 +347,20 @@ sub _run_one_test {
         return;
     }
 
+    # Setup some environment variables for steps
+    delete $ENV{MTT_TEST_NP};
+    $ENV{MTT_TEST_PREFIX} = $test_prefix;
+    if (MTT::Values::Functions::have_hostfile()) {
+        $ENV{MTT_TEST_HOSTFILE} = MTT::Values::Functions::hostfile();
+    } else {
+        $ENV{MTT_TEST_HOSTFILE} = "";
+    }
+    if (MTT::Values::Functions::have_hostlist()) {
+        $ENV{MTT_TEST_HOSTLIST} = MTT::Values::Functions::hostlist();
+    } else {
+        $ENV{MTT_TEST_HOSTLIST} = "";
+    }
+
     # See if we need to run the before_all step.
     if (! exists($mpi_details->{ran_some_tests})) {
         _run_step($mpi_details, "before_any");
@@ -354,6 +368,7 @@ sub _run_one_test {
     $mpi_details->{ran_some_tests} = 1;
 
     # If there is a before_each step, run it
+    $ENV{MTT_TEST_NP} = $test_np;
     _run_step($mpi_details, "before_each");
 
     my $timeout = MTT::Values::EvaluateString($run->{timeout});
