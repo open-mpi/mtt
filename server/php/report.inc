@@ -506,7 +506,7 @@ function get_phase_selection($params) {
         $phase_selection = $which_phases;
     }
     # Did they specify a specific phase in the phase menu?
-    elseif ($selected != $All) {
+    if ($selected != $All) {
         $phase_selection = array($selected);
     }
     # Default: show all phases
