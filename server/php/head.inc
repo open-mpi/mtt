@@ -84,6 +84,11 @@ $style = <<<EOT
     a.lgray_ln:active  { color: #FFFFFF } /* when link is clicked */
     a.lgray_ln:hover   { color: #FFFF40 } /* when mouse is over link */
 
+    a.black_ln:link    { color: #000000 } /* for unvisited links */
+    a.black_ln:visited { color: #555555 } /* for visited links */
+    a.black_ln:active  { color: #FFFFFF } /* when link is clicked */
+    a.black_ln:hover   { color: #FFFF40 } /* when mouse is over link */
+
 EOT;
 
 ?>

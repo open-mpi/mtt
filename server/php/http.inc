@@ -137,17 +137,16 @@ function is_rolled($field) {
     if ($_GET["agg_$field"] == 'on')
         return true;
 }
+
 function is_not_rolled($field) {
     $field = get_as_alias($field);
     if ($_GET["agg_$field"] != 'on')
         return true;
 }
 
-
 # Return list of field_ selects
 function get_select_fields($params) {
 
-    global $field_clauses;
     global $cgi_abbrevs;
 
     $selects = array();
@@ -155,7 +154,7 @@ function get_select_fields($params) {
     foreach (array_keys($params) as $p) {
         if (preg_match("/^" . $cgi_abbrevs['menufield'] . "(\w+)$/i", $p, $m)) {
             $f = $m[1];
-            $clause = ($field_clauses[$f] ? $field_clauses[$f] : $f);
+            $clause = $f;
             array_push($selects, strtolower($clause));
         }
     }
@@ -218,6 +217,5 @@ function dump_query_string($params) {
 function is_starred($str) {
     return preg_match('/^\s*\*/',$str);
 }
-
 
 ?>

@@ -56,7 +56,7 @@ function dump_report() {
     global $field_labels, $All;
     global $groupbys_str, $orderbys_str, $selects_str;
     global $cgi_abbrevs;
-    global $timestamp;
+    global $timestamp, $abs_date_range;
     global $thcolor, $gray, $dgray, $lgray, $llgray, 
            $lllgray, $lred, $lgreen, $lyellow, $white;
     global $sfont;
@@ -338,6 +338,8 @@ function dump_data_table($headers, $resource) {
     print "\n\n<!-- report_end -->\n\n";
 }
 
+$abs_date_range = "";
+
 # Return an HTML table describing the SQL filters used in $filters
 function filters_description($filters) {
 
@@ -346,6 +348,7 @@ function filters_description($filters) {
            $lllgray, $lred, $lgreen, $lyellow, $white;
     global $help;
     global $sfont;
+    global $abs_date_range;
 
     # Create a plain-english description of the filters
     if (sizeof($filters) > 0) {
@@ -354,6 +357,14 @@ function filters_description($filters) {
 
         foreach ($filters as $filter) {
             $tuple = sql_to_en($filter);
+
+            if (! $tuple[0])
+                continue;
+            
+            # blech - crude way of snarfing absolute date range
+            if (preg_match("/date/i", $tuple[0]))
+                $abs_date_range = $tuple[1];
+
             $filters_desc_html_table .=
                 sprintf("\n<tr><td bgcolor=$lgray>%s<td bgcolor=$llgray>%s",
                     ascii_sp_to_html_sp($tuple[0]), 
@@ -508,17 +519,43 @@ function get_phase_selection($params) {
 # Show links to point user to more info ...
 function info_pointers() {
 
-    global $thcolor, $gray, $dgray, $lgray, $llgray, 
+    global $thcolor, $gray, $dgray, $lgray, $llgray,
            $lllgray, $lred, $lgreen, $lyellow, $white;
     global $domain;
     global $sfont;
+    global $cgi_abbrevs;
+    global $abs_date_range, $timestamp, $dash;
 
-    $links = "\n<div align=left><br><br><table border=1><tr><td bgcolor=$lgray><a href='" . $domain .
-                $_SERVER['PHP_SELF'] . '?' .
-                dump_query_string($_GET) .
-                "' class='lgray_ln'><font size='$sfont'>[Link to this query]</font></a>" .
-                "</table>" .
-                "</div>";
+    $tstamp = $cgi_abbrevs['mainfield'] . $timestamp;
+
+    $query_string1 = dump_query_string($_GET) . 
+                     '&no_bookmarks';
+    $query_string2 = preg_replace(
+                        '/(&' . $tstamp . '=)([^&]+)/',
+                        '${1}'.$abs_date_range, $query_string1 . 
+                        '&no_bookmarks');
+
+    if (! isset($_GET['no_bookmarks'])) {
+
+        $links = "\n<div align=left><br>" .
+                 "\n<table border=1><tr><th bgcolor='$lgray' colspan=2>Bookmarks";
+
+        # Can't be a relative link to an absolute date range report
+        $links .= "\n<tr>" .
+                  "\n<td bgcolor=$lgray>Relative date range<td bgcolor=$llgray><a href='" . $domain .
+                      $_SERVER['PHP_SELF'] . '?' .
+                      $query_string1 .
+                  "' class='black_ln'><font size='$sfont'>[Link]</font></a>";
+
+        $links .= "\n<tr>" .
+                  "\n<td bgcolor=$lgray>Absolute date range<td bgcolor=$llgray><a href='" . $domain .
+                      $_SERVER['PHP_SELF'] . '?' .
+                      $query_string2 .
+                  "' class='black_ln'><font size='$sfont'>[Link]</font></a>";
+
+        $links .= "\n</table>" .
+                  "\n</div>";
+    }
 
     if (isset($_GET['info_links'])) {
 

@@ -104,7 +104,7 @@ $config['phase'] = array(
 $config['aggs'] = array(
     
     "&" . $cgi_abbrevs["mainfield"] . "agg_timestamp=-" .
-    "&agg_cluster=on" . 
+    "&agg_platform_id=on" . 
     "&agg_mpi_name=on" . 
     "&agg_mpi_version=on" .
     "&agg_os_version=on" .
@@ -129,7 +129,7 @@ $config['aggs'] = array(
 );
 
 $menufields =
-    "&" . $cgi_abbrevs["menufield"] . "cluster=All" . 
+    "&" . $cgi_abbrevs["menufield"] . "platform_id=All" . 
     "&" . $cgi_abbrevs["menufield"] . "mpi_name=All" .
     "&" . $cgi_abbrevs["menufield"] . "mpi_version=All" .
     "&" . $cgi_abbrevs["menufield"] . "os_name=All" . 

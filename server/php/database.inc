@@ -94,7 +94,7 @@ $columns["advanced"] = array(
 );
 
 $cluster_field =
-    "platform_id as cluster";
+    "platform_id";
 
 $columns['once'] = array(
     "platform_hardware" => $string_filter_types,
@@ -142,8 +142,6 @@ $results_types = array(
 #       For now, comment out fields we're not including in the summary report.
 
 # phase => array(fields belonging to phase)
-
-$field_clauses = array('cluster' => $cluster_field);
 
 # run-key definition
 $fields_run_key = array(
@@ -406,6 +404,8 @@ function get_non_run_key_params($arr) {
 function get_date_filter($filter) {
 
     global $words_to_numerals;
+    global $dash;
+    global $cgi_abbrevs;
 
     $filters = array();
 
@@ -424,6 +424,19 @@ function get_date_filter($filter) {
                     $m[2] . "'");
 
     }
+    elseif (preg_match("/(.*)$dash(.*)/i", $filter, $m)) {
+
+        array_push($filters, 
+                    "start_test_timestamp > " .
+                    "'" .  $m[1] . "'" .
+                    ""
+        );
+        array_push($filters, 
+                    "start_test_timestamp < " .
+                    "'" .  $m[2] . "'" .
+                    ""
+        );
+    }
     return $filters;
 }
 
@@ -438,6 +451,8 @@ function get_as_alias($str) {
     }
 }
 
+$dash = " through ";
+
 # Take an sql filter and explain it in plain-english
 # X: Clean this up - too many regexps that could be consolidated
 # Would it make more sense to go cgi_to_en?
@@ -446,6 +461,10 @@ function sql_to_en($str) {
     global $translate_data_cell;
     global $field_labels;
     global $gray, $lgray, $llgray;
+    global $dash;
+    global $cgi_abbrevs, $timestamp;
+    global $abs_date_range, $rel_date_range;
+    global $dbname, $user, $pass;
 
     $date_format = "m-d-Y";
     $time_format = "H:i:s";
@@ -457,7 +476,6 @@ function sql_to_en($str) {
     # regexp quotes
     $qs = '\x22\x27';
     $q = '[\x22|\x27]?';
-    $dash = "<b> - </b>";
     $ca = '\^'; # carrot
     $ds = '\$'; # dollar sign
 
@@ -467,83 +485,55 @@ function sql_to_en($str) {
 
     if (preg_match("/(\w+_timestamp)/i", $str, $m)) {
 
+        if (! ($conn = pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass")))
+            exit_("<br><b><i>Could not connect to database server.</i></b>");
+
         $field = "Date Range";
+
+        # Unfortunate to have to resort to looking at input params in this function
+        $abs_date_range = $_GET[$cgi_abbrevs['mainfield'] . $timestamp];
+
+        if (preg_match("/$dash/i", $abs_date_range)) {
+            if (preg_match("/>/", $str))  # better way to not duplicate date range desc?
+                $filter = $abs_date_range;
+            else {
+                $filter = null;
+                $field = null;
+            }
+        }
 
         # E.g., start_test_timestamp > now() - interval '3 Days'
         #       start_test_timestamp > date_trunc('day', now())
-        # X: Cover other comparisons for timestamps
-        if (preg_match("/([><=])\s*$q\s*now\(\)\s*-\s*interval\s*'(\d+)\s*(\w+)'$q/i", $str, $m)) {
+        elseif (preg_match("/([><=])\s*$q\s*((now\(\))\s*-\s*interval\s*'(\d+)\s*(\w+)')$q/i", $str, $m)) {
 
             $op = $m[1];
-            $num = $m[2];
-            $units = $m[3];
+            $start = $m[2];
+            $end = $m[3];
+            $num = $m[4];
+            $units = $m[5];
 
-            $days = 1;
-            $hours = 1;
-            $mins = 1;
-            $secs = 1;
-
-            if (preg_match("/year/i", $units)) {
-                $days  = 365 * $num;
-                $hours = 24;
-                $mins  = 60;
-                $secs  = 60;
-            }
-            elseif (preg_match("/month/i", $units)) {
-                $days  = 30 * $num;          # Doh, not all months are 30!
-                $hours = 24;
-                $mins  = 60;
-                $secs  = 60;
-            }
-            elseif (preg_match("/week/i", $units)) {
-                $days  = 7 * $num;
-                $hours = 24;
-                $mins  = 60;
-                $secs  = 60;
-            }
-            elseif (preg_match("/day/i", $units)) {
-                $days  = 1 * $num;
-                $hours = 24;
-                $mins  = 60;
-                $secs  = 60;
-            }
-            elseif (preg_match("/hour/i", $units)) {
-                $hours = $num;
-                $mins  = 60;
-                $secs  = 60;
-            }
-            elseif (preg_match("/minute/i", $units)) {
-                $mins = $num;
-                $secs = 60;
-            }
-            elseif (preg_match("/second/i", $units)) {
-                $secs = $num;
-            }
-
-            $format = $date_format . " " . $time_format;
-
-            $filter .=
-                  date($format,
-                        time() - ($days * $hours * $mins * $secs)) . " " . $dash .
-                  date($format);
+            $start = array_shift(pg_query_simple(
+                        "SELECT substring(date_trunc('second', $start) from 0 for 20)", $conn));
+            $end = array_shift(pg_query_simple(
+                        "SELECT substring(date_trunc('second', $end) from 0 for 20)", $conn));
+            $filter = $start . $dash . $end;
         }
-        # Yesterday in postgres means yesterday at 12:00 am
         elseif (preg_match("/yesterday/i", $str, $m)) {
 
-            $filter .=
-                  date($date_format, time() - (1 * 24 * 60 * 60)) . " 00:00:00 " .  $dash .
-                  date($date_format . " " . $time_format);
+            $start = array_shift(pg_query_simple(
+                        "SELECT substring(date_trunc('second', TIMESTAMP 'yesterday') from 0 for 20)", $conn));
+            $end = array_shift(pg_query_simple(
+                        "SELECT substring(date_trunc('second', now()) from 0 for 20)", $conn));
+            $filter = $start . $dash . $end;
         }
-        # Today
-        # E.g., start_test_timestamp > date_trunc('day', now())
-        # Watch out for them darn parenthesees, they need to be escaped
         elseif (preg_match("/date_trunc\(\s*$q"."day"."$q/i", $str)) {
 
-            $filter .=
-                  date($date_format, time()) . " 00:00:00 " . $dash .
-                  date($date_format . " " . $time_format);
+            $start = array_shift(pg_query_simple(
+                        "SELECT substring(date_trunc('day', now()) from 0 for 20)", $conn));
+            $end = array_shift(pg_query_simple(
+                        "SELECT substring(date_trunc('second', now()) from 0 for 20)", $conn));
+            $filter = $start . $dash . $end;
         }
-        $filter .= date(" O");
     }
     # success = 't|f'
     elseif (preg_match("/(test_pass|success)\s*=\s*$q(\w+)$q/i", $str, $m)) {
