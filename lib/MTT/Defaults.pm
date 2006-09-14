@@ -42,8 +42,8 @@ our $MPI_install = {
     configure_arguments => "",
     save_stdout_on_success => 0,
     merge_stdout_stderr => 0,
-    stdout_save_lines => 0,
-    stderr_save_lines => -1,
+    stdout_save_lines => 100,
+    stderr_save_lines => 100,
     make_check => 0,
 
 };
@@ -53,24 +53,23 @@ our $Test_build = {
     perfbase_xml => "inp_test_build.xml",
     mpi_install => "all",
     save_stdout_on_success => 0,
-    merge_stdout_stderr => 0,
-    stdout_save_lines => 0,
-    stderr_save_lines => -1,
+    merge_stdout_stderr => 1,
+    stdout_save_lines => 100,
+    stderr_save_lines => 100,
 };
 
-# Test run phase
-our $Test_run = {
-    perfbase_xml => "inp_test_run_correctness.xml",
+# Test specify phase
+our $Test_specify = {
+    pass => "&eq(&test_exit_status(), 0)",
     argv => "",
     np => "&env_max_np()",
     np_ok => 1,
-    pass => "&eq(&test_exit_status(), 0)",
     timeout => 30,
 
     save_stdout_on_pass => 0,
     merge_stdout_stderr => 1,
-    stdout_save_lines => 0,
-    stderr_save_lines => -1,
+    stdout_save_lines => 100,
+    stderr_save_lines => 100,
 };
 
 1;

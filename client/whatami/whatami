@@ -197,6 +197,9 @@ get_linux_type()
                 elif [ -n "`egrep 'Tao Linux release 1 ' /etc/issue`" ]; then
                         distro=tao_1.0
 
+                elif [ -n "`egrep 'White Box Enterprise Linux release 3.0' /etc/issue`" ]; then
+                        distro=white_box_enterprise_linux_3.0
+
                 else
                         distro=unknown_linux_type_please_send_us_a_patch
                 fi

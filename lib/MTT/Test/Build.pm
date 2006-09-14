@@ -35,7 +35,6 @@ package MTT::Test::Build;
 use strict;
 use Cwd;
 use Time::Local;
-use MTT::DoCommand;
 use MTT::Reporter;
 use MTT::Messages;
 use MTT::INI;
@@ -115,6 +114,12 @@ sub Build {
                                 # For each installation of that version
                                 foreach my $mpi_install_key (keys(%{$mpi_version})) {
                                     my $mpi_install = $mpi_version->{$mpi_install_key};
+
+                                    # Only take sucessful MPI installs
+                                    if (!$mpi_install->{success}) {
+                                        Verbose("   Failed build for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] -- skipping\n");
+                                        next;
+                                    }
 
                                     # See if we've already got a
                                     # successful test build for this
@@ -376,15 +381,17 @@ sub _do_build {
         # Submit it!
         MTT::Reporter::Submit("Test Build", $simple_section, $report);
 
-        # It's been saved to a file, so reclaim potentially a good
-        # chunk of memory...
+        # It's been saved, so reclaim potentially a good chunk of
+        # memory...
         delete $ret->{stdout};
         delete $ret->{stderr};
         
-        # If it was a good build, save it
+        # Save it
+        $MTT::Test::builds->{$mpi_install->{mpi_get_simple_section_name}}->{$mpi_install->{mpi_version}}->{$mpi_install->{simple_section_name}}->{$simple_section} = $ret;
+        MTT::Test::SaveBuilds($build_base);
+        
+        # Print
         if (1 == $ret->{success}) {
-            $MTT::Test::builds->{$mpi_install->{mpi_get_simple_section_name}}->{$mpi_install->{mpi_version}}->{$mpi_install->{simple_section_name}}->{$simple_section} = $ret;
-            MTT::Test::SaveBuilds($build_base);
             Verbose("   Completed test build successfully\n");
         } else {
             Warning("Failed to build test [$section]: $ret->{result_message}\n");

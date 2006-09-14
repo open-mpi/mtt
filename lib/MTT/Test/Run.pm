@@ -53,11 +53,11 @@ sub Run {
     # names that begin with "Test run:"
     foreach my $section ($ini->Sections()) {
         if ($section =~ /^\s*test run:/) {
-            Verbose(">> Test run [$section]\n");
 
             # Simple section name
             my $simple_section = $section;
             $simple_section =~ s/^\s*test run:\s*//;
+            Verbose(">> Test run [$simple_section]\n");
 
             # Ensure that we have a test build name
             my $test_build_value = MTT::Values::Value($ini, $section, "test_build");
@@ -83,7 +83,11 @@ sub Run {
                                 
                                 if ($test_build_key eq $test_build_name) {
                                     my $test_build = $MTT::Test::builds->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key}->{$test_build_key};
-                                    Debug("Found a match! $test_build_key [$simple_section");
+                                    Debug("Found a match! $test_build_key [$simple_section\n");
+                                    if (!$test_build->{success}) {
+                                        Debug("But that build was borked -- skipping\n");
+                                        next;
+                                    }
                                     my $mpi_install = $MTT::MPI::installs->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key};
                                     _do_run($ini, $section, $test_build, 
                                             $mpi_install, $top_dir, $force);
@@ -112,6 +116,7 @@ sub _do_run {
         return;
     }
 
+    Verbose(">> Running with [$mpi_install->{mpi_get_simple_section_name}] / [$mpi_install->{mpi_version}] / [$mpi_install->{simple_section_name}]\n");
     # Find an MPI details section for this MPI
     my $match = 0;
     my $mpi_details_section;
@@ -188,7 +193,7 @@ sub _do_run {
     MTT::Values::ProcessEnvKeys($mpi_install, \@save_env);
     # JMS: Do we need to grab from Test::Build as well?
     my $config;
-    %$config = %$MTT::Defaults::Test_run;
+    %$config = %$MTT::Defaults::Test_specify;
     $config->{setenv} = MTT::Values::Value($ini, $section, "setenv");
     $config->{unsetenv} = MTT::Values::Value($ini, $section, "unsetenv");
     $config->{prepend_path} = 
@@ -215,6 +220,12 @@ sub _do_run {
     $tmp = $ini->val($section, "save_output_on_pass");
     $config->{save_output_on_pass} = $tmp
         if (defined($tmp));
+    $tmp = $ini->val($section, "stderr_save_lines");
+    $config->{stderr_save_lines} = $tmp
+        if (defined($tmp));
+    $tmp = $ini->val($section, "stdout_save_lines");
+    $config->{stdout_save_lines} = $tmp
+        if (defined($tmp));
     $tmp = $ini->val($section, "merge_stdout_stderr");
     $config->{merge_stdout_stderr} = $tmp
         if (defined($tmp));
@@ -224,7 +235,7 @@ sub _do_run {
 
     # Run the module to get a list of tests to run
     my $ret = MTT::Module::Run("MTT::Test::Run::$module",
-                               "Run", $ini, $section, $test_build,
+                               "Specify", $ini, $section, $test_build,
                                $mpi_install, $config);
 
     # Analyze the return -- should give us a list of tests to run and
@@ -233,28 +244,21 @@ sub _do_run {
         my $test_results;
 
         # Loop through all the tests
-        foreach my $test (@{$ret->{tests}}) {
-            if (!exists($test->{executable})) {
+        foreach my $run (@{$ret->{tests}}) {
+            if (!exists($run->{executable})) {
                 Warning("No executable specified for text; skipped\n");
                 next;
             }
 
             # Get the values for this test
-            my $run;
             $run->{perfbase_xml} =
                 $ret->{perfbase_xml} ? $ret->{perfbase_xml} :
                 $MTT::Defaults::Test_run->{perfbase_xml};
             $run->{full_section_name} = $section;
             $run->{simple_section_name} = $section;
-            $run->{simple_section_name} = $section;
             $run->{simple_section_name} =~ s/^\s*test run:\s*//;
 
             $run->{test_build_simple_section_name} = $test_build->{simple_section_name};
-            $run->{executable} = $test->{executable};
-            foreach my $key (qw(np np_ok argv pass save_output_on_pass separate_stdout_stderr timeout)) {
-                my $str = "\$run->{$key} = exists(\$test->{$key}) ? \$test->{$key} : \$config->{$key}";
-                eval $str;
-            }
 
             # Setup some globals
             $test_executable = $run->{executable};
@@ -337,6 +341,20 @@ sub _run_one_test {
         return;
     }
 
+    # Setup some environment variables for steps
+    delete $ENV{MTT_TEST_NP};
+    $ENV{MTT_TEST_PREFIX} = $test_prefix;
+    if (MTT::Values::Functions::have_hostfile()) {
+        $ENV{MTT_TEST_HOSTFILE} = MTT::Values::Functions::hostfile();
+    } else {
+        $ENV{MTT_TEST_HOSTFILE} = "";
+    }
+    if (MTT::Values::Functions::have_hostlist()) {
+        $ENV{MTT_TEST_HOSTLIST} = MTT::Values::Functions::hostlist();
+    } else {
+        $ENV{MTT_TEST_HOSTLIST} = "";
+    }
+
     # See if we need to run the before_all step.
     if (! exists($mpi_details->{ran_some_tests})) {
         _run_step($mpi_details, "before_any");
@@ -344,13 +362,17 @@ sub _run_one_test {
     $mpi_details->{ran_some_tests} = 1;
 
     # If there is a before_each step, run it
+    $ENV{MTT_TEST_NP} = $test_np;
     _run_step($mpi_details, "before_each");
 
     my $timeout = MTT::Values::EvaluateString($run->{timeout});
-    my $separate = MTT::Values::EvaluateString($run->{separate_stdout_stderr});
+    my $out_lines = MTT::Values::EvaluateString($run->{stdout_save_lines});
+    my $err_lines = MTT::Values::EvaluateString($run->{stderr_save_lines});
+    my $merge = MTT::Values::EvaluateString($run->{merge_stdout_stderr});
     my $start_time = time;
     my $start = timegm(gmtime());
-    my $x = MTT::DoCommand::Cmd(!$separate, $cmd, $timeout);
+    my $x = MTT::DoCommand::Cmd($merge, $cmd, $timeout, 
+                                $out_lines, $err_lines);
     my $stop_time = time;
     my $duration = $stop_time - $start_time . " seconds";
     $test_exit_status = $x->{status};
@@ -398,8 +420,8 @@ sub _run_one_test {
         $want_output = $run->{save_output_on_pass};
     }
     if ($want_output) {
-        $report->{test_stdout} = $x->{stdout};
-        $report->{test_stderr} = $x->{stderr};
+        $report->{stdout} = $x->{stdout};
+        $report->{stderr} = $x->{stderr};
     }
     $MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$test_np}->{$cmd} = $report;
     MTT::Test::SaveRuns($top_dir);

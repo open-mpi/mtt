@@ -141,7 +141,8 @@ sub _quote_escape {
 
 # run a command and save the stdout / stderr
 sub Cmd {
-    my ($merge_output, $cmd, $timeout) = @_;
+    my ($merge_output, $cmd, $timeout, 
+        $max_stdout_lines, $max_stderr_lines) = @_;
 
     Debug("Running command: $cmd\n");
     pipe OUTread, OUTwrite;
@@ -209,7 +210,7 @@ sub Cmd {
     if (defined($timeout) && $timeout > 0) {
         $t = 1;
         $end_time = time() + $timeout;
-        Debug("Timeout: $t - $end_time (vs. now: " . time() . ")\n");
+        Debug("Timeout: $timeout - $end_time (vs. now: " . time() . ")\n");
     }
     my $killed_status;
     while ($done > 0) {
@@ -221,6 +222,10 @@ sub Cmd {
                 --$done;
             } else {
                 push(@out, $data);
+                if (defined($max_stdout_lines) && $max_stdout_lines > 0 &&
+                    $#out > $max_stdout_lines) {
+                    shift @out;
+                }
                 Debug("OUT:$data");
             }
         }
@@ -231,6 +236,10 @@ sub Cmd {
                 vec($rin, fileno(ERRread), 1) = 0;
                 --$done;
             } else {
+                if (defined($max_stderr_lines) && $max_stderr_lines > 0 &&
+                    $#err > $max_stderr_lines) {
+                    shift @err;
+                }
                 push(@err, $data);
                 Debug("ERR:$data");
             }
@@ -269,7 +278,8 @@ sub Cmd {
 #--------------------------------------------------------------------------
 
 sub CmdScript {
-    my ($merge_output, $cmds, $timeout) = @_;
+    my ($merge_output, $cmds, $timeout, 
+        $max_stdout_lines, $max_stderr_lines) = @_;
 
     my ($fh, $filename) = tempfile();
     print $fh ":\n$cmds\n";

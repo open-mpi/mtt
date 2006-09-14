@@ -529,6 +529,10 @@ sub env_max_procs {
         if slurm_job();
     return pbs_max_procs()
         if pbs_job();
+    return n1ge_max_procs()
+        if n1ge_job();
+    return loadleveler_max_procs()
+        if loadleveler_job();
 
     # Hostfile
     return hostfile_max_procs()
@@ -715,6 +719,69 @@ sub pbs_max_procs {
 
     Debug("&pbs_max_procs returning: $lines\n");
     return "$lines";
+}
+
+#--------------------------------------------------------------------------
+
+# Return "1" if we're running in a N1GE job; "0" otherwise.
+sub n1ge_job {
+    Debug("&n1ge_job\n");
+
+    return (exists($ENV{JOBID}) ? "1" : "0");
+}
+
+#--------------------------------------------------------------------------
+
+# If in a N1GE job, return the max number of processes we can run.
+# Otherwise, return 0.
+sub n1ge_max_procs {
+    Debug("&n1ge_max_procs\n");
+
+    return "0"
+        if (!n1ge_job());
+
+    # Just count the number of lines in the $PE_HOSTFILE
+
+    open (FILE, $ENV{PE_HOSTFILE}) || return "0";
+    my $lines = 0;
+    while (<FILE>) {
+        ++$lines;
+    }
+
+    Debug("&n1ge_max_procs returning: $lines\n");
+    return "$lines";
+}
+
+#--------------------------------------------------------------------------
+
+# Return "1" if we're running in a Load Leveler job; "0" otherwise.
+sub loadleveler_job {
+    Debug("&loadleveler_job\n");
+
+    return (exists($ENV{LOADLBATCH}) ? "1" : "0");
+}
+
+#--------------------------------------------------------------------------
+
+# If in a Load Leveler job, return the max number of processes we can
+# run.  Otherwise, return 0.
+sub loadleveler_max_procs {
+    Debug("&loadleveler_max_procs\n");
+
+    return "0"
+        if (!loadleveler_job());
+
+    # Just count the number of tokens in $LOADL_PROCESSOR_LIST
+
+    my $ret = 2;
+    if (exists($ENV{LOADL_PROCESSOR_LIST}) && 
+	$ENV{LOADL_PROCESSOR_LIST} ne "") {
+      my @hosts = split(/ /, $ENV{LOADL_PROCESSOR_LIST});
+      $ret = $#hosts + 1;
+    }
+
+    Debug("&loadleveler_max_procs returning: $ret\n");
+    return $ret;
 }
 
 1;
