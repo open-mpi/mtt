@@ -245,7 +245,7 @@ sub Submit {
                     # because they're currently in the "once" table on
                     # the server.  This will eventually be fixed.
                     elsif($key eq "mpi_name" || $key eq "mpi_version") {
-                        $form->{$key} = $result->{key};
+                        $form->{$key} = $result->{$key};
                     }
 
                     # Otherwise, just add it unmodified to the form
