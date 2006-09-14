@@ -53,11 +53,11 @@ sub Run {
     # names that begin with "Test run:"
     foreach my $section ($ini->Sections()) {
         if ($section =~ /^\s*test run:/) {
-            Verbose(">> Test run [$section]\n");
 
             # Simple section name
             my $simple_section = $section;
             $simple_section =~ s/^\s*test run:\s*//;
+            Verbose(">> Test run [$simple_section]\n");
 
             # Ensure that we have a test build name
             my $test_build_value = MTT::Values::Value($ini, $section, "test_build");
@@ -116,6 +116,7 @@ sub _do_run {
         return;
     }
 
+    Verbose(">> Running with [$mpi_install->{mpi_get_simple_section_name}] / [$mpi_install->{mpi_version}] / [$mpi_install->{simple_section_name}]\n");
     # Find an MPI details section for this MPI
     my $match = 0;
     my $mpi_details_section;
@@ -192,7 +193,7 @@ sub _do_run {
     MTT::Values::ProcessEnvKeys($mpi_install, \@save_env);
     # JMS: Do we need to grab from Test::Build as well?
     my $config;
-    %$config = %$MTT::Defaults::Test_run;
+    %$config = %$MTT::Defaults::Test_specify;
     $config->{setenv} = MTT::Values::Value($ini, $section, "setenv");
     $config->{unsetenv} = MTT::Values::Value($ini, $section, "unsetenv");
     $config->{prepend_path} = 
@@ -234,7 +235,7 @@ sub _do_run {
 
     # Run the module to get a list of tests to run
     my $ret = MTT::Module::Run("MTT::Test::Run::$module",
-                               "Run", $ini, $section, $test_build,
+                               "Specify", $ini, $section, $test_build,
                                $mpi_install, $config);
 
     # Analyze the return -- should give us a list of tests to run and
@@ -243,28 +244,21 @@ sub _do_run {
         my $test_results;
 
         # Loop through all the tests
-        foreach my $test (@{$ret->{tests}}) {
-            if (!exists($test->{executable})) {
+        foreach my $run (@{$ret->{tests}}) {
+            if (!exists($run->{executable})) {
                 Warning("No executable specified for text; skipped\n");
                 next;
             }
 
             # Get the values for this test
-            my $run;
             $run->{perfbase_xml} =
                 $ret->{perfbase_xml} ? $ret->{perfbase_xml} :
                 $MTT::Defaults::Test_run->{perfbase_xml};
             $run->{full_section_name} = $section;
             $run->{simple_section_name} = $section;
-            $run->{simple_section_name} = $section;
             $run->{simple_section_name} =~ s/^\s*test run:\s*//;
 
             $run->{test_build_simple_section_name} = $test_build->{simple_section_name};
-            $run->{executable} = $test->{executable};
-            foreach my $key (qw(np np_ok argv pass save_output_on_pass stdout_save_lines stderr_save_lines merge_stdout_stderr timeout)) {
-                my $str = "\$run->{$key} = exists(\$test->{$key}) ? \$test->{$key} : \$config->{$key}";
-                eval $str;
-            }
 
             # Setup some globals
             $test_executable = $run->{executable};
