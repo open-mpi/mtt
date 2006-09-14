@@ -363,7 +363,7 @@ function filters_description($filters) {
     if (sizeof($filters) > 0) {
         $filters_desc_html_table = "<table border=1 width=60%><tr>" .
             "<th bgcolor=$lgray colspan=2>Query Description" .
-            "<tr><td bgcolor=$lgray><i>Current time: <td bgcolor=$llgray><i>$now";
+            "<tr><td bgcolor=$lgray>Current Time (GMT) <td bgcolor=$llgray><i>$now";
 
         foreach ($filters as $filter) {
             $tuple = sql_to_en($filter);
@@ -546,7 +546,7 @@ function info_pointers() {
 
     global $thcolor, $gray, $dgray, $lgray, $llgray,
            $lllgray, $lred, $lgreen, $lyellow, $white;
-    global $domain;
+    global $domain, $url_basename, $url_filename;
     global $sfont;
     global $cgi_abbrevs;
     global $abs_date_range, $timestamp, $dash;
@@ -563,17 +563,17 @@ function info_pointers() {
     if (! isset($_GET['no_bookmarks'])) {
 
         $links = "\n<div align=left><br>" .
-                 "\n<table border=1><tr><th bgcolor='$lgray' colspan=2>Bookmarks";
+                 "\n<table border=1 width=20%><tr><th bgcolor='$lgray' colspan=2>Bookmarks";
 
         # Can't be a relative link to an absolute date range report
         $links .= "\n<tr>" .
-                  "\n<td bgcolor=$lgray>Relative date range<td bgcolor=$llgray><a href='" . $domain .
+                  "\n<td bgcolor=$lgray>Relative date range<td align=center bgcolor=$llgray><a href='" . $domain .
                       $_SERVER['PHP_SELF'] . '?' .
                       $query_string1 .
                   "' class='black_ln'><font size='$sfont'>[Link]</font></a>";
 
         $links .= "\n<tr>" .
-                  "\n<td bgcolor=$lgray>Absolute date range<td bgcolor=$llgray><a href='" . $domain .
+                  "\n<td bgcolor=$lgray>Absolute date range<td align=center bgcolor=$llgray><a href='" . $domain .
                       $_SERVER['PHP_SELF'] . '?' .
                       $query_string2 .
                   "' class='black_ln'><font size='$sfont'>[Link]</font></a>";
@@ -584,22 +584,20 @@ function info_pointers() {
 
     if (isset($_GET['info_links'])) {
 
-        $self    = $_SERVER['PHP_SELF'];
-        $customs = preg_replace('/reporter.php.*$/', 'reporter.php', $self);
-        $summary = preg_replace('/reporter.php.*$/', 'summary.php', $self);
-
         $links .= "\n<div align=left><br>" .
-                   "\n<table border=1><tr><td bgcolor=$lgray><a href='" . 
-                   # Note: do *not* put a slash between domain and path
-                   $domain  . $summary . "' class='lgray_ln'><font size='$sfont'>[Summary report]</font></a>" .
-                   "</table>" .
-                   "</div>";
+                 "\n<table border=1 width=20%><tr><th bgcolor='$lgray' colspan=2>More Info";
 
-        $links .= "\n<div align=left><br>" .
-                   "\n<table border=1><tr><td bgcolor=$lgray><a href='" . 
-                   $domain . $customs . "' class='lgray_ln'><font size='$sfont'>[Custom reports]</font></a>" .
-                   "</table>" .
-                   "</div>";
+        $links .= "\n<tr><td bgcolor=$lgray>Summary Report<td align=center bgcolor=$llgray><a href='" . 
+                  perfect_url("$url_basename/summary.php") . "' class='black_ln'><font size='$sfont'>[Link]</font></a>" .
+                  "";
+
+        $links .= "\n<tr><td bgcolor=$lgray>Custom Reports<td align=center bgcolor=$llgray><a href='" . 
+                  perfect_url("$url_basename/index.php"). "' class='black_ln'><font size='$sfont'>[Link]</font></a>" .
+                  "";
+
+        $links .= "\n</table>" .
+                  "\n</div>";
+
     }
     return $links;
 }

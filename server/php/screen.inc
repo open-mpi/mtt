@@ -246,7 +246,8 @@ $query_screen .= "\n<a href='$topdir/html/reporter_help.html' class='lgray_ln' t
 $query_screen .= "\n</form>";
 $query_screen .= "\n</table>";
 $query_screen .= "\n</table>";
-$query_screen .= "\n<br><br><br>";
+$query_screen .= "\n<br>";
+$query_screen .= "<font size='-0'>See also: <a href='./summary.php' target='_blank'>Open MPI Tests Summary</a></font><br>";
 
 function dump_query_screen() {
     global $query_screen;

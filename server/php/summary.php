@@ -39,9 +39,10 @@ $GLOBALS['debug']   = isset($_GET['debug'])   ? $_GET['debug']   : 0;
 $domain       = 'http://www.open-mpi.org';
 $default_date = 'Yesterday';
 
-$self = $_SERVER['PHP_SELF'];
-$url  = preg_replace('/summary.php/', 'reporter.php', $self);
-$url  = "$domain$url";
+$reporter = 'index.php';
+$self     = $_SERVER['PHP_SELF'];
+$url      = preg_replace('/summary.php/', $reporter, $self);
+$url      = "$domain$url";
 
 $url_template = $url .  '?' .
 
@@ -191,7 +192,7 @@ print <<<EOT
         <font size='+7'>Open&nbsp;MPI Test&nbsp;Results</font>
         <br>
         <font size='-1'>Time frame: $default_date - Now</font><br>
-        <font size='-1'>See also: <a href="./reporter.php">Open MPI Tests Reporter</a></font><br>
+        <font size='-1'>See also: <a href="./$reporter">Open MPI Tests Reporter</a></font><br>
 </table>
 EOT;
 

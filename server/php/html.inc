@@ -32,6 +32,7 @@ $domain             = "http://www.open-mpi.org";
 $images_dir         = "images";
 $self               = $_SERVER['PHP_SELF'];
 $url_basename       = "$domain/" . preg_replace('/[^\/]+$/', '', $self);
+$url_filename       = preg_replace('/.*([^\/]+)$/', '${1}', $self);
 $logo_img           = "open-mpi-logo.png";
 $reporter_img       = "reporter_logo.gif";
 $mpi_logo_url       = "$url_basename/$images_dir/$logo_img";
