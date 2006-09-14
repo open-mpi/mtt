@@ -488,7 +488,7 @@ function sql_to_en($str) {
         if (! ($conn = pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass")))
             exit_("<br><b><i>Could not connect to database server.</i></b>");
 
-        $field = "Date Range";
+        $field = "Date Range (GMT)";
 
         # Unfortunate to have to resort to looking at input params in this function
         $abs_date_range = $_GET[$cgi_abbrevs['mainfield'] . $timestamp];

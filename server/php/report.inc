@@ -40,6 +40,11 @@ $filters = array();
 
 $sfont = "-0";
 
+$conn = null;
+
+if (! ($conn = pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass")))
+    exit_("<br><b><i>Could not connect to database server.</i></b>");
+
 # Dump query description, results table, and link to query
 function dump_report() {
 
@@ -349,11 +354,16 @@ function filters_description($filters) {
     global $help;
     global $sfont;
     global $abs_date_range;
+    global $conn;
+
+    $now = array_shift(pg_query_simple(
+                "SELECT substring(now() from 0 for 20)", $conn));
 
     # Create a plain-english description of the filters
     if (sizeof($filters) > 0) {
         $filters_desc_html_table = "<table border=1 width=60%><tr>" .
-            "<th bgcolor=$lgray colspan=2>Query Description";
+            "<th bgcolor=$lgray colspan=2>Query Description" .
+            "<tr><td bgcolor=$lgray><i>Current time: <td bgcolor=$llgray><i>$now";
 
         foreach ($filters as $filter) {
             $tuple = sql_to_en($filter);
@@ -497,22 +507,37 @@ function get_phase_selection($params) {
     global $cgi_abbrevs;
 
     $phase_selection = array();
+    $selected        = array();
     $selected        = $params[$cgi_abbrevs['mainfield'] . 'phase'];
     $all_phases      = $phases['per_script'];
     $which_phases    = which_phase_specific_filter($params);
 
-    # Did they search on a phase specific field?
-    if ($which_phases != null) {
+    # Select phase specific filter, no phase menu selection
+    #     which phases
+    # Select phase specific filter, phase menu selection
+    #     selected
+    # Select general filter, phase menu selection
+    #     selected
+    # No filter, phase menu selection
+    #     selected
+    # Select general filter, no phase menu selection
+    #     all
+    # No filter, no phase menu selection
+    #     all
+
+    if (sizeof($which_phases) < sizeof($all_phases) and $which_phases != null)
         $phase_selection = $which_phases;
-    }
-    # Did they specify a specific phase in the phase menu?
-    if ($selected != $All) {
+    elseif ($which_phases == null and $selected != $All)
         $phase_selection = array($selected);
-    }
-    # Default: show all phases
-    else {
+    elseif (sizeof($which_phases) == sizeof($all_phases) and $selected != $All)
+        $phase_selection = array($selected);
+    # elseif (sizeof($which_phases) == sizeof($all_phases) and $selected == $All)
+    #     $phase_selection = $all_phases;
+    # elseif ($which_phases == null and $selected == $All)
+    #     $phase_selection = $all_phases;
+    else
         $phase_selection = $all_phases;
-    }
+
     return $phase_selection;
 }
 

@@ -127,7 +127,7 @@ function which_phase_specific_filter($params) {
         }
     }
 
-    # return all the phases by default
+    # No filters used
     return null;
 }
 
