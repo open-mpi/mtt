@@ -169,6 +169,7 @@ if (!$ok || $help_arg) {
 --debug|-d                    Output lots of debug messages
 --verbose|-v                  Output some status / verbose messages
                               while processing
+--print-time|-p               Display the amount of time taken in each phase
 --force                       Do steps even if they would not normally
                               be executed
 --[no-]mpi-get                Do the \"MPI get\" phase
