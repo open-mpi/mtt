@@ -126,7 +126,9 @@ CREATE TABLE test_run (
 	command text NOT NULL,
 	np smallint,
 
-	results_id integer --> refers to results table
+	results_id integer, --> refers to results table
+    failure_id integer DEFAULT NULL, --> points to information about failure
+                                     --> null if it's yet to be "churned"
 );
 
 DROP INDEX test_build_idx;
@@ -153,33 +155,13 @@ CREATE TABLE results (
 DROP INDEX results_result_idx;
 CREATE INDEX results_result_idx ON results(result);
 
---> All fields in "failure" map to fiels in "results"
+-- For "new" failure reporting
 
 DROP TABLE failure;
 CREATE TABLE failure (
-	failure_id serial,
-
-    --> Some well-selected keywords should go in the following text fields.
-    --> E.g., we can take the following text fields from the result, and strip
-    --> the following types of tokens from the text field to create an easily
-    --> identifiable "signature" for the failure:
-    --> 
-    -->    * dictionary words
-    -->    * numbers
-    -->    * user specific text (paths)
-    -->    * machine specific text
-
-	result_stdout text, 
-	result_stderr text,
-
-    --> We can use the timestamp of the failure"s first and last occurence to allow
-    --> some flexibility in the retrospective of detecting "new" failures. What is
-    --> the oldest possible "new" failure? A failure should be considered "new" if
-    --> it was fixed, but then reappears later.
-
-	first_occurence timestamp without time zone,
-	last_occurence timestamp without time zone,
-
-	exit_status smallint,
-	result smallint
+    failure_id integer,
+    timestamp timestamp without time zone,  --> first time the failure occurred
+    field character varying(16) NOT NULL,   --> maps to any non *_id field name in mtt database
+    value character varying(16) NOT NULL    --> value of field
 );
+
