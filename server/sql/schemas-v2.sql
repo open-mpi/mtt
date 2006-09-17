@@ -48,11 +48,6 @@ CREATE TABLE submit (
 	local_username character varying(16) NOT NULL,
 	http_username character varying(16) NOT NULL,
 	tstamp timestamp without time zone,
-	-- phase value: 1=mpi_install, 2=test_build, 3=test_run
-	phase smallint,
-	-- phase_id will be an index into mpi_install, test_build, or
-        -- test_run tables, depending on value of phase
-	phase_id integer
 );
 
 DROP INDEX submit_serial_idx;
@@ -127,7 +122,7 @@ CREATE TABLE test_run (
 	np smallint,
 
 	results_id integer, --> refers to results table
-    failure_id integer DEFAULT NULL, --> points to information about failure
+    failure_id integer DEFAULT NULL  --> points to information about failure
                                      --> null if it's yet to be "churned"
 );
 
@@ -139,6 +134,7 @@ CREATE INDEX results_idx ON test_run(results_id);
 DROP TABLE results;
 CREATE TABLE results (
 	results_id serial,
+	submit_id integer,
 
 	environment text,
 	merge_stdout_stderr boolean,
