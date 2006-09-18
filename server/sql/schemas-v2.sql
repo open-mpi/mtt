@@ -4,9 +4,9 @@
 -- Usage: $ psql -d dbname -U dbusername < this_filename
 --
 
-DROP TABLE cluster;
-CREATE TABLE cluster (
-       cluster_id serial,
+DROP TABLE compute_cluster;
+CREATE TABLE compute_cluster (
+       compute_cluster_id serial,
        platform_id character varying(256) NOT NULL,
        platform_hardware character varying(256) NOT NULL,
        platform_type character varying(256) NOT NULL,
@@ -25,14 +25,14 @@ CREATE TABLE users (
 DROP TABLE cluster_owner;
 CREATE TABLE cluster_owner (
        cluster_owner_id serial,
-       cluster_id integer, --> refers to cluster table
+       compute_cluster_id integer, --> refers to compute_cluster table
        users_id integer --> refers to users table
 );
 
 DROP INDEX cluster_owner_users_idx;
 CREATE INDEX cluster_owner_users_idx ON cluster_owner(users_id);
 DROP INDEX cluster_owner_cluster_idx;
-CREATE INDEX cluster_owner_cluster_idx ON cluster_owner(cluster_id);
+CREATE INDEX cluster_owner_cluster_idx ON cluster_owner(compute_cluster_id);
 
 -- Serial number used for individual MTT runs
 DROP SEQUENCE client_serial;
@@ -47,7 +47,7 @@ CREATE TABLE submit (
 	hostname character varying(128) NOT NULL,
 	local_username character varying(16) NOT NULL,
 	http_username character varying(16) NOT NULL,
-	tstamp timestamp without time zone,
+	tstamp timestamp without time zone
 );
 
 DROP INDEX submit_serial_idx;
@@ -60,7 +60,7 @@ CREATE INDEX submit_phase_idx ON submit(phase_id);
 DROP TABLE mpi_get;
 CREATE TABLE mpi_get (
 	mpi_get_id serial,
-	name character varying(64) NOT NULL,
+	section_name character varying(64) NOT NULL,
 	version character varying(32) NOT NULL
 );
 
@@ -75,7 +75,7 @@ DROP TABLE mpi_install;
 CREATE TABLE mpi_install (
 	mpi_install_id serial,
 
-	cluster_id integer, --> refers to cluster table
+	compute_cluster_id integer, --> refers to compute_cluster table
 	mpi_get_id integer, --> refers to mpi_get table
 	compiler_id integer, --> refers to compiler table
 	configure_arguments character varying(512), --> put this into separate table because substring searchs will be much faster, but rich says that this is a fairly uncommon way to search for our results, so the PITA for putting this in another table might not be worth it
@@ -84,8 +84,8 @@ CREATE TABLE mpi_install (
 	results_id integer --> refers to results table, this changes every night
 );
 
-DROP INDEX mpi_install_cluster_idx;
-CREATE INDEX mpi_install_cluster_idx ON mpi_install(cluster_id);
+DROP INDEX mpi_install_compute_cluster_idx;
+CREATE INDEX mpi_install_compute_cluster_idx ON mpi_install(compute_compute_cluster_id);
 DROP INDEX mpi_install_mpi_get_idx;
 CREATE INDEX mpi_install_mpi_get_idx ON mpi_install(mpi_get_id);
 DROP INDEX mpi_install_compiler_idx;
@@ -117,7 +117,7 @@ CREATE TABLE test_run (
 	test_build_id integer,--> refers to test_build table
 
 	variant smallint,
-	name character varying(64) NOT NULL,
+	test_name character varying(64) NOT NULL,
 	command text NOT NULL,
 	np smallint,
 
@@ -144,12 +144,12 @@ CREATE TABLE results (
 	stop_timestamp timestamp without time zone,
 	-- do we want exit status?
 	exit_status smallint,
-	-- result value: 1=pass, 2=fail, 3=skipped, 4=timed out
-	result smallint
+	-- success  value: 1=pass, 2=fail, 3=skipped, 4=timed out
+	success smallint
 );
 
-DROP INDEX results_result_idx;
-CREATE INDEX results_result_idx ON results(result);
+DROP INDEX results_success_idx;
+CREATE INDEX results_success_idx ON results(success);
 
 -- For "new" failure reporting
 
