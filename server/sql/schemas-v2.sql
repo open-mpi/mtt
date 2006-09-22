@@ -159,8 +159,27 @@ CREATE TABLE results (
     stop_timestamp timestamp without time zone,
     -- do we want exit status?
     exit_status smallint NOT NULL DEFAULT -1,
-    -- success  value: 1=pass, 2=fail, 3=skipped, 4=timed out
-    success smallint NOT NULL DEFAULT -1
+    success_id integer NOT NULL DEFAULT -1
+);
+
+DROP TABLE success;
+CREATE TABLE success (
+    success_id serial UNIQUE,
+    -- test_type value: 1=correctness, 2=performance
+    test_type smallint NOT NULL DEFAULT -1,
+    -- success value: 1=pass, 2=fail, 3=skipped, 4=timed out
+    success smallint NOT NULL DEFAULT -1,
+    -- set to DEFAULT for correctness tests
+    performance_id integer NOT NULL DEFAULT -1
+);
+
+DROP TABLE performance;
+CREATE TABLE performance (
+    performance_id serial UNIQUE,
+    x_axis_label character varying(64),
+    y_axis_label character varying(64),
+    performance_data double precision[][] NOT NULL DEFAULT '{{"0.0"}}',
+    description text NOT NULL DEFAULT ''
 );
 
 DROP INDEX results_success_idx;
