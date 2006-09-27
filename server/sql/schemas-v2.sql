@@ -21,6 +21,8 @@ CREATE TABLE compute_cluster (
     )
 );
 
+INSERT INTO compute_cluster (compute_cluster_id) VALUES ('-1');
+
 -- Serial number used for individual MTT runs
 DROP SEQUENCE client_serial;
 CREATE SEQUENCE client_serial;
@@ -28,7 +30,7 @@ CREATE SEQUENCE client_serial;
 DROP TABLE submit;
 CREATE TABLE submit (
     submit_id serial UNIQUE,
-    serial_id integer NOT NULL DEFAULT -1, --> refers to the serial sequence
+    client_serial integer NOT NULL DEFAULT -1, --> refers to the serial sequence
     mtt_version_major smallint NOT NULL DEFAULT -1,
     mtt_version_minor smallint NOT NULL DEFAULT -1,
     hostname character varying(128) NOT NULL DEFAULT '',
@@ -36,7 +38,7 @@ CREATE TABLE submit (
     http_username character varying(16) NOT NULL DEFAULT '',
     tstamp timestamp without time zone NOT NULL DEFAULT now(),
     UNIQUE (submit_id,
-            serial_id,
+            client_serial,
             mtt_version_major,
             mtt_version_minor,
             hostname,
@@ -44,6 +46,8 @@ CREATE TABLE submit (
             http_username
     )
 );
+
+INSERT INTO submit (submit_id) VALUES ('-1'); 
 
 DROP INDEX submit_serial_idx;
 CREATE INDEX submit_serial_idx ON submit(serial_id);
@@ -63,6 +67,8 @@ CREATE TABLE mpi_get (
     )
 );
 
+INSERT INTO mpi_get (mpi_get_id) VALUES ('-1'); 
+
 DROP TABLE compiler;
 CREATE TABLE compiler (
     compiler_id serial UNIQUE,
@@ -73,6 +79,8 @@ CREATE TABLE compiler (
             compiler_version
     )
 );
+
+INSERT INTO compiler (compiler_id) VALUES ('-1'); 
 
 DROP TABLE mpi_install;
 CREATE TABLE mpi_install (
@@ -93,6 +101,8 @@ CREATE TABLE mpi_install (
             vpath_mode
     )
 );
+
+INSERT INTO mpi_install (mpi_install_id) VALUES ('-1'); 
 
 DROP INDEX mpi_install_compute_cluster_idx;
 CREATE INDEX mpi_install_compute_cluster_idx ON mpi_install(compute_compute_cluster_id);
@@ -120,6 +130,8 @@ CREATE TABLE test_build (
     )
 );
 
+INSERT INTO test_build (test_build_id) VALUES ('-1'); 
+
 DROP INDEX test_build_mpi_install_idx;
 CREATE INDEX test_build_mpi_install_idx ON test_build(mpi_install_id);
 DROP INDEX test_build_compiler_idx;
@@ -141,6 +153,8 @@ CREATE TABLE test_run (
     failure_id integer NOT NULL DEFAULT -1  --> points to information about failure
 );
 
+INSERT INTO test_run (test_run_id) VALUES ('-1'); 
+
 DROP INDEX test_build_idx;
 CREATE INDEX test_build_idx ON test_run(test_build_id);
 DROP INDEX results_idx;
@@ -159,28 +173,23 @@ CREATE TABLE results (
     stop_timestamp timestamp without time zone,
     -- do we want exit status?
     exit_status smallint NOT NULL DEFAULT -1,
-    success_id integer NOT NULL DEFAULT -1
-);
-
-DROP TABLE success;
-CREATE TABLE success (
-    success_id serial UNIQUE,
-    -- test_type value: 1=correctness, 2=performance
-    test_type smallint NOT NULL DEFAULT -1,
-    -- success value: 1=pass, 2=fail, 3=skipped, 4=timed out
     success smallint NOT NULL DEFAULT -1,
     -- set to DEFAULT for correctness tests
     performance_id integer NOT NULL DEFAULT -1
 );
 
+INSERT INTO results (results_id) VALUES ('-1'); 
+
 DROP TABLE performance;
 CREATE TABLE performance (
     performance_id serial UNIQUE,
-    x_axis_label character varying(64),
-    y_axis_label character varying(64),
+    x_axis_label character varying(64) NOT NULL DEFAULT '',
+    y_axis_label character varying(64) NOT NULL DEFAULT '',
     performance_data double precision[][] NOT NULL DEFAULT '{{"0.0"}}',
     description text NOT NULL DEFAULT ''
 );
+
+INSERT INTO performance (performance_id) VALUES ('-1');
 
 DROP INDEX results_success_idx;
 CREATE INDEX results_success_idx ON results(success);
@@ -195,6 +204,8 @@ CREATE TABLE failure (
     value character varying(16) NOT NULL DEFAULT ''   --> value of field 
 );
 
+INSERT INTO failure (failure_id) VALUES ('-1'); 
+
 DROP TABLE users;
 CREATE TABLE users (
     users_id serial UNIQUE,
@@ -202,12 +213,16 @@ CREATE TABLE users (
     gecos character(32) NOT NULL DEFAULT ''
 );
 
+INSERT INTO users (users_id) VALUES ('-1'); 
+
 DROP TABLE cluster_owner;
 CREATE TABLE cluster_owner (
     cluster_owner_id serial UNIQUE,
     compute_cluster_id integer NOT NULL DEFAULT -1, --> refers to compute_cluster table
     users_id integer NOT NULL DEFAULT -1 --> refers to users table
 );
+
+INSERT INTO cluster_owner (cluster_owner_id) VALUES ('-1'); 
 
 DROP INDEX cluster_owner_users_idx;
 CREATE INDEX cluster_owner_users_idx ON cluster_owner(users_id);
