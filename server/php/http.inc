@@ -181,6 +181,7 @@ function debug_cgi($params, $title) {
 }
 
 # Returns a trimmed query string
+# X: use http_build_str here
 function dump_query_string($params) {
 
     global $cgi_abbrevs;

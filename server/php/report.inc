@@ -250,6 +250,13 @@ function dump_data_table($headers, $resource) {
         return;
     }
     
+   $max_rows = 5000;
+
+    # Be nice to the server, show only the first max_rows
+    if (pg_num_rows($resource) > $max_rows) {
+        print "<i>Displaying first $max_rows rows, please trim your query.</i>";
+    }
+    
     # Insert useful information on the left-hand side?
     print "\n\n<div align=center>" .
           "\n\n<!-- report_start -->\n\n" .
@@ -283,8 +290,12 @@ function dump_data_table($headers, $resource) {
         print sprintf("\n<th bgcolor='$thcolor'>%s", 'Fail');
     }
 
+    $i = 0;
     # Display data rows
     while ($row = pg_fetch_row($resource)) {
+
+        if ($i++ > $max_rows)
+            break;
 
         $details_html_table = "";
 
