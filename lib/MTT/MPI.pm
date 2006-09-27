@@ -60,6 +60,21 @@ sub Install {
 
 #--------------------------------------------------------------------------
 
+sub _scrub {
+    my $h = shift;
+
+    foreach my $k (keys(%$h)) {
+        if (ref($h->{$k}) eq "") {
+            # Remove bad characters
+            $h->{$k} =~ s/\000/<NULL>/g;
+        } else {
+            _scrub($h->{$k});
+        }
+    }
+}
+
+#--------------------------------------------------------------------------
+
 sub _setup_sources_xml {
     $sources_xs = new XML::Simple(KeyAttr => { mpi_get => "simple_section_name",
                                                mpi_version => "version",
@@ -127,7 +142,12 @@ sub SaveSources {
         foreach my $mpi_version_key (keys(%$mpi_get)) {
             my $mpi_version = $mpi_get->{$mpi_version_key};
 
-            $transformed->{mpi_get}->{$mpi_get_key}->{mpi_version}->{$mpi_version_key} = $mpi_version;
+            # Deep copy and scrub
+            my $h;
+            %$h = %$mpi_version;
+            _scrub($h);
+
+            $transformed->{mpi_get}->{$mpi_get_key}->{mpi_version}->{$mpi_version_key} = $h;
         }
     }
 
@@ -217,8 +237,12 @@ sub SaveInstalls {
             foreach my $mpi_install_key (keys(%{$mpi_version})) {
                 my $mpi_install = $mpi_version->{$mpi_install_key};
 
-                $transformed->{mpi_get}->{$mpi_get_key}->{mpi_version}->{$mpi_version_key}->{mpi_install}->{$mpi_install_key} = 
-                    $mpi_install;
+                # Deep copy and scrub
+                my $h;
+                %$h = %$mpi_install;
+                _scrub($h);
+
+                $transformed->{mpi_get}->{$mpi_get_key}->{mpi_version}->{$mpi_version_key}->{mpi_install}->{$mpi_install_key} = $h;
             }
         }
     }

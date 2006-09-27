@@ -76,6 +76,21 @@ sub Run {
 
 #--------------------------------------------------------------------------
 
+sub _scrub {
+    my $h = shift;
+
+    foreach my $k (keys(%$h)) {
+        if (ref($h->{$k}) eq "") {
+            # Remove bad characters
+            $h->{$k} =~ s/\000/<NULL>/g;
+        } else {
+            _scrub($h->{$k});
+        }
+    }
+}
+
+#--------------------------------------------------------------------------
+
 sub _setup_sources_xml {
     $sources_xs = new XML::Simple(KeyAttr => { test_get => "simple_section_name",
                                            },
@@ -131,7 +146,12 @@ sub SaveSources {
     foreach my $test_get_key (keys(%$MTT::Test::sources)) {
         my $test_get = $MTT::Test::sources->{$test_get_key};
 
-        $transformed->{test_get}->{$test_get_key} = $test_get;
+        # Deep copy and scrub
+        my $h;
+        %$h = %$test_get;
+        _scrub($h);
+
+        $transformed->{test_get}->{$test_get_key} = $h;
     }
 
     # Write out the file
@@ -232,8 +252,12 @@ sub SaveBuilds {
                 foreach my $test_build_key (keys(%{$mpi_install})) {
                     my $test_build = $mpi_install->{$test_build_key};
                     
-                    $transformed->{mpi_get}->{$mpi_get_key}->{mpi_version}->{$mpi_version_key}->{mpi_install}->{$mpi_install_key}->{test_build}->{$test_build_key} =
-                        $MTT::Test::builds->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key}->{$test_build_key};
+                    # Deep copy and scrub
+                    my $h;
+                    %$h = %$test_build;
+                    _scrub($h);
+
+                    $transformed->{mpi_get}->{$mpi_get_key}->{mpi_version}->{$mpi_version_key}->{mpi_install}->{$mpi_install_key}->{test_build}->{$test_build_key} = $h;
                 }
             }
         }
@@ -380,8 +404,12 @@ sub SaveRuns {
                                 foreach my $test_cmd_key (keys(%{$test_np})) {
                                     my $test_cmd = $test_np->{$test_cmd_key};
                                     
-                                    $transformed->{mpi_get}->{$mpi_get_key}->{mpi_version}->{$mpi_version_key}->{mpi_install}->{$mpi_install_key}->{test_build}->{$test_build_key}->{test_run}->{$test_run_key}->{test_name}->{$test_name_key}->{test_np}->{$test_np_key}->{test_cmd}->{$test_cmd_key} = 
-                                        $MTT::Test::runs->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key}->{$test_build_key}->{$test_run_key}->{$test_name_key}->{$test_np_key}->{$test_cmd_key};
+                                    # Deep copy and scrub
+                                    my $h;
+                                    %$h = %$test_cmd;
+                                    _scrub($h);
+
+                                    $transformed->{mpi_get}->{$mpi_get_key}->{mpi_version}->{$mpi_version_key}->{mpi_install}->{$mpi_install_key}->{test_build}->{$test_build_key}->{test_run}->{$test_run_key}->{test_name}->{$test_name_key}->{test_np}->{$test_np_key}->{test_cmd}->{$test_cmd_key} = $h;
                                 }
                             }
                         }
