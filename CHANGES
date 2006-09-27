@@ -1,10 +1,2 @@
 To announce to OMPI core testers:
 
-- Default number of lines saved (for stdout and stderr) in phases is
-  100; it used to be 1000. 
-- INI file used to have "separate_stdout_stderr" as a field; this has
-  been renamed to "merge_stdout_stderr".
-- New MPI Details after_each_exec section to do cleanup on all nodes.
-- New details for Simple Test Run specification in INI file
-  - can allow some tests to fail
-  - see new section in ompi-core-template.ini
