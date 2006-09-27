@@ -28,7 +28,9 @@ $thcolor  = $llgray;
 $menu_width    = '220px';
 $ft_menu_width = '125px';
 
-$domain             = "http://www.open-mpi.org";
+
+$domain             = "http://" . (isset($_SERVER['HTTP_HOST']) ? 
+                        $_SERVER['HTTP_HOST'] : 'www.open-mpi.org');
 $images_dir         = "images";
 $self               = $_SERVER['PHP_SELF'];
 $url_basename       = "$domain/" . preg_replace('/[^\/]+$/', '', $self);

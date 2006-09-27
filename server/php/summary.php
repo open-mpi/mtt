@@ -27,6 +27,7 @@
 $topdir = ".";
 include_once("$topdir/curl_get.inc");
 include_once("$topdir/http.inc");
+include_once("$topdir/html.inc");
 include_once("$topdir/reporter.inc");
 
 # In case we're using this script from the command-line
@@ -36,7 +37,6 @@ if ($argv)
 $GLOBALS['verbose'] = isset($_GET['verbose']) ? $_GET['verbose'] : 0;
 $GLOBALS['debug']   = isset($_GET['debug'])   ? $_GET['debug']   : 0;
 
-$domain       = 'http://www.open-mpi.org';
 $default_date = 'Yesterday';
 
 $reporter = 'index.php';
@@ -117,7 +117,7 @@ $config['aggs'] = array(
     "&agg_os_version=on" .
     "",
 
-    "&" . $cgi_abbrevs["mainfield"] . "agg_timestamp=Hour-by-Hour" .
+    "&" . $cgi_abbrevs["mainfield"] . "agg_timestamp=-" .
     "&agg_test_name=on" .
     "&agg_test_np=on" .
     "&agg_os_version=on" .
@@ -177,7 +177,7 @@ $config['details'] = array(
 $config['description'] = array(
     "",
     "",
-    "hour-by-hour",
+    "",
     "just_failures, second-by-second",
 );
 

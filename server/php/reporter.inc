@@ -204,6 +204,20 @@ function var_dump_($desc, $a) {
         var_dump("\n$desc",$a);
 }
 
+function var_dump_debug($function, $line, $var_name, $var) {
+
+    $dir  = dirname(getcwd());
+    $file = $dir . "/submit/" . basename($_SERVER['PHP_SELF']) . ".out";
+    $fh   = fopen($file, 'a+');
+
+    if ($GLOBALS['verbose'] or $GLOBALS['debug']) {
+        $output = "\ndebug: $function:$line, $var_name = " . var_export($var, 1);
+        print($output);
+        if ($fh)
+            fwrite($fh, $output); # *BROKEN*
+    }
+}
+
 # Actually see the nice identation var_dump provides
 function var_dump_html($desc,$var) {
     if ($GLOBALS['verbose'])
