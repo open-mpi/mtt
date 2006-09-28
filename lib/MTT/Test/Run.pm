@@ -384,7 +384,7 @@ sub _run_one_test {
 
     # result value: 1=pass, 2=fail, 3=skipped, 4=timed out
     my $result = 2;
-    if ($x->{timed_out) {
+    if ($x->{timed_out}) {
         $result = 4;
     } elsif ($pass) {
         $result = 1;
