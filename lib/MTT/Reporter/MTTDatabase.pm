@@ -35,6 +35,9 @@ my $platform;
 # LWP user agent
 my $ua;
 
+# Client serial
+my $client_serial;
+
 # Do we want debugging?
 my $debug_filename;
 my $debug_index;
@@ -114,9 +117,9 @@ sub Init {
 
     # Do a test ping to ensure that we can reach this URL
 
-    Debug("MTTDatabase testing submit URL with a ping...\n");
+    Debug("MTTDatabase getting a client serial number...\n");
     my $form = {
-        PING => 1,
+        SERIAL => 1,
     };
     my $req = POST ($url, $form);
     $req->authorization_basic($username, $password);
@@ -127,8 +130,8 @@ sub Init {
                 $response->content);
         Error(">> Do not want to continue with possible bad submission URL -- aborting\n");
     }
-    Debug("MTTDatabase ping successful: " . $response->status_line . "\n" . 
-          $response->content);
+    Debug("MTTDatabase client serial number: " . $response->content . "\n");
+    $client_serial = chomp($response->content);
     
     # If we have a debug filename, make it an absolute filename,
     # because there's oodles of chdir()'s within the testing.  Whack
@@ -197,6 +200,9 @@ sub Submit {
             # with.
             my $form;
             %$form = %{$default_form};
+
+            # Fill in the client serial number
+            $form->{client_serial} = $client_serial;
 
             # How many results are we submitting?
             $form->{number_of_results} = $#{$section_obj} + 1;
