@@ -113,8 +113,8 @@ sub Submit {
                 }
 
                 # Use ": " as a delimiter because this file may be fed
-                # to Perfbase (e.g., in a disconnected scenario this
-                # file is later read and fed to Perfbase).
+                # to the database (e.g., in a disconnected scenario this
+                # file is later read and fed to the database).
                 my $str = MTT::Reporter::MakeReportString($report, ": ");
 
                 # Substitute in the filename

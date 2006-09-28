@@ -241,8 +241,7 @@ sub _do_run {
                                "Specify", $ini, $section, $test_build,
                                $mpi_install, $config);
 
-    # Analyze the return -- should give us a list of tests to run and
-    # potentially a Perfbase XML file to analyze the results with
+    # Analyze the return -- should give us a list of tests to run
     if ($ret && $ret->{success}) {
         my $test_results;
 
@@ -254,9 +253,6 @@ sub _do_run {
             }
 
             # Get the values for this test
-            $run->{perfbase_xml} =
-                $ret->{perfbase_xml} ? $ret->{perfbase_xml} :
-                $MTT::Defaults::Test_run->{perfbase_xml};
             $run->{full_section_name} = $section;
             $run->{simple_section_name} = $section;
             $run->{simple_section_name} =~ s/^\s*test run:\s*//;
@@ -403,8 +399,6 @@ sub _run_one_test {
         mpi_version => $mpi_details->{version},
         mpi_name => $mpi_details->{mpi_get_simple_section_name},
         mpi_install_section_name => $mpi_details->{mpi_install_simple_section_name},
-
-        perfbase_xml => $run->{perfbase_xml},
 
         test_name => $name,
         test_command => $cmd,

@@ -233,10 +233,8 @@ sub Submit {
                     } 
 
                     # We can skip the phase key because it's already
-                    # in the top.  Also skip the perfbase_xml field,
-                    # too -- we'll come back to performance results
-                    # someday.
-                    elsif ($key eq "phase" || $key eq "perfbase_xml") {
+                    # in the top.  
+                    elsif ($key eq "phase") {
                         next;
                     }
 

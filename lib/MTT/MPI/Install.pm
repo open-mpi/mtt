@@ -324,11 +324,6 @@ sub _do_install {
     $config->{stdout_save_lines} = $tmp
         if (defined($tmp));
 
-    # XML
-    $tmp = Value($ini, $section, "perfbase_xml");
-    $config->{perfbase_xml} = $tmp
-        if (defined($tmp));
-
     # We're in the section directory.  Make a subdir for wthe source
     # and build.
     MTT::DoCommand::Cmd(1, "rm -rf source");
@@ -388,7 +383,6 @@ sub _do_install {
             merge_stdout_stderr => "$config->{merge_stdout_stderr}",
             environment => "filled in below",
 
-            perfbase_xml => $config->{perfbase_xml},
             start_test_timestamp => $start,
             test_duration_interval => $duration,
             mpi_details => $mpi_get->{mpi_details},

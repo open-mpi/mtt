@@ -285,9 +285,6 @@ sub _do_build {
         $ret->{mpi_version} = $mpi_install->{mpi_version};
         $ret->{timestamp} = timegm(gmtime());
 
-        my $perfbase_xml = Value($ini, $section, "perfbase_xml");
-        $perfbase_xml = "inp_test_build.xml"
-            if (!$perfbase_xml);
         $ret->{success} = 0
             if (!defined($ret->{success}));
         
@@ -308,7 +305,6 @@ sub _do_build {
             environment => "filled in below",
             stdout => "filled in below",
             stderr => "filled in below",
-            perfbase_xml => $perfbase_xml,
 
             test_build_section_name => $config->{simple_section_name},
 
