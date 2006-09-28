@@ -165,15 +165,25 @@ CREATE TABLE results (
     results_id serial UNIQUE,
     submit_id integer NOT NULL DEFAULT -1,
 
+    -- JMS: why is this "NOT NULL"?  What's wrong with it being NULL?
     environment text NOT NULL DEFAULT '',
     merge_stdout_stderr boolean,
+    -- JMS: why is this "NOT NULL"?  What's wrong with it being NULL?
     result_stdout text NOT NULL DEFAULT '', --> what is the largest text blob we can put in PG?  Rich says default might be 8k!
+    -- JMS: why is this "NOT NULL"?  What's wrong with it being NULL?
     result_stderr text NOT NULL DEFAULT '',
     start_timestamp timestamp without time zone,
     stop_timestamp timestamp without time zone,
-    -- do we want exit status?
+    -- JMS: how can a smallint be NULL?  (i.e., why is it NOT NULL?)  Does
+    -- "NOT NULL" simply mean that we have to assign it a value?  If
+    -- so, that's ok.
     exit_status smallint NOT NULL DEFAULT -1,
-    success smallint NOT NULL DEFAULT -1,
+    -- JMS: We need the key here.  Also, don't name the field
+    -- "success", because that's only one of the 4 possible values
+    -- (i.e., wouldn't it be weird to name field "success" but it
+    -- could have a "timed out" value?)
+    -- Key: result value: 1=pass, 2=fail, 3=skipped, 4=timed out
+    test_result smallint NOT NULL DEFAULT -1,
     -- set to DEFAULT for correctness tests
     performance_id integer NOT NULL DEFAULT -1
 );
