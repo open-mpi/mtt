@@ -217,6 +217,9 @@ sub _do_run {
     $tmp = $ini->val($section, "pass");
     $config->{pass} = $tmp
         if (defined($tmp));
+    $tmp = $ini->val($section, "skipped");
+    $config->{skipped} = $tmp
+        if (defined($tmp));
     $tmp = $ini->val($section, "save_output_on_pass");
     $config->{save_output_on_pass} = $tmp
         if (defined($tmp));
@@ -377,6 +380,17 @@ sub _run_one_test {
     my $duration = $stop_time - $start_time . " seconds";
     $test_exit_status = $x->{status};
     my $pass = MTT::Values::EvaluateString($run->{pass});
+    my $skipped = MTT::Values::EvaluateString($run->{skipped});
+
+    # result value: 1=pass, 2=fail, 3=skipped, 4=timed out
+    my $result = 2;
+    if ($x->{timed_out) {
+        $result = 4;
+    } elsif ($pass) {
+        $result = 1;
+    } elsif ($skipped) {
+        $result = 3;
+    }
 
     # Queue up a report on this test
     my $report = {
@@ -392,13 +406,13 @@ sub _run_one_test {
 
         perfbase_xml => $run->{perfbase_xml},
 
+        test_name => $name,
+        test_command => $cmd,
         test_build_section_name => $run->{test_build_simple_section_name},
         test_run_section_name => $run->{simple_section_name},
         test_np => $test_np,
-        success => $pass,
-        timed_out => $x->{timed_out},
-        test_name => $name,
-        test_command => $cmd,
+        exit_status => $x->{status},
+        test_result => $result,
     };
     my $want_output;
     if (!$pass) {
