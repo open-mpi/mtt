@@ -7,11 +7,14 @@
 DROP TABLE compute_cluster;
 CREATE TABLE compute_cluster (
     compute_cluster_id serial UNIQUE,
-    platform_id character varying(256) NOT NULL DEFAULT '',
-    platform_hardware character varying(256) NOT NULL DEFAULT '',
-    platform_type character varying(256) NOT NULL DEFAULT '',
-    os_name character varying(256) NOT NULL DEFAULT '',
-    os_version character varying(256) NOT NULL DEFAULT '',
+    -- JMS: Changed these to not have any default values -- we want to
+    -- the error checking to ensure that proper values are insertted
+    -- for all of these.
+    platform_id character varying(256) NOT NULL,
+    platform_hardware character varying(256) NOT NULL,
+    platform_type character varying(256) NOT NULL,
+    os_name character varying(256) NOT NULL,
+    os_version character varying(256) NOT NULL,
     UNIQUE (compute_cluster_id,
             os_name,
             os_version,
@@ -21,6 +24,7 @@ CREATE TABLE compute_cluster (
     )
 );
 
+-- JMS What are all these INSERTs for?
 INSERT INTO compute_cluster (compute_cluster_id) VALUES ('-1');
 
 -- Serial number used for individual MTT runs
@@ -30,12 +34,14 @@ CREATE SEQUENCE client_serial;
 DROP TABLE submit;
 CREATE TABLE submit (
     submit_id serial UNIQUE,
-    client_serial integer NOT NULL DEFAULT -1, --> refers to the serial sequence
-    mtt_version_major smallint NOT NULL DEFAULT -1,
-    mtt_version_minor smallint NOT NULL DEFAULT -1,
-    hostname character varying(128) NOT NULL DEFAULT '',
-    local_username character varying(16) NOT NULL DEFAULT '',
-    http_username character varying(16) NOT NULL DEFAULT '',
+
+    -- JMS: similar to above, no default values here
+    client_serial integer NOT NULL,
+    mtt_version_major smallint NOT NULL,
+    mtt_version_minor smallint NOT NULL,
+    hostname character varying(128) NOT NULL,
+    local_username character varying(16) NOT NULL,
+    http_username character varying(16) NOT NULL,
     tstamp timestamp without time zone NOT NULL DEFAULT now(),
     UNIQUE (submit_id,
             client_serial,
@@ -59,8 +65,9 @@ CREATE INDEX submit_phase_idx ON submit(phase_id);
 DROP TABLE mpi_get;
 CREATE TABLE mpi_get (
     mpi_get_id serial UNIQUE,
-    section_name character varying(64) NOT NULL DEFAULT '',
-    version character varying(32) NOT NULL DEFAULT '',
+    -- JMS: similar to above, no default values here
+    section_name character varying(64) NOT NULL,
+    version character varying(32) NOT NULL,
     UNIQUE (mpi_get_id,
             section_name,
             version
@@ -72,8 +79,9 @@ INSERT INTO mpi_get (mpi_get_id) VALUES ('-1');
 DROP TABLE compiler;
 CREATE TABLE compiler (
     compiler_id serial UNIQUE,
-    compiler_name character varying(64) NOT NULL DEFAULT '',
-    compiler_version character varying(64) NOT NULL DEFAULT '',
+    -- JMS: similar to above, no default values here
+    compiler_name character varying(64) NOT NULL,
+    compiler_version character varying(64) NOT NULL,
     UNIQUE (compiler_id,
             compiler_name,
             compiler_version
@@ -86,13 +94,14 @@ DROP TABLE mpi_install;
 CREATE TABLE mpi_install (
     mpi_install_id serial UNIQUE,
 
-    compute_cluster_id integer NOT NULL DEFAULT -1, --> refers to compute_cluster table
-    mpi_get_id integer NOT NULL DEFAULT -1, --> refers to mpi_get table
-    compiler_id integer NOT NULL DEFAULT -1, --> refers to compiler table
+    -- JMS: similar to above, no default values here
+    compute_cluster_id integer NOT NULL, --> refers to compute_cluster table
+    mpi_get_id integer NOT NULL, --> refers to mpi_get table
+    compiler_id integer NOT NULL, --> refers to compiler table
     configure_arguments character varying(512) NOT NULL DEFAULT '', --> put this into separate table because substring searchs will be much faster, but rich says that this is a fairly uncommon way to search for our results, so the PITA for putting this in another table might not be worth it
-    vpath_mode character varying(16) NOT NULL DEFAULT '',
+    vpath_mode character varying(16) NOT NULL,
 
-    results_id integer NOT NULL DEFAULT -1, --> refers to results table, this changes every night
+    results_id integer NOT NULL, --> refers to results table, this changes every night
     UNIQUE (mpi_install_id,
             compute_cluster_id,
             mpi_get_id,
@@ -116,12 +125,13 @@ CREATE INDEX mpi_install_results_idx ON mpi_install(results_id);
 DROP TABLE test_build;
 CREATE TABLE test_build (
     test_build_id serial UNIQUE, --> this changes every night
-    mpi_install_id integer NOT NULL DEFAULT -1, --> refers to mpi_install table
+    -- JMS: similar to above, no default values here
+    mpi_install_id integer NOT NULL, --> refers to mpi_install table
 
-    suite_name character varying(64) NOT NULL DEFAULT '',  --> *** do not know how to standardize this 
-    compiler_id integer NOT NULL DEFAULT -1, --> refers to compiler table
+    suite_name character varying(64) NOT NULL,  --> *** do not know how to standardize this 
+    compiler_id integer NOT NULL, --> refers to compiler table
 
-    results_id integer NOT NULL DEFAULT -1, --> refers to results table, this changes every night
+    results_id integer NOT NULL, --> refers to results table, this changes every night
     UNIQUE (test_build_id,
             mpi_install_id,
             suite_name,
@@ -142,15 +152,17 @@ CREATE INDEX test_build_results_idx ON test_build(results_id);
 DROP TABLE test_run;
 CREATE TABLE test_run (
     test_run_id serial UNIQUE,
-    test_build_id integer NOT NULL DEFAULT -1,--> refers to test_build table
+    -- JMS: similar to above, no default values here
+    test_build_id integer NOT NULL,--> refers to test_build table
 
-    variant smallint NOT NULL DEFAULT -1,
-    test_name character varying(64) NOT NULL DEFAULT '',
-    command text NOT NULL DEFAULT '',
-    np smallint NOT NULL DEFAULT -1,
+    variant smallint NOT NULL,
+    test_name character varying(64) NOT NULL,
+    command text NOT NULL,
+    np smallint NOT NULL,
 
-    results_id integer NOT NULL DEFAULT -1, --> refers to results table
-    failure_id integer NOT NULL DEFAULT -1  --> points to information about failure
+    results_id integer NOT NULL, --> refers to results table
+    -- JMS: we need to talk about this one
+    failure_id integer NOT NULL  --> points to information about failure
 );
 
 INSERT INTO test_run (test_run_id) VALUES ('-1'); 
@@ -165,26 +177,17 @@ CREATE TABLE results (
     results_id serial UNIQUE,
     submit_id integer NOT NULL DEFAULT -1,
 
-    -- JMS: why is this "NOT NULL"?  What's wrong with it being NULL?
     environment text NOT NULL DEFAULT '',
     merge_stdout_stderr boolean,
-    -- JMS: why is this "NOT NULL"?  What's wrong with it being NULL?
     result_stdout text NOT NULL DEFAULT '', --> what is the largest text blob we can put in PG?  Rich says default might be 8k!
-    -- JMS: why is this "NOT NULL"?  What's wrong with it being NULL?
     result_stderr text NOT NULL DEFAULT '',
     start_timestamp timestamp without time zone,
     stop_timestamp timestamp without time zone,
-    -- JMS: how can a smallint be NULL?  (i.e., why is it NOT NULL?)  Does
-    -- "NOT NULL" simply mean that we have to assign it a value?  If
-    -- so, that's ok.
-    exit_status smallint NOT NULL DEFAULT -1,
-    -- JMS: We need the key here.  Also, don't name the field
-    -- "success", because that's only one of the 4 possible values
-    -- (i.e., wouldn't it be weird to name field "success" but it
-    -- could have a "timed out" value?)
+    -- JMS: similar to above, no default values here
+    exit_status smallint NOT NULL,
     -- Key: result value: 1=pass, 2=fail, 3=skipped, 4=timed out
-    test_result smallint NOT NULL DEFAULT -1,
-    -- set to DEFAULT for correctness tests
+    test_result smallint NOT NULL,
+    -- set to DEFAULT for correctness tests (i.e., no performance results)
     performance_id integer NOT NULL DEFAULT -1
 );
 
