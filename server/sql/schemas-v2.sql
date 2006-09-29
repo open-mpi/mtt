@@ -7,17 +7,17 @@
 DROP TABLE compute_cluster;
 CREATE TABLE compute_cluster (
     compute_cluster_id serial UNIQUE,
-    platform_id character varying(256) NOT NULL DEFAULT '',
-    platform_hardware character varying(256) NOT NULL DEFAULT '',
-    platform_type character varying(256) NOT NULL DEFAULT '',
-    os_name character varying(256) NOT NULL DEFAULT '',
-    os_version character varying(256) NOT NULL DEFAULT '',
+    platform_name character varying(256) NOT NULL DEFAULT 'bogus',
+    platform_hardware character varying(256) NOT NULL DEFAULT 'bogus',
+    platform_type character varying(256) NOT NULL DEFAULT 'bogus',
+    os_name character varying(256) NOT NULL DEFAULT 'bogus',
+    os_version character varying(256) NOT NULL DEFAULT 'bogus',
     UNIQUE (compute_cluster_id,
             os_name,
             os_version,
             platform_hardware,
             platform_type,
-            platform_id
+            platform_name
     )
 );
 
@@ -31,9 +31,9 @@ CREATE TABLE submit (
     client_serial integer NOT NULL DEFAULT '-38', --> refers to the serial sequence
     mtt_version_major smallint NOT NULL DEFAULT '-38',
     mtt_version_minor smallint NOT NULL DEFAULT '-38',
-    hostname character varying(128) NOT NULL DEFAULT '',
-    local_username character varying(16) NOT NULL DEFAULT '',
-    http_username character varying(16) NOT NULL DEFAULT '',
+    hostname character varying(128) NOT NULL DEFAULT 'bogus',
+    local_username character varying(16) NOT NULL DEFAULT 'bogus',
+    http_username character varying(16) NOT NULL DEFAULT 'bogus',
     tstamp timestamp without time zone NOT NULL DEFAULT now(),
     UNIQUE (submit_id,
             client_serial,
@@ -56,8 +56,8 @@ CREATE INDEX submit_phase_idx ON submit(phase_id);
 DROP TABLE mpi_get;
 CREATE TABLE mpi_get (
     mpi_get_id serial UNIQUE,
-    section_name character varying(64) NOT NULL DEFAULT '',
-    version character varying(32) NOT NULL DEFAULT '',
+    section_name character varying(64) NOT NULL DEFAULT 'bogus',
+    version character varying(32) NOT NULL DEFAULT 'bogus',
     UNIQUE (mpi_get_id,
             section_name,
             version
@@ -67,8 +67,8 @@ CREATE TABLE mpi_get (
 DROP TABLE compiler;
 CREATE TABLE compiler (
     compiler_id serial UNIQUE,
-    compiler_name character varying(64) NOT NULL DEFAULT '',
-    compiler_version character varying(64) NOT NULL DEFAULT '',
+    compiler_name character varying(64) NOT NULL DEFAULT 'bogus',
+    compiler_version character varying(64) NOT NULL DEFAULT 'bogus',
     UNIQUE (compiler_id,
             compiler_name,
             compiler_version
@@ -87,7 +87,7 @@ CREATE TABLE mpi_install (
     --> but rich says that this is a fairly uncommon way to search for our results, so
     --> the PITA for putting this in another table might not be worth it
     configure_arguments character varying(512) NOT NULL DEFAULT '', 
-    vpath_mode character varying(16) NOT NULL DEFAULT '',
+    vpath_mode character varying(16) NOT NULL DEFAULT 'bogus',
 
     results_id integer NOT NULL DEFAULT '-38', --> refers to results table, this changes every night
     UNIQUE (mpi_install_id,
@@ -113,7 +113,7 @@ CREATE TABLE test_build (
     test_build_id serial UNIQUE, --> this changes every night
     mpi_install_id integer NOT NULL DEFAULT '-38', --> refers to mpi_install table
 
-    suite_name character varying(64) NOT NULL DEFAULT '',  --> *** do not know how to standardize this 
+    suite_name character varying(64) NOT NULL DEFAULT 'bogus',  --> *** do not know how to standardize this 
     compiler_id integer NOT NULL DEFAULT '-38', --> refers to compiler table
 
     results_id integer NOT NULL DEFAULT '-38', --> refers to results table, this changes every night
@@ -138,8 +138,8 @@ CREATE TABLE test_run (
     test_build_id integer NOT NULL DEFAULT '-38',--> refers to test_build table
 
     variant smallint NOT NULL DEFAULT '-38',
-    test_name character varying(64) NOT NULL DEFAULT '',
-    command text NOT NULL DEFAULT '',
+    test_name character varying(64) NOT NULL DEFAULT 'bogus',
+    command text NOT NULL DEFAULT 'bogus',
     np smallint NOT NULL DEFAULT '-38',
 
     results_id integer NOT NULL DEFAULT '-38', --> refers to results table
@@ -157,14 +157,14 @@ CREATE TABLE results (
     submit_id integer NOT NULL DEFAULT '-38',
 
     environment text NOT NULL DEFAULT '',
-    merge_stdout_stderr boolean,
+    merge_stdout_stderr boolean NOT NULL DEFAULT 't',
     result_stdout text NOT NULL DEFAULT '', --> what is the largest text blob we can put in PG?  Rich says default might be 8k!
     result_stderr text NOT NULL DEFAULT '',
     start_timestamp timestamp without time zone NOT NULL DEFAULT now() - interval '24 hours',
     stop_timestamp timestamp without time zone NOT NULL DEFAULT now() - interval '24 hours',
-    -- do we want exit status?
     exit_status smallint NOT NULL DEFAULT '-38',
-    success smallint NOT NULL DEFAULT '-38',
+    -- success value: 1=pass, 2=fail, 3=skipped, 4=timed out
+    test_result smallint NOT NULL DEFAULT '-38',
     -- set to DEFAULT for correctness tests
     performance_id integer NOT NULL DEFAULT '-38'
 );
@@ -172,10 +172,10 @@ CREATE TABLE results (
 DROP TABLE performance;
 CREATE TABLE performance (
     performance_id serial UNIQUE,
-    x_axis_label character varying(64) NOT NULL DEFAULT '',
-    y_axis_label character varying(64) NOT NULL DEFAULT '',
+    x_axis_label character varying(64) NOT NULL DEFAULT 'bogus',
+    y_axis_label character varying(64) NOT NULL DEFAULT 'bogus',
     performance_data double precision[][] NOT NULL DEFAULT '{{"0.0"}}',
-    description text NOT NULL DEFAULT ''
+    description text NOT NULL DEFAULT 'bogus'
 );
 
 DROP INDEX results_success_idx;
@@ -188,16 +188,16 @@ CREATE TABLE failure (
     failure_id integer NOT NULL DEFAULT '-38',
     first_occurrence timestamp without time zone,    --> first occurrence
     last_occurrence timestamp without time zone,     --> most recent occurrence
-    field character varying(16) NOT NULL DEFAULT '', --> maps to any non *_id field name in mtt database
-    value character varying(16) NOT NULL DEFAULT ''  --> value of field
+    field character varying(16) NOT NULL DEFAULT 'bogus', --> maps to any non *_id field name in mtt database
+    value character varying(16) NOT NULL DEFAULT 'bogus'  --> value of field
 );
 
 
 DROP TABLE users;
 CREATE TABLE users (
     users_id serial UNIQUE,
-    address character(64) NOT NULL DEFAULT '',
-    gecos character(32) NOT NULL DEFAULT ''
+    address character(64) NOT NULL DEFAULT 'bogus',
+    gecos character(32) NOT NULL DEFAULT 'bogus'
 );
 
 
