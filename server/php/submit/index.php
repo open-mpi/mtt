@@ -30,7 +30,7 @@ if (isset($_POST['PING'])) {
 # If the SERIAL field is set, then the client just
 # needs a serial.  Exit successfully.
 if (isset($_POST['SERIAL'])) {
-    print get_serial() . "\n";
+    print "\n*** invocation index = " .  stringify(get_serial()) . " ***\n";
     exit(0);
 }
 
@@ -460,6 +460,7 @@ function do_pg_query($cmd) {
 
 # Fetch 1D array
 function simple_select($cmd) {
+    do_pg_connect();
 
     $rows = null;
 
@@ -478,6 +479,7 @@ function simple_select($cmd) {
 
 # Fetch 2D array
 function select($cmd) {
+    do_pg_connect();
 
     debug("\nSQL: $cmd\n");
     if (! ($result = pg_query($cmd))) {
@@ -627,6 +629,7 @@ function get_serial() {
     $set         = array();
     $set         = simple_select($cmd);
     $serial_name = array_shift($set);
+
     $serial_name = 'client_serial';
     $set         = simple_select("SELECT nextval('$serial_name');");
     $serial      = array_shift($set);
