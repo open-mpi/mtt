@@ -130,8 +130,13 @@ sub Init {
                 $response->content);
         Error(">> Do not want to continue with possible bad submission URL -- aborting\n");
     }
-    Debug("MTTDatabase client serial number: " . $response->content . "\n");
-    $client_serial = chomp($response->content);
+    Debug("MTTDatabase got response: " . $response->content . "\n");
+    if ($response->content =~ m/=== client_serial = ([0-9]+) ===/) {
+        $client_serial = $1;
+        Debug("MTTDatabase parsed client serial: $client_serial\n");
+    } else {
+        Error("MTTDatabase did not get a client serial; aborting\n");
+    }
     
     # If we have a debug filename, make it an absolute filename,
     # because there's oodles of chdir()'s within the testing.  Whack
