@@ -27,10 +27,12 @@ if (isset($_POST['PING'])) {
     exit(0);
 }
 
+$marker = "===";
+
 # If the SERIAL field is set, then the client just
 # needs a serial.  Exit successfully.
 if (isset($_POST['SERIAL'])) {
-    print "\n*** invocation index = " .  stringify(get_serial()) . " ***\n";
+    print "\n$marker client_serial = " .  stringify(get_serial()) . " $marker\n";
     exit(0);
 }
 
@@ -47,32 +49,36 @@ $_POST['http_username'] =
         isset($_SERVER['PHP_AUTH_USER']) ?
         $_SERVER['PHP_AUTH_USER'] : "";
 
+$id = "_id";
+
 # This should be a condition on a _POST hash
 # E.g., test_type => (correctness or performance)
 if ($_POST['test_type'] != 'performance')
-    $idxs_hash["performance_id"] = '-1';
+    $idxs_hash["performance$id"] = '-1';
 
 # This index is for reporting on "new" failures,
 # and will get updated by a nightly churn script (see #70)
-$idxs_hash["failure_id"] = '-1';
+$idxs_hash["failure$id"] = '-1';
 
 # What phase are we doing?
-$phase = $_POST['phase'];
+$phase      = strtolower($_POST['phase']);
+$phase_name = preg_replace('/^\s+|\s+$/', '', $phase);
+$phase_name = preg_replace('/\s+/', '_', $phase);
 
 if (0 == strcasecmp($phase, "test run")) {
 
-    $idx = process_phase("test_run", $idxs_hash);
-    validate("test_run", array("mpi_install", "test_build", "failure"));
+    $idx = process_phase($phase_name, $idxs_hash);
+    validate($phase_name, array("mpi_install", "test_build", "failure"));
 
 } else if (0 == strcasecmp($phase, "test build")) {
 
-    $idx = process_phase("test_build", $idxs_hash);
-    validate("test_build", array("mpi_install", "failure"));
+    $idx = process_phase($phase_name, $idxs_hash);
+    validate($phase_name, array("mpi_install", "failure"));
 
 } else if (0 == strcasecmp($phase, "mpi install")) {
 
-    $idx = process_phase("mpi_install", $idxs_hash);
-    validate("mpi_install", array("failure"));
+    $idx = process_phase($phase_name, $idxs_hash);
+    validate($phase_name, array("failure"));
 
 } else {
     print "ERROR: Unknown phase! ($phase)<br>\n";
@@ -81,7 +87,7 @@ if (0 == strcasecmp($phase, "test run")) {
 }
 
 # Return index(es) to MTT client
-print "\n*** $phase index = " . stringify($idx) . " ***\n";
+print "\n$marker $phase_name$id" . " = " . stringify($idx) . " $marker\n";
 
 # All done
 pg_close();
@@ -90,6 +96,8 @@ exit(0);
 ######################################################################
 
 function process_phase($phase, $idxs_hash) {
+
+    global $id;
 
     $idx_override      = NULL;
     $phase_indexes     = array();
@@ -109,21 +117,21 @@ function process_phase($phase, $idxs_hash) {
                        get_table_indexes($phase, $fully_qualified)),
             'contains_no_table_key');
 
-    $always_new = false;
+    $always_new = true;
     foreach (array("submit") as $table) {
-        $results_idxs_hash[$table . "_id"] =
+        $results_idxs_hash[$table . $id] =
             set_data($table, NULL, $always_new, $idx_override);
     }
 
     $always_new = true;
     foreach (array("results") as $table) {
-        $phase_idxs_hash[$table . "_id"] =
+        $phase_idxs_hash[$table . $id] =
             set_data($table, $results_idxs_hash, $always_new, $idx_override);
     }
 
     $always_new = false;
     foreach ($phase_indexes as $table) {
-        $phase_idxs_hash[$table . "_id"] =
+        $phase_idxs_hash[$table . $id] =
             set_data($table, NULL, $always_new, $idx_override);
     }
 
@@ -139,10 +147,11 @@ function process_phase($phase, $idxs_hash) {
 function set_data($table, $indexes, $always_new, $idx_override) {
 
     global $_POST;
+    global $id;
 
     # MAKE SURE TABLE'S SERIAL-INTEGER PAIR
     # FOLLOWS THE table_id NAMING SCHEME
-    $table_id = $table . "_id";
+    $table_id = $table . $id;
 
     # Get existing fields from table
     $params = get_table_fields($table);
@@ -266,11 +275,13 @@ function contains_no_table_key($table_name) {
 # used to avoid descending into a part of the schema
 function gather_indexes($parent, $child, $idxs, $prune_list) {
 
+    global $id;
+
     $new_idxs = get_table_indexes($parent, true);
 
     if (! is_null($child))
         $self = array(
-                    $parent . "_id" => array(
+                    $parent . $id => array(
                         'integer' => $child,
                         'serial' => $parent,
                     )
@@ -308,6 +319,8 @@ function gather_indexes($parent, $child, $idxs, $prune_list) {
 # for an entire phase row, and dump the table
 function validate($table_name, $prune_list) {
 
+    global $id;
+
     $idxs = gather_indexes($table_name, NULL, NULL, $prune_list);
 
     $cmd .= "\n\t SELECT * FROM " .
@@ -321,25 +334,27 @@ function validate($table_name, $prune_list) {
     }
 
     $cmd .= "\n\t " . join(" AND \n\t", $wheres);
-    $cmd .= "\n\t ORDER BY $table_name" . "_id" . ";";
+    $cmd .= "\n\t ORDER BY $table_name$id;";
 
     $rows = select($cmd);
 }
 
 function sql_join($table_name) {
-    return "JOIN $table_name USING (" . $table_name . "_id)";
+    global $id;
+    return "JOIN $table_name USING (" . $table_name . $id . ")";
 }
 
 # X: maybe a misnomer, since this function doesn't involve database
 # indexes, but rather the pointers to other tables set up for this schema
 function get_table_indexes($table_name, $qualified) {
 
+    global $id;
     global $is_index_clause;
     global $dbname;
 
     # Crude way to tell whether a field is an index
     $is_index_clause = "\n\t (data_type = 'integer' AND " .
-                       "\n\t column_name ~ '_id$' AND " .
+                       "\n\t column_name ~ '$id$' AND " .
                        "\n\t column_default !~ 'nextval' AND " .
                        "\n\t table_catalog = '$dbname')";
 
@@ -403,7 +418,7 @@ function get_scalar(&$var) {
 function stringify($var) {
     if (is_array($var))
         if (is_numeric_($var))
-            return '[' . join(",",$var) . ']';
+            return join(",",$var);
         else
             return $var;
     else
@@ -633,5 +648,6 @@ function get_serial() {
     $serial_name = 'client_serial';
     $set         = simple_select("SELECT nextval('$serial_name');");
     $serial      = array_shift($set);
+
     return $serial;
 }
