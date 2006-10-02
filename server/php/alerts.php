@@ -1,21 +1,12 @@
 #! /usr/bin/php
 
-<!--
-
- Copyright (c) 2006 Sun Microsystems, Inc.
-                         All rights reserved.
- $COPYRIGHT$
-
- Additional copyrights may follow
-
- $HEADER$
-
--->
 
 <?php
 
 #
-#
+# Copyright (c) 2006 Sun Microsystems, Inc.
+#                          All rights reserved.
+# 
 # Email reporter -
 #   (Set this script up as a cron job)
 #
@@ -56,20 +47,33 @@ $headers .= "--$boundary\r\n" .
 
 foreach (array_keys($ini) as $section) {
 
-    $url          = $ini[$section]['url'];
+    $urls         = array();
+    $urls         = preg_split("/\s*url=\s*/", $ini[$section]['url']);
     $email        = $ini[$section]['email'];
-    $frequency    = $ini[$section]['frequency'];
-    $last_alerted = $ini[$section]['last_alerted'];
-    $report       = chunk_split(base64_encode(do_curl_get($url)));
+    #$frequency    = $ini[$section]['frequency'];
+    #$last_alerted = $ini[$section]['last_alerted'];
 
-    mail($email, $section, '', $headers . $report);
+    $html = "";
+    foreach ($urls as $url)
+        $html .= do_curl_get($url);
+
+    if (! contains_null_result_msg($html)) {
+        $report = chunk_split(base64_encode($html));
+        mail($email, $section, '', $headers . $report);
+    }
+    else
+        print "\nNull report, not mailing.";
 
     if ($report)
         $ini[$section]['last_alerted'] = time();
 }
 
-write_ini_file($ini_file, $ini);
+#write_ini_file($ini_file, $ini);
 
 exit;
+
+function contains_null_result_msg($str) {
+    return preg_match("/no data available for the specified query/i", $str);
+}
 
 ?>

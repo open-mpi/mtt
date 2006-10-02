@@ -222,7 +222,11 @@ function dump_report() {
     } else
         $filters_desc_html_table = null;
 
-    print $filters_desc_html_table;
+    if (! isset($_GET['no_description']))
+        print $filters_desc_html_table;
+
+    if (isset($_GET['table_title']))
+        print "<div align=left><i><b>" .  $_GET['table_title'] . "</b></i></div>";
 
     dump_data_table($headers, $resource);
 
@@ -245,7 +249,10 @@ function dump_data_table($headers, $resource) {
            $lllgray, $lred, $lgreen, $lyellow, $white;
 
     # Do not print an empty table
-    if (! $resource) {
+    if (pg_num_rows($resource) < 1) {
+        if (isset($_GET['blank_if_null']))
+            exit;
+
         print "<b><i>No data available for the specified query.</i></b>";
         return;
     }
@@ -270,8 +277,12 @@ function dump_data_table($headers, $resource) {
     print "\n\n<div align=center><table border=1 width='100%'>";
 
     # Display headers
+    $num_cols = count($headers['params']) +         # params headers
+               (count($phases['per_level']) * 2) +  # results headers
+                1;                                  # [i]
+
     print 
-        sprintf_("\n<th bgcolor='$thcolor' rowspan=2>%s", $headers['params']);
+        "<tr>" . sprintf_("\n<th bgcolor='$thcolor' rowspan=2>%s", $headers['params']);
 
     $i = 1;
     foreach ($phases['per_level'] as $ph) {
@@ -298,6 +309,8 @@ function dump_data_table($headers, $resource) {
             break;
 
         $details_html_table = "";
+        $details_inline = isset($_GET['details_inline']) ? true : false;
+        $border = ($details_inline ? 0 : 1);
 
         # Make the row clickable if there's clickable info for this query
         if ($selects['per_level']['details']) {
@@ -306,7 +319,7 @@ function dump_data_table($headers, $resource) {
             $linked_field_cols = array_splice($row, sizeof($row) - $len, $len);
 
             $details_html_table = "\n\n" .
-                "<table border=1 width=100%><tr><th bgcolor=$thcolor>Details" .
+                "<table border=$border width=100%><tr><th bgcolor=$thcolor>Details" .
                 "<tr><td bgcolor=$lllgray width=100%>";
 
             for ($i = 0; $i < $len; $i++) {
@@ -340,12 +353,17 @@ function dump_data_table($headers, $resource) {
 
         if ($details_html_table) {
 
-            print "<td align=center bgcolor=$lgray>" .
-                  "<a href='javascript:popup(\"900\",\"750\",\"" .
-                  "$phase_labels[$phase]: Detailed Info\",\"" .
-                  htmlentities(strip_quotes($details_html_table)) . "\",\"\",\" font-family:Courier,monospace\")' " .
-                     " class='lgray_ln'><font size='$sfont'>" .
-                  "[i]</font><a>";
+            if (! $details_inline)
+                print "\n<td align=center bgcolor=$lgray>" .
+                      "\n<a href='javascript:popup(\"900\",\"750\",\"" .
+                      "$phase_labels[$phase]: Detailed Info\",\"" .
+                      htmlentities(strip_quotes($details_html_table)) . "\",\"\",\" font-family:Courier,monospace\")' " .
+                         " class='lgray_ln'><font size='$sfont'>" .
+                      "[i]</font><a>";
+            else
+                print "\n<td align=center bgcolor=$lgray>" .
+                      "\n<font size='$sfont'>[i]</font>" .
+                      "\n<tr><td align=center colspan=$num_cols>" . strip_quotes($details_html_table);
         }
     }
 
