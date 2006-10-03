@@ -225,13 +225,12 @@ function dump_report() {
     if (! isset($_GET['no_description']))
         print $filters_desc_html_table;
 
-    if (isset($_GET['table_title']))
-        print "<div align=left><i><b>" .  $_GET['table_title'] . "</b></i></div>";
-
     dump_data_table($headers, $resource);
 
     print info_pointers();
     print help(phases_help($phases));
+
+    print "\n<br><hr><br>";
 
     pg_close();
 }
@@ -270,16 +269,18 @@ function dump_data_table($headers, $resource) {
           "<table width='100%' cellpadding=5>" .
           "<tr>" .
           #"<th bgcolor='$lgray' rowspan=2 colspan=2 valign='top' width=0px>[insert link here]" .
-          "";
-
-    print "\n<td bgcolor='$lgray'>";
-
-    print "\n\n<div align=center><table border=1 width='100%'>";
+          "" .
+          "\n<td bgcolor='$lgray'>" .
+          "\n\n<div align=center><table border=1 width='100%'>";
 
     # Display headers
     $num_cols = count($headers['params']) +         # params headers
                (count($phases['per_level']) * 2) +  # results headers
                 1;                                  # [i]
+
+    if (isset($_GET['table_title']))
+        print "\n<tr><th bgcolor='$thcolor' colspan=$num_cols>" .
+              "\n<i><b><br>" .  $_GET['table_title'] . "<br><br></b></i>";
 
     print 
         "<tr>" . sprintf_("\n<th bgcolor='$thcolor' rowspan=2>%s", $headers['params']);
@@ -301,6 +302,20 @@ function dump_data_table($headers, $resource) {
         print sprintf("\n<th bgcolor='$thcolor'>%s", 'Fail');
     }
 
+    if (isset($_GET['details_inline'])) {
+        $details_inline = true;
+        $cellcolor      = $llgray;
+        $border         = 0;
+
+        print "\n</table>" .
+              "\n</table>";
+    }
+    else {
+        $details_inline = false;
+        $cellcolor      = $white;
+        $border         = 1;
+    }
+
     $i = 0;
     # Display data rows
     while ($row = pg_fetch_row($resource)) {
@@ -309,8 +324,6 @@ function dump_data_table($headers, $resource) {
             break;
 
         $details_html_table = "";
-        $details_inline = isset($_GET['details_inline']) ? true : false;
-        $border = ($details_inline ? 0 : 1);
 
         # Make the row clickable if there's clickable info for this query
         if ($selects['per_level']['details']) {
@@ -342,7 +355,10 @@ function dump_data_table($headers, $resource) {
         $len = sizeof($phases['per_level']) * sizeof($results_types);
         $result_cols = array_splice($row, sizeof($row) - $len, $len);
 
-        print "\n<tr>" . sprintf_("\n<td bgcolor=$white>%s", $row);
+        if ($details_inline)
+            print "\n<br><table border=1 width=100%>";
+
+        print "\n<tr>" . sprintf_("\n<td bgcolor=$cellcolor>%s", $row);
 
         for ($i = 0; $i < sizeof($result_cols); $i += 2) {
             print "\n<td align='right' bgcolor='" .
@@ -365,6 +381,8 @@ function dump_data_table($headers, $resource) {
                       "\n<font size='$sfont'>[i]</font>" .
                       "\n<tr><td align=center colspan=$num_cols>" . strip_quotes($details_html_table);
         }
+        if ($details_inline)
+            print "\n</table>";
     }
 
     print "\n</table>";
@@ -416,7 +434,7 @@ function filters_description($filters) {
             $count . " *" .
                 help("<tr><td colspan=2 bgcolor=$lllgray><i><font size='$sfont'>*" .
                     $help[$count] . "</font></i>") .
-            "</table><br>" .
+            "</table>" .
             "";
     }
     else

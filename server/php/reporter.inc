@@ -16,8 +16,8 @@
 #
 #
 
-$GLOBALS['verbose'] = $_GET['verbose'] ? $_GET['verbose'] : 0;
-$GLOBALS['debug']   = $_GET['debug']   ? $_GET['debug']   : 0;
+$GLOBALS['verbose'] = isset($_GET['verbose']) ? $_GET['verbose'] : 0;
+$GLOBALS['debug']   = isset($_GET['debug'])   ? $_GET['debug']   : 0;
 $GLOBALS['res']     = 0;
 
 $form_id = "report";
