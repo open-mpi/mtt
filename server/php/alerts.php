@@ -35,12 +35,12 @@ $boundary = uniqid("MTTREPORT");
 $headers .= "Content-Type: multipart/alternative" .
             "; boundary = $boundary\r\n\r\n";
 $headers .= "This is a MIME encoded message.\r\n\r\n";
-$headers .= "--$boundary\r\n" .
-            "Content-Type: text/plain; charset=ISO-8859-1\r\n" .
-            "Content-Transfer-Encoding: base64\r\n\r\n";
-$headers .= chunk_split(base64_encode(
-            "A plain text version of the Nightly MTT Test Results " .
-            "is not yet available. Sorry."));
+# $headers .= "--$boundary\r\n" .
+#             "Content-Type: text/plain; charset=ISO-8859-1\r\n" .
+#             "Content-Transfer-Encoding: base64\r\n\r\n";
+# $headers .= chunk_split(base64_encode(
+#             "A plain text version of the Nightly MTT Test Results " .
+#             "is not yet available. Sorry."));
 $headers .= "--$boundary\r\n" .
             "Content-Type: text/html; charset=ISO-8859-1\r\n" .
             "Content-Transfer-Encoding: base64\r\n\r\n";
