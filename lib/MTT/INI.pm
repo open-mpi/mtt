@@ -13,6 +13,7 @@ package MTT::INI;
 
 use strict;
 use Config::IniFiles;
+use Data::Dumper;
 use vars qw(@EXPORT);
 use base qw(Exporter);
 @EXPORT = qw(WriteINI ReadINI);
@@ -79,6 +80,71 @@ sub OverrideINIParams {
     return $ini;
 }
 
+# Filter ini sections at the command line
+sub FilterINISections {
+
+    my($ini, $section_arg, $no_section_arg) = @_;
+       
+    return $ini if (! $section_arg and ! $no_section_arg);
+
+    my ($delete,
+        $section,
+        $patterns,
+        @patterns_and,
+        $re,
+        $del_on_match,
+        $del_on_mismatch,
+        @sections_to_delete);
+
+    if (defined(@$section_arg[0])) {
+        $patterns = $section_arg;
+        $del_on_match = 0;
+        $del_on_mismatch = 1;
+    }
+    else {
+        $patterns = $no_section_arg;
+        $del_on_match = 1;
+        $del_on_mismatch = 0;
+    }
+
+    # Iterate through the ini file, section by section
+    foreach $section ($ini->Sections) {
+
+        # Iterate through every ---[no]-section argument,
+        # and OR them together
+        foreach my $pattern (@$patterns) {
+
+            # Always process the mtt section
+            next if ($section =~ /\bmtt\b/i);
+
+            # Generate on-the-fly, perl code that will
+            # perform the regular expressions, and AND
+            # them together.
+            # (Conform to agrep ';' syntax for AND operations)
+            @patterns_and = split /\;/, $pattern;
+            $re = join(" and ", map { "\$section =~ /$_/i" } @patterns_and);
+
+            my $eval = "
+            if (($re)) {
+                \$delete = $del_on_match;
+                last;
+            }
+            else {
+                \$delete = $del_on_mismatch;
+            }";
+            eval $eval;
+        }
+        # Flag sections for deletion (to be safe, we do not
+        # delete sections while iterating over them)
+        push(@sections_to_delete, $section) if ($delete);
+    }
+
+    # Delete the flagged sections
+    foreach my $section (@sections_to_delete) {
+        $ini->DeleteSection($section);
+    }
+
+    return $ini;
+}
+
 1;
-
-
