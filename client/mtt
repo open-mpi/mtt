@@ -102,6 +102,8 @@ my $mpi_install_arg;
 my $test_get_arg;
 my $test_build_arg;
 my $test_run_arg;
+my @section_arg;
+my @no_section_arg;
 my $trim_arg;
 my $version_arg;
 my $ini_args;
@@ -122,6 +124,8 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
                                   "test-get!" => \$test_get_arg,
                                   "test-build!" => \$test_build_arg,
                                   "test-run!" => \$test_run_arg,
+                                  "section=s" => \@section_arg,
+                                  "no-section=s" => \@no_section_arg,
                                   "trim!" => \$trim_arg,
                                   "version" => \$version_arg,
                                   "print-time|p" => \$time_arg,
@@ -159,6 +163,7 @@ if ($file_arg[0] eq "-" or $stdin_arg) {
     $file_arg[0] = undef;
     open($file_arg[0], "-");
 }
+
 if (!$ok || $help_arg) {
     print("Command line error\n") 
         if (!$ok);
@@ -178,6 +183,7 @@ if (!$ok || $help_arg) {
 --[no-]test-build             Do the \"Test build\" phase
 --[no-]test-run               Do the \"Test run\" phase
 --[no-]trim                   Do the \"Trim\" phase
+--[no-]section                Do a specific section(s)
 field=value                   Replace parameter \"foo\" from the INI file
                               with the value \"bar\" (i.e., override the
                               INI file value)
@@ -201,7 +207,25 @@ positive and negative phases in a single MTT run.
 * If any phases are specified in the positive form, then only those
   phases will be run (e.g., \"--mpi-get --mpi-install\").
 * If negative phases are specified, then thoses phases will *not* be
-  run.\n";
+  run.
+  
+Use --section to run sections matching a pattern.  For example, the
+following command will perform any section matching the
+case-insensitive patttern \"intel\":
+
+    \$ client/mtt [...] --section intel
+
+The following performs only sections whose name matches the
+case-insensitive pattterns \"run\" AND \"intel\" (so only the [Test
+run: intel] section):
+
+    \$ client/mtt [...] --section 'run;intel'
+
+To perform sections NOT matching \"intel\" OR \"ibm\":
+
+    \$ client/mtt [...] --no-section intel --no-section ibm
+
+\n";
 
     exit($ok);
 }
@@ -406,8 +430,10 @@ foreach my $file (@file_arg) {
                                    -allowcontinue => 1);
 
     # Override ini file params with those supplied at command-line
-
     $ini = MTT::INI::OverrideINIParams($ini, $ini_args);
+
+    # Filter ini sections at command line
+    $ini = MTT::INI::FilterINISections($ini, \@section_arg, \@no_section_arg);
 
     if (! $ini) {
         MTT::Messages::Warning("Could not read INI file: $file; skipping\n");
