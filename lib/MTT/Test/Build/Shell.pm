@@ -32,14 +32,16 @@ sub Build {
     # Now run that file -- remove it when done, regardless of the outcome
     my $cmd = Value($ini, $config->{full_section_name}, "shell_build_command");
     my $x = MTT::DoCommand::CmdScript(!$config->{separate_stdout_stderr},
-                                      $cmd, $config->{stdout_save_lines},
+                                      $cmd, -1,
+                                      $config->{stdout_save_lines},
                                       $config->{stderr_save_lines});
     if ($x->{status} != 0) {
-        $ret->{result_message} = "Shell: command failed \"$cmd\"\n";
+        $ret->{result_message} = "Shell: command failed \"$cmd\"";
+        $ret->{result_message} .= " (timed out)"
+            if ($x->{timed_out});
         $ret->{stdout} = $x->{stdout};
         $ret->{stderr} = $x->{stderr}
             if ($x->{stderr});
-        $ret->{result_message} = "Failed";
         return $ret;
     }
 
