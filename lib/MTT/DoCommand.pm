@@ -24,7 +24,7 @@ sub _kill_proc {
 
     # Try an easy kill
     my $kid;
-    kill("HUP", $pid);
+    kill("TERM", $pid);
     $kid = waitpid($pid, WNOHANG);
     if ($kid != 0) {
         return $?;
@@ -58,7 +58,14 @@ sub _kill_proc {
         if ($kid != 0) {
             return $?;
         }
-        sleep(2);
+        sleep(1);
+
+        kill("KILL", $pid);
+        $kid = waitpid($pid, WNOHANG);
+        if ($kid != 0) {
+            return $?;
+        }
+        sleep(1);
     }
 }
 
@@ -212,7 +219,8 @@ sub Cmd {
         $end_time = time() + $timeout;
         Debug("Timeout: $timeout - $end_time (vs. now: " . time() . ")\n");
     }
-    my $killed_status;
+    my $killed_status = undef;
+    my $last_over = 0;
     while ($done > 0) {
         my $nfound = select($rout = $rin, undef, undef, $t);
         if (vec($rout, fileno(OUTread), 1) == 1) {
@@ -248,28 +256,37 @@ sub Cmd {
         # If we're running with a timeout, bail if we're past the end
         # time
         if (defined($end_time) && time() > $end_time) {
-            Debug("Past timeout! $end_time < " . time() . "\n");
-            $killed_status = _kill_proc($pid);
-            $ret->{timed_out} = 1;
+            my $over = time() - $end_time;
+            if ($over > $last_over) {
+                Debug("*** Past timeout by $over seconds\n");
+                my $st = _kill_proc($pid);
+                if (!defined($killed_status)) {
+                    $killed_status = $st;
+                }
+                $ret->{timed_out} = 1;
+            }
+            $last_over = $over;
         }
     }
     close OUTerr;
     close OUTread
         if (!$merge_output);
 
-    # The pipes are closed, so the process should be dead.  Reap it.
+    # If we didn't timeout, we need to reap the process (timeouts will
+    # have already been reaped).
 
-    waitpid($pid, 0);
-    my $status = $? >> 8;
-    Debug("Command complete, exit status: $status\n");
+    if (!$ret->{timed_out}) {
+        waitpid($pid, 0);
+        $ret->{status} = $? >> 8;
+        Debug("Command complete, exit status: $ret->{status}\n");
+    } else {
+        $ret->{status} = $killed_status;
+        Debug("Command timed out, exit status: $ret->{status}\n");
+    }
 
     # Return an anonymous hash containing the relevant data
 
     $ret->{stdout} = join('', @out);
-    $ret->{status} = $status;
-
-    # If we had stderr, return that, too
-
     $ret->{stderr} = join('', @err),
         if (!$merge_output);
     return $ret;
