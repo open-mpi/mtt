@@ -424,6 +424,9 @@ foreach my $file (@file_arg) {
     
     # Load up the ini file
 
+    # Check for problems in the ini file
+    MTT::INI::ValidateINI($file);
+
     MTT::Messages::Debug("Reading ini file: " . (($stdin_arg) ? "stdin" : $file) . "\n");
     my $ini = new Config::IniFiles(-file => $file, 
                                    -nocase => 1,

@@ -13,6 +13,7 @@ package MTT::INI;
 
 use strict;
 use Config::IniFiles;
+use MTT::Messages;
 use Data::Dumper;
 use vars qw(@EXPORT);
 use base qw(Exporter);
@@ -145,6 +146,39 @@ sub FilterINISections {
     }
 
     return $ini;
+}
+
+# Check the INI for duplicate sections
+sub ValidateINI {
+
+    my($file) = @_;
+    my @duplicates;
+    my %sections;
+    my $opener;
+
+    # stdin
+    if (ref($file) =~ /glob/i) {
+        $file = "stdin";
+        $opener = "-";
+    }
+    # filename
+    else {
+        $opener = "< $file";
+    }
+    open(ini, $opener);
+
+    Debug("Validating INI file: $file\n");
+
+    while (<ini>) {
+        my $section = $1 if (/^\s*(\[[^\]]+\])\s*$/);
+        $sections{$section}++ if ($section !~ /^\s*$/);
+        push(@duplicates, $section) if ($sections{$section} eq 2);
+    }
+
+    if (@duplicates) {
+        Error("There are duplicate sections for: \n\t" . join("\n\t", @duplicates) . "\n" . 
+              "Please eliminate duplicate sections in INI file(s).\n");
+    }
 }
 
 1;
