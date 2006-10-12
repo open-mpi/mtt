@@ -22,9 +22,17 @@ $options = getopt("f:dv");
 $GLOBALS['verbose'] = isset($options['v']) ? true : false;
 $GLOBALS['debug']   = isset($options['d']) ? true : false;
 
+# Set php trace levels
+if ($GLOBALS['verbose'])
+    error_reporting(E_ALL);
+else
+    error_reporting(E_ERROR | E_WARNING | E_PARSE);
+
 # Parse with sections
 $ini_file = ($options['f'] ? $options['f'] : "alerts.ini");
 $ini      = parse_ini_file($ini_file, true);
+
+print "\nCreating reports specified in $ini_file.";
 
 # Reference:
 #   http://www.zend.com/zend/trick/html-email.php
@@ -57,18 +65,23 @@ foreach (array_keys($ini) as $section) {
     foreach ($urls as $url)
         $html .= do_curl_get($url);
 
+
+    print "\nGenerating report for [$section].";
+
     if (! contains_null_result_msg($html)) {
         $report = chunk_split(base64_encode($html));
         mail($email, $section, '', $headers . $report);
     }
     else
-        print "\nNull report, not mailing.";
+        print "\nNull report for [$section], not mailing.";
 
     if ($report)
         $ini[$section]['last_alerted'] = time();
 }
 
 #write_ini_file($ini_file, $ini);
+
+print "\n";
 
 exit;
 
