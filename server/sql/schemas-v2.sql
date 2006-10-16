@@ -88,6 +88,8 @@ CREATE TABLE mpi_install (
     --> the PITA for putting this in another table might not be worth it
     configure_arguments character varying(512) NOT NULL DEFAULT '', 
     vpath_mode character varying(16) NOT NULL DEFAULT 'bogus',
+    --> 1=32bit, 2=64bit
+    bitness smallint NOT NULL DEFAULT '1',
 
     results_id integer NOT NULL DEFAULT '-38', --> refers to results table, this changes every night
     UNIQUE (mpi_install_id,
@@ -174,8 +176,11 @@ CREATE TABLE performance (
     performance_id serial UNIQUE,
     x_axis_label character varying(64) NOT NULL DEFAULT 'bogus',
     y_axis_label character varying(64) NOT NULL DEFAULT 'bogus',
-    performance_data double precision[][] NOT NULL DEFAULT '{{"0.0"}}',
-    description text NOT NULL DEFAULT 'bogus'
+    messages_size => integer[],
+    bandwidth     => integer[],
+    latency_min   => double precision[],
+    latency_max   => double precision[],
+    latency_avg   => double precision[]
 );
 
 DROP INDEX results_success_idx;
