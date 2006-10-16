@@ -41,7 +41,7 @@ sub Get {
         my $mpi_get = $MTT::MPI::sources->{$mpi_get_key};
         foreach my $version_key (keys(%{$mpi_get})) {
             my $source = $mpi_get->{$version_key};
-            Debug(">> have [$simple_section] version $version_key\n");
+            Debug(">> have [$section] version $version_key\n");
 
             if ($source->{module_name} eq "MTT::MPI::Get::Tarball" &&
                 basename($source->{module_data}->{tarball}) eq
