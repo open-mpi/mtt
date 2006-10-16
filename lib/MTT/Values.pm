@@ -219,4 +219,18 @@ sub ProcessEnvKeys {
     }
 }
 
+# This function generates random strings of a given length
+sub RandomString {
+
+    # length of the random string to generate
+    my $length_of_randomstring = shift;
+    my @chars = ('a'..'z','A'..'Z','0'..'9','_');
+    my $random_string;
+
+    foreach (1..$length_of_randomstring) {
+        $random_string .= $chars[rand @chars];
+    }
+    return $random_string;
+}
+
 1;
