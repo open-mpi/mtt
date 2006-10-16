@@ -421,13 +421,19 @@ sub stop_time {
 ########################################################################
 
 foreach my $file (@file_arg) {
-    
-    # Load up the ini file
 
-    MTT::Messages::Debug("Reading ini file: " . (($stdin_arg) ? "stdin" : $file) . "\n");
-    my $ini = new Config::IniFiles(-file => $file, 
+    my $orig_file = $file;
+    my $temp_file = MTT::Files::copyfile($file);
+
+    # Load up the ini file
+    MTT::Messages::Debug("Reading ini file: " . (($stdin_arg) ? "stdin" : $orig_file) . "\n");
+    my $ini = new Config::IniFiles(-file => $temp_file, 
                                    -nocase => 1,
                                    -allowcontinue => 1);
+
+    # Check for problems in the ini file
+    MTT::INI::ValidateINI($temp_file);
+    MTT::DoCommand::Cmd(1, "rm $temp_file");
 
     # Override ini file params with those supplied at command-line
     $ini = MTT::INI::OverrideINIParams($ini, $ini_args);

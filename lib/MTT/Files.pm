@@ -19,6 +19,7 @@ use MTT::Messages;
 use MTT::DoCommand;
 use MTT::FindProgram;
 use MTT::Defaults;
+use MTT::Values;
 use Data::Dumper;
 
 # How many old builds to keep
@@ -400,4 +401,35 @@ sub http_get {
     return 1;
 }
 
+# Copy infile or stdin to a unique file in /tmp
+sub copyfile {
+
+    my($infile) = @_;
+    my($opener);
+    my($outfile) = "/tmp/" . MTT::Values::RandomString(10) . ".ini";
+
+    # stdin
+    if (ref($infile) =~ /glob/i) {
+        $infile = "stdin";
+        $opener = "-";
+    }
+    # file
+    else {
+        $opener = "< $infile";
+    }
+    open(in, $opener);
+    open(out, "> $outfile");
+
+    Debug("Copying: $infile to $outfile\n");
+
+    while (<in>) {
+        print out;
+    }
+    close(in);
+    close(out);
+
+    return $outfile;
+}
 1;
+
+
