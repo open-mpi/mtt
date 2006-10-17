@@ -25,6 +25,8 @@ CREATE TABLE compute_cluster (
 DROP SEQUENCE client_serial;
 CREATE SEQUENCE client_serial;
 
+-- We may consider splitting this table into submit_data (who/from-where submitted)
+-- and submit_log (when was submitted)
 DROP TABLE submit;
 CREATE TABLE submit (
     submit_id serial UNIQUE,
@@ -41,7 +43,8 @@ CREATE TABLE submit (
             mtt_version_minor,
             hostname,
             local_username,
-            http_username
+            http_username,
+            tstamp
     )
 );
 
@@ -176,11 +179,11 @@ CREATE TABLE performance (
     performance_id serial UNIQUE,
     x_axis_label character varying(64) NOT NULL DEFAULT 'bogus',
     y_axis_label character varying(64) NOT NULL DEFAULT 'bogus',
-    messages_size => integer[],
-    bandwidth     => integer[],
-    latency_min   => double precision[],
-    latency_max   => double precision[],
-    latency_avg   => double precision[]
+    messages_size integer[],
+    bandwidth integer[],
+    latency_min double precision[],
+    latency_max double precision[],
+    latency_avg double precision[]
 );
 
 DROP INDEX results_success_idx;
