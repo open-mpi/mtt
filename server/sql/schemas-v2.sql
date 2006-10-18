@@ -189,6 +189,26 @@ CREATE TABLE performance (
 DROP INDEX results_success_idx;
 CREATE INDEX results_success_idx ON results(success);
 
+
+DROP TABLE alerts;
+CREATE TABLE alerts (
+    alerts_id serial UNIQUE,
+    users_id integer NOT NULL DEFAULT '-38',
+    enabled smallint,
+    url text NOT NULL DEFAULT 'bogus',
+    subject character(64) NOT NULL DEFAULT 'bogus',
+    description character(64) NOT NULL DEFAULT 'bogus'
+);
+
+
+DROP TABLE users;
+CREATE TABLE users (
+    users_id serial UNIQUE,
+    username character(16) NOT NULL DEFAULT 'bogus',
+    email_address character(64) NOT NULL DEFAULT 'bogus',
+    gecos character(32) NOT NULL DEFAULT 'bogus'
+);
+
 -- For "new" failure reporting
 
 DROP TABLE failure;
@@ -199,15 +219,6 @@ CREATE TABLE failure (
     field character varying(16) NOT NULL DEFAULT 'bogus', --> maps to any non *_id field name in mtt database
     value character varying(16) NOT NULL DEFAULT 'bogus'  --> value of field
 );
-
-
-DROP TABLE users;
-CREATE TABLE users (
-    users_id serial UNIQUE,
-    address character(64) NOT NULL DEFAULT 'bogus',
-    gecos character(32) NOT NULL DEFAULT 'bogus'
-);
-
 
 DROP TABLE cluster_owner;
 CREATE TABLE cluster_owner (
