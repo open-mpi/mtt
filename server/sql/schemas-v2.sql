@@ -171,16 +171,18 @@ CREATE TABLE results (
     -- success value: 1=pass, 2=fail, 3=skipped, 4=timed out
     test_result smallint NOT NULL DEFAULT '-38',
     -- set to DEFAULT for correctness tests
-    performance_id integer NOT NULL DEFAULT '-38'
+    latency_bandwidth_id integer NOT NULL DEFAULT '-38'
 );
 
-DROP TABLE performance;
-CREATE TABLE performance (
-    performance_id serial UNIQUE,
-    x_axis_label character varying(64) NOT NULL DEFAULT 'bogus',
-    y_axis_label character varying(64) NOT NULL DEFAULT 'bogus',
-    messages_size integer[],
-    bandwidth integer[],
+DROP TABLE latency_bandwidth;
+CREATE TABLE latency_bandwidth (
+    latency_bandwidth_id serial UNIQUE,
+    x_axis_label character varying(64),
+    y_axis_label character varying(64),
+    message_size integer[],
+    bandwidth_min integer[],
+    bandwidth_max integer[],
+    bandwidth_avg integer[],
     latency_min double precision[],
     latency_max double precision[],
     latency_avg double precision[]
@@ -232,7 +234,7 @@ CREATE INDEX cluster_owner_users_idx ON cluster_owner(users_id);
 DROP INDEX cluster_owner_cluster_idx;
 CREATE INDEX cluster_owner_cluster_idx ON cluster_owner(compute_cluster_id);
 
-INSERT INTO performance (performance_id) VALUES (DEFAULT);
+INSERT INTO latency_bandwidth (latency_bandwidth_id) VALUES (DEFAULT);
 INSERT INTO failure (failure_id) VALUES (DEFAULT); 
 
 -- Soon we will be strict, and disallow empty rows of this sort 
