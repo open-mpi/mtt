@@ -368,14 +368,32 @@ function get_table_indexes($table_name, $qualified) {
     return simple_select($sql_cmd);
 }
 
+# Function used to determine which _POST fields
+# to INSERT. Prevent non-existent fields from being
+# INSERTed
 function get_table_fields($table_name) {
 
     global $dbname;
+    global $id;
+
+    # These indexes are special in that they link phases
+    # together and hence, can and do show up in _POST
+    $special_indexes = array(
+        "mpi_install$id",
+        "test_build$id"
+    );
 
     # Crude way to tell whether a field is an index
-    $is_not_index_clause = "\n\t (data_type = 'integer' AND " .
-                           "\n\t column_name ~ '_id$' AND " .
-                           "\n\t table_catalog = '$dbname')";
+    $is_not_index_clause =
+           "\n\t (table_name = '$table_name' AND NOT " .
+           "\n\t (data_type = 'integer' AND " .
+           "\n\t column_name ~ '_id$' AND " .
+           "\n\t table_catalog = '$dbname'))";
+
+    $is_special_index_clause = 
+           "\n\t (table_name = '$table_name' AND " .
+           "\n\t (column_name = '$special_indexes[0]' OR " .
+           "\n\t column_name = '$special_indexes[1]'))";
 
     $is_index_columns = array(
             "column_name",
@@ -384,7 +402,9 @@ function get_table_fields($table_name) {
 
     $sql_cmd = "\n   SELECT " . join(",",$is_index_columns) .
                "\n\t FROM information_schema.columns WHERE " .
-               "\n\t table_name = '$table_name' AND NOT " . $is_not_index_clause . ';';
+               "\n\t " . 
+                     $is_not_index_clause . " OR " .
+                     $is_special_index_clause . ';';
 
     do_pg_connect();
 
