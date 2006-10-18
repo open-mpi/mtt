@@ -170,7 +170,8 @@ sub Install {
 
     # Write out the OMPI cleanup script and be done.
 
-    if (0 != write_cleanup_script("$ret->{installdir}/bin")) {
+    if ((0 != write_cleanup_script("$ret->{installdir}/bin")) 
+        and (! $MTT::DoCommand::no_execute)) {
         $ret->{success} = 0;
         $ret->{message} = "Failed to create cleanup script!";
     } else {

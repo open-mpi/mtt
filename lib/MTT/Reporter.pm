@@ -63,7 +63,7 @@ sub _fill_cache {
     $cache->{os_version} = `$whatami -r`;
     chomp($cache->{os_version});
     $cache->{hostname} = $hostname;
-    $cache->{submitting_local_username} = getpwuid($<);
+    $cache->{local_username} = getpwuid($<);
 }
 
 #--------------------------------------------------------------------------
@@ -184,6 +184,7 @@ sub Finalize {
 
 sub Submit {
     my ($phase, $section, $report) = @_;
+    my ($serials, $x);
 
     _fill_cache()
         if (!$cache);
@@ -196,8 +197,13 @@ sub Submit {
     # Call all the reporters.  Use the GMT ctime() as the timestamp.
     $cache->{submit_test_timestamp} = gmtime;
     foreach my $m (@modules) {
-        MTT::Module::Run("MTT::Reporter::$m", "Submit", $cache, $entries);
+        $x = MTT::Module::Run("MTT::Reporter::$m", "Submit", $cache, $entries);
+        foreach my $k (keys %$x) {
+            $serials->{$m}->{$k} = $x->{$k};
+        }
     }
+
+    return $serials;
 }
 
 #--------------------------------------------------------------------------

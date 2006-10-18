@@ -374,10 +374,21 @@ sub _do_build {
             }
         }
         
-        # Submit it!
-        MTT::Reporter::Submit("Test Build", $simple_section, $report);
+        # Fetch mpi install serial
+        my $mpi_install_id = $MTT::MPI::installs->{$mpi_install->{mpi_get_simple_section_name}}->{$mpi_install->{mpi_version}}->{$mpi_install->{simple_section_name}}->{mpi_install_id};
+        $report->{mpi_install_id} = $mpi_install_id;
+        $ret->{mpi_install_id} = $mpi_install_id;
 
-        # It's been saved, so reclaim potentially a good chunk of
+        # Submit it!
+        my $serials = MTT::Reporter::Submit("Test Build", $simple_section, $report);
+
+        # Merge in the serials from the MTTDatabase
+        my $module = "MTTDatabase";
+        foreach my $k (keys %{$serials->{$module}}) {
+            $ret->{$k} = $serials->{$module}->{$k};
+        }
+
+        # Data has been submitted, so reclaim potentially a good chunk of
         # memory...
         delete $ret->{stdout};
         delete $ret->{stderr};

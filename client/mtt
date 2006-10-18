@@ -89,6 +89,7 @@ require MTT::Defaults;
 require MTT::Globals;
 require MTT::FindProgram;
 require MTT::Trim;
+require MTT::DoCommand;
 
 my @file_arg;
 my $stdin_arg;
@@ -96,6 +97,7 @@ my $scratch_arg;
 my $help_arg;
 my $debug_arg;
 my $verbose_arg;
+my $no_execute_arg;
 my $force_arg;
 my $mpi_get_arg;
 my $mpi_install_arg;
@@ -118,6 +120,7 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
                                   "help|h" => \$help_arg,
                                   "debug|d" => \$debug_arg,
                                   "verbose|v" => \$verbose_arg,
+                                  "no-execute|n" => \$no_execute_arg,
                                   "force" => \$force_arg,
                                   "mpi-get!" => \$mpi_get_arg,
                                   "mpi-install!" => \$mpi_install_arg,
@@ -174,6 +177,7 @@ if (!$ok || $help_arg) {
 --debug|-d                    Output lots of debug messages
 --verbose|-v                  Output some status / verbose messages
                               while processing
+--no-execute|-n               Do not execute any commands (developers only)
 --print-time|-p               Display the amount of time taken in each phase
 --force                       Do steps even if they would not normally
                               be executed
@@ -234,9 +238,11 @@ To perform sections NOT matching \"intel\" OR \"ibm\":
 
 my $debug = ($debug_arg ? 1 : 0);
 my $verbose = ($verbose_arg ? 1 : $debug);
-MTT::Messages::Messages($debug, $verbose);
+MTT::Messages::Messages($debug, $verbose, cwd());
 MTT::Messages::Debug("Debug is $debug, Verbose is $verbose\n");
 MTT::Messages::Verbose("*** MTT: $0 @SAVE_ARGV\n");
+
+$MTT::DoCommand::no_execute = $no_execute_arg;
 
 MTT::FindProgram::FindZeroDir();
 
@@ -449,6 +455,7 @@ foreach my $file (@file_arg) {
     # Examine the [MTT] global defaults section
 
     MTT::Globals::load($ini);
+    MTT::Messages::Messages($debug, $verbose, cwd());
 
     # Run the phases
 

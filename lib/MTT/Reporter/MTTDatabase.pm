@@ -35,8 +35,9 @@ my $platform;
 # LWP user agent
 my $ua;
 
-# Client serial
-my $client_serial;
+# Serial per mtt client invocation
+my $invocation_serial_name = "client_serial";
+my $invocation_serial_value;
 
 # Do we want debugging?
 my $debug_filename;
@@ -130,12 +131,13 @@ sub Init {
                 $response->content);
         Error(">> Do not want to continue with possible bad submission URL -- aborting\n");
     }
+
     Debug("MTTDatabase got response: " . $response->content . "\n");
-    if ($response->content =~ m/=== client_serial = ([0-9]+) ===/) {
-        $client_serial = $1;
-        Debug("MTTDatabase parsed client serial: $client_serial\n");
+    if ($response->content =~ m/===\s+$invocation_serial_name\s+=\s+([0-9]+)\s+===/) {
+        $invocation_serial_value = $1;
+        Debug("MTTDatabase parsed invocation serial: $invocation_serial_value\n");
     } else {
-        Error("MTTDatabase did not get a client serial; aborting\n");
+        Warning("MTTDatabase did not get a serial\n");
     }
     
     # If we have a debug filename, make it an absolute filename,
@@ -189,6 +191,10 @@ sub Submit {
         mtt_version_major => $MTT::Version::Major,
         mtt_version_minor => $MTT::Version::Minor,
     };
+    my $phase_serials;
+    my $serial_name = $invocation_serial_name;
+    my $serial_value = $invocation_serial_value;
+
     foreach my $k (keys %{$id}) {
         $default_form->{$k} = $id->{$k};
     }
@@ -207,11 +213,11 @@ sub Submit {
             %$form = %{$default_form};
 
             # Fill in the client serial number
-            $form->{client_serial} = $client_serial;
+            $form->{$serial_name} = $serial_value;
 
             # How many results are we submitting?
             $form->{number_of_results} = $#{$section_obj} + 1;
-            $form->{platform_id} = $platform;
+            $form->{platform_name} = $platform;
 
             # First, go through and union all the field names to come
             # up with a comprehensive list of fields that we're
@@ -236,9 +242,13 @@ sub Submit {
 
                 # Go through all the keys in the results
                 foreach my $key (keys(%$result)) {
-                    # If the field that has the word "timestamp" in it
-                    # and convert it to GMT ctime.
-                    my $name = $key . "_" . $count;
+
+                    # Do not number serial fields (which by convention are
+                    # named "name_id")
+                    my $name = $key . ($key !~ /_id$/ ? "_" . $count : "");
+
+                    # If the field that has the word "timestamp" in it,
+                    # convert it to GMT ctime.
                     if ($key =~ /timestamp/ && $result->{$key} =~ /\d+/) {
                         $form->{$name} = gmtime($result->{$key});
                     } 
@@ -289,6 +299,19 @@ sub Submit {
                 ++$fails;
                 push(@fail_outputs, $response->content);
             }
+
+            Debug("MTTDatabase got response: " . $response->content . "\n");
+
+            # The following parses the returned serial which will index either
+            # an "MPI Install" or a "Test Build"
+            if ($response->content =~ m/===\s+(\S+)\s+=\s+([0-9\,]+)\s+===/) {
+                eval "\$phase_serials->{$1} = $2;";
+                Debug("MTTDatabase parsed serial: $1 = $2\n");
+            } else {
+                Warning("MTTDatabase did not get a serial; " .
+                        "phases will be isolated from each other in the reports\n");
+            }
+
             $num_results += ($count - 1);
             Debug("MTTDatabase submit complete\n");
             
@@ -309,6 +332,9 @@ sub Submit {
     }
 
     Verbose(">> $successes successful submit" . plural($successes) . ", $fails failed submit" . plural($fails) . " (total of $num_results result" . plural($num_results) . ")\n");
+
+
+    return $phase_serials;
 }
 
 sub plural {

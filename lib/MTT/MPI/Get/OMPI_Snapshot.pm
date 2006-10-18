@@ -57,9 +57,12 @@ sub Get {
     chdir($data_dir);
     unlink($latest_filename);
     MTT::Files::http_get("$url/$latest_filename");
-    Abort("Could not download latest snapshot number -- aborting")
-        if (! -f $latest_filename);
+
+    Abort("Could not download latest snapshot number -- aborting\n")
+        if (! -f $latest_filename and ! $MTT::DoCommand::no_execute);
     $ret->{version} = `cat $latest_filename`;
+    $ret->{version} = 'no_version' if ($MTT::DoCommand::no_execute);
+
     chomp($ret->{version});
 
     # see if we need to download the tarball
@@ -124,8 +127,8 @@ sub Get {
     chdir($tarball_dir);
     unlink("$tarball_dir/$tarball_name");
     MTT::Files::http_get("$url/$tarball_name");
-    Abort ("Could not download tarball -- aborting")
-        if (! -f $tarball_name);
+    Abort ("Could not download tarball -- aborting\n")
+        if (! -f $tarball_name and ! $MTT::DoCommand::no_execute);
     chdir($data_dir);
         
     # get the checksums

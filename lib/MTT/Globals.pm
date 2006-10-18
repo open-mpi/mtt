@@ -61,6 +61,13 @@ sub load {
         $Values->{hostlist} = $val;
         parse_hostlist($val);
     }
+
+    # Output display preference
+
+    my $val = MTT::Values::Value($ini, "MTT", "textwrap");
+    if ($val) {
+        $Values->{textwrap} = $val;
+    }
 }
 
 

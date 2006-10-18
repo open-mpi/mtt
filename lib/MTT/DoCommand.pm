@@ -17,6 +17,9 @@ use File::Temp qw(tempfile);
 use MTT::Messages;
 use Data::Dumper;
 
+# Want to see what MTT *would* do?
+our $no_execute;
+
 #--------------------------------------------------------------------------
 
 sub _kill_proc {
@@ -192,12 +195,26 @@ sub Cmd {
 
         # Run it!
 
-        exec(@$tokens) ||
-            die "Can't execute command: $cmd\n";
+        if (! $no_execute) {
+            exec(@$tokens) ||
+                die "Can't execute command: $cmd\n";
+        } else {
+            print join(" ", @$tokens);
+        }
     }
     close OUTwrite;
     close ERRwrite
         if (!$merge_output);
+
+
+    # Return if --no-execute, no output to see
+    if ($no_execute) {
+        $ret->{timed_out} = 0;
+        $ret->{status} = 0;
+        $ret->{stdout} = "";
+        $ret->{stderr} = "";
+        return $ret;
+    }
 
     # Parent
 

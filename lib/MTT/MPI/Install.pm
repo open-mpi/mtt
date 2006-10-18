@@ -391,6 +391,8 @@ sub _do_install {
 
             success => $ret->{success},
             result_message => $ret->{result_message},
+            client_serial => $ret->{client_serial},
+            mpi_install_id => $ret->{mpi_install_id},
             stdout => "filled in below",
             stderr => "filled in below",
         };
@@ -500,8 +502,14 @@ sub _do_install {
         delete $ret->{make_check_stdout};
         delete $ret->{make_install_stdout};
         
-        # Submit to the reporter
-        MTT::Reporter::Submit("MPI install", $simple_section, $report);
+        # Submit to the reporter, and receive a serial
+        my $serials = MTT::Reporter::Submit("MPI install", $simple_section, $report);
+
+        # Merge in the serials from the MTTDatabase
+        my $module = "MTTDatabase";
+        foreach my $k (keys %{$serials->{$module}}) {
+            $ret->{$k} = $serials->{$module}->{$k};
+        }
 
         # Add the data in the global $MTT::MPI::installs table
         $MTT::MPI::installs->{$mpi_get->{simple_section_name}}->{$mpi_get->{version}}->{$simple_section} = $ret;
