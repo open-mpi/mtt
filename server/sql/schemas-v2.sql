@@ -25,34 +25,25 @@ CREATE TABLE compute_cluster (
 DROP SEQUENCE client_serial;
 CREATE SEQUENCE client_serial;
 
--- We may consider splitting this table into submit_data (who/from-where submitted)
--- and submit_log (when was submitted)
 DROP TABLE submit;
 CREATE TABLE submit (
     submit_id serial UNIQUE,
-    client_serial integer NOT NULL DEFAULT '-38', --> refers to the serial sequence
     mtt_version_major smallint NOT NULL DEFAULT '-38',
     mtt_version_minor smallint NOT NULL DEFAULT '-38',
     hostname character varying(128) NOT NULL DEFAULT 'bogus',
     local_username character varying(16) NOT NULL DEFAULT 'bogus',
     http_username character varying(16) NOT NULL DEFAULT 'bogus',
-    tstamp timestamp without time zone NOT NULL DEFAULT now(),
     UNIQUE (submit_id,
-            client_serial,
             mtt_version_major,
             mtt_version_minor,
             hostname,
             local_username,
-            http_username,
-            tstamp
+            http_username
     )
 );
 
-
 DROP INDEX submit_serial_idx;
 CREATE INDEX submit_serial_idx ON submit(serial_id);
-DROP INDEX submit_tstamp_idx;
-CREATE INDEX submit_tstamp_idx ON submit(tstamp);
 DROP INDEX submit_phase_idx;
 CREATE INDEX submit_phase_idx ON submit(phase_id);
 
@@ -161,12 +152,21 @@ CREATE TABLE results (
     results_id serial UNIQUE,
     submit_id integer NOT NULL DEFAULT '-38',
 
+    -- refer to the index of one of the three phases 
+    phase_id integer NOT NULL DEFAULT '-38',
+    -- 1=mpi_install, 2=test_build, 3=test_run
+    phase smallint NOT NULL DEFAULT '-38',
+
     environment text NOT NULL DEFAULT '',
     merge_stdout_stderr boolean NOT NULL DEFAULT 't',
     result_stdout text NOT NULL DEFAULT '', --> what is the largest text blob we can put in PG?  Rich says default might be 8k!
     result_stderr text NOT NULL DEFAULT '',
     start_timestamp timestamp without time zone NOT NULL DEFAULT now() - interval '24 hours',
     stop_timestamp timestamp without time zone NOT NULL DEFAULT now() - interval '24 hours',
+
+    submit_timestamp timestamp without time zone NOT NULL DEFAULT now(),
+    client_serial integer NOT NULL DEFAULT '-38', --> refers to the serial sequence
+
     exit_status smallint NOT NULL DEFAULT '-38',
     -- success value: 1=pass, 2=fail, 3=skipped, 4=timed out
     test_result smallint NOT NULL DEFAULT '-38',

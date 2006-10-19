@@ -52,9 +52,9 @@ $_POST['http_username'] =
 $id = "_id";
 
 # This should be a condition on a _POST hash
-# E.g., test_type => (correctness or performance)
-if ($_POST['test_type'] != 'performance')
-    $idxs_hash["performance$id"] = '-1';
+# E.g., test_type => (correctness or latency_bandwidth)
+if ($_POST['test_type'] != 'latency_bandwidth')
+    $idxs_hash["latency_bandwidth$id"] = '-1';
 
 # This index is for reporting on "new" failures,
 # and will get updated by a nightly churn script (see #70)
@@ -64,6 +64,12 @@ $idxs_hash["failure$id"] = '-1';
 $phase      = strtolower($_POST['phase']);
 $phase_name = preg_replace('/^\s+|\s+$/', '', $phase);
 $phase_name = preg_replace('/\s+/', '_', $phase);
+
+$phase_smallints = array(
+    "mpi_install" => 1,
+    "test_build" => 2,
+    "test_run" => 3,
+);
 
 if (0 == strcasecmp($phase, "test run")) {
 
@@ -98,6 +104,7 @@ exit(0);
 function process_phase($phase, $idxs_hash) {
 
     global $id;
+    global $phase_smallints;
 
     $idx_override      = NULL;
     $phase_indexes     = array();
@@ -117,26 +124,24 @@ function process_phase($phase, $idxs_hash) {
                        get_table_indexes($phase, $fully_qualified)),
             'contains_no_table_key');
 
-    $always_new = true;
-    foreach (array("submit") as $table) {
-        $results_idxs_hash[$table . $id] =
-            set_data($table, NULL, $always_new, $idx_override);
-    }
-
-    $always_new = true;
-    foreach (array("results") as $table) {
-        $phase_idxs_hash[$table . $id] =
-            set_data($table, $results_idxs_hash, $always_new, $idx_override);
-    }
-
     $always_new = false;
+    $table = "submit";
+    $results_idxs_hash[$table . $id] =
+        set_data($table, NULL, $always_new, $idx_override);
+
     foreach ($phase_indexes as $table) {
         $phase_idxs_hash[$table . $id] =
             set_data($table, NULL, $always_new, $idx_override);
     }
 
-    $always_new = true;
     $idx = set_data($phase, $phase_idxs_hash, $always_new, NULL);
+    $results_idxs_hash["phase$id"] = $idx;
+    $results_idxs_hash["phase"] = $phase_smallints[$phase];
+
+    $always_new = true;
+    $table = "results";
+    $phase_idxs_hash[$table . $id] =
+        set_data($table, $results_idxs_hash, $always_new, $idx_override);
 
     return $idx;
 }
@@ -337,6 +342,8 @@ function validate($table_name, $prune_list) {
     $cmd .= "\n\t ORDER BY $table_name$id;";
 
     $rows = select($cmd);
+
+    var_dump_debug(__FUNCTION__, __LINE__, "rows", $rows);
 }
 
 function sql_join($table_name) {
@@ -378,10 +385,10 @@ function get_table_fields($table_name) {
 
     # These indexes are special in that they link phases
     # together and hence, can and do show up in _POST
-    $special_indexes = array(
-        "mpi_install$id",
-        "test_build$id"
-    );
+    if ($table_name == "test_build")
+        $special_indexes = array("mpi_install$id");
+    elseif ($table_name == "test_run")
+        $special_indexes = array("test_build$id");
 
     # Crude way to tell whether a field is an index
     $is_not_index_clause =
@@ -576,6 +583,10 @@ function sql_compare($param, $value, $type, $default) {
         $clause = 'true';           # This allows us to recycle a row
     elseif (strstr($type, "serial"))
         $clause = 'true';           # This allows us to recycle a row
+
+    # When doing comparisons in a SELECT statement we cannot
+    # use the DEFAULT key word, we have to provide the
+    # actual value of the DEFAULT
     elseif (strstr($value, "DEFAULT"))
         $clause = "$param = '$default'";
     else
@@ -670,4 +681,16 @@ function get_serial() {
     $serial      = array_shift($set);
 
     return $serial;
+}
+
+# Special debug routine to audit INSERT statements
+function var_dump_debug_inserts($function, $line, $var_name, $arr) {
+
+    if ($GLOBALS['verbose'] or $GLOBALS['debug']) {
+        $output = "\ndebug: $function:$line, $var_name = ";
+        foreach (array_keys($arr) as $k) {
+            $output .= "\n\t '$k' => '" . get_scalar($arr[$k]) . "'";
+        }
+        print($output);
+    }
 }
