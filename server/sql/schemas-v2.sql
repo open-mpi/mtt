@@ -12,7 +12,7 @@ CREATE TABLE compute_cluster (
     platform_type character varying(256) NOT NULL DEFAULT 'bogus',
     os_name character varying(256) NOT NULL DEFAULT 'bogus',
     os_version character varying(256) NOT NULL DEFAULT 'bogus',
-    UNIQUE (compute_cluster_id,
+    UNIQUE (
             os_name,
             os_version,
             platform_hardware,
@@ -33,7 +33,7 @@ CREATE TABLE submit (
     hostname character varying(128) NOT NULL DEFAULT 'bogus',
     local_username character varying(16) NOT NULL DEFAULT 'bogus',
     http_username character varying(16) NOT NULL DEFAULT 'bogus',
-    UNIQUE (submit_id,
+    UNIQUE (
             mtt_version_major,
             mtt_version_minor,
             hostname,
@@ -52,7 +52,7 @@ CREATE TABLE mpi_get (
     mpi_get_id serial UNIQUE,
     section_name character varying(64) NOT NULL DEFAULT 'bogus',
     version character varying(32) NOT NULL DEFAULT 'bogus',
-    UNIQUE (mpi_get_id,
+    UNIQUE (
             section_name,
             version
     )
@@ -63,7 +63,7 @@ CREATE TABLE compiler (
     compiler_id serial UNIQUE,
     compiler_name character varying(64) NOT NULL DEFAULT 'bogus',
     compiler_version character varying(64) NOT NULL DEFAULT 'bogus',
-    UNIQUE (compiler_id,
+    UNIQUE (
             compiler_name,
             compiler_version
     )
@@ -84,9 +84,7 @@ CREATE TABLE mpi_install (
     vpath_mode character varying(16) NOT NULL DEFAULT 'bogus',
     --> 1=32bit, 2=64bit
     bitness smallint NOT NULL DEFAULT '1',
-
-    results_id integer NOT NULL DEFAULT '-38', --> refers to results table, this changes every night
-    UNIQUE (mpi_install_id,
+    UNIQUE (
             compute_cluster_id,
             mpi_get_id,
             compiler_id,
@@ -101,8 +99,6 @@ DROP INDEX mpi_install_mpi_get_idx;
 CREATE INDEX mpi_install_mpi_get_idx ON mpi_install(mpi_get_id);
 DROP INDEX mpi_install_compiler_idx;
 CREATE INDEX mpi_install_compiler_idx ON mpi_install(compiler_id);
-DROP INDEX mpi_install_results_idx;
-CREATE INDEX mpi_install_results_idx ON mpi_install(results_id);
 
 DROP TABLE test_build;
 CREATE TABLE test_build (
@@ -111,13 +107,10 @@ CREATE TABLE test_build (
 
     suite_name character varying(64) NOT NULL DEFAULT 'bogus',  --> *** do not know how to standardize this 
     compiler_id integer NOT NULL DEFAULT '-38', --> refers to compiler table
-
-    results_id integer NOT NULL DEFAULT '-38', --> refers to results table, this changes every night
-    UNIQUE (test_build_id,
+    UNIQUE (
             mpi_install_id,
             suite_name,
-            compiler_id,
-            results_id
+            compiler_id
     )
 );
 
@@ -125,8 +118,6 @@ DROP INDEX test_build_mpi_install_idx;
 CREATE INDEX test_build_mpi_install_idx ON test_build(mpi_install_id);
 DROP INDEX test_build_compiler_idx;
 CREATE INDEX test_build_compiler_idx ON test_build(compiler_id);
-DROP INDEX test_build_results_idx;
-CREATE INDEX test_build_results_idx ON test_build(results_id);
 
 DROP TABLE test_run;
 CREATE TABLE test_run (
@@ -136,16 +127,11 @@ CREATE TABLE test_run (
     variant smallint NOT NULL DEFAULT '-38',
     test_name character varying(64) NOT NULL DEFAULT 'bogus',
     command text NOT NULL DEFAULT 'bogus',
-    np smallint NOT NULL DEFAULT '-38',
-
-    results_id integer NOT NULL DEFAULT '-38', --> refers to results table
-    failure_id integer NOT NULL DEFAULT '-38'  --> points to information about failure
+    np smallint NOT NULL DEFAULT '-38'
 );
 
 DROP INDEX test_build_idx;
 CREATE INDEX test_build_idx ON test_run(test_build_id);
-DROP INDEX results_idx;
-CREATE INDEX results_idx ON test_run(results_id);
 
 DROP TABLE results;
 CREATE TABLE results (
@@ -216,6 +202,12 @@ CREATE TABLE users (
 DROP TABLE failure;
 CREATE TABLE failure (
     failure_id integer NOT NULL DEFAULT '-38',
+
+    -- refer to the index of one of the three phases 
+    phase_id integer NOT NULL DEFAULT '-38',
+    -- 1=mpi_install, 2=test_build, 3=test_run
+    phase smallint NOT NULL DEFAULT '-38',
+
     first_occurrence timestamp without time zone,    --> first occurrence
     last_occurrence timestamp without time zone,     --> most recent occurrence
     field character varying(16) NOT NULL DEFAULT 'bogus', --> maps to any non *_id field name in mtt database
