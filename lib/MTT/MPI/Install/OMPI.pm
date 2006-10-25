@@ -214,35 +214,60 @@ use strict;
 my $ps_args;
 my $pid_token;
 my $cmd_start_token;
-my $ret = system("ps auxw > /dev/null 2> /dev/null");
-$ret = $ret >> 8;
-if (0 == $ret) {
-    $ps_args = "auxww";
-    $pid_token = 1;
-    $cmd_start_token = 10;
-} else {
-    $ps_args = "-eadf";
-    $pid_token = 1;
-    $cmd_start_token = 7;
-}
+my $ret;
 
-# Run ps and find all orteds.  Kill any that are not my parent.
+$ret = system("pgrep . > /dev/null 2> /dev/null");
+$ret = $ret >> 8;
+
+# Run ps or pgrep, and find all orteds.  Kill any that are not my parent.
 
 my $orted_pid = getppid();
-open(CMD, "ps $ps_args|") || die("Could not run ps");
-my @pids;
-while (<CMD>) {
-    my @tokens = split(/\s+/);
-    # Only look at the first token in the command to see if it is the
-    # orted; we do not want to grab incidental processes that contian
-    # "orted" (e.g., "emacs orted.c", "ssh <othernode> orted ...",
-    # etc.).
-    if ($tokens[$cmd_start_token] =~ /orted/) {
-        if ($tokens[$pid_token] != $orted_pid) {
-            # Do not bother to check the return from kill() because, at
-            # least at the moment, there is could be multiple instances
-            # of this script running on a single node :-(
-            kill(9, $tokens[$pid_token]);
+
+# Try using pgrep
+if (0 == $ret) {
+
+    open(CMD, "pgrep orted|") ||
+        warn("Could not run pgrep, so I can not cleanup stale orteds.");
+
+    while (<CMD>) {
+        my $pid = $_;
+        if ($pid != $orted_pid) {
+            kill(9, $pid);
+        }
+    }
+
+# Try using ps
+} else {
+
+    $ret = system("ps auxw > /dev/null 2> /dev/null");
+    $ret = $ret >> 8;
+
+    if (0 == $ret) {
+        $ps_args = "auxww";
+        $pid_token = 1;
+        $cmd_start_token = 10;
+    } else {
+        $ps_args = "-eadf";
+        $pid_token = 1;
+        $cmd_start_token = 7;
+    }
+
+    open(CMD, "ps $ps_args|") || 
+        warn("Could not run ps, so I can not cleanup stale orteds.");
+
+    while (<CMD>) {
+        my @tokens = split(/\s+/);
+        # Only look at the first token in the command to see if it is the
+        # orted; we do not want to grab incidental processes that contain
+        # "orted" (e.g., "emacs orted.c", "ssh <othernode> orted ...",
+        # etc.).
+        if ($tokens[$cmd_start_token] =~ /orted$/) {
+            if ($tokens[$pid_token] != $orted_pid) {
+                # Do not bother to check the return from kill() because, at
+                # least at the moment, there could be multiple instances
+                # of this script running on a single node :-(
+                kill(9, $tokens[$pid_token]);
+            }
         }
     }
 }
