@@ -100,7 +100,7 @@ sub Get {
     my $svn_username = Value($ini, $section, "svn_username");
     my $svn_password = Value($ini, $section, "svn_password");
     my $svn_password_cache = Value($ini, $section, "svn_password_cache");
-    chdir($dir);
+    MTT::DoCommand::Chdir($dir);
     ($dir, $data->{r}) = MTT::Files::svn_checkout($data->{url}, $svn_username, $svn_password, $svn_password_cache, 1, 1);
     if (!$dir) {
         $ret->{success} = 0;

@@ -30,7 +30,7 @@ sub Build {
     $ret->{success} = 0;
 
     # Clean it (just to be sure)
-    chdir("NPB2.3-MPI");
+    MTT::DoCommand::Chdir("NPB2.3-MPI");
     my $x = MTT::DoCommand::Cmd($config->{merge_stdout_stderr}, "make clean");
     if ($x->{status} != 0) {
         $ret->{result_message} = "NPB_ompi_tests: make clean failed; skipping";

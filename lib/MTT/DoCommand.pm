@@ -167,40 +167,43 @@ sub Cmd {
     # Child
 
     my $pid;
-    if (($pid = fork()) == 0) {
-        close OUTread;
-        close ERRread
-            if (!$merge_output);
 
-        close(STDERR);
-        if ($merge_output) {
-            open STDERR, ">&OUTwrite" ||
-                die "Can't redirect stderr\n";
-        } else {
-            open STDERR, ">&ERRwrite" ||
-                die "Can't redirect stderr\n";
-        }
-        select STDERR;
-        $| = 1;
+    # Turn shell-quoted words ("foo bar baz") into individual tokens
 
-        close(STDOUT);
-        open STDOUT, ">&OUTwrite" || 
-            die "Can't redirect stdout\n";
-        select STDOUT;
-        $| = 1;
+    my $tokens = _quote_escape($cmd);
 
-        # Turn shell-quoted words ("foo bar baz") into individual tokens
+    if (! $MTT::DoCommand::no_execute) {
 
-        my $tokens = _quote_escape($cmd);
+        if (($pid = fork()) == 0) {
+            close OUTread;
+            close ERRread
+                if (!$merge_output);
 
-        # Run it!
+            close(STDERR);
+            if ($merge_output) {
+                open STDERR, ">&OUTwrite" ||
+                    die "Can't redirect stderr\n";
+            } else {
+                open STDERR, ">&ERRwrite" ||
+                    die "Can't redirect stderr\n";
+            }
+            select STDERR;
+            $| = 1;
 
-        if (! $no_execute) {
+            close(STDOUT);
+            open STDOUT, ">&OUTwrite" || 
+                die "Can't redirect stdout\n";
+            select STDOUT;
+            $| = 1;
+
+            # Run it!
+
             exec(@$tokens) ||
                 die "Can't execute command: $cmd\n";
-        } else {
-            print join(" ", @$tokens);
         }
+    }
+    else {
+        print join(" ", @$tokens);
     }
     close OUTwrite;
     close ERRwrite
@@ -323,6 +326,12 @@ sub CmdScript {
     my $x = Cmd($merge_output, $filename, $timeout);
     unlink($filename);
     return $x;
+}
+
+sub Chdir {
+    my($dir) = @_;
+    Debug("chdir $dir\n");
+    chdir $dir;
 }
 
 1;

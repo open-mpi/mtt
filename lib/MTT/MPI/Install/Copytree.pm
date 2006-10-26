@@ -65,9 +65,9 @@ sub Install {
 
     # Copy the tree
     my $start_dir = cwd();
-    chdir($config->{installdir});
+    MTT::DoCommand::Chdir($config->{installdir});
     $x = MTT::Files::copy_tree("$config->{abs_srcdir}", 1);
-    chdir($start_dir);
+    MTT::DoCommand::Chdir($start_dir);
     return undef
         if (!$x);
 
@@ -118,7 +118,7 @@ sub Install {
 
     # Try compiling and linking a simple C application
 
-    chdir($config->{section_dir});
+    MTT::DoCommand::Chdir($config->{section_dir});
     if (! -d "test-compile") {
         mkdir("test-compile", 0777);
         if (-d "test_compile") {
@@ -127,7 +127,7 @@ sub Install {
             return $ret;
         }
     }
-    chdir("test-compile");
+    MTT::DoCommand::Chdir("test-compile");
 
     Debug("Test compile/link sample C MPI application\n");
     open C, ">hello.c";
@@ -222,7 +222,7 @@ int main(int argc, char* argv[]) {
 
     # Remove test compiles dir
 
-    chdir("..");
+    MTT::DoCommand::Chdir("..");
     MTT::DoCommand::Cmd(1, "rm -rf test-compile");
 
     # Dump $ret into a file in this directory in case we are not

@@ -39,7 +39,7 @@ sub Get {
 
     # Go through all the sections in the ini file looking for section
     # names that begin with "Test Get:"
-    chdir($source_dir);
+    MTT::DoCommand::Chdir($source_dir);
     foreach my $section ($ini->Sections()) {
         if ($section =~ /^\s*test get:/) {
             Verbose(">> Test get: [$section]\n");
@@ -69,10 +69,10 @@ sub _do_get {
     }
     
     # Make a directory just for this section
-    chdir($source_dir);
+    MTT::DoCommand::Chdir($source_dir);
     my $section_dir = MTT::Files::make_safe_filename($section);
     $section_dir = MTT::Files::mkdir($section_dir);
-    chdir($section_dir);
+    MTT::DoCommand::Chdir($section_dir);
 
     # Run the module
     my $ret = MTT::Module::Run("MTT::Test::Get::$module",

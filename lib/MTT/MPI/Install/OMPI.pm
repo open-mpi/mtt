@@ -17,6 +17,7 @@ use Cwd;
 use MTT::DoCommand;
 use MTT::Messages;
 use Data::Dumper;
+use MTT::FindProgram;
 
 #--------------------------------------------------------------------------
 
@@ -154,6 +155,10 @@ sub Install {
     }
     $ret->{make_install_stdout} = $stdout;
 
+    # Detect the library's pointer-size
+
+    $ret->{bitness} = get_mpi_type();
+
     # Set which bindings were compiled
 
     $ret->{c_bindings} = 1;
@@ -285,6 +290,35 @@ exit(0);
     close(FILE);
     umask($u);
     return 0;
+}
+
+# Determine the pointer-size (32-bit or
+# 64-bit) of the installed Open MPI library
+sub get_mpi_type {
+
+    my $tmp;
+    my $libmpi;
+    my $filetype;
+    my @binaries = (
+        "opal_wrapper",
+        "orted",
+        "orteprobe",
+        "orterun",
+    );
+
+    $tmp        = FindProgram(@binaries);
+    $tmp        =~ s#\bbin/.*#lib\/libmpi.so#;
+    $libmpi     = $tmp;
+    $filetype   = `file $libmpi`;
+    ($filetype) =~ m/\:(.*)$/;
+
+    if ($filetype =~ /\b32\b/) {
+        return 32;
+    } elsif ($filetype =~ /\b64\b/) {
+        return 64;
+    } else {
+        return undef;
+    }
 }
 
 1;

@@ -167,7 +167,7 @@ sub _do_run {
     $mpi_details->{version} = $mpi_install->{mpi_version};
 
     # Go to the right dir
-    chdir($test_build->{srcdir});
+    MTT::DoCommand::Chdir($test_build->{srcdir});
 
     # Set the PATH and LD_LIBRARY_PATH
     if ($mpi_install->{bindir}) {
@@ -401,10 +401,10 @@ sub _run_one_test {
         mpi_install_section_name => $mpi_details->{mpi_install_simple_section_name},
 
         test_name => $name,
-        test_command => $cmd,
+        command => $cmd,
         test_build_section_name => $run->{test_build_simple_section_name},
         test_run_section_name => $run->{simple_section_name},
-        test_np => $test_np,
+        np => $test_np,
         exit_status => $x->{status},
         test_result => $result,
     };

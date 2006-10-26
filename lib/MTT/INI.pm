@@ -116,8 +116,8 @@ sub FilterINISections {
         # and OR them together
         foreach my $pattern (@$patterns) {
 
-            # Always process the mtt section
-            next if ($section =~ /\bmtt\b/i);
+            # Always process the "mtt" and "mpi details" sections
+            next if ($section =~ /\bmtt\b|mpi\s+details/i);
 
             # Generate on-the-fly, perl code that will
             # perform the regular expressions, and AND

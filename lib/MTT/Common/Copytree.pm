@@ -133,7 +133,7 @@ sub PrepareForInstall {
     # Post copy
     if ($data->{post_copy}) {
         my $old = cwd();
-        chdir($ret);
+        MTT::DoCommand::Chdir($ret);
 
         Debug("copytree running post_copy command: $data->{post_copy}\n");
         my $x = MTT::DoCommand::CmdScript(1, $data->{post_copy});
@@ -142,7 +142,7 @@ sub PrepareForInstall {
             return undef;
         }
 
-        chdir($old);
+        MTT::DoCommand::Chdir($old);
     }
 
     # All done

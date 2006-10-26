@@ -108,7 +108,7 @@ sub PrepareForInstall {
     Debug(">> tarball extracting to $build_dir\n");
 
     my $orig = cwd();
-    chdir($build_dir);
+    MTT::DoCommand::Chdir($build_dir);
     my $data = $source->{module_data};
 
     # Pre extract
@@ -123,14 +123,14 @@ sub PrepareForInstall {
     # Extract the tarball
     my $ret = MTT::Files::unpack_tarball($data->{tarball}, 1);
     if (!$ret) {
-        chdir($orig);
+        MTT::DoCommand::Chdir($orig);
         return undef;
     }
 
     # Post extract
     if ($data->{post_extract}) {
         my $old = cwd();
-        chdir($ret);
+        MTT::DoCommand::Chdir($ret);
 
         my $x = MTT::DoCommand::Cmds(1, $data->{pre_copy});
         if (0 != $x->{status}) {
@@ -138,12 +138,12 @@ sub PrepareForInstall {
             return undef;
         }
 
-        chdir($old);
+        MTT::DoCommand::Chdir($old);
     }
 
     # All done
 
-    chdir($orig);
+    MTT::DoCommand::Chdir($orig);
     Debug(">> tarball finished extracting\n");
     return $ret;
 }

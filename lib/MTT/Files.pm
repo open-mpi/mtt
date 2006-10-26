@@ -71,9 +71,9 @@ sub mkdir {
     # Return an absolute version of the created directory
 
     my $orig = cwd();
-    chdir($str);
+    MTT::DoCommand::Chdir($str);
     my $newdir = cwd();
-    chdir($orig);
+    MTT::DoCommand::Chdir($orig);
     $newdir;
 } 
 
@@ -96,7 +96,7 @@ sub trim_builds {
     return if ($len < 0);
 
     my $old_cwd = cwd();
-    chdir($base_dir);
+    MTT::DoCommand::Chdir($base_dir);
 
     my $i = 0;
     while ($i <= $len) {
@@ -118,7 +118,7 @@ sub trim_builds {
         }
         ++$i;
     }
-    chdir($old_cwd);
+    MTT::DoCommand::Chdir($old_cwd);
 }
 
 #--------------------------------------------------------------------------
@@ -185,7 +185,7 @@ sub unpack_tarball {
         my $b = basename($tarball);
         Debug("GOT FILES IN TARBALL\n");
         $tarball_dir = MTT::Files::mkdir("slimy_tarball_$b");
-        chdir($tarball_dir);
+        MTT::DoCommand::Chdir($tarball_dir);
     } else {
         my @k = keys(%$dirs);
         if ($#k != 0) {
@@ -193,7 +193,7 @@ sub unpack_tarball {
             Debug("GOT MULTI DIRS IN TARBALL\n");
             print Dumper($dirs);
             $tarball_dir = MTT::Files::mkdir("slimy_tarball_$b");
-            chdir($tarball_dir);
+            MTT::DoCommand::Chdir($tarball_dir);
         } else {
             $tarball_dir = $k[0];
         }
@@ -430,6 +430,5 @@ sub copyfile {
 
     return $outfile;
 }
+
 1;
-
-

@@ -127,7 +127,7 @@ sub Install {
     # Go through all the sections in the ini file looking for section
     # names that begin with "MPI Install:"
     $install_base = $install_dir;
-    chdir($install_base);
+    MTT::DoCommand::Chdir($install_base);
     foreach my $section ($ini->Sections()) {
         if ($section =~ /^\s*mpi install:/) {
             Verbose(">> MPI install [$section]\n");
@@ -171,9 +171,9 @@ sub Install {
                             } else {
                                 Verbose("   Installing MPI: [$mpi_get_key] / [$mpi_version_key] / [$simple_section]...\n");
                             
-                                chdir($install_base);
+                                MTT::DoCommand::Chdir($install_base);
                                 my $mpi_dir = _make_safe_dir($mpi_version->{simple_section_name});
-                                chdir($mpi_dir);
+                                MTT::DoCommand::Chdir($mpi_dir);
                             
                                 # Install and restore the environment
                                 _do_install($section, $ini,
@@ -231,6 +231,7 @@ sub _do_install {
     $config->{unsetenv} = "to be filled in below";
     $config->{prepend_path} = "to be filled in below";
     $config->{append_path} = "to be filled in below";
+    $config->{bitness} = "to be filled in below";
         
     # Filled in by the module
     $config->{success} = 0;
@@ -251,13 +252,13 @@ sub _do_install {
     }
     
     # Make a directory just for this section
-    chdir($this_install_base);
+    MTT::DoCommand::Chdir($this_install_base);
     $config->{section_dir} = _make_safe_dir($simple_section);
-    chdir($config->{section_dir});
+    MTT::DoCommand::Chdir($config->{section_dir});
 
     # Make a directory just for this version
     $config->{version_dir} = _make_safe_dir($mpi_get->{version});
-    chdir($config->{version_dir});
+    MTT::DoCommand::Chdir($config->{version_dir});
     
     # Process setenv, unsetenv, prepend_path, and
     # append_path
@@ -268,8 +269,18 @@ sub _do_install {
     my @save_env;
     ProcessEnvKeys($config, \@save_env);
     
-    # configure_arguments
+    # bitness
     my $tmp;
+    $tmp = Value($ini, $section, "bitness");
+    if ($tmp == 32) {
+        $config->{bitness} = 1;
+    } elsif ($tmp == 64) {
+        $config->{bitness} = 2;
+    } else {
+        $config->{bitness} = undef;
+    }
+
+    # configure_arguments
     $tmp = Value($ini, $section, "configure_arguments");
     $config->{configure_arguments} = $tmp
         if (defined($tmp));
@@ -328,12 +339,12 @@ sub _do_install {
     # and build.
     MTT::DoCommand::Cmd(1, "rm -rf source");
     my $source_dir = MTT::Files::mkdir("source");
-    chdir($source_dir);
+    MTT::DoCommand::Chdir($source_dir);
     
     # Unpack the source and find out the subdirectory
     # name it created
     $config->{srcdir} = _prepare_source($mpi_get);
-    chdir($config->{srcdir});
+    MTT::DoCommand::Chdir($config->{srcdir});
     $config->{abs_srcdir} = cwd();
     
     # vpath mode (error checking was already done above)
@@ -354,7 +365,7 @@ sub _do_install {
         
         MTT::Files::mkdir($config->{builddir});
     }
-    chdir($config->{builddir});
+    MTT::DoCommand::Chdir($config->{builddir});
     
     # Installdir
     
@@ -367,6 +378,11 @@ sub _do_install {
     my $ret = MTT::Module::Run("MTT::MPI::Install::$config->{module}",
                                "Install", $ini, $section, $config);
     my $duration = time - $start_time . " seconds";
+    
+    # Detect bitness
+    if (($ret->{success} == 1) and defined($ret->{bitness})) {
+        $config->{bitness} = $ret->{bitness};
+    }
     
     # Analyze the return
     

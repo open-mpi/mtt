@@ -76,7 +76,7 @@ sub Build {
 
     # Go through all the sections in the ini file looking for section
     # names that begin with "Test build:"
-    chdir($build_base);
+    MTT::DoCommand::Chdir($build_base);
     foreach my $section ($ini->Sections()) {
         if ($section =~ /^\s*test build:/) {
             Verbose(">> Test build [$section]\n");
@@ -144,10 +144,10 @@ sub Build {
 
                                     Verbose("   Building for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section]\n");
                                     
-                                    chdir($build_base);
-                                    chdir(MTT::Files::make_safe_filename($mpi_install->{mpi_get_simple_section_name}));
-                                    chdir(MTT::Files::make_safe_filename($mpi_install->{simple_section_name}));
-                                    chdir(MTT::Files::make_safe_filename($mpi_install->{mpi_version}));
+                                    MTT::DoCommand::Chdir($build_base);
+                                    MTT::DoCommand::Chdir(MTT::Files::make_safe_filename($mpi_install->{mpi_get_simple_section_name}));
+                                    MTT::DoCommand::Chdir(MTT::Files::make_safe_filename($mpi_install->{simple_section_name}));
+                                    MTT::DoCommand::Chdir(MTT::Files::make_safe_filename($mpi_install->{mpi_version}));
                                     
                                     # Do the build and restore the environment
                                     _do_build($ini, $section, $build_base, $test_get, $mpi_install);
@@ -211,14 +211,14 @@ sub _do_build {
 
     # Make a directory just for this ini section
     my $tests_dir = MTT::Files::mkdir("tests");
-    chdir($tests_dir);
+    MTT::DoCommand::Chdir($tests_dir);
     my $build_section_dir = _make_safe_dir($simple_section);
-    chdir($build_section_dir);
+    MTT::DoCommand::Chdir($build_section_dir);
 
     # Unpack the source and find out the subdirectory name it created
 
     $config->{srcdir} = _prepare_source($test_get);
-    chdir($config->{srcdir});
+    MTT::DoCommand::Chdir($config->{srcdir});
     $config->{srcdir} = cwd();
 
     # What to do with stdout/stderr?
@@ -306,7 +306,7 @@ sub _do_build {
             stdout => "filled in below",
             stderr => "filled in below",
 
-            test_build_section_name => $config->{simple_section_name},
+            suite_name => $config->{simple_section_name},
 
             mpi_name => $mpi_install->{mpi_get_simple_section_name},
             mpi_get_section_name => $mpi_install->{mpi_get_simple_section_name},
