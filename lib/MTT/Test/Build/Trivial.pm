@@ -49,11 +49,16 @@ sub Build {
     Debug("Building Trivial\n");
     $ret->{success} = 0;
 
+    my $cflags = Value($ini, $config->{full_section_name}, 
+                       "trivial_tests_cflags");
+    my $fflags = Value($ini, $config->{full_section_name}, 
+                       "trivial_tests_fflags");
+
     # Try compiling and linking a simple C application
 
     if ($mpi_install->{c_bindings}) {
         Debug("Test compile/link sample C MPI application\n");
-        $x = _do_compile("mpicc", "hello.c", "c_hello");
+        $x = _do_compile("mpicc $cflags", "hello.c", "c_hello");
         return $x
             if (defined($x));
     } else {
@@ -65,7 +70,7 @@ sub Build {
 
     if ($mpi_install->{cxx_bindings}) {
         Debug("Test compile/link sample C++ MPI application\n");
-        $x = _do_compile("mpic++", "hello.cc", "cxx_hello");
+        $x = _do_compile("mpic++ $cflags", "hello.cc", "cxx_hello");
         return $x
             if (defined($x));
     } else {
@@ -77,7 +82,7 @@ sub Build {
 
     if ($mpi_install->{f77_bindings}) {
         Debug("Test compile/link sample F77 MPI application\n");
-        $x = _do_compile("mpif77", "hello.f", "f77_hello");
+        $x = _do_compile("mpif77 $fflags", "hello.f", "f77_hello");
         return $x
             if (defined($x));
     } else {
@@ -89,7 +94,7 @@ sub Build {
 
     if ($mpi_install->{f90_bindings}) {
         Debug("Test compile/link sample F90 MPI application\n");
-        $x = _do_compile("mpif90", "hello.f90", "f90_hello");
+        $x = _do_compile("mpif90 $fflags", "hello.f90", "f90_hello");
         return $x
             if (defined($x));
     } else {
