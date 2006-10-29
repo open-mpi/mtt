@@ -198,8 +198,11 @@ sub Submit {
     $cache->{submit_test_timestamp} = gmtime;
     foreach my $m (@modules) {
         $x = MTT::Module::Run("MTT::Reporter::$m", "Submit", $cache, $entries);
-        foreach my $k (keys %$x) {
-            $serials->{$m}->{$k} = $x->{$k};
+        # Some reporters are not yet returning serials (e.g., text file)
+        if (ref($x) ne "") {
+            foreach my $k (keys %$x) {
+                $serials->{$m}->{$k} = $x->{$k};
+            }
         }
     }
 
