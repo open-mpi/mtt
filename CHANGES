@@ -1,2 +1,5 @@
 To announce to OMPI core testers:
 
+- added new fields to MTT section to ini file
+  - textwrap
+  - drain_timeout

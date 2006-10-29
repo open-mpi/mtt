@@ -32,6 +32,7 @@ sub _kill_proc {
     if ($kid != 0) {
         return $?;
     }
+    Verbose("** Kill TERM didn't work!\n");
 
     # Nope, that didn't work.  Sleep a few seconds and try again.
     sleep(2);
@@ -39,6 +40,7 @@ sub _kill_proc {
     if ($kid != 0) {
         return $?;
     }
+    Verbose("** Kill TERM (more waiting) didn't work!\n");
 
     # That didn't work either.  Try SIGINT;
     kill("INT", $pid);
@@ -46,6 +48,7 @@ sub _kill_proc {
     if ($kid != 0) {
         return $?;
     }
+    Verbose("** Kill INT didn't work!\n");
 
     # Nope, that didn't work.  Sleep a few seconds and try again.
     sleep(2);
@@ -53,6 +56,7 @@ sub _kill_proc {
     if ($kid != 0) {
         return $?;
     }
+    Verbose("** Kill INT (more waiting) didn't work!\n");
 
     # Ok, now we're mad.  Be violent.
     while (1) {
@@ -61,13 +65,7 @@ sub _kill_proc {
         if ($kid != 0) {
             return $?;
         }
-        sleep(1);
-
-        kill("KILL", $pid);
-        $kid = waitpid($pid, WNOHANG);
-        if ($kid != 0) {
-            return $?;
-        }
+        Verbose("** Kill KILL didn't work!\n");
         sleep(1);
     }
 }
@@ -278,7 +276,7 @@ sub Cmd {
         if (defined($end_time) && time() > $end_time) {
             my $over = time() - $end_time;
             if ($over > $last_over) {
-                Debug("*** Past timeout by $over seconds\n");
+                Verbose("*** Past timeout by $over seconds\n");
                 my $st = _kill_proc($pid);
                 if (!defined($killed_status)) {
                     $killed_status = $st;
@@ -286,6 +284,12 @@ sub Cmd {
                 $ret->{timed_out} = 1;
             }
             $last_over = $over;
+
+            # See if we've over the drain_timeout
+            if ($over > $MTT::Globals::Values->{drain_timeout}) {
+                Verbose("*** Past drain timeout; quitting\n");
+                $done = 0;
+            }
         }
     }
     close OUTerr;
