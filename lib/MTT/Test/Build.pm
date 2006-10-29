@@ -102,7 +102,7 @@ sub Build {
                 foreach my $test_get_key (keys(%{$MTT::Test::sources})) {
                     if ($test_get_key eq $test_get_name) {
                         my $test_get = $MTT::Test::sources->{$test_get_key};
-            
+
                         # For each MPI source
                         foreach my $mpi_get_key (keys(%{$MTT::MPI::installs})) {
                             my $mpi_get = $MTT::MPI::installs->{$mpi_get_key};
@@ -114,7 +114,6 @@ sub Build {
                                 # For each installation of that version
                                 foreach my $mpi_install_key (keys(%{$mpi_version})) {
                                     my $mpi_install = $mpi_version->{$mpi_install_key};
-
                                     # Only take sucessful MPI installs
                                     if (!$mpi_install->{success}) {
                                         Verbose("   Failed build for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] -- skipping\n");

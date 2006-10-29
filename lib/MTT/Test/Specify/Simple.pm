@@ -10,7 +10,7 @@
 # $HEADER$
 #
 
-package MTT::Test::Run::Simple;
+package MTT::Test::Specify::Simple;
 
 use strict;
 use Cwd;
