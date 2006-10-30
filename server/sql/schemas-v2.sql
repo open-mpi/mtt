@@ -50,11 +50,11 @@ CREATE INDEX submit_phase_idx ON submit(phase_id);
 DROP TABLE mpi_get;
 CREATE TABLE mpi_get (
     mpi_get_id serial UNIQUE,
-    section_name character varying(64) NOT NULL DEFAULT 'bogus',
-    version character varying(32) NOT NULL DEFAULT 'bogus',
+    mpi_name character varying(64) NOT NULL DEFAULT 'bogus',
+    mpi_version character varying(32) NOT NULL DEFAULT 'bogus',
     UNIQUE (
-            section_name,
-            version
+            mpi_name,
+            mpi_version
     )
 );
 
@@ -149,6 +149,7 @@ CREATE TABLE results (
     result_stderr text NOT NULL DEFAULT '',
     start_timestamp timestamp without time zone NOT NULL DEFAULT now() - interval '24 hours',
     stop_timestamp timestamp without time zone NOT NULL DEFAULT now() - interval '24 hours',
+    duration interval NOT NULL DEFAULT '-38 seconds',
 
     submit_timestamp timestamp without time zone NOT NULL DEFAULT now(),
     client_serial integer NOT NULL DEFAULT '-38', --> refers to the serial sequence
