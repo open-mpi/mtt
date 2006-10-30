@@ -61,7 +61,7 @@ our $Test_specify = {
     pass => "&eq(&test_exit_status(), 0)",
     skipped => "&eq(&test_exit_status(), 77)",
     argv => "",
-    np => "&env_max_np()",
+    np => "&env_max_procs()",
     np_ok => 1,
     timeout => 30,
 
