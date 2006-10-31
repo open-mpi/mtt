@@ -154,7 +154,7 @@ CREATE TABLE results (
     submit_timestamp timestamp without time zone NOT NULL DEFAULT now(),
     client_serial integer NOT NULL DEFAULT '-38', --> refers to the serial sequence
 
-    exit_status smallint NOT NULL DEFAULT '-38',
+    exit_status integer NOT NULL DEFAULT '-38',
     -- success value: 1=pass, 2=fail, 3=skipped, 4=timed out
     test_result smallint NOT NULL DEFAULT '-38',
     -- set to DEFAULT for correctness tests
@@ -167,9 +167,9 @@ CREATE TABLE latency_bandwidth (
     x_axis_label character varying(64),
     y_axis_label character varying(64),
     message_size integer[],
-    bandwidth_min integer[],
-    bandwidth_max integer[],
-    bandwidth_avg integer[],
+    bandwidth_min double precision[],
+    bandwidth_max double precision[],
+    bandwidth_avg double precision[],
     latency_min double precision[],
     latency_max double precision[],
     latency_avg double precision[]

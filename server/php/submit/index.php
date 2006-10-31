@@ -19,6 +19,7 @@ include_once("$topdir/reporter.inc");
 $GLOBALS['debug']   = isset($_POST['debug'])   ? $_POST['debug']   : 1;
 $GLOBALS['verbose'] = isset($_POST['verbose']) ? $_POST['verbose'] : 1;
 $dbname             = isset($_GET['db'])       ? $_GET['db']       : "mtt2";
+$pgsql_conn;
 
 # If the PING field is set, then this was just a
 # test.  Exit successfully.
@@ -39,7 +40,7 @@ if (isset($_POST['SERIAL'])) {
 # If these are not set, then exit.
 if (! isset($_POST['mtt_version_major']) ||
     ! isset($_POST['mtt_version_minor'])) {
-    mtt_error(400, "\nClient version not specified.");
+    mtt_error(400, "\nMTT client version not specified.");
     exit(1);
 }
 
@@ -51,14 +52,12 @@ $_POST['http_username'] =
 
 $id = "_id";
 
-# This should be a condition on a _POST hash
-# E.g., test_type => (correctness or latency_bandwidth)
-if ($_POST['test_type'] != 'latency_bandwidth')
-    $idxs_hash["latency_bandwidth$id"] = '-1';
-
-# This index is for reporting on "new" failures,
-# and will get updated by a nightly churn script (see #70)
-$idxs_hash["failure$id"] = '-1';
+# Process performance data, if there is any
+$table = 'latency_bandwidth';
+if (($_POST['test_type'] == $table) or 
+    ($_POST['test_type_1'] == $table)) {
+    $idxs_hash["$table$id"] = set_data($table, NULL, true, NULL);
+}
 
 # What phase are we doing?
 $phase      = strtolower($_POST['phase']);
@@ -78,12 +77,12 @@ if (0 == strcasecmp($phase, "test run")) {
 
 } else if (0 == strcasecmp($phase, "test build")) {
 
-    $idx = process_phase($phase_name, $idxs_hash);
+    $idx = process_phase($phase_name, NULL);
     validate($phase_name, array("mpi_install", "failure"));
 
 } else if (0 == strcasecmp($phase, "mpi install")) {
 
-    $idx = process_phase($phase_name, $idxs_hash);
+    $idx = process_phase($phase_name, NULL);
     validate($phase_name, array("failure"));
 
 } else {
@@ -134,9 +133,12 @@ function process_phase($phase, $idxs_hash) {
             set_data($table, NULL, $always_new, $idx_override);
     }
 
-    $idx = set_data($phase, $phase_idxs_hash, $always_new, NULL);
+    $idx = set_data($phase, $phase_idxs_hash, $always_new, $idx_override);
     $results_idxs_hash["phase$id"] = $idx;
     $results_idxs_hash["phase"] = $phase_smallints[$phase];
+
+    # Add in performance data
+    $results_idxs_hash = array_merge($results_idxs_hash, $idxs_hash);
 
     $always_new = true;
     $table = "results";
@@ -196,7 +198,8 @@ function set_data($table, $indexes, $always_new, $idx_override) {
             }
 
             $select_qry .= join("\n\t AND ", $items);
-            $select_qry .= "\n\t ORDER BY $table_id DESC;"; # Extraneous?
+            $select_qry .= "\n\t ORDER BY $table_id ASC ";
+            $select_qry .= "LIMIT 1 ";
 
             $set = array();
             $set = simple_select($select_qry);
@@ -209,6 +212,9 @@ function set_data($table, $indexes, $always_new, $idx_override) {
                 $idx[] = array_shift($set);
         }
     }
+
+    $seq_name = $table . "_" . "$table_id" . "_seq";
+    $col_name = $table . "." . "$table_id";
 
     # If we need to manually override the default
     # index, override with idx_override
@@ -223,7 +229,7 @@ function set_data($table, $indexes, $always_new, $idx_override) {
         for ($i = 0; $i < $n; $i++) {
             if (is_null($idx[$i])) {
                 $set = array();
-                $set = simple_select("SELECT nextval('$table" . "_" . "$table_id" . "_seq');");
+                $set = simple_select("SELECT nextval('$seq_name') LIMIT 1;");
                 $idx_tmp[$i] = array_shift($set);
             }
             if (! $numbered)
@@ -257,8 +263,6 @@ function set_data($table, $indexes, $always_new, $idx_override) {
                 break;
         }
     }
-
-    var_dump_debug(__FUNCTION__, __LINE__, "return val", stringify($idx));
 
     # Return the new or existing index
     return $idx;
@@ -399,8 +403,7 @@ function get_table_fields($table_name) {
 
     $is_special_index_clause = 
            "\n\t (table_name = '$table_name' AND " .
-           "\n\t (column_name = '$special_indexes[0]' OR " .
-           "\n\t column_name = '$special_indexes[1]'))";
+           "\n\t (column_name = '$special_indexes[0]'))";
 
     $is_index_columns = array(
             "column_name",
@@ -482,12 +485,16 @@ function do_pg_connect() {
     global $dbname;
     global $user;
     global $pass;
+    global $pgsql_conn;
     static $connected = false;
 
     if (!$connected) {
         $pgsql_conn = pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass");
         $connected = true;
-        pg_trace('/tmp/trace.log', 'w', $pgsql_conn);
+        # pg_set_error_verbosity($pgsql_conn, PGSQL_ERRORS_VERBOSE); # PHP 5 needed
+        # pg_trace('/nfs/rontok/xraid/users/emallove/pgsql.trace', 'w', $pgsql_conn);
+        pg_trace('/nfs/rontok/xraid/users/emallove/pgsql.trace');
+        debug("\npg_options: " . var_export(pg_options($pgsql_conn)));
     }
 }
 
@@ -498,6 +505,7 @@ function do_pg_query($cmd) {
     if (! ($db_res = pg_query($cmd))) {
         debug("\npostgres: " . pg_last_error() . "\n" . pg_result_error());
     }
+    debug("\nrows affected: " . pg_affected_rows($db_res) . "\n");
 }
 
 # Fetch 1D array
