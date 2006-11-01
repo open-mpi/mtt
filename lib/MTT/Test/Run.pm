@@ -241,6 +241,9 @@ sub _do_run {
     my $ret = MTT::Test::Specify::Specify($specify_module, $ini, $section, 
                                           $test_build, $mpi_install, $config);
 
+    # Grab the output-parser plugin, if there is one
+    $ret->{analyze_module} = MTT::Values::Value($ini, $section, "analyze_module");
+
     # If we got a list of tests to run, invoke the run engine to
     # actually run them.
     if ($ret && $ret->{success}) {

@@ -38,6 +38,7 @@ sub RunEngine {
         $run->{full_section_name} = $section;
         $run->{simple_section_name} = $section;
         $run->{simple_section_name} =~ s/^\s*test run:\s*//;
+        $run->{analyze_module} = $ret->{analyze_module};
         
         $run->{test_build_simple_section_name} = $test_build->{simple_section_name};
 
@@ -72,6 +73,7 @@ sub _run_one_np {
     my ($top_dir, $run, $mpi_details, $np, $force) = @_;
 
     my $name = basename($MTT::Test::Run::test_executable);
+    $run->{name} = $name;
 
     # Load up the final global
     $MTT::Test::Run::test_np = $np;
@@ -150,81 +152,30 @@ sub _run_one_test {
     my $err_lines = MTT::Values::EvaluateString($run->{stderr_save_lines});
     my $merge = MTT::Values::EvaluateString($run->{merge_stdout_stderr});
     my $start_time = time;
-    my $start = timegm(gmtime());
-    my $x = MTT::DoCommand::Cmd($merge, $cmd, $timeout, 
-                                $out_lines, $err_lines);
+    $run->{start} = timegm(gmtime());
+
+    my $x = MTT::DoCommand::Cmd($merge, $cmd, $timeout, $out_lines, $err_lines);
+
     my $stop_time = time;
-    my $duration = $stop_time - $start_time . " seconds";
+    $run->{stop} = timegm(gmtime());
+    $run->{duration} = $stop_time - $start_time . " seconds";
+    $run->{np} = $MTT::Test::Run::test_np;
+    $run->{cmd} = $cmd;
+
     $MTT::Test::Run::test_exit_status = $x->{status};
-    my $pass = MTT::Values::EvaluateString($run->{pass});
-    my $skipped = MTT::Values::EvaluateString($run->{skipped});
 
-    # result value: 1=pass, 2=fail, 3=skipped, 4=timed out
-    my $result = 2;
-    if ($x->{timed_out}) {
-        $result = 4;
-    } elsif ($pass) {
-        $result = 1;
-    } elsif ($skipped) {
-        $result = 3;
-    }
-
-    # Queue up a report on this test
-    my $report = {
-        phase => "Test run",
-
-        start_test_timestamp => $start,
-        test_duration_interval => $duration,
-
-        mpi_name => $mpi_details->{name},
-        mpi_version => $mpi_details->{version},
-        mpi_name => $mpi_details->{mpi_get_simple_section_name},
-        mpi_install_section_name => $mpi_details->{mpi_install_simple_section_name},
-
-        test_name => $name,
-        command => $cmd,
-        test_build_section_name => $run->{test_build_simple_section_name},
-        test_run_section_name => $run->{simple_section_name},
-        np => $MTT::Test::Run::test_np,
-        exit_status => $x->{status},
-        test_result => $result,
-    };
-    my $want_output;
-    if (!$pass) {
-        $str =~ s/^ +//;
-        if ($x->{timed_out}) {
-            Warning("$str TIMED OUT (failed)\n");
-        } else {
-            Warning("$str FAILED\n");
-        }
-        $want_output = 1;
-        if ($stop_time - $start_time > $timeout) {
-            $report->{result_message} = "Failed; timeout expired ($timeout seconds)";
-        } else {
-            $report->{result_message} = "Failed; exit status: $x->{status}";
-        }
-    } else {
-        Verbose("$str Passed\n");
-        $report->{result_message} = "Passed";
-        $want_output = $run->{save_output_on_pass};
-    }
-    if ($want_output) {
-        $report->{stdout} = $x->{stdout};
-        $report->{stderr} = $x->{stderr};
-    }
-
-    my $test_build_id = $MTT::Test::builds->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{test_build_id};
-    $report->{test_build_id} = $test_build_id;
+    # Analyze the test parameters and results
+    my $report;
+    $report = MTT::Module::Run("MTT::Test::Analyze", "Analyze", $run, $mpi_details, $x);
 
     $MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$MTT::Test::Run::test_np}->{$cmd} = $report;
     MTT::Test::SaveRuns($top_dir);
     MTT::Reporter::QueueAdd("Test Run", $run->{simple_section_name}, $report);
 
-
     # If there is an after_each step, run it
     _run_step($mpi_details, "after_each");
 
-    return $pass;
+    return $run->{pass};
 }
 
 sub _run_step {

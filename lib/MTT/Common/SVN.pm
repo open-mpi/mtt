@@ -59,11 +59,11 @@ sub Get {
             # last R number.
 
             # 2. one or more entries of log messages.  In this case,
-            # we need to look at the r number of the # first entry
-            # that comes along.  It may be the old # r number (i.e.,
-            # it's still the HEAD), in which # case we don't need a
-            # new checkout.  Or it may be # a different r number, in
-            # which case we need a # new checkout.
+            # we need to look at the r number of the first entry
+            # that comes along.  It may be the old r number (i.e.,
+            # it's still the HEAD), in which case we don't need a
+            # new checkout.  Or it may be a different r number, in
+            # which case we need a new checkout.
 
             my $need_new;
             if ($x->{stdout} =~ /^-+\n$/) {

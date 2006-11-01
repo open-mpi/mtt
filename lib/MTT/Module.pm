@@ -41,7 +41,7 @@ sub Run {
         return undef;
     }
 
-    # Call the Build() method in that module
+    # Call the method in that module
 
     my $ret = undef;
     $str = "\$ret = \&${module}::$method(\@args)";

@@ -170,7 +170,7 @@ sub Cmd {
 
     my $tokens = _quote_escape($cmd);
 
-    if (! $MTT::DoCommand::no_execute) {
+    if (! $no_execute) {
 
         if (($pid = fork()) == 0) {
             close OUTread;
