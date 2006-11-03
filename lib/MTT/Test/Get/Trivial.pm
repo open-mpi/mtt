@@ -127,7 +127,7 @@ C
         call MPI_COMM_SIZE(MPI_COMM_WORLD, size, ierr)
         print *, 'Hello, Fortran 77 world, I am ', rank, ' of ', size
         call MPI_FINALIZE(ierr)
-        end program main\n");
+        end\n");
     if ($x) {
         $ret->{result_message} = $x->{result_message};
         return $ret;
@@ -149,7 +149,7 @@ program main
     call MPI_COMM_SIZE(MPI_COMM_WORLD, size, ierr)
     print *, 'Hello, Fortran 90 world, I am ', rank, ' of ', size
     call MPI_FINALIZE(ierr)
-end program main\n");
+end\n");
     if ($x) {
         $ret->{result_message} = $x->{result_message};
         return $ret;
