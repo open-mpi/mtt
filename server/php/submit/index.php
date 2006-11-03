@@ -610,11 +610,37 @@ function get_idx_root($str) {
 
 # Args: parameters to fetch from _POST
 # Return: associateive array of field=value pairs
+
+# Three types of POST params:
+# 
+# 1 Once set (not numbered)
+# 2 Always set (each and every param, 1-num_of_results are set)
+# 3 Sometimes set (some names are set)
+
+# A "some_set" field is a field that may be present in
+# only several tests in a given submission (e.g., latency_min)
+# Only a numbered field can be a some_set
+#
+# 1. Determine the some_sets
+# 2. Fill in the name/value pairs, and use DEFAULT if 
+#    it is a some_set
+
 function get_post_values($params, $n) {
 
     global $_POST;
 
     $hash = array();
+    $some_set = array();
+
+    # Determine some_sets
+    foreach ($params as $field) {
+        for ($i = 1; $i <= $n; $i++) {
+            $name = $field . (($i == 0) ? "" : "_" . $i);
+            if (isset($_POST[$name])) {
+                $some_set[$field] = true;
+            }
+        }
+    }
 
     foreach ($params as $field) {
 
@@ -638,6 +664,9 @@ function get_post_values($params, $n) {
                     $hash[$field] = $value;
                     break;
                 } 
+            }
+            elseif (isset($some_set[$field]) and $numbered) {
+                $hash[$field][] = "DEFAULT";
             }
         }
         # We could leave this out and the field would insert to DEFAULT,

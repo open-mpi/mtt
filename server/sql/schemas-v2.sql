@@ -164,15 +164,13 @@ CREATE TABLE results (
 DROP TABLE latency_bandwidth;
 CREATE TABLE latency_bandwidth (
     latency_bandwidth_id serial UNIQUE,
-    x_axis_label character varying(64),
-    y_axis_label character varying(64),
-    message_size integer[],
-    bandwidth_min double precision[],
-    bandwidth_max double precision[],
-    bandwidth_avg double precision[],
-    latency_min double precision[],
-    latency_max double precision[],
-    latency_avg double precision[]
+    message_size integer[] DEFAULT '{}',
+    bandwidth_min double precision[] DEFAULT '{}',
+    bandwidth_max double precision[] DEFAULT '{}',
+    bandwidth_avg double precision[] DEFAULT '{}',
+    latency_min double precision[] DEFAULT '{}',
+    latency_max double precision[] DEFAULT '{}',
+    latency_avg double precision[] DEFAULT '{}'
 );
 
 DROP INDEX results_success_idx;
