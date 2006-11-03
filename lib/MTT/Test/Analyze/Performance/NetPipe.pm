@@ -28,10 +28,6 @@ sub Analyze {
 
     my @lines = split(/\n|\r/, $stdout);
 
-    while (my $line = shift(@lines)) {
-        last if ($line =~ /starting the main loop/i);
-    }
-
     # Sample stdout:
     # 1: 2 bytes  440 times --> 0.05 Mbps in  293.11 usec
     # 2: 3 bytes  341 times --> 0.06 Mbps in  352.66 usec
@@ -40,8 +36,9 @@ sub Analyze {
     # 5: 8 bytes  322 times --> 0.35 Mbps in  172.63 usec
     # ...
 
+    my $line;
     my $arrow = '[\s\-\>]+';
-    while (my $line = shift(@lines)) {
+    while (defined($line = shift(@lines))) {
         if ($line =~
                 (/(\d+)     \s+ bytes \s+
                   (\d+)     \s+ times $arrow
