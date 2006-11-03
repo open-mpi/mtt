@@ -18,30 +18,23 @@ sub Analyze {
 
     my($stdout) = @_;
     my $report;
-    my(@bytes,
-       @times,
-       @headers,
-       $data,
-       @mbps,
-       @usec,
-       $bandwidth_unit,
-       $latency_unit);
-
-    print "\nstdout = " . Dumper($stdout);
+    my(@headers, $data);
 
     my @lines = split(/\n|\r/, $stdout);
 
-    while (my $line = shift(@lines)) {
+    my $line;
+    while (defined($line = shift(@lines))) {
 
         if ($line =~ /benchmarking\s+(\w+)/i) {
             $report->{test_name} = $1;
             last;
         }
     }
+
     my $lat_units = '\b\w*sec(?:onds?)?';
 
     # Grab the table headers
-    while (my $line = shift(@lines)) {
+    while (defined($line = shift(@lines))) {
 
         # Possible headers:
         # #bytes #repetitions      t[usec]                             Mbytes/sec
@@ -73,7 +66,8 @@ sub Analyze {
 
     # Grab the table body
     my $rows = 0;
-    while (my $line = shift(@lines)) {
+    while (defined($line = shift(@lines))) {
+
         if ($line =~
                 (/
                   (?:([\d\.]+) \s*)
@@ -133,8 +127,6 @@ sub Analyze {
         $report->{message_size} = 
             "{" . join(",", map { "0" } (1..$rows)) . "}";
     }
-
-    print "\nreport = " . Dumper($report);
 
     return $report;
 }

@@ -71,13 +71,12 @@ sub Analyze {
     } else {
         Verbose("$str Passed\n");
         $report->{result_message} = "Passed";
-        $want_output = $run->{save_output_on_pass};
+        $want_output = $run->{save_stdout_on_pass};
     }
     if ($want_output) {
         $report->{stdout} = $results->{stdout};
         $report->{stderr} = $results->{stderr};
     }
-
     my $test_build_id = $MTT::Test::builds->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{test_build_id};
     $report->{test_build_id} = $test_build_id;
 

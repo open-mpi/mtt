@@ -221,8 +221,8 @@ sub _do_run {
     $tmp = $ini->val($section, "skipped");
     $config->{skipped} = $tmp
         if (defined($tmp));
-    $tmp = $ini->val($section, "save_output_on_pass");
-    $config->{save_output_on_pass} = $tmp
+    $tmp = $ini->val($section, "save_stdout_on_pass");
+    $config->{save_stdout_on_pass} = $tmp
         if (defined($tmp));
     $tmp = $ini->val($section, "stderr_save_lines");
     $config->{stderr_save_lines} = $tmp
