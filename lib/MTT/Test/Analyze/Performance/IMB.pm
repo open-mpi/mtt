@@ -68,6 +68,9 @@ sub Analyze {
     my $rows = 0;
     while (defined($line = shift(@lines))) {
 
+        # If test is timed out or killed, exit loop
+        last if (($line =~ /kill|terminate|exit/i) or ($line !~ /\d/));
+
         if ($line =~
                 (/
                   (?:([\d\.]+) \s*)
@@ -111,15 +114,15 @@ sub Analyze {
         if ($k =~ /(min|max|avg)?\[$lat_units\]/i) {
             my $agg = (defined($1) ? $1 : "avg");
             $report->{"latency_$agg"} = 
-                "{" . join(",", map { trim($_) } @{$data->{$k}}) . "}";
+                "{" . join(",", map { &trim($_) } @{$data->{$k}}) . "}";
 
         } elsif ($k =~ /[kmbpt]?byte.*sec|[kmbpt]?bps/i) {
             $report->{"bandwidth_avg"} =
-                "{" . join(",", map { trim($_) } @{$data->{$k}}) . "}";
+                "{" . join(",", map { &trim($_) } @{$data->{$k}}) . "}";
 
         } elsif ($k =~ /byte|[kmbpt]b/i) {
             $report->{message_size} =
-                "{" . join(",", map { trim($_) } @{$data->{$k}}) . "}";
+                "{" . join(",", map { &trim($_) } @{$data->{$k}}) . "}";
         }
     }
 
