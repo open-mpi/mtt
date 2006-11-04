@@ -112,12 +112,12 @@ sub FilterINISections {
     # Iterate through the ini file, section by section
     foreach $section ($ini->Sections) {
 
+        # Always process the "mtt" and "mpi details" sections
+        next if ($section =~ /\bmtt\b|mpi\s+details/i);
+
         # Iterate through every ---[no]-section argument,
         # and OR them together
         foreach my $pattern (@$patterns) {
-
-            # Always process the "mtt" and "mpi details" sections
-            next if ($section =~ /\bmtt\b|mpi\s+details/i);
 
             # Generate on-the-fly, perl code that will
             # perform the regular expressions, and AND
