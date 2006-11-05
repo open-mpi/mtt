@@ -251,6 +251,10 @@ sub _do_build {
         }
     }
 
+    # Some test suites require knowledge of where
+    # the MPI library is at the build stage
+    $MTT::Test::Run::test_prefix = $mpi_install->{installdir};
+
     # Process setenv, unsetenv, prepend-path, and append-path -- for
     # both the MPI that we're building with and the section of the ini
     # file that we're building.

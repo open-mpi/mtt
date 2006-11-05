@@ -418,7 +418,7 @@ sub copyfile {
         $opener = "< $infile";
     }
     open(in, $opener);
-    open(out, "> $outfile");
+    open(out, "> $outfile") or warn "Could not open $outfile for writing";
 
     Debug("Copying: $infile to $outfile\n");
 

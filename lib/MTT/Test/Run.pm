@@ -120,20 +120,31 @@ sub _do_run {
     Verbose(">> Running with [$mpi_install->{mpi_get_simple_section_name}] / [$mpi_install->{mpi_version}] / [$mpi_install->{simple_section_name}]\n");
     # Find an MPI details section for this MPI
     my $match = 0;
-    my $mpi_details_section;
+    my ($mpi_details_section,
+        $details_install_section,
+        $mpi_install_section);
+
     foreach my $s ($ini->Sections()) {
         if ($s =~ /^\s*mpi details:/) {
-            my $section_mpi_name = MTT::Values::Value($ini, $s, "mpi_name");
-            if ($section_mpi_name eq $mpi_install->{mpi_name}) {
-                Debug("Found MPI details\n");
+            Debug("Found MPI details: [$s]\n");
+
+            # MPI Details can be specified per MPI Install,
+            # or globally for every MPI Install
+            $details_install_section = MTT::Values::Value($ini, $s, "mpi_name");
+            $mpi_install_section = $mpi_install->{simple_section_name};
+            $mpi_details_section = $s;
+
+            if (($details_install_section eq $mpi_install_section) or
+                ! $details_install_section) {
+
+                Debug("Using [$s] with [MPI Install: $mpi_install_section]\n");
                 $match = 1;
-                $mpi_details_section = $s;
                 last;
             }
         }
     }
-    if (!$match) {
-        Warning("Unable to find MPI details section; skipping\n");
+    if (!$match and !$mpi_details_section) {
+        Warning("Unable to find MPI details section for [MPI Install: $details_install_section]; skipping\n");
         return;
     }
     

@@ -428,16 +428,22 @@ sub stop_time {
 
 foreach my $file (@file_arg) {
 
-    my $orig_file = $file;
+    my $orig_file = ($stdin_arg ? "stdin" : $file);
     my $temp_file = MTT::Files::copyfile($file);
 
     # Load up the ini file
-    MTT::Messages::Debug("Reading ini file: " . (($stdin_arg) ? "stdin" : $orig_file) . "\n");
+    MTT::Messages::Debug("Reading ini file: $orig_file\n");
     my $ini = new Config::IniFiles(-file => $temp_file, 
                                    -nocase => 1,
                                    -allowcontinue => 1);
 
-    # Check for problems in the ini file
+    # Check for syntax errors in the ini file
+    if (! $ini) {
+        MTT::Messages::Abort("Syntax error in $orig_file: " .
+            join("\n", @Config::IniFiles::errors));
+    }
+
+    # Check for duplicate entries in the ini file
     MTT::INI::ValidateINI($temp_file);
     MTT::DoCommand::Cmd(1, "rm $temp_file");
 
