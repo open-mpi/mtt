@@ -194,6 +194,11 @@ sub Cmd {
             select STDOUT;
             $| = 1;
 
+            # Remove leading/trailing quotes, which
+            # protects against a common funclet syntax error
+            @$tokens[(@$tokens - 1)] =~ s/\"$//
+                if (@$tokens[0] =~ s/^\"//);
+
             # Run it!
 
             exec(@$tokens) ||
@@ -323,6 +328,12 @@ sub CmdScript {
         $max_stdout_lines, $max_stderr_lines) = @_;
 
     my ($fh, $filename) = tempfile();
+
+    # Remove leading/trailing quotes, which
+    # protects against a common funclet syntax error
+    $cmds =~ s/\"$//
+        if ($cmds =~ s/^\"//);
+
     print $fh ":\n$cmds\n";
     close($fh);
     chmod(0700, $filename);
