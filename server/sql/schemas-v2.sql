@@ -127,7 +127,14 @@ CREATE TABLE test_run (
     variant smallint NOT NULL DEFAULT '-38',
     test_name character varying(64) NOT NULL DEFAULT 'bogus',
     command text NOT NULL DEFAULT 'bogus',
-    np smallint NOT NULL DEFAULT '-38'
+    np smallint NOT NULL DEFAULT '-38',
+    UNIQUE (
+        test_build_id,
+        variant,
+        test_name,
+        command,
+        np
+    )
 );
 
 DROP INDEX test_build_idx;

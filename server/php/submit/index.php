@@ -70,6 +70,8 @@ $phase_smallints = array(
     "test_run" => 3,
 );
 
+print "\nBeginning MTT submission for $phase\n";
+
 if (0 == strcasecmp($phase, "test run")) {
 
     $idx = process_phase($phase_name, $idxs_hash);
@@ -123,10 +125,16 @@ function process_phase($phase, $idxs_hash) {
                        get_table_indexes($phase, $fully_qualified)),
             'contains_no_table_key');
 
+    # It's impossible to submit with two different submit identities
+    # so shift off the index
+    # IF DISCONNECTED SCENARIOS COMES TO PASS, THIS MAY NEED 
+    # TO BE CHANGED
     $always_new = false;
     $table = "submit";
     $results_idxs_hash[$table . $id] =
-        set_data($table, NULL, $always_new, $idx_override);
+        get_scalar(
+            set_data($table, NULL, $always_new, $idx_override)
+        );
 
     foreach ($phase_indexes as $table) {
         $phase_idxs_hash[$table . $id] =
@@ -209,7 +217,7 @@ function set_data($table, $indexes, $always_new, $idx_override) {
                 break;
             }
             else
-                $idx[] = array_shift($set);
+                $idx[$i] = array_shift($set);
         }
     }
 
@@ -347,7 +355,7 @@ function validate($table_name, $prune_list) {
 
     $rows = select($cmd);
 
-    var_dump_debug(__FUNCTION__, __LINE__, "rows", $rows);
+    var_dump_debug(__FUNCTION__, __LINE__, "cmd", $cmd);
 }
 
 function sql_join($table_name) {
