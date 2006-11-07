@@ -70,7 +70,7 @@ $phase_smallints = array(
     "test_run" => 3,
 );
 
-print "\nBeginning MTT submission for $phase\n";
+print "\nMTT submission for $phase\n";
 
 if (0 == strcasecmp($phase, "test run")) {
 
@@ -122,32 +122,36 @@ function process_phase($phase, $idxs_hash) {
     $phase_indexes =
         array_filter(
             array_map('get_idx_root',
-                       get_table_indexes($phase, $fully_qualified)),
+                       get_table_indexes($phase, $fully_qualified)
+            ),
             'contains_no_table_key');
 
     # It's impossible to submit with two different submit identities
-    # so shift off the index
-    # IF DISCONNECTED SCENARIOS COMES TO PASS, THIS MAY NEED 
+    # so grab the one and only submit_id
+    # IF DISCONNECTED SCENARIOS COMES TO PASS, THIS WILL NEED 
     # TO BE CHANGED
     $always_new = false;
     $table = "submit";
     $results_idxs_hash[$table . $id] =
-        get_scalar(
-            set_data($table, NULL, $always_new, $idx_override)
-        );
+        get_scalar(set_data($table, NULL, $always_new, $idx_override), 0);
 
+    # Plug in the _id integer fields in the
+    # table (e.g., mpi_get, compiler, and cluster for MPI Install)
     foreach ($phase_indexes as $table) {
         $phase_idxs_hash[$table . $id] =
             set_data($table, NULL, $always_new, $idx_override);
     }
 
+    # Insert the MPI Install, Test Build, or Test Run
     $idx = set_data($phase, $phase_idxs_hash, $always_new, $idx_override);
     $results_idxs_hash["phase$id"] = $idx;
     $results_idxs_hash["phase"] = $phase_smallints[$phase];
 
-    # Add in performance data
+    # Plug in more data to the results if there is any (right now that will be
+    # only latency_bandwidth data)
     $results_idxs_hash = array_merge($results_idxs_hash, $idxs_hash);
 
+    # Finally, INSERT the results
     $always_new = true;
     $table = "results";
     $phase_idxs_hash[$table . $id] =
@@ -175,9 +179,10 @@ function set_data($table, $indexes, $always_new, $idx_override) {
     $n = $_POST['number_of_results'];
 
     # Match up fetched column names with data in the HTTP POST
-    $wheres   = array();
-    $wheres   = get_post_values($column_names, $n);
-    $numbered = are_numbered($column_names, $n);
+    $wheres      = array();
+    $new_indexes = array();
+    $wheres      = get_post_values($column_names, $n);
+    $numbered    = are_numbered($column_names, $n);
 
     $wheres   = array_merge($wheres, $indexes);
 
@@ -199,7 +204,7 @@ function set_data($table, $indexes, $always_new, $idx_override) {
             # Seems odd that we iterate over both string and numeric keys here
             foreach (array_keys($wheres_tmp) as $k) {
                 $items[] = sql_compare($k,
-                                        pg_escape_string(get_scalar($wheres_tmp[$k])),
+                                        pg_escape_string(get_scalar($wheres_tmp[$k], $i)),
                                         $params['data_type'][$j],
                                         $params['column_default'][$j]);
                 $j++;
@@ -239,7 +244,11 @@ function set_data($table, $indexes, $always_new, $idx_override) {
                 $set = array();
                 $set = simple_select("SELECT nextval('$seq_name') LIMIT 1;");
                 $idx_tmp[$i] = array_shift($set);
+                $new_indexes[$i] = true;
+            } else {
+                $new_indexes[$i] = false;
             }
+                
             if (! $numbered)
                 break;
         }
@@ -255,13 +264,19 @@ function set_data($table, $indexes, $always_new, $idx_override) {
     # If it was not already in the table, insert it
     if (! $found_match or $always_new) {
         for ($i = 0; $i < $n; $i++) {
+
+            # If the row is already in the table, do not 
+            # attempt the INSERT
+            if (! $new_indexes[$i])
+                continue;
+
             $insert_qry = "\n\t INSERT INTO $table " .
                           "\n\t (" . join(",\n\t", array_keys($inserts)) . ") " .
                           "\n\t VALUES ";
 
             $items = array();
             foreach (array_keys($inserts) as $k) {
-                $items[] = quote_(pg_escape_string(get_scalar($inserts[$k]))); 
+                $items[] = quote_(pg_escape_string(get_scalar($inserts[$k], $i))); 
             }
             $insert_qry .= "\n\t (" . join(",\n\t", $items) . ") \n\t";
 
@@ -442,10 +457,10 @@ function get_table_fields($table_name) {
 }
 
 # Take an array or scalar
-function get_scalar(&$var) {
+function get_scalar($var , $i) {
 
     if (is_array($var))
-        return array_shift($var);
+        return $var[$i];
     else
         return $var;
 }
@@ -497,12 +512,19 @@ function do_pg_connect() {
     static $connected = false;
 
     if (!$connected) {
-        $pgsql_conn = pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass");
-        $connected = true;
+        $pgsql_conn = 
+            pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass");
+
+        # Exit if we cannot connect
+        if (!$pgsql_conn)
+            mtt_error("\nCould not connect to the $dbname database; " .
+                      "submit this run later.");
+        else
+            $connected = true;
+
         # pg_set_error_verbosity($pgsql_conn, PGSQL_ERRORS_VERBOSE); # PHP 5 needed
-        # pg_trace('/nfs/rontok/xraid/users/emallove/pgsql.trace', 'w', $pgsql_conn);
-        pg_trace('/nfs/rontok/xraid/users/emallove/pgsql.trace');
-        debug("\npg_options: " . var_export(pg_options($pgsql_conn)));
+        # pg_trace($_ENV['HOME'] . "/pgsql.trace", 'w', $pgsql_conn);
+        # debug("\npg_options: " . var_export(pg_options($pgsql_conn)));
     }
 }
 
@@ -734,7 +756,11 @@ function var_dump_debug_inserts($function, $line, $var_name, $arr) {
     if ($GLOBALS['verbose'] or $GLOBALS['debug']) {
         $output = "\ndebug: $function:$line, $var_name = ";
         foreach (array_keys($arr) as $k) {
-            $output .= "\n\t '$k' => '" . get_scalar($arr[$k]) . "'";
+            $output .= "\n\t '$k' => '" . 
+                    (is_array($arr[$k]) ?
+                        join(",", $arr[$k]) :
+                        $arr[$k])
+                    . "'";
         }
         print($output);
     }
