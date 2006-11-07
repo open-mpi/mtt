@@ -419,34 +419,34 @@ sub _do_install {
             if (!$config->{save_stdout_on_success}) {
                 $want_save = 0;
             }
-        } elsif (!$ret->{stdout}) {
+        } elsif (!$ret->{result_stdout}) {
             $want_save = 0;
         }
 
         # If we want to save, see how many lines we want to save
         if ($want_save) {
             if ($config->{stdout_save_lines} == -1) {
-                $report->{stdout} = "$ret->{stdout}\n";
+                $report->{result_stdout} = "$ret->{result_stdout}\n";
             } elsif ($config->{stdout_save_lines} == 0) {
-                delete $report->{stdout};
+                delete $report->{result_stdout};
             } else {
-        if ($ret->{stdout} =~ m/((.*\n){$config->{stdout_save_lines}})$/) {
-                    $report->{stdout} = $1;
+        if ($ret->{result_stdout} =~ m/((.*\n){$config->{stdout_save_lines}})$/) {
+                    $report->{result_stdout} = $1;
                 } else {
                     # There were less lines available than we asked
                     # for, so just take them all
-                    $report->{stdout} = $ret->{stdout};
+                    $report->{result_stdout} = $ret->{result_stdout};
                 }
             }
         } else {
-            delete $report->{stdout};
+            delete $report->{result_stdout};
         }
 
-        # $ret->{stderr} will be filled in on error.  If there was no
+        # $ret->{result_stderr} will be filled in on error.  If there was no
         # error, then take $ret->{make_all_stderr}.
         my $stderr;
-        if ($ret->{stderr}) {
-            $stderr = $ret->{stderr};
+        if ($ret->{result_stderr}) {
+            $stderr = $ret->{result_stderr};
         } else {
             $stderr = $ret->{make_all_stderr};
         }
@@ -454,20 +454,20 @@ sub _do_install {
         # Always fill in the last bunch of lines for stderr
         if ($stderr) {
             if ($config->{stderr_save_lines} == -1) {
-                $report->{stderr} = "$stderr\n";
+                $report->{result_stderr} = "$stderr\n";
             } elsif ($config->{stderr_save_lines} == 0) {
-                delete $report->{stderr};
+                delete $report->{result_stderr};
             } else {
                 if ($stderr =~ m/((.*\n){$config->{stderr_save_lines}})$/) {
-                    $report->{stderr} = $1;
+                    $report->{result_stderr} = $1;
                 } else {
                     # There were less lines available than we asked
                     # for, so just take them all
-                    $report->{stderr} = $stderr;
+                    $report->{result_stderr} = $stderr;
                 }
             }
         } else {
-            delete $report->{stderr};
+            delete $report->{result_stderr};
         }
 
         # Did we have any environment?
@@ -510,8 +510,8 @@ sub _do_install {
         
         # All of the data has been saved to an INI file, so reclaim
         # potentially a big chunk of memory...
-        delete $ret->{stdout};
-        delete $ret->{stderr};
+        delete $ret->{result_stdout};
+        delete $ret->{result_stderr};
         delete $ret->{configure_stdout};
         delete $ret->{make_all_stdout};
         delete $ret->{make_all_stderr};

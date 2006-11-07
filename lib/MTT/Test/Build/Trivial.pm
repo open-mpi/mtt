@@ -31,7 +31,7 @@ sub _do_compile {
         my $ret;
         $ret->{success} = 0;
         $ret->{result_message} = "Failed to compile/link $out_name\n";
-        $ret->{stdout} = $x->{stdout};
+        $ret->{result_stdout} = $x->{result_stdout};
         return $ret;
     }
 

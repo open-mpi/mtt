@@ -61,13 +61,13 @@ sub Install {
     $ret->{libdir} = "$ret->{installdir}/lib";
 
     $x = MTT::DoCommand::Cmd(1, "$config->{configdir}/configure $config->{configure_arguments} --prefix=$ret->{installdir}", -1, $config->{stdout_save_lines}, $config->{stderr_save_lines});
-    $stdout = $x->{stdout} ? "--- Configure stdout/stderr ---\n$x->{stdout}" :
+    $stdout = $x->{result_stdout} ? "--- Configure stdout/stderr ---\n$x->{result_stdout}" :
         undef;
     if ($x->{status} != 0) {
         $ret->{result_message} = "Configure failed -- skipping this build";
         # Put the output of the failure into $ret so that it gets
         # reported (stdout/stderr was combined into just stdout)
-        $ret->{stdout} = $stdout;
+        $ret->{result_stdout} = $stdout;
         return $ret;
     }
     # We don't need this in the main stdout
@@ -77,23 +77,23 @@ sub Install {
 
     $x = MTT::DoCommand::Cmd($config->{merge_stdout_stderr}, "make $config->{make_all_arguments} all", -1, $config->{stdout_save_lines});
     $stdout = undef;
-    if ($x->{stdout}) {
+    if ($x->{result_stdout}) {
         $stdout = "--- \"make all ";
         $stdout .= "stdout"
-            if ($x->{stdout});
+            if ($x->{result_stdout});
         $stdout .= "/stderr"
             if ($config->{merge_stdout_stderr});
-        $stdout .= " ---\n$x->{stdout}";
+        $stdout .= " ---\n$x->{result_stdout}";
     }
-    $stderr = $x->{stderr} ? "--- \"make all\" stderr ---\n$x->{stderr}" : 
+    $stderr = $x->{result_stderr} ? "--- \"make all\" stderr ---\n$x->{result_stderr}" : 
         undef;
     if ($x->{status} != 0) {
         $ret->{result_message} = "Failed to build: make $config->{make_all_arguments} all";
         # Put the output of the failure into $ret so that it gets
         # reported (stdout/stderr *may* be separated, so assign them
         # both -- if they were combined, then $stderr will be empty)
-        $ret->{stdout} = $stdout;
-        $ret->{stderr} = $stderr;
+        $ret->{result_stdout} = $stdout;
+        $ret->{result_stderr} = $stderr;
         return $ret;
     }
     $ret->{make_all_stdout} = $stdout;
@@ -124,13 +124,13 @@ sub Install {
         $x = MTT::DoCommand::Cmd(1, "make check", -1, $config->{stdout_save_lines}, $config->{stderr_save_lines});
         %ENV = %ENV_SAVE;
 
-        $stdout = "--- \"make check\" stdout ---\n$x->{stdout}"
-            if ($x->{stdout});
+        $stdout = "--- \"make check\" stdout ---\n$x->{result_stdout}"
+            if ($x->{result_stdout});
         if ($x->{status} != 0) {
             $ret->{result_message} = "Failed to make check";
             # Put the output of the failure into $ret so that it gets
             # reported (stdout/stderr were combined)
-            $ret->{stdout} = $x->{stdout};
+            $ret->{result_stdout} = $x->{result_stdout};
             return $ret;
         }
         $ret->{make_check_stdout} = $stdout;
@@ -145,12 +145,12 @@ sub Install {
 
     $x = MTT::DoCommand::Cmd(1, "make install", -1, $config->{stdout_save_lines}, $config->{stderr_save_lines});
     if ($x->{status} != 0) {
-        $ret->{stdout} .= "--- \"make install\" stdout ---\n$x->{stdout}"
-            if ($x->{stdout});
+        $ret->{result_stdout} .= "--- \"make install\" stdout ---\n$x->{result_stdout}"
+            if ($x->{result_stdout});
         $ret->{result_message} = "Failed to make install";
         # Put the output of the failure into $ret so that it gets
         # reported (stdout/stderr were combined)
-        $ret->{stdout} = $x->{stdout};
+        $ret->{result_stdout} = $x->{result_stdout};
         return $ret;
     }
     $ret->{make_install_stdout} = $stdout;

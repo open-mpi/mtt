@@ -123,7 +123,7 @@ sub Install {
         mkdir("test-compile", 0777);
         if (-d "test_compile") {
             $ret->{result_message} = "Could not make test compile directory: $@\n";
-            $x->{stdout} = $@;
+            $x->{result_stdout} = $@;
             return $ret;
         }
     }
@@ -141,8 +141,8 @@ int main(int argc, char* argv[]) {
     $x = MTT::DoCommand::Cmd(1, "$ret->{bindir}/mpicc hello.c -o hello");
     if ($x->{status} != 0) {
         $ret->{result_message} = "Failed to compile/link C \"hello world\" MPI app: $@\n";
-        $ret->{stdout} = $x->{stdout};
-        print "Stdout: $ret->{stdout}\n";
+        $ret->{result_stdout} = $x->{result_stdout};
+        print "Stdout: $ret->{result_stdout}\n";
         return $ret;
     }
     unlink "hello.c", "hello";
@@ -163,7 +163,7 @@ int main(int argc, char* argv[]) {
         $x = MTT::DoCommand::Cmd(1, "$ret->{bindir}/mpic++ hello.cc -o hello");
         if ($x->{status} != 0) {
             $ret->{result_message} = "Failed to compile/link C++ \"hello world\" MPI app\n";
-            $ret->{stdout} = $x->{stdout};
+            $ret->{result_stdout} = $x->{result_stdout};
             return $ret;
         }
         unlink "hello.cc", "hello";
@@ -188,7 +188,7 @@ int main(int argc, char* argv[]) {
         $x = MTT::DoCommand::Cmd(1, "$ret->{bindir}/mpif77 hello.f -o hello");
         if ($x->{status} != 0) {
             $ret->{result_message} = "Failed to compile/link F77 \"hello world\" MPI app\n";
-            $ret->{stdout} = $x->{stdout};
+            $ret->{result_stdout} = $x->{result_stdout};
             return $ret;
         }
         unlink "hello.f", "hello";
@@ -212,7 +212,7 @@ int main(int argc, char* argv[]) {
         $x = MTT::DoCommand::Cmd(1, "$ret->{bindir}/mpif90 hello.F -o hello");
         if ($x->{status} != 0) {
             $ret->{result_message} = "Failed to compile/link F90 \"hello world\" MPI app\n";
-            $ret->{stdout} = $x->{stdout};
+            $ret->{result_stdout} = $x->{result_stdout};
             return $ret;
         }
         unlink "hello.F", "hello";

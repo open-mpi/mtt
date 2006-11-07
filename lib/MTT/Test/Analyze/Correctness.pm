@@ -74,8 +74,8 @@ sub Analyze {
         $want_output = $run->{save_stdout_on_pass};
     }
     if ($want_output) {
-        $report->{stdout} = $results->{stdout};
-        $report->{stderr} = $results->{stderr};
+        $report->{result_stdout} = $results->{result_stdout};
+        $report->{result_stderr} = $results->{result_stderr};
     }
     my $test_build_id = $MTT::Test::builds->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{test_build_id};
     $report->{test_build_id} = $test_build_id;

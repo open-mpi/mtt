@@ -34,8 +34,8 @@ sub Build {
     my $x = MTT::DoCommand::Cmd($config->{merge_stdout_stderr}, "make clean");
     if ($x->{status} != 0) {
         $ret->{result_message} = "NPB_ompi_tests: make clean failed; skipping";
-        $ret->{stdout} = $x->{stdout};
-        $ret->{stderr} = $x->{stderr};
+        $ret->{result_stdout} = $x->{result_stdout};
+        $ret->{result_stderr} = $x->{result_stderr};
         return $ret;
     }
     MTT::Files::mkdir("bin") if (! -x "bin");
@@ -74,7 +74,7 @@ sub Build {
     if (0 == $x->{status}) {
         $ret->{success} = 0;
         $ret->{result_message} = $x->{result_message};
-        $ret->{stdout} = $x->{stdout};
+        $ret->{result_stdout} = $x->{result_stdout};
     } else {
         $ret->{success} = 1;
         $ret->{result_message} = "Success";
@@ -104,7 +104,7 @@ sub _build {
                     $ret->{success} = 0;
                     $ret->{result_message} =
                         "NPB_ompi_tests: $cmd failed; aborting";
-                    $ret->{stdout} = $x->{stdout};
+                    $ret->{result_stdout} = $x->{result_stdout};
                     return $ret;
                 }
             }

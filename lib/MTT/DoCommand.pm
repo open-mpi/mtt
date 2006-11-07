@@ -217,8 +217,8 @@ sub Cmd {
     if ($no_execute) {
         $ret->{timed_out} = 0;
         $ret->{status} = 0;
-        $ret->{stdout} = "";
-        $ret->{stderr} = "";
+        $ret->{result_stdout} = "";
+        $ret->{result_stderr} = "";
         return $ret;
     }
 
@@ -315,8 +315,8 @@ sub Cmd {
 
     # Return an anonymous hash containing the relevant data
 
-    $ret->{stdout} = join('', @out);
-    $ret->{stderr} = join('', @err),
+    $ret->{result_stdout} = join('', @out);
+    $ret->{result_stderr} = join('', @err),
         if (!$merge_output);
     return $ret;
 }

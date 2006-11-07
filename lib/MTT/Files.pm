@@ -251,7 +251,7 @@ sub svn_checkout {
         return undef;
     }
     my $r = undef;
-    if ($ret->{stdout} =~ m/Exported revision (\d+)\.\n$/) {
+    if ($ret->{result_stdout} =~ m/Exported revision (\d+)\.\n$/) {
         $r = $1;
     }
 
@@ -314,7 +314,7 @@ sub md5sum {
         Warning("md5sum unable to run properly\n");
         return undef;
     }
-    $x->{stdout} =~ m/^(\w{32})/;
+    $x->{result_stdout} =~ m/^(\w{32})/;
     return $1;
 }
 
@@ -346,7 +346,7 @@ sub sha1sum {
         Warning("sha1sum unable to run properly\n");
         return undef;
     }
-    $x->{stdout} =~ m/^(\w{40})/;
+    $x->{result_stdout} =~ m/^(\w{40})/;
     return $1;
 }
 

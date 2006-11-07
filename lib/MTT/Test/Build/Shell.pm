@@ -39,15 +39,15 @@ sub Build {
         $ret->{result_message} = "Shell: command failed \"$cmd\"";
         $ret->{result_message} .= " (timed out)"
             if ($x->{timed_out});
-        $ret->{stdout} = $x->{stdout};
-        $ret->{stderr} = $x->{stderr}
-            if ($x->{stderr});
+        $ret->{result_stdout} = $x->{result_stdout};
+        $ret->{result_stderr} = $x->{result_stderr}
+            if ($x->{result_stderr});
         return $ret;
     }
 
     # All done
-    $ret->{stdout} = $x->{stdout};
-    $ret->{stderr} = $x->{stderr};
+    $ret->{result_stdout} = $x->{result_stdout};
+    $ret->{result_stderr} = $x->{result_stderr};
     $ret->{success} = 1;
     $ret->{result_message} = "Success";
     return $ret;

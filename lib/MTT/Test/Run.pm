@@ -110,8 +110,11 @@ sub Run {
 sub _do_run {
     my ($ini, $section, $test_build, $mpi_install, $top_dir, $force) = @_;
 
-    # Check for the module
-    my $specify_module = MTT::Values::Value($ini, $section, "specify_module");
+    # Check both specify_module and module (for backcompatibility)
+    my $specify_module;
+    $specify_module = MTT::Values::Value($ini, $section, "specify_module");
+    $specify_module = MTT::Values::Value($ini, $section, "module") if (!$specify_module);
+
     if (!$specify_module) {
         Warning("No module specified in [$section]; skipping\n");
         return;

@@ -21,6 +21,7 @@ use MTT::Version;
 use LWP::UserAgent;
 use HTTP::Request::Common qw(POST);
 use Data::Dumper;
+use File::Basename;
 
 # http credentials
 my $username;
@@ -147,6 +148,8 @@ sub Init {
     if ($debug_filename) {
         if ($debug_filename !~ /\//) {
             $debug_filename = cwd() . "/$debug_filename";
+        } else {
+            MTT::Files::mkdir(dirname($debug_filename));
         }
         Debug("MTTDatabase reporter writing to debug file ($debug_filename)\n");
     }

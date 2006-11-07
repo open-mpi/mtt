@@ -66,11 +66,11 @@ sub Get {
             # which case we need a new checkout.
 
             my $need_new;
-            if ($x->{stdout} =~ /^-+\n$/) {
+            if ($x->{result_stdout} =~ /^-+\n$/) {
                 $need_new = 0;
                 Debug("Got one line of dashes -- no need for new export\n");
             } else {
-                $x->{stdout} =~ m/^-+\nr(\d+)\s/;
+                $x->{result_stdout} =~ m/^-+\nr(\d+)\s/;
                 if ($1 eq $previous_r) {
                     $need_new = 0;
                     Debug("Got old r number -- no need for new export\n");

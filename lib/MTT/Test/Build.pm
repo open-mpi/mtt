@@ -199,7 +199,7 @@ sub _do_build {
     # Filled in by the module
     $config->{success} = 0;
     $config->{msg} = "";
-    $config->{stdout} = "";
+    $config->{result_stdout} = "";
 
     # Find the build module
     $config->{build_module} = Value($ini, $section, "module");
@@ -323,46 +323,46 @@ sub _do_build {
             if (!$config->{save_stdout_on_success}) {
                 $want_save = 0;
             }
-        } elsif (!$ret->{stdout}) {
+        } elsif (!$ret->{result_stdout}) {
             $want_save = 0;
         }
 
         # If we want to save, see how many lines we want to save
         if ($want_save) {
             if ($config->{stdout_save_lines} == -1) {
-                $report->{stdout} = "$ret->{stdout}\n";
+                $report->{result_stdout} = "$ret->{result_stdout}\n";
             } elsif ($config->{stdout_save_lines} == 0) {
-                delete $report->{stdout};
+                delete $report->{result_stdout};
             } else {
-                if ($ret->{stdout} =~ m/((.*\n){$config->{stdout_save_lines}})$/) {
-                    $report->{stdout} = $1;
+                if ($ret->{result_stdout} =~ m/((.*\n){$config->{stdout_save_lines}})$/) {
+                    $report->{result_stdout} = $1;
                 } else {
                     # There were less lines available than we asked
                     # for, so just take them all
-                    $report->{stdout} = $ret->{stdout};
+                    $report->{result_stdout} = $ret->{result_stdout};
                 }
             }
         } else {
-            delete $report->{stdout};
+            delete $report->{result_stdout};
         }
 
         # Always fill in the last bunch of lines for stderr
-        if ($ret->{stderr}) {
+        if ($ret->{result_stderr}) {
             if ($config->{stderr_save_lines} == -1) {
-                $report->{stderr} = "$ret->{stderr}\n";
+                $report->{result_stderr} = "$ret->{result_stderr}\n";
             } elsif ($config->{stderr_save_lines} == 0) {
-                delete $report->{stderr};
+                delete $report->{result_stderr};
             } else {
-                if ($ret->{stderr} =~ m/((.*\n){$config->{stderr_save_lines}})$/) {
-                    $report->{stderr} = $1;
+                if ($ret->{result_stderr} =~ m/((.*\n){$config->{stderr_save_lines}})$/) {
+                    $report->{result_stderr} = $1;
                 } else {
                     # There were less lines available than we asked
                     # for, so just take them all
-                    $report->{stderr} = $ret->{stderr};
+                    $report->{result_stderr} = $ret->{result_stderr};
                 }
             }
         } else {
-            delete $report->{stderr};
+            delete $report->{result_stderr};
         }
 
         # Did we have any environment?
@@ -393,8 +393,8 @@ sub _do_build {
 
         # Data has been submitted, so reclaim potentially a good chunk of
         # memory...
-        delete $ret->{stdout};
-        delete $ret->{stderr};
+        delete $ret->{result_stdout};
+        delete $ret->{result_stderr};
         
         # Save it
         $MTT::Test::builds->{$mpi_install->{mpi_get_simple_section_name}}->{$mpi_install->{mpi_version}}->{$mpi_install->{simple_section_name}}->{$simple_section} = $ret;
