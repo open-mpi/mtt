@@ -81,7 +81,8 @@ CREATE TABLE mpi_install (
     --> but rich says that this is a fairly uncommon way to search for our results, so
     --> the PITA for putting this in another table might not be worth it
     configure_arguments character varying(512) NOT NULL DEFAULT '', 
-    vpath_mode character varying(16) NOT NULL DEFAULT 'bogus',
+    --> 0=no vpath, 1=relative vpath, 2=absolute vpath
+    vpath_mode smallint NOT NULL DEFAULT '0',
     --> 1=32bit, 2=64bit
     bitness smallint NOT NULL DEFAULT '1',
     UNIQUE (
@@ -154,6 +155,7 @@ CREATE TABLE results (
     merge_stdout_stderr boolean NOT NULL DEFAULT 't',
     result_stdout text NOT NULL DEFAULT '', --> what is the largest text blob we can put in PG?  Rich says default might be 8k!
     result_stderr text NOT NULL DEFAULT '',
+    result_message text NOT NULL DEFAULT '',
     start_timestamp timestamp without time zone NOT NULL DEFAULT now() - interval '24 hours',
     stop_timestamp timestamp without time zone NOT NULL DEFAULT now() - interval '24 hours',
     duration interval NOT NULL DEFAULT '-38 seconds',

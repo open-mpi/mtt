@@ -21,6 +21,15 @@ $GLOBALS['verbose'] = isset($_POST['verbose']) ? $_POST['verbose'] : 1;
 $dbname             = isset($_GET['db'])       ? $_GET['db']       : "mtt2";
 $pgsql_conn;
 
+# Set php trace levels
+if ($GLOBALS['verbose'])
+    error_reporting(E_ALL);
+else
+    error_reporting(E_ERROR | E_WARNING | E_PARSE);
+
+# Notify of fields that do not exist in the database
+report_id_mismatches();
+
 # If the PING field is set, then this was just a
 # test.  Exit successfully.
 if (isset($_POST['PING'])) {
@@ -454,6 +463,37 @@ function get_table_fields($table_name) {
         }
     }
     return $tmp;
+}
+
+# Check for client-server field name mismatches
+function report_id_mismatches() {
+
+    global $dbname;
+
+    $sql_cmd = "\n   SELECT column_name " .
+               "\n\t FROM information_schema.columns " . 
+               "\n\t WHERE table_schema = 'public'";
+
+    do_pg_connect();
+
+    $arr = array();
+    $arr = simple_select($sql_cmd);
+    $arr = array_flip($arr);
+
+    # Iterate through POST, and report names that are not 
+    # columns in the database
+    foreach (array_keys($_POST) as $k) {
+
+        # We only need to check the first numbered field
+        if (preg_match("/_(\d+)$/", $k, $m)) {
+            $n = $m[1];
+            if ($n > 1)
+                continue;
+        }
+        $name = preg_replace('/_\d+$/', '', $k);
+        if (! $arr[$name])
+            debug("Notice: $name is not in $dbname database.");
+    }
 }
 
 # Take an array or scalar
