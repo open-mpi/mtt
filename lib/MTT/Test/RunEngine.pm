@@ -23,12 +23,20 @@ use Data::Dumper;
 
 #--------------------------------------------------------------------------
 
+my $verbose_out;
+
+#--------------------------------------------------------------------------
+
 sub RunEngine {
     my ($section, $top_dir, $mpi_details, $test_build, $force, $ret) = @_;
     my $test_results;
+    my $total = $#{$ret->{tests}};
 
     # Loop through all the tests
-    foreach my $run (@{$ret->{tests}}) {
+    Verbose("   Total of $total tests to run in this section\n");
+    $verbose_out = 0;
+    my $count = 0;
+    foreach my $run (sort(@{$ret->{tests}})) {
         if (!exists($run->{executable})) {
             Warning("No executable specified for text; skipped\n");
             next;
@@ -58,7 +66,17 @@ sub RunEngine {
                                 $force);
             }
         }
+        ++$count;
+        
+        # Output a progress bar
+        if ($verbose_out > 50) {
+            $verbose_out = 0;
+            my $per = sprintf("%d%%", $count / $total * 100);
+            Verbose("   Test progress: $count of $total section tests complete ($per)\n");
+        }
     }
+    --$count;
+    Verbose("   Test progress: $count of $total section tests complete (100%)\n");
 
     # If we ran any tests at all, then run the after_all step and
     # submit the results to the Reporter
@@ -120,6 +138,7 @@ sub _run_one_test {
         exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$MTT::Test::Run::test_np}) &&
         exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$MTT::Test::Run::test_np}->{$cmd})) {
         Verbose("$str Skipped (already ran)\n");
+        ++$verbose_out;
         return;
     }
 
@@ -167,6 +186,8 @@ sub _run_one_test {
     # Analyze the test parameters and results
     my $report;
     $report = MTT::Module::Run("MTT::Test::Analyze", "Analyze", $run, $mpi_details, $x);
+    # Assume that the Analyze module will output one line
+    ++$verbose_out;
 
     $MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$MTT::Test::Run::test_np}->{$cmd} = $report;
     MTT::Test::SaveRuns($top_dir);
