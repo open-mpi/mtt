@@ -13,14 +13,14 @@ package MTT::Test::Analyze::Performance::IMB;
 use strict;
 use Data::Dumper;
 
-# Process the stdout emitted from an IMB test
+# Process the result_stdout emitted from an IMB test
 sub Analyze {
 
-    my($stdout) = @_;
+    my($result_stdout) = @_;
     my $report;
     my(@headers, $data);
 
-    my @lines = split(/\n|\r/, $stdout);
+    my @lines = split(/\n|\r/, $result_stdout);
 
     my $line;
     while (defined($line = shift(@lines))) {

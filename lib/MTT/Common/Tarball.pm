@@ -51,7 +51,7 @@ sub Get {
         $src_md5 = MTT::Files::md5sum($data->{tarball});
         if ($src_md5 eq $previous_md5) {
             Debug(">> tarball: we already have this tarball\n");
-            $ret->{success} = 1;
+            $ret->{test_result} = 1;
             $ret->{have_new} = 0;
             $ret->{result_message} = "Tarball has not changed (did not re-copy)";
             return $ret;
@@ -63,8 +63,8 @@ sub Get {
     Debug(">> tarball: caching\n");
     my $dir = cwd();
     my $x = MTT::DoCommand::Cmd(1, "cp $data->{tarball} .");
-    if (0 != $x->{status}) {
-        $ret->{success} = 0;
+    if (0 != $x->{exit_status}) {
+        $ret->{test_result} = 0;
         $ret->{result_message} = "Failed to copy tarball";
         Warning($ret->{result_message});
         return $ret;
@@ -95,7 +95,7 @@ sub Get {
 
     # All done
     Debug(">> tarball: returning successfully\n");
-    $ret->{success} = 1;
+    $ret->{test_result} = 1;
     $ret->{result_message} = "Success";
     return $ret;
 } 
@@ -114,7 +114,7 @@ sub PrepareForInstall {
     # Pre extract
     if ($data->{pre_extract}) {
         my $x = MTT::DoCommand::CmdScript(1, $data->{pre_copy});
-        if (0 != $x->{status}) {
+        if (0 != $x->{exit_status}) {
             Warning("Pre-extract command failed: $@\n");
             return undef;
         }
@@ -133,7 +133,7 @@ sub PrepareForInstall {
         MTT::DoCommand::Chdir($ret);
 
         my $x = MTT::DoCommand::Cmds(1, $data->{pre_copy});
-        if (0 != $x->{status}) {
+        if (0 != $x->{exit_status}) {
             Warning("Post-extract command failed: $@\n");
             return undef;
         }

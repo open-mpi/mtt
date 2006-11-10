@@ -235,7 +235,6 @@ sub Submit {
             # JMS: Current brokenness on the server's db scehema:
             # these fields are recorded per result rather than in the
             # "once" table.
-            $form->{fields} .= ",start_run_timestamp,submit_test_timestamp";
             $form->{phase} = $phase;
 
             # Now go through and actually attach all the result to
@@ -275,15 +274,6 @@ sub Submit {
                         $form->{$name} = $result->{$key};
                     }
                 }
-
-                # Some other brokenness with the current schema on the
-                # server: these fields are recorded with each entry
-                # rather than in the once table.  This will also
-                # someday be fixed.
-                my $name = "start_run_timestamp_$count";
-                $form->{$name} = $form->{start_run_timestamp};
-                $name = "submit_test_timestamp_$count";
-                $form->{$name} = $form->{submit_test_timestamp};
 
                 # Increment and repeat for all results
                 ++$count;

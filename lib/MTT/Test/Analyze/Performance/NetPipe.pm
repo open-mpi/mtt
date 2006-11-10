@@ -14,10 +14,10 @@ use strict;
 use Data::Dumper;
 use MTT::Messages;
 
-# Process the stdout emitted from a NetPipe test
+# Process the result_stdout emitted from a NetPipe test
 sub Analyze {
 
-    my($stdout) = @_;
+    my($result_stdout) = @_;
     my $report;
     my(@bytes,
        @times,
@@ -26,9 +26,9 @@ sub Analyze {
        $bandwidth_unit,
        $latency_unit);
 
-    my @lines = split(/\n|\r/, $stdout);
+    my @lines = split(/\n|\r/, $result_stdout);
 
-    # Sample stdout:
+    # Sample result_stdout:
     # 1: 2 bytes  440 times --> 0.05 Mbps in  293.11 usec
     # 2: 3 bytes  341 times --> 0.06 Mbps in  352.66 usec
     # 3: 4 bytes  189 times --> 0.24 Mbps in  125.22 usec

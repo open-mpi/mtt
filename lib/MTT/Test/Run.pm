@@ -37,7 +37,7 @@ our $test_executable;
 # Exported current argv under test
 our $test_argv;
 
-# Exported exit status of the last test run
+# Exported exit_status of the last test run
 our $test_exit_status;
 
 #--------------------------------------------------------------------------
@@ -85,7 +85,7 @@ sub Run {
                                 if ($test_build_key eq $test_build_name) {
                                     my $test_build = $MTT::Test::builds->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key}->{$test_build_key};
                                     Debug("Found a match! $test_build_key [$simple_section\n");
-                                    if (!$test_build->{success}) {
+                                    if (!$test_build->{test_result}) {
                                         Debug("But that build was borked -- skipping\n");
                                         next;
                                     }
@@ -260,7 +260,7 @@ sub _do_run {
 
     # If we got a list of tests to run, invoke the run engine to
     # actually run them.
-    if ($ret && $ret->{success}) {
+    if ($ret && $ret->{test_result}) {
         MTT::Test::RunEngine::RunEngine($section, $top_dir, $mpi_details,
                                         $test_build, $force, $ret);
     }

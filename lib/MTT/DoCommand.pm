@@ -216,7 +216,7 @@ sub Cmd {
     # Return if --no-execute, no output to see
     if ($no_execute) {
         $ret->{timed_out} = 0;
-        $ret->{status} = 0;
+        $ret->{exit_status} = 0;
         $ret->{result_stdout} = "";
         $ret->{result_stderr} = "";
         return $ret;
@@ -306,11 +306,11 @@ sub Cmd {
 
     if (!$ret->{timed_out}) {
         waitpid($pid, 0);
-        $ret->{status} = $? >> 8;
-        Debug("Command complete, exit status: $ret->{status}\n");
+        $ret->{exit_status} = $? >> 8;
+        Debug("Command complete, exit status: $ret->{exit_status}\n");
     } else {
-        $ret->{status} = $killed_status;
-        Debug("Command timed out, exit status: $ret->{status}\n");
+        $ret->{exit_status} = $killed_status;
+        Debug("Command timed out, exit status: $ret->{exit_status}\n");
     }
 
     # Return an anonymous hash containing the relevant data

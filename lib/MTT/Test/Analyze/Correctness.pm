@@ -50,7 +50,7 @@ sub Analyze {
         test_build_section_name => $run->{test_build_simple_section_name},
         test_run_section_name => $run->{simple_section_name},
         np => $run->{np},
-        exit_status => $results->{status},
+        exit_status => $results->{exit_status},
         test_result => $result,
     };
     my $want_output;
@@ -66,7 +66,7 @@ sub Analyze {
         if ($run->{stop_time} - $run->{start_time} > $run->{timeout}) {
             $report->{result_message} = "Failed; timeout expired ($run->{timeout} seconds)";
         } else {
-            $report->{result_message} = "Failed; exit status: $results->{status}";
+            $report->{result_message} = "Failed; exit_status: $results->{exit_status}";
         }
     } else {
         Verbose("$str Passed\n");

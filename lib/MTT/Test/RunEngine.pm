@@ -162,7 +162,7 @@ sub _run_one_test {
     $run->{np} = $MTT::Test::Run::test_np;
     $run->{cmd} = $cmd;
 
-    $MTT::Test::Run::test_exit_status = $x->{status};
+    $MTT::Test::Run::test_exit_status = $x->{exit_status};
 
     # Analyze the test parameters and results
     my $report;
@@ -185,7 +185,7 @@ sub _run_step {
     if (exists($mpi_details->{$step}) && $mpi_details->{$step}) {
         Debug("Running step: $step\n");
         my $x = MTT::DoCommand::CmdScript(1, $mpi_details->{$step}, 10);
-        #JMS should be checking return status here and in who invoked
+        #JMS should be checking exit_status here and in who invoked
         #_run_step.
     }
 }

@@ -29,7 +29,7 @@ sub Build {
     my $x;
 
     Debug("Building Intel OMPI tests (Intel tests from ompi-tests SVN repository)\n");
-    $ret->{success} = 0;
+    $ret->{test_result} = 0;
 
     my $cflags = Value($ini, $config->{full_section_name}, 
                        "intel_ompi_tests_cflags");
@@ -117,7 +117,7 @@ sub Build {
 
     # Clean it (just to be sure)
     my $x = MTT::DoCommand::Cmd(1, "make clean");
-    if ($x->{status} != 0) {
+    if ($x->{exit_status} != 0) {
         $ret->{result_message} = "Intel_ompi_tests: make clean failed; skipping";
         $ret->{result_stdout} = $x->{result_stdout};
         return $ret;
@@ -131,13 +131,13 @@ sub Build {
         if ($fflags);
     $x = MTT::DoCommand::Cmd(1, $cmd);
     $ret->{result_stdout} = $x->{result_stdout};
-    if ($x->{status} != 0) {
+    if ($x->{exit_status} != 0) {
         $ret->{result_message} = "Failed to build intel suite: $buildfile; skipping";
         return $ret;
     }
 
     # All done
-    $ret->{success} = 1;
+    $ret->{test_result} = 1;
     $ret->{result_message} = "Success";
     return $ret;
 } 

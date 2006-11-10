@@ -205,7 +205,7 @@ sub unpack_tarball {
         if ($delete_first);
 
     # Untar the tarball.  Do not use DoCommand here
-    # because we don't want the stdout intercepted.
+    # because we don't want the result_stdout intercepted.
 
     system("$unpacker -c $tarball | tar xf -");
     my $ret = $? >> 8;
@@ -246,7 +246,7 @@ sub svn_checkout {
     }
     $str .= $url;
     my $ret = MTT::DoCommand::Cmd(1, $str);
-    if (0 != $ret->{status}) {
+    if (0 != $ret->{exit_status}) {
         Warning("Could not SVN checkout $url: $@\n");
         return undef;
     }
@@ -276,7 +276,7 @@ sub copy_tree {
         if ($delete_first);
 
     my $ret = MTT::DoCommand::Cmd(1, "cp -r $srcdir .");
-    if (0 != $ret->{status}) {
+    if (0 != $ret->{exit_status}) {
         Warning("Could not copy file tree $srcdir: $@\n");
         return undef;
     }
@@ -310,7 +310,7 @@ sub md5sum {
         if (! -f $file);
 
     my $x = MTT::DoCommand::Cmd(1, "$md5sum_path $file");
-    if (0 != $x->{status}) {
+    if (0 != $x->{exit_status}) {
         Warning("md5sum unable to run properly\n");
         return undef;
     }
@@ -342,7 +342,7 @@ sub sha1sum {
     }
 
     my $x = MTT::DoCommand::Cmd(1, "$sha1sum_path $file");
-    if (0 != $x->{status}) {
+    if (0 != $x->{exit_status}) {
         Warning("sha1sum unable to run properly\n");
         return undef;
     }
@@ -395,7 +395,7 @@ sub http_get {
         if (!defined($http_agent));
 
     my $x = MTT::DoCommand::Cmd(1, "$http_agent $url");
-    if (0 != $x->{status}) {
+    if (0 != $x->{exit_status}) {
         return undef;
     }
     return 1;

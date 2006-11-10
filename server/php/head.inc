@@ -88,6 +88,7 @@ $style = <<<EOT
     a.black_ln:visited { color: #555555 } /* for visited links */
     a.black_ln:active  { color: #FFFFFF } /* when link is clicked */
     a.black_ln:hover   { color: #FFFF40 } /* when mouse is over link */
+    td {font-size: 75%; }
 
 EOT;
 

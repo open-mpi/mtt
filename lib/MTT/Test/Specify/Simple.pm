@@ -25,7 +25,7 @@ sub Specify {
     my ($ini, $section, $build_dir, $mpi_install, $config) = @_;
     my $ret;
 
-    $ret->{success} = 0;
+    $ret->{test_result} = 0;
 
     # Loop through all the parameters from the INI file and put them
     # in a hash that is easy for us to traverse
@@ -119,7 +119,7 @@ sub Specify {
     }
 
     # All done
-    $ret->{success} = 1;
+    $ret->{test_result} = 1;
     return $ret;
 } 
 

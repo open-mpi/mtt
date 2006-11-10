@@ -173,7 +173,7 @@ sub _trim_runs {
                                 
                                 # Check to see if this was a
                                 # successful test build
-                                if (!$test_cmd->{success}) {
+                                if (!$test_cmd->{test_result}) {
                                     $found_failed = 1;
                                     last;
                                 }
@@ -225,7 +225,7 @@ sub _trim_gets {
 
 sub _compare {
     my ($a, $b) = @_;
-    return ($a->{timestamp} - $b->{timestamp});
+    return ($a->{start_timestamp} - $b->{start_timestamp});
 }
 
 #--------------------------------------------------------------------------

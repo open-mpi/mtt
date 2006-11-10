@@ -99,7 +99,7 @@ sub _do_get {
                                "Get", $ini, $section, $force);
     
     # Did we get a source tree back?
-    if ($ret->{success}) {
+    if ($ret->{test_result}) {
         if ($ret->{have_new}) {
 
             Verbose("   Got new MPI sources: version $ret->{version}\n");
@@ -109,7 +109,7 @@ sub _do_get {
             $ret->{simple_section_name} = $simple_section;
             $ret->{mpi_details} = $mpi_details;
             $ret->{module_name} = "MTT::MPI::Get::$module";
-            $ret->{timestamp} = timegm(gmtime());
+            $ret->{start_timestamp} = timegm(gmtime());
             
             # Add this into the $MPI::sources hash
             $MTT::MPI::sources->{$simple_section}->{$ret->{version}} = $ret;

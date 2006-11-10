@@ -16,387 +16,22 @@
 #
 #
 
+$ompi_home = '/l/osl/www/doc/www.open-mpi.org';
+include_once("$ompi_home/dbpassword.inc");
 include_once("$topdir/config.inc");
 include_once("$topdir/reporter.inc");
 include_once("$topdir/html.inc");
 
-# MTT uses time zone independent timestamps
-putenv("PGTZ=GMT");
+# Return a table->field->values hash
+# to be used to generate menus
 
-# Corresponding db tables for "MPI Install", "Test Build", and "Test Run" phases
-# X: better as 'table' => 'phase label' ?
-$phases['per_script'] = array(
-    "installs",
-    "builds",
-    "runs",
-);
 
-$tables = array(
-    "once",
-    "general_a",
-    "general_b",
-);
-
-$once_db_table = "once";
-
-$Filters = "Filters";
-$textfield_tables = array(
-    "general_a" => array( "label" => null,
-                          "phases" => array( "runs","builds","installs" ),
-                   ),
-    "runs"      => array( "label" => "Test Run $Filters",
-                          "phases" => array( "runs" ),
-                   ),
-    "general_b" => array( "label" => "MPI Install/Test Build $Filters",
-                          "phases" => array( "builds","installs" ),
-                   ),
-);
-
-$string_filter_types = array("contains","does not contain", "begins with", "ends with");
-$numeric_filter_types = array("equals","less than","greater than");
-
-$columns = array();
-
-# We'll define these fields instead of fetch from information_schema
-# so that we can order/process/categorize them how we want
-$columns["general_a"] = array(
-    "stderr"                   => $string_filter_types,
-    "stdout"                   => $string_filter_types,
-    "environment"              => $string_filter_types,
-    "configure_arguments"      => $string_filter_types,
-    "result_message"           => $string_filter_types,
-    "mpi_get_section_name"     => $string_filter_types,
-    "mpi_install_section_name" => $string_filter_types,
-    #"vpath_mode"              => $string_filter_types,
-    #"start_test_timestamp"    => $string_filter_types,
-    #"submit_test_timestamp"   => $string_filter_types,
-    #"test_duration_interval"  => $string_filter_types,
-    #"merge_stdout_stderr"     => $string_filter_types,
-    #"mpi_details"             => $string_filter_types,
-);
-$columns["general_b"] = array(
-    "compiler_name"    => $string_filter_types,
-    "compiler_version" => $string_filter_types,
-);
-
-$columns["advanced"] = array(
-    "mpi_details"               => $string_filter_types,
-    "merge_stdout_stderr"       => $string_filter_types,
-    "vpath_mode"                => $string_filter_types,
-    "start_test_timestamp"      => $string_filter_types,
-    "submit_test_timestamp"     => $string_filter_types,
-    "test_duration_interval"    => $string_filter_types,
-    #"result_message"           => $string_filter_types,
-    #"environment"              => $string_filter_types,
-    #"configure_arguments"      => $string_filter_types,
-    #"mpi_get_section_name"     => $string_filter_types,
-    #"mpi_install_section_name" => $string_filter_types,
-);
-
-$cluster_field =
-    "platform_id";
-
-$columns['once'] = array(
-    "platform_hardware" => $string_filter_types,
-    "os_name"           => $string_filter_types,
-    "os_version"        => $string_filter_types,
-    "mpi_name"          => $string_filter_types,
-    "mpi_version"       => $string_filter_types,
-
-    "$cluster_field"    => $string_filter_types,
-
-    #"hostname"         => $string_filter_types,
-    #"platform_type"    => $string_filter_types,
-    #"platform_id"      => $string_filter_types,
-);
-
-$columns["runs"] = array(
-    "test_name"               => $string_filter_types,
-    "test_command"            => $string_filter_types,
-    "test_np"                 => $numeric_filter_types,
-    "test_build_section_name" => $string_filter_types,
-    "test_run_section_name"   => $string_filter_types,
-);
-
-$columns["installs"] = 
-    $columns["general_b"];
-$columns["builds"] = array_merge(
-    array("test_build_section_name" => $string_filter_types),
-    array($columns["general_b"])
-);
-$br = " ";
-$phase_labels = array(
-    "installs" => "MPI" . $br . "Install",
-    "builds"   => "Test" . $br . "Build",
-    "runs"     => "Test" . $br . "Run",
-);
-
-# Corresponding db tables for "MPI Install", "Test Build", and "Test Run" phases
-$results_types = array(
-    "pass",
-    "fail",
-);
-
-# Note: test_pass/success fields are appended to all SELECTs,
-#       and are thus not listed in the following arrays.
-#       For now, comment out fields we're not including in the summary report.
-
-# phase => array(fields belonging to phase)
-
-# run-key definition
-$fields_run_key = array(
-    "hostname",
-    "start_run_timestamp",
-);
-
-# Gather selectable menu items
-
-# Global timestamp
-# X: To avoid conflicting with a 'by_run' query, we use _test_timestamp
-#    and not run_timestamp. We may want to allow for either.
-$timestamp = 'start_test_timestamp';
-$main_menu[$timestamp]["options"] = array(
-    "*Today",
-    "Since Yesterday",
-);
-
-$i = 0;
-foreach (array_keys($words_to_numerals) as $n) {
-    if ($i++ > 5)
-        break;
-    array_push($main_menu[$timestamp]["options"], "Past $n Days");
-}
-$i = 0;
-foreach (array_keys($words_to_numerals) as $n) {
-    if ($i++ > 5)
-        break;
-    array_push($main_menu[$timestamp]["options"], "Past $n Weeks");
-}
-$i = 0;
-foreach (array_keys($words_to_numerals) as $n) {
-    if ($i++ > 4)
-        break;
-    array_push($main_menu[$timestamp]["options"], "Past $n Months");
-}
-array_push($main_menu[$timestamp]["options"], $All);
-
-# Timestamp is an oddball field, in that it has more than one
-# way to aggregate
-# X: Add week-by-week
-$agg_timestamp_selects = array(
-    "*-"               => null,
-    "Month-by-Month"   => "substring($timestamp from 0 for 8) as $timestamp",
-    "Day-by-Day"       => "substring($timestamp from 0 for 11) as $timestamp",
-    "Hour-by-Hour"     => "substring($timestamp from 0 for 14) || ':00' as $timestamp",
-    "Minute-by-Minute" => "substring($timestamp from 0 for 17) as $timestamp",
-    "Second-by-Second" => $timestamp,
-);
-
-$main_menu["agg_timestamp"]["options"] = array_keys($agg_timestamp_selects);
-
-# Note: 'phase' is a special key in that it is not a field in the db
-$main_menu["phase"]["options"] = array(
-    $All,
-    "installs",
-    "builds",
-    "runs",
-);
-
-# X: This javascript is *broken* due to undefined tf_0 and ft_0 fields
-# X: Loop through elems in HTML 'name' attribute, instead of this absurd
-#    get_phase_specific_fields function
-#
-# Add some javascript actions for this menu (gray out appropriate
-# phase-specific fields)
-$main_menu["phase"]["javascript"] = array(
-    # $All
-    "enable(" . join(",", get_phase_specific_fields(array("installs","builds","runs"))) . ");",
-    # installs
-    "disable(" . join(",", get_phase_specific_fields(array("runs"))) . ");" .
-    "enable(" . join(",", get_phase_specific_fields(array("installs"))) . ");",
-    # builds
-    "disable(" . join(",", get_phase_specific_fields(array("runs"))) . ");" .
-    "enable(" . join(",", get_phase_specific_fields(array("builds"))) . ");",
-    # runs
-    "disable(" . join(",", get_phase_specific_fields(array("installs","builds"))) . ");" .
-    "enable(" . join(",", get_phase_specific_fields(array("runs"))) . ");",
-);
-
-$main_menu["success"]["options"] = array(
-    $All,
-    "Pass",
-    "Fail",
-);
-
-$dbname = 'mtt';
+$dbname = 'mtt2';
 
 # Setup db connection
 if (isset($_GET['db']))
     if (preg_match("/mtt/i", $_GET['db']))
         $dbname = $_GET['db'];
-
-if (! ($conn = pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass")))
-    exit_("<br><b><i>Could not connect to database server.</i></b>");
-
-$menu = array();
-$menu = populate_menu(array_keys($columns["once"]), "once");
-
-pg_close();
-
-$by_atoms = array(
-    "*by_test_case" => "By test case",
-    "by_test_run" => "By test run",
-);
-
-$client = "MTT";
-
-$results['from_perm_tbl'] = array();
-$results['from_tmp_tbl'] = array();
-
-# Construct boolean-to-string casts for pass/fail (t/f) columns
-# We differentiate between _case fails and _run fails
-# A case is the single atomic test case (e.g., gmake foo, cc foo, or
-# mpirun foo).
-# A run is a collection of cases.
-foreach ($phases['per_script'] as $ph) {
-    $results['from_perm_tbl'][$ph] =
-        array("(CASE WHEN success='t' THEN 'pass_case_$ph' END) as pass",
-              "(CASE WHEN success='f' THEN 'fail_case_$ph' END) as fail");
-}
-
-# Construct the result aggregates
-
-# A single pass/fail is based on the passing of test case
-foreach ($phases['per_script'] as $ph) {
-    $results['from_tmp_tbl'][$ph]['by_case'] = array();
-    foreach (array("pass","fail") as $res) {
-
-        $agg = "COUNT(CASE WHEN " . $res . " = '" .
-                                    $res . "_case" . "_$ph' " .
-                      "THEN '"    . $res . "_case" . "_$ph' END) " .
-                      "as "       . $res . "_case" . "_$ph";
-
-        array_push($results['from_tmp_tbl'][$ph]['by_case'], $agg);
-    }
-}
-
-# A run pass is a collection of test cases without a single failure
-# and at least one pass
-foreach ($phases['per_script'] as $ph) {
-
-    $results['from_tmp_tbl'][$ph]['by_run'] = array();
-
-    $agg_pass = "COUNT(CASE WHEN pass_case_$ph > 0 " .
-                    "AND fail_case_$ph < 1 " .
-                    "THEN   'pass_run_$ph' " .
-                    "END) as pass_run_$ph";
-
-    $agg_fail = "COUNT(CASE WHEN fail_case_$ph > 0 " .
-                    "THEN   'fail_run_$ph' " .
-                    "END) as fail_run_$ph";
-
-    array_push($results['from_tmp_tbl'][$ph]['by_run'], $agg_pass);
-    array_push($results['from_tmp_tbl'][$ph]['by_run'], $agg_fail);
-}
-
-# There might be a lengthy list of possiblities for result labels
-# so let's generate them via loop
-foreach ($phases['per_script'] as $phase) {
-    foreach (array("case", "run") as $type) {
-        $field_labels["pass_" . $type . "_$phase"] = 'Pass';
-        $field_labels["fail_" . $type . "_$phase"] = 'Fail';
-        $field_labels[substr($phase, 0, 1) . "pass"] = 'Pass';
-        $field_labels[substr($phase, 0, 1) . "fail"] = 'Fail';
-    }
-}
-
-# Translate db result strings
-$translate_data_cell = array(
-    't' => 'pass',
-    'f' => 'fail',
-    'ompi-nightly-v1.0' => 'Open MPI v1.0',
-    'ompi-nightly-v1.1' => 'Open MPI v1.1',
-    'ompi-nightly-v1.2' => 'Open MPI v1.2',
-    'ompi-nightly-v1.3' => 'Open MPI v1.3',
-    'ompi-nightly-trunk' => 'Open MPI trunk',
-);
-
-# pg_query_ that returns a 1D list
-function pg_query_simple($cmd, $conn) {
-
-    $rows = array();
-    if ($resource = pg_query($conn, $cmd)) {
-        while ($row = pg_fetch_row($resource)) {
-            array_push($rows, $row);
-        }
-    }
-    else {
-        debug("\n<br>postgres: " . pg_last_error() . "\n" . pg_result_error());
-    }
-    return array_map('join', $rows);
-}
-
-# pg_query that returns a pgsql resource
-# (return a resource instead of a 2D list to save memory)
-function pg_query_($cmd, $conn) {
-
-    if ($resource = pg_query($conn, $cmd))
-        return $resource;
-    else
-        debug("\n<br>postgres: " . pg_last_error() . "\n" . pg_result_error());
-}
-
-# Return list of phase specific fields for each phase
-# passed in
-function get_phase_specific_fields($phases) {
-
-    global $columns;
-    global $cgi_abbrevs;
-
-    $fields = array();
-
-    $field_types = array($cgi_abbrevs["textfield"], $cgi_abbrevs["filter_types"]);
-
-    foreach ($phases as $phase) {
-        foreach (array_keys($columns[$phase]) as $f) {
-            foreach ($field_types as $ft) {
-                array_push($fields, $ft . $f);
-            }
-        }
-    }
-    return $fields;
-}
-
-# Take a list of phases and the type of atom, and return a list of result
-# aggregates for those phases
-function get_phase_result_selects($phases, $atom) {
-
-    global $results;
-
-    $tmp = array();
-
-    foreach ($phases as $p) {
-        $tmp = array_merge($tmp, $results['from_tmp_tbl'][$p][$atom]);
-    }
-    return $tmp;
-}
-
-# Return list of fields that are not run_key fields. Useful for filtering out
-# run_key fields when doing a by_run query
-function get_non_run_key_params($arr) {
-
-    global $fields_run_key;
-
-    $run_keys = array();
-    $tmp = array();
-    $run_keys = array_flip($fields_run_key);
-
-    foreach ($arr as $a)
-        if (! isset($run_keys[$a]))
-            array_push($tmp, $a);
-
-    return $tmp;
-}
 
 # Take in a filter (e.g., 'yesterday', 'today', etc.), and return the SQL date
 # filter
@@ -426,12 +61,12 @@ function get_date_filter($filter) {
     }
     elseif (preg_match("/(.*)$dash(.*)/i", $filter, $m)) {
 
-        array_push($filters, 
+        array_push($filters,
                     "start_test_timestamp > " .
                     "'" .  $m[1] . "'" .
                     ""
         );
-        array_push($filters, 
+        array_push($filters,
                     "start_test_timestamp < " .
                     "'" .  $m[2] . "'" .
                     ""
@@ -616,5 +251,123 @@ function populate_menu($list, $table) {
     }
     return $menu;
 }
+
+# Function used to determine which _POST fields
+# to INSERT. Prevent non-existent fields from being
+# INSERTed
+function get_table_fields($table_name) {
+
+    global $dbname;
+    global $id;
+
+    # These indexes are special in that they link phases
+    # together and hence, can and do show up in _POST
+    if ($table_name == "test_build")
+        $special_indexes = array("mpi_install$id");
+    elseif ($table_name == "test_run")
+        $special_indexes = array("test_build$id");
+
+    # Crude way to tell whether a field is an index
+    $is_not_index_clause =
+           "\n\t (table_name = '$table_name' AND NOT " .
+           "\n\t (data_type = 'integer' AND " .
+           "\n\t column_name ~ '_id$' AND " .
+           "\n\t table_catalog = '$dbname'))";
+
+    $is_special_index_clause = 
+           "\n\t (table_name = '$table_name' AND " .
+           "\n\t (column_name = '$special_indexes[0]'))";
+
+    $is_index_columns = array(
+            "column_name",
+            "data_type",
+            "column_default");
+
+    $sql_cmd = "\n   SELECT " . join(",",$is_index_columns) .
+               "\n\t FROM information_schema.columns WHERE " .
+               "\n\t " . 
+                     $is_not_index_clause . " OR " .
+                     $is_special_index_clause . ';';
+
+    do_pg_connect();
+
+    # This table will be easier to manage if it's
+    # keyed by column, instead of index
+    $tmp = array();
+    $arr = array();
+    $arr = select($sql_cmd);
+
+    foreach ($is_index_columns as $col) {
+        $tmp[$col] = array();
+        for ($i = 0; $i < sizeof($arr); $i++) {
+            $tmp[$col][] = $arr[$i][$col];
+        }
+    }
+    return $tmp;
+}
+
+######################################################################
+#
+# Pulled from submit/index.php
+#
+######################################################################
+
+function do_pg_connect() {
+    global $dbname;
+    global $user;
+    global $pass;
+    global $pgsql_conn;
+    static $connected = false;
+
+    if (!$connected) {
+        $pgsql_conn = pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass");
+        $connected = true;
+        pg_trace('/nfs/rontok/xraid/users/emallove/pgsql.trace');
+        debug("\npg_options: " . var_export(pg_options($pgsql_conn)));
+    }
+}
+
+function do_pg_query($cmd) {
+    do_pg_connect();
+
+    debug("\nSQL: $cmd\n");
+    if (! ($db_res = pg_query($cmd))) {
+        debug("\npostgres: " . pg_last_error() . "\n" . pg_result_error());
+    }
+    debug("\nrows affected: " . pg_affected_rows($db_res) . "\n");
+}
+
+# Fetch 1D array
+function simple_select($cmd) {
+    do_pg_connect();
+
+    $rows = null;
+
+    debug("\nSQL: $cmd\n");
+    if (! ($result = pg_query($cmd))) {
+        debug("\npostgres: " . pg_last_error() . "\n" .
+                  pg_result_error());
+    }
+    $max = pg_num_rows($result);
+    for ($i = 0; $i < $max; ++$i) {
+        $row = pg_fetch_array($result, $i, PGSQL_NUM);
+        $rows[] = $row[0];
+    }
+    return $rows;
+}
+
+# Fetch 2D array
+function select($cmd) {
+    do_pg_connect();
+
+    debug("\nSQL: $cmd\n");
+    if (! ($result = pg_query($cmd))) {
+        debug("\npostgres: " . pg_last_error() . "\n" .
+                  pg_result_error());
+    }
+    return pg_fetch_all($result);
+}
+
+######################################################################
 
 ?>

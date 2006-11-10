@@ -35,7 +35,7 @@ sub Get {
 
     my $ret;
     my $data;
-    $ret->{success} = 0;
+    $ret->{test_result} = 0;
 
     # See if we got a url in the ini section
     my $url = Value($ini, $section, "ompi_snapshot_url");
@@ -98,7 +98,7 @@ sub Get {
                 # We have this tarball already.  If we're not forcing,
                 # return nothing.
                 if (!$force) {
-                    $ret->{success} = 1;
+                    $ret->{test_result} = 1;
                     $ret->{have_new} = 0;
                     $ret->{result_message} = "Snapshot tarball has not changed (did not re-download)";
                     return $ret;
@@ -168,7 +168,7 @@ sub Get {
 
     # All done
     Debug(">> OMPI_Snapshot complete\n");
-    $ret->{success} = 1;
+    $ret->{test_result} = 1;
     $ret->{result_message} = "Success";
     return $ret;
 } 

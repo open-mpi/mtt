@@ -115,7 +115,7 @@ sub Build {
                                 foreach my $mpi_install_key (keys(%{$mpi_version})) {
                                     my $mpi_install = $mpi_version->{$mpi_install_key};
                                     # Only take sucessful MPI installs
-                                    if (!$mpi_install->{success}) {
+                                    if (!$mpi_install->{test_result}) {
                                         Verbose("   Failed build for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] -- skipping\n");
                                         next;
                                     }
@@ -197,7 +197,7 @@ sub _do_build {
     $config->{append_path} = "to be filled in below";
         
     # Filled in by the module
-    $config->{success} = 0;
+    $config->{test_result} = 0;
     $config->{msg} = "";
     $config->{result_stdout} = "";
 
@@ -220,7 +220,7 @@ sub _do_build {
     MTT::DoCommand::Chdir($config->{srcdir});
     $config->{srcdir} = cwd();
 
-    # What to do with stdout/stderr?
+    # What to do with result_stdout/result_stderr?
     my $tmp;
     $tmp = Logical($ini, $section, "save_stdout_on_success");
     $config->{save_stdout_on_success} = $tmp
@@ -286,10 +286,10 @@ sub _do_build {
         $ret->{mpi_get_simple_section_name} = $mpi_install->{mpi_get_simple_section_name};
         $ret->{mpi_install_simple_section_name} = $mpi_install->{simple_section_name};
         $ret->{mpi_version} = $mpi_install->{mpi_version};
-        $ret->{timestamp} = timegm(gmtime());
+        $ret->{start_timestamp} = timegm(gmtime());
 
-        $ret->{success} = 0
-            if (!defined($ret->{success}));
+        $ret->{test_result} = 0
+            if (!defined($ret->{test_result}));
         
         # Save the results in an ini file
         Debug("Writing built file: $config->{srcdir}/$built_file\n");
@@ -299,15 +299,15 @@ sub _do_build {
         # Send the results back to the reporter
         my $report = {
             phase => "Test Build",
-            start_test_timestamp => $start,
-            test_duration_interval => $duration,
-            success => $ret->{success},
+            start_timestamp => $start,
+            duration => $duration,
+            test_result => $ret->{test_result},
             compiler_name => $mpi_install->{compiler_name},
             compiler_version => $mpi_install->{compiler_version},
             result_message => $ret->{result_message},
             environment => "filled in below",
-            stdout => "filled in below",
-            stderr => "filled in below",
+            result_stdout => "filled in below",
+            result_stderr => "filled in below",
 
             suite_name => $config->{simple_section_name},
 
@@ -317,9 +317,9 @@ sub _do_build {
             mpi_version => $mpi_install->{mpi_version},
         };
 
-        # See if we want to save the stdout
+        # See if we want to save the result_stdout
         my $want_save = 1;
-        if (1 == $ret->{success}) {
+        if (1 == $ret->{test_result}) {
             if (!$config->{save_stdout_on_success}) {
                 $want_save = 0;
             }
@@ -346,7 +346,7 @@ sub _do_build {
             delete $report->{result_stdout};
         }
 
-        # Always fill in the last bunch of lines for stderr
+        # Always fill in the last bunch of lines for result_stderr
         if ($ret->{result_stderr}) {
             if ($config->{stderr_save_lines} == -1) {
                 $report->{result_stderr} = "$ret->{result_stderr}\n";
@@ -401,7 +401,7 @@ sub _do_build {
         MTT::Test::SaveBuilds($build_base);
         
         # Print
-        if (1 == $ret->{success}) {
+        if (1 == $ret->{test_result}) {
             Verbose("   Completed test build successfully\n");
         } else {
             Warning("Failed to build test [$section]: $ret->{result_message}\n");

@@ -27,9 +27,9 @@ sub _do_compile {
 
     # Do the compile
     my $x = MTT::DoCommand::Cmd(1, "$wrapper $in_name -o $out_name");
-    if ($x->{status} != 0) {
+    if ($x->{exit_status} != 0) {
         my $ret;
-        $ret->{success} = 0;
+        $ret->{test_result} = 0;
         $ret->{result_message} = "Failed to compile/link $out_name\n";
         $ret->{result_stdout} = $x->{result_stdout};
         return $ret;
@@ -47,7 +47,7 @@ sub Build {
     my $x;
 
     Debug("Building Trivial\n");
-    $ret->{success} = 0;
+    $ret->{test_result} = 0;
 
     my $cflags = Value($ini, $config->{full_section_name}, 
                        "trivial_tests_cflags");
@@ -102,7 +102,7 @@ sub Build {
     }
 
     # All done
-    $ret->{success} = 1;
+    $ret->{test_result} = 1;
     $ret->{result_message} = "Success";
     return $ret;
 } 

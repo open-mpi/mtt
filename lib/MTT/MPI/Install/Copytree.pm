@@ -44,7 +44,7 @@ sub Install {
     # Prepare $ret
 
     my $ret;
-    $ret->{success} = 0;
+    $ret->{test_result} = 0;
 
     Debug(">> copytree copying to $config->{installdir}\n");
     if (-d $config->{installdir}) {
@@ -57,7 +57,7 @@ sub Install {
     if ($val) {
         Debug("Copytree running pre_copy command: $val\n");
         $x = MTT::DoCommand::CmdScript(1, $val);
-        if (0 != $x->{status}) {
+        if (0 != $x->{exit_status}) {
             Warning("Pre-copy command failed: $@\n");
             return undef;
         }
@@ -84,7 +84,7 @@ sub Install {
     if ($val) {
         Debug("Copytree running pre_copy command: $val\n");
         $x = MTT::DoCommand::CmdScript(1, $val);
-        if (0 != $x->{status}) {
+        if (0 != $x->{exit_status}) {
             Warning("Post-copy command failed: $@\n");
             return undef;
         }
@@ -109,7 +109,7 @@ sub Install {
     $ret->{f90_bindings} = _find_bindings($config, "f90");
 
     ######################################################################
-    # At this point, we could just set $ret->{success} and
+    # At this point, we could just set $ret->{test_result} and
     # $ret->{result_message} and return $ret -- that would meet the
     # requirements of this module.  But we choose to do some basic
     # compile/link tests with "hello world" MPI apps just to verify
@@ -139,10 +139,10 @@ int main(int argc, char* argv[]) {
 }\n";
     close(C);
     $x = MTT::DoCommand::Cmd(1, "$ret->{bindir}/mpicc hello.c -o hello");
-    if ($x->{status} != 0) {
+    if ($x->{exit_status} != 0) {
         $ret->{result_message} = "Failed to compile/link C \"hello world\" MPI app: $@\n";
         $ret->{result_stdout} = $x->{result_stdout};
-        print "Stdout: $ret->{result_stdout}\n";
+        print "test_Stdout: $ret->{result_stdout}\n";
         return $ret;
     }
     unlink "hello.c", "hello";
@@ -161,7 +161,7 @@ int main(int argc, char* argv[]) {
 }\n";
         close(CXX);
         $x = MTT::DoCommand::Cmd(1, "$ret->{bindir}/mpic++ hello.cc -o hello");
-        if ($x->{status} != 0) {
+        if ($x->{exit_status} != 0) {
             $ret->{result_message} = "Failed to compile/link C++ \"hello world\" MPI app\n";
             $ret->{result_stdout} = $x->{result_stdout};
             return $ret;
@@ -186,7 +186,7 @@ int main(int argc, char* argv[]) {
         end\n";
         close(F77);
         $x = MTT::DoCommand::Cmd(1, "$ret->{bindir}/mpif77 hello.f -o hello");
-        if ($x->{status} != 0) {
+        if ($x->{exit_status} != 0) {
             $ret->{result_message} = "Failed to compile/link F77 \"hello world\" MPI app\n";
             $ret->{result_stdout} = $x->{result_stdout};
             return $ret;
@@ -210,7 +210,7 @@ int main(int argc, char* argv[]) {
         end program main\n";
         close(F90);
         $x = MTT::DoCommand::Cmd(1, "$ret->{bindir}/mpif90 hello.F -o hello");
-        if ($x->{status} != 0) {
+        if ($x->{exit_status} != 0) {
             $ret->{result_message} = "Failed to compile/link F90 \"hello world\" MPI app\n";
             $ret->{result_stdout} = $x->{result_stdout};
             return $ret;
@@ -228,7 +228,7 @@ int main(int argc, char* argv[]) {
     # Dump $ret into a file in this directory in case we are not
     # building the tests now
 
-    $ret->{success} = 1;
+    $ret->{test_result} = 1;
     $ret->{result_message} = "Success";
 
     # All done

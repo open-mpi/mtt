@@ -27,7 +27,7 @@ sub Build {
     my $ret;
 
     Debug("Building Shell\n");
-    $ret->{success} = 0;
+    $ret->{test_result} = 0;
 
     # Now run that file -- remove it when done, regardless of the outcome
     my $cmd = Value($ini, $config->{full_section_name}, "shell_build_command");
@@ -35,7 +35,7 @@ sub Build {
                                       $cmd, -1,
                                       $config->{stdout_save_lines},
                                       $config->{stderr_save_lines});
-    if ($x->{status} != 0) {
+    if ($x->{exit_status} != 0) {
         $ret->{result_message} = "Shell: command failed \"$cmd\"";
         $ret->{result_message} .= " (timed out)"
             if ($x->{timed_out});
@@ -48,7 +48,7 @@ sub Build {
     # All done
     $ret->{result_stdout} = $x->{result_stdout};
     $ret->{result_stderr} = $x->{result_stderr};
-    $ret->{success} = 1;
+    $ret->{test_result} = 1;
     $ret->{result_message} = "Success";
     return $ret;
 } 

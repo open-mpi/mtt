@@ -79,7 +79,7 @@ sub _do_get {
                                "Get", $ini, $section, $force);
     
     # Did we get a source tree back?
-    if ($ret->{success}) {
+    if ($ret->{test_result}) {
         if ($ret->{have_new}) {
 
             Verbose("   Got new test sources\n");
@@ -88,7 +88,7 @@ sub _do_get {
             $ret->{full_section_name} = $section;
             $ret->{simple_section_name} = $simple_section;
             $ret->{module_name} = "MTT::Test::Get::$module";
-            $ret->{timestamp} = timegm(gmtime());
+            $ret->{start_timestamp} = timegm(gmtime());
 
             # Add this into the $Test::sources hash
             $MTT::Test::sources->{$simple_section} = $ret;

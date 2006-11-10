@@ -27,12 +27,12 @@ sub Build {
     my $ret;
 
     Debug("Building NPB_ompi_tests\n");
-    $ret->{success} = 0;
+    $ret->{test_result} = 0;
 
     # Clean it (just to be sure)
     MTT::DoCommand::Chdir("NPB2.3-MPI");
     my $x = MTT::DoCommand::Cmd($config->{merge_stdout_stderr}, "make clean");
-    if ($x->{status} != 0) {
+    if ($x->{exit_status} != 0) {
         $ret->{result_message} = "NPB_ompi_tests: make clean failed; skipping";
         $ret->{result_stdout} = $x->{result_stdout};
         $ret->{result_stderr} = $x->{result_stderr};
@@ -59,7 +59,7 @@ sub Build {
                             $config->{merge_stdout_stderr},
                             "benchmarks_$n",
                             "classes_$n", "nprocs_$n");
-                if (0 == $x->{status}) {
+                if (0 == $x->{exit_status}) {
                     last;
                 }
             }
@@ -71,12 +71,12 @@ sub Build {
                     $config->{merge_stdout_stderr},
                     "benchmarks", "classes", "nprocs");
     }
-    if (0 == $x->{status}) {
-        $ret->{success} = 0;
+    if (0 == $x->{exit_status}) {
+        $ret->{test_result} = 0;
         $ret->{result_message} = $x->{result_message};
         $ret->{result_stdout} = $x->{result_stdout};
     } else {
-        $ret->{success} = 1;
+        $ret->{test_result} = 1;
         $ret->{result_message} = "Success";
     }
     return $ret;
@@ -100,8 +100,8 @@ sub _build {
             foreach my $np (@$nprocs) {
                 my $cmd = "make $bm CLASS=$cl NPROCS=$np";
                 my $x = MTT::DoCommand::Cmd($merge, $cmd);
-                if ($x->{status} != 0) {
-                    $ret->{success} = 0;
+                if ($x->{exit_status} != 0) {
+                    $ret->{test_result} = 0;
                     $ret->{result_message} =
                         "NPB_ompi_tests: $cmd failed; aborting";
                     $ret->{result_stdout} = $x->{result_stdout};
@@ -110,7 +110,7 @@ sub _build {
             }
         }
     }
-    $ret->{success} = 1;
+    $ret->{test_result} = 1;
     return $ret;
 }
 

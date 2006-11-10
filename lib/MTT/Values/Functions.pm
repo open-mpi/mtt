@@ -20,7 +20,7 @@ use MTT::Globals;
 
 #--------------------------------------------------------------------------
 
-# Returns the stdout of running a shell command
+# Returns the result_stdout of running a shell command
 sub shell {
     Debug("&shell: got @_\n");
     my $cmd = join(/ /, @_);
@@ -440,7 +440,7 @@ sub test_argv {
 
 #--------------------------------------------------------------------------
 
-# Return the exit status from the last test run
+# Return the exit exit_status from the last test run
 sub test_exit_status {
     Debug("&test_exit_status returning: $MTT::Test::Run::test_exit_status\n");
 

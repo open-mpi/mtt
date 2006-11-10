@@ -25,12 +25,12 @@ package MTT::MPI::Install;
 # ------------------------------
 
 # module (IN) => name of the module that built the MPI
-# success (OUT) => 0 or 1; whether the build succeeded or not
+# test_result (OUT) => 0 or 1; whether the build succeeded or not
 # result_message (OUT) => a message describing the result
 # mpi_get_section_name (IN) => name of the INI file section for this build
 # configure_arguments (IN) => arguments passed to configure when built
-# configure_stdout (OUT) => stdout and stderr from running configure
-# vpath_mode (IN) => none, relative, absolute
+# configure_stdout (OUT) => result_stdout and result_stderr from running configure
+# vpath_mode (IN) => none, relative, absolute (0, 1, 2)
 # configdir (IN) => where configure was invoked relative to the source
 #     tree
 # builddir (IN) => location of build dir (will not exist if build was
@@ -38,12 +38,12 @@ package MTT::MPI::Install;
 # srcdir (IN) => (relative) source tree
 # abs_srcdir (IN) => absolute source tree (will not exist if build was
 #     successful)
-# merge_stdout_stderr (IN) => 0 or 1; whether stdout was combined with stderr
+# merge_stdout_stderr (IN) => 0 or 1; whether result_stdout was combined with result_stderr
 #     or not
 # make_all_arguments (IN) => arguments passed to "make all"
-# stdout (OUT) => stdout from the installation process (or stdout and
-#     stderr if merge_stdout_stderr == 1)
-# stderr (OUT) => stderr from the installation process (or nonexistant
+# result_stdout (OUT) => result_stdout from the installation process (or result_stdout and
+#     result_stderr if merge_stdout_stderr == 1)
+# result_stderr (OUT) => result_stderr from the installation process (or nonexistant
 #     if merge_stdout_stderr == 1)
 
 # Other fields:
@@ -234,7 +234,7 @@ sub _do_install {
     $config->{bitness} = "to be filled in below";
         
     # Filled in by the module
-    $config->{success} = 0;
+    $config->{test_result} = 0;
     $config->{result_message} = "to be filled in by module";
     $config->{c_bindings} = 0;
     $config->{cxx_bindings} = 0;
@@ -320,7 +320,7 @@ sub _do_install {
     $config->{compiler_version} =
         Value($ini, $section, "compiler_version");
 
-    # What to do with stdout/stderr?
+    # What to do with result_stdout/result_stderr?
     my $tmp;
     $tmp = Logical($ini, $section, "save_stdout_on_success");
     $config->{save_stdout_on_success} = $tmp
@@ -351,14 +351,16 @@ sub _do_install {
     
     if (!$config->{vpath_mode} || $config->{vpath_mode} eq "" ||
         $config->{vpath_mode} eq "none") {
-        $config->{vpath_mode} eq "none";
+        $config->{vpath_mode} = 0;
         $config->{configdir} = ".";
         $config->{builddir} = $config->{abs_srcdir};
     } else {
         if ($config->{vpath_mode} eq "absolute") {
+            $config->{vpath_mode} = 2;
             $config->{configdir} = $config->{abs_srcdir};
             $config->{builddir} = "$config->{version_dir}/build_vpath_absolute";
         } else {
+            $config->{vpath_mode} = 1;
             $config->{configdir} = "../$config->{srcdir}";
             $config->{builddir} = "$config->{version_dir}/build_vpath_relative";
         }
@@ -380,7 +382,7 @@ sub _do_install {
     my $duration = time - $start_time . " seconds";
     
     # Detect bitness
-    if (($ret->{success} == 1) and defined($ret->{bitness})) {
+    if (($ret->{test_result} == 1) and defined($ret->{bitness})) {
         $config->{bitness} = $ret->{bitness};
     }
     
@@ -399,23 +401,23 @@ sub _do_install {
             merge_stdout_stderr => "$config->{merge_stdout_stderr}",
             environment => "filled in below",
 
-            start_test_timestamp => $start,
-            test_duration_interval => $duration,
+            start_timestamp => $start,
+            duration => $duration,
             mpi_details => $mpi_get->{mpi_details},
             mpi_name => $mpi_get->{simple_section_name},
             mpi_version => $mpi_get->{version},
 
-            success => $ret->{success},
+            test_result => $ret->{test_result},
             result_message => $ret->{result_message},
             client_serial => $ret->{client_serial},
             mpi_install_id => $ret->{mpi_install_id},
-            stdout => "filled in below",
-            stderr => "filled in below",
+            result_stdout => "filled in below",
+            result_stderr => "filled in below",
         };
 
-        # See if we want to save the stdout
+        # See if we want to save the result_stdout
         my $want_save = 1;
-        if (1 == $ret->{success}) {
+        if (1 == $ret->{test_result}) {
             if (!$config->{save_stdout_on_success}) {
                 $want_save = 0;
             }
@@ -423,47 +425,35 @@ sub _do_install {
             $want_save = 0;
         }
 
-        # If we want to save, see how many lines we want to save
+        # If we want to, save stdout
         if ($want_save) {
-            if ($config->{stdout_save_lines} == -1) {
-                $report->{result_stdout} = "$ret->{result_stdout}\n";
-            } elsif ($config->{stdout_save_lines} == 0) {
-                delete $report->{result_stdout};
-            } else {
-        if ($ret->{result_stdout} =~ m/((.*\n){$config->{stdout_save_lines}})$/) {
-                    $report->{result_stdout} = $1;
-                } else {
-                    # There were less lines available than we asked
-                    # for, so just take them all
-                    $report->{result_stdout} = $ret->{result_stdout};
-                }
-            }
+            $report->{result_stdout} = $ret->{result_stdout};
         } else {
             delete $report->{result_stdout};
         }
 
         # $ret->{result_stderr} will be filled in on error.  If there was no
         # error, then take $ret->{make_all_stderr}.
-        my $stderr;
+        my $result_stderr;
         if ($ret->{result_stderr}) {
-            $stderr = $ret->{result_stderr};
+            $result_stderr = $ret->{result_stderr};
         } else {
-            $stderr = $ret->{make_all_stderr};
+            $result_stderr = $ret->{make_all_stderr};
         }
 
-        # Always fill in the last bunch of lines for stderr
-        if ($stderr) {
+        # Always fill in the last bunch of lines for result_stderr
+        if ($result_stderr) {
             if ($config->{stderr_save_lines} == -1) {
-                $report->{result_stderr} = "$stderr\n";
+                $report->{result_stderr} = "$result_stderr\n";
             } elsif ($config->{stderr_save_lines} == 0) {
                 delete $report->{result_stderr};
             } else {
-                if ($stderr =~ m/((.*\n){$config->{stderr_save_lines}})$/) {
+                if ($result_stderr =~ m/((.*\n){$config->{stderr_save_lines}})$/) {
                     $report->{result_stderr} = $1;
                 } else {
                     # There were less lines available than we asked
                     # for, so just take them all
-                    $report->{result_stderr} = $stderr;
+                    $report->{result_stderr} = $result_stderr;
                 }
             }
         } else {
@@ -484,7 +474,7 @@ sub _do_install {
         # Some additional values
         $ret->{full_section_name} = $config->{full_section_name};
         $ret->{simple_section_name} = $config->{simple_section_name};
-        $ret->{test_status} = "installed";
+        $ret->{exit_status} = "installed";
         $ret->{compiler_name} = $config->{compiler_name};
         $ret->{compiler_version} = $config->{compiler_version};
         $ret->{configure_arguments} = $config->{configure_arguments};
@@ -494,7 +484,7 @@ sub _do_install {
         $ret->{unsetenv} = $config->{unsetenv};
         $ret->{prepend_path} = $config->{prepend_path};
         $ret->{append_path} = $config->{append_path};
-        $ret->{timestamp} = timegm(gmtime());
+        $ret->{start_timestamp} = timegm(gmtime());
 
         # Delete keys with empty values
         foreach my $k (keys(%$report)) {
@@ -504,7 +494,7 @@ sub _do_install {
         }
         
         # Save the results in an ini file so that we save all the
-        # stdout, etc.
+        # result_stdout, etc.
         WriteINI("$config->{version_dir}/$installed_file",
                  $installed_section, $ret);
         
@@ -532,7 +522,7 @@ sub _do_install {
         MTT::MPI::SaveInstalls($install_base);
 
         # Successful build?
-        if (1 == $ret->{success}) {
+        if (1 == $ret->{test_result}) {
             # If it was successful, there's no need for
             # the source or build trees anymore
             # JMS: this is not right -- if there is a problem with
