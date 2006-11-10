@@ -34,27 +34,29 @@ $GLOBALS['debug']   = isset($_GET['debug'])   ? $_GET['debug']   : 0;
 $s = "%s";
 $template = "http://www.open-mpi.org/mtt/reporter.php?" .
     "&maf_start_test_timestamp=$s" . 
+    "&tf_platform_id=$s" .
+    "&maf_phase=$s" . 
+    "&maf_success=$s" .
     "&by_atom=*by_test_case" . 
     "&ft_platform_id=contains" . 
     "&go=Table" . 
     "&maf_agg_timestamp=-" .
-    "&maf_phase=$s" . 
-    "&maf_success=All" . 
     "&mef_mpi_name=All" . 
     "&mef_mpi_version=All" . 
     "&mef_os_name=All" . 
     "&mef_os_version=All" . 
     "&mef_platform_hardware=All" . 
     "&mef_platform_id=All" . 
-    "&tf_platform_id=$s" .
     "&agg_platform_id=off" .
     "";
 
 $date_ranges = array(
+    "Past 48 Hours",
     "Past 24 Hours",
     "Past 12 Hours",
     "Past 6 Hours",
-    "Past 2 Hours",
+    "Past 3 Hours",
+    "Past 60 Minutes",
 );
 
 $orgs = array(
@@ -72,6 +74,12 @@ $phases = array(
     "All"      => "All",
 );
 
+$results = array(
+    "pass" => "[P]",
+    "fail" => "[F]",
+    "all"  => "[*]",
+);
+
 # Display webpage title
 $sp = '&nbsp;';
 print <<<EOT
@@ -81,6 +89,7 @@ print <<<EOT
     <title>Open MPI Test Results Summary</title>
     <style type='text/css'>
     $style
+    td { font-size: 75%; }
     </style>
 </head>
 
@@ -99,9 +108,12 @@ print <<<EOT
 EOT;
 
 # HTML elements
-$table_tag = "<table width=100% align=center border=1 cellspacing=1 cellpadding=5>";
+$table_tag = "<table width=100% align=center border=1>";
 $th = "<th bgcolor=$lgray>";
 $td = "<td bgcolor=$llgray>";
+
+$small = "<font size=-2>";
+$_small = "</font>";
 
 $i = 0;
 $cols = 2;
@@ -113,22 +125,30 @@ foreach ($date_ranges as $date_range) {
     print "\n<td>";
     print "\n\t $table_tag" .
           "\n\t <th bgcolor=$lgray colspan=" .
-            (sizeof($phases) + 1) . ">$date_range";
+            ((sizeof($phases) + 1)) . ">$date_range" .
+          "\n\t <tr>" .
+          "\n\t $th" . "Org" .
+              "\n\t <th align=center bgcolor=$lgray colspan=" .
+                sizeof($phases) . "><b>Phase</b>" .
+          "";
 
     foreach (array_keys($orgs) as $org) {
-        print "\n\t\t <tr>$td" . $orgs[$org];
+        print "\n\t\t <tr><td bgcolor=$lgray><b>" . $orgs[$org] . "</b>";
 
         foreach (array_keys($phases) as $phase) {
+            print "\n\t\t\t $td" . "$phases[$phase]";
 
-            # If these are re-ordered, do not forget to
-            # reorder the %s's in $template
-            $url = sprintf($template,
-                             respace($date_range),
-                             respace($phase),
-                             respace($org)
-                          );
-
-            print "\n\t\t\t $td<a href=$url target=_report>$phases[$phase]</a>";
+            foreach (array_keys($results) as $result) {
+                # If these are re-ordered, do not forget to
+                # reorder the %s's in $template
+                $url = sprintf($template,
+                                 respace($date_range),
+                                 respace($org),
+                                 respace($phase),
+                                 respace($result)
+                              );
+                print "\n\t\t\t\t <a href=$url target=_report>$results[$result]</A>";
+            }
         }
     }
     print "\n\t</table>";
