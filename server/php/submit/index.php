@@ -9,9 +9,8 @@ $dbname = isset($_GET['db']) ? $_GET['db'] : "mtt";
 $user   = "mtt";
 $pass   = "3o4m5p6i";
 
-$GLOBALS['debug'] = isset($_POST['debug']) ? $_POST['debug'] : 0;
-$GLOBALS['verbose'] = isset($_POST['verbose']) ? $_POST['verbose'] : 0;
-$GLOBALS['nosql'] = isset($_POST['nosql']) ? $_POST['nosql'] : 0;
+$GLOBALS['debug'] = isset($_GET['debug']) ? $_GET['debug'] : 0;
+$GLOBALS['verbose'] = isset($_GET['verbose']) ? $_GET['verbose'] : 0;
 
 # if the PING field is set, then this was just a test.  Exit successfully.
 
@@ -67,7 +66,7 @@ function get_table_fields($table_name) {
     do_pg_connect();
     debug("\nSQL: $sql_cmd\n");
     if (! ($result = pg_query($sql_cmd))) {
-        mtt_error(100, "\npostgres: " . pg_last_error() . "\n" . 
+        mtt_error(100, "\nPOSTGRES ERROR: " . pg_last_error() . "\n" . 
                   pg_result_error());
     }
     $max = pg_num_rows($result);
@@ -231,7 +230,7 @@ function simple_select($cmd) {
 
     debug("\nSQL: $cmd");
     if (! ($db_res = pg_query($cmd))) {
-        debug("\npostgres: " . pg_last_error() . "\n" . pg_result_error());
+        print("\nPOSTGRES ERROR: " . pg_last_error() . "\n" . pg_result_error());
     }
     $fetched = array_shift(pg_fetch_row($db_res));
     return $fetched;
@@ -242,7 +241,7 @@ function do_pg_query($cmd) {
 
     debug("\nSQL: $cmd\n");
     if (! ($db_res = pg_query($cmd))) {
-        debug("\npostgres: " . pg_last_error() . "\n" . pg_result_error());
+        print("\nPOSTGRES ERROR: " . pg_last_error() . "\n" . pg_result_error());
     }
 }
 
