@@ -32,7 +32,7 @@ $GLOBALS['debug']   = isset($_GET['debug'])   ? $_GET['debug']   : 0;
 
 # URL template to loop over
 $s = "%s";
-$template = "http://www.open-mpi.org/mtt/?" .
+$template = "http://www.open-mpi.org/mtt/reporter.php?" .
     "&maf_start_test_timestamp=$s" . 
     "&by_atom=*by_test_case" . 
     "&ft_platform_id=contains" . 
