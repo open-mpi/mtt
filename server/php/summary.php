@@ -39,7 +39,7 @@ $GLOBALS['debug']   = isset($_GET['debug'])   ? $_GET['debug']   : 0;
 
 $default_date = 'Yesterday';
 
-$reporter = 'index.php';
+$reporter = 'reporter.php';
 $self     = $_SERVER['PHP_SELF'];
 $url      = preg_replace('/summary.php/', $reporter, $self);
 $url      = "$domain$url";
