@@ -72,11 +72,11 @@ sub RunEngine {
         if ($verbose_out > 50) {
             $verbose_out = 0;
             my $per = sprintf("%d%%", $count / $total * 100);
-            Verbose("   Test progress: $count of $total section tests complete ($per)\n");
+            Verbose("   ### Test progress: $count of $total section tests complete ($per)\n");
         }
     }
     --$count;
-    Verbose("   Test progress: $count of $total section tests complete (100%)\n");
+    Verbose("   ### Test progress: $count of $total section tests complete (100%)\n");
 
     # If we ran any tests at all, then run the after_all step and
     # submit the results to the Reporter
