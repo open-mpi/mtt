@@ -30,7 +30,7 @@ my $verbose_out;
 sub RunEngine {
     my ($section, $top_dir, $mpi_details, $test_build, $force, $ret) = @_;
     my $test_results;
-    my $total = $#{$ret->{tests}};
+    my $total = $#{$ret->{tests}} + 1;
 
     # Loop through all the tests
     Verbose("   Total of $total tests to run in this section\n");
