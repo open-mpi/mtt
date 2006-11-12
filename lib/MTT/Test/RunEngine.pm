@@ -36,7 +36,7 @@ sub RunEngine {
     Verbose("   Total of $total tests to run in this section\n");
     $verbose_out = 0;
     my $count = 0;
-    foreach my $run (sort(@{$ret->{tests}})) {
+    foreach my $run (@{$ret->{tests}}) {
         if (!exists($run->{executable})) {
             Warning("No executable specified for text; skipped\n");
             next;
