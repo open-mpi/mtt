@@ -24,12 +24,12 @@ sub Analyze {
 
     # result value: 1=pass, 2=fail, 3=skipped, 4=timed out
     my $result = 2;
-    if ($results->{timed_out}) {
+    if ($skipped) {
+        $result = 3;
+    } elsif ($results->{timed_out}) {
         $result = 4;
     } elsif ($pass) {
         $result = 1;
-    } elsif ($skipped) {
-        $result = 3;
     }
 
     # Queue up a report on this test
