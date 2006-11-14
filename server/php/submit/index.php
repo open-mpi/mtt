@@ -9,8 +9,8 @@ $dbname = isset($_GET['db']) ? $_GET['db'] : "mtt";
 $user   = "mtt";
 $pass   = "3o4m5p6i";
 
-$GLOBALS['debug'] = isset($_GET['debug']) ? $_GET['debug'] : 0;
-$GLOBALS['verbose'] = isset($_GET['verbose']) ? $_GET['verbose'] : 0;
+$GLOBALS['debug'] = isset($_GET['debug']) ? 1 : 0;
+$GLOBALS['verbose'] = isset($_GET['verbose']) ? 1 : 0;
 
 # if the PING field is set, then this was just a test.  Exit successfully.
 
@@ -106,10 +106,9 @@ function set_once_data() {
     
     # If there is no matching config in the db - grab the latest run_index,
     # increment it, and assign it to this config
-    # JMS: THIS IS A RACE CONDITION THAT WILL BE ADDRESSED BY TICKET #51
     $found_match = false;
     if ($idx == null) {
-        $sql_cmd = "SELECT (run_index + 1) FROM once ORDER BY run_index DESC LIMIT 1;";
+        $sql_cmd = "SELECT nextval('run_index_seq');";
         $idx = simple_select($sql_cmd);
     } else {
         $found_match = true;
