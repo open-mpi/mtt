@@ -43,6 +43,11 @@ my $invocation_serial_value;
 # Do we want debugging?
 my $debug_filename;
 my $debug_index;
+my $keep_debug_files;
+my $debug_server;
+
+# Keep track of SQL errors coming from the server
+my $server_errors_total = 0;
 
 #--------------------------------------------------------------------------
 
@@ -56,6 +61,10 @@ sub Init {
     $url = Value($ini, $section, "mttdatabase_url");
     $realm = Value($ini, $section, "mttdatabase_realm");
     $debug_filename = Value($ini, $section, "mttdatabase_debug_filename");
+    $debug_filename = "mttdatabase_debug" if (! $debug_filename);
+    $keep_debug_files = Value($ini, $section, "mttdatabase_keep_debug_files");
+    $debug_server = 1 if ($url =~ /\bdebug\b|\bverbose\b/);
+
     $debug_index = 0;
     if (!$url) {
         Warning("Need URL in MTTDatabase Reporter section [$section]\n");
@@ -145,14 +154,12 @@ sub Init {
     # because there's oodles of chdir()'s within the testing.  Whack
     # the file if it's already there.
 
-    if ($debug_filename) {
-        if ($debug_filename !~ /\//) {
-            $debug_filename = cwd() . "/$debug_filename";
-        } else {
-            MTT::Files::mkdir(dirname($debug_filename));
-        }
-        Debug("MTTDatabase reporter writing to debug file ($debug_filename)\n");
+    # If filename given is relative, branch it off the scratch tree
+    if ($debug_filename !~ /\//) {
+        $debug_filename = cwd() . "/mttdatabase-submit/$debug_filename";
     }
+    MTT::Files::mkdir(dirname($debug_filename));
+    Debug("MTTDatabase reporter writing to debug file ($debug_filename)\n");
 
     Debug("MTTDatabase reporter initialized ($realm, $username, XXXXXX, $url, $platform)\n");
 
@@ -170,6 +177,13 @@ sub Finalize {
     undef $ua;
     undef $debug_filename;
     undef $debug_index;
+
+    # Report number of server errors for entire MTT run
+    if ($server_errors_total) {
+        Warning(">> $server_errors_total total MTTDatabase server error" . 
+            plural($server_errors_total) . "\n" .
+            "See the above output for more info.\n");
+    }
 }
 
 #--------------------------------------------------------------------------
@@ -184,6 +198,7 @@ sub Submit {
     my $fails = 0;
     my @fail_outputs;
     my $num_results = 0;
+    my $server_errors_count = 0;
 
     # Get a bunch of information about this host
     my $id = MTT::Reporter::GetID();
@@ -283,9 +298,15 @@ sub Submit {
             my $req = POST ($url, $form);
             $req->authorization_basic($username, $password);
             my $response = $ua->request($req);
+            my $sql_error = 0;
             if ($response->is_success()) {
                 ++$successes;
                 push(@success_outputs, $response->content);
+                $sql_error = &count_sql_errors($response->content);
+                $server_errors_count += $sql_error;
+                $server_errors_total += $server_errors_count;
+                Warning($response->content . "\n") if ($sql_error);
+                print("\n" . $response->content . "\n") if ($debug_server);
             } else {
                 Verbose(">> Failed to report to MTTDatabase: " .
                         $response->status_line . "\n" . $response->content);
@@ -308,10 +329,13 @@ sub Submit {
             $num_results += ($count - 1);
             Debug("MTTDatabase submit complete\n");
             
-            if ($debug_filename) {
-                # Write out what we *would* have sent via HTTP to a
-                # file
-                my $f = "$debug_filename.$debug_index.txt";
+            # Write out what we *would* have sent via HTTP to a
+            # file
+            my $f;
+            if ($sql_error or $keep_debug_files) {
+                
+                $f = "$debug_filename.$debug_index" .
+                        ($sql_error ? "." . time . "-error" : "") . ".txt";
                 ++$debug_index;
                 Debug("Writing to MTTDatabase debug file: $f\n");
                 open OUT, ">$f" || die "Could not open MTTDatabase debug output file";
@@ -324,8 +348,20 @@ sub Submit {
         }
     }
 
-    Verbose(">> $successes successful submit" . plural($successes) . ", $fails failed submit" . plural($fails) . " (total of $num_results result" . plural($num_results) . ")\n");
+    Verbose(">> $successes successful submit" . plural($successes) .  ", " .
+            "$fails failed submit" . plural($fails) . 
+            " (total of $num_results result" . plural($num_results) . ")\n");
 
+    # Print a hairy warning if there was an SQL error
+    if ($server_errors_count) {
+        Warning("\n" . "#" x 60 .
+                "\n#" .
+                "\n# $server_errors_count MTTDatabase server error" . plural($server_errors_count) .
+                "\n# The data that failed to submit is in $debug_filename.*.txt." .
+                "\n# See the above output for more info." .
+                "\n#" .
+                "\n" . "#" x 60 . "\n");
+    }
 
     return $phase_serials;
 }
@@ -333,6 +369,19 @@ sub Submit {
 sub plural {
     my $val = shift;
     ($val == 1) ? "" : "s";
+}
+
+# Count the number of database server errors
+sub count_sql_errors {
+    my($str) = @_;
+    my @lines = split(/\n|\r/, $str);
+    my $line;
+    my $count = 0;
+
+    while (defined($line = shift @lines)) {
+        $count++ if ($line =~ /mttdatabase server error/i);
+    }
+    return $count;
 }
 
 1;
