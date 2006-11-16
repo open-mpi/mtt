@@ -66,6 +66,7 @@ function get_table_fields($table_name) {
     do_pg_connect();
     debug("\nSQL: $sql_cmd\n");
     if (! ($result = pg_query($sql_cmd))) {
+        print("\nSQL: $sql_cmd\n");
         mtt_error(100, "\nMTTDatabase server ERROR: " . pg_last_error() . "; " . 
                   pg_result_error());
     }
@@ -229,6 +230,7 @@ function simple_select($cmd) {
 
     debug("\nSQL: $cmd");
     if (! ($db_res = pg_query($cmd))) {
+        print("\nSQL: $cmd\n");
         print("\nMTTDatabase server ERROR: " . pg_last_error() . "; " . pg_result_error());
     }
     $fetched = array_shift(pg_fetch_row($db_res));
@@ -240,6 +242,7 @@ function do_pg_query($cmd) {
 
     debug("\nSQL: $cmd\n");
     if (! ($db_res = pg_query($cmd))) {
+        print("\nSQL: $cmd\n");
         print("\nMTTDatabase server ERROR: " . pg_last_error() . "; " . pg_result_error());
     }
 }
