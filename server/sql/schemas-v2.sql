@@ -164,7 +164,7 @@ CREATE TABLE results (
     client_serial integer NOT NULL DEFAULT '-38', --> refers to the serial sequence
 
     exit_status integer NOT NULL DEFAULT '-38',
-    -- success value: 1=pass, 2=fail, 3=skipped, 4=timed out
+    -- result value: 0=fail, 1=pass, 2=skipped, 3=timed out
     test_result smallint NOT NULL DEFAULT '-38',
     -- set to DEFAULT for correctness tests
     latency_bandwidth_id integer NOT NULL DEFAULT '-38'
