@@ -22,12 +22,12 @@ sub Analyze {
     my $pass = MTT::Values::EvaluateString($run->{pass});
     my $skipped = MTT::Values::EvaluateString($run->{skipped});
 
-    # result value: 1=pass, 2=fail, 3=skipped, 4=timed out
-    my $result = 2;
+    # result value: 0=fail, 1=pass, 2=skipped, 3=timed out
+    my $result = 0;
     if ($skipped) {
-        $result = 3;
+        $result = 2;
     } elsif ($results->{timed_out}) {
-        $result = 4;
+        $result = 3;
     } elsif ($pass) {
         $result = 1;
     }
