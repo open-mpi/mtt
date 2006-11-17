@@ -1,0 +1,10 @@
+DROP INDEX idx_phase_id_pair;
+CREATE INDEX idx_phase_id_pair ON results (phase_id, phase);
+DROP INDEX idx_submit_id;
+CREATE INDEX idx_submit_id     ON results (submit_id);
+DROP INDEX idx_test_result;
+CREATE INDEX idx_test_result   ON results (test_result);
+DROP INDEX idx_client_serial;
+CREATE INDEX idx_client_serial ON results (client_serial);
+DROP INDEX idx_exit_status;
+CREATE INDEX idx_exit_status   ON results (exit_status);

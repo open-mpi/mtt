@@ -42,11 +42,6 @@ CREATE TABLE submit (
     )
 );
 
-DROP INDEX submit_serial_idx;
-CREATE INDEX submit_serial_idx ON submit(serial_id);
-DROP INDEX submit_phase_idx;
-CREATE INDEX submit_phase_idx ON submit(phase_id);
-
 DROP TABLE mpi_get;
 CREATE TABLE mpi_get (
     mpi_get_id serial UNIQUE,
@@ -94,13 +89,6 @@ CREATE TABLE mpi_install (
     )
 );
 
-DROP INDEX mpi_install_compute_cluster_idx;
-CREATE INDEX mpi_install_compute_cluster_idx ON mpi_install(compute_compute_cluster_id);
-DROP INDEX mpi_install_mpi_get_idx;
-CREATE INDEX mpi_install_mpi_get_idx ON mpi_install(mpi_get_id);
-DROP INDEX mpi_install_compiler_idx;
-CREATE INDEX mpi_install_compiler_idx ON mpi_install(compiler_id);
-
 DROP TABLE test_build;
 CREATE TABLE test_build (
     test_build_id serial UNIQUE, --> this changes every night
@@ -114,11 +102,6 @@ CREATE TABLE test_build (
             compiler_id
     )
 );
-
-DROP INDEX test_build_mpi_install_idx;
-CREATE INDEX test_build_mpi_install_idx ON test_build(mpi_install_id);
-DROP INDEX test_build_compiler_idx;
-CREATE INDEX test_build_compiler_idx ON test_build(compiler_id);
 
 DROP TABLE test_run;
 CREATE TABLE test_run (
@@ -137,9 +120,6 @@ CREATE TABLE test_run (
         np
     )
 );
-
-DROP INDEX test_build_idx;
-CREATE INDEX test_build_idx ON test_run(test_build_id);
 
 DROP TABLE results;
 CREATE TABLE results (
@@ -170,6 +150,8 @@ CREATE TABLE results (
     latency_bandwidth_id integer NOT NULL DEFAULT '-38'
 );
 
+-- Some much needed indexing
+
 DROP TABLE latency_bandwidth;
 CREATE TABLE latency_bandwidth (
     latency_bandwidth_id serial UNIQUE,
@@ -182,10 +164,6 @@ CREATE TABLE latency_bandwidth (
     latency_avg double precision[] DEFAULT '{}'
 );
 
-DROP INDEX results_success_idx;
-CREATE INDEX results_success_idx ON results(success);
-
-
 DROP TABLE alerts;
 CREATE TABLE alerts (
     alerts_id serial UNIQUE,
@@ -195,7 +173,6 @@ CREATE TABLE alerts (
     subject character(64) NOT NULL DEFAULT 'bogus',
     description character(64) NOT NULL DEFAULT 'bogus'
 );
-
 
 DROP TABLE users;
 CREATE TABLE users (
@@ -228,11 +205,6 @@ CREATE TABLE cluster_owner (
     compute_cluster_id integer NOT NULL DEFAULT '-38', --> refers to compute_cluster table
     users_id integer NOT NULL DEFAULT '-38' --> refers to users table
 );
-
-DROP INDEX cluster_owner_users_idx;
-CREATE INDEX cluster_owner_users_idx ON cluster_owner(users_id);
-DROP INDEX cluster_owner_cluster_idx;
-CREATE INDEX cluster_owner_cluster_idx ON cluster_owner(compute_cluster_id);
 
 INSERT INTO latency_bandwidth (latency_bandwidth_id) VALUES (DEFAULT);
 INSERT INTO failure (failure_id) VALUES (DEFAULT); 
