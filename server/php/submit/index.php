@@ -49,7 +49,7 @@ if (isset($_POST['SERIAL'])) {
 # If these are not set, then exit.
 if (! isset($_POST['mtt_version_major']) ||
     ! isset($_POST['mtt_version_minor'])) {
-    mtt_error(400, "\nMTT client version not specified.");
+    mtt_abort(400, "\nMTT client version not specified.");
     exit(1);
 }
 
@@ -84,21 +84,18 @@ print "\nMTT submission for $phase\n";
 if (0 == strcasecmp($phase, "test run")) {
 
     $idx = process_phase($phase_name, $idxs_hash);
-    validate($phase_name, array("mpi_install", "test_build", "failure"));
 
 } else if (0 == strcasecmp($phase, "test build")) {
 
     $idx = process_phase($phase_name, NULL);
-    validate($phase_name, array("mpi_install", "failure"));
 
 } else if (0 == strcasecmp($phase, "mpi install")) {
 
     $idx = process_phase($phase_name, NULL);
-    validate($phase_name, array("failure"));
 
 } else {
     print "ERROR: Unknown phase! ($phase)<br>\n";
-    mtt_error(400, "\nNo phase given, so I don't know which table to direct this data to.");
+    mtt_abort(400, "\nNo phase given, so I don't know which table to direct this data to.");
     exit(1);
 }
 
@@ -356,32 +353,6 @@ function gather_indexes($parent, $child, $idxs, $prune_list) {
     return $idxs;
 }
 
-# Execute a JOINing query (use table1.id = table2.id syntax)
-# for an entire phase row, and dump the table
-function validate($table_name, $prune_list) {
-
-    global $id;
-
-    $idxs = gather_indexes($table_name, NULL, NULL, $prune_list);
-
-    $cmd .= "\n\t SELECT * FROM " .
-            "\n\t " . $table_name . "," .
-            "\n\t " . join(",\n\t\t", array_map('get_idx_root', array_keys($idxs))) .
-            "\n\t WHERE";
-
-    foreach (array_keys($idxs) as $idx) {
-        $wheres[] = $idxs[$idx]['serial'] .'.'.$idx . ' = ' .
-                    $idxs[$idx]['integer'].'.'.$idx;
-    }
-
-    $cmd .= "\n\t " . join(" AND \n\t", $wheres);
-    $cmd .= "\n\t ORDER BY $table_name$id;";
-
-    $rows = select($cmd);
-
-    var_dump_debug(__FUNCTION__, __LINE__, "cmd", $cmd);
-}
-
 function sql_join($table_name) {
     global $id;
     return "JOIN $table_name USING (" . $table_name . $id . ")";
@@ -492,7 +463,7 @@ function report_id_mismatches() {
         }
         $name = preg_replace('/_\d+$/', '', $k);
         if (! $arr[$name])
-            debug("Notice: $name is not in $dbname database.");
+            mtt_notice("$name is not in $dbname database.");
     }
 }
 
@@ -557,7 +528,7 @@ function do_pg_connect() {
 
         # Exit if we cannot connect
         if (!$pgsql_conn)
-            mtt_error("\nCould not connect to the $dbname database; " .
+            mtt_abort("\nCould not connect to the $dbname database; " .
                       "submit this run later.");
         else
             $connected = true;
@@ -573,9 +544,9 @@ function do_pg_query($cmd) {
 
     debug("\nSQL: $cmd\n");
     if (! ($db_res = pg_query($cmd))) {
-        debug("\npostgres: " . pg_last_error() . "\n" . pg_result_error());
+        mtt_error(pg_last_error() . "; " . pg_result_error());
     }
-    debug("\nrows affected: " . pg_affected_rows($db_res) . "\n");
+    debug("\nDatabase rows affected: " . pg_affected_rows($db_res) . "\n");
 }
 
 # Fetch 1D array
@@ -586,8 +557,7 @@ function simple_select($cmd) {
 
     debug("\nSQL: $cmd\n");
     if (! ($result = pg_query($cmd))) {
-        debug("\npostgres: " . pg_last_error() . "\n" .
-                  pg_result_error());
+        mtt_error(pg_last_error() . "; " .  pg_result_error());
     }
     $max = pg_num_rows($result);
     for ($i = 0; $i < $max; ++$i) {
@@ -603,8 +573,7 @@ function select($cmd) {
 
     debug("\nSQL: $cmd\n");
     if (! ($result = pg_query($cmd))) {
-        debug("\npostgres: " . pg_last_error() . "\n" .
-                  pg_result_error());
+        mtt_error(pg_last_error() . "; " .  pg_result_error());
     }
     return pg_fetch_all($result);
 }
@@ -612,14 +581,24 @@ function select($cmd) {
 ######################################################################
 
 # Function for reporting errors back to the client
-function mtt_error($status, $str) {
+function mtt_abort($status, $str) {
     if (!headers_sent()) {
         header("HTTP/1.0 $status");
     } else {
-        print("ERROR: (Tried to send HTTP error) $status\n");
+        print("MTTDatabase abort: (Tried to send HTTP error) $status\n");
     }
-    print("ERROR: $str\n");
+    print("MTTDatabase abort: $str\n");
     exit(0);
+}
+
+# Function for reporting errors back to the client
+function mtt_error($str) {
+    print("MTTDatabase server error: $str\n");
+}
+
+# Function for reporting notices back to the client
+function mtt_notice($str) {
+    print("MTTDatabase server notice: $str\n");
 }
 
 ######################################################################
