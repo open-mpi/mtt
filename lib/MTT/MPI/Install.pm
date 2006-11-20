@@ -474,7 +474,6 @@ sub _do_install {
         # Some additional values
         $ret->{full_section_name} = $config->{full_section_name};
         $ret->{simple_section_name} = $config->{simple_section_name};
-        $ret->{exit_status} = "installed";
         $ret->{compiler_name} = $config->{compiler_name};
         $ret->{compiler_version} = $config->{compiler_version};
         $ret->{configure_arguments} = $config->{configure_arguments};

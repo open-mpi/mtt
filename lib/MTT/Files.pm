@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -246,7 +247,7 @@ sub svn_checkout {
     }
     $str .= $url;
     my $ret = MTT::DoCommand::Cmd(1, $str);
-    if (0 != $ret->{exit_status}) {
+    if (!MTT::DoCommand::wsuccess($ret->{exit_status})) {
         Warning("Could not SVN checkout $url: $@\n");
         return undef;
     }
@@ -276,7 +277,7 @@ sub copy_tree {
         if ($delete_first);
 
     my $ret = MTT::DoCommand::Cmd(1, "cp -r $srcdir .");
-    if (0 != $ret->{exit_status}) {
+    if (!MTT::DoCommand::wsuccess($ret->{exit_status})) {
         Warning("Could not copy file tree $srcdir: $@\n");
         return undef;
     }
@@ -310,7 +311,7 @@ sub md5sum {
         if (! -f $file);
 
     my $x = MTT::DoCommand::Cmd(1, "$md5sum_path $file");
-    if (0 != $x->{exit_status}) {
+    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         Warning("md5sum unable to run properly\n");
         return undef;
     }
@@ -342,7 +343,7 @@ sub sha1sum {
     }
 
     my $x = MTT::DoCommand::Cmd(1, "$sha1sum_path $file");
-    if (0 != $x->{exit_status}) {
+    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         Warning("sha1sum unable to run properly\n");
         return undef;
     }
@@ -395,7 +396,7 @@ sub http_get {
         if (!defined($http_agent));
 
     my $x = MTT::DoCommand::Cmd(1, "$http_agent $url");
-    if (0 != $x->{exit_status}) {
+    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         return undef;
     }
     return 1;

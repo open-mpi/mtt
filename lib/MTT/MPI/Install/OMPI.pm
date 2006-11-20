@@ -53,6 +53,7 @@ sub Install {
 
     my $ret;
     $ret->{test_result} = 0;
+    $ret->{exit_status} = 0;
 
     # Run configure
 
@@ -63,11 +64,12 @@ sub Install {
     $x = MTT::DoCommand::Cmd(1, "$config->{configdir}/configure $config->{configure_arguments} --prefix=$ret->{installdir}", -1, $config->{stdout_save_lines}, $config->{stderr_save_lines});
     $result_stdout = $x->{result_stdout} ? "--- Configure result_stdout/result_stderr ---\n$x->{result_stdout}" :
         undef;
-    if ($x->{exit_status} != 0) {
+    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         $ret->{result_message} = "Configure failed -- skipping this build";
         # Put the output of the failure into $ret so that it gets
         # reported (result_stdout/result_stderr was combined into just result_stdout)
         $ret->{result_stdout} = $result_stdout;
+        $ret->{exit_status} = $x->{status};
         return $ret;
     }
     # We don't need this in the main result_stdout
@@ -87,13 +89,14 @@ sub Install {
     }
     $result_stderr = $x->{result_stderr} ? "--- \"make all\" result_stderr ---\n$x->{result_stderr}" : 
         undef;
-    if ($x->{exit_status} != 0) {
+    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         $ret->{result_message} = "Failed to build: make $config->{make_all_arguments} all";
         # Put the output of the failure into $ret so that it gets
         # reported (result_stdout/result_stderr *may* be separated, so assign them
         # both -- if they were combined, then $result_stderr will be empty)
         $ret->{result_stdout} = $result_stdout;
         $ret->{result_stderr} = $result_stderr;
+        $ret->{exit_status} = $x->{status};
         return $ret;
     }
     $ret->{make_all_stdout} = $result_stdout;
@@ -126,11 +129,12 @@ sub Install {
 
         $result_stdout = "--- \"make check\" result_stdout ---\n$x->{result_stdout}"
             if ($x->{result_stdout});
-        if ($x->{exit_status} != 0) {
+        if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
             $ret->{result_message} = "Failed to make check";
             # Put the output of the failure into $ret so that it gets
             # reported (result_stdout/result_stderr were combined)
             $ret->{result_stdout} = $x->{result_stdout};
+            $ret->{exit_status} = $x->{status};
             return $ret;
         }
         $ret->{make_check_stdout} = $result_stdout;
@@ -144,13 +148,14 @@ sub Install {
     # re-linking libraries when they are installed)
 
     $x = MTT::DoCommand::Cmd(1, "make install", -1, $config->{stdout_save_lines}, $config->{stderr_save_lines});
-    if ($x->{exit_status} != 0) {
+    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         $ret->{result_stdout} .= "--- \"make install\" result_stdout ---\n$x->{result_stdout}"
             if ($x->{result_stdout});
         $ret->{result_message} = "Failed to make install";
         # Put the output of the failure into $ret so that it gets
         # reported (result_stdout/result_stderr were combined)
         $ret->{result_stdout} = $x->{result_stdout};
+        $ret->{exit_status} = $x->{status};
         return $ret;
     }
     $ret->{make_install_stdout} = $result_stdout;
@@ -178,10 +183,12 @@ sub Install {
     if ((0 != write_cleanup_script("$ret->{installdir}/bin")) 
         and (! $MTT::DoCommand::no_execute)) {
         $ret->{test_result} = 0;
+        $ret->{exit_status} = $x->{status};
         $ret->{message} = "Failed to create cleanup script!";
     } else {
         $ret->{test_result} = 1;
         $ret->{result_message} = "Success";
+        $ret->{exit_status} = $x->{status};
         Debug("Build was a test_result\n");
     }
 

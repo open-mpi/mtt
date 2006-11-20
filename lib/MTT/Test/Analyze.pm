@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 #
 # Copyright (c) 2006 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2006 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -16,13 +17,14 @@ use MTT::Messages;
 
 sub Analyze {
 
-    my ($run, $mpi_details, $results) = @_;
+    my ($run, $mpi_details, $msg, $results) = @_;
     my ($correctness, $performance);
     my $report;
 
     # Analyze everything (including performance tests) for correctness
     $correctness = MTT::Module::Run("MTT::Test::Analyze::Correctness",
-                                 "Analyze", $run, $mpi_details, $results);
+                                    "Analyze", $run, $mpi_details, $msg, 
+                                    $results);
 
     my $m = $run->{analyze_module};
 

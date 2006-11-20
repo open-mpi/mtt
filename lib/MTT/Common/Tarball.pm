@@ -63,7 +63,7 @@ sub Get {
     Debug(">> tarball: caching\n");
     my $dir = cwd();
     my $x = MTT::DoCommand::Cmd(1, "cp $data->{tarball} .");
-    if (0 != $x->{exit_status}) {
+    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         $ret->{test_result} = 0;
         $ret->{result_message} = "Failed to copy tarball";
         Warning($ret->{result_message});
@@ -114,7 +114,7 @@ sub PrepareForInstall {
     # Pre extract
     if ($data->{pre_extract}) {
         my $x = MTT::DoCommand::CmdScript(1, $data->{pre_copy});
-        if (0 != $x->{exit_status}) {
+        if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
             Warning("Pre-extract command failed: $@\n");
             return undef;
         }
@@ -133,7 +133,7 @@ sub PrepareForInstall {
         MTT::DoCommand::Chdir($ret);
 
         my $x = MTT::DoCommand::Cmds(1, $data->{pre_copy});
-        if (0 != $x->{exit_status}) {
+        if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
             Warning("Post-extract command failed: $@\n");
             return undef;
         }

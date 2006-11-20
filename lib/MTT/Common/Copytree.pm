@@ -118,7 +118,7 @@ sub PrepareForInstall {
     if ($data->{pre_copy}) {
         Debug("copytree running pre_copy command: $data->{pre_copy}\n");
         my $x = MTT::DoCommand::CmdScript(1, $data->{pre_copy});
-        if (0 != $x->{exit_status}) {
+        if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
             Warning("Pre-copy command failed: $@\n");
             return undef;
         }
@@ -137,7 +137,7 @@ sub PrepareForInstall {
 
         Debug("copytree running post_copy command: $data->{post_copy}\n");
         my $x = MTT::DoCommand::CmdScript(1, $data->{post_copy});
-        if (0 != $x->{exit_status}) {
+        if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
             Warning("Post-copy command failed: $@\n");
             return undef;
         }

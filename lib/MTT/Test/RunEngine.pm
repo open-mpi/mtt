@@ -75,7 +75,6 @@ sub RunEngine {
             Verbose("   ### Test progress: $count of $total section tests complete ($per)\n");
         }
     }
-    --$count;
     Verbose("   ### Test progress: $count of $total section tests complete (100%)\n");
 
     # If we ran any tests at all, then run the after_all step and
@@ -185,7 +184,7 @@ sub _run_one_test {
 
     # Analyze the test parameters and results
     my $report;
-    $report = MTT::Module::Run("MTT::Test::Analyze", "Analyze", $run, $mpi_details, $x);
+    $report = MTT::Module::Run("MTT::Test::Analyze", "Analyze", $run, $mpi_details, $str, $x);
     # Assume that the Analyze module will output one line
     ++$verbose_out;
 

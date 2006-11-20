@@ -47,7 +47,7 @@ sub Get {
         # up.
 
         my $x = MTT::DoCommand::Cmd(1, "svn log -r $previous_r:HEAD $data->{url}");
-        if (0 != $x->{exit_status}) {
+        if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
             Warning("Can't check repository properly; going to assume we need a new export\n");
             last;
         } else {

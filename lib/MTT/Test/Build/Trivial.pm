@@ -27,7 +27,7 @@ sub _do_compile {
 
     # Do the compile
     my $x = MTT::DoCommand::Cmd(1, "$wrapper $in_name -o $out_name");
-    if ($x->{exit_status} != 0) {
+    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         my $ret;
         $ret->{test_result} = 0;
         $ret->{result_message} = "Failed to compile/link $out_name\n";

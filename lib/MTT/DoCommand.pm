@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -35,7 +36,7 @@ sub _kill_proc {
     Verbose("** Kill TERM didn't work!\n");
 
     # Nope, that didn't work.  Sleep a few seconds and try again.
-    sleep(2);
+    sleep(1);
     $kid = waitpid($pid, WNOHANG);
     if ($kid != 0) {
         return $?;
@@ -51,7 +52,7 @@ sub _kill_proc {
     Verbose("** Kill INT didn't work!\n");
 
     # Nope, that didn't work.  Sleep a few seconds and try again.
-    sleep(2);
+    sleep(1);
     $kid = waitpid($pid, WNOHANG);
     if ($kid != 0) {
         return $?;
@@ -281,10 +282,10 @@ sub Cmd {
         if (defined($end_time) && time() > $end_time) {
             my $over = time() - $end_time;
             if ($over > $last_over) {
-                Verbose("*** Past timeout by $over seconds\n");
+                Verbose("*** Past timeout of $timeout seconds by $over seconds\n");
                 my $st = _kill_proc($pid);
                 if (!defined($killed_status)) {
-                    $killed_status = $st;
+                    $ret->{exit_status} = $killed_status = $st;
                 }
                 $ret->{timed_out} = 1;
             }
@@ -304,14 +305,33 @@ sub Cmd {
     # If we didn't timeout, we need to reap the process (timeouts will
     # have already been reaped).
 
+    my $msg = "Command ";
     if (!$ret->{timed_out}) {
         waitpid($pid, 0);
-        $ret->{exit_status} = $? >> 8;
-        Debug("Command complete, exit status: $ret->{exit_status}\n");
+        $ret->{exit_status} = $?;
+        $msg .= "complete";
     } else {
-        $ret->{exit_status} = $killed_status;
-        Debug("Command timed out, exit status: $ret->{exit_status}\n");
+        $msg .= "timed out";
     }
+
+    # Was it signaled?
+    if (wifsignaled($ret->{exit_status})) {
+        my $s = wtermsig($ret->{exit_status});
+        $msg .= ", signal $s";
+        if (wcoredump($ret->{exit_status} & 128)) {
+            if ($ret->{core_dump}) {
+                $msg .= " (core dump)";
+            }
+        }
+        $ret->{status} = -1;
+    }
+    # No, it was not signaled
+    else {
+        $msg .= ", exit status: $ret->{status}";
+        $ret->{status} = wexitstatus($ret->{exit_status});
+    }
+
+    Debug($msg);
 
     # Return an anonymous hash containing the relevant data
 
@@ -343,10 +363,59 @@ sub CmdScript {
     return $x;
 }
 
+#--------------------------------------------------------------------------
+
 sub Chdir {
     my($dir) = @_;
     Debug("chdir $dir\n");
     chdir $dir;
+}
+
+#--------------------------------------------------------------------------
+
+# See perlvar(1)
+sub wifexited {
+    return !wifsignaled(@_);
+}
+
+#--------------------------------------------------------------------------
+
+# See perlvar(1)
+sub wexitstatus {
+    my ($val) = @_;
+    return ($val >> 8);
+}
+
+#--------------------------------------------------------------------------
+
+# See perlvar(1)
+sub wifsignaled {
+    my ($val) = @_;
+    my $ret = (0 != ($val & 127));
+}
+
+#--------------------------------------------------------------------------
+
+# See perlvar(1)
+sub wtermsig {
+    my ($val) = @_;
+    my $ret = ($val & 127);
+}
+
+#--------------------------------------------------------------------------
+
+# See perlvar(1)
+sub wcoredump {
+    my ($val) = @_;
+    my $ret = (0 != ($val & 128));
+}
+
+#--------------------------------------------------------------------------
+
+# See perlvar(1)
+sub wsuccess {
+    my ($val) = @_;
+    return (1 == wifexited($val) && 0 == wexitstatus($val));
 }
 
 1;

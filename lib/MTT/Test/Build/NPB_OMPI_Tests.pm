@@ -32,7 +32,7 @@ sub Build {
     # Clean it (just to be sure)
     MTT::DoCommand::Chdir("NPB2.3-MPI");
     my $x = MTT::DoCommand::Cmd($config->{merge_stdout_stderr}, "make clean");
-    if ($x->{exit_status} != 0) {
+    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         $ret->{result_message} = "NPB_ompi_tests: make clean failed; skipping";
         $ret->{result_stdout} = $x->{result_stdout};
         $ret->{result_stderr} = $x->{result_stderr};
@@ -59,7 +59,7 @@ sub Build {
                             $config->{merge_stdout_stderr},
                             "benchmarks_$n",
                             "classes_$n", "nprocs_$n");
-                if (0 == $x->{exit_status}) {
+                if (MTT::DoCommand::wsuccess($x->{exit_status})) {
                     last;
                 }
             }
@@ -71,7 +71,7 @@ sub Build {
                     $config->{merge_stdout_stderr},
                     "benchmarks", "classes", "nprocs");
     }
-    if (0 == $x->{exit_status}) {
+    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         $ret->{test_result} = 0;
         $ret->{result_message} = $x->{result_message};
         $ret->{result_stdout} = $x->{result_stdout};
@@ -100,7 +100,7 @@ sub _build {
             foreach my $np (@$nprocs) {
                 my $cmd = "make $bm CLASS=$cl NPROCS=$np";
                 my $x = MTT::DoCommand::Cmd($merge, $cmd);
-                if ($x->{exit_status} != 0) {
+                if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
                     $ret->{test_result} = 0;
                     $ret->{result_message} =
                         "NPB_ompi_tests: $cmd failed; aborting";

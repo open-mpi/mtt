@@ -117,7 +117,7 @@ sub Build {
 
     # Clean it (just to be sure)
     my $x = MTT::DoCommand::Cmd(1, "make clean");
-    if ($x->{exit_status} != 0) {
+    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         $ret->{result_message} = "Intel_ompi_tests: make clean failed; skipping";
         $ret->{result_stdout} = $x->{result_stdout};
         return $ret;
@@ -131,7 +131,7 @@ sub Build {
         if ($fflags);
     $x = MTT::DoCommand::Cmd(1, $cmd);
     $ret->{result_stdout} = $x->{result_stdout};
-    if ($x->{exit_status} != 0) {
+    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         $ret->{result_message} = "Failed to build intel suite: $buildfile; skipping";
         return $ret;
     }

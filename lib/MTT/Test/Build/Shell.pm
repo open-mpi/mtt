@@ -35,7 +35,7 @@ sub Build {
                                       $cmd, -1,
                                       $config->{stdout_save_lines},
                                       $config->{stderr_save_lines});
-    if ($x->{exit_status} != 0) {
+    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         $ret->{result_message} = "Shell: command failed \"$cmd\"";
         $ret->{result_message} .= " (timed out)"
             if ($x->{timed_out});
