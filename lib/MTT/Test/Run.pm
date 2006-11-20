@@ -24,6 +24,10 @@ use Data::Dumper;
 
 #--------------------------------------------------------------------------
 
+my $verbose_out;
+
+#--------------------------------------------------------------------------
+
 # Exported current number of processes in the test
 our $test_np;
 
@@ -242,8 +246,12 @@ sub _do_run {
     # potentially a Perfbase XML file to analyze the results with
     if ($ret && $ret->{success}) {
         my $test_results;
+        my $total = $#{$ret->{tests}} + 1;
 
         # Loop through all the tests
+        $verbose_out = 0;
+        my $count = 0;
+        Verbose("   Total of $total tests to run in this section\n");
         foreach my $run (@{$ret->{tests}}) {
             if (!exists($run->{executable})) {
                 Warning("No executable specified for text; skipped\n");
@@ -276,7 +284,17 @@ sub _do_run {
                                     $force);
                 }
             }
+            ++$count;
+
+            # Output a progress bar
+            if ($verbose_out > 50) {
+                $verbose_out = 0;
+                my $per = sprintf("%d%%", $count / $total * 100);
+                Verbose("   ### Test progress: $count of $total section tests complete ($per)\n");
+            }
         }
+        Verbose("   ### Test progress: $count of $total section tests complete (100%)\n
+");
 
         # If we ran any tests at all, then run the after_all step and
         # submit the results to the Reporter
@@ -338,6 +356,7 @@ sub _run_one_test {
         exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$test_np}) &&
         exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$test_np}->{$cmd})) {
         Verbose("$str Skipped (already ran)\n");
+        ++$verbose_out;
         return;
     }
 
@@ -375,8 +394,14 @@ sub _run_one_test {
                                 $out_lines, $err_lines);
     my $stop_time = time;
     my $duration = $stop_time - $start_time . " seconds";
-    $test_exit_status = $x->{status};
-    my $pass = MTT::Values::EvaluateString($run->{pass});
+    $test_exit_status = $x->{exit_status};
+    # If we timeout, automatically fail the test.  Otherwise, it's
+    # possible that the "pass" criteria could incorrectly report
+    # success.
+    my $pass = 0;
+    if (!$x->{timed_out}) {
+        $pass = MTT::Values::EvaluateString($run->{pass});
+    }
 
     # Queue up a report on this test
     my $report = {
@@ -412,13 +437,20 @@ sub _run_one_test {
         if ($stop_time - $start_time > $timeout) {
             $report->{result_message} = "Failed; timeout expired ($timeout seconds)";
         } else {
-            $report->{result_message} = "Failed; exit status: $x->{status}";
+            $report->{result_message} = "Failed; ";
+            if (MTT::DoCommand::wifexited($x->{exit_status})) {
+                $report->{result_message} .= "exit status: $x->{status}\n";
+            } else {
+                my $sig = MTT::DoCommand::wtermsig($x->{exit_status});
+                $report->{result_message} .= "termination signal: $sig\n";
+            }
         }
     } else {
         Verbose("$str Passed\n");
         $report->{result_message} = "Passed";
         $want_output = $run->{save_output_on_pass};
     }
+    ++$verbose_out;
     if ($want_output) {
         $report->{stdout} = $x->{stdout};
         $report->{stderr} = $x->{stderr};
@@ -440,8 +472,14 @@ sub _run_step {
     if (exists($mpi_details->{$step}) && $mpi_details->{$step}) {
         Debug("Running step: $step\n");
         my $x = MTT::DoCommand::CmdScript(1, $mpi_details->{$step}, 10);
-        #JMS should be checking return status here and in who invoked
-        #_run_step.
+        if ($x->{timed_out}) {
+            Verbose("  Warning: step $step TIMED OUT; skipping\n");
+        } elsif (MTT::DoCommand::wifsignaled($x->{exit_status})) {
+            my $ret = MTT::DoCommand::wtermsig($x->{exit_status});
+            Verbose("  Warning: step $step finished via signal $ret; skipping\n");
+        } elsif (!MTT::DoCommand::wsuccess($x->{exit_status})) {
+            Verbose("  Warning: step $step finished with nonzero exit status ($x->{status}); skipping\n");
+        }
     }
 }
 

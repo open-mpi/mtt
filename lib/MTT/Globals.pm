@@ -26,6 +26,8 @@ my $_defaults = {
     hostfile => undef,
     hostlist => undef,
     max_np => undef,
+    textwrap => 76,
+    drain_timeout => 5,
 };
 
 # Reset $Globals per a specific ini file
@@ -60,6 +62,13 @@ sub load {
     if ($val) {
         $Values->{hostlist} = $val;
         parse_hostlist($val);
+    }
+
+    # Output display preference
+
+    my $val = MTT::Values::Value($ini, "MTT", "drain_timeout");
+    if ($val) {
+        $Values->{drain_timeout} = $val;
     }
 }
 

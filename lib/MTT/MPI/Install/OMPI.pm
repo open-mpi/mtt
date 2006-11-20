@@ -62,7 +62,7 @@ sub Install {
     $x = MTT::DoCommand::Cmd(1, "$config->{configdir}/configure $config->{configure_arguments} --prefix=$ret->{installdir}", -1, $config->{stdout_save_lines}, $config->{stderr_save_lines});
     $stdout = $x->{stdout} ? "--- Configure stdout/stderr ---\n$x->{stdout}" :
         undef;
-    if ($x->{status} != 0) {
+    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         $ret->{result_message} = "Configure failed -- skipping this build";
         # Put the output of the failure into $ret so that it gets
         # reported (stdout/stderr was combined into just stdout)
@@ -86,7 +86,7 @@ sub Install {
     }
     $stderr = $x->{stderr} ? "--- \"make all\" stderr ---\n$x->{stderr}" : 
         undef;
-    if ($x->{status} != 0) {
+    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         $ret->{result_message} = "Failed to build: make $config->{make_all_arguments} all";
         # Put the output of the failure into $ret so that it gets
         # reported (stdout/stderr *may* be separated, so assign them
@@ -125,7 +125,7 @@ sub Install {
 
         $stdout = "--- \"make check\" stdout ---\n$x->{stdout}"
             if ($x->{stdout});
-        if ($x->{status} != 0) {
+        if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
             $ret->{result_message} = "Failed to make check";
             # Put the output of the failure into $ret so that it gets
             # reported (stdout/stderr were combined)
@@ -143,7 +143,7 @@ sub Install {
     # re-linking libraries when they are installed)
 
     $x = MTT::DoCommand::Cmd(1, "make install", -1, $config->{stdout_save_lines}, $config->{stderr_save_lines});
-    if ($x->{status} != 0) {
+    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         $ret->{stdout} .= "--- \"make install\" stdout ---\n$x->{stdout}"
             if ($x->{stdout});
         $ret->{result_message} = "Failed to make install";

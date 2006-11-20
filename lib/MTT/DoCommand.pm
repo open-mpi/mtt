@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -29,13 +30,15 @@ sub _kill_proc {
     if ($kid != 0) {
         return $?;
     }
+    Verbose("** Kill TERM didn't work! (got $kid)\n");
 
     # Nope, that didn't work.  Sleep a few seconds and try again.
-    sleep(2);
+    sleep(1);
     $kid = waitpid($pid, WNOHANG);
     if ($kid != 0) {
         return $?;
     }
+    Verbose("** Kill TERM (more waiting) didn't work! (got $kid)\n");
 
     # That didn't work either.  Try SIGINT;
     kill("INT", $pid);
@@ -43,13 +46,15 @@ sub _kill_proc {
     if ($kid != 0) {
         return $?;
     }
+    Verbose("** Kill INT didn't work! (got $kid)\n");
 
     # Nope, that didn't work.  Sleep a few seconds and try again.
-    sleep(2);
+    sleep(1);
     $kid = waitpid($pid, WNOHANG);
     if ($kid != 0) {
         return $?;
     }
+    Verbose("** Kill INT (more waiting) didn't work!\n");
 
     # Ok, now we're mad.  Be violent.
     while (1) {
@@ -58,13 +63,7 @@ sub _kill_proc {
         if ($kid != 0) {
             return $?;
         }
-        sleep(1);
-
-        kill("KILL", $pid);
-        $kid = waitpid($pid, WNOHANG);
-        if ($kid != 0) {
-            return $?;
-        }
+        Verbose("** Kill KILL didn't work! (got $kid)\n");
         sleep(1);
     }
 }
@@ -258,14 +257,20 @@ sub Cmd {
         if (defined($end_time) && time() > $end_time) {
             my $over = time() - $end_time;
             if ($over > $last_over) {
-                Debug("*** Past timeout by $over seconds\n");
+                Verbose("*** Past timeout of $timeout seconds by $over seconds\n");
                 my $st = _kill_proc($pid);
                 if (!defined($killed_status)) {
-                    $killed_status = $st;
+                    $ret->{exit_status} = $killed_status = $st;
                 }
                 $ret->{timed_out} = 1;
             }
             $last_over = $over;
+
+            # See if we've over the drain_timeout
+            if ($over > $MTT::Globals::Values->{drain_timeout}) {
+                Verbose("*** Past drain timeout; quitting\n");
+                $done = 0;
+            }
         }
     }
     close OUTerr;
@@ -275,14 +280,33 @@ sub Cmd {
     # If we didn't timeout, we need to reap the process (timeouts will
     # have already been reaped).
 
+    my $msg = "Command ";
     if (!$ret->{timed_out}) {
         waitpid($pid, 0);
-        $ret->{status} = $? >> 8;
-        Debug("Command complete, exit status: $ret->{status}\n");
+        $ret->{exit_status} = $?;
+        $msg .= "complete";
     } else {
-        $ret->{status} = $killed_status;
-        Debug("Command timed out, exit status: $ret->{status}\n");
+        $msg .= "timed out";
     }
+
+    # Was it signaled?
+    if (wifsignaled($ret->{exit_status})) {
+        my $s = wtermsig($ret->{exit_status});
+        $msg .= ", signal $s";
+        if (wcoredump($ret->{exit_status} & 128)) {
+            if ($ret->{core_dump}) {
+                $msg .= " (core dump)";
+            }
+        }
+        $ret->{status} = -1;
+    }
+    # No, it was not signaled
+    else {
+        $msg .= ", exit status: $ret->{status}";
+        $ret->{status} = wexitstatus($ret->{exit_status});
+    }
+
+    Debug($msg);
 
     # Return an anonymous hash containing the relevant data
 
@@ -306,6 +330,53 @@ sub CmdScript {
     my $x = Cmd($merge_output, $filename, $timeout);
     unlink($filename);
     return $x;
+}
+
+#--------------------------------------------------------------------------
+
+# See perlvar(1)
+sub wifexited {
+    return !wifsignaled(@_);
+}
+
+#--------------------------------------------------------------------------
+
+# See perlvar(1)
+sub wexitstatus {
+    my ($val) = @_;
+    return ($val >> 8);
+}
+
+#--------------------------------------------------------------------------
+
+# See perlvar(1)
+sub wifsignaled {
+    my ($val) = @_;
+    my $ret = (0 != ($val & 127));
+}
+
+#--------------------------------------------------------------------------
+
+# See perlvar(1)
+sub wtermsig {
+    my ($val) = @_;
+    my $ret = ($val & 127);
+}
+
+#--------------------------------------------------------------------------
+
+# See perlvar(1)
+sub wcoredump {
+    my ($val) = @_;
+    my $ret = (0 != ($val & 128));
+}
+
+#--------------------------------------------------------------------------
+
+# See perlvar(1)
+sub wsuccess {
+    my ($val) = @_;
+    return (1 == wifexited($val) && 0 == wexitstatus($val));
 }
 
 1;
