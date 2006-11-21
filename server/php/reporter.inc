@@ -16,105 +16,35 @@
 #
 #
 
-$GLOBALS['verbose'] = isset($_GET['verbose']) ? $_GET['verbose'] : 0;
-$GLOBALS['debug']   = isset($_GET['debug'])   ? $_GET['debug']   : 0;
-$GLOBALS['res']     = 0;
-
-$form_id = "report";
-
-$words_to_numerals = array(
-    #"One"   => 1,
-    "Two"   => 2,
-    "Three" => 3,
-    "Four"  => 4,
-    "Five"  => 5,
-    "Six"   => 6,
-    "Seven" => 7,
-    "Eight" => 8,
-    "Nine"  => 9,
-    "Ten"   => 10,
-);
-
-# db field name => html column header This could be done using the SQL 'as'
-# construct (?), but that's a lot of regexp-ing
-#
-# Or use pg_fetch_all which returns a hash, not a numerically indexed array
-# (we're okay as long as php can preserve the array creation order)
-$sp = "&nbsp;";
-$field_labels = array(
-
-    # not an actual db field
-    "phase"                    => "Phase",
-
-    # phase-independent fields
-    "platform_hardware"        => "Hardware",
-    "platform_type"            => "Os",
-    "platform_id"              => "Cluster",
-    "cluster"                  => "Cluster",
-    "os_name"                  => "Os",
-    "os_version"               => "Os".$sp."ver",
-    "mpi_name"                 => "Mpi",
-    "mpi_version"              => "Mpi".$sp."rev",
-    "hostname"                 => "Host",
-
-    # timestamp related
-    "start_test_timestamp"     => "Timestamp" .$sp."(GMT)",
-    "start_run_timestamp"      => "Timestamp" .$sp."(GMT)",
-    "submit_test_timestamp"    => "Submit".$sp."time",
-    "test_duration_interval"   => "Test".$sp."duration",
-    "agg_timestamp"            => "Timestamp".$sp."aggregation",
-
-    "mpi_get_section_name"     => "Section".$sp."(MPI Get)",
-    "mpi_install_section_name" => "Section".$sp."(MPI Install)",
-    "mpi_details"              => "MPI Details",
-    "test_build_section_name"  => "Suite".$sp."(Build)",
-    "test_run_section_name"    => "Suite".$sp."(Run)",
-    "section"                  => "Section",
-    "merge_stdout_stderr"      => "Merge".$sp."outputs",
-    "stderr"                   => "Stderr",
-    "stdout"                   => "Stdout",
-    "environment"              => "Env",
-    "mtt_version_major"        => "Mtt".$sp."ver".$sp."maj",
-    "mtt_version_minor"        => "Mtt".$sp."ver".$sp."min",
-    "compiler_name"            => "Compiler",
-    "compiler"                 => "Compiler",
-    "compiler_version"         => "Compiler".$sp."ver",
-    "configure_arguments"      => "Config".$sp."args",
-    "vpath_mode"               => "Vpath",
-    "result_message"           => "Result".$sp."msg",
-    "test_name"                => "Test".$sp."name",
-    "name"                     => "Test name",
-    "section_name"             => "Test name",
-    "test_command"             => "Mpirun".$sp."cmd",
-    "test_np"                  => "Np",
-    "result_message"           => "Test".$sp."msg",
-    "test_message"             => "Test".$sp."msg",
-    "test_pass"                => "Result",
-    "success"                  => "Result",
-    "count"                    => "Count",
-    "date"                     => "Date",
-    "time"                     => "Time",
-);
-$menu_labels = array(
-    "all" => "All",
-);
-$All = "All";
-
-# Encode cgi param name prefixes as a means to slim down the query string
-# X: Encode cgi param field names
-$cgi_abbrevs = array(
-    'hidden_menufield' => 'hmef_',
-    'menufield'        => 'mef_',
-    'mainfield'        => 'maf_',
-    'textfield'        => 'tf_',
-    'filter_types'     => 'ft_',
-);
-
 #########################################
 #                                       #
 #  String Processing Functions          #
 #                                       #
 #########################################
+
+
+function strtonumeral($str) {
+
+    $words_to_numerals = array(
+        "one"   => 1,
+        "two"   => 2,
+        "three" => 3,
+        "four"  => 4,
+        "five"  => 5,
+        "six"   => 6,
+        "seven" => 7,
+        "eight" => 8,
+        "nine"  => 9,
+        "ten"   => 10,
+    );
+
+    $converted = $words_to_numerals[strtolower($str)];
+
+    if ($converted)
+        return $converted;
+    else
+        return $str;
+}
 
 # Return string concatenated to itself x times
 function repeat($str, $x) {
@@ -179,7 +109,7 @@ function html_to_txt2($str) {
 # Strip quotes from html.
 # Needed for sending 'content' argument to a javascript popup function
 function strip_quotes($str) {
-    return preg_replace('/\x22|\x27/','',$str);
+    return preg_replace('/\x27/','',$str);
 }
 
 # Useful for preventing browser text-wrapping
@@ -196,7 +126,7 @@ function ascii_sp_to_html_sp($str) {
 
 function debug($str) {
     if ($GLOBALS['debug'] or $GLOBALS['verbose'])
-        print("\n$str");
+        print("\n<pre>$str</pre>");
 }
 
 function var_dump_($desc, $a) {

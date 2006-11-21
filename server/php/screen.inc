@@ -19,228 +19,92 @@
 $topdir = ".";
 include_once("$topdir/reporter.inc");
 include_once("$topdir/database.inc");
-include_once("$topdir/http.inc");
 include_once("$topdir/html.inc");
 
-# Start page menu
-
-$http_username =
-        isset($_SERVER['PHP_AUTH_USER']) ?
-        $_SERVER['PHP_AUTH_USER'] : "";
-
-$main_menu = array(
-    "start_timestamp"   => "since yesterday",
-    "http_username"     => $http_username,
-    "local_username"    => "all",
-    "hostname"          => "all",
-    "phase"             => "all",
-    "mpi_name"          => "all",
-    "test_result"       => "all",
-    "mpi_version"       => "all",
-    "platform_hardware" => "all",
-    "os_name"           => "all",
-);
-
-# HTML input elements
-$main_textfields = ""; 
-$pulldowns      = ""; 
-$advanced       = ""; 
-$filters        = ""; 
-
-
-# Because the CGI array will not be 2D, we have to do a makeshift 2D array by prefixing
-# CGI names with things like "field_" or "mainfield_"
-
-# Generate Main Menu
-
-$main_textfields .= "\n\n<table width=100% align=center border=1 cellspacing=1 cellpadding=5>";
-
-$i = 0;
-$cols = 2;
-foreach (array_keys($main_menu) as $field) {
-
-    $main_textfields .= "\n" . ((($i++ % $cols) == 0) ? "\n<tr colspan=$cols>" : "") .
-                        "\n<td bgcolor=$lgray>$field:" .
-                        "\n<td bgcolor=$lgray><input type='textfield' value='$main_menu[$field]'>";
-}
-$main_textfields .= "\n</table>";
-
-# Generate pulldowns table
-
-# $pulldowns .= "\n\n<table width=100% align=center border=1 cellspacing=1 cellpadding=5>";
-# $pulldowns .= "\n<tr bgcolor=$gray>";
-# $pulldowns .= "\n<th colspan=3>Selections <tr>";
-# $pulldowns .= repeat("\n<th bgcolor='$gray'>Field <th bgcolor='$gray'>Menu <th bgcolor='$gray'>" .
-#                 # "<a href=' " .
-#                 #     "\njavascript:toggle_checkboxes" .
-#                 #         "( " . join(",", lsprintf_('"%s"', prefix("agg_", array_keys($menu)))) . ")' " .
-#                 # "class='lgray_ln'>" .
-#                 "Aggregate" .
-#                 # "</a>" .
-#                 "",
-#               $cols);
-# 
-# $i = 0;
-# foreach (array_keys($menu) as $field) {
-# 
-#     $pulldowns .= "\n" . ((($i++ % $cols) == 0) ? "\n<tr>" : "") .
-#         "\n<td bgcolor=$lgray><font>$field_labels[$field]:" .
-#         "\n<td><select name='" . $cgi_abbrevs['menufield'] . "$field'>";
-# 
-#     $starred = false;
-#     foreach (array_merge(array($All), $menu[$field]) as $item) {
-# 
-#         # X: functionalize the whole 'default selection' thing
-#         $starred = (preg_match('/^\*/',$item) ? true : false);
-#         $item = preg_replace("/^\*/i",'',$item);
-#         $pulldowns .= "\n<option " .
-#                         ($starred ? "selected" : "") .
-#                         " style='width: $menu_width;' value='$item'>$item";
-#     }
-#     $pulldowns .= "\n</select>";
-# 
-#     # check the first three by default
-#     $pulldowns .= "\n<td><input type='checkbox' name='agg_$field' id='agg_$field' " .
-#                     (($i > 3) ? "checked" : " ") . ">";
-# }
-# $pulldowns .= "\n</table>";
-# 
-# # X: Merge the following two foreach loops
-# 
-# # Generate advanced textfield filters (this should be thought of as a
-# # logical extension of the $filters panel)
-# 
-# $advanced .= "\n\n<table width=100% align=center border=1 cellspacing=1 cellpadding=5>";
-# $advanced .= "\n<tr bgcolor=$gray>";
-# $advanced .= "\n<th colspan=3>Advanced <tr>";
-# $advanced .= repeat("\n<th bgcolor='$gray'>Field <th bgcolor='$gray'>Text <th bgcolor='$gray'>", $cols);
-# 
-# $i = 0;
-# foreach (array("advanced") as $t) {
-#     foreach (array_keys($columns[$t]) as $textfield) {
-# 
-#         $advanced .= "\n" . ((($i++ % $cols) == 0) ? "\n<tr>" : "") .
-#                     "\n<td bgcolor=$lgray><font>".
-#                     ($field_labels[$textfield] ? $field_labels[$textfield] : $textfield) . ":" .
-#                     "\n<td><input type='textfield' name='" . $cgi_abbrevs['textfield'] . "$textfield'>" .
-#                     "\n<td><select name='" . $cgi_abbrevs['filter_types'] . "$textfield'>";
-# 
-#         foreach ($columns[$t][$textfield] as $filter_type) {
-#             $advanced .= sprintf("\n<option>%s</option>", $filter_type);
-#         }
-#         $advanced .= "\n</select>";
-#     }
-# }
-# 
-# $advanced .= "\n<tr>";
-# $advanced .= "\n<td bgcolor=$gray align=center colspan=3><input type='submit' value='Save'>";
-# $advanced .= "\n</table>";
-# 
-# # Generate textfield filters
-# 
-# $filters .= "\n\n<table width=100% align=center border=1 cellspacing=1 cellpadding=5>";
-# $filters .= "\n<tr bgcolor=$gray>";
-# $filters .= "\n<th colspan=3>$Filters ";
-# 
-# # X: Need to create javascript import/export functions to get this working
-# # $filters .= "\n<a href='javascript:popup(\"900\",\"750\",\"Advanced $Filters\",\"" .
-# #              strip_quotes($advanced) .
-# #              "\",\"\")' class='lgray_ln'>[+]</a>";
-# 
-# $filters .= "\n<tr>";
-# $filters .= repeat("\n<th bgcolor='$gray'>Field <th bgcolor='$gray'>Text <th bgcolor='$gray'>", $cols);
-# 
-# $i = 0;
-# foreach (array_keys($textfield_tables) as $t) {
-# 
-#     $divider = $textfield_tables[$t]["label"];
-#     $filters .= $divider ? "\n<tr><th colspan=3 bgcolor=$gray align='center'>$divider" : "";
-# 
-#     foreach (array_keys($columns[$t]) as $textfield) {
-#         $filters .= "\n" . ((($i++ % $cols) == 0) ? "\n<tr>" : "") .
-#                     "\n<td bgcolor=$lgray><font>" .
-#                     ($field_labels[$textfield] ? $field_labels[$textfield] : $textfield) . ":" .
-#                     "\n<td><input type='textfield' name='" . $cgi_abbrevs['textfield'] . "$textfield'>" .
-#                     "\n<td><select name='" . $cgi_abbrevs['filter_types'] . "$textfield'>";
-# 
-#         foreach ($columns[$t][$textfield] as $filter_type) {
-#             $filters .= sprintf("\n<option " .
-#                         "style='width: $ft_menu_width;' " .
-#                         ">%s</option>", $filter_type);
-#         }
-#         $filters .= "\n</select>" .  "";
-#     }
-# }
-# $filters .= "\n</table>";
-
-# Other settings
-
-# $other .= "\n<table width=100% align=center border=1 cellspacing=1 cellpadding=5>";
-# $other .= "\n<tr bgcolor=$gray>";
-# $other .= "\n<th colspan=3>Settings ";
-# $other .= "\n<tr><td bgcolor=$lgray>Count";
-# 
-# $starred = false;
-# foreach (array_keys($by_atoms) as $by_atom) {
-# 
-#     $starred = (preg_match('/^\*/', $by_atom) ? true : false);
-# 
-#     $other .= "\n<td><input type='radio' name='by_atom' value='" . $by_atom . "' " .
-#                ($starred ? " checked " : "") .  ">" .
-#               "<font>$by_atoms[$by_atom]" .
-#               "";
-# }
-# $other .= "\n<tr><td bgcolor=$lgray>Display";
-# $other .= "\n<td colspan=2><input type='checkbox' name='sql'>SQL$sp";
-# $other .= "\n<input type='checkbox' name='cgi'>CGI$sp";
-# # $other .= "\n<input type='checkbox' " .
-# #           #"\nchecked " .
-# #           "\nname='1-page'>1-page$sp";
-# $other .= "\n</table>";
-
-# --- Print it all
-
-# html body
-$query_screen .= "\n";
-$query_screen .= "\n<body>";
-
-$query_screen .= "\n <div align=left>";
-$query_screen .= "\n <table width=80% align=center border=1 cellspacing=1 cellpadding=5>";
-$query_screen .= "\n   <form name=$form_id target=_report>";
-$query_screen .= "\n   <tr><td>";
-$query_screen .= "\n   $main_textfields";
-$query_screen .= "\n   <tr>";
-$query_screen .= "\n   <td align=center bgcolor=$lgray><input type='submit' value='Report'>";
-$query_screen .= "\n   </form>";
-$query_screen .= "\n </table>";
-$query_screen .= "\n </div>";
-
-$query_screen .= carryover_cgi_params($_GET);
-
-list($width, $height, $type, $attr) = getimagesize($mpi_logo_path);
-
-
 function dump_query_screen() {
-    global $query_screen;
-    # $data = array();
-    # $data = get_menus_info();
-    # var_dump_html('$data = ', $data);
 
-    return $query_screen;
-}
+    global $lgray, $llgray;
 
-# prefix a list of strings with $str, and return the list
-function prefix($prefix, $list) {
+    $defaults = setup_defaults();
+    $layout = setup_layout();
 
-    $arr = array();
+    # Fill-in form using last invocation's input
+    $main_menu = menu_carryover($defaults);
 
-    foreach ($list as $elem) {
-        array_push($arr, $prefix . $elem);
+    # Generate advanced popup menus
+    $entries = get_menus_info(array_keys($main_menu["text"]));
+
+    # Generate advanced popup menus
+    $links = selection_popups($defaults, $entries);
+
+    # Generate Menu
+    $i = 0;
+    $cols = 1;
+    $td = "<td bgcolor=$lgray>";
+    $ctd = "<td bgcolor=$lgray align=center>";
+    $ztd = "<td bgcolor=$lgray width=33%>";
+    $table_elem = "\n\n<table width=100% align=center cellspacing=1 cellpadding=5>";
+
+    foreach (array_keys($layout) as $section) {
+        $layout[$section]['html'] = "\n$table_elem";
+
+        # Display input textfields
+        foreach ($layout[$section]['fields'] as $field) {
+            $layout[$section]['html'] .=
+                "\n" . ((($i++ % $cols) == 0) ? "\n<tr>" : "") .
+                "\n$ztd " .
+                "\n" . $links[$field] . ":" .
+                "\n$td " .
+                "\n<input type='textfield' " .
+                    "name='text_$field' " .
+                    "id='text_$field' " .
+                    "value='" . $main_menu["text"][$field] . "'>";
+
+        # No checkbox for a timestamp field
+        # Timestamp column is added using, e.g. "by hours"
+        if (! preg_match("/timestamp/i", $field))
+            $layout[$section]['html'] .=
+                "\n$td " .
+                "\n<input type='checkbox' " .
+                    "name='show_$field' " .
+                    "id='show_$field' " . $main_menu["show"][$field] . ">" .
+                "\n";
+        }
+        $layout[$section]['html'] .= '</table>';
     }
-    return $arr;
+
+    $layout['bottom']['html'] = 
+        $table_elem .
+        "\n<tr>$ctd " .
+        "\n<input type='reset' value='Reset'>&nbsp;" .
+        "\n<input type='submit' name='go' value='Report'>" .
+        "\n</table>";
+
+    # Print the screen
+    print html_head();
+    print "\n";
+    print "\n<body>";
+
+    print "\n <div align=left>";
+    print "\n <table width=100% align=center border=1 cellspacing=1";
+    print "\n   <form name=report target=_self>";
+    print "\n   <tr><td>";
+    print "\n" . $layout['topleft']['html'];
+    print "\n   <td rowspan=2>";
+    print "\n" . $layout['right']['html'];
+    print "\n   <tr><td>";
+    print "\n" . $layout['bottomleft']['html'];
+    print "\n   <tr>";
+    print "\n   <td align=center colspan=2>";
+    print        $layout['bottom']['html'];
+    print        carryover_cgi_params($_GET);
+    print "\n   </form>";
+    print "\n </table>";
+    print "\n </div>";
 }
 
 # Carry input params over between invocations of the script
+# Note: this string must be printed between the <form> tags
 function carryover_cgi_params($params) {
 
     foreach (array_keys($params) as $k) {
@@ -250,9 +114,10 @@ function carryover_cgi_params($params) {
     return $str;
 }
 
-function get_menus_info() {
+# Populate menus with entries (listed in columns_arg) from database
+function get_menus_info($columns_arg) {
 
-    debug("\nGetting menus info");
+    $columns_arg = array_flip($columns_arg);
 
     $tables = array(
         "compute_cluster",
@@ -262,31 +127,378 @@ function get_menus_info() {
         "mpi_install",
         "test_build",
         "test_run",
-        # "results",
-        # "latency_bandwidth",
-        # "alerts",
-        # "users",
-        # "failure",
-        # "cluster_owner",
+        "results",
     );
 
+    # Do *not* provide menus for these fields
+    $big_columns = array(
+        "command" => 1,
+        "configure_arguments" => 1,
 
-    # Gather what is in the database
+        # Results
+        "environment" => 1,
+        "merge_stdout_stderr" => 1,
+        "result_stdout" => 1,
+        "result_stderr" => 1,
+        "start_timestamp" => 1,
+        "stop_timestamp" => 1,
+        "duration" => 1,
+        "submit_timestamp" => 1,
+    );
 
-    $data = array();
+    # Gather database columns
+    $columns = array();
+    $entries = array();
     $tmp = array();
     foreach ($tables as $table) {
         $tmp = get_table_fields($table);
-        $data[$table] = $tmp["column_name"];
+        $columns[$table] = $tmp["column_name"];
     }
-    var_dump_html('325 $data = ', $data);
+
+    # Gather all available entries for the above columns
     foreach ($tables as $table) {
-        foreach ($data[$table] as $column) {
-            $cmd = "SELECT $column FROM $table GROUP BY $column";
-            $data[$table][$column] = simple_select($cmd);
+        foreach ($columns[$table] as $column) {
+            if ($big_columns[$column] or ! isset($columns_arg[$column]))
+                continue;
+
+            $cmd = "SELECT $column FROM $table " .
+                   "WHERE $column != 'bogus' " .
+                   "GROUP BY $column ORDER BY $column DESC;";
+            $entries[$column][] = simple_select($cmd);
         }
     }
-    var_dump_html('332 $data = ', $data);
+
+    $entries["start_timestamp"][] = array(
+        "today",
+        "yesterday",
+        "past 12 hours",
+        "past 24 hours",
+        "past 1 day",
+        "past 2 days",
+        "past 3 days",
+        "past 1 week",
+        "past 2 weeks",
+    );
+    $entries["start_timestamp"][] = array(
+        "by second",
+        "by minute",
+        "by hour",
+        "by month",
+        "by year",
+    );
+    return $entries;
+}
+
+# Prints an HTML table of _GET and _POST vars
+function debug_cgi($params, $title) {
+
+    global $lgray;
+    global $dgray;
+
+    $cols = 3;
+
+    print "\n\n<table width=80% border=1>";
+    print "\n\n<tr><th bgcolor=$dgray colspan=" . $cols * 2 . ">$title";
+
+    $i = 0;
+    foreach (array_keys($params) as $k) {
+        print "\n" . ((($i++ % $cols) == 0) ? "\n<tr>" : "") .
+            "<td bgcolor=$lgray>" . $k . "<td>$params[$k]";
+    }
+    print "\n\n</table>";
+}
+
+# Return javascript code to bring popup selections
+# back into the main window's textfields
+function jscript_export($entries, $field) {
+
+	$script .= <<<EOT
+
+    <script language=javascript>
+
+        function exportVars() {
+            var str = '';
+            var items = new Array();
+EOT;
+
+    $for_loop = <<<EOT
+
+            for (i = 0; i < document.adv._%s.length; i++) {
+                if (document.adv._%s.options[i].selected) {
+                    items.push(document.adv._%s.options[i].text);
+                }
+            }
+EOT;
+
+    # THERE SHOULD BE NO NEED TO CREATE ''TWO'' FOR LOOPS
+    # HERE
+    $i = 0;
+    foreach ($entries as $entry) {
+        $script .= sprintf($for_loop, $i, $i, $i);
+        $i++;
+    }
+
+	$script .= <<<EOT
+
+            str = items.join(';');
+            if (items.length > 0) {
+                window.opener.document.report.text_$field.value = str;
+            }
+            window.close();
+        }
+
+    </script>
+EOT;
+
+    return $script;
+}
+
+# Provide logical labels for form controls
+function label($str) {
+
+    $labels = array(
+        'start_timestamp' => "date_range",
+        'submit_timestamp' => "date_range",
+    );
+    $label = $labels[$str];
+
+    if ($label)
+        return $label;
+    else 
+        return $str;
+}
+
+# Return an array of default values for textfields
+function setup_defaults() {
+
+    return array(
+        # results
+        "start_timestamp"   => 'past 24 hours',
+
+        # submit
+        "http_username" =>
+            isset($_SERVER['PHP_AUTH_USER']) ?
+            $_SERVER['PHP_AUTH_USER'] : "",
+        "local_username"    => 'all',
+        "hostname"          => 'all',
+
+        # mpi_install
+        "platform_hardware" => 'all',
+        "os_name"           => 'all',
+        "mpi_name"          => 'all',
+        "mpi_version"       => 'all',
+    );
+}
+
+# Return an array to represent the
+# screen's layout
+function setup_layout() {
+
+    # results
+    $layout['topleft']['fields'] = array(
+        'start_timestamp'
+    );
+    # submit
+    $layout['bottomleft']['fields'] = array(
+        'http_username',
+        'local_username',
+        'hostname',
+    );
+    # mpi_install
+    $layout['right']['fields'] = array(
+        'platform_hardware',
+        'os_name',
+        'mpi_name',
+        'mpi_version',
+    );
+    foreach (array_keys($layout) as $k)
+        $layout['report']['fields'][] = $k;
+
+    return $layout;
+}
+
+# Return an array of selection menu popups
+function selection_popups($defaults, $entries) {
+
+    global $lgray, $llgray;
+
+    # For small menus in popup windows
+    $table_elem = "\n\n<table align=center border=1 cellspacing=1 cellpadding=5>";
+    $td = "<td align='center' bgcolor='$llgray'>";
+    $td2 = "<td align='center' bgcolor='$llgray' colspan=2>";
+    $th2 = "<th align='center' bgcolor='$lgray' colspan=2>";
+
+    # Generate a popup window containing one or
+    # more menus, for every textfield displayed in
+    # the main window
+    foreach (array_keys($defaults) as $field) {
+
+        # Disallow multiple selection for date range
+        if (! preg_match("/timestamp/i", $field))
+            $multiple = "multiple";
+
+        $i = 0;
+
+        $menu = "\n<form id=adv name=adv>" .
+                "\n$table_elem" .
+                "\n<tr>$th2 $field<tr>";
+
+        # Each column keys to an array of arrays (one array of which is
+        # normally the available entries in the database) 
+        foreach (array_keys($entries[$field]) as $k) {
+
+            $size = sizeof($entries[$field][$k]);
+            $menu .= "\n$td" .
+                     "\n<select name='_".$i++."' $multiple size='10'>";
+
+            foreach ($entries[$field][$k] as $entry) {
+                $menu .= 
+                    sprintf("\n<option style='width: 220px;' " .
+                                       "name='%s' value='%s'>%s", 
+                                       $entry, $entry, $entry);
+            }
+            $menu .= "\n</select>";
+        }
+
+        $menu .=
+            "\n<tr>$td2" .
+            "\n<input type='submit' name='insert' onclick='javascript:exportVars();' value='Insert'>" .
+            "\n</table>" .
+            "\n</form>";
+
+        $num_menus = sizeof($entries[$field]);
+
+        $link =
+            "\n<a class='black_ln' href='javascript:popup(" .
+                "\n\"" . (350 * $num_menus) . "\"," .
+                "\n\"300\"," .
+                "\n\"Title\"," .
+                "\n\"" . htmlentities(jscript_export($entries[$field], $field), ENT_QUOTES) . "\"," .
+                "\n\"" . htmlentities($menu, ENT_QUOTES) . "\"," .
+                "\n\"font-family:Courier,monospace\"" . 
+            ")'><font size='$sfont'>" . label($field) . "</font>" .
+            "</a>";
+
+        $links[$field] = $link;
+    }
+    return $links;
+}
+
+# carry over textfields and checkboxes from the last invocation
+function menu_carryover($defaults) {
+
+    foreach (array_keys($defaults) as $k) {
+        if (isset($_GET["text_$k"]))
+            $menu["text"][$k] = $_GET["text_$k"];
+        else
+            $menu["text"][$k] = $defaults[$k];
+
+        if (isset($_GET["go"]))
+            if (isset($_GET["show_$k"])) {
+                if ($_GET["show_$k"] == "on")
+                    $menu["show"][$k] = "checked";
+            }
+            else
+                $menu["show"][$k] = "";
+        else
+            $menu["show"][$k] = "checked";
+    }
+    return $menu;
+}
+
+function html_head() {
+
+    $javascript = <<<EOT
+
+    function popup(width,height,title,script,content,style) {
+
+        newwindow2=window.open('','name','height=' + height + ',width=' + width + ',scrollbars=yes');
+        var tmp = newwindow2.document;
+        tmp.write('<html><head>' + script + '<title>' + title + '</title></head>');
+        tmp.write('<body ' + style + '>' + content + '</body></html>');
+        tmp.close();
+    }
+
+    // X: combine the following two functions
+
+    // Disable all objects passed to the function
+    function disable() {
+
+        for (i = 0; i < arguments.length; i++) {
+
+            // alert("list[i] = " + arguments[i]);
+
+            // Aack! How do we check to see if the val is defined!
+            // The function dies if we try to disable a single undefined object
+
+            if (undefined != arguments[i]) {
+                arguments[i].disabled=1;
+            }
+        }
+    }
+
+    // Enable all objects passed to the function
+    function enable() {
+        for (i = 0; i < arguments.length; i++) {
+            if (undefined != arguments[i]) {
+                arguments[i].disabled=0;
+            }
+        }
+    }
+
+    // Toggle all the arguments (check/uncheck)
+    function toggle_checkboxes() {
+
+        one_is_checked = false;
+
+        for (i = 0; i < arguments.length; i++) {
+            var box = document.getElementByName(arguments[i]);
+            if (box.checked == true) {
+                one_is_checked = true;
+                break;
+            }
+        }
+
+        toggle = ! one_is_checked;
+
+        for (i = 0; i < arguments.length; i++) {
+            var box = document.getElementByName(arguments[i]);
+            box.checked = toggle;
+        }
+    }
+
+EOT;
+
+    $style = <<<EOT
+
+    a.lgray_ln:link    { color: #F8F8F8 } /* for unvisited links */
+    a.lgray_ln:visited { color: #555555 } /* for visited links */
+    a.lgray_ln:active  { color: #FFFFFF } /* when link is clicked */
+    a.lgray_ln:hover   { color: #FFFF40 } /* when mouse is over link */
+
+    a.black_ln:link    { color: #000000 } /* for unvisited links */
+    a.black_ln:visited { color: #555555 } /* for visited links */
+    a.black_ln:active  { color: #FFFFFF } /* when link is clicked */
+    a.black_ln:hover   { color: #FFFF40 } /* when mouse is over link */
+    td {font-size: 75%; }
+
+EOT;
+
+    # Print html head (query frame & results frame may need this script/style)
+    $html_head = "";
+    $html_head .= "\n<html>";
+    $html_head .= "\n<head><title>Open MPI Test Reporter</title>";
+
+    $html_head .= "\n<script language='javascript' type='text/javascript'>";
+    $html_head .= "\n$javascript";
+    $html_head .= "\n</script>";
+
+    $html_head .= "\n<style type='text/css'>";
+    $html_head .= "\n$style";
+    $html_head .= "\n</style>";
+    $html_head .= "\n</head>";
+
+    return $html_head;
 }
 
 ?>
