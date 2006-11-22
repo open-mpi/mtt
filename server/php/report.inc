@@ -65,11 +65,6 @@ function dump_report() {
 
     dump_data_table($headers, $resource);
 
-    # Skip bookmarks?
-    if (isset($_GET['just_results'])) {
-        return;
-    }
-
     print info_pointers($datefields);
 
     print "\n<br><hr><br>";
@@ -152,7 +147,7 @@ function dump_data_table($headers, $resource) {
         print sprintf("\n<th bgcolor='$thcolor' " .
                       "colspan='$num_result_types[$phase]'>%s",
                       replace_underscores($phase));
-        if ($num_result_type[$phase])
+        if ($num_result_types[$phase])
             $total_result_cols += $num_result_type[$phase];
     }
 
@@ -338,6 +333,7 @@ function info_pointers($datefields) {
                   "\n</div>";
 
     }
+
     return $links;
 }
 
@@ -578,6 +574,39 @@ function order_columns($columns) {
             $ordering[$column] = $columns[$column];
 
     return $ordering;
+}
+
+# Returns a trimmed query string
+function dump_query_string($params) {
+
+    global $cgi_abbrevs;
+
+    foreach (array_keys($params) as $k) {
+
+        # Only hash these textfield-filter_type pairs if BOTH are non-null
+        if (preg_match("/" . $cgi_abbrevs['textfield'] . "(\w+)|" .
+                             $cgi_abbrevs['filter_types'] . "(\w+)/i", $k, $m)) {
+
+            $f     = $m[1];
+            $type  = "" . $cgi_abbrevs['filter_types'] . "$f";
+            $field = "" . $cgi_abbrevs['textfield'] . "$f";
+
+            if ($params[$field]) {
+                $hash[$type] = $params[$type];
+                $hash[$field] = $params[$field];
+            }
+
+        } else {
+            $hash[$k] = $params[$k];
+        }
+    }
+
+    $str = "";
+    foreach (array_keys($hash) as $k) {
+        if ($hash[$k] != null)
+            $str .= '&' . $k . "=$_GET[$k]";
+    }
+    return $str;
 }
 
 ?>

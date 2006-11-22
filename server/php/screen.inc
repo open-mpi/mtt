@@ -40,22 +40,22 @@ function dump_query_screen() {
     # Generate Menu
     $i = 0;
     $cols = 1;
-    $td = "<td bgcolor=$lgray>";
-    $ctd = "<td bgcolor=$lgray align=center>";
-    $ztd = "<td bgcolor=$lgray width=33%>";
-    $table_elem = "\n\n<table width=100% align=center cellspacing=1 cellpadding=5>";
+    $td = "<td bgcolor='$lgray'>";
+    $ctd = "<td bgcolor='$lgray' align='center'>";
+    $td33 = "<td bgcolor='$lgray' width='33%'>";
+    $tbl = "\n\n<table width='100%' align='center' cellspacing='1' cellpadding='5'>";
 
     foreach (array_keys($layout) as $section) {
-        $layout[$section]['html'] = "\n$table_elem";
+        $layout[$section]['html'] = "\n$tbl";
 
         # Display input textfields
         foreach ($layout[$section]['fields'] as $field) {
             $layout[$section]['html'] .=
                 "\n" . ((($i++ % $cols) == 0) ? "\n<tr>" : "") .
-                "\n$ztd " .
+                "\n$td33 " .
                 "\n" . $links[$field] . ":" .
                 "\n$td " .
-                "\n<input type='textfield' " .
+                "\n<input type='text' " .
                     "name='text_$field' " .
                     "id='text_$field' " .
                     "value='" . $main_menu["text"][$field] . "'>";
@@ -64,7 +64,7 @@ function dump_query_screen() {
         # Timestamp column is added using, e.g. "by hours"
         if (! preg_match("/timestamp/i", $field))
             $layout[$section]['html'] .=
-                "\n$td " .
+                "\n$ctd " .
                 "\n<input type='checkbox' " .
                     "name='show_$field' " .
                     "id='show_$field' " . $main_menu["show"][$field] . ">" .
@@ -74,33 +74,35 @@ function dump_query_screen() {
     }
 
     $layout['bottom']['html'] = 
-        $table_elem .
+        $tbl .
         "\n<tr>$ctd " .
-        "\n<input type='reset' value='Reset'>&nbsp;" .
-        "\n<input type='submit' name='go' value='Report'>" .
+        "\n<input type='Reset' value='Reset'>&nbsp;" .
+        "\n<input type='Submit' name='go' value='Report'>" .
         "\n</table>";
 
     # Print the screen
     print html_head();
+
+    $self = 'http://' . $_SERVER['SERVER_NAME'] . $_SERVER['PHP_SELF'];
+
     print "\n";
     print "\n<body>";
-
-    print "\n <div align=left>";
-    print "\n <table width=100% align=center border=1 cellspacing=1";
-    print "\n   <form name=report target=_self>";
+    print "\n<form method='get' id='report' name='report' action='$self'>";
+    print "\n <div align='left'>";
+    print "\n <table width='100%' align='center' border='1' cellspacing='1'";
     print "\n   <tr><td>";
     print "\n" . $layout['topleft']['html'];
-    print "\n   <td rowspan=2>";
+    print "\n   <td rowspan='2'>";
     print "\n" . $layout['right']['html'];
     print "\n   <tr><td>";
     print "\n" . $layout['bottomleft']['html'];
     print "\n   <tr>";
-    print "\n   <td align=center colspan=2>";
+    print "\n   <td align='center' colspan='2'>";
     print        $layout['bottom']['html'];
     print        carryover_cgi_params($_GET);
-    print "\n   </form>";
     print "\n </table>";
     print "\n </div>";
+    print "\n </form>";
 }
 
 # Carry input params over between invocations of the script
@@ -173,7 +175,6 @@ function get_menus_info($columns_arg) {
         "yesterday",
         "past 12 hours",
         "past 24 hours",
-        "past 1 day",
         "past 2 days",
         "past 3 days",
         "past 1 week",
@@ -197,13 +198,13 @@ function debug_cgi($params, $title) {
 
     $cols = 3;
 
-    print "\n\n<table width=80% border=1>";
-    print "\n\n<tr><th bgcolor=$dgray colspan=" . $cols * 2 . ">$title";
+    print "\n\n<table width='80%' border='1'>";
+    print "\n\n<tr><th bgcolor='$dgray' colspan=" . $cols * 2 . ">$title";
 
     $i = 0;
     foreach (array_keys($params) as $k) {
         print "\n" . ((($i++ % $cols) == 0) ? "\n<tr>" : "") .
-            "<td bgcolor=$lgray>" . $k . "<td>$params[$k]";
+            "<td bgcolor='$lgray'>" . $k . "<td>$params[$k]";
     }
     print "\n\n</table>";
 }
@@ -214,7 +215,7 @@ function jscript_export($entries, $field) {
 
 	$script .= <<<EOT
 
-    <script language=javascript>
+    <script language='javascript'>
 
         function exportVars() {
             var str = '';
@@ -271,14 +272,17 @@ function label($str) {
 # Return an array of default values for textfields
 function setup_defaults() {
 
+    # ompi does not submit results
+    $http_username = $_SERVER['PHP_AUTH_USER'];
+    if (preg_match("/ompi/i", $http_username))
+        $http_username = 'all';
+
     return array(
         # results
         "start_timestamp"   => 'past 24 hours',
 
         # submit
-        "http_username" =>
-            isset($_SERVER['PHP_AUTH_USER']) ?
-            $_SERVER['PHP_AUTH_USER'] : "",
+        "http_username"     => $http_username,
         "local_username"    => 'all',
         "hostname"          => 'all',
 
@@ -323,10 +327,10 @@ function selection_popups($defaults, $entries) {
     global $lgray, $llgray;
 
     # For small menus in popup windows
-    $table_elem = "\n\n<table align=center border=1 cellspacing=1 cellpadding=5>";
+    $tbl = "\n\n<table align='center' border='1' cellspacing='1' cellpadding='5'>";
     $td = "<td align='center' bgcolor='$llgray'>";
-    $td2 = "<td align='center' bgcolor='$llgray' colspan=2>";
-    $th2 = "<th align='center' bgcolor='$lgray' colspan=2>";
+    $td2 = "<td align='center' bgcolor='$llgray' colspan='2'>";
+    $th2 = "<th align='center' bgcolor='$lgray' colspan='2'>";
 
     # Generate a popup window containing one or
     # more menus, for every textfield displayed in
@@ -339,21 +343,20 @@ function selection_popups($defaults, $entries) {
 
         $i = 0;
 
-        $menu = "\n<form id=adv name=adv>" .
-                "\n$table_elem" .
+        $menu = "\n" .
+                "\n$tbl" .
                 "\n<tr>$th2 $field<tr>";
 
         # Each column keys to an array of arrays (one array of which is
         # normally the available entries in the database) 
         foreach (array_keys($entries[$field]) as $k) {
 
-            $size = sizeof($entries[$field][$k]);
             $menu .= "\n$td" .
                      "\n<select name='_".$i++."' $multiple size='10'>";
 
             foreach ($entries[$field][$k] as $entry) {
                 $menu .= 
-                    sprintf("\n<option style='width: 220px;' " .
+                    sprintf("\n<option style='width: 300px;' " .
                                        "name='%s' value='%s'>%s", 
                                        $entry, $entry, $entry);
             }
@@ -363,20 +366,27 @@ function selection_popups($defaults, $entries) {
         $menu .=
             "\n<tr>$td2" .
             "\n<input type='submit' name='insert' onclick='javascript:exportVars();' value='Insert'>" .
-            "\n</table>" .
-            "\n</form>";
+            "\n</table>";
 
+        # Widen popup according to the number of menus
         $num_menus = sizeof($entries[$field]);
 
         $link =
             "\n<a class='black_ln' href='javascript:popup(" .
-                "\n\"" . (350 * $num_menus) . "\"," .
-                "\n\"300\"," .
-                "\n\"Title\"," .
+                # Width
+                "\n\"" . (400 * $num_menus) . "\"," .
+                # Height
+                "\n\"325\"," .
+                # Title
+                "\n\"Select $field\"," .
+                # <script>
                 "\n\"" . htmlentities(jscript_export($entries[$field], $field), ENT_QUOTES) . "\"," .
+                # <body>
                 "\n\"" . htmlentities($menu, ENT_QUOTES) . "\"," .
+                # <body style>
                 "\n\"font-family:Courier,monospace\"" . 
-            ")'><font size='$sfont'>" . label($field) . "</font>" .
+            ")'>" .
+            "\n" . label($field) .  
             "</a>";
 
         $links[$field] = $link;
@@ -415,58 +425,9 @@ function html_head() {
         newwindow2=window.open('','name','height=' + height + ',width=' + width + ',scrollbars=yes');
         var tmp = newwindow2.document;
         tmp.write('<html><head>' + script + '<title>' + title + '</title></head>');
-        tmp.write('<body ' + style + '>' + content + '</body></html>');
+        tmp.write('<body ' + style + '><form id=adv name=adv>' + content + '</form></body></html>');
         tmp.close();
     }
-
-    // X: combine the following two functions
-
-    // Disable all objects passed to the function
-    function disable() {
-
-        for (i = 0; i < arguments.length; i++) {
-
-            // alert("list[i] = " + arguments[i]);
-
-            // Aack! How do we check to see if the val is defined!
-            // The function dies if we try to disable a single undefined object
-
-            if (undefined != arguments[i]) {
-                arguments[i].disabled=1;
-            }
-        }
-    }
-
-    // Enable all objects passed to the function
-    function enable() {
-        for (i = 0; i < arguments.length; i++) {
-            if (undefined != arguments[i]) {
-                arguments[i].disabled=0;
-            }
-        }
-    }
-
-    // Toggle all the arguments (check/uncheck)
-    function toggle_checkboxes() {
-
-        one_is_checked = false;
-
-        for (i = 0; i < arguments.length; i++) {
-            var box = document.getElementByName(arguments[i]);
-            if (box.checked == true) {
-                one_is_checked = true;
-                break;
-            }
-        }
-
-        toggle = ! one_is_checked;
-
-        for (i = 0; i < arguments.length; i++) {
-            var box = document.getElementByName(arguments[i]);
-            box.checked = toggle;
-        }
-    }
-
 EOT;
 
     $style = <<<EOT
@@ -481,13 +442,11 @@ EOT;
     a.black_ln:active  { color: #FFFFFF } /* when link is clicked */
     a.black_ln:hover   { color: #FFFF40 } /* when mouse is over link */
     td {font-size: 75%; }
-
 EOT;
 
     # Print html head (query frame & results frame may need this script/style)
-    $html_head = "";
-    $html_head .= "\n<html>";
-    $html_head .= "\n<head><title>Open MPI Test Reporter</title>";
+    $html_head .= "\n<head>";
+    $html_head .= "\n<title>Open MPI Test Reporter</title>";
 
     $html_head .= "\n<script language='javascript' type='text/javascript'>";
     $html_head .= "\n$javascript";
