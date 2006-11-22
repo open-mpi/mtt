@@ -24,10 +24,7 @@ include_once("$topdir/html.inc");
 # Dump query description, results table, and link to query
 function dump_report() {
 
-    # global declarations
-    global $timestamp;
-    global $thcolor, $gray, $dgray, $lgray, $llgray,
-           $lllgray, $lred, $lgreen, $lyellow, $white;
+    global $thcolor, $gray, $dgray, $lgray, $llgray, $lllgray, $white;
 
     if ($_GET['cgi'] == 'on')
         debug_cgi($_GET, "GET");
@@ -35,12 +32,12 @@ function dump_report() {
     # Process input params
     $phases       = process_phase_field($_GET);
     $datefields   = process_date_field($_GET);
-    $textfields   = process_textfields($_GET);
-    $resultfields = get_result_cases($phases);
+    $inputfields  = process_input_fields($_GET);
+    $resultfields = get_result_cases($phases, $_GET);
 
     $query = array_merge_recursive(
         $datefields,
-        $textfields,
+        $inputfields,
         $resultfields
     );
     $query['phases'] = $phases;
@@ -53,8 +50,8 @@ function dump_report() {
     $resource = do_pg_query("\n$cmd");
 
     # Generate headers
-    $headers['params']  = array();
     $headers['params']  = array_map('replace_underscores', array_keys($query['select']));
+    $headers['details'] = array_map('replace_underscores', array_keys($query['select_more']));
     $headers['results'] = array_keys($query['aggregates']);
     $headers['phases']  = $phases;
 
@@ -63,7 +60,12 @@ function dump_report() {
           "<tr><td>Date range (GMT): <td>" . $datefields["absolute"] .
           "</table><br>";
 
-    dump_data_table($headers, $resource);
+    # Print either a summary or detail table,
+    # depending on whether a 'select_more' parameter is set
+    if ($headers['details'])
+        detail_table($headers, $resource);
+    else
+        summary_table($headers, $resource);
 
     print info_pointers($datefields);
 
@@ -72,30 +74,43 @@ function dump_report() {
     pg_close();
 }
 
-# void function to print out html data table
-function dump_data_table($headers, $resource) {
+# Void function to print out a summary style HTML data table
+function summary_table($headers, $resource) {
 
-    # global declarations
     global $thcolor, $gray, $dgray, $lgray, $llgray,
            $lllgray, $lred, $lgreen, $lyellow, $white;
 
-    $results_types = array("pass", "fail");
+    $self = 'http://' . $_SERVER['SERVER_NAME'] . $_SERVER['REQUEST_URI'];
 
-    # Some header labels
-    $labels = array(
-        '_if' => "fail",
-        '_ip' => "pass",
-        '_is' => "skip",
-        '_it' => "timed",
-        '_bf' => "fail",
-        '_bp' => "pass",
-        '_bs' => "skip",
-        '_bt' => "timed",
-        '_rf' => "fail",
-        '_rp' => "pass",
-        '_rs' => "skip",
-        '_rt' => "timed",
-    );
+    # Append the detail params to the URL
+    foreach (detail_columns() as $column)
+        $appendage .= "&more_$column";
+
+    # URL format for a drilldown
+    $drilldown = "<a href='" . $self . $appendage . "%s%s' " .
+                 "class='black_ln' " .
+                 "target='_self'>%s" .
+                 "</a>";
+
+    # Some headers that link to drilled down reports
+    $rformat = '&test_result=%s';
+    $phase = '&phase=mpi_install';
+    $labels['_if'] = sprintf($drilldown, $phase, sprintf($rformat, "fail"), "fail");
+    $labels['_ip'] = sprintf($drilldown, $phase, sprintf($rformat, "pass"), "pass");
+    $labels['_is'] = sprintf($drilldown, $phase, sprintf($rformat, "skip"), "skip");
+    $labels['_it'] = sprintf($drilldown, $phase, sprintf($rformat, "timed"), "timed");
+
+    $phase = '&phase=test_build';
+    $labels['_bf'] = sprintf($drilldown, $phase, sprintf($rformat, "fail"), "fail");
+    $labels['_bp'] = sprintf($drilldown, $phase, sprintf($rformat, "pass"), "pass");
+    $labels['_bs'] = sprintf($drilldown, $phase, sprintf($rformat, "skip"), "skip");
+    $labels['_bt'] = sprintf($drilldown, $phase, sprintf($rformat, "timed"), "timed");
+
+    $phase = '&phase=test_run';
+    $labels['_rf'] = sprintf($drilldown, $phase, sprintf($rformat, "fail"), "fail");
+    $labels['_rp'] = sprintf($drilldown, $phase, sprintf($rformat, "pass"), "pass");
+    $labels['_rs'] = sprintf($drilldown, $phase, sprintf($rformat, "skip"), "skip");
+    $labels['_rt'] = sprintf($drilldown, $phase, sprintf($rformat, "timed"), "timed");
 
     # Do not print an empty table
     if (pg_num_rows($resource) < 1) {
@@ -114,14 +129,15 @@ function dump_data_table($headers, $resource) {
     }
 
     # Insert useful information on the left-hand side?
-    print "\n\n<div align=center>" .
+    print "\n<div align=center>" .
+
           "\n\n<!-- report_start -->\n\n" .
-          "<table width='100%' cellpadding=5>" .
-          "<tr>" .
-          #"<th bgcolor='$lgray' rowspan=2 colspan=2 valign='top' width=0px>[insert link here]" .
-          "" .
+
+          "\n<table width='100%' cellpadding=5>" .
+          "\n<tr>" .
           "\n<td bgcolor='$lgray'>" .
-          "\n\n<div align=center><table border=1 width='100%'>";
+          "\n<div align=center>" .
+          "\n<table border=1 width='100%'>";
 
     # Display headers
     $num_cols = count($headers['params']) +
@@ -135,20 +151,20 @@ function dump_data_table($headers, $resource) {
         "<tr>" .
         sprintf_("\n<th bgcolor='$thcolor' rowspan=2>%s", $headers['params']);
 
-    # Number of result types for each phase
     $num_result_types = array(
         "mpi_install" => 2,
         "test_build" => 2,
         "test_run" => 4,
     );
 
-    $total_result_cols = 0;
+    # Print result headers
+    $total_results_cols = 0;
     foreach ($headers['phases'] as $phase) {
         print sprintf("\n<th bgcolor='$thcolor' " .
                       "colspan='$num_result_types[$phase]'>%s",
                       replace_underscores($phase));
         if ($num_result_types[$phase])
-            $total_result_cols += $num_result_type[$phase];
+            $total_results_cols += $num_result_types[$phase];
     }
 
     print "\n<tr>";
@@ -158,15 +174,15 @@ function dump_data_table($headers, $resource) {
     }
 
     $i = 0;
-    # Display data rows
+
+    # Print data rows
     while ($row = pg_fetch_row($resource)) {
 
         if ($i++ > $max_rows)
             break;
 
         # Results are always in the far right cols
-        $len = (sizeof($headers['phases']) * sizeof($results_types)) + 2;
-        $result_cols = array_splice($row, sizeof($row) - $len, $len);
+        $results = array_splice($row, sizeof($row) - $total_results_cols);
 
         print "\n<tr>" . sprintf_("\n<td bgcolor=$white>%s", $row);
 
@@ -176,17 +192,17 @@ function dump_data_table($headers, $resource) {
         foreach ($headers['phases'] as $phase) {
             $cols = $num_result_types[$phase];
 
-            $pass = $result_cols[$i];
-            $fail = $result_cols[$i+1];
-            $skip = $result_cols[$i+2];
-            $time = $result_cols[$i+3];
+            $pass = $results[$i];
+            $fail = $results[$i+1];
+            $skip = $results[$i+2];
+            $time = $results[$i+3];
 
-            if ($cols > 0)
-                print "\n<td align='right' bgcolor='" .
-                        (($pass > 0) ? $lgreen : $lgray) .  "'>$pass";
-            if ($cols > 1)
-                print "\n<td align='right' bgcolor='" .
-                        (($fail > 0) ? $lred : $lgray) .    "'>$fail";
+            print "\n<td align='right' bgcolor='" .
+                    (($pass > 0) ? $lgreen : $lgray) . "'>$pass";
+
+            print "\n<td align='right' bgcolor='" .
+                    (($fail > 0) ? $lred : $lgray) . "'>$fail";
+
             if ($cols > 2)
                 print "\n<td align='right' bgcolor='" .
                         (($skip > 0) ? $lyellow : $lgray) . "'>$skip";
@@ -196,6 +212,105 @@ function dump_data_table($headers, $resource) {
 
             $i += $cols;
         }
+    }
+
+    print "\n</table>" .
+          "\n</table>" .
+          "\n\n<!-- report_end -->\n\n";
+}
+
+# Void function to print out a summary style HTML data table
+function detail_table($headers, $resource) {
+
+    global $thcolor, $gray, $dgray, $lgray, $llgray,
+           $lllgray, $lred, $lgreen, $lyellow, $white;
+
+    # Do not print an empty table
+    if (pg_num_rows($resource) < 1) {
+        print "<b><i>No data available for the specified query.</i></b>";
+        return;
+    }
+
+    $max_rows = 5000;
+
+    # Be nice to the server, show only the first max_rows
+    if (pg_num_rows($resource) > $max_rows) {
+        print "<i>Displaying first $max_rows rows, please trim your query.</i>";
+    }
+
+    $num_result_types = array(
+        "mpi_install" => 2,
+        "test_build" => 2,
+        "test_run" => 4,
+    );
+
+    # Print result headers
+    $num_cols['results'] = 0;
+    foreach ($headers['phases'] as $phase) {
+        print sprintf("\n<th bgcolor='$thcolor' " .
+                      "colspan='$num_result_types[$phase]'>%s",
+                      replace_underscores($phase));
+        if ($num_result_types[$phase])
+            $num_cols['results'] += $num_result_types[$phase];
+    }
+    $num_cols['details'] = sizeof($headers['details']);
+    $num_cols['params'] = sizeof($headers['params']);
+
+    print "\n<tr>";
+
+    foreach ($headers['results'] as $result) {
+        print sprintf("\n<th bgcolor='$thcolor'>%s", $labels[$result]);
+    }
+
+    $i = 0;
+
+    # Print data rows
+    while ($row = pg_fetch_row($resource)) {
+
+        if ($i++ > $max_rows)
+            break;
+
+        # Results are always in the far right cols
+        $results = array_splice($row, $num_cols['params']);
+
+        # Details are always in the far far right cols
+        $details = array_splice($results, $num_cols['results']);
+
+        $pass = $results[0];
+        $fail = $results[1];
+        $skip = $results[2];
+        $time = $results[3];
+
+        if ($pass)
+            $bordercolor = (($pass > 0) ? $lgreen  : "");
+        elseif ($fail)
+            $bordercolor = (($fail > 0) ? $lred    : "");
+        elseif ($skip)
+            $bordercolor = (($skip > 0) ? $lyellow : "");
+        elseif ($time)
+            $bordercolor = (($time > 0) ? $lyellow : "");
+
+        print "<br><table border='1'><tr><td bgcolor='$bordercolor'>";
+
+        $td = "<td bgcolor='$lgray'>";
+        $tdl = "<td bgcolor='$white'>";
+
+        $i = 0;
+        print "<table border='1' width='100%'>";
+        foreach ($headers['params'] as $header) {
+            print (($i % 1 == 0) ? "\n<tr>" : "") .
+                  "\n$td <b>$header</b> $tdl " . $row[$i];
+            $i++;
+        }
+        $i = 0;
+        foreach ($headers['details'] as $header) {
+            print (($i % 1 == 0) ? "\n<tr>" : "") .
+                  "\n$td <b>$header</b> $tdl " . 
+                  "\n<pre>$details[$i]</pre>";
+            $i++;
+        }
+        print "</table>";
+        print "</table>";
     }
 
     print "\n</table>" .
@@ -215,14 +330,25 @@ function compose_sql($query) {
     else
         $tables = suffix_list($query['phases'], '_view');
 
-    # Compile list of aggregate clauses
     foreach (array_keys($query['aggregates']) as $aggregate) {
         $aggregates[] = $query['aggregates'][$aggregate];
     }
 
+    # Compile lists for SELECT, GROUP BY,
+    # and ORDER BY statments
     $selects = array_merge(
         $query['select'],
-        $aggregates
+        $aggregates,
+        $query['select_more']
+    );
+
+    $groupbys = array_merge(
+        array_keys($query['select']),
+        array_keys($query['select_more'])
+    );
+
+    $orderbys = array_merge(
+        array_keys($query['select'])
     );
 
     # Piece together all the clauses
@@ -239,10 +365,10 @@ function compose_sql($query) {
 
     if (array_keys($query['select'])) {
         $cmd .= "\n GROUP BY ";
-        $cmd .=     "$nl" . join(",$nl ", array_keys($query['select']));
+        $cmd .=     "$nl" . join(",$nl ", $groupbys);
 
         $cmd .= "\n ORDER BY ";
-        $cmd .=     "$nl" . join(",$nl ", array_keys($query['select']));
+        $cmd .=     "$nl" . join(",$nl ", $orderbys);
     }
 
     $cmd .= ";";
@@ -250,63 +376,102 @@ function compose_sql($query) {
     return $cmd;
 }
 
-# Return an array of SQL COUNT(CASE ...) clauses
-# which will be used to tally the result numbers
+# Return 
+# 1. An array of SQL COUNT(CASE ...) clauses
+#    which will be used to tally the result numbers
+# 2. A result filter (optional)
 # (Reference: postgresql.org/docs/7.3/static/functions-conditional.html)
-function get_result_cases($phases) {
+function get_result_cases($phases, $params) {
 
     $_phases = array_flip($phases);
 
-    $result_cases = array();
+    $test_result = $params['test_result'];
+
+    if (preg_match('/pass|true|1/i', $test_result))
+        $filter = 'pass';
+    elseif (preg_match('/fail|false|0/i', $test_result))
+        $filter = 'fail';
+    elseif (preg_match('/skip|2/i', $test_result))
+        $filter = 'skip';
+    elseif (preg_match('/time|3/i', $test_result))
+        $filter = 'timed';
+
+    $format = "COUNT(CASE WHEN %s THEN '%s' END) as %s";
 
     # MPI Installs
     if (isset($_phases["mpi_install"])) {
-        $result_cases['aggregates']['_ip'] =
-            "COUNT(CASE WHEN pass = '_ip' THEN '_ip' END) as _ip";
-        $result_cases['aggregates']['_if'] =
-            "COUNT(CASE WHEN fail = '_if' THEN '_if' END) as _if";
+        $str = '_ip';
+        $when['pass'] = "pass = '$str'";
+        $results['aggregates'][$str] =
+            sprintf($format, $when['pass'], $str, $str);
+
+        $str = '_if';
+        $when['fail'] = "fail = '$str'";
+        $results['aggregates'][$str] =
+            sprintf($format, $when['fail'], $str, $str);
     }
 
     # Test Builds
     if (isset($_phases["test_build"])) {
-        $result_cases['aggregates']['_bp'] =
-            "COUNT(CASE WHEN pass = '_bp' THEN '_bp' END) as _bp";
-        $result_cases['aggregates']['_bf'] =
-            "COUNT(CASE WHEN fail = '_bf' THEN '_bf' END) as _bf";
+        $str = '_bp';
+        $when['pass'] = "pass = '$str'";
+        $results['aggregates'][$str] =
+            sprintf($format, $when['pass'], $str, $str);
+
+        $str = '_bf';
+        $when['fail'] = "fail = '$str'";
+        $results['aggregates'][$str] =
+            sprintf($format, $when['fail'], $str, $str);
     }
 
     # Test Runs
     if (isset($_phases["test_run"])) {
-        $result_cases['aggregates']['_rp'] =
-            "COUNT(CASE WHEN pass = '_rp' THEN '_rp' END) as _rp";
-        $result_cases['aggregates']['_rf'] =
-            "COUNT(CASE WHEN fail = '_rf' THEN '_rf' END) as _rf";
-        $result_cases['aggregates']['_rs'] =
-            "COUNT(CASE WHEN skipped = '_rs' THEN '_rs' END) as _rs";
-        $result_cases['aggregates']['_rt'] =
-            "COUNT(CASE WHEN timed_out = '_rt' THEN '_rt' END) as _rt";
+        $str = '_rp';
+        $when['pass'] = "pass = '$str'";
+        $results['aggregates'][$str] =
+            sprintf($format, $when['pass'], $str, $str);
+
+        $str = '_rf';
+        $when['fail'] = "fail = '$str'";
+        $results['aggregates'][$str] =
+            sprintf($format, $when['fail'], $str, $str);
+
+        $str = '_rs';
+        $when['skip'] = "skipped = '$str'";
+        $results['aggregates'][$str] =
+            sprintf($format, $when['skip'], $str, $str);
+
+        $str = '_rt';
+        $when['timed'] = "timed_out = '$str'";
+        $results['aggregates'][$str] =
+            sprintf($format, $when['timed'], $str, $str);
     }
 
-    return $result_cases;
+    $results['where'] = $when[$filter];
+
+    return $results;
 }
 
 # Show links to point user to more info ...
 function info_pointers($datefields) {
 
-    global $thcolor, $gray, $dgray, $lgray, $llgray,
-           $lllgray, $lred, $lgreen, $lyellow, $white;
-    global $domain, $url_basename;
+    global $lgray, $llgray;
+
+    $domain    = $_SERVER['SERVER_NAME'];
+    $uri       = $_SERVER['REQUEST_URI'];
+    $script    = $_SERVER['SCRIPT_NAME'];
+    $datefield = $datefields["absolute"] . ';' . $datefields["rollup"];
 
     # Create links to report using relative and absolute date ranges
-    $rel_link = dump_query_string($_GET) .  '&no_bookmarks';
-    $abs_link = rewrite_url($rel_link, "text_start_timestamp", $datefields["absolute"]);
+    $rel_link = "http://$domain$uri&no_bookmarks";
+    $abs_link = rewrite_url($rel_link, "text_start_timestamp", $datefield);
 
     # Can't be a relative link to an absolute date range report
     if (! isset($_GET['no_bookmarks'])) {
 
         $href = "\n<tr>" .
                   "\n<td bgcolor=$lgray>%s<td align=center bgcolor=$llgray>" .
-                  "\n<a href='".$domain.$_SERVER['PHP_SELF']."?%s'".
+                  "\n<a href='%s'".
                   "' class='black_ln'>[Link]</a>";
 
         $links = "\n<div align=left><br>" .
@@ -317,29 +482,12 @@ function info_pointers($datefields) {
         $links .= "\n</table>" .
                   "\n</div>";
     }
-
-    if (isset($_GET['info_links'])) {
-
-        $href =  "\n<tr><td bgcolor=$lgray>%s<td align=center bgcolor=$llgray>" .
-                 "\n<a href='".perfect_url("$url_basename/%s")."' class='black_ln'>" .
-                 "\n<font size='-0'>[Link]</font></a>";
-
-        $links .= "\n<div align=left><br>" .
-                 "\n<table border=1 width=20%><tr><th bgcolor='$lgray' colspan=2>More Info";
-
-        $links .= sprintf($href, "Summary Report", "summary.php");
-        $links .= sprintf($href, "Custom Reports", "reporter.php");
-        $links .= "\n</table>" .
-                  "\n</div>";
-
-    }
-
     return $links;
 }
 
 # 1. Generate WHERE clause pieces from user-entered textfields
 # 2. Generate SELECT items from user-entered checkboxes
-function process_textfields($params) {
+function process_input_fields($params) {
 
     $query['where'] = array();
     $query['select'] = array();
@@ -349,7 +497,6 @@ function process_textfields($params) {
         "timestamp",
         "duration",
         "phase",
-        "result"
     );
 
     foreach (array_keys($params) as $k) {
@@ -378,6 +525,13 @@ function process_textfields($params) {
 
             if (isset($params[$k]))
                 $query['select'][$column] = $column;
+        }
+        # If it's a "more" param, add it to the ''end'' of the SELECT clause
+        elseif (preg_match("/^more_/i", $k)) {
+            $column = strip_prefix($k);
+
+            if (isset($params[$k]))
+                $query['select_more'][$column] = $column;
         }
     }
     return $query;
@@ -464,31 +618,32 @@ function process_date_field($params) {
         # Do date aggregation
         else {
 
-            $format = "substring($timestamp_name from 0 for %d) as $timestamp_name";
             $format2 = "substring($timestamp_name from 0 for %d) || ':00' as $timestamp_name";
+            $format3 = "substring($timestamp_name from 0 for %d) as $timestamp_name";
 
             if (preg_match("/by(?:-| *)sec(?:onds?)?/i", $token)) {
                 $clause = $timestamp_name;
 
             } elseif (preg_match("/by(?:-| *)min(?:utes?)?/i", $token)) {
-                $clause = sprintf($format, 17);
+                $clause = sprintf($format3, 17);
 
             } elseif (preg_match("/by(?:-| *)hours?/i", $token)) {
                 $clause = sprintf($format2, 14);
 
             } elseif (preg_match("/by(?:-| *)days?/i", $token)) {
-                $clause = sprintf($format, 11);
+                $clause = sprintf($format3, 11);
 
             } elseif (preg_match("/by(?:-| *)mon(?:ths?)?/i", $token)) {
-                $clause = sprintf($format, 8);
+                $clause = sprintf($format3, 8);
 
             } elseif (preg_match("/by(?:-| *)years?/i", $token)) {
-                $clause = sprintf($format, 5);
+                $clause = sprintf($format3, 5);
             }
+            $date["rollup"] = $token;
         }
     }
 
-    # PROTECT AGAINST AN EMPTY DATE RANGE
+    # PROTECT AGAINST AN EMPTY DATE RANGE.
     # OUGHT TO PRINT A JAVASCRIPT ALERT AS WELL
     if (! $where) {
         $operand = "now() - interval '24 hours'";
@@ -508,7 +663,7 @@ function process_date_field($params) {
 # Remove the prefix part of the parameter,
 # which will leave only a database column name
 function strip_prefix($str) {
-    return preg_replace('/^show_|^text_/', '', $str);
+    return preg_replace('/^more_|^show_|^text_/', '', $str);
 }
 
 # Reference: http://www.php.net/strtok
@@ -552,7 +707,7 @@ function suffix_list($arr, $sfx) {
 }
 
 # Loop through column aliases, and return
-# an ordering of clauses
+# a left-to-right ordering of SELECT clauses
 function order_columns($columns) {
 
     $layout = array(
@@ -576,37 +731,18 @@ function order_columns($columns) {
     return $ordering;
 }
 
-# Returns a trimmed query string
-function dump_query_string($params) {
-
-    global $cgi_abbrevs;
-
-    foreach (array_keys($params) as $k) {
-
-        # Only hash these textfield-filter_type pairs if BOTH are non-null
-        if (preg_match("/" . $cgi_abbrevs['textfield'] . "(\w+)|" .
-                             $cgi_abbrevs['filter_types'] . "(\w+)/i", $k, $m)) {
-
-            $f     = $m[1];
-            $type  = "" . $cgi_abbrevs['filter_types'] . "$f";
-            $field = "" . $cgi_abbrevs['textfield'] . "$f";
-
-            if ($params[$field]) {
-                $hash[$type] = $params[$type];
-                $hash[$field] = $params[$field];
-            }
-
-        } else {
-            $hash[$k] = $params[$k];
-        }
-    }
-
-    $str = "";
-    foreach (array_keys($hash) as $k) {
-        if ($hash[$k] != null)
-            $str .= '&' . $k . "=$_GET[$k]";
-    }
-    return $str;
+# Add these to select statements for Detail reports
+function detail_columns() {
+    return array(
+        "exit_status",
+        "start_timestamp",
+        "duration",
+        "result_message",
+        "result_stdout",
+        "result_stderr",
+        "environment",
+        "client_serial",
+    );
 }
 
 ?>
