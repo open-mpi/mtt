@@ -6,7 +6,7 @@
 
 DROP TABLE compute_cluster;
 CREATE TABLE compute_cluster (
-    compute_cluster_id serial UNIQUE,
+    compute_cluster_id serial PRIMARY KEY,
     platform_name character varying(256) NOT NULL DEFAULT 'bogus',
     platform_hardware character varying(256) NOT NULL DEFAULT 'bogus',
     platform_type character varying(256) NOT NULL DEFAULT 'bogus',
@@ -27,7 +27,7 @@ CREATE SEQUENCE client_serial;
 
 DROP TABLE submit;
 CREATE TABLE submit (
-    submit_id serial UNIQUE,
+    submit_id serial PRIMARY KEY,
     mtt_version_major smallint NOT NULL DEFAULT '-38',
     mtt_version_minor smallint NOT NULL DEFAULT '-38',
     hostname character varying(128) NOT NULL DEFAULT 'bogus',
@@ -44,7 +44,7 @@ CREATE TABLE submit (
 
 DROP TABLE mpi_get;
 CREATE TABLE mpi_get (
-    mpi_get_id serial UNIQUE,
+    mpi_get_id serial PRIMARY KEY,
     mpi_name character varying(64) NOT NULL DEFAULT 'bogus',
     mpi_version character varying(32) NOT NULL DEFAULT 'bogus',
     UNIQUE (
@@ -55,7 +55,7 @@ CREATE TABLE mpi_get (
 
 DROP TABLE compiler;
 CREATE TABLE compiler (
-    compiler_id serial UNIQUE,
+    compiler_id serial PRIMARY KEY,
     compiler_name character varying(64) NOT NULL DEFAULT 'bogus',
     compiler_version character varying(64) NOT NULL DEFAULT 'bogus',
     UNIQUE (
@@ -66,11 +66,11 @@ CREATE TABLE compiler (
 
 DROP TABLE mpi_install;
 CREATE TABLE mpi_install (
-    mpi_install_id serial UNIQUE,
+    mpi_install_id serial PRIMARY KEY,
 
-    compute_cluster_id integer NOT NULL DEFAULT '-38', --> refers to compute_cluster table
-    mpi_get_id integer NOT NULL DEFAULT '-38', --> refers to mpi_get table
-    compiler_id integer NOT NULL DEFAULT '-38', --> refers to compiler table
+    compute_cluster_id integer NOT NULL DEFAULT '-38' REFERENCES compute_cluster,
+    mpi_get_id integer NOT NULL DEFAULT '-38' REFERENCES mpi_get,
+    compiler_id integer NOT NULL DEFAULT '-38' REFERENCES compiler,
 
     --> put this into separate table because substring searchs will be much faster,
     --> but rich says that this is a fairly uncommon way to search for our results, so
@@ -78,8 +78,10 @@ CREATE TABLE mpi_install (
     configure_arguments character varying(512) NOT NULL DEFAULT '', 
     --> 0=no vpath, 1=relative vpath, 2=absolute vpath
     vpath_mode smallint NOT NULL DEFAULT '0',
-    --> 1=32bit, 2=64bit
+    --> 1=32bit, 2=64bit, 3=both
     bitness smallint NOT NULL DEFAULT '1',
+    --> 0=unknown, 1=big, 2=little
+    endian smallint NOT NULL DEFAULT '0',
     UNIQUE (
             compute_cluster_id,
             mpi_get_id,
@@ -91,11 +93,14 @@ CREATE TABLE mpi_install (
 
 DROP TABLE test_build;
 CREATE TABLE test_build (
-    test_build_id serial UNIQUE, --> this changes every night
-    mpi_install_id integer NOT NULL DEFAULT '-38', --> refers to mpi_install table
+    test_build_id serial PRIMARY KEY,
+    mpi_install_id integer NOT NULL DEFAULT '-38' REFERENCES mpi_install,
 
-    suite_name character varying(64) NOT NULL DEFAULT 'bogus',  --> *** do not know how to standardize this 
-    compiler_id integer NOT NULL DEFAULT '-38', --> refers to compiler table
+    --> *** do not know how to standardize this 
+    suite_name character varying(64) NOT NULL DEFAULT 'bogus',
+    compiler_id integer NOT NULL DEFAULT '-38' REFERENCES compiler,
+    --> 1=32bit, 2=64bit, 3=both
+    bitness smallint NOT NULL DEFAULT '1',
     UNIQUE (
             mpi_install_id,
             suite_name,
@@ -105,8 +110,8 @@ CREATE TABLE test_build (
 
 DROP TABLE test_run;
 CREATE TABLE test_run (
-    test_run_id serial UNIQUE,
-    test_build_id integer NOT NULL DEFAULT '-38',--> refers to test_build table
+    test_run_id serial PRIMARY KEY,
+    test_build_id integer NOT NULL DEFAULT '-38' REFERENCES test_build,
 
     variant smallint NOT NULL DEFAULT '-38',
     test_name character varying(64) NOT NULL DEFAULT 'bogus',
@@ -123,8 +128,8 @@ CREATE TABLE test_run (
 
 DROP TABLE results;
 CREATE TABLE results (
-    results_id serial UNIQUE,
-    submit_id integer NOT NULL DEFAULT '-38',
+    results_id serial PRIMARY KEY,
+    submit_id integer NOT NULL DEFAULT '-38' REFERENCES submit,
 
     -- refer to the index of one of the three phases 
     phase_id integer NOT NULL DEFAULT '-38',
@@ -133,7 +138,9 @@ CREATE TABLE results (
 
     environment text NOT NULL DEFAULT '',
     merge_stdout_stderr boolean NOT NULL DEFAULT 't',
-    result_stdout text NOT NULL DEFAULT '', --> what is the largest text blob we can put in PG?  Rich says default might be 8k!
+
+    --> what is the largest text blob we can put in PG?  Rich says default might be 8k!
+    result_stdout text NOT NULL DEFAULT '', 
     result_stderr text NOT NULL DEFAULT '',
     result_message text NOT NULL DEFAULT '',
     start_timestamp timestamp without time zone NOT NULL DEFAULT now() - interval '24 hours',
@@ -141,20 +148,21 @@ CREATE TABLE results (
     duration interval NOT NULL DEFAULT '-38 seconds',
 
     submit_timestamp timestamp without time zone NOT NULL DEFAULT now(),
-    client_serial integer NOT NULL DEFAULT '-38', --> refers to the serial sequence
+    client_serial integer NOT NULL DEFAULT '-38',
 
+    -- set if process exited
     exit_status integer NOT NULL DEFAULT '-38',
+    -- set if process was signaled
+    signal integer NOT NULL DEFAULT '-38',
     -- result value: 0=fail, 1=pass, 2=skipped, 3=timed out
     test_result smallint NOT NULL DEFAULT '-38',
     -- set to DEFAULT for correctness tests
     latency_bandwidth_id integer NOT NULL DEFAULT '-38'
 );
 
--- Some much needed indexing
-
 DROP TABLE latency_bandwidth;
 CREATE TABLE latency_bandwidth (
-    latency_bandwidth_id serial UNIQUE,
+    latency_bandwidth_id serial PRIMARY KEY,
     message_size integer[] DEFAULT '{}',
     bandwidth_min double precision[] DEFAULT '{}',
     bandwidth_max double precision[] DEFAULT '{}',
@@ -166,8 +174,8 @@ CREATE TABLE latency_bandwidth (
 
 DROP TABLE alerts;
 CREATE TABLE alerts (
-    alerts_id serial UNIQUE,
-    users_id integer NOT NULL DEFAULT '-38',
+    alerts_id serial PRIMARY KEY,
+    users_id integer NOT NULL DEFAULT '-38' REFERENCES users,
     enabled smallint,
     url text NOT NULL DEFAULT 'bogus',
     subject character(64) NOT NULL DEFAULT 'bogus',
@@ -176,34 +184,33 @@ CREATE TABLE alerts (
 
 DROP TABLE users;
 CREATE TABLE users (
-    users_id serial UNIQUE,
+    users_id serial PRIMARY KEY,
     username character(16) NOT NULL DEFAULT 'bogus',
     email_address character(64) NOT NULL DEFAULT 'bogus',
     gecos character(32) NOT NULL DEFAULT 'bogus'
 );
 
 -- For "new" failure reporting
-
 DROP TABLE failure;
 CREATE TABLE failure (
-    failure_id integer NOT NULL DEFAULT '-38',
+    failure_id serial NOT NULL DEFAULT '-38',
 
     -- refer to the index of one of the three phases 
-    phase_id integer NOT NULL DEFAULT '-38',
+    phase_id integer NOT NULL DEFAULT '-38' REFERENCES phase,
     -- 1=mpi_install, 2=test_build, 3=test_run
     phase smallint NOT NULL DEFAULT '-38',
 
-    first_occurrence timestamp without time zone,    --> first occurrence
-    last_occurrence timestamp without time zone,     --> most recent occurrence
+    first_occurrence timestamp without time zone, --> first occurrence
+    last_occurrence timestamp without time zone,  --> most recent occurrence
     field character varying(16) NOT NULL DEFAULT 'bogus', --> maps to any non *_id field name in mtt database
     value character varying(16) NOT NULL DEFAULT 'bogus'  --> value of field
 );
 
 DROP TABLE cluster_owner;
 CREATE TABLE cluster_owner (
-    cluster_owner_id serial UNIQUE,
-    compute_cluster_id integer NOT NULL DEFAULT '-38', --> refers to compute_cluster table
-    users_id integer NOT NULL DEFAULT '-38' --> refers to users table
+    cluster_owner_id serial PRIMARY KEY,
+    compute_cluster_id integer NOT NULL DEFAULT '-38' REFERENCES compute_cluster,
+    users_id integer NOT NULL DEFAULT '-38'
 );
 
 INSERT INTO latency_bandwidth (latency_bandwidth_id) VALUES (DEFAULT);
