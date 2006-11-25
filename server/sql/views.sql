@@ -124,22 +124,27 @@ DROP VIEW mpi_install_view CASCADE;
 CREATE VIEW mpi_install_view AS
 SELECT
 
-    -- submit
-    http_username,
-    local_username,
-    hostname,
-
-    bitness,
-    compiler_name,
-    compiler_version,
-    configure_arguments,
-    mpi_name,
-    mpi_version,
+    -- compute_cluster
     os_name,
     os_version,
     platform_hardware,
     platform_name,
     platform_type,
+
+    -- mpi_install
+    mpi_name,
+    mpi_version,
+    compiler_name,
+    compiler_version,
+    configure_arguments,
+    vpath_mode,
+    endian,
+    bitness,
+
+    -- submit
+    http_username,
+    local_username,
+    hostname,
 
     -- results
     exit_status,
@@ -176,22 +181,27 @@ DROP VIEW test_build_view CASCADE;
 CREATE VIEW test_build_view AS
 SELECT
 
-    -- submit
-    http_username,
-    local_username,
-    hostname,
-
-    bitness,
-    compiler_name,
-    compiler_version,
-    configure_arguments,
-    mpi_name,
-    mpi_version,
+    -- compute_cluster
     os_name,
     os_version,
     platform_hardware,
     platform_name,
     platform_type,
+
+    -- mpi_install
+    mpi_name,
+    mpi_version,
+
+    -- test_build
+    suite_name,
+    compiler_name,
+    compiler_version,
+    bitness,
+
+    -- submit
+    http_username,
+    local_username,
+    hostname,
 
     -- results
     exit_status,
@@ -230,22 +240,30 @@ DROP VIEW test_run_view CASCADE;
 CREATE VIEW test_run_view AS
 SELECT
 
-    -- submit
-    http_username,
-    local_username,
-    hostname,
-
-    bitness,
-    compiler_name,
-    compiler_version,
-    configure_arguments,
-    mpi_name,
-    mpi_version,
+    -- compute_cluster
     os_name,
     os_version,
     platform_hardware,
     platform_name,
     platform_type,
+
+    -- mpi_install
+    mpi_name,
+    mpi_version,
+
+    -- test_build
+    suite_name,
+
+    -- test_run
+    test_name,
+    command,
+    np,
+    variant,
+
+    -- submit
+    http_username,
+    local_username,
+    hostname,
 
     -- results
     exit_status,

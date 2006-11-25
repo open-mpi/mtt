@@ -20,7 +20,7 @@ $ompi_home = '/l/osl/www/doc/www.open-mpi.org';
 include_once("$ompi_home/dbpassword.inc");
 include_once("$topdir/reporter.inc");
 
-$dbname = 'mtt2';
+$dbname = 'mtt3';
 
 # Setup db connection
 if (isset($_GET['db']))
