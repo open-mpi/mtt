@@ -120,7 +120,8 @@ function do_pg_query($cmd) {
     $elapsed = $finish - $start;
 
     debug("\nExecution time: " . $elapsed . " seconds\n");
-    debug("\nRows affected: " . pg_affected_rows($db_res) . "\n");
+    debug("\nRows affected: " . pg_affected_rows($db_res));
+    debug("\nRows retrieved: " . pg_num_rows($db_res));
 
     return $db_res;
 }

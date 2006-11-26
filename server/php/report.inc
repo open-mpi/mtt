@@ -130,6 +130,16 @@ function summary_table($headers, $resource) {
         "test_build" => 2,
         "test_run" => 4,
     );
+    $result_colors = array(
+        $lgreen,
+        $lred,
+        $lgreen,
+        $lred,
+        $lgreen,
+        $lred,
+        $lyellow,
+        $lyellow,
+    );
 
     # Create links for drilled-down queries
     $labels = drilldown_basic($headers['phases']);
@@ -165,6 +175,9 @@ function summary_table($headers, $resource) {
         foreach ($row as $cell)
             printf("\n<td bgcolor=$white>%s", $cell);
 
+        $i = 0;
+        $j = 0;
+
         foreach ($headers['phases'] as $phase) {
             
             # Each phase has differing result types
@@ -187,19 +200,40 @@ function summary_table($headers, $resource) {
                  $time_count) = $ret['counts'];
 
             print "\n<td align='right' bgcolor='" .
-                    (($pass_count > 0) ? $lgreen : $lgray) . "'>$pass";
-
+                    (($pass_count > 0) ? $result_colors[$j] : $lgray) . "'>$pass";
+            $j++;
             print "\n<td align='right' bgcolor='" .
-                    (($fail_count > 0) ? $lred : $lgray) . "'>$fail";
+                    (($fail_count > 0) ? $result_colors[$j] : $lgray) . "'>$fail";
+            $j++;
+            if (! is_null($skip)) {
+                print "\n<td align='right' bgcolor='" .
+                        (($skip_count > 0) ? $result_colors[$j] : $lgray) . "'>$skip";
+                $j++;
+            }
+            if (! is_null($time)) {
+                print "\n<td align='right' bgcolor='" .
+                        (($time_count > 0) ? $result_colors[$j] : $lgray) . "'>$time";
+                $j++;
+            }
 
-            if (! is_null($skip))
-                print "\n<td align='right' bgcolor='" .
-                        (($skip_count > 0) ? $lyellow : $lgray) . "'>$skip";
-            if (! is_null($time))
-                print "\n<td align='right' bgcolor='" .
-                        (($time_count > 0) ? $lyellow : $lgray) . "'>$time";
+            # Tally totals for all result counts
+            foreach ($ret['counts'] as $count) {
+                $totals[$i++] += $count;
+            }
         }
     }
+
+    $i = 0;
+
+    # Print results totals in last row
+    print "\n<tfoot><tr><td bgcolor='$llgray' colspan='" . sizeof($headers['params']) . "'>";
+    foreach ($totals as $total) {
+        print "\n<td align='right' " .
+                     "bgcolor='" . (($total > 0) ? $result_colors[$i] : $lgray) . "'" .
+                 "><b>$total</b>";
+        $i++;
+    }
+    print "\n</tfoot>";
 
     print "\n</table>" .
           "\n</table>" .
