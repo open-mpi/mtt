@@ -643,6 +643,24 @@ function process_input_fields($params) {
         "phase",
     );
 
+    # Some special enumerated types
+    $enums = array(
+        'bitness' => array(
+            1 => 32,
+            2 => 64,
+            3 => '32/64',
+        ),
+        'endian' => array(
+            1 => 'little',
+            2 => 'big',
+        ),
+        'vpath_mode' => array(
+            1 => 'no vpath',
+            2 => 'relative',
+            3 => 'absolute',
+        ),
+    );
+
     foreach (array_keys($params) as $k) {
 
         if (preg_match("/" . join("|", $special_fields) . "/i", $k))
@@ -653,11 +671,23 @@ function process_input_fields($params) {
         elseif (preg_match("/^text_/i", $k)) {
             $column = strip_prefix($k);
 
+            $clauses = array();
+
+            # Compose WHERE clause(s) on special enumerated types
+            if (preg_match("/" . join('|', array_keys($enums)) . "/i", $column)) {
+                $filters = array_flip($enums[$column]);
+                foreach (tokenize($params[$k]) as $t) {
+                    if (preg_match("/unknown/i", $t))
+                        continue;
+                    $clauses[] = "$column = $filters[$t]";
+                }
+                continue;
+            }
+
             # No WHERE clause, if field is blank or "all"
-            if (preg_match("/^\s*all\s*$|^\s*$/i", $params[$k], $m))
+            if (preg_match("/^\s*all\s*$|^\s*$/i", $params[$k]))
                 continue;
 
-            $clauses = array();
             foreach (tokenize($params[$k]) as $t) {
                 $clauses[] = "$column ~* '$t'";
             }
@@ -678,6 +708,20 @@ function process_input_fields($params) {
                 $query['select_more'][$column] = $column;
         }
     }
+
+    # Compose SELECT clause(s) on special enumerated types
+    foreach (array_keys($enums) as $enum) {
+        if (isset($query['select'][$enum])) {
+            $query['select'][$enum] =
+                "(CASE ";
+            foreach (array_keys($enums[$enum]) as $k)
+                $query['select'][$enum] .=
+                    "WHEN $enum = $k THEN '" . $enums[$enum][$k] . "' ";
+            $query['select'][$enum] .=
+                "ELSE 'unknown' END) as $enum";
+        }
+    }
+
     return $query;
 }
 

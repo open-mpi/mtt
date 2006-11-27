@@ -164,6 +164,31 @@ function get_menus_info($columns_arg) {
         }
     }
 
+
+    # Some special enumerated types
+    $enums = array(
+        'bitness' => array(
+            1 => 32,
+            2 => 64,
+            3 => '32/64',
+        ),
+        'endian' => array(
+            1 => 'little',
+            2 => 'big',
+        ),
+        'vpath_mode' => array(
+            1 => 'no vpath',
+            2 => 'relative',
+            3 => 'absolute',
+        ),
+    );
+
+    foreach (array_keys($enums) as $enum)
+        $entries[$enum][] = array_merge(
+            array_values($enums[$enum]), 
+            array('unknown')
+        );
+
     $entries["start_timestamp"][] = array(
         "today",
         "yesterday",
