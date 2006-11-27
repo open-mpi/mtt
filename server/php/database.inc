@@ -101,6 +101,10 @@ function do_pg_connect() {
     if (!$connected) {
         $pgsql_conn = 
             pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass");
+        if (!$pgsql_conn) {
+            print("\nCould not connect to database.");
+            exit;
+        }
         $connected = true;
     }
 }

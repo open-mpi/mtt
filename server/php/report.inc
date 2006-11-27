@@ -87,7 +87,7 @@ function dump_report() {
 function summary_table($headers, $resource) {
 
     global $thcolor, $gray, $dgray, $lgray, $llgray,
-           $lllgray, $lred, $lgreen, $lyellow, $white;
+           $lllgray, $white;
 
     # Do not print an empty table
     if (pg_num_rows($resource) < 1) {
@@ -130,16 +130,10 @@ function summary_table($headers, $resource) {
         "test_build" => 2,
         "test_run" => 4,
     );
-    $result_colors = array(
-        $lgreen,
-        $lred,
-        $lgreen,
-        $lred,
-        $lgreen,
-        $lred,
-        $lyellow,
-        $lyellow,
-    );
+
+    # Setup sequence of result colors
+    $phases = $headers['phases'];
+    $result_colors = result_colors($phases);
 
     # Create links for drilled-down queries
     $labels = drilldown_basic($headers['phases']);
@@ -240,6 +234,30 @@ function summary_table($headers, $resource) {
           "\n\n<!-- report_end -->\n\n";
 }
 
+# Return a sequence of result cell bgcolors
+function result_colors($phases) {
+
+    global $lred, $lgreen, $lyellow;
+
+    $_phases = array_flip($phases);
+
+    if (isset($_phases['mpi_install'])) {
+        $colors [] = $lgreen;
+        $colors [] = $lred;
+    }
+    if (isset($_phases['test_build'])) {
+        $colors [] = $lgreen;
+        $colors [] = $lred;
+    }
+    if (isset($_phases['test_run'])) {
+        $colors [] = $lgreen;
+        $colors [] = $lred;
+        $colors [] = $lyellow;
+        $colors [] = $lyellow;
+    }
+    return $colors;
+}
+
 # Create links that drill down by phase, result, and a set of general params
 function drilldown_filters($headers, $params, $results, $phase) {
 
@@ -277,7 +295,7 @@ function drilldown_filters($headers, $params, $results, $phase) {
 }
 
 # Convert an associative array to an HTTP-ready query string
-function arr2qstring ($arr) {
+function arr2qstring($arr) {
     foreach (array_keys($arr) as $key)
         $str .= "&$key=$arr[$key]";
 
@@ -375,6 +393,14 @@ function detail_table($headers, $resource) {
 
     $i = 0;
 
+    # Remove duplicated headers
+    $headers = array_unique(
+        array_merge(
+            $headers['params'],
+            $headers['details']
+        )
+    );
+
     # Print data rows
     while ($row = pg_fetch_row($resource)) {
 
@@ -407,18 +433,18 @@ function detail_table($headers, $resource) {
         $td = "<td bgcolor='$lgray' width='10%' valign='top'>";
         $tdl = "<td bgcolor='$white'>";
 
+        $values =
+            array_merge(
+                $row,
+                $details
+            );
+
         $i = 0;
         print "<table border='1' width='100%'>";
-        foreach ($headers['params'] as $header) {
-            print (($i % 1 == 0) ? "\n<tr>" : "") .
-                  "\n$td <b>$header</b> $tdl " . $row[$i];
-            $i++;
-        }
-        $i = 0;
-        foreach ($headers['details'] as $header) {
+        foreach ($headers as $header) {
             print (($i % 1 == 0) ? "\n<tr>" : "") .
                   "\n$td <b>$header</b> $tdl " . 
-                  "\n<pre>$details[$i]</pre>";
+                  "\n<pre>$values[$i]</pre>";
             $i++;
         }
         print "</table>";
@@ -438,7 +464,7 @@ function compose_sql($query) {
 
     # Determine table (or views) to SELECT from
     if (sizeof($query['phases']) > 1)
-        $tables = array('all_phases');
+        $tables = array('all_view');
     else
         $tables = suffix_list($query['phases'], '_view');
 
@@ -447,20 +473,26 @@ function compose_sql($query) {
     }
 
     # Compile lists for SELECT, GROUP BY,
-    # and ORDER BY statments
-    $selects = array_merge(
-        $query['select'],
-        $aggregates,
-        $query['select_more']
+    # and ORDER BY clauses
+    $selects = array_unique(
+        array_merge(
+            $query['select'],
+            $aggregates,
+            $query['select_more']
+        )
     );
 
-    $groupbys = array_merge(
-        array_keys($query['select']),
-        array_keys($query['select_more'])
+    $groupbys = array_unique(
+        array_merge(
+            array_keys($query['select']),
+            array_keys($query['select_more'])
+        )
     );
 
-    $orderbys = array_merge(
-        array_keys($query['select'])
+    $orderbys =  array_unique(
+        array_merge(
+            array_keys($query['select'])
+        )
     );
 
     # Piece together all the clauses
@@ -649,14 +681,6 @@ function process_input_fields($params) {
     return $query;
 }
 
-# Grab phase field
-function process_phase_field($params) {
-    if (isset($params['phase']))
-        return tokenize($params['phase']);
-    else
-        return array("mpi_install", "test_build", "test_run");
-}
-
 # Arguments:
 # 1. English filter (e.g., 'yesterday' or
 #    'past x days')
@@ -778,29 +802,6 @@ function strip_prefix($str) {
     return preg_replace('/^more_|^show_|^text_/', '', $str);
 }
 
-# Reference: http://www.php.net/strtok
-function tokenize($string) {
-    $tokens = array();
-
-    $c = "/\s*;\s*/";
-    if (preg_match($c, $string))
-        return preg_split($c, $string);
-
-    for ($next_token = strtok($string, ' ');
-         $next_token !== false;
-         $next_token = strtok(' ')) {
-
-        if ($next_token{0} == '"')
-            $next_token =
-                $next_token{strlen($next_token) - 1} == '"' ?
-                     substr($next_token, 1, -1) :
-                     substr($next_token, 1) . ' ' . strtok('"');
-        $tokens[] = $next_token;
-    }
-
-    return $tokens;
-}
-
 # '_' to ' '
 function us2sp($str) {
     return preg_replace('/_/', ' ', $str);
@@ -840,6 +841,14 @@ function order_columns($columns) {
         'os_name'           => 1,
         'mpi_name'          => 1,
         'mpi_version'       => 1,
+        'bitness'           => 1,
+        'endian'            => 1,
+        'compiler_name'     => 1,
+        'compiler_version'  => 1,
+        # phase-specific
+        'suite_name'        => 1,
+        'test_name'         => 1,
+        'np'                => 1,
     );
 
     foreach (array_keys($layout) as $column)
@@ -898,6 +907,31 @@ function detail_columns($phase) {
         $phase_columns,
         $results_columns
     );
+}
+
+# Convert English words to integers (1-10)
+function strtonumeral($str) {
+
+    $words_to_numerals = array(
+        "zero"  => 0,
+        "one"   => 1,
+        "two"   => 2,
+        "three" => 3,
+        "four"  => 4,
+        "five"  => 5,
+        "six"   => 6,
+        "seven" => 7,
+        "eight" => 8,
+        "nine"  => 9,
+        "ten"   => 10,
+    );
+
+    $converted = $words_to_numerals[strtolower($str)];
+
+    if ($converted)
+        return $converted;
+    else
+        return $str;
 }
 
 ?>

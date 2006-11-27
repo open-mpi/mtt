@@ -2,8 +2,8 @@
 -- phases. Naming scheme is the phase name with "_"
 -- prepended
 
-DROP VIEW all_phases CASCADE;
-CREATE VIEW all_phases AS
+DROP VIEW all_view CASCADE;
+CREATE VIEW all_view AS
 SELECT
     start_timestamp,
     http_username,

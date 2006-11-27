@@ -23,13 +23,14 @@ include_once("$topdir/html.inc");
 
 function dump_query_screen() {
 
-    global $lgray, $llgray;
+    global $dgray;
 
-    $defaults = setup_defaults();
-    $layout = setup_layout();
+    $phases   = process_phase_field($_GET);
+    $defaults = setup_defaults($phases);
+    $layout   = setup_layout($phases);
 
     # Fill-in form using last invocation's input
-    $main_menu = menu_carryover($defaults);
+    $main_menu = form_carryover($defaults);
 
     # Generate advanced popup menus
     $entries = get_menus_info(array_keys($main_menu["text"]));
@@ -37,83 +38,62 @@ function dump_query_screen() {
     # Generate advanced popup menus
     $links = selection_popups($defaults, $entries);
 
-    # Generate Menu
-    $i = 0;
-    $cols = 1;
-    $td = "<td bgcolor='$lgray'>";
-    $ctd = "<td bgcolor='$lgray' align='center'>";
-    $td33 = "<td bgcolor='$lgray' width='33%'>";
-    $tbl = "\n\n<table width='100%' align='center' cellspacing='1' cellpadding='5'>";
+    # Generate each of the screen's HTML components
+    $layout = setup_layout_html($layout, $main_menu, $links);
 
-    foreach (array_keys($layout) as $section) {
-        $layout[$section]['html'] = "\n$tbl";
+    $self = "http://" . $_SERVER['SERVER_NAME'] . $_SERVER['PHP_SELF'];
+    $phase_specific = $layout['farright']['html'] ? true : false;
 
-        # Display input textfields
-        foreach ($layout[$section]['fields'] as $field) {
-            $layout[$section]['html'] .=
-                "\n" . ((($i++ % $cols) == 0) ? "\n<tr>" : "") .
-                "\n$td33 " .
-                "\n" . $links[$field] . ":" .
-                "\n$td " .
-                "\n<input type='text' " .
-                    "name='text_$field' " .
-                    "id='text_$field' " .
-                    "value='" . $main_menu["text"][$field] . "'>";
+    # Table cell tags
+    $tds2  = "<td rowspan='2' bgcolor='$dgray' width='1%'>";
+    $tds3  = "<td rowspan='3' bgcolor='$dgray' width='1%'>";
+    $td1   = "<td rowspan='1' bgcolor='$dgray'>";
+    $td2   = "<td rowspan='2' bgcolor='$dgray'>";
+    $td3   = "<td rowspan='3' bgcolor='$dgray'>";
 
-        # No checkbox for a timestamp field
-        # Timestamp column is added using, e.g. "by hours"
-        if (! preg_match("/timestamp/i", $field))
-            $layout[$section]['html'] .=
-                "\n$ctd " .
-                "\n<input type='checkbox' " .
-                    "name='show_$field' " .
-                    "id='show_$field' " . $main_menu["show"][$field] . ">" .
-                "\n";
-        }
-        $layout[$section]['html'] .= '</table>';
+    # Display some additional fields for phase-specific querying
+    if ($phase_specific) {
+        $layout['farright']['html'] =
+            "\n$td2" .
+            "\n" . $layout['farright']['html'];
+        $colspan = 4;
+    }
+    else {
+        $layout['farright']['html'] = "";
+        $colspan = 3;
     }
 
-    $layout['bottom']['html'] = 
-        $tbl .
-        "\n<tr>$ctd " .
-        "\n<input type='Reset' value='Reset'>&nbsp;" .
-        "\n<input type='Submit' name='go' value='Report'>" .
-        "\n</table>";
+    $tdb = "\n<td align='center' bgcolor='$dgray' colspan='$colspan'>";
+    $tdt = "\n<td align='center' bgcolor='$dgray' colspan='" . ($colspan - 1) . "'>";
 
     # Print the screen
-    print html_head();
-
-    $self = 'http://' . $_SERVER['SERVER_NAME'] . $_SERVER['PHP_SELF'];
-
-    print "\n";
-    print "\n<body>";
-    print "\n<form method='get' id='report' name='report' action='$self'>";
-    print "\n <div align='left'>";
-    print "\n <table width='100%' align='center' border='1' cellspacing='1'";
-    print "\n   <tr><td>";
-    print "\n" . $layout['topleft']['html'];
-    print "\n   <td rowspan='2'>";
-    print "\n" . $layout['right']['html'];
-    print "\n   <tr><td>";
-    print "\n" . $layout['bottomleft']['html'];
-    print "\n   <tr>";
-    print "\n   <td align='center' colspan='2'>";
-    print        $layout['bottom']['html'];
-    print        carryover_cgi_params($_GET);
-    print "\n </table>";
-    print "\n </div>";
-    print "\n </form>";
-}
-
-# Carry input params over between invocations of the script
-# Note: this string must be printed between the <form> tags
-function carryover_cgi_params($params) {
-
-    foreach (array_keys($params) as $k) {
-        if (! $params[$k])
-            $str .= "\n<input type='hidden' name='$k' value='$params[$k]'>";
-    }
-    return $str;
+    print html_head() .
+          "\n" .
+          "\n<body>" .
+          "\n<form method='get' id='report' name='report' action='$self'>" .
+          "\n <div align='left'>" .
+          "\n <table width='100%' align='center' border='1' cellspacing='1'>" .
+          "\n   <tr>" .
+          "\n" . $tds3 .
+          "\n" . $layout['farleft']['html'] .
+          "\n    $tdt" .
+          "\n" . $layout['top']['html'] .
+          "\n   <tr>" .
+          "\n" . $td1 .
+          "\n" . $layout['topleft']['html'] .
+          "\n" . $td2 .
+          "\n" . $layout['right']['html'] .
+          "\n" . $layout['farright']['html'] .
+          "\n   <tr>" .
+          "\n" . $td1 .
+          "\n" . $layout['bottomleft']['html'] .
+          "\n   <tr>" .
+          "\n    $tdb" .
+                 $layout['bottom']['html'] .
+                 hidden_carryover($_GET) .
+          "\n </table>" .
+          "\n </div>" .
+          "\n </form>";
 }
 
 # Populate menus with entries (listed in columns_arg) from database
@@ -136,6 +116,8 @@ function get_menus_info($columns_arg) {
     $big_columns = array(
         "command" => 1,
         "configure_arguments" => 1,
+        "bitness" => 1,
+        "endian" => 1,
 
         # Results
         "environment" => 1,
@@ -154,18 +136,30 @@ function get_menus_info($columns_arg) {
     $tmp = array();
     foreach ($tables as $table) {
         $tmp = get_table_fields($table);
-        $columns[$table] = $tmp["column_name"];
+
+        $size = sizeof($tmp["column_name"]);
+        for ($i = 0; $i < $size; $i++) {
+            $column = $tmp["column_name"][$i];
+            $default = $tmp["column_default"][$i];
+            $default = preg_replace("/::.*$/i", '', $default);
+            $columns[$table][$column] = $default;
+        }
     }
 
     # Gather all available entries for the above columns
     foreach ($tables as $table) {
-        foreach ($columns[$table] as $column) {
+        foreach (array_keys($columns[$table]) as $column) {
             if ($big_columns[$column] or ! isset($columns_arg[$column]))
                 continue;
 
+            # Put most recent 'r' numbers at the top of the menu
+            $ordering = "ASC";
+            if (preg_match("/mpi_version/i", $column))
+                $ordering = "DESC";
+
             $cmd = "SELECT $column FROM $table " .
-                   "WHERE $column != 'bogus' " .
-                   "GROUP BY $column ORDER BY $column DESC;";
+                   "WHERE $column != " . $columns[$table][$column] . " " .
+                   "GROUP BY $column ORDER BY $column $ordering;";
             $entries[$column][] = simple_select($cmd);
         }
     }
@@ -270,33 +264,80 @@ function label($str) {
 }
 
 # Return an array of default values for textfields
-function setup_defaults() {
+function setup_defaults($phases) {
+
+    $_phases = array_flip($phases);
+    $single_phase = (sizeof($phases) == 1) ? true : false;
 
     # ompi does not submit results
     $http_username = $_SERVER['PHP_AUTH_USER'];
-    if (preg_match("/ompi/i", $http_username))
+    if (! $http_username or preg_match("/ompi/i", $http_username))
         $http_username = 'all';
 
-    return array(
+    $defaults = array(
+        # phase
+        'phase'             => 'all',
+
         # results
-        "start_timestamp"   => 'past 24 hours',
+        'start_timestamp'   => 'past 24 hours',
 
         # submit
-        "http_username"     => $http_username,
-        "local_username"    => 'all',
-        "hostname"          => 'all',
+        'http_username'     => $http_username,
+        'local_username'    => 'all',
+        'hostname'          => 'all',
 
         # mpi_install
-        "platform_hardware" => 'all',
-        "os_name"           => 'all',
-        "mpi_name"          => 'all',
-        "mpi_version"       => 'all',
+        'platform_hardware' => 'all',
+        'os_name'           => 'all',
+        'mpi_name'          => 'all',
+        'mpi_version'       => 'all',
+    );
+
+    # phase-specific
+    if ($single_phase) {
+        if (isset($_phases['mpi_install']))
+            $specific = array(
+                'configure_arguments' => '',
+                'compiler_name'       => 'all',
+                'bitness'             => 'all',
+                'endian'              => 'all',
+            );
+        elseif (isset($_phases['test_build']))
+            $specific = array(
+                'suite_name'       => 'all',
+                'compiler_name'    => 'all',
+                'compiler_version' => 'all',
+                'bitness'          => 'all',
+            );
+        elseif (isset($_phases['test_run']))
+            $specific = array(
+                'suite_name' => 'all',
+                'test_name'  => 'all',
+                'np'         => 'all',
+                'command'    => 'all',
+            );
+    }
+
+    return array_merge(
+        $defaults,
+        $specific
     );
 }
 
 # Return an array to represent the
 # screen's layout
-function setup_layout() {
+function setup_layout($phases) {
+
+    $_phases = array_flip($phases);
+    $single_phase = (sizeof($phases) == 1) ? true : false;
+
+    # phase
+    $layout['top']['fields'] = array(
+        "all",
+        "mpi_install",
+        "test_build",
+        "test_run",
+    );
 
     # results
     $layout['topleft']['fields'] = array(
@@ -315,8 +356,129 @@ function setup_layout() {
         'mpi_name',
         'mpi_version',
     );
+    # phase-specific
+    if ($single_phase) {
+        if (isset($_phases['mpi_install']))
+            $layout['farright']['fields'] = array(
+                'configure_arguments',
+                'compiler_name',
+                'bitness',
+                'endian',
+            );
+        elseif (isset($_phases['test_build']))
+            $layout['farright']['fields'] = array(
+                'suite_name',
+                'compiler_name',
+                'compiler_version',
+                'bitness',
+            );
+        elseif (isset($_phases['test_run']))
+            $layout['farright']['fields'] = array(
+                'suite_name',
+                'test_name',
+                'np',
+                'command',
+            );
+    }
+
     foreach (array_keys($layout) as $k)
         $layout['report']['fields'][] = $k;
+
+    return $layout;
+}
+
+# Return the query screen HTML components
+function setup_layout_html($layout, $menu, $links) {
+
+    global $lgray, $llgray;
+
+    # Generate Menu
+    $i    = 0;
+    $cols = 1;
+    $ctd  = "<td bgcolor='$lgray' align='center'>";
+    $ctd2 = "<td bgcolor='$lgray' align='center' colspan='2'>";
+    $td33 = "<td bgcolor='$lgray' width='33%'>";
+    $tbl  = "\n\n<table width='100%' align='center' cellspacing='1' cellpadding='5'>";
+
+    # IMPORTANT: SET SECTIONS CONTAINING TEXT FIELDS FIRST, 
+    # WE'LL OVERWRITE THE OTHER SECTIONS AFTERWARDS (see below)
+    foreach (array_keys($layout) as $section) {
+        $layout[$section]['html'] = "\n$tbl";
+
+        # Display textfields and checkboxes
+        foreach ($layout[$section]['fields'] as $field) {
+
+            # No checkbox for some fields since they would widen the
+            # summary table by several screen widths. Timestamp column
+            # is added using, e.g. "by hours".
+            $td = "<td bgcolor='$lgray'>";
+            $checkbox = true;
+            if (preg_match("/timestamp$|^command$|^configure_arguments$/i", $field)) {
+                $checkbox = false;
+                $td = "<td bgcolor='$lgray' colspan='2'>";
+            }
+
+            # Textfield
+            $layout[$section]['html'] .=
+                "\n" . ((($i++ % $cols) == 0) ? "\n<tr>" : "") .
+                "\n$td33 " .
+                "\n" . $links[$field] . ":" .
+                "\n$td " .
+                "\n<input type='text' " .
+                    "name='text_$field' " .
+                    "id='text_$field' " .
+                    "value='" . $menu["text"][$field] . "'>";
+
+
+            # Checkbox
+            if ($checkbox) {
+                $layout[$section]['html'] .=
+                    "\n$ctd" .
+                    "\n<input type='checkbox' " .
+                        "name='show_$field' " .
+                        "id='show_$field' " . $menu["show"][$field] . ">";
+            }
+        }
+        $layout[$section]['html'] .= '</table>';
+    }
+
+    # AFTERWARDS ...
+
+    # Put the logo in the far left
+    $script = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
+    $top    = dirname($script);
+    $logo   = "$top/images/reporter_logo.gif";
+    list($width, $height, $type, $attr) = getimagesize($logo);
+
+    # Put phase selection at the top
+    $layout['top']['html'] =
+        "\n$tbl" .
+        "\n<tr><td bgcolor='$lgray'>";
+    foreach ($layout['top']['fields'] as $field) {
+        $layout['top']['html'] .=
+            "\n$field <input type='radio' " .
+                     "name='phase' " .
+                     "value='$field' " .
+                     "onClick='javascript:self.open(\"$script?phase=$field\", \"_self\");' " .
+                     $menu['radio'][$field] . '>';
+    }
+    $layout['top']['html'] .=
+        "\n</table>";
+
+    $layout['farleft']['html'] =
+        "\n<a href='$script'>" .
+        "\n<img width='$width' " .
+               "height='$height' " .
+               "border='0' " .
+               "src='$logo'></a>";
+
+    # Put buttons at the bottom of the panel
+    $layout['bottom']['html'] =
+        $tbl .
+        "\n<tr>$ctd " .
+        "\n<input type='Reset' value='Reset'>&nbsp;" .
+        "\n<input type='Submit' name='go' value='Report'>" .
+        "\n</table>";
 
     return $layout;
 }
@@ -347,9 +509,14 @@ function selection_popups($defaults, $entries) {
                 "\n$tbl" .
                 "\n<tr>$th2 $field<tr>";
 
+        # Do not link to an empty menu(s)
+        $linkto = false;
+
         # Each column keys to an array of arrays (one array of which is
         # normally the available entries in the database) 
         foreach (array_keys($entries[$field]) as $k) {
+
+            $linkto = true;
 
             $menu .= "\n$td" .
                      "\n<select name='_".$i++."' $multiple size='10'>";
@@ -371,31 +538,35 @@ function selection_popups($defaults, $entries) {
         # Widen popup according to the number of menus
         $num_menus = sizeof($entries[$field]);
 
-        $link =
-            "\n<a class='black_ln' href='javascript:popup(" .
-                # Width
-                "\n\"" . (400 * $num_menus) . "\"," .
-                # Height
-                "\n\"325\"," .
-                # Title
-                "\n\"Select $field\"," .
-                # <script>
-                "\n\"" . htmlentities(jscript_export($entries[$field], $field), ENT_QUOTES) . "\"," .
-                # <body>
-                "\n\"" . htmlentities($menu, ENT_QUOTES) . "\"," .
-                # <body style>
-                "\n\"font-family:Courier,monospace\"" . 
-            ")'>" .
-            "\n" . label($field) .  
-            "</a>";
+        if ($linkto) {
+            $link =
+                "\n<a class='black_ln' href='javascript:popup(" .
+                    # Width
+                    "\n\"" . (400 * $num_menus) . "\"," .
+                    # Height
+                    "\n\"375\"," .
+                    # Title
+                    "\n\"Select $field\"," .
+                    # <script>
+                    "\n\"" . htmlentities(jscript_export($entries[$field], $field), ENT_QUOTES) . "\"," .
+                    # <body>
+                    "\n\"" . htmlentities($menu, ENT_QUOTES) . "\"," .
+                    # <body style>
+                    "\n\"font-family:Courier,monospace\"" . 
+                ")'>" .
+                "\n" . label($field) .  
+                "</a>";
+        }
+        else
+            $link = "\n" . label($field);
 
         $links[$field] = $link;
     }
     return $links;
 }
 
-# carry over textfields and checkboxes from the last invocation
-function menu_carryover($defaults) {
+# Carry over textfields and checkboxes from the last invocation
+function form_carryover($defaults) {
 
     foreach (array_keys($defaults) as $k) {
         if (isset($_GET["text_$k"]))
@@ -413,7 +584,27 @@ function menu_carryover($defaults) {
         else
             $menu["show"][$k] = "checked";
     }
+
+    $phase = $_GET["phase"];
+    if ($phase)
+        $menu['radio'][$phase] = 'checked';
+    else
+        $menu['radio'][$defaults['phase']] = 'checked';
+
     return $menu;
+}
+
+# Carry over input params (that are not submitted via form
+# controls) between invocations of the script. Note:
+# this string must be printed between the <form> tags
+function hidden_carryover($params) {
+
+    foreach (array_keys($params) as $k) {
+        if (preg_match('/^phase$|^more_|^show_|^text_/', $k))
+            continue;
+        $str .= "\n<input type='hidden' name='$k' value='$params[$k]'>";
+    }
+    return $str;
 }
 
 function html_head() {
