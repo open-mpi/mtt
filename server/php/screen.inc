@@ -33,7 +33,7 @@ function dump_query_screen() {
     $main_menu = form_carryover($defaults);
 
     # Generate advanced popup menus
-    $entries = get_menus_info(array_keys($main_menu["text"]));
+    $entries = get_menus_info(array_keys($main_menu['text']));
 
     # Generate advanced popup menus
     $links = selection_popups($defaults, $entries);
@@ -102,32 +102,32 @@ function get_menus_info($columns_arg) {
     $columns_arg = array_flip($columns_arg);
 
     $tables = array(
-        "compute_cluster",
-        "submit",
-        "mpi_get",
-        "compiler",
-        "mpi_install",
-        "test_build",
-        "test_run",
-        "results",
+        'compute_cluster',
+        'submit',
+        'mpi_get',
+        'compiler',
+        'mpi_install',
+        'test_build',
+        'test_run',
+        'results',
     );
 
     # Do *not* provide menus for these fields
     $big_columns = array(
-        "command" => 1,
-        "configure_arguments" => 1,
-        "bitness" => 1,
-        "endian" => 1,
+        'command' => 1,
+        'configure_arguments' => 1,
+        'bitness' => 1,
+        'endian' => 1,
 
         # Results
-        "environment" => 1,
-        "merge_stdout_stderr" => 1,
-        "result_stdout" => 1,
-        "result_stderr" => 1,
-        "start_timestamp" => 1,
-        "stop_timestamp" => 1,
-        "duration" => 1,
-        "submit_timestamp" => 1,
+        'environment' => 1,
+        'merge_stdout_stderr' => 1,
+        'result_stdout' => 1,
+        'result_stderr' => 1,
+        'start_timestamp' => 1,
+        'stop_timestamp' => 1,
+        'duration' => 1,
+        'submit_timestamp' => 1,
     );
 
     # Gather database columns
@@ -137,10 +137,10 @@ function get_menus_info($columns_arg) {
     foreach ($tables as $table) {
         $tmp = get_table_fields($table);
 
-        $size = sizeof($tmp["column_name"]);
+        $size = sizeof($tmp['column_name']);
         for ($i = 0; $i < $size; $i++) {
-            $column = $tmp["column_name"][$i];
-            $default = $tmp["column_default"][$i];
+            $column = $tmp['column_name'][$i];
+            $default = $tmp['column_default'][$i];
             $default = preg_replace("/::.*$/i", '', $default);
             $columns[$table][$column] = $default;
         }
@@ -189,43 +189,24 @@ function get_menus_info($columns_arg) {
             array('unknown')
         );
 
-    $entries["start_timestamp"][] = array(
-        "today",
-        "yesterday",
-        "past 12 hours",
-        "past 24 hours",
-        "past 2 days",
-        "past 3 days",
-        "past 1 week",
-        "past 2 weeks",
+    $entries['start_timestamp'][] = array(
+        'today',
+        'yesterday',
+        'past 12 hours',
+        'past 24 hours',
+        'past 2 days',
+        'past 3 days',
+        'past 1 week',
+        'past 2 weeks',
     );
-    $entries["start_timestamp"][] = array(
-        "by second",
-        "by minute",
-        "by hour",
-        "by month",
-        "by year",
+    $entries['start_timestamp'][] = array(
+        'by second',
+        'by minute',
+        'by hour',
+        'by month',
+        'by year',
     );
     return $entries;
-}
-
-# Prints an HTML table of _GET and _POST vars
-function debug_cgi($params, $title) {
-
-    global $lgray;
-    global $dgray;
-
-    $cols = 3;
-
-    print "\n\n<table width='80%' border='1'>";
-    print "\n\n<tr><th bgcolor='$dgray' colspan=" . $cols * 2 . ">$title";
-
-    $i = 0;
-    foreach (array_keys($params) as $k) {
-        print "\n" . ((($i++ % $cols) == 0) ? "\n<tr>" : "") .
-            "<td bgcolor='$lgray'>" . $k . "<td>$params[$k]";
-    }
-    print "\n\n</table>";
 }
 
 # Return javascript code to bring popup selections
@@ -358,10 +339,10 @@ function setup_layout($phases) {
 
     # phase
     $layout['top']['fields'] = array(
-        "all",
-        "mpi_install",
-        "test_build",
-        "test_run",
+        'all',
+        'mpi_install',
+        'test_build',
+        'test_run',
     );
 
     # results
@@ -452,7 +433,7 @@ function setup_layout_html($layout, $menu, $links) {
                 "\n<input type='text' " .
                     "name='text_$field' " .
                     "id='text_$field' " .
-                    "value='" . $menu["text"][$field] . "'>";
+                    "value='" . $menu['text'][$field] . "'>";
 
 
             # Checkbox
@@ -461,7 +442,7 @@ function setup_layout_html($layout, $menu, $links) {
                     "\n$ctd" .
                     "\n<input type='checkbox' " .
                         "name='show_$field' " .
-                        "id='show_$field' " . $menu["show"][$field] . ">";
+                        "id='show_$field' " . $menu['show'][$field] . ">";
             }
         }
         $layout[$section]['html'] .= '</table>';
@@ -475,7 +456,13 @@ function setup_layout_html($layout, $menu, $links) {
     $logo   = "$top/images/reporter_logo.gif";
     list($width, $height, $type, $attr) = getimagesize($logo);
 
-    # Put phase selection at the top
+    # Put phase selection at the top ...
+
+    # Bring over phase-independent selections
+    # on the phase-selector radio-button click
+    $selections = partial_form_carryover(setup_defaults());
+    $appendage = arr2qstring($selections);
+
     $layout['top']['html'] =
         "\n$tbl" .
         "\n<tr><td bgcolor='$lgray'>";
@@ -484,7 +471,7 @@ function setup_layout_html($layout, $menu, $links) {
             "\n$field <input type='radio' " .
                      "name='phase' " .
                      "value='$field' " .
-                     "onClick='javascript:self.open(\"$script?phase=$field\", \"_self\");' " .
+                     "onClick='javascript:self.open(\"$script?phase=$field$appendage\", \"_self\");' " .
                      $menu['radio'][$field] . '>';
     }
     $layout['top']['html'] .=
@@ -515,7 +502,7 @@ function selection_popups($defaults, $entries) {
 
     # For small menus in popup windows
     $tbl = "\n\n<table align='center' border='1' cellspacing='1' cellpadding='5'>";
-    $td = "<td align='center' bgcolor='$llgray'>";
+    $td  = "<td align='center' bgcolor='$llgray'>";
     $td2 = "<td align='center' bgcolor='$llgray' colspan='2'>";
     $th2 = "<th align='center' bgcolor='$lgray' colspan='2'>";
 
@@ -526,7 +513,7 @@ function selection_popups($defaults, $entries) {
 
         # Disallow multiple selection for date range
         if (! preg_match("/timestamp/i", $field))
-            $multiple = "multiple";
+            $multiple = 'multiple';
 
         $i = 0;
 
@@ -590,33 +577,57 @@ function selection_popups($defaults, $entries) {
     return $links;
 }
 
-# Carry over textfields and checkboxes from the last invocation
+# Carry over textfields, checkboxes, and radios from the last invocation
 function form_carryover($defaults) {
 
     foreach (array_keys($defaults) as $k) {
         if (isset($_GET["text_$k"]))
-            $menu["text"][$k] = $_GET["text_$k"];
+            $menu['text'][$k] = $_GET["text_$k"];
         else
-            $menu["text"][$k] = $defaults[$k];
+            $menu['text'][$k] = $defaults[$k];
 
-        if (isset($_GET["go"]))
+        if (isset($_GET['go']))
             if (isset($_GET["show_$k"])) {
                 if ($_GET["show_$k"] == "on")
-                    $menu["show"][$k] = "checked";
+                    $menu['show'][$k] = "checked";
             }
             else
-                $menu["show"][$k] = "";
+                $menu['show'][$k] = '';
         else
-            $menu["show"][$k] = "checked";
+            $menu['show'][$k] = 'checked';
     }
 
-    $phase = $_GET["phase"];
+    $phase = $_GET['phase'];
     if ($phase)
         $menu['radio'][$phase] = 'checked';
     else
         $menu['radio'][$defaults['phase']] = 'checked';
 
     return $menu;
+}
+
+# Carry over the phase-independent textfields, checkboxes,
+# and radios from the last invocation
+# (Return a list that is arr2qstring-ready)
+function partial_form_carryover($defaults) {
+
+    # Phase independent
+    unset($defaults['phase']);
+
+    foreach (array_keys($defaults) as $k) {
+        $textfield = "text_$k";
+        $showfield = "show_$k";
+
+        if (isset($_GET[$textfield]))
+            $selections[$textfield] = $_GET[$textfield];
+        else
+            $selections[$textfield] = $defaults[$k];
+
+        if (isset($_GET[$showfield]))
+            if ($_GET[$showfield] == 'on')
+                $selections[$showfield] = 'on';
+    }
+    return $selections;
 }
 
 # Carry over input params (that are not submitted via form
@@ -660,20 +671,16 @@ EOT;
     td {font-size: 75%; }
 EOT;
 
-    # Print html head (query frame & results frame may need this script/style)
-    $html_head .= "\n<head>";
-    $html_head .= "\n<title>Open MPI Test Reporter</title>";
-
-    $html_head .= "\n<script language='javascript' type='text/javascript'>";
-    $html_head .= "\n$javascript";
-    $html_head .= "\n</script>";
-
-    $html_head .= "\n<style type='text/css'>";
-    $html_head .= "\n$style";
-    $html_head .= "\n</style>";
-    $html_head .= "\n</head>";
-
-    return $html_head;
+    # Print html head
+    return "\n<head>" .
+           "\n<title>Open MPI Test Reporter</title>" .
+           "\n<script language='javascript' type='text/javascript'>" .
+           "\n$javascript" .
+           "\n</script>" .
+           "\n<style type='text/css'>" .
+           "\n$style" .
+           "\n</style>" .
+           "\n</head>";
 }
 
 ?>

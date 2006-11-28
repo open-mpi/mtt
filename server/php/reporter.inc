@@ -45,6 +45,13 @@ function tokenize($string) {
     return $tokens;
 }
 
+# Convert an associative array to an HTTP-ready query string
+function arr2qstring($arr) {
+    foreach (array_keys($arr) as $key)
+        $str .= "&$key=$arr[$key]";
+    return $str;
+}
+
 #########################################
 #                                       #
 #  Developer & User Help Functions      #
@@ -86,6 +93,24 @@ function debug_sql($cmd) {
     if (isset($_GET['sql']))
         if ($_GET['sql'] == 'on')
             print("\n<br>SQL: <pre>" . html_to_txt($cmd) . "</pre>");
+}
+
+# Prints an HTML table of _GET and _POST vars
+function debug_cgi($params, $title) {
+
+    global $lgray, $dgray;
+
+    $cols = 3;
+
+    print "\n\n<table width='80%' border='1'>";
+    print "\n\n<tr><th bgcolor='$dgray' colspan=" . $cols * 2 . ">$title";
+
+    $i = 0;
+    foreach (array_keys($params) as $k) {
+        print "\n" . ((($i++ % $cols) == 0) ? "\n<tr>" : "") .
+            "<td bgcolor='$lgray'>" . $k . "<td>$params[$k]";
+    }
+    print "\n\n</table>";
 }
 
 # Show help text

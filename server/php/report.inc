@@ -263,10 +263,10 @@ function drilldown_filters($headers, $params, $results, $phase) {
 
     $qstring_arr = $_GET;
     $test_results = array(
-        "pass",
-        "fail",
-        "skip",
-        "timed",
+        'pass',
+        'fail',
+        'skip',
+        'timed',
     );
 
     $self = 'http://' . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'];
@@ -283,8 +283,8 @@ function drilldown_filters($headers, $params, $results, $phase) {
         foreach ($headers['params'] as $param) {
             $qstring_arr["text_$param"] = $params[$i++];
         }
-        $qstring_arr["test_result"] = $test_results[$j];
-        $qstring_arr["phase"] = $phase;
+        $qstring_arr['test_result'] = $test_results[$j];
+        $qstring_arr['phase'] = $phase;
 
         $ret['links'][] = sprintf($format, arr2qstring($qstring_arr), $count);
         $ret['counts'][] = $count;
@@ -292,14 +292,6 @@ function drilldown_filters($headers, $params, $results, $phase) {
     }
 
     return $ret;
-}
-
-# Convert an associative array to an HTTP-ready query string
-function arr2qstring($arr) {
-    foreach (array_keys($arr) as $key)
-        $str .= "&$key=$arr[$key]";
-
-    return $str;
 }
 
 # Create links that drill down by phase and/or result
@@ -339,9 +331,9 @@ function drilldown_basic($phases) {
 # Generate the shorthand for the given phase-result code (see get_result_cases)
 function result_str($phase, $result) {
     $abbrevs = array(
-        "mpi_install" => "i",
-        "test_build" => "b",
-        "test_run" => "r",
+        'mpi_install' => 'i',
+        'test_build' => 'b',
+        'test_run' => 'r',
     );
     return '_' . $abbrevs[$phase] . substr($result, 0, 1);
 }
@@ -543,7 +535,7 @@ function get_result_cases($phases, $params) {
     $format = "COUNT(CASE WHEN %s THEN '%s' END) as %s";
 
     # MPI Installs
-    if (isset($_phases["mpi_install"])) {
+    if (isset($_phases['mpi_install'])) {
         $str = '_ip';
         $when['pass'] = "pass = '$str'";
         $results['aggregates'][$str] =
@@ -556,7 +548,7 @@ function get_result_cases($phases, $params) {
     }
 
     # Test Builds
-    if (isset($_phases["test_build"])) {
+    if (isset($_phases['test_build'])) {
         $str = '_bp';
         $when['pass'] = "pass = '$str'";
         $results['aggregates'][$str] =
@@ -569,7 +561,7 @@ function get_result_cases($phases, $params) {
     }
 
     # Test Runs
-    if (isset($_phases["test_run"])) {
+    if (isset($_phases['test_run'])) {
         $str = '_rp';
         $when['pass'] = "pass = '$str'";
         $results['aggregates'][$str] =
@@ -744,7 +736,7 @@ function process_date_field($params) {
     $format = "replace(date_trunc('second', %s), '+00', '')";
 
     $now = select_scalar("SELECT " . sprintf($format, "now()"));
-    $date["current"] = $now;
+    $date['current'] = $now;
 
     $timestamp_name = "start_timestamp";
     $timestamp_param = $params["text_$timestamp_name"];
@@ -835,7 +827,7 @@ function process_date_field($params) {
 
     $date['select'][$timestamp_name] = $clause;
     $date['where'] = $where;
-    $date["absolute"] = $absolute;
+    $date['absolute'] = $absolute;
 
     return $date;
 }
@@ -910,41 +902,41 @@ function detail_columns($phase) {
     # MPI Install
     if (isset($phases['mpi_install']))
         $phase_columns = array(
-            "compiler_name",
-            "compiler_version",
-            "configure_arguments",
-            "vpath_mode",
-            "bitness",
-            "endian",
+            'compiler_name',
+            'compiler_version',
+            'configure_arguments',
+            'vpath_mode',
+            'bitness',
+            'endian',
         );
 
     # Test Build
     if (isset($phases['test_build']))
         $phase_columns = array(
-            "compiler_name",
-            "compiler_version",
-            "suite_name",
-            "bitness",
+            'compiler_name',
+            'compiler_version',
+            'suite_name',
+            'bitness',
         );
 
     # Test Run
     if (isset($phases['test_run']))
         $phase_columns = array(
-            "variant",
-            "test_name",
-            "command",
-            "np",
+            'variant',
+            'test_name',
+            'command',
+            'np',
         );
 
     $results_columns = array(
-        "exit_status",
-        "start_timestamp",
-        "duration",
-        "result_message",
-        "result_stdout",
-        "result_stderr",
-        "environment",
-        "client_serial",
+        'exit_status',
+        'start_timestamp',
+        'duration',
+        'result_message',
+        'result_stdout',
+        'result_stderr',
+        'environment',
+        'client_serial',
     );
     
     return array_merge(
@@ -957,17 +949,17 @@ function detail_columns($phase) {
 function strtonumeral($str) {
 
     $words_to_numerals = array(
-        "zero"  => 0,
-        "one"   => 1,
-        "two"   => 2,
-        "three" => 3,
-        "four"  => 4,
-        "five"  => 5,
-        "six"   => 6,
-        "seven" => 7,
-        "eight" => 8,
-        "nine"  => 9,
-        "ten"   => 10,
+        'zero'  => 0,
+        'one'   => 1,
+        'two'   => 2,
+        'three' => 3,
+        'four'  => 4,
+        'five'  => 5,
+        'six'   => 6,
+        'seven' => 7,
+        'eight' => 8,
+        'nine'  => 9,
+        'ten'   => 10,
     );
 
     $converted = $words_to_numerals[strtolower($str)];
