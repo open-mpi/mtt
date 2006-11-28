@@ -52,6 +52,21 @@ function arr2qstring($arr) {
     return $str;
 }
 
+# Provide logical labels for form controls
+function label($str) {
+
+    $labels = array(
+        'start_timestamp' => "date_range",
+        'submit_timestamp' => "date_range",
+    );
+    $label = $labels[$str];
+
+    if ($label)
+        return $label;
+    else 
+        return $str;
+}
+
 #########################################
 #                                       #
 #  Developer & User Help Functions      #

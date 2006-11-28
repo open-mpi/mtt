@@ -123,7 +123,7 @@ function summary_table($headers, $resource) {
 
     print "<tr>";
     foreach ($headers['params'] as $header)
-        printf("\n<th bgcolor='$thcolor' rowspan=2>%s", us2sp($header));
+        printf("\n<th bgcolor='$thcolor' rowspan=2>%s", us2sp(label($header)));
 
     $num_result_types = array(
         "mpi_install" => 2,
@@ -790,26 +790,33 @@ function process_date_field($params) {
         # Do date aggregation
         else {
 
-            $format2 = "substring($timestamp_name from 0 for %d) || ':00' as $timestamp_name";
-            $format3 = "substring($timestamp_name from 0 for %d) as $timestamp_name";
+            # substring(start_timestamp from 0 for 14) || ':00 - ' ||
+            # substring(start_timestamp + interval '1 hour' from 0 for 14) || ':00'
+
+            $format2 = "\n substring($timestamp_name from 0 for %d) || ':00 - ' || " .
+                       "\n substring($timestamp_name + interval '1 %s' from 0 for %d)  || ':00' " .
+                       "\n   as $timestamp_name";
+            $format3 = "\n substring($timestamp_name from 0 for %d) || ' - ' || " .
+                       "\n substring($timestamp_name + interval '1 %s' from 0 for %d) " .
+                       "\n   as $timestamp_name";
 
             if (preg_match("/by(?:-| *)sec(?:onds?)?/i", $token)) {
                 $clause = $timestamp_name;
 
             } elseif (preg_match("/by(?:-| *)min(?:utes?)?/i", $token)) {
-                $clause = sprintf($format3, 17);
+                $clause = sprintf($format3, 17, "minute", 17);
 
             } elseif (preg_match("/by(?:-| *)hours?/i", $token)) {
-                $clause = sprintf($format2, 14);
+                $clause = sprintf($format2, 14, "hour", 14);
 
             } elseif (preg_match("/by(?:-| *)days?/i", $token)) {
-                $clause = sprintf($format3, 11);
+                $clause = sprintf($format3, 11, "day", 11);
 
             } elseif (preg_match("/by(?:-| *)mon(?:ths?)?/i", $token)) {
-                $clause = sprintf($format3, 8);
+                $clause = sprintf($format3, 8, "month", 8);
 
             } elseif (preg_match("/by(?:-| *)years?/i", $token)) {
-                $clause = sprintf($format3, 5);
+                $clause = sprintf($format3, 5, "year", 5);
             }
             $date["rollup"] = $token;
         }

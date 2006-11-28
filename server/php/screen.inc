@@ -254,21 +254,6 @@ EOT;
     return $script;
 }
 
-# Provide logical labels for form controls
-function label($str) {
-
-    $labels = array(
-        'start_timestamp' => "date_range",
-        'submit_timestamp' => "date_range",
-    );
-    $label = $labels[$str];
-
-    if ($label)
-        return $label;
-    else 
-        return $str;
-}
-
 # Return an array of default values for textfields
 function setup_defaults($phases) {
 
