@@ -185,6 +185,7 @@ sub _run_one_test {
     # Analyze the test parameters and results
     my $report;
     $report = MTT::Module::Run("MTT::Test::Analyze", "Analyze", $run, $mpi_details, $str, $x);
+    $report->{variant} = $variant;
     # Assume that the Analyze module will output one line
     ++$verbose_out;
 
