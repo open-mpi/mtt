@@ -13,7 +13,7 @@
 # Grab phase field
 function process_phase_field($params) {
     if (isset($params['phase'])) {
-        if ($params['phase'] == 'all')
+        if (preg_match('/^all/', $params['phase']))
             return array("mpi_install", "test_build", "test_run");
         else
             return tokenize($params['phase']);
@@ -52,17 +52,88 @@ function arr2qstring($arr) {
     return $str;
 }
 
-# Provide logical labels for form controls
+# Display more human-readable labels
 function label($str) {
 
     $labels = array(
-        'start_timestamp' => "date_range",
-        'submit_timestamp' => "date_range",
-    );
-    $label = $labels[$str];
 
-    if ($label)
-        return $label;
+        # Database column names
+        "bandwidth_avg"       => "Bandwidth avg.",
+        "bandwidth_max"       => "Bandwidth max.",
+        "bandwidth_min"       => "Bandwidth min.",
+        "bitness"             => "Bitness",
+        "client_serial"       => "Client serial",
+        "command"             => "Command",
+        "compiler_name"       => "Compiler name",
+        "compiler_version"    => "Compiler version",
+        "configure_arguments" => "Configure arguments",
+        "description"         => "Description",
+        "duration"            => "Duration",
+        "email_address"       => "Email address",
+        "enabled"             => "Enabled",
+        "endian"              => "Endian",
+        "environment"         => "Environment",
+        "exit_status"         => "Exit status",
+        "field"               => "Field",
+        "first_occurrence"    => "First occurrence",
+        "gecos"               => "Gecos",
+        "hostname"            => "Hostname",
+        "http_username"       => "HTTP username",
+        "last_occurrence"     => "Last occurrence",
+        "latency_avg"         => "Latency avg.",
+        "latency_max"         => "Latency max.",
+        "latency_min"         => "Latency min.",
+        "local_username"      => "Local username",
+        "merge_stdout_stderr" => "Merge stdout stderr",
+        "message_size"        => "Message size",
+        "mpi_name"            => "MPI name",
+        "mpi_version"         => "MPI version",
+        "mtt_version_major"   => "MTT version major",
+        "mtt_version_minor"   => "MTT version minor",
+        "np"                  => "np",
+        "os_name"             => "OS name",
+        "os_version"          => "OS version",
+        "phase"               => "Phase",
+        "platform_hardware"   => "Platform hardware",
+        "platform_name"       => "Platform name",
+        "platform_type"       => "Platform type",
+        "result_message"      => "Result message",
+        "result_stderr"       => "Result stderr",
+        "result_stdout"       => "Result stdout",
+        "signal"              => "Signal",
+        "start_timestamp"     => "Date range",
+        "stop_timestamp"      => "Date range",
+        "subject"             => "Subject",
+        "submit_timestamp"    => "Date range",
+        "suite_name"          => "Suite name",
+        "test_name"           => "Test name",
+        "test_result"         => "Test result",
+        "url"                 => "Url",
+        "username"            => "Username",
+        "value"               => "Value",
+        "variant"             => "Variant",
+        "vpath_mode"          => "Vpath mode",
+
+        # MTT phase names
+        "all_phases"        => "All phases",
+        "mpi_install"       => "MPI install",
+        "test_build"        => "Test build",
+        "test_run"          => "Test run",
+        "latency_bandwidth" => "Latency bandwidth",
+
+        # Result types
+        "pass"  => "Pass",
+        "fail"  => "Fail",
+        "skip"  => "Skip",
+        "timed" => "Timed",
+
+        # Selection/unselection
+        "show"  => "Show",
+        "hide"  => "Hide",
+    );
+
+    if (isset($labels[$str]))
+        return $labels[$str];
     else 
         return $str;
 }

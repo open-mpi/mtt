@@ -45,11 +45,11 @@ function dump_query_screen() {
     $phase_specific = $layout['farright']['html'] ? true : false;
 
     # Table cell tags
-    $tds2  = "<td rowspan='2' bgcolor='$dgray' width='1%'>";
-    $tds3  = "<td rowspan='3' bgcolor='$dgray' width='1%'>";
-    $td1   = "<td rowspan='1' bgcolor='$dgray'>";
-    $td2   = "<td rowspan='2' bgcolor='$dgray'>";
-    $td3   = "<td rowspan='3' bgcolor='$dgray'>";
+    $tds2 = "<td rowspan='2' bgcolor='$dgray' width='1%'>";
+    $tds3 = "<td rowspan='3' bgcolor='$dgray' width='1%'>";
+    $td1  = "<td rowspan='1' bgcolor='$dgray'>";
+    $td2  = "<td rowspan='2' bgcolor='$dgray'>";
+    $td3  = "<td rowspan='3' bgcolor='$dgray'>";
 
     # Display some additional fields for phase-specific querying
     if ($phase_specific) {
@@ -160,10 +160,12 @@ function get_menus_info($columns_arg) {
             $cmd = "SELECT $column FROM $table " .
                    "WHERE $column != " . $columns[$table][$column] . " " .
                    "GROUP BY $column ORDER BY $column $ordering;";
-            $entries[$column][] = simple_select($cmd);
+            $entries[$column][] = array_merge(
+                                    array("all"),
+                                    simple_select($cmd)
+                                  );
         }
     }
-
 
     # Some special enumerated types
     $enums = array(
@@ -183,8 +185,10 @@ function get_menus_info($columns_arg) {
         ),
     );
 
+    # Hmmm. "all" and "unknown" are treated the same
     foreach (array_keys($enums) as $enum)
         $entries[$enum][] = array_merge(
+            array("all"),
             array_values($enums[$enum]), 
             array('unknown')
         );
@@ -203,6 +207,7 @@ function get_menus_info($columns_arg) {
         'by second',
         'by minute',
         'by hour',
+        'by day',
         'by month',
         'by year',
     );
@@ -267,7 +272,7 @@ function setup_defaults($phases) {
 
     $defaults = array(
         # phase
-        'phase'             => 'all',
+        'phase'             => 'all_phases',
 
         # results
         'start_timestamp'   => 'past 24 hours',
@@ -282,6 +287,13 @@ function setup_defaults($phases) {
         'os_name'           => 'all',
         'mpi_name'          => 'all',
         'mpi_version'       => 'all',
+
+        # developer params
+        'dev' => array(
+            'sql'   => 'off',
+            'cgi'   => 'off',
+            'debug' => null,
+        ),
     );
 
     # phase-specific
@@ -324,7 +336,7 @@ function setup_layout($phases) {
 
     # phase
     $layout['top']['fields'] = array(
-        'all',
+        'all_phases',
         'mpi_install',
         'test_build',
         'test_run',
@@ -396,16 +408,17 @@ function setup_layout_html($layout, $menu, $links) {
     foreach (array_keys($layout) as $section) {
         $layout[$section]['html'] = "\n$tbl";
 
-        # Display textfields and checkboxes
+        # Display textfields and show/hide menus
         foreach ($layout[$section]['fields'] as $field) {
 
-            # No checkbox for some fields since they would widen the
-            # summary table by several screen widths. Timestamp column
-            # is added using, e.g. "by hours".
+            # No veil (show/hide menu) for some fields since
+            # they would widen the summary table by several
+            # screen widths. Timestamp column is added
+            # using, e.g. "by hours".
             $td = "<td bgcolor='$lgray'>";
-            $checkbox = true;
+            $veil = true;
             if (preg_match("/timestamp$|^command$|^configure_arguments$/i", $field)) {
-                $checkbox = false;
+                $veil = false;
                 $td = "<td bgcolor='$lgray' colspan='2'>";
             }
 
@@ -418,16 +431,28 @@ function setup_layout_html($layout, $menu, $links) {
                 "\n<input type='text' " .
                     "name='text_$field' " .
                     "id='text_$field' " .
+                    # carried over from last invocation
                     "value='" . $menu['text'][$field] . "'>";
 
+            $selections = array(
+                'show' => 'on',
+                'hide' => 'off');
 
-            # Checkbox
-            if ($checkbox) {
+            # Show/hide menu
+            if ($veil) {
                 $layout[$section]['html'] .=
                     "\n$ctd" .
-                    "\n<input type='checkbox' " .
-                        "name='show_$field' " .
-                        "id='show_$field' " . $menu['show'][$field] . ">";
+                    "\n<select name='show_$field'>";
+                foreach (array_keys($selections) as $selection) {
+                    $layout[$section]['html'] .=
+                        "\n<option id='$selection' " .
+                                  "name='$selection' " .
+                                  "value='" . $selections[$selection] . "' " . 
+                                  # carried over from last invocation
+                                  $menu[$selection][$field] . ">" . 
+                              label($selection);
+                }
+                $layout[$section]['html'] .= "\n</select>";
             }
         }
         $layout[$section]['html'] .= '</table>';
@@ -453,11 +478,12 @@ function setup_layout_html($layout, $menu, $links) {
         "\n<tr><td bgcolor='$lgray'>";
     foreach ($layout['top']['fields'] as $field) {
         $layout['top']['html'] .=
-            "\n$field <input type='radio' " .
+            "\n<input type='radio' " .
                      "name='phase' " .
                      "value='$field' " .
                      "onClick='javascript:self.open(\"$script?phase=$field$appendage\", \"_self\");' " .
-                     $menu['radio'][$field] . '>';
+                     # carried over from last invocation
+                     $menu['radio'][$field] . "> " . label($field);
     }
     $layout['top']['html'] .=
         "\n</table>";
@@ -486,7 +512,7 @@ function selection_popups($defaults, $entries) {
     global $lgray, $llgray;
 
     # For small menus in popup windows
-    $tbl = "\n\n<table align='center' border='1' cellspacing='1' cellpadding='5'>";
+    $tbl = "\n<table align='center' border='1' cellspacing='1' cellpadding='5'>";
     $td  = "<td align='center' bgcolor='$llgray'>";
     $td2 = "<td align='center' bgcolor='$llgray' colspan='2'>";
     $th2 = "<th align='center' bgcolor='$lgray' colspan='2'>";
@@ -502,9 +528,9 @@ function selection_popups($defaults, $entries) {
 
         $i = 0;
 
-        $menu = "\n" .
+        $menu = "\n<div align='center'>" .
                 "\n$tbl" .
-                "\n<tr>$th2 $field<tr>";
+                "\n<tr>$th2 " . label($field) . "<tr>";
 
         # Do not link to an empty menu(s)
         $linkto = false;
@@ -530,7 +556,9 @@ function selection_popups($defaults, $entries) {
         $menu .=
             "\n<tr>$td2" .
             "\n<input type='submit' name='insert' onclick='javascript:exportVars();' value='Insert'>" .
-            "\n</table>";
+            "\n</table>" .
+            "\n<br><i>Select one or more menu items.</i>" .
+            "\n</div>";
 
         # Widen popup according to the number of menus
         $num_menus = sizeof($entries[$field]);
@@ -541,9 +569,9 @@ function selection_popups($defaults, $entries) {
                     # Width
                     "\n\"" . (400 * $num_menus) . "\"," .
                     # Height
-                    "\n\"375\"," .
+                    "\n\"400\"," .
                     # Title
-                    "\n\"Select $field\"," .
+                    "\n\"Select " . label($field) . "\"," .
                     # <script>
                     "\n\"" . htmlentities(jscript_export($entries[$field], $field), ENT_QUOTES) . "\"," .
                     # <body>
@@ -562,7 +590,7 @@ function selection_popups($defaults, $entries) {
     return $links;
 }
 
-# Carry over textfields, checkboxes, and radios from the last invocation
+# Carry over textfields, show/hide menus, and radios from the last invocation
 function form_carryover($defaults) {
 
     foreach (array_keys($defaults) as $k) {
@@ -571,15 +599,14 @@ function form_carryover($defaults) {
         else
             $menu['text'][$k] = $defaults[$k];
 
-        if (isset($_GET['go']))
-            if (isset($_GET["show_$k"])) {
-                if ($_GET["show_$k"] == "on")
-                    $menu['show'][$k] = "checked";
-            }
+        if (isset($_GET["show_$k"])) {
+            if ($_GET["show_$k"] == "on")
+                $menu['show'][$k] = "selected";
             else
-                $menu['show'][$k] = '';
+                $menu['hide'][$k] = "selected";
+        }
         else
-            $menu['show'][$k] = 'checked';
+            $menu['show'][$k] = 'selected';
     }
 
     $phase = $_GET['phase'];
@@ -591,15 +618,18 @@ function form_carryover($defaults) {
     return $menu;
 }
 
-# Carry over the phase-independent textfields, checkboxes,
-# and radios from the last invocation
-# (Return a list that is arr2qstring-ready)
+# Carry over the phase-independent textfields, show/hide
+# menus, and radios from the last invocation (Return a list
+# that is arr2qstring-ready)
 function partial_form_carryover($defaults) {
 
     # Phase independent
     unset($defaults['phase']);
 
     foreach (array_keys($defaults) as $k) {
+        if ($k == 'dev')
+            continue;
+
         $textfield = "text_$k";
         $showfield = "show_$k";
 
@@ -609,8 +639,13 @@ function partial_form_carryover($defaults) {
             $selections[$textfield] = $defaults[$k];
 
         if (isset($_GET[$showfield]))
-            if ($_GET[$showfield] == 'on')
-                $selections[$showfield] = 'on';
+            $selections[$showfield] = $_GET[$showfield];
+    }
+    # Carryover developer params
+    foreach (array_keys($defaults['dev']) as $k) {
+        if (isset($_GET[$k]))
+            $selections[$k] = $_GET[$k];
+    
     }
     return $selections;
 }

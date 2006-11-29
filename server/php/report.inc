@@ -55,18 +55,17 @@ function dump_report() {
     $headers['results'] = array_keys($query['aggregates']);
     $headers['phases']  = $phases;
 
-    $td = "<td>";
+    $num_rows = pg_num_rows($resource);
 
-    print "<table>" .
-          "<tr>$td<b>Current time (GMT)</b>:<td>" . $datefields["current"] . 
-          "<tr>$td<b>Date range (GMT)</b>: <td>" . $datefields["absolute"] .
-          "<tr>$td<b>Phase(s)</b>:<td>" . join(", ", $phases);
+    $basic_info = basic_info($datefields, $phases, $num_rows);
+    $permalinks = permalinks($datefields);
 
-    if ($_GET["test_result"])
-        print "<tr>$td<b>Result</b>:<td>" . $_GET["test_result"] . " only";
-
-    print "</table><br>";
-
+    # Print general info/links up top
+    print "<table width='100%'><tr>" .
+          "<td>$basic_info" .
+          "<td align='right'>$permalinks" .
+          "</table><br>";
+    
     # Print either a summary or detail report,
     # depending on whether a 'select_more' parameter is set
     $do_detailed = $headers['details'] ? true : false;
@@ -75,8 +74,6 @@ function dump_report() {
         detail_table($headers, $resource);
     else
         summary_table($headers, $resource);
-
-    print info_pointers($datefields);
 
     print "\n<br><hr><br>";
 
@@ -114,16 +111,11 @@ function summary_table($headers, $resource) {
           "\n<table border=1 width='100%'>";
 
     # Display headers
-    $num_cols = count($headers['params']) +
-                count($headers['results']) + 1;
+    $format = "\n<th bgcolor='$thcolor' rowspan=2>%s";
 
-    if (isset($_GET['table_title']))
-        print "\n<tr><th bgcolor='$thcolor' colspan=$num_cols>" .
-              "\n<i><b><br>" .  $_GET['table_title'] . "<br><br></b></i>";
-
-    print "<tr>";
+    print "<tr>" . sprintf($format, '#');
     foreach ($headers['params'] as $header)
-        printf("\n<th bgcolor='$thcolor' rowspan=2>%s", us2sp(label($header)));
+        printf($format, label($header));
 
     $num_result_types = array(
         "mpi_install" => 2,
@@ -154,20 +146,25 @@ function summary_table($headers, $resource) {
         printf("\n<th bgcolor='$thcolor'>%s", $labels[$result]);
     }
 
-    $i = 0;
+    $r = 1;
 
     # Print data rows
     while ($row = pg_fetch_row($resource)) {
 
-        if ($i++ > $max_rows)
+        if ($r > $max_rows)
             break;
 
         # Results are always in the far right cols
         $results = array_splice($row, sizeof($row) - $total_results_cols);
 
-        print "\n<tr>";
+        # printf formats
+        $format  = "\n<td bgcolor='%s' align='right'>%s";
+        $formatg = "\n<td bgcolor='$lgray' align='right'>%s";
+        $formatw = "\n<td bgcolor='$white'>%s";
+
+        print "\n<tr>" . sprintf($formatg, $r++);
         foreach ($row as $cell)
-            printf("\n<td bgcolor=$white>%s", $cell);
+            printf($formatw, $cell);
 
         $i = 0;
         $j = 0;
@@ -193,20 +190,20 @@ function summary_table($headers, $resource) {
                  $skip_count,
                  $time_count) = $ret['counts'];
 
-            print "\n<td align='right' bgcolor='" .
-                    (($pass_count > 0) ? $result_colors[$j] : $lgray) . "'>$pass";
+            printf($format,
+                    (($pass_count > 0) ? $result_colors[$j] : $lgray), $pass);
             $j++;
-            print "\n<td align='right' bgcolor='" .
-                    (($fail_count > 0) ? $result_colors[$j] : $lgray) . "'>$fail";
+            printf($format,
+                    (($fail_count > 0) ? $result_colors[$j] : $lgray), $fail);
             $j++;
             if (! is_null($skip)) {
-                print "\n<td align='right' bgcolor='" .
-                        (($skip_count > 0) ? $result_colors[$j] : $lgray) . "'>$skip";
+                printf($format,
+                        (($skip_count > 0) ? $result_colors[$j] : $lgray), $skip);
                 $j++;
             }
             if (! is_null($time)) {
-                print "\n<td align='right' bgcolor='" .
-                        (($time_count > 0) ? $result_colors[$j] : $lgray) . "'>$time";
+                printf($format,
+                        (($time_count > 0) ? $result_colors[$j] : $lgray), $time);
                 $j++;
             }
 
@@ -220,16 +217,20 @@ function summary_table($headers, $resource) {
     $i = 0;
 
     # Print results totals in last row
-    print "\n<tfoot><tr><td bgcolor='$llgray' colspan='" . sizeof($headers['params']) . "'>";
+    print "\n<tfoot><tr>" .
+          "\n<td align='left' " .
+                "bgcolor='$lgray' " .
+                "colspan='" . (sizeof($headers['params']) + 1) . "'>" .
+          "\n<b>Totals</b>";
+
     foreach ($totals as $total) {
         print "\n<td align='right' " .
                      "bgcolor='" . (($total > 0) ? $result_colors[$i] : $lgray) . "'" .
                  "><b>$total</b>";
         $i++;
     }
-    print "\n</tfoot>";
-
-    print "\n</table>" .
+    print "\n</tfoot>" .
+          "\n</table>" .
           "\n</table>" .
           "\n\n<!-- report_end -->\n\n";
 }
@@ -273,7 +274,7 @@ function drilldown_filters($headers, $params, $results, $phase) {
     foreach (detail_columns($phase) as $column)
         $qstring_arr["more_$column"] = null;
 
-    $format = "<a href='$self?%s' class='black_ln' target='_blank'>%s</a>";
+    $format = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
 
     $j = 0;
     foreach ($results as $count) {
@@ -316,16 +317,16 @@ function drilldown_basic($phases) {
 
         $drilldown = esc_percent("<a href='$self$appendage") . "%s' " .
                      "class='black_ln' " .
-                     "target='_blank'>%s" .
+                     "target='_self'>%s" .
                      "</a>";
-        $labels[$phase] = sprintf($drilldown, "&phase=$phase", $phase);
+        $links[$phase] = sprintf($drilldown, "&phase=$phase", label($phase));
         foreach ($test_results as $result) {
-            $labels[result_str($phase, $result)] =
-                sprintf($drilldown, "&phase=$phase&test_result=$result", $result);
+            $links[result_str($phase, $result)] =
+                sprintf($drilldown, "&phase=$phase&test_result=$result", label($result));
         }
     }
 
-    return $labels;
+    return $links;
 }
 
 # Generate the shorthand for the given phase-result code (see get_result_cases)
@@ -383,7 +384,7 @@ function detail_table($headers, $resource) {
         printf("\n<th bgcolor='$thcolor'>%s", $labels[$result]);
     }
 
-    $i = 0;
+    $r = 0;
 
     # Remove duplicated headers
     $headers = array_unique(
@@ -396,7 +397,7 @@ function detail_table($headers, $resource) {
     # Print data rows
     while ($row = pg_fetch_row($resource)) {
 
-        if ($i++ > $max_rows)
+        if ($r++ > $max_rows)
             break;
 
         # Results are always in the far right cols
@@ -435,8 +436,8 @@ function detail_table($headers, $resource) {
         print "<table border='1' width='100%'>";
         foreach ($headers as $header) {
             print (($i % 1 == 0) ? "\n<tr>" : "") .
-                  "\n$td <b>$header</b> $tdl " . 
-                  "\n<pre>$values[$i]</pre>";
+                  "\n$td <b>" . label($header) . "</b> $tdl " .
+                  "\n<pre>" . wordwrap($values[$i], 100) . "</pre>";
             $i++;
         }
         print "</table>";
@@ -589,9 +590,7 @@ function get_result_cases($phases, $params) {
 }
 
 # Show links to point user to more info ...
-function info_pointers($datefields) {
-
-    global $lgray, $llgray;
+function permalinks($datefields) {
 
     $domain    = $_SERVER['SERVER_NAME'];
     $uri       = $_SERVER['REQUEST_URI'];
@@ -604,25 +603,40 @@ function info_pointers($datefields) {
 
     # Can't be a relative link to an absolute date range report
     if (! isset($_GET['no_bookmarks'])) {
-
         $href = "\n<tr>" .
-                  "\n<td bgcolor=$lgray>%s<td align=center bgcolor=$llgray>" .
+                  "\n<td><b>%s</b>:<td>" .
                   "\n<a href='%s'".
-                  "' class='black_ln'>[Link]</a>";
+                  "' class='black_ln'>Permalink</a>";
 
-        $links = "\n<div align=left><br>" .
-                 "\n<table border=1 width=20%>" .
-                 "\n<tr><th bgcolor='$lgray' colspan=2>bookmarks";
-        $links .= sprintf($href, "relative date range", $rel_link);
-        $links .= sprintf($href, "absolute date range", $abs_link);
-        $links .= "\n</table>" .
-                  "\n</div>";
+        $links = "\n<table>" .
+                  sprintf($href, "Relative date range", $rel_link) .
+                  sprintf($href, "Absolute date range", $abs_link) .
+                  "\n</table>";
     }
     return $links;
 }
 
+# Print current time, date range, phases, and
+# result filter for the report
+function basic_info($datefields, $phases, $num_rows) {
+
+    $ret = "<table>" .
+          "<tr><td><b>Current time (GMT)</b>:<td>" . $datefields["current"] . 
+          "<tr><td><b>Date range (GMT)</b>: <td>" . $datefields["absolute"] .
+          "<tr><td><b>Phase(s)</b>:<td>" . join(", ", $phases);
+
+    if ($_GET["test_result"])
+        $ret .= "<tr><td><b>Result</b>:<td>" . $_GET["test_result"] . " only";
+
+    $ret .= "<tr><td><b>Number of rows</b>:<td>" . $num_rows .
+            "</table>";
+
+    return $ret;
+}
+
+
 # 1. Generate WHERE clause pieces from user-entered textfields
-# 2. Generate SELECT items from user-entered checkboxes
+# 2. Generate SELECT items from user-entered show/hide menus
 function process_input_fields($params) {
 
     $query['where'] = array();
@@ -685,11 +699,11 @@ function process_input_fields($params) {
             }
             $query['where'][] = "(" . join(" OR ", $clauses) . ")";
         }
-        # If it's a "show" checkbox, add it to SELECT clause
+        # If "show" is selected, add it to SELECT clause
         elseif (preg_match("/^show_/i", $k)) {
             $column = strip_prefix($k);
 
-            if (isset($params[$k]))
+            if ($params[$k] == 'on')
                 $query['select'][$column] = $column;
         }
         # If it's a "more" param, add it to the ''end'' of the SELECT clause
@@ -789,9 +803,6 @@ function process_date_field($params) {
         }
         # Do date aggregation
         else {
-
-            # substring(start_timestamp from 0 for 14) || ':00 - ' ||
-            # substring(start_timestamp + interval '1 hour' from 0 for 14) || ':00'
 
             $format2 = "\n substring($timestamp_name from 0 for %d) || ':00 - ' || " .
                        "\n substring($timestamp_name + interval '1 %s' from 0 for %d)  || ':00' " .
