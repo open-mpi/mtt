@@ -67,6 +67,9 @@ sub RunEngine {
             }
         }
         ++$count;
+
+        # Write out the "to be saved" test run results
+        MTT::Test::SaveRuns($top_dir);
         
         # Output a progress bar
         if ($verbose_out > 50) {
@@ -189,8 +192,21 @@ sub _run_one_test {
     # Assume that the Analyze module will output one line
     ++$verbose_out;
 
-    $MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$MTT::Test::Run::test_np}->{$cmd} = $report;
-    MTT::Test::SaveRuns($top_dir);
+    # For Test Runs data, we have two datasets: the "to be saved" set
+    # and the "all results" set.  The "to be saved" set is a
+    # relatively small set of data that is written out to disk
+    # periodically (i.e., augmenting what has already been written
+    # out).  The "all results" set is everything that has occurred so
+    # far.  We do this because the "all results" set can get *very*
+    # large, so we don't want to write out the whole thing every time
+    # we save the results to disk.
+
+    # So save this new result in both the "to be saved" and "all
+    # results" sets.  We'll write out the "to be saved" results
+    # shortly.
+
+    $MTT::Test::runs_to_be_saved->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$MTT::Test::Run::test_np}->{$cmd} = 
+        $MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$MTT::Test::Run::test_np}->{$cmd} = $report;
     MTT::Reporter::QueueAdd("Test Run", $run->{simple_section_name}, $report);
 
     # If there is an after_each step, run it

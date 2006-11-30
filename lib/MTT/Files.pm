@@ -40,8 +40,15 @@ sub make_safe_filename {
 
 #--------------------------------------------------------------------------
 
-sub mkdir {
+sub safe_mkdir {
     my ($dir) = @_;
+    MTT::Files::mkdir($dir, 1);
+}
+
+#--------------------------------------------------------------------------
+
+sub mkdir {
+    my ($dir, $safe) = @_;
 
     my $c = cwd();
     Debug("Making dir: $dir (cwd: $c)\n");
@@ -57,6 +64,9 @@ sub mkdir {
 
     foreach my $p (@parts) {
         next if (! $p);
+
+        $p = make_safe_filename($p)
+            if ($safe);
 
         $str .= "$p";
         if (! -d $str) {
@@ -402,6 +412,8 @@ sub http_get {
     return 1;
 }
 
+#--------------------------------------------------------------------------
+
 # Copy infile or stdin to a unique file in /tmp
 sub copyfile {
 
@@ -430,6 +442,66 @@ sub copyfile {
     close(out);
 
     return $outfile;
+}
+
+#--------------------------------------------------------------------------
+
+sub load_dumpfile {
+    my ($filename, $data) = @_;
+
+    # Check that the file is there
+    return
+        if (! -r $filename);
+
+    # Get the file size
+    my ($dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size,
+        $atime, $mtime, $ctime, $blksize, $blocks) = stat($filename);
+
+    # Read it in
+    open IN, $filename;
+    my $tmp;
+    read(IN, $tmp, $size);
+    close IN;
+    
+    # It's in Dumper format.  How many $VARx's are there?
+    return
+        if (! $tmp =~ m/\$VAR[0-9]+/g);
+    my $count = 0;
+    ++$count
+        while ($tmp =~ m/\$VAR[0-9]+/g);
+
+    # We know how many $VARx's there are.  Build up a string to eval.
+    my $str;
+    my $var_num = 1;
+    while ($var_num <= $count) {
+        $str .= "my \$VAR$var_num;\n";
+        ++$var_num;
+    }
+    $str .= "eval \$tmp;\n";
+    my $var_num = 1;
+    while ($var_num <= $count) {
+        $str .= "\$\$data->{VAR$var_num} = \$VAR$var_num;\n";
+        ++$var_num;
+    }
+    eval $str;
+}
+
+#--------------------------------------------------------------------------
+
+sub save_dumpfile {
+    my ($filename) = @_;
+    shift;
+
+    # Serialize
+    my $d = new Data::Dumper([@_]);
+    $d->Purity(1)->Indent(1);
+
+    open FILE, ">$filename.new";
+    print FILE $d->Dump;
+    close FILE;
+
+    # Atomically move it onto the old file
+    rename("$filename.new", $filename);
 }
 
 1;
