@@ -30,16 +30,16 @@ function dump_query_screen() {
     $layout   = setup_layout($phases);
 
     # Fill-in form using last invocation's input
-    $main_menu = form_carryover($defaults);
+    $lasttime = form_carryover($defaults);
 
     # Generate advanced popup menus
-    $entries = get_menus_info(array_keys($main_menu['text']));
+    $entries = get_menus_info($defaults);
 
     # Generate advanced popup menus
     $links = selection_popups($defaults, $entries);
 
     # Generate each of the screen's HTML components
-    $layout = setup_layout_html($layout, $main_menu, $links);
+    $layout = setup_layout_html($layout, $lasttime, $links);
 
     $self = "http://" . $_SERVER['SERVER_NAME'] . $_SERVER['PHP_SELF'];
     $phase_specific = $layout['farright']['html'] ? true : false;
@@ -99,8 +99,6 @@ function dump_query_screen() {
 # Populate menus with entries (listed in columns_arg) from database
 function get_menus_info($columns_arg) {
 
-    $columns_arg = array_flip($columns_arg);
-
     $tables = array(
         'compute_cluster',
         'submit',
@@ -149,7 +147,8 @@ function get_menus_info($columns_arg) {
     # Gather all available entries for the above columns
     foreach ($tables as $table) {
         foreach (array_keys($columns[$table]) as $column) {
-            if ($big_columns[$column] or ! isset($columns_arg[$column]))
+            if ($big_columns[$column] or
+                ! isset($columns_arg[$column]))
                 continue;
 
             # Put most recent 'r' numbers at the top of the menu
@@ -168,22 +167,7 @@ function get_menus_info($columns_arg) {
     }
 
     # Some special enumerated types
-    $enums = array(
-        'bitness' => array(
-            1 => 32,
-            2 => 64,
-            3 => '32/64',
-        ),
-        'endian' => array(
-            1 => 'little',
-            2 => 'big',
-        ),
-        'vpath_mode' => array(
-            1 => 'no vpath',
-            2 => 'relative',
-            3 => 'absolute',
-        ),
-    );
+    $enums = enums_table();
 
     # Hmmm. "all" and "unknown" are treated the same
     foreach (array_keys($enums) as $enum)
@@ -212,6 +196,15 @@ function get_menus_info($columns_arg) {
         'by year',
     );
     return $entries;
+}
+
+# Return the list of fields prefixed with "text_" in the input
+function get_textfields($params) {
+    foreach (array_keys($params) as $param) 
+        if (preg_match("/^text_(\w+)/i", $param, $m))
+            $fields[] = $m[1];
+
+    return $fields;
 }
 
 # Return javascript code to bring popup selections
@@ -262,7 +255,10 @@ EOT;
 # Return an array of default values for textfields
 function setup_defaults($phases) {
 
-    $_phases = array_flip($phases);
+    # Arrayify the argument
+    if (! is_array($phases))
+        $phases = array($phases);
+
     $single_phase = (sizeof($phases) == 1) ? true : false;
 
     # ompi does not submit results
@@ -271,9 +267,6 @@ function setup_defaults($phases) {
         $http_username = 'all';
 
     $defaults = array(
-        # phase
-        'phase'             => 'all_phases',
-
         # results
         'start_timestamp'   => 'past 24 hours',
 
@@ -287,32 +280,25 @@ function setup_defaults($phases) {
         'os_name'           => 'all',
         'mpi_name'          => 'all',
         'mpi_version'       => 'all',
-
-        # developer params
-        'dev' => array(
-            'sql'   => 'off',
-            'cgi'   => 'off',
-            'debug' => null,
-        ),
     );
 
-    # phase-specific
+    # Phase-specific
     if ($single_phase) {
-        if (isset($_phases['mpi_install']))
+        if (array_search('mpi_install', $phases) !== false)
             $specific = array(
                 'configure_arguments' => '',
                 'compiler_name'       => 'all',
                 'bitness'             => 'all',
                 'endian'              => 'all',
             );
-        elseif (isset($_phases['test_build']))
+        elseif (array_search('test_build', $phases) !== false)
             $specific = array(
                 'suite_name'       => 'all',
                 'compiler_name'    => 'all',
                 'compiler_version' => 'all',
                 'bitness'          => 'all',
             );
-        elseif (isset($_phases['test_run']))
+        elseif (array_search('test_run', $phases) !== false)
             $specific = array(
                 'suite_name' => 'all',
                 'test_name'  => 'all',
@@ -321,17 +307,47 @@ function setup_defaults($phases) {
             );
     }
 
-    return array_merge(
+    $ret = array_merge(
         $defaults,
         $specific
     );
+
+    # Show all columns (except test_name)
+    foreach (array_keys($ret) as $k)
+        $ret['show'][$k] = 'show';
+
+    $ret['show']['test_name'] = 'hide';
+
+    # Phase
+    $ret['phase'] = 'all_phases';
+
+    # Developer params
+    $ret['dev'] = array(
+        'sql'   => 'off',
+        'cgi'   => 'off',
+        'debug' => null,
+    );
+
+    return $ret;
 }
+
+# 1. Two values to compare
+# 2. An array->key combo
+function checked($var1, $var2) {
+    if (is_array($var1)) {
+        if ($var1[$var2])
+            return 'checked';
+    }
+    elseif ($var1 == $var2) {
+        return 'checked';
+    }
+}
+    
 
 # Return an array to represent the
 # screen's layout
 function setup_layout($phases) {
 
-    $_phases = array_flip($phases);
     $single_phase = (sizeof($phases) == 1) ? true : false;
 
     # phase
@@ -361,21 +377,21 @@ function setup_layout($phases) {
     );
     # phase-specific
     if ($single_phase) {
-        if (isset($_phases['mpi_install']))
+        if (array_search('mpi_install', $phases) !== false)
             $layout['farright']['fields'] = array(
                 'configure_arguments',
                 'compiler_name',
                 'bitness',
                 'endian',
             );
-        elseif (isset($_phases['test_build']))
+        elseif (array_search('test_build', $phases) !== false)
             $layout['farright']['fields'] = array(
                 'suite_name',
                 'compiler_name',
                 'compiler_version',
                 'bitness',
             );
-        elseif (isset($_phases['test_run']))
+        elseif (array_search('test_run', $phases) !== false)
             $layout['farright']['fields'] = array(
                 'suite_name',
                 'test_name',
@@ -391,7 +407,7 @@ function setup_layout($phases) {
 }
 
 # Return the query screen HTML components
-function setup_layout_html($layout, $menu, $links) {
+function setup_layout_html($layout, $lasttime, $links) {
 
     global $lgray, $llgray;
 
@@ -403,6 +419,16 @@ function setup_layout_html($layout, $menu, $links) {
     $td33 = "<td bgcolor='$lgray' width='33%'>";
     $tbl  = "\n\n<table width='100%' align='center' cellspacing='1' cellpadding='5'>";
 
+    # No veil (show/hide menu) for some fields since
+    # they would widen the summary table by several
+    # screen widths. Timestamp column is added
+    # using, e.g. "by hours".
+    $veilless_cols = array(
+        'timestamp$',
+         '^command$',
+         '^configure_arguments$'
+    );
+
     # IMPORTANT: SET SECTIONS CONTAINING TEXT FIELDS FIRST, 
     # WE'LL OVERWRITE THE OTHER SECTIONS AFTERWARDS (see below)
     foreach (array_keys($layout) as $section) {
@@ -411,13 +437,9 @@ function setup_layout_html($layout, $menu, $links) {
         # Display textfields and show/hide menus
         foreach ($layout[$section]['fields'] as $field) {
 
-            # No veil (show/hide menu) for some fields since
-            # they would widen the summary table by several
-            # screen widths. Timestamp column is added
-            # using, e.g. "by hours".
             $td = "<td bgcolor='$lgray'>";
             $veil = true;
-            if (preg_match("/timestamp$|^command$|^configure_arguments$/i", $field)) {
+            if (preg_match("/" . join('|', $veilless_cols) . "/i", $field)) {
                 $veil = false;
                 $td = "<td bgcolor='$lgray' colspan='2'>";
             }
@@ -431,25 +453,31 @@ function setup_layout_html($layout, $menu, $links) {
                 "\n<input type='text' " .
                     "name='text_$field' " .
                     "id='text_$field' " .
-                    # carried over from last invocation
-                    "value='" . $menu['text'][$field] . "'>";
+                    # Carried over from last invocation
+                    "value='" . $lasttime["text_$field"] . "'>";
 
-            $selections = array(
-                'show' => 'on',
-                'hide' => 'off');
+            $selections = array('show', 'hide');
+
+            # Carryover from last invocation
+            # or 'show' by default
+            $autoselect = null;
+            if ($lasttime["show_$field"])
+                $autoselect[$lasttime["show_$field"]] = 'selected';
+            else
+                $autoselect['show'] = 'selected';
 
             # Show/hide menu
             if ($veil) {
                 $layout[$section]['html'] .=
                     "\n$ctd" .
                     "\n<select name='show_$field'>";
-                foreach (array_keys($selections) as $selection) {
+
+                foreach ($selections as $selection) {
                     $layout[$section]['html'] .=
                         "\n<option id='$selection' " .
                                   "name='$selection' " .
-                                  "value='" . $selections[$selection] . "' " . 
-                                  # carried over from last invocation
-                                  $menu[$selection][$field] . ">" . 
+                                  "value='$selection' " . 
+                                  $autoselect[$selection] . ">" . 
                               label($selection);
                 }
                 $layout[$section]['html'] .= "\n</select>";
@@ -468,22 +496,27 @@ function setup_layout_html($layout, $menu, $links) {
 
     # Put phase selection at the top ...
 
-    # Bring over phase-independent selections
-    # on the phase-selector radio-button click
-    $selections = partial_form_carryover(setup_defaults());
-    $appendage = arr2qstring($selections);
-
     $layout['top']['html'] =
         "\n$tbl" .
         "\n<tr><td bgcolor='$lgray'>";
-    foreach ($layout['top']['fields'] as $field) {
+
+    foreach ($layout['top']['fields'] as $phase) {
+
+        # Bring over phase-independent selections, and
+        # combine them with phase-dependent defaults on the
+        # phase-selector radio-button click
+        $defaults = setup_defaults($phase);
+        $selections = form_carryover($defaults);
+        $selections['phase'] = $phase;
+        $qstring = arr2qstring($selections);
+
         $layout['top']['html'] .=
             "\n<input type='radio' " .
                      "name='phase' " .
-                     "value='$field' " .
-                     "onClick='javascript:self.open(\"$script?phase=$field$appendage\", \"_self\");' " .
-                     # carried over from last invocation
-                     $menu['radio'][$field] . "> " . label($field);
+                     "value='$phase' " .
+                     "onClick='javascript:self.open(\"$script?$qstring\", \"_self\");' " .
+                     # Carried over from last invocation
+                     checked($lasttime['phase'], $phase) . "> " . label($phase);
     }
     $layout['top']['html'] .=
         "\n</table>";
@@ -500,7 +533,7 @@ function setup_layout_html($layout, $menu, $links) {
         $tbl .
         "\n<tr>$ctd " .
         "\n<input type='Reset' value='Reset'>&nbsp;" .
-        "\n<input type='Submit' name='go' value='Report'>" .
+        "\n<input type='Submit' name='go' value='Summary'>" .
         "\n</table>";
 
     return $layout;
@@ -563,6 +596,7 @@ function selection_popups($defaults, $entries) {
         # Widen popup according to the number of menus
         $num_menus = sizeof($entries[$field]);
 
+        # Yippee, selection popup
         if ($linkto) {
             $link =
                 "\n<a class='black_ln' href='javascript:popup(" .
@@ -582,6 +616,7 @@ function selection_popups($defaults, $entries) {
                 "\n" . label($field) .  
                 "</a>";
         }
+        # Rats, no selection popup
         else
             $link = "\n" . label($field);
 
@@ -590,64 +625,52 @@ function selection_popups($defaults, $entries) {
     return $links;
 }
 
-# Carry over textfields, show/hide menus, and radios from the last invocation
+# Carry over textfields, show/hide menus, and radios from
+# the last invocation (Returns an arr2qstring-ready list)
 function form_carryover($defaults) {
 
     foreach (array_keys($defaults) as $k) {
-        if (isset($_GET["text_$k"]))
-            $menu['text'][$k] = $_GET["text_$k"];
-        else
-            $menu['text'][$k] = $defaults[$k];
 
-        if (isset($_GET["show_$k"])) {
-            if ($_GET["show_$k"] == "on")
-                $menu['show'][$k] = "selected";
-            else
-                $menu['hide'][$k] = "selected";
-        }
-        else
-            $menu['show'][$k] = 'selected';
-    }
-
-    $phase = $_GET['phase'];
-    if ($phase)
-        $menu['radio'][$phase] = 'checked';
-    else
-        $menu['radio'][$defaults['phase']] = 'checked';
-
-    return $menu;
-}
-
-# Carry over the phase-independent textfields, show/hide
-# menus, and radios from the last invocation (Return a list
-# that is arr2qstring-ready)
-function partial_form_carryover($defaults) {
-
-    # Phase independent
-    unset($defaults['phase']);
-
-    foreach (array_keys($defaults) as $k) {
-        if ($k == 'dev')
+        if ($k == 'show' or 
+            $k == 'phase' or
+            $k == 'go' or
+            $k == 'dev')
             continue;
 
         $textfield = "text_$k";
         $showfield = "show_$k";
 
+        # Carryover textfields
         if (isset($_GET[$textfield]))
-            $selections[$textfield] = $_GET[$textfield];
+            $params[$textfield] = $_GET[$textfield];
         else
-            $selections[$textfield] = $defaults[$k];
+            $params[$textfield] = $defaults[$k];
 
-        if (isset($_GET[$showfield]))
-            $selections[$showfield] = $_GET[$showfield];
+        # Carryover show/hide menus
+        if ($_GET[$showfield])
+            $params[$showfield] = $_GET[$showfield];
+        else
+            $params[$showfield] = $defaults['show'][$k];
     }
+
+    # Carryover phase
+    $phase = $_GET['phase'];
+    if ($phase)
+        $params['phase'] = $phase;
+    else
+        $params['phase'] = $defaults['phase'];
+
+    # Carryover report type (summary or detail)
+    $go = $_GET['go'];
+    if ($go)
+        $params['go'] = $go;
+
     # Carryover developer params
-    foreach (array_keys($defaults['dev']) as $k) {
+    foreach (array_keys($defaults['dev']) as $k)
         if (isset($_GET[$k]))
-            $selections[$k] = $_GET[$k];
-    
-    }
-    return $selections;
+            $params[$k] = $_GET[$k];
+
+    return $params;
 }
 
 # Carry over input params (that are not submitted via form
@@ -689,6 +712,7 @@ EOT;
     a.black_ln:active  { color: #FFFFFF } /* when link is clicked */
     a.black_ln:hover   { color: #FFFF40 } /* when mouse is over link */
     td {font-size: 75%; }
+    th {font-size: 80%; }
 EOT;
 
     # Print html head

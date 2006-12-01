@@ -10,46 +10,43 @@
 # $HEADER$
 #
 
-# Grab phase field
-function process_phase_field($params) {
-    if (isset($params['phase'])) {
-        if (preg_match('/^all/', $params['phase']))
-            return array("mpi_install", "test_build", "test_run");
-        else
-            return tokenize($params['phase']);
-    }
-    else
-        return array("mpi_install", "test_build", "test_run");
+#########################################
+#                                       #
+#  Global arrays                        #
+#                                       #
+#########################################
+
+# Some special enumerated types
+function enums_table() {
+
+    return array(
+        'bitness' => array(
+            1 => 32,
+            2 => 64,
+            3 => '32/64',
+        ),
+        'endian' => array(
+            1 => 'little',
+            2 => 'big',
+        ),
+        'vpath_mode' => array(
+            1 => 'no vpath',
+            2 => 'relative',
+            3 => 'absolute',
+        ),
+    );
 }
 
-# Reference: http://www.php.net/strtok
-function tokenize($string) {
-    $tokens = array();
+# Return a listing of which results go with which phase
+function phase_results_table() {
 
-    $c = "/\s*;\s*/";
-    if (preg_match($c, $string))
-        return preg_split($c, $string);
-
-    for ($next_token = strtok($string, ' ');
-         $next_token !== false;
-         $next_token = strtok(' ')) {
-
-        if ($next_token{0} == '"')
-            $next_token =
-                $next_token{strlen($next_token) - 1} == '"' ?
-                     substr($next_token, 1, -1) :
-                     substr($next_token, 1) . ' ' . strtok('"');
-        $tokens[] = $next_token;
-    }
-
-    return $tokens;
-}
-
-# Convert an associative array to an HTTP-ready query string
-function arr2qstring($arr) {
-    foreach (array_keys($arr) as $key)
-        $str .= "&$key=$arr[$key]";
-    return $str;
+    # THESE RESULT STRINGS MUST MATCH THE IDENTIFIERS USED
+    # IN [source:/trunk/server/sql/views.sql]
+    return array(
+        'mpi_install' => array('pass', 'fail'),
+        'test_build'  => array('pass', 'fail'),
+        'test_run'    => array('pass', 'fail', 'skipped', 'timed_out'),
+    );
 }
 
 # Display more human-readable labels
@@ -122,10 +119,12 @@ function label($str) {
         "latency_bandwidth" => "Latency bandwidth",
 
         # Result types
-        "pass"  => "Pass",
-        "fail"  => "Fail",
-        "skip"  => "Skip",
-        "timed" => "Timed",
+        "pass"      => "Pass",
+        "fail"      => "Fail",
+        "skip"      => "Skip",
+        "timed"     => "Timed",
+        "skipped"   => "Skip",
+        "timed_out" => "Timed",
 
         # Selection/unselection
         "show"  => "Show",
@@ -136,6 +135,70 @@ function label($str) {
         return $labels[$str];
     else 
         return $str;
+}
+
+#########################################
+#                                       #
+#  Common screen/report functions       #
+#                                       #
+#########################################
+
+# Grab phase field
+function process_phase_field($params) {
+    if (isset($params['phase'])) {
+        if (preg_match('/^all/', $params['phase']))
+            return array("mpi_install", "test_build", "test_run");
+        else
+            return tokenize($params['phase']);
+    }
+    else
+        return array("mpi_install", "test_build", "test_run");
+}
+
+# Reference: http://www.php.net/strtok
+function tokenize($string) {
+    $tokens = array();
+
+    $c = "/\s*;\s*/";
+    if (preg_match($c, $string))
+        return preg_split($c, $string);
+
+    for ($next_token = strtok($string, ' ');
+         $next_token !== false;
+         $next_token = strtok(' ')) {
+
+        if ($next_token{0} == '"')
+            $next_token =
+                $next_token{strlen($next_token) - 1} == '"' ?
+                     substr($next_token, 1, -1) :
+                     substr($next_token, 1) . ' ' . strtok('"');
+        $tokens[] = $next_token;
+    }
+
+    return $tokens;
+}
+
+# Convert an associative array to an HTTP-ready query string
+function arr2qstring($arr) {
+    foreach (array_keys($arr) as $key)
+        $str .= "&$key=$arr[$key]";
+    return $str;
+}
+
+# Return an English-formatted list
+function en_join($list) {
+
+    $size = sizeof($list);
+
+    if ($size == 0)
+        return null;
+    elseif ($size == 1)
+        return $list[0];
+    elseif ($size == 2)
+        return $list[0] . " and " . $list[1];
+    elseif ($size > 2)
+        return join(", ", array_slice($list, 0, -1)) .
+                ", and " . $list[$size-1];
 }
 
 #########################################
@@ -177,8 +240,7 @@ function var_dump_html($desc,$var) {
 # Print SQL if they want it
 function debug_sql($cmd) {
     if (isset($_GET['sql']))
-        if ($_GET['sql'] == 'on')
-            print("\n<br>SQL: <pre>" . html_to_txt($cmd) . "</pre>");
+        print("\n<br><pre>SQL:\n$cmd</pre>");
 }
 
 # Prints an HTML table of _GET and _POST vars
@@ -186,17 +248,19 @@ function debug_cgi($params, $title) {
 
     global $lgray, $dgray;
 
-    $cols = 3;
+    if (isset($_GET['cgi'])) {
 
-    print "\n\n<table width='80%' border='1'>";
-    print "\n\n<tr><th bgcolor='$dgray' colspan=" . $cols * 2 . ">$title";
+        $cols = 3;
+        print "\n\n<table width='80%' border='1'>";
+        print "\n\n<tr><th bgcolor='$dgray' colspan=" . $cols * 2 . ">$title";
 
-    $i = 0;
-    foreach (array_keys($params) as $k) {
-        print "\n" . ((($i++ % $cols) == 0) ? "\n<tr>" : "") .
-            "<td bgcolor='$lgray'>" . $k . "<td>$params[$k]";
+        $i = 0;
+        foreach (array_keys($params) as $k) {
+            print "\n" . ((($i++ % $cols) == 0) ? "\n<tr>" : "") .
+                "<td bgcolor='$lgray'>" . $k . "<td>$params[$k]";
+        }
+        print "\n\n</table>";
     }
-    print "\n\n</table>";
 }
 
 # Show help text

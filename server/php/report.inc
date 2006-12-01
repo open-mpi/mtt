@@ -26,13 +26,13 @@ function dump_report() {
 
     global $thcolor, $gray, $dgray, $lgray, $llgray, $lllgray, $white;
 
-    if ($_GET['cgi'] == 'on')
-        debug_cgi($_GET, "GET");
+    debug_cgi($_GET, "GET");
 
     # Process input params
     $phases       = process_phase_field($_GET);
     $datefields   = process_date_field($_GET);
     $inputfields  = process_input_fields($_GET);
+    $buttonpress  = process_buttons($_GET);
     $resultfields = get_result_cases($phases, $_GET);
 
     $query = array_merge_recursive(
@@ -48,11 +48,17 @@ function dump_report() {
     $cmd = compose_sql($query);
 
     $resource = do_pg_query("\n$cmd");
+    debug_sql($cmd);
 
     # Generate headers
+    foreach ($phases as $phase)
+        $keys = array_keys($resultfields['codes'][$phase]);
+        foreach ($keys as $result)
+            $results[] = $result;
+
     $headers['params']  = array_keys($query['select']);
     $headers['details'] = array_keys($query['select_more']);
-    $headers['results'] = array_keys($query['aggregates']);
+    $headers['results'] = $results;
     $headers['phases']  = $phases;
 
     $num_rows = pg_num_rows($resource);
@@ -68,7 +74,7 @@ function dump_report() {
     
     # Print either a summary or detail report,
     # depending on whether a 'select_more' parameter is set
-    $do_detailed = $headers['details'] ? true : false;
+    $do_detailed = $buttonpress == 'detail' ? true : false;
 
     if ($do_detailed)
         detail_table($headers, $resource);
@@ -117,34 +123,31 @@ function summary_table($headers, $resource) {
     foreach ($headers['params'] as $header)
         printf($format, label($header));
 
-    $num_result_types = array(
-        "mpi_install" => 2,
-        "test_build" => 2,
-        "test_run" => 4,
-    );
-
     # Setup sequence of result colors
     $phases = $headers['phases'];
     $result_colors = result_colors($phases);
 
     # Create links for drilled-down queries
-    $labels = drilldown_basic($headers['phases']);
+    $links = drilldown_links($headers['phases']);
 
     # Print result headers
     $total_results_cols = 0;
-    foreach ($headers['phases'] as $phase) {
+    foreach (array_keys($links) as $phase) {
+        $link = array_shift($links[$phase]);
+        $colspan = sizeof($links[$phase]);
+        $num_result_types[$phase] = $colspan;
+
         printf("\n<th bgcolor='$thcolor' " .
-                      "colspan='$num_result_types[$phase]'>%s",
-                      $labels[$phase]);
-        if ($num_result_types[$phase])
-            $total_results_cols += $num_result_types[$phase];
+                     "colspan='$colspan'>%s",
+                     $link);
+        $total_results_cols += $colspan;
     }
 
     print "\n<tr>";
 
-    foreach ($headers['results'] as $result) {
-        printf("\n<th bgcolor='$thcolor'>%s", $labels[$result]);
-    }
+    foreach (array_keys($links) as $phase)
+        foreach ($links[$phase] as $result)
+            printf("\n<th bgcolor='$thcolor'>%s", $result);
 
     $r = 1;
 
@@ -163,8 +166,8 @@ function summary_table($headers, $resource) {
         $formatw = "\n<td bgcolor='$white'>%s";
 
         print "\n<tr>" . sprintf($formatg, $r++);
-        foreach ($row as $cell)
-            printf($formatw, $cell);
+        for ($i = 0; $i < sizeof($row); $i++)
+            printf($formatw, drilldown_links($headers['params'][$i], $row[$i]));
 
         $i = 0;
         $j = 0;
@@ -176,7 +179,7 @@ function summary_table($headers, $resource) {
                 array_splice($results, 0, $num_result_types[$phase]);
 
             # Link result counts to filtered drill-down reports
-            $ret = drilldown_filters($headers,
+            $ret = drilldown_links($headers,
                                   $row,
                                   $_results,
                                   $phase);
@@ -259,74 +262,112 @@ function result_colors($phases) {
     return $colors;
 }
 
-# Create links that drill down by phase, result, and a set of general params
-function drilldown_filters($headers, $params, $results, $phase) {
+# Create links that drill down by phase, result, and a set
+# of general params This function takes the following three
+# forms:
+#
+# 1. Entire row or data
+#    * Phase, series of param/value pairs, result counts
+#    * For "colored" result count table cells
+#       
+# 2. Just a single param/value pair
+#    * For "white" parameter table cells
+#    
+# 3. List of phases
+#    * For phase/result table header cells
+#
+function drilldown_links() {
 
+    # This function has three forms (see above comment)
+    $argc = func_num_args();
+
+    $phase_results_table = phase_results_table();
+
+    # Prepare a query string for manipulation
     $qstring_arr = $_GET;
-    $test_results = array(
-        'pass',
-        'fail',
-        'skip',
-        'timed',
-    );
 
     $self = 'http://' . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'];
-    foreach (detail_columns($phase) as $column)
-        $qstring_arr["more_$column"] = null;
-
     $format = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
 
-    $j = 0;
-    foreach ($results as $count) {
+    # 1. Entire row or data
+    #    * Phase, series of param/value pairs, result counts
+    #    * For "colored" result count table cells
+    if ($argc == 4) {
 
-        $i = 0;
-        # Loop over header names
-        foreach ($headers['params'] as $param) {
-            $qstring_arr["text_$param"] = $params[$i++];
-        }
-        $qstring_arr['test_result'] = $test_results[$j];
+        $headers = func_get_arg(0);
+        $params  = func_get_arg(1);
+        $results = func_get_arg(2);
+        $phase   = func_get_arg(3);
+
         $qstring_arr['phase'] = $phase;
 
-        $ret['links'][] = sprintf($format, arr2qstring($qstring_arr), $count);
-        $ret['counts'][] = $count;
-        $j++;
+        $j = 0;
+        foreach ($results as $count) {
+
+            $i = 0;
+            # Loop over header names
+            foreach ($headers['params'] as $param) {
+                $qstring_arr["text_$param"] = $params[$i++];
+            }
+            $qstring_arr['test_result'] = $phase_results_table[$phase][$j++];
+
+            $ret['links'][] = sprintf($format, arr2qstring($qstring_arr), $count);
+            $ret['counts'][] = $count;
+        }
     }
 
+    # 2. Just a single param/value pair
+    #    * For "white" parameter table cells
+    #    
+    elseif ($argc == 2) {
+
+        $header = func_get_arg(0);
+        $param  = func_get_arg(1);
+
+        $qstring_arr["text_$header"] = $param;
+
+        $ret = sprintf($format, arr2qstring($qstring_arr), $param);
+    }
+
+    # 3. List of phases
+    #    * For phase/result table header cells
+    #
+    # Return a series of links, containing one or three of
+    # the following:
+    #
+    # * MPI Install
+    #   Pass, Fail
+    # * Test Build
+    #   Pass, Fail
+    # * Test Run
+    #   Pass, Fail, Skipped, Timed out
+    #
+    elseif ($argc == 1) {
+
+        $phases = func_get_arg(0);
+
+        foreach ($phases as $phase) {
+            $qstring_arr['phase'] = $phase;
+            unset($qstring_arr['test_result']);
+            $ret[$phase][] = sprintf($format, arr2qstring($qstring_arr), label($phase));
+
+            foreach ($phase_results_table[$phase] as $result) {
+                $qstring_arr['test_result'] = $result;
+                $ret[$phase][] =
+                    sprintf($format, arr2qstring($qstring_arr), label($result));
+            }
+        }
+    }
     return $ret;
 }
 
-# Create links that drill down by phase and/or result
-function drilldown_basic($phases) {
-
-    $self = 'http://' . $_SERVER['SERVER_NAME'] . $_SERVER['REQUEST_URI'];
-
-    $test_results = array(
-        "fail",
-        "pass",
-        "skip",
-        "timed",
-    );
-
-    # Some headers that link to drilled down reports
-    foreach ($phases as $phase) {
-        
-        # Add phase-specific columns to the report
-        $appendage = "";
-        foreach (detail_columns($phase) as $column)
-            $appendage .= "&more_$column";
-
-        $drilldown = esc_percent("<a href='$self$appendage") . "%s' " .
-                     "class='black_ln' " .
-                     "target='_self'>%s" .
-                     "</a>";
-        $links[$phase] = sprintf($drilldown, "&phase=$phase", label($phase));
-        foreach ($test_results as $result) {
-            $links[result_str($phase, $result)] =
-                sprintf($drilldown, "&phase=$phase&test_result=$result", label($result));
-        }
-    }
-
-    return $links;
+# Return either the first element of the list
+# or the scalar argument
+function get_scalar($var) {
+    if (is_array($var))
+        return $phases[0];
+    else
+        return $var;
 }
 
 # Generate the shorthand for the given phase-result code (see get_result_cases)
@@ -520,68 +561,35 @@ function compose_sql($query) {
 # (Reference: postgresql.org/docs/7.3/static/functions-conditional.html)
 function get_result_cases($phases, $params) {
 
-    $_phases = array_flip($phases);
+    $_phases     = array_flip($phases);
 
     $test_result = $params['test_result'];
 
+    $table       = phase_results_table();
+
+    # THESE FILTER STRINGS MUST MATCH THE IDENTIFIERS USED
+    # IN [source:/trunk/server/sql/views.sql]
     if (preg_match('/pass|true|1/i', $test_result))
         $filter = 'pass';
     elseif (preg_match('/fail|false|0/i', $test_result))
         $filter = 'fail';
     elseif (preg_match('/skip|2/i', $test_result))
-        $filter = 'skip';
+        $filter = 'skipped';
     elseif (preg_match('/time|3/i', $test_result))
-        $filter = 'timed';
+        $filter = 'timed_out';
 
     $format = "COUNT(CASE WHEN %s THEN '%s' END) as %s";
 
-    # MPI Installs
-    if (isset($_phases['mpi_install'])) {
-        $str = '_ip';
-        $when['pass'] = "pass = '$str'";
-        $results['aggregates'][$str] =
-            sprintf($format, $when['pass'], $str, $str);
-
-        $str = '_if';
-        $when['fail'] = "fail = '$str'";
-        $results['aggregates'][$str] =
-            sprintf($format, $when['fail'], $str, $str);
-    }
-
-    # Test Builds
-    if (isset($_phases['test_build'])) {
-        $str = '_bp';
-        $when['pass'] = "pass = '$str'";
-        $results['aggregates'][$str] =
-            sprintf($format, $when['pass'], $str, $str);
-
-        $str = '_bf';
-        $when['fail'] = "fail = '$str'";
-        $results['aggregates'][$str] =
-            sprintf($format, $when['fail'], $str, $str);
-    }
-
-    # Test Runs
-    if (isset($_phases['test_run'])) {
-        $str = '_rp';
-        $when['pass'] = "pass = '$str'";
-        $results['aggregates'][$str] =
-            sprintf($format, $when['pass'], $str, $str);
-
-        $str = '_rf';
-        $when['fail'] = "fail = '$str'";
-        $results['aggregates'][$str] =
-            sprintf($format, $when['fail'], $str, $str);
-
-        $str = '_rs';
-        $when['skip'] = "skipped = '$str'";
-        $results['aggregates'][$str] =
-            sprintf($format, $when['skip'], $str, $str);
-
-        $str = '_rt';
-        $when['timed'] = "timed_out = '$str'";
-        $results['aggregates'][$str] =
-            sprintf($format, $when['timed'], $str, $str);
+    foreach (array_keys($table) as $phase) {
+        foreach ($table[$phase] as $result) {
+            if (isset($_phases[$phase])) {
+                $str = result_str($phase, $result);
+                $results['codes'][$phase][$result] = $str;
+                $when[$result] = "$result = '$str'";
+                $results['aggregates'][$str] =
+                    sprintf($format, $when[$result], $str, $str);
+            }
+        }
     }
 
     $results['where'] = $when[$filter];
@@ -592,14 +600,20 @@ function get_result_cases($phases, $params) {
 # Show links to point user to more info ...
 function permalinks($datefields) {
 
+    $params = $_GET;
+
     $domain    = $_SERVER['SERVER_NAME'];
     $uri       = $_SERVER['REQUEST_URI'];
     $script    = $_SERVER['SCRIPT_NAME'];
     $datefield = $datefields["absolute"] . ';' . $datefields["rollup"];
 
+    $qstring1 = arr2qstring($params);
+    $params["text_start_timestamp"] = $datefield;
+    $qstring2 = arr2qstring($params);
+
     # Create links to report using relative and absolute date ranges
-    $rel_link = "http://$domain$uri&no_bookmarks";
-    $abs_link = rewrite_url($rel_link, "text_start_timestamp", $datefield);
+    $rel_link = "http://$domain$script?$qstring1&no_bookmarks";
+    $abs_link = "http://$domain$script?$qstring2&no_bookmarks";
 
     # Can't be a relative link to an absolute date range report
     if (! isset($_GET['no_bookmarks'])) {
@@ -623,7 +637,7 @@ function basic_info($datefields, $phases, $num_rows) {
     $ret = "<table>" .
           "<tr><td><b>Current time (GMT)</b>:<td>" . $datefields["current"] . 
           "<tr><td><b>Date range (GMT)</b>: <td>" . $datefields["absolute"] .
-          "<tr><td><b>Phase(s)</b>:<td>" . join(", ", $phases);
+          "<tr><td><b>Phase(s)</b>:<td>" . en_join($phases);
 
     if ($_GET["test_result"])
         $ret .= "<tr><td><b>Result</b>:<td>" . $_GET["test_result"] . " only";
@@ -634,6 +648,10 @@ function basic_info($datefields, $phases, $num_rows) {
     return $ret;
 }
 
+# Summary or Detail report?
+function process_buttons($params) {
+    return strtolower($params['go']);
+}
 
 # 1. Generate WHERE clause pieces from user-entered textfields
 # 2. Generate SELECT items from user-entered show/hide menus
@@ -649,23 +667,7 @@ function process_input_fields($params) {
         "phase",
     );
 
-    # Some special enumerated types
-    $enums = array(
-        'bitness' => array(
-            1 => 32,
-            2 => 64,
-            3 => '32/64',
-        ),
-        'endian' => array(
-            1 => 'little',
-            2 => 'big',
-        ),
-        'vpath_mode' => array(
-            1 => 'no vpath',
-            2 => 'relative',
-            3 => 'absolute',
-        ),
-    );
+    $enums = enums_table();
 
     foreach (array_keys($params) as $k) {
 
@@ -703,7 +705,7 @@ function process_input_fields($params) {
         elseif (preg_match("/^show_/i", $k)) {
             $column = strip_prefix($k);
 
-            if ($params[$k] == 'on')
+            if ($params[$k] == 'show')
                 $query['select'][$column] = $column;
         }
         # If it's a "more" param, add it to the ''end'' of the SELECT clause
@@ -864,12 +866,6 @@ function us2sp($str) {
 # ' ' to '_'
 function sp2us($str) {
     return preg_replace('/\s+/', '_', $str);
-}
-
-# Function to rewrite URL, with new $value set for $field
-function rewrite_url($url, $field, $value) {
-    $t_url = preg_replace("/$field=[^\&]+/", "$field=$value", $url);
-    return $t_url;
 }
 
 function suffix_list($arr, $sfx) {
