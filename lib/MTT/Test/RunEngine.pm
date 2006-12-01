@@ -222,8 +222,16 @@ sub _run_step {
     if (exists($mpi_details->{$step}) && $mpi_details->{$step}) {
         Debug("Running step: $step\n");
         my $x = MTT::DoCommand::CmdScript(1, $mpi_details->{$step}, 10);
-        #JMS should be checking exit_status here and in who invoked
-        #_run_step.
+        if ($x->{timed_out}) {
+            Verbose("  Warning: step $step TIMED OUT; skipping\n");
+        } elsif (MTT::DoCommand::wifsignaled($x->{exit_status})) {
+            my $ret = MTT::DoCommand::wtermsig($x->{exit_status});
+            Verbose("  Warning: step $step finished via signal $ret; skipping\n");
+        } elsif (!MTT::DoCommand::wsuccess($x->{exit_status})) {
+            my $success = MTT::DoCommand::wsuccess($x->{exit_status});
+            my $exited = MTT::DoCommand::wifexited($x->{exit_status});
+            Verbose("  Warning: step $step ($x->{exit_status} : success $success : exited $exited) finished with nonzero exit status ($x->{status}); skipping\n");
+        }
     }
 }
 

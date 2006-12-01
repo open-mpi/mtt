@@ -236,7 +236,7 @@ $ret = $ret >> 8;
 my $orted_pid = getppid();
 
 # List of processes to clean up
-my @processes = ("orted", "orterun");
+my @processes = ("orted", "mpirun");
 
 # Try using pgrep
 if (0 == $ret) {
@@ -295,7 +295,7 @@ close(CMD);
 # Whack any sessions directories
 
 my $who = getpwuid($<);
-system("rm -rf /tmp/openmpi-sessions-$who*");
+system("rm -rf /tmp/openmpi-sessions-$who* > /dev/null 2>&1");
 
 # All done
 
