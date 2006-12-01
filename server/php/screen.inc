@@ -25,6 +25,8 @@ function dump_query_screen() {
 
     global $dgray;
 
+    debug_cgi($_GET, "GET");
+
     $phases   = process_phase_field($_GET);
     $defaults = setup_defaults($phases);
     $layout   = setup_layout($phases);
@@ -528,12 +530,19 @@ function setup_layout_html($layout, $lasttime, $links) {
                "border='0' " .
                "src='$logo'></a>";
 
+    # Disable 'Detail' button if we are in multi-phase mode
+    $phases = process_phase_field($_GET);
+
+    if (sizeof($phases) > 1)
+        $disabled = 'disabled';
+
     # Put buttons at the bottom of the panel
     $layout['bottom']['html'] =
         $tbl .
         "\n<tr>$ctd " .
         "\n<input type='Reset' value='Reset'>&nbsp;" .
-        "\n<input type='Submit' name='go' value='Summary'>" .
+        "\n<input type='Submit' name='go' value='Summary'>&nbsp;" .
+        "\n<input type='Submit' name='go' value='Detail' $disabled>" .
         "\n</table>";
 
     return $layout;
@@ -588,7 +597,14 @@ function selection_popups($defaults, $entries) {
 
         $menu .=
             "\n<tr>$td2" .
-            "\n<input type='submit' name='insert' onclick='javascript:exportVars();' value='Insert'>" .
+            "\n<input type='submit' " .
+                      "name='insert' " .
+                      "onclick='javascript:exportVars();' " .
+                      "value='Insert'>&nbsp;" .
+            "\n<input type='submit' " .
+                      "name='cancel' " .
+                      "onclick='javascript:window.close();' " .
+                       "value='Cancel'>" .
             "\n</table>" .
             "\n<br><i>Select one or more menu items.</i>" .
             "\n</div>";
@@ -631,6 +647,7 @@ function form_carryover($defaults) {
 
     foreach (array_keys($defaults) as $k) {
 
+        # Only deal with text fields
         if ($k == 'show' or 
             $k == 'phase' or
             $k == 'go' or
@@ -653,17 +670,17 @@ function form_carryover($defaults) {
             $params[$showfield] = $defaults['show'][$k];
     }
 
+    # Carryover report type (summary or detail)
+    $go = $_GET['go'];
+    if ($go)
+        $params['go'] = $go;
+
     # Carryover phase
     $phase = $_GET['phase'];
     if ($phase)
         $params['phase'] = $phase;
     else
         $params['phase'] = $defaults['phase'];
-
-    # Carryover report type (summary or detail)
-    $go = $_GET['go'];
-    if ($go)
-        $params['go'] = $go;
 
     # Carryover developer params
     foreach (array_keys($defaults['dev']) as $k)
@@ -679,7 +696,7 @@ function form_carryover($defaults) {
 function hidden_carryover($params) {
 
     foreach (array_keys($params) as $k) {
-        if (preg_match('/^phase$|^more_|^show_|^text_/', $k))
+        if (preg_match('/^go$|^phase$|^more_|^show_|^text_/', $k))
             continue;
         $str .= "\n<input type='hidden' name='$k' value='$params[$k]'>";
     }

@@ -29,16 +29,25 @@ function dump_report() {
     debug_cgi($_GET, "GET");
 
     # Process input params
-    $phases       = process_phase_field($_GET);
-    $datefields   = process_date_field($_GET);
-    $inputfields  = process_input_fields($_GET);
-    $buttonpress  = process_buttons($_GET);
-    $resultfields = get_result_cases($phases, $_GET);
+    $phases        = process_phase_field($_GET);
+    $date_fields   = process_date_field($_GET);
+    $input_fields  = process_input_fields($_GET);
+    $button_press  = process_buttons($_GET);
+    $result_fields = get_result_cases($phases, $_GET);
+
+    # Print either a summary or detail report,
+    # depending on whether a 'select_more' parameter is set
+    $do_detailed = $button_press == 'detail' ? true : false;
+
+    # Tack on a bunch more columns for a detailed report
+    if ($do_detailed)
+        $detail_fields = detail_fields(get_scalar($phases));
 
     $query = array_merge_recursive(
-        $datefields,
-        $inputfields,
-        $resultfields
+        $date_fields,
+        $input_fields,
+        $result_fields,
+        $detail_fields
     );
     $query['phases'] = $phases;
 
@@ -47,12 +56,12 @@ function dump_report() {
     # Compose query
     $cmd = compose_sql($query);
 
-    $resource = do_pg_query("\n$cmd");
+    $resource = do_pg_query($cmd);
     debug_sql($cmd);
 
     # Generate headers
     foreach ($phases as $phase)
-        $keys = array_keys($resultfields['codes'][$phase]);
+        $keys = array_keys($result_fields['codes'][$phase]);
         foreach ($keys as $result)
             $results[] = $result;
 
@@ -63,8 +72,8 @@ function dump_report() {
 
     $num_rows = pg_num_rows($resource);
 
-    $basic_info = basic_info($datefields, $phases, $num_rows);
-    $permalinks = permalinks($datefields);
+    $basic_info = basic_info($date_fields, $phases, $num_rows);
+    $permalinks = permalinks($date_fields);
 
     # Print general info/links up top
     print "<table width='100%'><tr>" .
@@ -72,10 +81,6 @@ function dump_report() {
           "<td align='right'>$permalinks" .
           "</table><br>";
     
-    # Print either a summary or detail report,
-    # depending on whether a 'select_more' parameter is set
-    $do_detailed = $buttonpress == 'detail' ? true : false;
-
     if ($do_detailed)
         detail_table($headers, $resource);
     else
@@ -365,7 +370,7 @@ function drilldown_links() {
 # or the scalar argument
 function get_scalar($var) {
     if (is_array($var))
-        return $phases[0];
+        return $var[0];
     else
         return $var;
 }
@@ -598,14 +603,14 @@ function get_result_cases($phases, $params) {
 }
 
 # Show links to point user to more info ...
-function permalinks($datefields) {
+function permalinks($date_fields) {
 
     $params = $_GET;
 
     $domain    = $_SERVER['SERVER_NAME'];
     $uri       = $_SERVER['REQUEST_URI'];
     $script    = $_SERVER['SCRIPT_NAME'];
-    $datefield = $datefields["absolute"] . ';' . $datefields["rollup"];
+    $datefield = $date_fields["absolute"] . ';' . $datefields["rollup"];
 
     $qstring1 = arr2qstring($params);
     $params["text_start_timestamp"] = $datefield;
@@ -632,11 +637,11 @@ function permalinks($datefields) {
 
 # Print current time, date range, phases, and
 # result filter for the report
-function basic_info($datefields, $phases, $num_rows) {
+function basic_info($date_fields, $phases, $num_rows) {
 
     $ret = "<table>" .
-          "<tr><td><b>Current time (GMT)</b>:<td>" . $datefields["current"] . 
-          "<tr><td><b>Date range (GMT)</b>: <td>" . $datefields["absolute"] .
+          "<tr><td><b>Current time (GMT)</b>:<td>" . $date_fields["current"] . 
+          "<tr><td><b>Date range (GMT)</b>: <td>" . $date_fields["absolute"] .
           "<tr><td><b>Phase(s)</b>:<td>" . en_join($phases);
 
     if ($_GET["test_result"])
@@ -650,7 +655,15 @@ function basic_info($datefields, $phases, $num_rows) {
 
 # Summary or Detail report?
 function process_buttons($params) {
-    return strtolower($params['go']);
+    $phases = process_phase_field($_GET);
+    $go = strtolower($_GET['go']);
+
+    # Press 'Summary' for them if they traverse from a
+    # detailed report into multi-phase mode
+    if (sizeof($phases) > 1 and $go == 'detail')
+        $go = 'summary';
+    $_GET['go'] = $go;
+    return $go;
 }
 
 # 1. Generate WHERE clause pieces from user-entered textfields
@@ -909,54 +922,55 @@ function order_columns($columns) {
 }
 
 # Add these to select statements for Detail reports
-function detail_columns($phase) {
-    
-    $phases = array($phase => 1);
-    
+function detail_fields($phase) {
+
     # MPI Install
-    if (isset($phases['mpi_install']))
+    if ($phase == 'mpi_install')
         $phase_columns = array(
-            'compiler_name',
-            'compiler_version',
-            'configure_arguments',
-            'vpath_mode',
-            'bitness',
-            'endian',
+            'compiler_name'       => 'compiler_name',
+            'compiler_version'    => 'compiler_version',
+            'configure_arguments' => 'configure_arguments',
+            'vpath_mode'          => 'vpath_mode',
+            'bitness'             => 'bitness',
+            'endian'              => 'endian',
         );
 
     # Test Build
-    if (isset($phases['test_build']))
+    if ($phase == 'test_build')
         $phase_columns = array(
-            'compiler_name',
-            'compiler_version',
-            'suite_name',
-            'bitness',
+            'compiler_name'    => 'compiler_name',
+            'compiler_version' => 'compiler_version',
+            'suite_name'       => 'suite_name',
+            'bitness'          => 'bitness',
         );
 
     # Test Run
-    if (isset($phases['test_run']))
+    if ($phase == 'test_run')
         $phase_columns = array(
-            'variant',
-            'test_name',
-            'command',
-            'np',
+            'variant'   => 'variant',
+            'test_name' => 'test_name',
+            'command'   => 'command',
+            'np'        => 'np',
         );
 
     $results_columns = array(
-        'exit_status',
-        'start_timestamp',
-        'duration',
-        'result_message',
-        'result_stdout',
-        'result_stderr',
-        'environment',
-        'client_serial',
+        'exit_status'     => 'exit_status',
+        'start_timestamp' => 'start_timestamp',
+        'duration'        => 'duration',
+        'result_message'  => 'result_message',
+        'result_stdout'   => 'result_stdout',
+        'result_stderr'   => 'result_stderr',
+        'environment'     => 'environment',
+        'client_serial'   => 'client_serial',
     );
     
-    return array_merge(
-        $phase_columns,
-        $results_columns
-    );
+    return 
+        array('select_more' => 
+            array_merge(
+                $phase_columns,
+                $results_columns
+            )
+        );
 }
 
 # Convert English words to integers (1-10)
