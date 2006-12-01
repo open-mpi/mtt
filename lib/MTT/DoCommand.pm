@@ -302,10 +302,10 @@ sub Cmd {
     }
     # No, it was not signaled
     else {
-        $msg .= ", exit status: $ret->{status}";
         $ret->{status} = wexitstatus($ret->{exit_status});
+        $msg .= ", exit status: $ret->{status}";
     }
-
+    $msg .= "\n";
     Debug($msg);
 
     # Return an anonymous hash containing the relevant data
@@ -352,7 +352,7 @@ sub wexitstatus {
 # See perlvar(1)
 sub wifsignaled {
     my ($val) = @_;
-    my $ret = (0 != ($val & 127));
+    return (0 != ($val & 127)) ? 1 : 0;
 }
 
 #--------------------------------------------------------------------------
@@ -360,7 +360,7 @@ sub wifsignaled {
 # See perlvar(1)
 sub wtermsig {
     my ($val) = @_;
-    my $ret = ($val & 127);
+    return ($val & 127);
 }
 
 #--------------------------------------------------------------------------
@@ -368,7 +368,7 @@ sub wtermsig {
 # See perlvar(1)
 sub wcoredump {
     my ($val) = @_;
-    my $ret = (0 != ($val & 128));
+    return (0 != ($val & 128)) ? 1 : 0;
 }
 
 #--------------------------------------------------------------------------
@@ -376,7 +376,7 @@ sub wcoredump {
 # See perlvar(1)
 sub wsuccess {
     my ($val) = @_;
-    return (1 == wifexited($val) && 0 == wexitstatus($val));
+    return (1 == wifexited($val) && 0 == wexitstatus($val)) ? 1 : 0;
 }
 
 1;

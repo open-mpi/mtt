@@ -453,7 +453,7 @@ sub test_exit_status {
 sub test_wifexited {
     my $ret = MTT::DoCommand::wifexited($MTT::Test::Run::test_exit_status);
     Debug("&test_wifexited returning: $ret\n");
-    return $ret;
+    return $ret ? "1" : "0";
 }
 
 #--------------------------------------------------------------------------
@@ -462,7 +462,7 @@ sub test_wifexited {
 sub test_wexitstatus {
     my $ret = MTT::DoCommand::wexitstatus($MTT::Test::Run::test_exit_status);
     Debug("&test_wexitstatus returning $ret\n");
-    return $ret;
+    return "$ret";
 }
 
 #--------------------------------------------------------------------------
@@ -471,7 +471,7 @@ sub test_wexitstatus {
 sub test_wifsignaled {
     my $ret = MTT::DoCommand::wifsignaled($MTT::Test::Run::test_exit_status);
     Debug("&test_widsignaled returning: $ret\n");
-    return $ret;
+    return $ret ? "1" : "0";
 }
 
 #--------------------------------------------------------------------------
@@ -480,7 +480,7 @@ sub test_wifsignaled {
 sub test_wtermsig {
     my $ret = MTT::DoCommand::wtermsig($MTT::Test::Run::test_exit_status);
     Debug("&test_wtermsig returning: $ret\n");
-    return $ret;
+    return "$ret";
 }
 
 #--------------------------------------------------------------------------
