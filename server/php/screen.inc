@@ -21,6 +21,7 @@ include_once("$topdir/reporter.inc");
 include_once("$topdir/database.inc");
 include_once("$topdir/html.inc");
 
+# Print user dash-board 
 function dump_query_screen() {
 
     global $dgray;
@@ -254,85 +255,6 @@ EOT;
     return $script;
 }
 
-# Return an array of default values for textfields
-function setup_defaults($phases) {
-
-    # Arrayify the argument
-    if (! is_array($phases))
-        $phases = array($phases);
-
-    $single_phase = (sizeof($phases) == 1) ? true : false;
-
-    # ompi does not submit results
-    $http_username = $_SERVER['PHP_AUTH_USER'];
-    if (! $http_username or preg_match("/ompi/i", $http_username))
-        $http_username = 'all';
-
-    $defaults = array(
-        # results
-        'start_timestamp'   => 'past 24 hours',
-
-        # submit
-        'http_username'     => $http_username,
-        'local_username'    => 'all',
-        'hostname'          => 'all',
-
-        # mpi_install
-        'platform_hardware' => 'all',
-        'os_name'           => 'all',
-        'mpi_name'          => 'all',
-        'mpi_version'       => 'all',
-    );
-
-    # Phase-specific
-    if ($single_phase) {
-        if (array_search('mpi_install', $phases) !== false)
-            $specific = array(
-                'configure_arguments' => '',
-                'compiler_name'       => 'all',
-                'bitness'             => 'all',
-                'endian'              => 'all',
-            );
-        elseif (array_search('test_build', $phases) !== false)
-            $specific = array(
-                'suite_name'       => 'all',
-                'compiler_name'    => 'all',
-                'compiler_version' => 'all',
-                'bitness'          => 'all',
-            );
-        elseif (array_search('test_run', $phases) !== false)
-            $specific = array(
-                'suite_name' => 'all',
-                'test_name'  => 'all',
-                'np'         => 'all',
-                'command'    => 'all',
-            );
-    }
-
-    $ret = array_merge(
-        $defaults,
-        $specific
-    );
-
-    # Show all columns (except test_name)
-    foreach (array_keys($ret) as $k)
-        $ret['show'][$k] = 'show';
-
-    $ret['show']['test_name'] = 'hide';
-
-    # Phase
-    $ret['phase'] = 'all_phases';
-
-    # Developer params
-    $ret['dev'] = array(
-        'sql'   => 'off',
-        'cgi'   => 'off',
-        'debug' => null,
-    );
-
-    return $ret;
-}
-
 # 1. Two values to compare
 # 2. An array->key combo
 function checked($var1, $var2) {
@@ -344,7 +266,6 @@ function checked($var1, $var2) {
         return 'checked';
     }
 }
-    
 
 # Return an array to represent the
 # screen's layout
@@ -530,22 +451,42 @@ function setup_layout_html($layout, $lasttime, $links) {
                "border='0' " .
                "src='$logo'></a>";
 
-    # Disable 'Detail' button if we are in multi-phase mode
-    $phases = process_phase_field($_GET);
-
-    if (sizeof($phases) > 1)
-        $disabled = 'disabled';
-
     # Put buttons at the bottom of the panel
     $layout['bottom']['html'] =
         $tbl .
         "\n<tr>$ctd " .
-        "\n<input type='Reset' value='Reset'>&nbsp;" .
-        "\n<input type='Submit' name='go' value='Summary'>&nbsp;" .
-        "\n<input type='Submit' name='go' value='Detail' $disabled>" .
+        join('&nbsp;', form_buttons($_GET)) .
         "\n</table>";
 
     return $layout;
+}
+
+# Return list of buttons for bottom of query panel
+function form_buttons($params) {
+
+    # Declare button types
+    $types = array(
+        "Summary",
+        "Detail",
+    );
+
+    # Disable 'Detail' button if we are in multi-phase mode
+    $phases = process_phase_field($params);
+
+    if (sizeof($phases) > 1)
+        $disable['Detail'] = 'disabled';
+
+    $buttons[] =
+        "\n<input type='Reset' value='Reset'>";
+
+    $format = "\n<input type='Submit' " .
+                  "name='go' " .
+                  "value='%s' %s>";
+
+    foreach ($types as $type)
+       $buttons[] = sprintf($format, $type, $disable[$type]);
+
+    return $buttons;
 }
 
 # Return an array of selection menu popups
@@ -641,55 +582,6 @@ function selection_popups($defaults, $entries) {
     return $links;
 }
 
-# Carry over textfields, show/hide menus, and radios from
-# the last invocation (Returns an arr2qstring-ready list)
-function form_carryover($defaults) {
-
-    foreach (array_keys($defaults) as $k) {
-
-        # Only deal with text fields
-        if ($k == 'show' or 
-            $k == 'phase' or
-            $k == 'go' or
-            $k == 'dev')
-            continue;
-
-        $textfield = "text_$k";
-        $showfield = "show_$k";
-
-        # Carryover textfields
-        if (isset($_GET[$textfield]))
-            $params[$textfield] = $_GET[$textfield];
-        else
-            $params[$textfield] = $defaults[$k];
-
-        # Carryover show/hide menus
-        if ($_GET[$showfield])
-            $params[$showfield] = $_GET[$showfield];
-        else
-            $params[$showfield] = $defaults['show'][$k];
-    }
-
-    # Carryover report type (summary or detail)
-    $go = $_GET['go'];
-    if ($go)
-        $params['go'] = $go;
-
-    # Carryover phase
-    $phase = $_GET['phase'];
-    if ($phase)
-        $params['phase'] = $phase;
-    else
-        $params['phase'] = $defaults['phase'];
-
-    # Carryover developer params
-    foreach (array_keys($defaults['dev']) as $k)
-        if (isset($_GET[$k]))
-            $params[$k] = $_GET[$k];
-
-    return $params;
-}
-
 # Carry over input params (that are not submitted via form
 # controls) between invocations of the script. Note:
 # this string must be printed between the <form> tags
@@ -703,6 +595,7 @@ function hidden_carryover($params) {
     return $str;
 }
 
+# Load up some CSS and Javascript
 function html_head() {
 
     $javascript = <<<EOT

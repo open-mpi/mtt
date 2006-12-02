@@ -143,6 +143,145 @@ function label($str) {
 #                                       #
 #########################################
 
+# Return an array of default values for textfields
+# (Feed this too form_carryover)
+function setup_defaults($phases) {
+
+    # Arrayify the argument
+    if (! is_array($phases))
+        $phases = array($phases);
+
+    $single_phase = (sizeof($phases) == 1) ? true : false;
+
+    # ompi does not submit results
+    $http_username = $_SERVER['PHP_AUTH_USER'];
+    if (! $http_username or preg_match("/ompi/i", $http_username))
+        $http_username = 'all';
+
+    $defaults = array(
+        # results
+        'start_timestamp'   => 'past 24 hours',
+
+        # submit
+        'http_username'     => $http_username,
+        'local_username'    => 'all',
+        'hostname'          => 'all',
+
+        # mpi_install
+        'platform_hardware' => 'all',
+        'os_name'           => 'all',
+        'mpi_name'          => 'all',
+        'mpi_version'       => 'all',
+    );
+
+    # Phase-specific
+    if ($single_phase) {
+        if (array_search('mpi_install', $phases) !== false)
+            $specific = array(
+                'configure_arguments' => '',
+                'compiler_name'       => 'all',
+                'bitness'             => 'all',
+                'endian'              => 'all',
+            );
+        elseif (array_search('test_build', $phases) !== false)
+            $specific = array(
+                'suite_name'       => 'all',
+                'compiler_name'    => 'all',
+                'compiler_version' => 'all',
+                'bitness'          => 'all',
+            );
+        elseif (array_search('test_run', $phases) !== false)
+            $specific = array(
+                'suite_name' => 'all',
+                'test_name'  => 'all',
+                'np'         => 'all',
+                'command'    => 'all',
+            );
+    }
+
+    $ret = array_merge(
+        $defaults,
+        $specific
+    );
+
+    # Show all columns (except test_name)
+    foreach (array_keys($ret) as $k)
+        $ret['show'][$k] = 'show';
+
+    # Phase
+    $ret['phase'] = 'all_phases';
+
+    # Developer params
+    $ret['dev'] = array(
+        'sql'   => 'off',
+        'cgi'   => 'off',
+        'debug' => null,
+    );
+
+    return $ret;
+}
+
+# Take a 'defaults' array (output from setup_defaults)
+# Carry over textfields, show/hide menus, and radios from
+# the last invocation (Returns an arr2qstring-ready list)
+#
+# Dual-purpose function:
+# 1. Used for filling in form controls from "last time"
+# 2. Used (in tandem with setup_defaults) for creating
+#    drilldown links
+function form_carryover($defaults) {
+
+    foreach (array_keys($defaults) as $k) {
+
+        # Only deal with text fields
+        if ($k == 'show' or 
+            $k == 'phase' or
+            $k == 'go' or
+            $k == 'dev')
+            continue;
+
+        $textfield = "text_$k";
+        $showfield = "show_$k";
+
+        # Carryover textfields
+        if (isset($_GET[$textfield]))
+            $params[$textfield] = $_GET[$textfield];
+        else
+            $params[$textfield] = $defaults[$k];
+
+        # Carryover show/hide menus
+        if ($_GET[$showfield])
+            $params[$showfield] = $_GET[$showfield];
+        else
+            $params[$showfield] = $defaults['show'][$k];
+    }
+
+    # Carryover report type (summary or detail)
+    $go = $_GET['go'];
+    if ($go)
+        $params['go'] = $go;
+
+    # Carryover phase
+    $phase = $_GET['phase'];
+    if ($phase)
+        $params['phase'] = $phase;
+    else
+        $params['phase'] = $defaults['phase'];
+
+    # Carryover developer params
+    foreach (array_keys($defaults['dev']) as $k)
+        if (isset($_GET[$k]))
+            $params[$k] = $_GET[$k];
+
+    # It would be nonsensical to carry these onward
+    # (this is only done in the case of clicking a
+    # ''next_n_rows'' link)
+    unset($params['offset']);
+    unset($params['rows']);
+
+    return $params;
+}
+
 # Grab phase field
 function process_phase_field($params) {
     if (isset($params['phase'])) {

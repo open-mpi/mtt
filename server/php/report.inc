@@ -21,18 +21,22 @@ include_once("$topdir/reporter.inc");
 include_once("$topdir/database.inc");
 include_once("$topdir/html.inc");
 
-# Dump query description, results table, and link to query
+# Print report
 function dump_report() {
 
     global $thcolor, $gray, $dgray, $lgray, $llgray, $lllgray, $white;
 
     debug_cgi($_GET, "GET");
 
+    # Process buttons 
+    # (needs to come first, because _GET could be mutated here)
+    $button_press = process_buttons($_GET);
+
     # Process input params
     $phases        = process_phase_field($_GET);
     $date_fields   = process_date_field($_GET);
     $input_fields  = process_input_fields($_GET);
-    $button_press  = process_buttons($_GET);
+    $offset_field  = process_offset_field($_GET);
     $result_fields = get_result_cases($phases, $_GET);
 
     # Print either a summary or detail report,
@@ -43,21 +47,24 @@ function dump_report() {
     if ($do_detailed)
         $detail_fields = detail_fields(get_scalar($phases));
 
+    # Prepare query components
     $query = array_merge_recursive(
         $date_fields,
         $input_fields,
         $result_fields,
-        $detail_fields
+        $detail_fields,
+        $offset_field
     );
     $query['phases'] = $phases;
 
+    # Order columns left-to-right
     $query['select'] = order_columns($query['select']);
 
     # Compose query
     $cmd = compose_sql($query);
 
+    # Execute query
     $resource = do_pg_query($cmd);
-    debug_sql($cmd);
 
     # Generate headers
     foreach ($phases as $phase)
@@ -65,31 +72,40 @@ function dump_report() {
         foreach ($keys as $result)
             $results[] = $result;
 
+    # Number of rows in this report
+    $rowcount = pg_num_rows($resource);
+    $n = rowcount($rowcount, $_GET);
+    $o = offset($_GET);
+
+    # Prepare headers array for *_table functions
     $headers['params']  = array_keys($query['select']);
     $headers['details'] = array_keys($query['select_more']);
     $headers['results'] = $results;
     $headers['phases']  = $phases;
+    $headers['offset']  = $o;
 
-    $num_rows = pg_num_rows($resource);
-
-    $basic_info = basic_info($date_fields, $phases, $num_rows);
-    $permalinks = permalinks($date_fields);
-
-    # Print general info/links up top
-    print "<table width='100%'><tr>" .
-          "<td>$basic_info" .
-          "<td align='right'>$permalinks" .
-          "</table><br>";
+    # Print some basic, useful info atop each report table
+    report_header($date_fields, $phases, $n);
     
     if ($do_detailed)
         detail_table($headers, $resource);
     else
         summary_table($headers, $resource);
 
+    # Provide links to slices of the report ('x' rows at a time)
+    print "<br>";
+    next_n_rows($n, 100, $date_fields, $_GET);
+
     print "\n<br><hr><br>";
 
     pg_close();
 }
+
+#########################################
+#                                       
+#  Report Table Generating Functions (2)
+#                                     
+#########################################
 
 # Void function to print out a summary style HTML data table
 function summary_table($headers, $resource) {
@@ -101,13 +117,6 @@ function summary_table($headers, $resource) {
     if (pg_num_rows($resource) < 1) {
         print "<b><i>No data available for the specified query.</i></b>";
         return;
-    }
-
-    $max_rows = 5000;
-
-    # Be nice to the server, show only the first max_rows
-    if (pg_num_rows($resource) > $max_rows) {
-        print "<i>Displaying first $max_rows rows, please trim your query.</i>";
     }
 
     # Insert useful information on the left-hand side?
@@ -154,13 +163,13 @@ function summary_table($headers, $resource) {
         foreach ($links[$phase] as $result)
             printf("\n<th bgcolor='$thcolor'>%s", $result);
 
-    $r = 1;
+    # Row numbering starts at the OFFEST arg to LIMIT
+    $offset = $headers['offset'];
+    $row_n = $offset;
+    $lastrow = $offset + 100;
 
     # Print data rows
     while ($row = pg_fetch_row($resource)) {
-
-        if ($r > $max_rows)
-            break;
 
         # Results are always in the far right cols
         $results = array_splice($row, sizeof($row) - $total_results_cols);
@@ -170,7 +179,10 @@ function summary_table($headers, $resource) {
         $formatg = "\n<td bgcolor='$lgray' align='right'>%s";
         $formatw = "\n<td bgcolor='$white'>%s";
 
-        print "\n<tr>" . sprintf($formatg, $r++);
+        if ($row_n >= $lastrow)
+            break;
+
+        print "\n<tr>" . sprintf($formatg, $row_n++);
         for ($i = 0; $i < sizeof($row); $i++)
             printf($formatw, drilldown_links($headers['params'][$i], $row[$i]));
 
@@ -243,154 +255,7 @@ function summary_table($headers, $resource) {
           "\n\n<!-- report_end -->\n\n";
 }
 
-# Return a sequence of result cell bgcolors
-function result_colors($phases) {
-
-    global $lred, $lgreen, $lyellow;
-
-    $_phases = array_flip($phases);
-
-    if (isset($_phases['mpi_install'])) {
-        $colors [] = $lgreen;
-        $colors [] = $lred;
-    }
-    if (isset($_phases['test_build'])) {
-        $colors [] = $lgreen;
-        $colors [] = $lred;
-    }
-    if (isset($_phases['test_run'])) {
-        $colors [] = $lgreen;
-        $colors [] = $lred;
-        $colors [] = $lyellow;
-        $colors [] = $lyellow;
-    }
-    return $colors;
-}
-
-# Create links that drill down by phase, result, and a set
-# of general params This function takes the following three
-# forms:
-#
-# 1. Entire row or data
-#    * Phase, series of param/value pairs, result counts
-#    * For "colored" result count table cells
-#       
-# 2. Just a single param/value pair
-#    * For "white" parameter table cells
-#    
-# 3. List of phases
-#    * For phase/result table header cells
-#
-function drilldown_links() {
-
-    # This function has three forms (see above comment)
-    $argc = func_num_args();
-
-    $phase_results_table = phase_results_table();
-
-    # Prepare a query string for manipulation
-    $qstring_arr = $_GET;
-
-    $self = 'http://' . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'];
-    $format = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
-
-    # 1. Entire row or data
-    #    * Phase, series of param/value pairs, result counts
-    #    * For "colored" result count table cells
-    if ($argc == 4) {
-
-        $headers = func_get_arg(0);
-        $params  = func_get_arg(1);
-        $results = func_get_arg(2);
-        $phase   = func_get_arg(3);
-
-        $qstring_arr['phase'] = $phase;
-
-        $j = 0;
-        foreach ($results as $count) {
-
-            $i = 0;
-            # Loop over header names
-            foreach ($headers['params'] as $param) {
-                $qstring_arr["text_$param"] = $params[$i++];
-            }
-            $qstring_arr['test_result'] = $phase_results_table[$phase][$j++];
-
-            $ret['links'][] = sprintf($format, arr2qstring($qstring_arr), $count);
-            $ret['counts'][] = $count;
-        }
-    }
-
-    # 2. Just a single param/value pair
-    #    * For "white" parameter table cells
-    #    
-    elseif ($argc == 2) {
-
-        $header = func_get_arg(0);
-        $param  = func_get_arg(1);
-
-        $qstring_arr["text_$header"] = $param;
-
-        $ret = sprintf($format, arr2qstring($qstring_arr), $param);
-    }
-
-    # 3. List of phases
-    #    * For phase/result table header cells
-    #
-    # Return a series of links, containing one or three of
-    # the following:
-    #
-    # * MPI Install
-    #   Pass, Fail
-    # * Test Build
-    #   Pass, Fail
-    # * Test Run
-    #   Pass, Fail, Skipped, Timed out
-    #
-    elseif ($argc == 1) {
-
-        $phases = func_get_arg(0);
-
-        foreach ($phases as $phase) {
-            $qstring_arr['phase'] = $phase;
-            unset($qstring_arr['test_result']);
-            $ret[$phase][] = sprintf($format, arr2qstring($qstring_arr), label($phase));
-
-            foreach ($phase_results_table[$phase] as $result) {
-                $qstring_arr['test_result'] = $result;
-                $ret[$phase][] =
-                    sprintf($format, arr2qstring($qstring_arr), label($result));
-            }
-        }
-    }
-    return $ret;
-}
-
-# Return either the first element of the list
-# or the scalar argument
-function get_scalar($var) {
-    if (is_array($var))
-        return $var[0];
-    else
-        return $var;
-}
-
-# Generate the shorthand for the given phase-result code (see get_result_cases)
-function result_str($phase, $result) {
-    $abbrevs = array(
-        'mpi_install' => 'i',
-        'test_build' => 'b',
-        'test_run' => 'r',
-    );
-    return '_' . $abbrevs[$phase] . substr($result, 0, 1);
-}
-
-# Used to print literal '%' symbols in a printf
-function esc_percent($str) {
-    return preg_replace('/%/', '%%', $str);
-}
-
-# Void function to print out a summary style HTML data table
+# Void function to print out a detail style HTML data table
 function detail_table($headers, $resource) {
 
     global $thcolor, $gray, $dgray, $lgray, $llgray,
@@ -400,13 +265,6 @@ function detail_table($headers, $resource) {
     if (pg_num_rows($resource) < 1) {
         print "<b><i>No data available for the specified query.</i></b>";
         return;
-    }
-
-    $max_rows = 5000;
-
-    # Be nice to the server, show only the first max_rows
-    if (pg_num_rows($resource) > $max_rows) {
-        print "<i>Displaying first $max_rows rows, please trim your query.</i>";
     }
 
     $num_result_types = array(
@@ -430,7 +288,10 @@ function detail_table($headers, $resource) {
         printf("\n<th bgcolor='$thcolor'>%s", $labels[$result]);
     }
 
-    $r = 0;
+    # Row numbering starts at the OFFEST arg to LIMIT
+    $offset = $headers['offset'];
+    $row_n = $offset;
+    $lastrow = $offset + 100;
 
     # Remove duplicated headers
     $headers = array_unique(
@@ -443,7 +304,7 @@ function detail_table($headers, $resource) {
     # Print data rows
     while ($row = pg_fetch_row($resource)) {
 
-        if ($r++ > $max_rows)
+        if ($row_n >= $lastrow)
             break;
 
         # Results are always in the far right cols
@@ -495,68 +356,39 @@ function detail_table($headers, $resource) {
           "\n\n<!-- report_end -->\n\n";
 }
 
-# Compose an SQL SELECT statement
-function compose_sql($query) {
+#########################################
 
-    $selects = array();
-    $nl = "\n\t";
+# Return a sequence of result cell bgcolors
+function result_colors($phases) {
 
-    # Determine table (or views) to SELECT from
-    if (sizeof($query['phases']) > 1)
-        $tables = array('all_view');
+    global $lred, $lgreen, $lyellow;
+
+    $_phases = array_flip($phases);
+
+    if (isset($_phases['mpi_install'])) {
+        $colors [] = $lgreen;
+        $colors [] = $lred;
+    }
+    if (isset($_phases['test_build'])) {
+        $colors [] = $lgreen;
+        $colors [] = $lred;
+    }
+    if (isset($_phases['test_run'])) {
+        $colors [] = $lgreen;
+        $colors [] = $lred;
+        $colors [] = $lyellow;
+        $colors [] = $lyellow;
+    }
+    return $colors;
+}
+
+# Return either the first element of the list
+# or the scalar argument
+function get_scalar($var) {
+    if (is_array($var))
+        return $var[0];
     else
-        $tables = suffix_list($query['phases'], '_view');
-
-    foreach (array_keys($query['aggregates']) as $aggregate) {
-        $aggregates[] = $query['aggregates'][$aggregate];
-    }
-
-    # Compile lists for SELECT, GROUP BY,
-    # and ORDER BY clauses
-    $selects = array_unique(
-        array_merge(
-            $query['select'],
-            $aggregates,
-            $query['select_more']
-        )
-    );
-
-    $groupbys = array_unique(
-        array_merge(
-            array_keys($query['select']),
-            array_keys($query['select_more'])
-        )
-    );
-
-    $orderbys =  array_unique(
-        array_merge(
-            array_keys($query['select'])
-        )
-    );
-
-    # Piece together all the clauses
-    $cmd  = "\n SELECT ";
-    $cmd .=     "$nl" . join(",$nl", $selects);
-
-    $cmd .= "\n FROM ";
-    $cmd .=     "$nl" . join(",$nl", $tables);
-
-    if ($query['where']) {
-        $cmd .= "\n WHERE ";
-        $cmd .=     "$nl" . join("$nl AND $nl", $query['where']);
-    }
-
-    if (array_keys($query['select'])) {
-        $cmd .= "\n GROUP BY ";
-        $cmd .=     "$nl" . join(",$nl ", $groupbys);
-
-        $cmd .= "\n ORDER BY ";
-        $cmd .=     "$nl" . join(",$nl ", $orderbys);
-    }
-
-    $cmd .= ";";
-
-    return $cmd;
+        return $var;
 }
 
 # Return 
@@ -602,6 +434,214 @@ function get_result_cases($phases, $params) {
     return $results;
 }
 
+#########################################
+#                                       
+#  Link Generating Functions
+#                                     
+#########################################
+
+# Show links to report slices ('x' rows at a time)
+function next_n_rows($n, $limit, $date_fields, $params) {
+
+    # Prepare an href element to use for linking to report
+    # slices
+    $self = 'http://' . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'];
+    $format = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
+
+    $qstring_arr = $params;
+    $qstring_arr['rows'] = $n;
+
+    $phase = process_phase_field($params['phase']);
+    $offset = offset($params);
+
+    $go = strtolower($params['go']);
+
+    # Determine report type
+    if (preg_match("/(summary|detail)/i", $go, $m))
+        $qstring_arr['go'] = $m[1]."_slice";
+
+    # Report "slices" should use absolute date range
+    # because the LIMIT clause may not make sense in
+    # the future
+    $date_field = $date_fields["absolute"] . ';' . $date_fields["rollup"];
+    $qstring_arr["text_start_timestamp"] = $date_field;
+
+    $i = 0;
+    while ($i < $n) {
+       $qstring_arr['offset'] = $i;
+       # Do not link to the current report slice
+       if ($i == $offset)
+           $links[] = $i;
+       else
+           $links[] = sprintf($format, arr2qstring($qstring_arr), $i);
+       $i += $limit;
+    }
+
+    # Do not print a lone '0'
+    if (sizeof($links) > 1)
+        print "\n<table cellspacing='10'>" .
+                "\n<tr>" .
+                "<td>" . join("<td>", $links) .
+                "\n</table>";
+}
+
+# Create links that drill down by phase, result, and a set
+# of general params This function takes the following three
+# forms:
+#
+# 1. Entire row or data
+#    * Phase, series of param/value pairs, result counts
+#    * For "colored" result count table cells
+#       
+# 2. Just a single param/value pair
+#    * For "white" parameter table cells
+#    
+# 3. List of phases
+#    * For phase/result table header cells
+#
+# Note: this function takes a variable number of arguments
+function drilldown_links() {
+
+    # This function has three forms (see above comment)
+    $argc = func_num_args();
+
+    $phase_results_table = phase_results_table();
+
+    # Prepare a query string for manipulation
+    $qstring_arr = $_GET;
+
+    # Do not bring over LIMIT clause for a drilldown
+    unset($qstring_arr['rows']);
+    unset($qstring_arr['offset']);
+
+    $self = 'http://' . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'];
+    $format = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
+
+    # 1. Entire row or data
+    #    * Phase, series of param/value pairs, result counts
+    #    * For "colored" result count table cells
+    if ($argc == 4) {
+
+        $headers = func_get_arg(0);
+        $params  = func_get_arg(1);
+        $results = func_get_arg(2);
+        $phase   = func_get_arg(3);
+
+        # Bring over phase-independent selections, and
+        # combine them with phase-dependent defaults
+        $defaults = setup_defaults($phase);
+        $qstring_arr = form_carryover($defaults);
+        $qstring_arr['phase'] = $phase;
+
+        # Do not bring over LIMIT clause for a drilldown
+        unset($qstring_arr['rows']);
+        unset($qstring_arr['offset']);
+
+        $j = 0;
+        # Loop over result count values
+        foreach ($results as $count) {
+
+            $i = 0;
+            # Loop over header names
+            foreach ($headers['params'] as $param) {
+                $qstring_arr["text_$param"] = $params[$i++];
+            }
+            $qstring_arr['test_result'] = $phase_results_table[$phase][$j++];
+
+            $ret['links'][] = sprintf($format, arr2qstring($qstring_arr), $count);
+            $ret['counts'][] = $count;
+        }
+    }
+
+    # 2. Just a single param/value pair
+    #    * For "white" parameter table cells
+    #    
+    elseif ($argc == 2) {
+
+        $header = func_get_arg(0);
+        $param  = func_get_arg(1);
+
+        $qstring_arr["text_$header"] = $param;
+
+        # Do not bring over LIMIT clause for a drilldown
+        unset($qstring_arr['rows']);
+        unset($qstring_arr['offset']);
+
+        $ret = sprintf($format, arr2qstring($qstring_arr), $param);
+    }
+
+    # 3. List of phases
+    #    * For phase/result table header cells
+    #
+    # Return a series of links, containing one or three of
+    # the following:
+    #
+    # * MPI Install
+    #   Pass, Fail
+    # * Test Build
+    #   Pass, Fail
+    # * Test Run
+    #   Pass, Fail, Skipped, Timed out
+    #
+    elseif ($argc == 1) {
+
+        $phases = func_get_arg(0);
+
+        foreach ($phases as $phase) {
+
+            # Bring over phase-independent selections, and
+            # combine them with phase-dependent defaults
+            $defaults = setup_defaults($phase);
+            $qstring_arr = form_carryover($defaults);
+            $qstring_arr['phase'] = $phase;
+
+            # Do not bring over LIMIT clause for a drilldown
+            unset($qstring_arr['rows']);
+            unset($qstring_arr['offset']);
+
+            unset($qstring_arr['test_result']);
+            $ret[$phase][] = sprintf($format, arr2qstring($qstring_arr), label($phase));
+
+            foreach ($phase_results_table[$phase] as $result) {
+                $qstring_arr['test_result'] = $result;
+                $ret[$phase][] =
+                    sprintf($format, arr2qstring($qstring_arr), label($result));
+            }
+        }
+    }
+    return $ret;
+}
+
+# Return number of rows in report
+function rowcount($n, $params) {
+    # LIMIT has not been used
+    if (! isset($params['rows']))
+        return $n;
+    else
+         return $params['rows'];
+}
+
+# Return offset integer from where this report is displaying
+function offset($params) {
+    if (isset($params['offset']))
+        return $params['offset'];
+    else
+        return 0;
+}
+
+# Print some basic, useful info atop each report table
+function report_header($date_fields, $phases, $n) {
+
+    $basic_info = basic_info($date_fields, $phases, $n);
+    $permalinks = permalinks($date_fields);
+
+    # Print general info/links up top
+    print "<table width='100%'><tr>" .
+          "<td>$basic_info" .
+          "<td align='right'>$permalinks" .
+          "</table><br>";
+}
+
 # Show links to point user to more info ...
 function permalinks($date_fields) {
 
@@ -610,10 +650,10 @@ function permalinks($date_fields) {
     $domain    = $_SERVER['SERVER_NAME'];
     $uri       = $_SERVER['REQUEST_URI'];
     $script    = $_SERVER['SCRIPT_NAME'];
-    $datefield = $date_fields["absolute"] . ';' . $datefields["rollup"];
+    $date_field = $date_fields["absolute"] . ';' . $date_fields["rollup"];
 
     $qstring1 = arr2qstring($params);
-    $params["text_start_timestamp"] = $datefield;
+    $params["text_start_timestamp"] = $date_field;
     $qstring2 = arr2qstring($params);
 
     # Create links to report using relative and absolute date ranges
@@ -642,10 +682,10 @@ function basic_info($date_fields, $phases, $num_rows) {
     $ret = "<table>" .
           "<tr><td><b>Current time (GMT)</b>:<td>" . $date_fields["current"] . 
           "<tr><td><b>Date range (GMT)</b>: <td>" . $date_fields["absolute"] .
-          "<tr><td><b>Phase(s)</b>:<td>" . en_join($phases);
+          "<tr><td><b>Phase(s)</b>:<td>" . en_join(array_map('label', $phases));
 
     if ($_GET["test_result"])
-        $ret .= "<tr><td><b>Result</b>:<td>" . $_GET["test_result"] . " only";
+        $ret .= "<tr><td><b>Result</b>:<td>" . label($_GET["test_result"]) . " only";
 
     $ret .= "<tr><td><b>Number of rows</b>:<td>" . $num_rows .
             "</table>";
@@ -653,17 +693,126 @@ function basic_info($date_fields, $phases, $num_rows) {
     return $ret;
 }
 
+#########################################
+
+# Compose an SQL SELECT statement
+function compose_sql($query) {
+
+    $selects = array();
+    $nl = "\n\t";
+
+    # Determine table (or views) to SELECT from
+    if (sizeof($query['phases']) > 1)
+        $tables = array('all_view');
+    else
+        $tables = suffix_list($query['phases'], '_view');
+
+    foreach (array_keys($query['aggregates']) as $aggregate) {
+        $aggregates[] = $query['aggregates'][$aggregate];
+    }
+
+    # Compile values for SELECT, GROUP BY,
+    # and ORDER BY, and LIMIT clauses
+    $selects = array_unique(
+        array_merge(
+            $query['select'],
+            $aggregates,
+            $query['select_more']
+        )
+    );
+
+    $groupbys = array_unique(
+        array_merge(
+            array_keys($query['select']),
+            array_keys($query['select_more'])
+        )
+    );
+
+    $orderbys =  array_unique(
+        array_merge(
+            array_keys($query['select'])
+        )
+    );
+
+    $offset = offset($query);
+
+    # Piece together all the clauses
+    $cmd  = "\n SELECT " .
+                "$nl" . join(",$nl", $selects);
+
+    $cmd .= "\n FROM " .
+                "$nl" . join(",$nl", $tables);
+
+    if ($query['where']) {
+        $cmd .= "\n WHERE " .
+                    "$nl" . join("$nl AND $nl", $query['where']);
+    }
+
+    if (array_keys($query['select'])) {
+        $cmd .= "\n GROUP BY " .
+                    "$nl" . join(",$nl ", $groupbys);
+
+        $cmd .= "\n ORDER BY " .
+                    "$nl" . join(",$nl ", $orderbys);
+    }
+    if ($offset)
+        $cmd .= "\n LIMIT 100 OFFSET $offset;";
+
+    debug_sql($cmd);
+
+    return $cmd;
+}
+
+#########################################
+#                                       
+#  Input Processing Functions          
+#                                     
+# The following process_*_field(s) functions return arrays
+# ready to be fed to compose_query. The query array is
+# structured more or less like an SQL SELECT statement:
+#
+# (type)  
+# (all)    $query['select'][column alias] => list of SELECT {string functions | column aliases}
+# (all)    $query['aggregates']           => list of COUNT clauses for result counts
+# (detail) $query['select_more']          => list of detail SELECT columns
+# (all)    $query['where']                => list of WHERE clauses
+# (all)    $query['limit']                => LIMIT value
+# (all)    $query['offset']               => OFFSET value
+#
+#########################################
+
 # Summary or Detail report?
+function process_offset_field($params) {
+    $offset = $_GET['offset'];
+    return array('offset' => $offset);
+}
+
+# Determine report type, Summary or Detail
+#
+# THIS FUNCTION CHANGES _GET BASED ON WHETHER A "SLICE"
+# REPORT IS BEING USED. REASON: THERE IS NO WAY TO CHANGE
+# TWO PARAMS IN A SINGLE BUTTON CLICK
 function process_buttons($params) {
-    $phases = process_phase_field($_GET);
     $go = strtolower($_GET['go']);
+
+    # Determine report type, and
+    # whether this is a "slice" report
+    if (preg_match("/(summary|detail)/i", $go, $m)) {
+        $type = $m[1];
+        if (! preg_match("/slice/i", $go)) {
+            unset($_GET['rows']);
+            unset($_GET['offset']);
+        }
+    }
 
     # Press 'Summary' for them if they traverse from a
     # detailed report into multi-phase mode
-    if (sizeof($phases) > 1 and $go == 'detail')
-        $go = 'summary';
-    $_GET['go'] = $go;
-    return $go;
+    $phases = process_phase_field($_GET);
+    if (sizeof($phases) > 1 and 
+        (stristr('detail', $type) === true))
+        $type = 'summary';
+
+    return $type;
 }
 
 # 1. Generate WHERE clause pieces from user-entered textfields
@@ -865,28 +1014,7 @@ function process_date_field($params) {
     return $date;
 }
 
-# Remove the prefix part of the parameter,
-# which will leave only a database column name
-function strip_prefix($str) {
-    return preg_replace('/^more_|^show_|^text_/', '', $str);
-}
-
-# '_' to ' '
-function us2sp($str) {
-    return preg_replace('/_/', ' ', $str);
-}
-
-# ' ' to '_'
-function sp2us($str) {
-    return preg_replace('/\s+/', '_', $str);
-}
-
-function suffix_list($arr, $sfx) {
-    $tmp = array();
-    foreach ($arr as $a)
-        $tmp[] = $a . $sfx;
-    return $tmp;
-}
+#########################################
 
 # Loop through column aliases, and return
 # a left-to-right ordering of SELECT clauses
@@ -973,6 +1101,13 @@ function detail_fields($phase) {
         );
 }
 
+#########################################
+#                                       
+#  String Processing Functions
+#                                     
+#########################################
+
+# The following process_*_field(s) functions return arrays
 # Convert English words to integers (1-10)
 function strtonumeral($str) {
 
@@ -997,5 +1132,30 @@ function strtonumeral($str) {
     else
         return $str;
 }
+
+# Remove the prefix part of the parameter,
+# which will leave only a database column name
+function strip_prefix($str) {
+    return preg_replace('/^more_|^show_|^text_/', '', $str);
+}
+
+function suffix_list($arr, $sfx) {
+    $tmp = array();
+    foreach ($arr as $a)
+        $tmp[] = $a . $sfx;
+    return $tmp;
+}
+
+# Generate the shorthand for the given phase-result code (see get_result_cases)
+function result_str($phase, $result) {
+    $abbrevs = array(
+        'mpi_install' => 'i',
+        'test_build' => 'b',
+        'test_run' => 'r',
+    );
+    return '_' . $abbrevs[$phase] . substr($result, 0, 1);
+}
+
+#########################################
 
 ?>
