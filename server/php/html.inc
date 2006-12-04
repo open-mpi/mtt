@@ -19,6 +19,7 @@ $lllgray = "#E8E8E8";
 $lred    = "#FFC0C0";
 $lgreen  = "#C0FFC0";
 $lyellow = "#FFFFC0";
+$lblue   = "#C0C0FF";
 $white   = "#FFFFFF";
 $thcolor = $llgray;
 

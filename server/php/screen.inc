@@ -468,13 +468,20 @@ function form_buttons($params) {
     $types = array(
         "Summary",
         "Detail",
+        "Performance",
     );
 
     # Disable 'Detail' button if we are in multi-phase mode
     $phases = process_phase_field($params);
 
-    if (sizeof($phases) > 1)
+    # Disallow 'Detail' reports in multi-phase mode
+    # Allow 'Performance' reports only in test_run mode
+    if (sizeof($phases) > 1) {
         $disable['Detail'] = 'disabled';
+        $disable['Performance'] = 'disabled';
+    }
+    elseif (! (array_search('test_run', $phases) !== false))
+        $disable['Performance'] = 'disabled';
 
     $buttons[] =
         "\n<input type='Reset' value='Reset'>";
@@ -621,8 +628,8 @@ EOT;
     a.black_ln:visited { color: #555555 } /* for visited links */
     a.black_ln:active  { color: #FFFFFF } /* when link is clicked */
     a.black_ln:hover   { color: #FFFF40 } /* when mouse is over link */
-    td {font-size: 75%; }
-    th {font-size: 80%; }
+    td { font-size: 75%; } 
+    th { font-size: 80%; } 
 EOT;
 
     # Print html head

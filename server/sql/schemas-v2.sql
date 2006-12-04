@@ -4,7 +4,7 @@
 -- Usage: $ psql -d dbname -U dbusername < this_filename
 --
 
-DROP TABLE compute_cluster;
+DROP TABLE compute_cluster CASCADE;
 CREATE TABLE compute_cluster (
     compute_cluster_id serial PRIMARY KEY,
     platform_name character varying(256) NOT NULL DEFAULT 'bogus',
@@ -25,7 +25,7 @@ CREATE TABLE compute_cluster (
 DROP SEQUENCE client_serial;
 CREATE SEQUENCE client_serial;
 
-DROP TABLE submit;
+DROP TABLE submit CASCADE;
 CREATE TABLE submit (
     submit_id serial PRIMARY KEY,
     mtt_version_major smallint NOT NULL DEFAULT '-38',
@@ -42,7 +42,7 @@ CREATE TABLE submit (
     )
 );
 
-DROP TABLE mpi_get;
+DROP TABLE mpi_get CASCADE;
 CREATE TABLE mpi_get (
     mpi_get_id serial PRIMARY KEY,
     mpi_name character varying(64) NOT NULL DEFAULT 'bogus',
@@ -53,7 +53,7 @@ CREATE TABLE mpi_get (
     )
 );
 
-DROP TABLE compiler;
+DROP TABLE compiler CASCADE;
 CREATE TABLE compiler (
     compiler_id serial PRIMARY KEY,
     compiler_name character varying(64) NOT NULL DEFAULT 'bogus',
@@ -64,7 +64,7 @@ CREATE TABLE compiler (
     )
 );
 
-DROP TABLE mpi_install;
+DROP TABLE mpi_install CASCADE;
 CREATE TABLE mpi_install (
     mpi_install_id serial PRIMARY KEY,
 
@@ -91,7 +91,7 @@ CREATE TABLE mpi_install (
     )
 );
 
-DROP TABLE test_build;
+DROP TABLE test_build CASCADE;
 CREATE TABLE test_build (
     test_build_id serial PRIMARY KEY,
     mpi_install_id integer NOT NULL DEFAULT '-38' REFERENCES mpi_install,
@@ -108,7 +108,7 @@ CREATE TABLE test_build (
     )
 );
 
-DROP TABLE test_run;
+DROP TABLE test_run CASCADE;
 CREATE TABLE test_run (
     test_run_id serial PRIMARY KEY,
     test_build_id integer NOT NULL DEFAULT '-38' REFERENCES test_build,
@@ -126,7 +126,7 @@ CREATE TABLE test_run (
     )
 );
 
-DROP TABLE results;
+DROP TABLE results CASCADE;
 CREATE TABLE results (
     results_id serial PRIMARY KEY,
     submit_id integer NOT NULL DEFAULT '-38' REFERENCES submit,
@@ -160,7 +160,7 @@ CREATE TABLE results (
     latency_bandwidth_id integer NOT NULL DEFAULT '-38'
 );
 
-DROP TABLE latency_bandwidth;
+DROP TABLE latency_bandwidth CASCADE;
 CREATE TABLE latency_bandwidth (
     latency_bandwidth_id serial PRIMARY KEY,
     message_size integer[] DEFAULT '{}',
@@ -172,7 +172,7 @@ CREATE TABLE latency_bandwidth (
     latency_avg double precision[] DEFAULT '{}'
 );
 
-DROP TABLE alerts;
+DROP TABLE alerts CASCADE;
 CREATE TABLE alerts (
     alerts_id serial PRIMARY KEY,
     users_id integer NOT NULL DEFAULT '-38' REFERENCES users,
@@ -182,7 +182,7 @@ CREATE TABLE alerts (
     description character(64) NOT NULL DEFAULT 'bogus'
 );
 
-DROP TABLE users;
+DROP TABLE users CASCADE;
 CREATE TABLE users (
     users_id serial PRIMARY KEY,
     username character(16) NOT NULL DEFAULT 'bogus',
@@ -191,7 +191,7 @@ CREATE TABLE users (
 );
 
 -- For "new" failure reporting
-DROP TABLE failure;
+DROP TABLE failure CASCADE;
 CREATE TABLE failure (
     failure_id serial NOT NULL DEFAULT '-38',
 
@@ -206,25 +206,9 @@ CREATE TABLE failure (
     value character varying(16) NOT NULL DEFAULT 'bogus'  --> value of field
 );
 
-DROP TABLE cluster_owner;
+DROP TABLE cluster_owner CASCADE;
 CREATE TABLE cluster_owner (
     cluster_owner_id serial PRIMARY KEY,
     compute_cluster_id integer NOT NULL DEFAULT '-38' REFERENCES compute_cluster,
     users_id integer NOT NULL DEFAULT '-38'
 );
-
-INSERT INTO latency_bandwidth (latency_bandwidth_id) VALUES (DEFAULT);
-INSERT INTO failure (failure_id) VALUES (DEFAULT); 
-
--- Soon we will be strict, and disallow empty rows of this sort 
--- DEFAULT is a random bogus value for such an empty row
-INSERT INTO compute_cluster (compute_cluster_id) VALUES (DEFAULT);
-INSERT INTO submit (submit_id) VALUES (DEFAULT); 
-INSERT INTO mpi_get (mpi_get_id) VALUES (DEFAULT); 
-INSERT INTO compiler (compiler_id) VALUES (DEFAULT); 
-INSERT INTO mpi_install (mpi_install_id) VALUES (DEFAULT); 
-INSERT INTO test_build (test_build_id) VALUES (DEFAULT); 
-INSERT INTO test_run (test_run_id) VALUES (DEFAULT); 
-INSERT INTO results (results_id) VALUES (DEFAULT); 
-INSERT INTO users (users_id) VALUES (DEFAULT); 
-INSERT INTO cluster_owner (cluster_owner_id) VALUES (DEFAULT); 

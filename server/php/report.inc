@@ -37,15 +37,19 @@ function dump_report() {
     $date_fields   = process_date_field($_GET);
     $input_fields  = process_input_fields($_GET);
     $offset_field  = process_offset_field($_GET);
-    $result_fields = get_result_cases($phases, $_GET);
+    $result_fields = process_result_fields($phases, $_GET);
 
     # Print either a summary or detail report,
     # depending on whether a 'select_more' parameter is set
-    $do_detailed = $button_press == 'detail' ? true : false;
-
-    # Tack on a bunch more columns for a detailed report
-    if ($do_detailed)
+    if ($button_press == 'detail') {
+        $do_detailed = true;
         $detail_fields = detail_fields(get_scalar($phases));
+    } elseif ($button_press == 'performance') {
+        $do_performance = true;
+        $detail_fields = detail_fields(get_scalar($phases));
+        $performance_fields = performance_fields();
+    } else
+        $do_summary = true;
 
     # Prepare query components
     $query = array_merge_recursive(
@@ -53,6 +57,7 @@ function dump_report() {
         $input_fields,
         $result_fields,
         $detail_fields,
+        $performance_fields,
         $offset_field
     );
     $query['phases'] = $phases;
@@ -78,19 +83,22 @@ function dump_report() {
     $o = offset($_GET);
 
     # Prepare headers array for *_table functions
-    $headers['params']  = array_keys($query['select']);
-    $headers['details'] = array_keys($query['select_more']);
-    $headers['results'] = $results;
-    $headers['phases']  = $phases;
-    $headers['offset']  = $o;
+    $headers['params']      = array_keys($query['select']);
+    $headers['details']     = array_keys($query['select_more']);
+    $headers['performance'] = array_keys($query['performance']);
+    $headers['results']     = $results;
+    $headers['phases']      = $phases;
+    $headers['offset']      = $o;
 
     # Print some basic, useful info atop each report table
     report_header($date_fields, $phases, $n);
     
     if ($do_detailed)
         detail_table($headers, $resource);
-    else
+    elseif ($do_summary)
         summary_table($headers, $resource);
+    elseif ($do_performance)
+        performance_table($headers, $resource);
 
     # Provide links to slices of the report ('x' rows at a time)
     print "<br>";
@@ -203,12 +211,14 @@ function summary_table($headers, $resource) {
             list($pass,
                  $fail,
                  $skip,
-                 $time) = $ret['links'];
+                 $time,
+                 $perf) = $ret['links'];
 
             list($pass_count,
                  $fail_count,
                  $skip_count,
-                 $time_count) = $ret['counts'];
+                 $time_count,
+                 $perf_count) = $ret['counts'];
 
             printf($format,
                     (($pass_count > 0) ? $result_colors[$j] : $lgray), $pass);
@@ -224,6 +234,11 @@ function summary_table($headers, $resource) {
             if (! is_null($time)) {
                 printf($format,
                         (($time_count > 0) ? $result_colors[$j] : $lgray), $time);
+                $j++;
+            }
+            if (! is_null($perf)) {
+                printf($format,
+                        (($perf_count > 0) ? $result_colors[$j] : $lgray), $perf);
                 $j++;
             }
 
@@ -267,17 +282,11 @@ function detail_table($headers, $resource) {
         return;
     }
 
-    $num_result_types = array(
-        "mpi_install" => 2,
-        "test_build" => 2,
-        "test_run" => 4,
-    );
-
     # Print result headers
+    $phase_results_table = phase_results_table();
     $num_cols['results'] = 0;
     foreach ($headers['phases'] as $phase) {
-        if ($num_result_types[$phase])
-            $num_cols['results'] += $num_result_types[$phase];
+        $num_cols['results'] += sizeof($phase_results_table[$phase]);
     }
     $num_cols['details'] = sizeof($headers['details']);
     $num_cols['params'] = sizeof($headers['params']);
@@ -313,10 +322,11 @@ function detail_table($headers, $resource) {
         # Details are always in the far far right cols
         $details = array_splice($results, $num_cols['results']);
 
-        $pass = $results[0];
-        $fail = $results[1];
-        $skip = $results[2];
-        $time = $results[3];
+        list($pass,
+             $fail,
+             $skip,
+             $time,
+             $perf) = $results;
 
         if ($pass)
             $bgcolor = (($pass > 0) ? $lgreen  : "");
@@ -326,6 +336,107 @@ function detail_table($headers, $resource) {
             $bgcolor = (($skip > 0) ? $lyellow : "");
         elseif ($time)
             $bgcolor = (($time > 0) ? $lyellow : "");
+        elseif ($perf)
+            $bgcolor = (($time > 0) ? $lblue   : "");
+
+        print "<table border='1' width='100%'>" .
+              "<tr><td bgcolor='$bgcolor'>";
+
+        $td = "<td bgcolor='$lgray' width='10%' valign='top'>";
+        $tdl = "<td bgcolor='$white'>";
+
+        $values =
+            array_merge(
+                $row,
+                $details
+            );
+
+        $i = 0;
+        print "<table border='1' width='100%'>";
+        foreach ($headers as $header) {
+            print (($i % 1 == 0) ? "\n<tr>" : "") .
+                  "\n$td <b>" . label($header) . "</b> $tdl " .
+                  "\n<pre>" . wordwrap($values[$i], 100) . "</pre>";
+            $i++;
+        }
+        print "</table>";
+        print "</table><br>";
+    }
+
+    print "\n</table>" .
+          "\n</table>" .
+          "\n\n<!-- report_end -->\n\n";
+}
+
+# Void function to print out a table of performance data
+function performance_table($headers, $resource) {
+
+    global $thcolor, $gray, $dgray, $lgray, $llgray,
+           $lllgray, $lred, $lgreen, $lyellow, $white;
+
+    # Do not print an empty table
+    if (pg_num_rows($resource) < 1) {
+        print "<b><i>No data available for the specified query.</i></b>";
+        return;
+    }
+
+    # Print result headers
+    $phase_results_table = phase_results_table();
+    $num_cols['results'] = 0;
+    foreach ($headers['phases'] as $phase) {
+        $num_cols['results'] += sizeof($phase_results_table[$phase]);
+    }
+    $num_cols['details'] = sizeof($headers['details']);
+    $num_cols['params'] = sizeof($headers['params']);
+
+    print "\n<tr>";
+
+    foreach ($headers['results'] as $result) {
+        printf("\n<th bgcolor='$thcolor'>%s", $labels[$result]);
+    }
+
+    # Row numbering starts at the OFFEST arg to LIMIT
+    $offset = $headers['offset'];
+    $row_n = $offset;
+    $lastrow = $offset + 100;
+
+    # Remove duplicated headers
+    $headers = array_unique(
+        array_merge(
+            $headers['params'],
+            $headers['details'],
+            $headers['performance']
+        )
+    );
+
+    # Print data rows
+    while ($row = pg_fetch_row($resource)) {
+
+        if ($row_n >= $lastrow)
+            break;
+
+        # Results are always in the far right cols
+        $results = array_splice($row, $num_cols['params']);
+
+        # Details are always in the far far right cols
+        $details = array_splice($results, $num_cols['results']);
+
+        list($pass,
+             $fail,
+             $skip,
+             $time,
+             $perf) = $results;
+
+        if ($pass)
+            $bgcolor = (($pass > 0) ? $lgreen  : "");
+        elseif ($fail)
+            $bgcolor = (($fail > 0) ? $lred    : "");
+        elseif ($skip)
+            $bgcolor = (($skip > 0) ? $lyellow : "");
+        elseif ($time)
+            $bgcolor = (($time > 0) ? $lyellow : "");
+        elseif ($perf)
+            $bgcolor = (($time > 0) ? $lblue   : "");
 
         print "<table border='1' width='100%'>" .
               "<tr><td bgcolor='$bgcolor'>";
@@ -361,23 +472,22 @@ function detail_table($headers, $resource) {
 # Return a sequence of result cell bgcolors
 function result_colors($phases) {
 
-    global $lred, $lgreen, $lyellow;
+    global $lred, $lgreen, $lyellow, $lblue;
 
-    $_phases = array_flip($phases);
-
-    if (isset($_phases['mpi_install'])) {
-        $colors [] = $lgreen;
-        $colors [] = $lred;
+    if (array_search('mpi_install', $phases) !== false) {
+        $colors[] = $lgreen;
+        $colors[] = $lred;
     }
-    if (isset($_phases['test_build'])) {
-        $colors [] = $lgreen;
-        $colors [] = $lred;
+    if (array_search('test_build', $phases) !== false) {
+        $colors[] = $lgreen;
+        $colors[] = $lred;
     }
-    if (isset($_phases['test_run'])) {
-        $colors [] = $lgreen;
-        $colors [] = $lred;
-        $colors [] = $lyellow;
-        $colors [] = $lyellow;
+    if (array_search('test_run', $phases) !== false) {
+        $colors[] = $lgreen;
+        $colors[] = $lred;
+        $colors[] = $lyellow;
+        $colors[] = $lyellow;
+        $colors[] = $lblue;
     }
     return $colors;
 }
@@ -389,49 +499,6 @@ function get_scalar($var) {
         return $var[0];
     else
         return $var;
-}
-
-# Return 
-# 1. An array of SQL COUNT(CASE ...) clauses
-#    which will be used to tally the result numbers
-# 2. A result filter (optional)
-# (Reference: postgresql.org/docs/7.3/static/functions-conditional.html)
-function get_result_cases($phases, $params) {
-
-    $_phases     = array_flip($phases);
-
-    $test_result = $params['test_result'];
-
-    $table       = phase_results_table();
-
-    # THESE FILTER STRINGS MUST MATCH THE IDENTIFIERS USED
-    # IN [source:/trunk/server/sql/views.sql]
-    if (preg_match('/pass|true|1/i', $test_result))
-        $filter = 'pass';
-    elseif (preg_match('/fail|false|0/i', $test_result))
-        $filter = 'fail';
-    elseif (preg_match('/skip|2/i', $test_result))
-        $filter = 'skipped';
-    elseif (preg_match('/time|3/i', $test_result))
-        $filter = 'timed_out';
-
-    $format = "COUNT(CASE WHEN %s THEN '%s' END) as %s";
-
-    foreach (array_keys($table) as $phase) {
-        foreach ($table[$phase] as $result) {
-            if (isset($_phases[$phase])) {
-                $str = result_str($phase, $result);
-                $results['codes'][$phase][$result] = $str;
-                $when[$result] = "$result = '$str'";
-                $results['aggregates'][$str] =
-                    sprintf($format, $when[$result], $str, $str);
-            }
-        }
-    }
-
-    $results['where'] = $when[$filter];
-
-    return $results;
 }
 
 #########################################
@@ -478,11 +545,12 @@ function next_n_rows($n, $limit, $date_fields, $params) {
     }
 
     # Do not print a lone '0'
-    if (sizeof($links) > 1)
-        print "\n<table cellspacing='10'>" .
-                "\n<tr>" .
-                "<td>" . join("<td>", $links) .
-                "\n</table>";
+    if (sizeof($links) > 1) {
+        print "\n<table width='100%'><tr><td align='center'>";
+
+        foreach ($links as $link)
+            print "\n&nbsp;$link";
+    }
 }
 
 # Create links that drill down by phase, result, and a set
@@ -717,14 +785,16 @@ function compose_sql($query) {
         array_merge(
             $query['select'],
             $aggregates,
-            $query['select_more']
+            $query['select_more'],
+            $query['performance']
         )
     );
 
     $groupbys = array_unique(
         array_merge(
             array_keys($query['select']),
-            array_keys($query['select_more'])
+            array_keys($query['select_more']),
+            array_keys($query['performance'])
         )
     );
 
@@ -768,24 +838,18 @@ function compose_sql($query) {
 #  Input Processing Functions          
 #                                     
 # The following process_*_field(s) functions return arrays
-# ready to be fed to compose_query. The query array is
+# ready to be fed to compose_sql. The query array is
 # structured more or less like an SQL SELECT statement:
 #
 # (type)  
-# (all)    $query['select'][column alias] => list of SELECT {string functions | column aliases}
-# (all)    $query['aggregates']           => list of COUNT clauses for result counts
-# (detail) $query['select_more']          => list of detail SELECT columns
-# (all)    $query['where']                => list of WHERE clauses
-# (all)    $query['limit']                => LIMIT value
-# (all)    $query['offset']               => OFFSET value
+# (all)    $query['select'][column alias]      => list of SELECT {string functions | column aliases}
+# (all)    $query['aggregates']                => list of COUNT clauses for result counts
+# (detail) $query['select_more'][column alias] => list of detail SELECT columns
+# (all)    $query['where']                     => list of WHERE clauses
+# (all)    $query['limit']                     => LIMIT value
+# (all)    $query['offset']                    => OFFSET value
 #
 #########################################
-
-# Summary or Detail report?
-function process_offset_field($params) {
-    $offset = $_GET['offset'];
-    return array('offset' => $offset);
-}
 
 # Determine report type, Summary or Detail
 #
@@ -797,7 +861,7 @@ function process_buttons($params) {
 
     # Determine report type, and
     # whether this is a "slice" report
-    if (preg_match("/(summary|detail)/i", $go, $m)) {
+    if (preg_match("/(summary|detail|performance|latency\w+)/i", $go, $m)) {
         $type = $m[1];
         if (! preg_match("/slice/i", $go)) {
             unset($_GET['rows']);
@@ -809,8 +873,10 @@ function process_buttons($params) {
     # detailed report into multi-phase mode
     $phases = process_phase_field($_GET);
     if (sizeof($phases) > 1 and 
-        (stristr('detail', $type) === true))
+        (stristr($type, 'detail') !== false)) {
         $type = 'summary';
+        $_GET['go'] = $type;
+    }
 
     return $type;
 }
@@ -976,7 +1042,7 @@ function process_date_field($params) {
                        "\n   as $timestamp_name";
 
             if (preg_match("/by(?:-| *)sec(?:onds?)?/i", $token)) {
-                $clause = $timestamp_name;
+                $clause = sprintf($format3, 20, "second", 20);
 
             } elseif (preg_match("/by(?:-| *)min(?:utes?)?/i", $token)) {
                 $clause = sprintf($format3, 17, "minute", 17);
@@ -1014,6 +1080,55 @@ function process_date_field($params) {
     return $date;
 }
 
+# Return 
+# 1. An array of SQL COUNT(CASE ...) clauses
+#    which will be used to tally the result numbers
+# 2. A result filter (optional)
+# (Reference: postgresql.org/docs/7.3/static/functions-conditional.html)
+function process_result_fields($phases, $params) {
+
+    $test_result = $params['test_result'];
+
+    $table = phase_results_table();
+
+    # THESE FILTER STRINGS MUST MATCH THE IDENTIFIERS USED
+    # IN [source:/trunk/server/sql/views.sql]
+    if (preg_match('/pass|true|1/i', $test_result))
+        $filter = 'pass';
+    elseif (preg_match('/fail|false|0/i', $test_result))
+        $filter = 'fail';
+    elseif (preg_match('/skip|2/i', $test_result))
+        $filter = 'skipped';
+    elseif (preg_match('/time|3/i', $test_result))
+        $filter = 'timed_out';
+    elseif (preg_match('/lat|band|perf/i', $test_result))
+        $filter = 'latency_bandwidth';
+
+    $format = "COUNT(CASE WHEN %s THEN '%s' END) as %s";
+
+    foreach (array_keys($table) as $phase) {
+        foreach ($table[$phase] as $result) {
+            if (array_search($phase, $phases) !== false) {
+                $str = result_str($phase, $result);
+                $results['codes'][$phase][$result] = $str;
+                $when[$result] = "$result = '$str'";
+                $results['aggregates'][$str] =
+                    sprintf($format, $when[$result], $str, $str);
+            }
+        }
+    }
+
+    $results['where'] = $when[$filter];
+
+    return $results;
+}
+
+# Process OFFSET value for LIMIT clause
+function process_offset_field($params) {
+    $offset = $_GET['offset'];
+    return array('offset' => $offset);
+}
+
 #########################################
 
 # Loop through column aliases, and return
@@ -1021,12 +1136,15 @@ function process_date_field($params) {
 function order_columns($columns) {
 
     $layout = array(
+
         # results
         'start_timestamp'   => 1,
+
         # submit
         'http_username'     => 1,
         'local_username'    => 1,
         'hostname'          => 1,
+
         # mpi_install
         'platform_hardware' => 1,
         'os_name'           => 1,
@@ -1036,10 +1154,20 @@ function order_columns($columns) {
         'endian'            => 1,
         'compiler_name'     => 1,
         'compiler_version'  => 1,
+
         # phase-specific
         'suite_name'        => 1,
         'test_name'         => 1,
         'np'                => 1,
+
+        # performance
+        'message_size'      => 1,
+        'bandwidth_min'     => 1,
+        'bandwidth_max'     => 1,
+        'bandwidth_avg'     => 1,
+        'latency_min'       => 1,
+        'latency_max'       => 1,
+        'latency_avg'       => 1,
     );
 
     foreach (array_keys($layout) as $column)
@@ -1101,6 +1229,23 @@ function detail_fields($phase) {
         );
 }
 
+# Return performance columns
+function performance_fields() {
+    return 
+        array('performance' =>
+            array(
+                'message_size'  => 'message_size',
+                'bandwidth_min' => 'bandwidth_min',
+                'bandwidth_max' => 'bandwidth_max',
+                'bandwidth_avg' => 'bandwidth_avg',
+                'latency_min'   => 'latency_min',
+                'latency_max'   => 'latency_max',
+                'latency_avg'   => 'latency_avg',
+            )
+        );
+}
+
+
 #########################################
 #                                       
 #  String Processing Functions
@@ -1146,7 +1291,7 @@ function suffix_list($arr, $sfx) {
     return $tmp;
 }
 
-# Generate the shorthand for the given phase-result code (see get_result_cases)
+# Generate the shorthand for the given phase-result code (see process_result_fields)
 function result_str($phase, $result) {
     $abbrevs = array(
         'mpi_install' => 'i',

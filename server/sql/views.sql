@@ -1,6 +1,6 @@
 -- Create virtual tables (aka VIEWs) for the three
--- phases. Naming scheme is the phase name with "_"
--- prepended
+-- phases. Naming scheme is the phase name suffixed
+-- by '_view'
 
 DROP VIEW all_view CASCADE;
 CREATE VIEW all_view AS
@@ -26,12 +26,13 @@ SELECT
     (CASE WHEN
       test_result = 1
       THEN '_ip' END) as pass,
-    (CASE WHEN
-      test_result = 2
-      THEN '_is' END) as skipped,
-    (CASE WHEN
-      test_result = 3
-      THEN '_it' END) as timed_out
+
+    -- These are just place holder columns needed because
+    -- UNION requires each query in the UNION have identical
+    -- columns
+    '' as skipped,
+    '' as timed_out,
+    '' as latency_bandwidth
 FROM
     (results NATURAL JOIN submit) JOIN 
         (mpi_install NATURAL JOIN
@@ -64,12 +65,13 @@ SELECT
     (CASE WHEN
       test_result = 1
       THEN '_bp' END) as pass,
-    (CASE WHEN
-      test_result = 2
-      THEN '_bs' END) as skipped,
-    (CASE WHEN
-      test_result = 3
-      THEN '_bt' END) as timed_out
+
+    -- These are just place holder columns needed because
+    -- UNION requires each query in the UNION have identical
+    -- columns
+    '' as skipped,
+    '' as timed_out,
+    '' as latency_bandwidth
 FROM
     (results NATURAL JOIN submit) JOIN 
         (test_build NATURAL JOIN
@@ -108,7 +110,10 @@ SELECT
       THEN '_rs' END) as skipped,
     (CASE WHEN
       test_result = 3
-      THEN '_rt' END) as timed_out
+      THEN '_rt' END) as timed_out,
+    (CASE WHEN
+      results.latency_bandwidth_id != -38
+      THEN '_rl' END) as latency_bandwidth
 FROM
     (results NATURAL JOIN submit)
     JOIN test_run NATURAL JOIN
@@ -117,7 +122,10 @@ FROM
               compute_cluster NATURAL JOIN
                 compiler NATURAL JOIN
                     mpi_get))
-    ON (results.phase = 3 AND phase_id = test_run_id)
+    ON (results.phase = 3 AND 
+        phase_id = test_run_id)
+    LEFT OUTER JOIN latency_bandwidth 
+        USING (latency_bandwidth_id)
 ;
 
 DROP VIEW mpi_install_view CASCADE;
@@ -161,13 +169,7 @@ SELECT
       THEN '_if' END) as fail,
     (CASE WHEN
       test_result = 1
-      THEN '_ip' END) as pass,
-    (CASE WHEN
-      test_result = 2
-      THEN '_is' END) as skipped,
-    (CASE WHEN
-      test_result = 3
-      THEN '_it' END) as timed_out
+      THEN '_ip' END) as pass
 FROM
     (results NATURAL JOIN submit) JOIN 
         (mpi_install NATURAL JOIN
@@ -218,13 +220,7 @@ SELECT
       THEN '_bf' END) as fail,
     (CASE WHEN
       test_result = 1
-      THEN '_bp' END) as pass,
-    (CASE WHEN
-      test_result = 2
-      THEN '_bs' END) as skipped,
-    (CASE WHEN
-      test_result = 3
-      THEN '_bt' END) as timed_out
+      THEN '_bp' END) as pass
 FROM
     (results NATURAL JOIN submit) JOIN 
         (test_build NATURAL JOIN
@@ -234,7 +230,6 @@ FROM
                     mpi_get))
     ON (results.phase = 2 AND phase_id = test_build_id)
 ;
-
 
 DROP VIEW test_run_view CASCADE;
 CREATE VIEW test_run_view AS
@@ -275,26 +270,41 @@ SELECT
     environment,
     client_serial,
 
-    (CASE WHEN
-      test_result = 0
-      THEN '_rf' END) as fail,
+    -- latency_bandwidth
+    message_size,
+    bandwidth_min,
+    bandwidth_max,
+    bandwidth_avg,
+    latency_min,
+    latency_max,
+    latency_avg,
+
+    -- results
     (CASE WHEN
       test_result = 1
       THEN '_rp' END) as pass,
+    (CASE WHEN
+      test_result = 0
+      THEN '_rf' END) as fail,
     (CASE WHEN
       test_result = 2
       THEN '_rs' END) as skipped,
     (CASE WHEN
       test_result = 3
-      THEN '_rt' END) as timed_out
+      THEN '_rt' END) as timed_out,
+    (CASE WHEN
+      results.latency_bandwidth_id != -38
+      THEN '_rl' END) as latency_bandwidth
 FROM
-    (results NATURAL JOIN submit)
+    results NATURAL JOIN submit
     JOIN test_run NATURAL JOIN
         (test_build NATURAL JOIN
             (mpi_install NATURAL JOIN
               compute_cluster NATURAL JOIN
                 compiler NATURAL JOIN
                     mpi_get))
-    ON (results.phase = 3 AND phase_id = test_run_id)
+    ON (results.phase = 3 AND 
+        phase_id = test_run_id)
+    LEFT OUTER JOIN latency_bandwidth 
+        USING (latency_bandwidth_id)
 ;
-

@@ -43,9 +43,12 @@ function phase_results_table() {
     # THESE RESULT STRINGS MUST MATCH THE IDENTIFIERS USED
     # IN [source:/trunk/server/sql/views.sql]
     return array(
-        'mpi_install' => array('pass', 'fail'),
-        'test_build'  => array('pass', 'fail'),
-        'test_run'    => array('pass', 'fail', 'skipped', 'timed_out'),
+        'mpi_install' => 
+            array('pass', 'fail'),
+        'test_build'  => 
+            array('pass', 'fail'),
+        'test_run'    => 
+            array('pass', 'fail', 'skipped', 'timed_out', 'latency_bandwidth'),
     );
 }
 
@@ -116,15 +119,15 @@ function label($str) {
         "mpi_install"       => "MPI install",
         "test_build"        => "Test build",
         "test_run"          => "Test run",
-        "latency_bandwidth" => "Latency bandwidth",
 
         # Result types
-        "pass"      => "Pass",
-        "fail"      => "Fail",
-        "skip"      => "Skip",
-        "timed"     => "Timed",
-        "skipped"   => "Skip",
-        "timed_out" => "Timed",
+        "pass"              => "Pass",
+        "fail"              => "Fail",
+        "skip"              => "Skip",
+        "timed"             => "Timed",
+        "skipped"           => "Skip",
+        "timed_out"         => "Timed",
+        "latency_bandwidth" => "Perf",
 
         # Selection/unselection
         "show"  => "Show",
