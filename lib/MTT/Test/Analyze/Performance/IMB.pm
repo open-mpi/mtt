@@ -90,9 +90,7 @@ sub Analyze {
 
                 eval '$match = $' . $i . ';';
 
-                if ($match) {
-                    push(@{$data->{$header}}, $match);
-                }
+                push(@{$data->{$header}}, $match);
             }
             $rows++;
 
