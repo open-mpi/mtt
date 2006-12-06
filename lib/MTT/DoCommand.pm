@@ -323,6 +323,7 @@ sub Cmd {
                 $msg .= " (core dump)";
             }
         }
+        $ret->{signal} = $s;
         $ret->{status} = -1;
     }
     # No, it was not signaled
