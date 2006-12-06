@@ -99,6 +99,11 @@ function dump_report() {
         return;
     }
 
+    # Display report in chunks of 100 rows
+    $next_n_rows = next_n_rows($n, 100, $date_fields, $_GET);
+
+    print "$next_n_rows<br><br>";
+
     if ($do_detailed)
         detail_table($headers, $resource);
     elseif ($do_summary)
@@ -109,8 +114,7 @@ function dump_report() {
     }
 
     # Provide links to slices of the report ('x' rows at a time)
-    print "<br>";
-    next_n_rows($n, 100, $date_fields, $_GET);
+    print "<br>$next_n_rows";
 
     print "\n<br><hr><br></body></html>";
 
@@ -213,7 +217,7 @@ function summary_table($headers, $resource) {
         if ($row_n >= $lastrow)
             break;
 
-        print "\n<tr>" . sprintf($formatg, $row_n++);
+        print "\n<tr>" . sprintf($formatg, $row_n + 1);
         for ($i = 0; $i < sizeof($row); $i++)
             printf($formatw, drilldown_links($headers['params'][$i], $row[$i]));
 
@@ -270,6 +274,7 @@ function summary_table($headers, $resource) {
                 $totals[$i++] += $count;
             }
         }
+        $row_n++;
     }
 
     $i = 0;
@@ -377,7 +382,7 @@ function detail_table($headers, $resource) {
             $i++;
         }
         print "</table>";
-        print "</table><br>";
+        print "</table>";
     }
 
     print "\n</table>" .
@@ -469,7 +474,7 @@ function performance_table($headers, $resource) {
             $i++;
         }
         print "</table>";
-        print "</table><br>";
+        print "</table>";
     }
 
     print "\n</table>" .
@@ -645,6 +650,42 @@ function performance_graph($headers, $resource) {
     display_graph($graph_data, 'bandwidth_avg', $message_sizes);
     display_graph($graph_data, 'bandwidth_min', $message_sizes);
     display_graph($graph_data, 'bandwidth_max', $message_sizes);
+
+    # Clean up old graphs
+    housekeeping('./images/tmp');
+}
+
+# Clean up old graphs
+function housekeeping($dir) {
+
+    $res = opendir($dir);
+
+    $root = dirname($_SERVER["SCRIPT_FILENAME"]);
+
+    $img_types = array("\.gif$",
+                       "\.jpg$",
+                       "\.png$",
+                       "\.jpeg$",
+                       "\.pdf$");
+
+    # Threshold to unlink a file
+    $hours = 1;
+
+    $now = time();
+
+    # Loop through the files and delete any old ones
+    while ($filename = readdir($res)) {
+
+        # unlink needs a full path
+        $filename = "$root/$dir/$filename";
+
+        if (preg_match('/'.join('|', $img_types).'/i', $filename)) {
+            $age = $now - filemtime($filename);
+            if ($age > (60 * 60 * $hours))
+                unlink($filename);
+        }
+    }
+    closedir($res);
 }
 
 # Print out the actual binary image data
@@ -834,6 +875,9 @@ function next_n_rows($n, $limit, $date_fields, $params) {
     $self = 'http://' . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'];
     $format = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
 
+    # Convenience arrow for going through 100s of rows
+    $img = "<img src='./images/%s_arrow.gif' border='0'>";
+
     $qstring_arr = $params;
     $qstring_arr['rows'] = $n;
 
@@ -855,22 +899,42 @@ function next_n_rows($n, $limit, $date_fields, $params) {
 
     $i = 0;
     while ($i < $n) {
-       $qstring_arr['offset'] = $i;
-       # Do not link to the current report slice
-       if ($i == $offset)
-           $links[] = $i;
-       else
-           $links[] = sprintf($format, arr2qstring($qstring_arr), $i);
-       $i += $limit;
+        $qstring_arr['offset'] = $i;
+        $label = (($i/$limit) + 1);
+
+        $qstring = arr2qstring($qstring_arr);
+
+        # Numbered links
+        if ($i == $offset)
+            $links[] = $label;
+        else
+            $links[] = sprintf($format, $qstring, $label);
+
+        # Arrows
+        $prevn = $offset - $limit;
+        $nextn = $offset + $limit;
+        if ($i == $prevn and ($i != 0))
+             $prev = sprintf($format, $qstring, sprintf($img, "left"));
+        elseif ($i == $nextn)
+             $next = sprintf($format, $qstring, sprintf($img, "right"));
+
+        $i += $limit;
     }
 
     # Do not print a lone '0'
     if (sizeof($links) > 1) {
-        print "\n<table width='100%'><tr><td align='center'>";
+        $ret .= "\n<table width='100%'><tr><td align='center'>";
+
+        # Left arrow
+        $ret .= "\n$prev";
 
         foreach ($links as $link)
-            print "\n&nbsp;$link";
+            $ret .= "\n&nbsp;$link";
+
+        # Right arrow
+        $ret .= "\n&nbsp;$next";
     }
+    return $ret;
 }
 
 # Create links that drill down by phase, result, and a set
@@ -1033,7 +1097,7 @@ function report_header($date_fields, $phases, $n) {
     print "<table width='100%'><tr>" .
           "<td>$basic_info" .
           "<td align='right'>$permalinks" .
-          "</table><br>";
+          "</table>";
 }
 
 # Show links to point user to more info ...
@@ -1550,6 +1614,7 @@ function detail_fields($phase) {
 
     $results_columns = array(
         'exit_status'     => 'exit_status',
+        'signal'          => 'signal',
         'start_timestamp' => 'start_timestamp',
         'duration'        => 'duration',
         'result_message'  => 'result_message',

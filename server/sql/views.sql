@@ -156,6 +156,7 @@ SELECT
 
     -- results
     exit_status,
+    signal,
     start_timestamp,
     duration,
     result_message,
@@ -207,6 +208,7 @@ SELECT
 
     -- results
     exit_status,
+    signal,
     start_timestamp,
     duration,
     result_message,
@@ -262,6 +264,7 @@ SELECT
 
     -- results
     exit_status,
+    signal,
     start_timestamp,
     duration,
     result_message,

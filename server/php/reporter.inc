@@ -215,9 +215,11 @@ function setup_defaults($phases) {
         $specific
     );
 
-    # Show all columns (except test_name)
+    # Show all columns (except local_username)
     foreach (array_keys($ret) as $k)
         $ret['show'][$k] = 'show';
+
+    $ret['show']['local_username'] = 'hide';
 
     # Phase
     $ret['phase'] = 'all_phases';
