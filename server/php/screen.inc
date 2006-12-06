@@ -70,7 +70,8 @@ function dump_query_screen() {
     $tdt = "\n<td align='center' bgcolor='$dgray' colspan='" . ($colspan - 1) . "'>";
 
     # Print the screen
-    print html_head() .
+    print "<html>" . 
+          html_head("Open MPI Test Reporter") .
           "\n" .
           "\n<body>" .
           "\n<form method='get' id='report' name='report' action='$self'>" .
@@ -429,7 +430,7 @@ function setup_layout_html($layout, $lasttime, $links) {
         # combine them with phase-dependent defaults on the
         # phase-selector radio-button click
         $defaults = setup_defaults($phase);
-        $selections = form_carryover($defaults);
+        $selections = form_carryover($defaults, $phase);
         $selections['phase'] = $phase;
         $qstring = arr2qstring($selections);
 
@@ -603,7 +604,7 @@ function hidden_carryover($params) {
 }
 
 # Load up some CSS and Javascript
-function html_head() {
+function html_head($title) {
 
     $javascript = <<<EOT
 
@@ -615,6 +616,11 @@ function html_head() {
         tmp.write('<body ' + style + '><form id=adv name=adv>' + content + '</form></body></html>');
         tmp.close();
     }
+
+    function littleWindow(link) {
+        open(link, 'Tiny link', 'resizable=yes, toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, width=50, height=30');
+    }
+
 EOT;
 
     $style = <<<EOT
@@ -630,11 +636,12 @@ EOT;
     a.black_ln:hover   { color: #FFFF40 } /* when mouse is over link */
     td { font-size: 75%; } 
     th { font-size: 80%; } 
+
 EOT;
 
     # Print html head
     return "\n<head>" .
-           "\n<title>Open MPI Test Reporter</title>" .
+           "\n<title>$title</title>" .
            "\n<script language='javascript' type='text/javascript'>" .
            "\n$javascript" .
            "\n</script>" .

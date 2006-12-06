@@ -128,6 +128,14 @@ function label($str) {
         "skipped"           => "Skip",
         "timed_out"         => "Timed",
         "latency_bandwidth" => "Perf",
+        
+        # Latency/bandwidth
+        "latency_avg"       => "Latency (avg)",
+        "latency_min"       => "Latency (min)",
+        "latency_max"       => "Latency (max)",
+        "bandwidth_avg"     => "Bandwidth (avg)",
+        "bandwidth_min"     => "Bandwidth (min)",
+        "bandwidth_max"     => "Bandwidth (max)",
 
         # Selection/unselection
         "show"  => "Show",
@@ -232,7 +240,7 @@ function setup_defaults($phases) {
 # 1. Used for filling in form controls from "last time"
 # 2. Used (in tandem with setup_defaults) for creating
 #    drilldown links
-function form_carryover($defaults) {
+function form_carryover($defaults, $phase) {
 
     foreach (array_keys($defaults) as $k) {
 
@@ -259,10 +267,15 @@ function form_carryover($defaults) {
             $params[$showfield] = $defaults['show'][$k];
     }
 
-    # Carryover report type (summary or detail)
-    $go = $_GET['go'];
-    if ($go)
-        $params['go'] = $go;
+    # Press 'Summary' for them if they traverse from a
+    # detailed report into multi-phase mode
+    if (preg_match("/^all/i", $phase))
+        $params['go'] = 'summary';
+    else {
+        $go = $_GET['go'];
+        if ($go)
+            $params['go'] = $go;
+    }
 
     # Carryover phase
     $phase = $_GET['phase'];
@@ -341,6 +354,12 @@ function en_join($list) {
     elseif ($size > 2)
         return join(", ", array_slice($list, 0, -1)) .
                 ", and " . $list[$size-1];
+}
+
+# Capitalize the first char of a string
+function capitalize($str) {
+    $len = strlen($str);
+    return strtoupper(substr($str, 0, 1)) . substr($str, 1, $len);
 }
 
 #########################################

@@ -12,7 +12,7 @@
 
 #
 #
-# Print a report in tabular format
+# Print a report
 #
 #
 
@@ -26,11 +26,11 @@ function dump_report() {
 
     global $thcolor, $gray, $dgray, $lgray, $llgray, $lllgray, $white;
 
-    debug_cgi($_GET, "GET");
-
     # Process buttons 
     # (needs to come first, because _GET could be mutated here)
     $button_press = process_buttons($_GET);
+
+    debug_cgi($_GET, "GET");
 
     # Process input params
     $phases        = process_phase_field($_GET);
@@ -93,20 +93,49 @@ function dump_report() {
     # Print some basic, useful info atop each report table
     report_header($date_fields, $phases, $n);
     
+    # Do not print an empty table
+    if (pg_num_rows($resource) < 1) {
+        print "<b><i>No data available for the specified query.</i></b>";
+        return;
+    }
+
     if ($do_detailed)
         detail_table($headers, $resource);
     elseif ($do_summary)
         summary_table($headers, $resource);
-    elseif ($do_performance)
-        performance_table($headers, $resource);
+    elseif ($do_performance) {
+        #performance_table($headers, $resource);
+        performance_graph($headers, $resource);
+    }
 
     # Provide links to slices of the report ('x' rows at a time)
     print "<br>";
     next_n_rows($n, 100, $date_fields, $_GET);
 
-    print "\n<br><hr><br>";
+    print "\n<br><hr><br></body></html>";
 
     pg_close();
+}
+
+# PHP5 has this function built-in
+function array_combine($keys, $values) {
+    $arr = array();
+    for ($i = 0; $i < sizeof($keys); $i++)
+        $arr[$keys[$i]] = $values[$i];
+
+    return $arr;
+}
+
+# Convert an SQL array (bracketed CSV) to a PHP array
+function csv2arr($str) {
+    if (preg_match("/{([^}]+)}/i", $str, $m)) {
+        $csv = $m[1];
+        $arr = explode(',', $csv);
+    }
+    else 
+        $arr = false;
+
+    return $arr;
 }
 
 #########################################
@@ -120,12 +149,6 @@ function summary_table($headers, $resource) {
 
     global $thcolor, $gray, $dgray, $lgray, $llgray,
            $lllgray, $white;
-
-    # Do not print an empty table
-    if (pg_num_rows($resource) < 1) {
-        print "<b><i>No data available for the specified query.</i></b>";
-        return;
-    }
 
     # Insert useful information on the left-hand side?
     print "\n<div align=center>" .
@@ -276,12 +299,6 @@ function detail_table($headers, $resource) {
     global $thcolor, $gray, $dgray, $lgray, $llgray,
            $lllgray, $lred, $lgreen, $lyellow, $white;
 
-    # Do not print an empty table
-    if (pg_num_rows($resource) < 1) {
-        print "<b><i>No data available for the specified query.</i></b>";
-        return;
-    }
-
     # Print result headers
     $phase_results_table = phase_results_table();
     $num_cols['results'] = 0;
@@ -374,12 +391,6 @@ function performance_table($headers, $resource) {
     global $thcolor, $gray, $dgray, $lgray, $llgray,
            $lllgray, $lred, $lgreen, $lyellow, $white;
 
-    # Do not print an empty table
-    if (pg_num_rows($resource) < 1) {
-        print "<b><i>No data available for the specified query.</i></b>";
-        return;
-    }
-
     # Print result headers
     $phase_results_table = phase_results_table();
     $num_cols['results'] = 0;
@@ -388,8 +399,7 @@ function performance_table($headers, $resource) {
     }
     $num_cols['details'] = sizeof($headers['details']);
     $num_cols['params'] = sizeof($headers['params']);
-
-    print "\n<tr>";
+    $num_cols['performance'] = sizeof($headers['performance']);
 
     foreach ($headers['results'] as $result) {
         printf("\n<th bgcolor='$thcolor'>%s", $labels[$result]);
@@ -467,12 +477,321 @@ function performance_table($headers, $resource) {
           "\n\n<!-- report_end -->\n\n";
 }
 
+# Void function to print out a summary table,
+# with a performance graph. (Legend the 
+# graph using the row numbers from the summary table)
+function performance_graph($headers, $resource) {
+
+    global $thcolor, $gray, $dgray, $lgray, $llgray,
+           $lllgray, $white;
+
+    # Insert useful information on the left-hand side?
+    print "\n<div align=center>" .
+
+          "\n\n<!-- report_start -->\n\n" .
+
+          "\n<table width='100%' cellpadding=5>" .
+          "\n<tr>" .
+          "\n<td bgcolor='$lgray'>" .
+          "\n<div align=center>" .
+          "\n<table border=1 width='100%'>";
+
+    # Display headers
+    $format = "\n<th bgcolor='$thcolor' rowspan=2>%s";
+
+    print "<tr>" . sprintf($format, '#');
+    foreach ($headers['params'] as $header)
+        printf($format, label($header));
+
+    # Setup sequence of result colors
+    $phases = $headers['phases'];
+    $result_colors = result_colors($phases);
+
+    # Create links for drilled-down queries
+    $links = drilldown_links($headers['phases']);
+
+    # Print result headers
+    $total_results_cols = 0;
+    foreach (array_keys($links) as $phase) {
+        $link = array_shift($links[$phase]);
+        $colspan = sizeof($links[$phase]);
+        $num_result_types[$phase] = $colspan;
+
+        printf("\n<th bgcolor='$thcolor' " .
+                     "colspan='$colspan'>%s",
+                     $link);
+        $total_results_cols += $colspan;
+    }
+
+    print "\n<tr>";
+
+    foreach (array_keys($links) as $phase)
+        foreach ($links[$phase] as $result)
+            printf("\n<th bgcolor='$thcolor'>%s", $result);
+
+    # Print result headers
+    $phase_results_table = phase_results_table();
+    $num_cols['results'] = 0;
+    foreach ($headers['phases'] as $phase) {
+        $num_cols['results'] += sizeof($phase_results_table[$phase]);
+    }
+    $num_cols['details'] = sizeof($headers['details']);
+    $num_cols['params'] = sizeof($headers['params']);
+    $num_cols['performance'] = sizeof($headers['performance']);
+
+    # Row numbering starts at the OFFEST arg to LIMIT
+    $offset = $headers['offset'];
+    $row_n = $offset;
+    $lastrow = $offset + 100;
+
+    $format  = "\n<td bgcolor='%s' align='right'>%s";
+
+    $result_colors = result_colors('test_run');
+
+    # Print data rows
+    while ($row = pg_fetch_row($resource)) {
+
+        # Results are always in the far right cols
+        $results = array_splice($row, $num_cols['params']);
+
+        # Details are always in the far far right cols
+        $details = array_splice($results, $num_cols['results']);
+
+        # Performance is always in the far far far right cols
+        $performance = array_splice($details, $num_cols['details']);
+
+        # printf formats
+        $format  = "\n<td bgcolor='%s' align='right'>%s";
+        $formatg = "\n<td bgcolor='$lgray' align='right'>%s";
+        $formatw = "\n<td bgcolor='$white'>%s";
+
+        if ($row_n >= $lastrow)
+            break;
+
+        print "\n<tr>" . sprintf($formatg, $row_n);
+        for ($i = 0; $i < sizeof($row); $i++)
+            printf($formatw, drilldown_links($headers['params'][$i], $row[$i]));
+
+        # Link result counts to filtered drill-down reports
+        $ret = drilldown_links($headers,
+                               $row,
+                               $results,
+                               'test_run');
+
+        list($pass,
+             $fail,
+             $skip,
+             $time,
+             $perf) = $ret['links'];
+
+        list($pass_count,
+             $fail_count,
+             $skip_count,
+             $time_count,
+             $perf_count) = $ret['counts'];
+
+        $j = 0;
+        printf($format,
+                (($pass_count > 0) ? $result_colors[$j] : $lgray), $pass);
+        $j++;
+        printf($format,
+                (($fail_count > 0) ? $result_colors[$j] : $lgray), $fail);
+        $j++;
+        if (! is_null($skip)) {
+            printf($format,
+                    (($skip_count > 0) ? $result_colors[$j] : $lgray), $skip);
+            $j++;
+        }
+        if (! is_null($time)) {
+            printf($format,
+                    (($time_count > 0) ? $result_colors[$j] : $lgray), $time);
+            $j++;
+        }
+        if (! is_null($perf)) {
+            printf($format,
+                    (($perf_count > 0) ? $result_colors[$j] : $lgray), $perf);
+            $j++;
+        }
+
+        # Tally totals for all result counts
+        foreach ($ret['counts'] as $count) {
+            $totals[$i++] += $count;
+        }
+
+        # Prepare perf data to be displayed in a graph
+        $hash = array_combine(
+                    $headers['performance'], 
+                    array_map('csv2arr', $performance)
+                );
+        $graph_data[$row_n] = $hash;
+
+        # Tests may have differing series of message sizes,
+        # so find the longest series for the x-axis
+        if ($pad < sizeof($hash['message_size'])) {
+            $message_sizes = $hash['message_size'];
+            $pad = sizeof($message_sizes);
+        }
+        $row_n++;
+    }
+
+    print "\n</table>" .
+          "\n</table>" .
+          "\n\n<!-- report_end -->\n\n";
+
+    # Do graph(s)
+    display_graph($graph_data, 'latency_avg', $message_sizes);
+    display_graph($graph_data, 'latency_min', $message_sizes);
+    display_graph($graph_data, 'latency_max', $message_sizes);
+    display_graph($graph_data, 'bandwidth_avg', $message_sizes);
+    display_graph($graph_data, 'bandwidth_min', $message_sizes);
+    display_graph($graph_data, 'bandwidth_max', $message_sizes);
+}
+
+# Print out the actual binary image data
+# Uses jpgraph (http://www.aditus.nu/jpgraph)
+function display_graph($data, $type, $message_sizes) {
+
+    $jpgraph_dir = './jpgraph';
+    include_once("$jpgraph_dir/jpgraph.php");
+    include_once("$jpgraph_dir/jpgraph_line.php");
+
+    $pad = sizeof($message_sizes);
+
+    # Set axis label units
+    if (preg_match("/latency/i", $type))
+        $unit = 'usec';
+    elseif (preg_match("/bandwidth/i", $type))
+        $unit = 'Mbps';
+
+    $colors = array(
+        '#FFA500', # 255,165,0       Orange              	
+        '#0000FF', # 0,0,255         Blue	
+        '#FF0000', # 255,0,0         Red                 	
+        '#008000', # 0,128,0         Green               	
+        '#DAA520', # 218,165,32      GoldenRod           	
+        '#FF00FF', # 255,0,255       Magenta             	
+        '#000000', # 0,0,0           Black
+        '#00FFFF', # 0,255,255       Cyan                	
+        '#808080', # 128,128,128     Gray                	
+        '#DA70D6', # 218,112,214     Orchid              	
+        '#F0E68C', # 240,230,140     Khaki               	
+        '#DC143C', # 237,164,61      Crimson             	
+        '#66CDAA', # 102,205,170     MediumAquaMarine    	
+        '#0000CD', # 0,0,205         MediumBlue          	
+        '#BA55D3', # 186,85,211      MediumOrchid        	
+        '#9370D8', # 147,112,219     MediumPurple        	
+        '#3CB371', # 60,179,113      MediumSeaGreen      	
+        '#7B68EE', # 123,104,238     MediumSlateBlue     	
+        '#00FA9A', # 0,250,154       MediumSpringGreen   	
+        '#48D1CC', # 72,209,204      MediumTurquoise     	
+        '#C71585', # 199,21,133      MediumVioletRed     	
+        '#00008B', # 0,0,139         DarkBlue            	
+        '#B8860B', # 184,134,11      DarkGoldenRod       	
+        '#006400', # 0,100,0         DarkGreen           	
+        '#8B008B', # 139,0,139       DarkMagenta         	
+        '#A9A9A9', # 169,169,169     DarkGray            	
+        '#FF8C00', # 255,140,0       Darkorange          	
+        '#008B8B', # 0,139,139       DarkCyan            	
+        '#BDB76B', # 189,183,107     DarkKhaki           	
+        '#556B2F', # 85,107,47       DarkOliveGreen      	
+        '#9932CC', # 153,50,204      DarkOrchid          	
+        '#8B0000', # 139,0,0         DarkRed             	
+        '#E9967A', # 233,150,122     DarkSalmon          	
+        '#8FBC8F', # 143,188,143     DarkSeaGreen        	
+        '#483D8B', # 72,61,139       DarkSlateBlue       	
+        '#2F4F4F', # 47,79,79        DarkSlateGray       	
+        '#00CED1', # 0,206,209       DarkTurquoise       	
+        '#9400D3', # 148,0,211       DarkViolet          	
+    );
+
+    # Create the graph. These two calls are always required
+    $gJpgBrandTiming = true;
+    $graph = new Graph(600, 400, "auto");    
+    $graph->SetScale("textlin");
+
+    # Make the margin around the plot a little bit bigger then default
+    $graph->img->SetMargin(40,100,40,60);    
+    #$graph->xaxis->title->Set("Message size (bytes)");
+    $graph->yaxis->title->Set(label($type) . " - $unit");
+
+    $graph->title->Set("MTT Performance Results");
+    $graph->title->SetFont(FF_FONT1, FS_BOLD);
+    $graph->yaxis->title->SetFont(FF_FONT1, FS_BOLD);
+    $graph->xaxis->title->SetFont(FF_FONT1, FS_BOLD);
+
+    # Setup the labels
+    $graph->xaxis->SetTickLabels($message_sizes);
+    $graph->xaxis->SetLabelAngle(90);
+
+    $j = 0;
+
+    $type = strtolower($type);
+
+    # jpgraph doesn't like empty graphs
+    $empty = true;
+
+    # Plot the data
+    foreach (array_keys($data) as $i) {
+        
+        $line = $data[$i][$type];
+
+        # Create the linear plot
+        if ($line) {
+            $empty = false;
+
+            $ydata = array_pad($line, $pad, null);
+
+            $color = $colors[$j++];
+
+            # Avoid null color error
+            if (! $color)
+                $color = 'black';
+
+            $lineplots[$i] = new LinePlot($ydata);
+
+            $lineplots[$i]->SetColor($color);
+            $lineplots[$i]->SetWeight(2);
+            $lineplots[$i]->SetLegend("$i");
+
+            $graph->Add($lineplots[$i]);
+        }
+    }
+    if ($empty)
+        return;
+
+    $graph->SetShadow();
+
+    # Write the graph to a file
+    $filename = 'images/tmp/' . randstr(10) . '.png';
+    $graph->Stroke($filename);
+
+    # Display the graph
+    print "<br><div align='center'><img src='$filename'></div>";
+}
+
+# Generate a random string
+function randstr($length) {
+
+    $pattern = "1234567890abcdefghijklmnopqrstuvwxyz";
+    for($i = 0; $i < $length; $i++) {
+        if (isset($key))
+            $key .= $pattern{rand(0,35)};
+        else
+            $key = $pattern{rand(0,35)};
+    }
+    return $key;
+}
+
 #########################################
 
 # Return a sequence of result cell bgcolors
 function result_colors($phases) {
 
     global $lred, $lgreen, $lyellow, $lblue;
+
+    # Arrayify the argument
+    if (! is_array($phases))
+        $phases = array($phases);
 
     if (array_search('mpi_install', $phases) !== false) {
         $colors[] = $lgreen;
@@ -530,8 +849,9 @@ function next_n_rows($n, $limit, $date_fields, $params) {
     # Report "slices" should use absolute date range
     # because the LIMIT clause may not make sense in
     # the future
-    $date_field = $date_fields["absolute"] . ';' . $date_fields["rollup"];
-    $qstring_arr["text_start_timestamp"] = $date_field;
+    $absolute_date = handle_absolute_date($date_fields);
+
+    $qstring_arr["text_start_timestamp"] = $absolute_date;
 
     $i = 0;
     while ($i < $n) {
@@ -612,7 +932,7 @@ function drilldown_links() {
             $i = 0;
             # Loop over header names
             foreach ($headers['params'] as $param) {
-                $qstring_arr["text_$param"] = $params[$i++];
+                $qstring_arr["text_$param"] = exact($params[$i++]);
             }
             $qstring_arr['test_result'] = $phase_results_table[$phase][$j++];
 
@@ -629,7 +949,7 @@ function drilldown_links() {
         $header = func_get_arg(0);
         $param  = func_get_arg(1);
 
-        $qstring_arr["text_$header"] = $param;
+        $qstring_arr["text_$header"] = exact($param);
 
         # Do not bring over LIMIT clause for a drilldown
         unset($qstring_arr['rows']);
@@ -680,6 +1000,12 @@ function drilldown_links() {
     return $ret;
 }
 
+# Return the string with beginning/ending regexp match boundaries
+# (param/value drilldown links on table cells should use this)
+function exact($str) {
+    return '^' . $str . '$';
+}
+
 # Return number of rows in report
 function rowcount($n, $params) {
     # LIMIT has not been used
@@ -715,32 +1041,57 @@ function permalinks($date_fields) {
 
     $params = $_GET;
 
-    $domain    = $_SERVER['SERVER_NAME'];
-    $uri       = $_SERVER['REQUEST_URI'];
-    $script    = $_SERVER['SCRIPT_NAME'];
-    $date_field = $date_fields["absolute"] . ';' . $date_fields["rollup"];
+    $domain        = $_SERVER['SERVER_NAME'];
+    $uri           = $_SERVER['REQUEST_URI'];
+    $script        = $_SERVER['SCRIPT_NAME'];
+    $absolute_date = handle_absolute_date($date_fields);
 
+    $start_timestamp = $params["text_start_timestamp"];
+
+    # Tell reporter to create a permalink
+    $params["make_redir"] = 1;
+
+    # Do relative link
     $qstring1 = arr2qstring($params);
-    $params["text_start_timestamp"] = $date_field;
+
+    # Do absolute link
+    $params["text_start_timestamp"] = $absolute_date;
     $qstring2 = arr2qstring($params);
 
     # Create links to report using relative and absolute date ranges
-    $rel_link = "http://$domain$script?$qstring1&no_bookmarks";
-    $abs_link = "http://$domain$script?$qstring2&no_bookmarks";
+    $links["Absolute date range"] = "http://$domain$script?$qstring2";
 
-    # Can't be a relative link to an absolute date range report
-    if (! isset($_GET['no_bookmarks'])) {
-        $href = "\n<tr>" .
-                  "\n<td><b>%s</b>:<td>" .
-                  "\n<a href='%s'".
-                  "' class='black_ln'>Permalink</a>";
+    # Do not display two permalinks with identical URLs
+    if ($absolute_date != $start_timestamp)
+        $links["Relative date range"] = 
+            "http://$domain$script?$qstring1";
 
-        $links = "\n<table>" .
-                  sprintf($href, "Relative date range", $rel_link) .
-                  sprintf($href, "Absolute date range", $abs_link) .
-                  "\n</table>";
-    }
-    return $links;
+    # Formatting for Javascript to open a small window
+    $anchor = "<a href='javascript:littleWindow(\"%s\");' " .
+                 "class='black_ln'>Create permalink</a>";
+
+    # Formatting for a link which generates a permalink when clicked
+    $href = "\n<tr><td><b>%s</b>:<td>$anchor";
+
+    $ret = "\n<table>";
+
+    foreach (array_keys($links) as $k)
+        $ret .= sprintf($href, $k, $links[$k]);
+
+    $ret .= "\n</table>";
+
+    return $ret;
+}
+
+function handle_absolute_date($date_fields) {
+    $absolute_date   = $date_fields["absolute"];
+    $rollup          = $date_fields["rollup"];
+    $date_field      = $absolute_date;
+
+    if (! is_null($rollup))
+        $date_field .= "; $rollup";
+
+    return $date_field;
 }
 
 # Print current time, date range, phases, and
@@ -872,8 +1223,7 @@ function process_buttons($params) {
     # Press 'Summary' for them if they traverse from a
     # detailed report into multi-phase mode
     $phases = process_phase_field($_GET);
-    if (sizeof($phases) > 1 and 
-        (stristr($type, 'detail') !== false)) {
+    if ((sizeof($phases) > 1) and (! preg_match("/summary/i", $type))) {
         $type = 'summary';
         $_GET['go'] = $type;
     }
@@ -1183,30 +1533,19 @@ function detail_fields($phase) {
     # MPI Install
     if ($phase == 'mpi_install')
         $phase_columns = array(
-            'compiler_name'       => 'compiler_name',
-            'compiler_version'    => 'compiler_version',
-            'configure_arguments' => 'configure_arguments',
-            'vpath_mode'          => 'vpath_mode',
-            'bitness'             => 'bitness',
-            'endian'              => 'endian',
+            'compiler_version' => 'compiler_version',
+            'vpath_mode' => 'vpath_mode',
         );
 
     # Test Build
     if ($phase == 'test_build')
-        $phase_columns = array(
-            'compiler_name'    => 'compiler_name',
-            'compiler_version' => 'compiler_version',
-            'suite_name'       => 'suite_name',
-            'bitness'          => 'bitness',
-        );
+        $phase_columns = null;
 
     # Test Run
     if ($phase == 'test_run')
         $phase_columns = array(
-            'variant'   => 'variant',
-            'test_name' => 'test_name',
-            'command'   => 'command',
-            'np'        => 'np',
+            'command' => 'command',
+            'variant' => 'variant',
         );
 
     $results_columns = array(
@@ -1244,7 +1583,6 @@ function performance_fields() {
             )
         );
 }
-
 
 #########################################
 #                                       
