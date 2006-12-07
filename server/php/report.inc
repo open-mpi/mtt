@@ -99,10 +99,10 @@ function dump_report() {
         return;
     }
 
-    # Display report in chunks of 100 rows
+    # Report chunks index
     $next_n_rows = next_n_rows($n, 100, $date_fields, $_GET);
 
-    print "$next_n_rows<br><br>";
+    print $next_n_rows;
 
     if ($do_detailed)
         detail_table($headers, $resource);
@@ -113,10 +113,9 @@ function dump_report() {
         performance_graph($headers, $resource);
     }
 
-    # Provide links to slices of the report ('x' rows at a time)
-    print "<br>$next_n_rows";
+    print $next_n_rows;
 
-    print "\n<br><hr><br></body></html>";
+    print "\n<hr></body></html>";
 
     pg_close();
 }
@@ -128,6 +127,14 @@ function array_combine($keys, $values) {
         $arr[$keys[$i]] = $values[$i];
 
     return $arr;
+}
+
+# Take keys and values and mutate hash
+# like so: list[keys][values] = 1
+function array_combine2(&$hash, $keys, $values) {
+    for ($i = 0; $i < sizeof($values); $i++) {
+        $hash[$keys[$i]][$values[$i]] = 1;
+    }
 }
 
 # Convert an SQL array (bracketed CSV) to a PHP array
@@ -628,14 +635,18 @@ function performance_graph($headers, $resource) {
                     $headers['performance'], 
                     array_map('csv2arr', $performance)
                 );
-        $graph_data[$row_n] = $hash;
+        $graph_data['plots'][$row_n] = $hash;
 
-        # Tests may have differing series of message sizes,
-        # so find the longest series for the x-axis
-        if ($pad < sizeof($hash['message_size'])) {
-            $message_sizes = $hash['message_size'];
-            $pad = sizeof($message_sizes);
-        }
+        # Prepare legend data for each individual line plot
+        array_combine2($graph_data['legend'], $headers['params'], $row);
+
+        # Prepare global legend data for the entire perf graph
+        $hash = array_combine(
+                    $headers['params'], 
+                    $row
+                );
+        $graph_data['params'][$row_n] = $hash;
+
         $row_n++;
     }
 
@@ -644,12 +655,40 @@ function performance_graph($headers, $resource) {
           "\n\n<!-- report_end -->\n\n";
 
     # Do graph(s)
-    display_graph($graph_data, 'latency_avg', $message_sizes);
-    display_graph($graph_data, 'latency_min', $message_sizes);
-    display_graph($graph_data, 'latency_max', $message_sizes);
-    display_graph($graph_data, 'bandwidth_avg', $message_sizes);
-    display_graph($graph_data, 'bandwidth_min', $message_sizes);
-    display_graph($graph_data, 'bandwidth_max', $message_sizes);
+    $types = array(
+        'latency_avg',
+        'latency_min',
+        'latency_max',
+        'bandwidth_avg',
+        'bandwidth_min',
+        'bandwidth_max',
+    );
+
+    foreach ($types as $type) {
+        $ret = do_graph($graph_data, $type);
+        if (! is_null($ret)) {
+            $filenames[] = $ret['filename'];
+            $widths[] = $ret['width'];
+        }
+    }
+
+    $total_width = array_sum($widths);
+
+    # Calculate how many graphs to show per row
+    # (Using best guess screen size)
+    $screen_width = 1200;
+    $avg_width = $total_width / sizeof($widths);
+    $cols = floor($screen_width / $avg_width);
+
+    # Display graphs
+    print "<br><table width='100%'>";
+
+    $i = 0;
+    foreach ($filenames as $filename) {
+        print ((($i++ % $cols) == 0) ? "<tr>" : "") .
+                "<td align='center'><img src='$filename'>";
+    }
+    print "</table>";
 
     # Clean up old graphs
     housekeeping('./images/tmp');
@@ -690,13 +729,33 @@ function housekeeping($dir) {
 
 # Print out the actual binary image data
 # Uses jpgraph (http://www.aditus.nu/jpgraph)
-function display_graph($data, $type, $message_sizes) {
+# type = latency*|bandwidth* 
+function do_graph($data, $type) {
 
     $jpgraph_dir = './jpgraph';
     include_once("$jpgraph_dir/jpgraph.php");
     include_once("$jpgraph_dir/jpgraph_line.php");
 
-    $pad = sizeof($message_sizes);
+    # Process inputs
+    $legend = $data['legend'];
+    unset($data['legend']);
+
+    $params = $data['params'];
+    unset($data['params']);
+
+    $plots = $data['plots'];
+    unset($data['plots']);
+
+    # Tests may have differing lists of message sizes,
+    # so find the longest series for the x-axis
+    $pad = 0;
+    foreach (array_keys($plots) as $i) {
+        $message_size = $plots[$i]['message_size'];
+        if ($pad < sizeof($message_size)) {
+            $message_sizes = $message_size;
+            $pad = sizeof($message_size);
+        }
+    }
 
     # Set axis label units
     if (preg_match("/latency/i", $type))
@@ -704,7 +763,137 @@ function display_graph($data, $type, $message_sizes) {
     elseif (preg_match("/bandwidth/i", $type))
         $unit = 'Mbps';
 
-    $colors = array(
+    # Setup line plot colors
+    $colors = graph_colors();
+
+    # Set up titles
+    $title    = "MTT Performance Results";
+    $subtitle = create_subtitle($legend);
+
+    $j = 0;
+
+    $type = strtolower($type);
+
+    # jpgraph doesn't like empty graphs
+    $empty = true;
+
+    # Collect the line plots
+    foreach (array_keys($plots) as $i) {
+        
+        $line = $plots[$i][$type];
+
+        # Create the linear plot
+        if ($line) {
+            $empty = false;
+
+            $ydata = array_pad($line, $pad, null);
+
+            $color = $colors[$j++];
+
+            # Avoid null color error
+            if (! $color)
+                $color = 'black';
+
+            $lineplots[$i] = new LinePlot($ydata);
+
+            $legend_items[$i] = 
+                "$i " . create_legend_item($params[$i], $legend);
+
+            $lineplots[$i]->SetColor($color);
+            $lineplots[$i]->SetWeight(2);
+            $lineplots[$i]->SetLegend($legend_items[$i]);
+        }
+    }
+
+    # Default margin sizes
+    $margins['left']   = 60;
+    $margins['right']  = 50;
+    $margins['top']    = 30;
+    $margins['bottom'] = 80;
+
+    # Font width in pixels (NEED A WAY TO DETERMINE THESE
+    # NUMBERS CORRECTLY!)
+    $fontwidth = 6;
+    $fontheight = 6;
+    $legend_height = $fontheight * sizeof($legend_items);
+    $legend_width = $fontwidth * max(array_map('strlen', $legend_items));
+
+    # Best guess for pixel:char and line:char ratios
+    # WE WOULD HAVE TO GUESS AGAIN IF WE CHANGE FONT!
+    # (NEED A BETTER WAY TO GET PIXEL SIZE OF FONTS)
+    $c2p = 20;
+    $l2p = 21;
+    
+    $xticks = sizeof($message_sizes);
+    $width = $xticks * $c2p;
+    $height = 400;
+
+    # Max-out/bottom-out graph sizes
+    if ($width > 1200)
+        $width = 1200;
+    elseif ($width < 250)
+        $width = 250;
+    elseif ($legend_width > $width)
+        $width += abs($legend_width - $width) + 25;
+
+    # Legend sizing
+    $legend_cols       =  floor($width / $legend_width);
+    $legend_rows       =  ceil(sizeof($legend_items) / $legend_cols);
+    $height            += $legend_rows * $l2p;
+    $margins['bottom'] += $legend_rows * $l2p;
+
+    # Create the graph. These two calls are always required
+    $graph = new Graph($width, $height, "auto");    
+    $graph->SetScale("textlin");
+
+    $gJpgBrandTiming = true;
+
+    list($l, $r, $t, $b) = array_values($margins);
+    $graph->img->SetMargin($l, $r, $t, $b);
+    
+    # Setup legend
+    $graph->legend->SetPos(0.05,0.95, 'right','bottom');
+    $graph->legend->SetColumns($legend_cols);
+    $graph->legend->SetLineWeight(10);
+
+    # Setup titles
+    $graph->title->Set($title);
+    $graph->subtitle->Set($subtitle);
+    $graph->subtitle->ParagraphAlign("left");
+    $graph->title->SetFont(FF_FONT1, FS_BOLD);
+    $graph->subtitle->SetFont(FF_FONT1, FS_NORMAL);
+
+    # Setup axes
+    $graph->xaxis->SetTickLabels($message_sizes);
+    $graph->xaxis->SetLabelAngle(90);
+    $graph->xaxis->SetTitleMargin(25);
+    $graph->yaxis->SetTitleMargin(40);
+    $graph->xaxis->setTitle("Message size - bytes", "middle");
+    $graph->yaxis->setTitle(label($type) . " - $unit", "middle");
+    $graph->xaxis->title->SetFont(FF_FONT1, FS_BOLD);
+    $graph->yaxis->title->SetFont(FF_FONT1, FS_BOLD);
+
+    # Plot the lines
+    foreach (array_keys($lineplots) as $i)
+        $graph->Add($lineplots[$i]);
+
+    # Return nothing if we have no line plots
+    if ($empty)
+        return;
+
+    $graph->SetShadow();
+
+    # Write the graph to a file
+    $filename = 'images/tmp/' . randstr(10) . '.png';
+    $graph->Stroke($filename);
+
+    # Return the graph's filename and width
+    return array('filename' => $filename, 'width' => $width);
+}
+
+# Return HTML colors for the lineplots
+function graph_colors() {
+    return array(
         '#FFA500', # 255,165,0       Orange              	
         '#0000FF', # 0,0,255         Blue	
         '#FF0000', # 255,0,0         Red                 	
@@ -744,70 +933,43 @@ function display_graph($data, $type, $message_sizes) {
         '#00CED1', # 0,206,209       DarkTurquoise       	
         '#9400D3', # 148,0,211       DarkViolet          	
     );
+}
 
-    # Create the graph. These two calls are always required
-    $gJpgBrandTiming = true;
-    $graph = new Graph(600, 400, "auto");    
-    $graph->SetScale("textlin");
+# Return a subtitle out of items that would be redundant in
+# the legend (whack those would-be legend items)
+function create_subtitle(&$legend) {
 
-    # Make the margin around the plot a little bit bigger then default
-    $graph->img->SetMargin(40,100,40,60);    
-    #$graph->xaxis->title->Set("Message size (bytes)");
-    $graph->yaxis->title->Set(label($type) . " - $unit");
-
-    $graph->title->Set("MTT Performance Results");
-    $graph->title->SetFont(FF_FONT1, FS_BOLD);
-    $graph->yaxis->title->SetFont(FF_FONT1, FS_BOLD);
-    $graph->xaxis->title->SetFont(FF_FONT1, FS_BOLD);
-
-    # Setup the labels
-    $graph->xaxis->SetTickLabels($message_sizes);
-    $graph->xaxis->SetLabelAngle(90);
-
-    $j = 0;
-
-    $type = strtolower($type);
-
-    # jpgraph doesn't like empty graphs
-    $empty = true;
-
-    # Plot the data
-    foreach (array_keys($data) as $i) {
-        
-        $line = $data[$i][$type];
-
-        # Create the linear plot
-        if ($line) {
-            $empty = false;
-
-            $ydata = array_pad($line, $pad, null);
-
-            $color = $colors[$j++];
-
-            # Avoid null color error
-            if (! $color)
-                $color = 'black';
-
-            $lineplots[$i] = new LinePlot($ydata);
-
-            $lineplots[$i]->SetColor($color);
-            $lineplots[$i]->SetWeight(2);
-            $lineplots[$i]->SetLegend("$i");
-
-            $graph->Add($lineplots[$i]);
+    # Remove singletons from legend and put them in 
+    # the subtitle
+    foreach (array_keys($legend) as $k) {
+        $items = array_keys($legend[$k]);
+        if (sizeof($items) == 1) {
+            unset($legend[$k]);
+            $subtitle[$k] = array_shift($items);
         }
     }
-    if ($empty)
-        return;
 
-    $graph->SetShadow();
+    $subtitle_pad = max(array_map('strlen', array_keys($subtitle))) + 3;
 
-    # Write the graph to a file
-    $filename = 'images/tmp/' . randstr(10) . '.png';
-    $graph->Stroke($filename);
+    # Loop through the singletons and create a nicely aligned table
+    foreach (array_keys($subtitle) as $k) {
+        $item = $subtitle[$k];
+        $ret .= "\n" . str_pad("$k: ", $subtitle_pad) . $item;
+    }
+    $ret .= "\n";
 
-    # Display the graph
-    print "<br><div align='center'><img src='$filename'></div>";
+    return $ret;
+}
+
+# Return string for a given hash entry. 
+# $legend is keyed by params that are *not* in the subtitle,
+# because they differ across lineplots
+function create_legend_item($hash, $legend) {
+    foreach (array_keys($legend) as $k)
+        if (isset($legend[$k]))
+            $items[] = $hash[$k];
+
+    return join(' ', $items);
 }
 
 # Generate a random string
@@ -876,12 +1038,14 @@ function next_n_rows($n, $limit, $date_fields, $params) {
     $format = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
 
     # Convenience arrow for going through 100s of rows
-    $img = "<img src='./images/%s_arrow.gif' border='0'>";
+    $img  = "<img src='./images/%s_arrow.gif' border='0'>";
+    $prev = sprintf($img, "no");
+    $next = sprintf($img, "no");
 
     $qstring_arr = $params;
     $qstring_arr['rows'] = $n;
 
-    $phase = process_phase_field($params['phase']);
+    $phase  = process_phase_field($params['phase']);
     $offset = offset($params);
 
     $go = strtolower($params['go']);
@@ -913,13 +1077,14 @@ function next_n_rows($n, $limit, $date_fields, $params) {
         # Arrows
         $prevn = $offset - $limit;
         $nextn = $offset + $limit;
-        if ($i == $prevn and ($i != 0))
+        if ($i == $prevn)
              $prev = sprintf($format, $qstring, sprintf($img, "left"));
         elseif ($i == $nextn)
              $next = sprintf($format, $qstring, sprintf($img, "right"));
 
         $i += $limit;
     }
+    $ret .= "\n<br>";
 
     # Do not print a lone '0'
     if (sizeof($links) > 1) {
@@ -932,7 +1097,7 @@ function next_n_rows($n, $limit, $date_fields, $params) {
             $ret .= "\n&nbsp;$link";
 
         # Right arrow
-        $ret .= "\n&nbsp;$next";
+        $ret .= "\n&nbsp;$next<br><br>";
     }
     return $ret;
 }

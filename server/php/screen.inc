@@ -335,13 +335,19 @@ function setup_layout_html($layout, $lasttime, $links) {
 
     global $lgray, $llgray;
 
-    # Generate Menu
+    # Set up some table attributes
     $i    = 0;
     $cols = 1;
     $ctd  = "<td bgcolor='$lgray' align='center'>";
-    $ctd2 = "<td bgcolor='$lgray' align='center' colspan='2'>";
     $td33 = "<td bgcolor='$lgray' width='33%'>";
-    $tbl  = "\n\n<table width='100%' align='center' cellspacing='1' cellpadding='5'>";
+
+    # For the bottom buttons
+    $rtd1b = "<td bgcolor='$lgray' valign='bottom' align='right' rowspan='1' width='41%'>";
+    $rtd1t = "<td bgcolor='$lgray' valign='top'    align='right' rowspan='1' width='41%'>";
+    $ctd2  = "<td bgcolor='$lgray' align='left'                  rowspan='2' width='59%'>";
+
+    $tbl  = "\n\n<table width='100%' cellspacing='1' cellpadding='5'>";
+    $tbl2 = "\n\n<table width='100%' cellspacing='0' cellpadding='0'>";
 
     # No veil (show/hide menu) for some fields since
     # they would widen the summary table by several
@@ -452,11 +458,19 @@ function setup_layout_html($layout, $lasttime, $links) {
                "border='0' " .
                "src='$logo'></a>";
 
+    $buttons = form_buttons($_GET);
+    $reset = array_shift($buttons);
+    $clear = array_shift($buttons);
+
     # Put buttons at the bottom of the panel
     $layout['bottom']['html'] =
-        $tbl .
-        "\n<tr>$ctd " .
-        join('&nbsp;', form_buttons($_GET)) .
+        $tbl2 .
+        "\n<tr>$rtd1b" .
+            "$reset&nbsp;&nbsp;" .
+        "\n$ctd2" .
+            join('&nbsp;', $buttons) .
+        "\n<tr>$rtd1t" .
+            "$clear&nbsp;&nbsp;" .
         "\n</table>";
 
     return $layout;
@@ -472,20 +486,27 @@ function form_buttons($params) {
         "Performance",
     );
 
-    # Disable 'Detail' button if we are in multi-phase mode
     $phases = process_phase_field($params);
 
-    # Disallow 'Detail' reports in multi-phase mode
-    # Allow 'Performance' reports only in test_run mode
+    # Disable 'Detail' and 'Performance' buttons if we are
+    # in multi-phase mode
     if (sizeof($phases) > 1) {
         $disable['Detail'] = 'disabled';
         $disable['Performance'] = 'disabled';
     }
+    # Allow 'Performance' reports only in test_run mode
     elseif (! (array_search('test_run', $phases) !== false))
         $disable['Performance'] = 'disabled';
 
-    $buttons[] =
-        "\n<input type='Reset' value='Reset'>";
+    $script = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
+
+    # Reset and Clear 'buttons' are small links
+    $buttons[] = 
+        "\n<a href='javascript:document.report.reset();' " .
+             "class='lgray_ln'>Reset</a>";
+    $buttons[] = 
+        "\n<a href='$script' " .
+             "class='lgray_ln'>Clear</a>";
 
     $format = "\n<input type='Submit' " .
                   "name='go' " .
@@ -625,15 +646,16 @@ EOT;
 
     $style = <<<EOT
 
-    a.lgray_ln:link    { color: #F8F8F8 } /* for unvisited links */
-    a.lgray_ln:visited { color: #555555 } /* for visited links */
-    a.lgray_ln:active  { color: #FFFFFF } /* when link is clicked */
-    a.lgray_ln:hover   { color: #FFFF40 } /* when mouse is over link */
-
     a.black_ln:link    { color: #000000 } /* for unvisited links */
     a.black_ln:visited { color: #555555 } /* for visited links */
     a.black_ln:active  { color: #FFFFFF } /* when link is clicked */
     a.black_ln:hover   { color: #FFFF40 } /* when mouse is over link */
+
+    a.lgray_ln:link    { color: #F8F8F8; font-size: 65%; text-decoration:none; }
+    a.lgray_ln:visited { color: #555555; font-size: 65%; text-decoration:none; }
+    a.lgray_ln:active  { color: #FFFFFF; font-size: 65%; text-decoration:none; }
+    a.lgray_ln:hover   { color: #FFFF40; font-size: 65%; text-decoration:none; }
+
     td { font-size: 75%; } 
     th { font-size: 80%; } 
 
