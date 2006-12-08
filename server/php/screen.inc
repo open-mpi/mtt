@@ -680,6 +680,7 @@ EOT;
     td { font-size: 75%; } 
     th { font-size: 80%; } 
     th#result { font-size: 55%; } 
+    img#result { width: 55%; height: 55%; } 
 
 EOT;
 

@@ -105,8 +105,7 @@ function dump_report() {
     elseif ($do_summary)
         summary_table($headers, $resource);
     elseif ($do_performance) {
-        #performance_table($headers, $resource);
-        performance_graph($headers, $resource);
+        summary_table($headers, $resource);
     }
 
     print $next_n_rows;
@@ -150,144 +149,6 @@ function csv2arr($str) {
 #  Report Table Generating Functions (2)
 #                                     
 #########################################
-
-# Void function to print out a summary style HTML data table
-function summary_table($headers, $resource) {
-
-    global $thcolor, $gray, $dgray, $lgray, $llgray,
-           $lllgray, $white;
-
-    # Insert useful information on the left-hand side?
-    print "\n<div align=center>" .
-
-          "\n\n<!-- report_start -->\n\n" .
-
-          "\n<table width='100%' cellpadding=5>" .
-          "\n<tr>" .
-          "\n<td bgcolor='$lgray'>" .
-          "\n<div align=center>" .
-          "\n<table border=1 width='100%'>";
-
-    # Display headers
-    $format = "\n<th bgcolor='$thcolor' rowspan=2>%s";
-
-    # Headers with up/down sort arrows
-    print "<tr>" . sprintf($format, '#');
-    foreach (sorting_links($headers['params']) as $header)
-        printf($format, $header);
-
-    # Setup sequence of result colors
-    $phases = $headers['phases'];
-    $result_colors = result_colors($phases);
-
-    # Create links for drilled-down queries
-    $links = drilldown_links($headers['phases']);
-
-    # Print phase headers
-    $total_results_cols = 0;
-    foreach (array_keys($links) as $phase) {
-        $link = array_shift($links[$phase]);
-        $colspan = sizeof($links[$phase]);
-        $num_result_types[$phase] = $colspan;
-
-        printf("\n<th bgcolor='$thcolor' " .
-                     "colspan='$colspan'>%s",
-                     $link);
-        $total_results_cols += $colspan;
-    }
-
-    print "\n<tr>";
-
-    # Print result headers
-    foreach (array_keys($links) as $phase)
-        foreach ($links[$phase] as $result)
-            printf("\n<th id='result' bgcolor='$thcolor'>%s", $result);
-
-    # Row numbering starts at the OFFEST arg to LIMIT
-    $offset = $headers['offset'];
-    $row_n = $offset;
-    $lastrow = $offset + 100;
-
-    # Print data rows
-    while ($row = pg_fetch_row($resource)) {
-
-        # Results are always in the far right cols
-        $results = array_splice($row, sizeof($row) - $total_results_cols);
-
-        # printf formats
-        $format  = "\n<td bgcolor='%s' align='right'>%s";
-        $formatg = "\n<td bgcolor='$lgray' align='right'>%s";
-        $formatw = "\n<td bgcolor='$white'>%s";
-
-        if ($row_n >= $lastrow)
-            break;
-
-        print "\n<tr>" . sprintf($formatg, $row_n + 1);
-        for ($i = 0; $i < sizeof($row); $i++)
-            printf($formatw, drilldown_links($headers['params'][$i], $row[$i]));
-
-        $i = 0;
-        $j = 0;
-
-        foreach ($headers['phases'] as $phase) {
-            
-            # Each phase has differing result types
-            $_results =
-                array_splice($results, 0, $num_result_types[$phase]);
-
-            # Link result counts to filtered drill-down reports
-            $ret = drilldown_links($headers,
-                                  $row,
-                                  $_results,
-                                  $phase);
-            list($pass,
-                 $fail,
-                 $skip,
-                 $time,
-                 $perf) = $ret['links'];
-
-            list($pass_count,
-                 $fail_count,
-                 $skip_count,
-                 $time_count,
-                 $perf_count) = $ret['counts'];
-
-            printf($format,
-                    (($pass_count > 0) ? $result_colors[$j] : $lgray), $pass);
-            $j++;
-            printf($format,
-                    (($fail_count > 0) ? $result_colors[$j] : $lgray), $fail);
-            $j++;
-            if (! is_null($skip)) {
-                printf($format,
-                        (($skip_count > 0) ? $result_colors[$j] : $lgray), $skip);
-                $j++;
-            }
-            if (! is_null($time)) {
-                printf($format,
-                        (($time_count > 0) ? $result_colors[$j] : $lgray), $time);
-                $j++;
-            }
-            if (! is_null($perf)) {
-                printf($format,
-                        (($perf_count > 0) ? $result_colors[$j] : $lgray), $perf);
-                $j++;
-            }
-
-            # Tally totals for all result counts
-            foreach ($ret['counts'] as $count) {
-                $totals[$i++] += $count;
-            }
-        }
-        $row_n++;
-    }
-
-    print_totals($totals, $headers, $result_colors);
-
-    print "\n</table>" .
-          "\n</table>" .
-          "\n\n<!-- report_end -->\n\n";
-}
 
 # Void function to print out a detail style HTML data table
 function detail_table($headers, $resource) {
@@ -381,10 +242,9 @@ function detail_table($headers, $resource) {
           "\n\n<!-- report_end -->\n\n";
 }
 
-# Void function to print out a summary table,
-# with a performance graph. (Legend the 
-# graph using the row numbers from the summary table)
-function performance_graph($headers, $resource) {
+# Print out a summary table
+# (and maybe a performance graph). 
+function summary_table($headers, $resource) {
 
     global $thcolor, $gray, $dgray, $lgray, $llgray,
            $lllgray, $white;
@@ -429,12 +289,12 @@ function performance_graph($headers, $resource) {
 
     print "\n<tr>";
 
-    # Print result headers
+    # Print phase headers
     foreach (array_keys($links) as $phase)
         foreach ($links[$phase] as $result)
             printf("\n<th id='result' bgcolor='$thcolor'>%s", $result);
 
-    # Print result headers
+    # Calculate some colspans
     $phase_results_table = phase_results_table();
     $num_cols['results'] = 0;
     foreach ($headers['phases'] as $phase) {
@@ -449,96 +309,103 @@ function performance_graph($headers, $resource) {
     $row_n = $offset;
     $lastrow = $offset + 100;
 
+    # printf formats
     $format  = "\n<td bgcolor='%s' align='right'>%s";
-
-    $result_colors = result_colors('test_run');
+    $formatg = "\n<td bgcolor='$lgray' align='right'>%s";
+    $formatw = "\n<td bgcolor='$white'>%s";
 
     # Print data rows
     while ($row = pg_fetch_row($resource)) {
 
-        # Results are always in the far right cols
-        $results = array_splice($row, $num_cols['params']);
-
-        # Details are always in the far far right cols
-        $details = array_splice($results, $num_cols['results']);
-
-        # Performance is always in the far far far right cols
-        $performance = array_splice($details, $num_cols['details']);
-
-        # printf formats
-        $format  = "\n<td bgcolor='%s' align='right'>%s";
-        $formatg = "\n<td bgcolor='$lgray' align='right'>%s";
-        $formatw = "\n<td bgcolor='$white'>%s";
-
         if ($row_n >= $lastrow)
             break;
+
+        # Results are always in the far right cols
+        $results = array_splice($row, $num_cols['params']);
 
         print "\n<tr>" . sprintf($formatg, $row_n);
         for ($i = 0; $i < sizeof($row); $i++)
             printf($formatw, drilldown_links($headers['params'][$i], $row[$i]));
 
-        # Link result counts to filtered drill-down reports
-        $ret = drilldown_links($headers,
-                               $row,
-                               $results,
-                               'test_run');
-
-        list($pass,
-             $fail,
-             $skip,
-             $time,
-             $perf) = $ret['links'];
-
-        list($pass_count,
-             $fail_count,
-             $skip_count,
-             $time_count,
-             $perf_count) = $ret['counts'];
-
         $j = 0;
-        printf($format,
-                (($pass_count > 0) ? $result_colors[$j] : $lgray), $pass);
-        $j++;
-        printf($format,
-                (($fail_count > 0) ? $result_colors[$j] : $lgray), $fail);
-        $j++;
-        if (! is_null($skip)) {
+
+        foreach ($headers['phases'] as $phase) {
+            
+            # Each phase has differing result types
+            $_results =
+                array_splice($results, 0, $num_result_types[$phase]);
+
+            # Link result counts to filtered drill-down reports
+            $ret = drilldown_links($headers,
+                                   $row,
+                                   $_results,
+                                   $phase);
+
+            list($pass,
+                 $fail,
+                 $skip,
+                 $time,
+                 $perf) = $ret['links'];
+
+            list($pass_count,
+                 $fail_count,
+                 $skip_count,
+                 $time_count,
+                 $perf_count) = $ret['counts'];
+
             printf($format,
-                    (($skip_count > 0) ? $result_colors[$j] : $lgray), $skip);
+                    (($pass_count > 0) ? $result_colors[$j] : $lgray), $pass);
             $j++;
-        }
-        if (! is_null($time)) {
             printf($format,
-                    (($time_count > 0) ? $result_colors[$j] : $lgray), $time);
+                    (($fail_count > 0) ? $result_colors[$j] : $lgray), $fail);
             $j++;
+            if (! is_null($skip)) {
+                printf($format,
+                        (($skip_count > 0) ? $result_colors[$j] : $lgray), $skip);
+                $j++;
+            }
+            if (! is_null($time)) {
+                printf($format,
+                        (($time_count > 0) ? $result_colors[$j] : $lgray), $time);
+                $j++;
+            }
+            if (! is_null($perf)) {
+                printf($format,
+                        (($perf_count > 0) ? $result_colors[$j] : $lgray), $perf);
+                $j++;
+            }
+
+            # Tally totals for all result counts
+            foreach ($ret['counts'] as $count) {
+                $totals[$i++] += $count;
+            }
+
         }
-        if (! is_null($perf)) {
-            printf($format,
-                    (($perf_count > 0) ? $result_colors[$j] : $lgray), $perf);
-            $j++;
+
+        # Performance is always in the far far far right cols
+        if ($num_cols['details'])
+            $performance = array_splice($results, $num_cols['details']);
+
+        # Complile some performance data, if there is any
+        if ($performance) {
+
+            # Prepare perf data to be displayed in a graph
+            $hash = array_combine(
+                        $headers['performance'], 
+                        array_map('csv2arr', $performance)
+                    );
+            $graph_data['plots'][$row_n] = $hash;
+
+            # Prepare legend data for each individual line plot
+            array_combine2($graph_data['legend'], $headers['params'], $row);
+
+            # Prepare global legend data for the entire perf graph
+            $hash = array_combine(
+                        $headers['params'], 
+                        $row
+                    );
+            $graph_data['params'][$row_n] = $hash;
         }
-
-        # Tally totals for all result counts
-        foreach ($ret['counts'] as $count) {
-            $totals[$i++] += $count;
-        }
-
-        # Prepare perf data to be displayed in a graph
-        $hash = array_combine(
-                    $headers['performance'], 
-                    array_map('csv2arr', $performance)
-                );
-        $graph_data['plots'][$row_n] = $hash;
-
-        # Prepare legend data for each individual line plot
-        array_combine2($graph_data['legend'], $headers['params'], $row);
-
-        # Prepare global legend data for the entire perf graph
-        $hash = array_combine(
-                    $headers['params'], 
-                    $row
-                );
-        $graph_data['params'][$row_n] = $hash;
 
         $row_n++;
     }
@@ -549,50 +416,15 @@ function performance_graph($headers, $resource) {
           "\n</table>" .
           "\n\n<!-- report_end -->\n\n";
 
-    print "\n</table>" .
-          "\n</table>" .
-          "\n\n<!-- report_end -->\n\n";
-
-    # Do graph(s)
-    $types = array(
-        'latency_avg',
-        'latency_min',
-        'latency_max',
-        'bandwidth_avg',
-        'bandwidth_min',
-        'bandwidth_max',
-    );
-
-    foreach ($types as $type) {
-        $ret = do_graph($graph_data, $type);
-        if (! is_null($ret)) {
-            $filenames[] = $ret['filename'];
-            $widths[] = $ret['width'];
-        }
-    }
-
-    $total_width = array_sum($widths);
-
-    # Calculate how many graphs to show per row
-    # (Using best guess screen size)
-    $screen_width = 1200;
-    $avg_width = $total_width / sizeof($widths);
-    $cols = floor($screen_width / $avg_width);
-
-    # Display graphs
-    print "<br><table width='100%'>";
-
-    $i = 0;
-    foreach ($filenames as $filename) {
-        print ((($i++ % $cols) == 0) ? "<tr>" : "") .
-                "<td align='center'><img src='$filename'>";
-    }
-    print "</table>";
+    # Print performance graphs
+    if ($performance)
+        performance_graphs($graph_data);
 
     # Clean up old graphs
     housekeeping('./images/tmp');
 }
 
+# Print the totals at the foot the summary table
 function print_totals($totals, $headers, $result_colors) {
 
     # Print results totals in last row
@@ -612,37 +444,47 @@ function print_totals($totals, $headers, $result_colors) {
     print "\n</tfoot>";
 }
 
-# Clean up old graphs
-function housekeeping($dir) {
+# Print all the available performance graphs
+function performance_graphs($data) {
 
-    $res = opendir($dir);
+    # Do graph(s)
+    $types = array(
+        'latency_avg',
+        'latency_min',
+        'latency_max',
+        'bandwidth_avg',
+        'bandwidth_min',
+        'bandwidth_max',
+    );
 
-    $root = dirname($_SERVER["SCRIPT_FILENAME"]);
-
-    $img_types = array("\.gif$",
-                       "\.jpg$",
-                       "\.png$",
-                       "\.jpeg$",
-                       "\.pdf$");
-
-    # Threshold to unlink a file
-    $hours = 1;
-
-    $now = time();
-
-    # Loop through the files and delete any old ones
-    while ($filename = readdir($res)) {
-
-        # unlink needs a full path
-        $filename = "$root/$dir/$filename";
-
-        if (preg_match('/'.join('|', $img_types).'/i', $filename)) {
-            $age = $now - filemtime($filename);
-            if ($age > (60 * 60 * $hours))
-                unlink($filename);
+    foreach ($types as $type) {
+        $ret = do_graph($data, $type);
+        if (! is_null($ret)) {
+            $images[] = $ret['image'];
+            $widths[] = $ret['width'];
+            $raws[] = $ret['raw'];
         }
     }
-    closedir($res);
+
+    $total_width = array_sum($widths);
+
+    # Calculate how many graphs to show per row
+    # (Using best guess screen size)
+    $screen_width = 1200;
+    $avg_width = $total_width / sizeof($widths);
+    $cols = floor($screen_width / $avg_width);
+
+    # Display graphs
+    print "<br><table width='100%'>";
+
+    $i = 0;
+    foreach ($images as $image) {
+        print ((($i % $cols) == 0) ? "<tr>" : "") .
+                "<td align='center'>" .  $image .
+                "<br><br>Raw data: " .  $raws[$i] . "<br><br>";
+        $i++;
+    }
+    print "</table>";
 }
 
 # Print out the actual binary image data
@@ -723,6 +565,10 @@ function do_graph($data, $type) {
         }
     }
 
+    # Return nothing if we have no line plots
+    if ($empty)
+        return;
+
     # Default margin sizes
     $margins['left']   = 60;
     $margins['right']  = 50;
@@ -782,22 +628,44 @@ function do_graph($data, $type) {
     $graph->subtitle->SetFont(FF_FONT1, FS_NORMAL);
 
     # Setup axes
+    $titles['xaxis'] = "Message size - bytes";
+    $titles['yaxis'] = label($type) . " - $unit";
+
     $graph->xaxis->SetTickLabels($message_sizes);
     $graph->xaxis->SetLabelAngle(90);
     $graph->xaxis->SetTitleMargin(25);
     $graph->yaxis->SetTitleMargin(40);
-    $graph->xaxis->setTitle("Message size - bytes", "middle");
-    $graph->yaxis->setTitle(label($type) . " - $unit", "middle");
+    $graph->xaxis->setTitle($titles['xaxis'], "middle");
+    $graph->yaxis->setTitle($titles['yaxis'], "middle");
     $graph->xaxis->title->SetFont(FF_FONT1, FS_BOLD);
     $graph->yaxis->title->SetFont(FF_FONT1, FS_BOLD);
 
     # Plot the lines
-    foreach (array_keys($lineplots) as $i)
+    foreach (array_keys($lineplots) as $i) {
         $graph->Add($lineplots[$i]);
+    }
 
-    # Return nothing if we have no line plots
-    if ($empty)
-        return;
+    # Create 2D array to feed to raw data output function
+    $i = 0;
+    $arr[$i++] = $title . "<br>" . label($type);
+    $arr[$i++] = $subtitle;
+    $arr[$i++] = 'bytes';
+    $arr[$i++] = $unit;
+
+    foreach (array_keys($plots) as $p) {
+        if (! is_null($legend_items[$p]))
+            $arr[$i][] = $legend_items[$p];
+    }
+    $i++;
+
+    for ($j = 0; $j < sizeof($message_sizes); $j++) {
+        $arr[$i][] = $message_sizes[$j];
+        foreach (array_keys($plots) as $p) {
+            if ($plots[$p][$type])
+                $arr[$i][] = array_shift($plots[$p][$type]);
+        }
+        $i++;
+    }
 
     $graph->SetShadow();
 
@@ -805,8 +673,127 @@ function do_graph($data, $type) {
     $filename = 'images/tmp/' . randstr(10) . '.png';
     $graph->Stroke($filename);
 
-    # Return the graph's filename and width
-    return array('filename' => $filename, 'width' => $width);
+    $image = "<img src='$filename' " .
+                  "alt='$title' " .
+                  "border='0'>";
+
+    # Adjust size of raw data links
+    $cols = max(array_map('sizeof', array_values($arr)));
+    $rows = sizeof($arr);
+    $rwidth = (90 * $cols);
+    $rheight = ((20 * $rows) + 200);
+    if ($rheight > 800)
+        $rheight = 800;
+    if ($rwidth > 1200)
+        $rwidth = 1200;
+
+    # Provide popups for raw data
+    $raw =
+        "\n<a class='black_ln' href='javascript:popup(" .
+            "\n\"" . $rwidth . "\", " .
+            "\n\"" . $rheight . "\"," .
+            "\n\"Raw performance numbers\"," .
+            "\n\"\"," .
+            "\n\"" . htmlentities(raw2html($arr), ENT_QUOTES) . "\"," .
+            "\n\"font-family:Courier,monospace\"" .
+        ")'>" .
+        "\nhtml" .
+        "</a>&nbsp;";
+
+    # Return links to the image, raw data, and width
+    $ret = array(
+        'image' => $image,
+        'raw' => $raw,
+        'width' => $width
+    );
+
+    return $ret;
+}
+
+# Convert a 2D array (output by do_graph) to an html table
+function raw2html($arr) {
+
+    global $lgray, $llgray;
+
+    # Headers are always here
+    $colspan = sizeof($arr[5]) - 1;
+
+    $tr = "<tr>";
+    $th = "<th bgcolor='$lgray'>";
+    $td = "<td bgcolor='$lgray'>";
+    $ths = "<th bgcolor='$lgray' colspan='$colspan'>";
+    $tdc = "<td bgcolor='$lgray' align='center'>";
+
+    $i = 0;
+    $html .= "<br><b>" . $arr[$i++] . "</b>";
+    $html .= "<br><b><i>" . 
+                    font('-1', nl2br($arr[$i++])) .
+                 "</b></i>";
+
+    $html .= "<br><table border='1'>";
+    $html .= $tr;
+    $html .= $th  . font('-2', $arr[$i++]);
+    $html .= $ths . font('-2', $arr[$i++]);
+    $html .= $tr;
+    $html .= $td;
+
+    foreach ($arr[$i] as $cell)
+        $html .= $tdc . font('-2', sp2br($cell));
+
+    for ($i++; $i < sizeof($arr); $i++) {
+        $html .= "\n<tr>";
+        $html .= "\n<td bgcolor='$llgray'>". 
+                    font('-2', array_shift($arr[$i]));
+        for ($j = 0; $j < sizeof($arr[$i]); $j++) {
+            $html .= "<td>" . font('-2', $arr[$i][$j]);
+        }
+    }
+    $html .= "</table>";
+
+    return $html;
+}
+
+# Wrap a string in font tags
+function font($size, $str) { 
+    return sprintf("<font size='%s'>%s</font>", $size, $str);
+}
+
+# ' ' -> '<br>'
+function sp2br($str) {
+    return preg_replace('/\s+/', '<br>', $str);
+}
+
+# Clean up old graphs
+function housekeeping($dir) {
+
+    $res = opendir($dir);
+
+    $root = dirname($_SERVER["SCRIPT_FILENAME"]);
+
+    $img_types = array("\.gif$",
+                       "\.jpg$",
+                       "\.png$",
+                       "\.jpeg$",
+                       "\.pdf$");
+
+    # Threshold to unlink a file
+    $hours = 1;
+
+    $now = time();
+
+    # Loop through the files and delete any old ones
+    while ($filename = readdir($res)) {
+
+        # unlink needs a full path
+        $filename = "$root/$dir/$filename";
+
+        if (preg_match('/'.join('|', $img_types).'/i', $filename)) {
+            $age = $now - filemtime($filename);
+            if ($age > (60 * 60 * $hours))
+                unlink($filename);
+        }
+    }
+    closedir($res);
 }
 
 # Return HTML colors for the lineplots
@@ -1146,7 +1133,7 @@ function drilldown_links() {
                 # "result code" to "column name" to "web page label"
                 $label = 
                     sprintf($format, arr2qstring($qstring_arr), label(label($result)));
-                $header = sorting_links($result, $label);
+                $header = sorting_links($result, $label, 0.85);
                 $ret[$phase][] = $header;
             }
         }
@@ -1158,7 +1145,7 @@ function drilldown_links() {
 # (Rather have this an another if/else in drilldown_links.
 # Oh well.)
 # (Override the standard text label with 2nd argument)
-function sorting_links($headers, $label) {
+function sorting_links($headers, $label, $arrow_size) {
 
     $scalar_context = false;
     $default_label = false;
@@ -1173,6 +1160,12 @@ function sorting_links($headers, $label) {
     if (is_null($label))
         $default_label = true;
 
+    # Adjust arrow size
+    if ($arrow_size) {
+        list($width) = getimagesize('./images/right_arrow.gif');
+        $size = "width='" . ($arrow_size * $width) . "'";
+    }
+
     # Prepare a query string for manipulation
     $qstring_arr = $_GET;
 
@@ -1185,7 +1178,7 @@ function sorting_links($headers, $label) {
     # Setup printf formats
     $self       = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
     $a_format   = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
-    $img_format = "<img src='./images/%s_arrow.gif' border='0'>";
+    $img_format = "<img src='./images/%s_arrow.gif' $size border='0'>";
 
     # ASC and DESC sort
     $directions = array('up', 'down');
@@ -1317,7 +1310,7 @@ function basic_info($date_fields, $phases, $num_rows) {
           "<tr><td><b>Phase(s)</b>:<td>" . en_join(array_map('label', $phases));
 
     if ($_GET["test_result"])
-        $ret .= "<tr><td><b>Result</b>:<td>" . label($_GET["test_result"]) . " only";
+        $ret .= "<tr><td><b>Result</b>:<td>" . label(label($_GET["test_result"])) . " only";
 
     $ret .= "<tr><td><b>Number of rows</b>:<td>" . $num_rows .
             "</table>";
