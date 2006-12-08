@@ -36,8 +36,9 @@ function dump_report() {
     $phases        = process_phase_field($_GET);
     $date_fields   = process_date_field($_GET);
     $input_fields  = process_input_fields($_GET);
-    $offset_field  = process_offset_field($_GET);
     $result_fields = process_result_fields($phases, $_GET);
+    $sort_field    = process_sort_field($_GET);
+    $offset_field  = process_offset_field($_GET);
 
     # Print either a summary or detail report,
     # depending on whether a 'select_more' parameter is set
@@ -58,6 +59,7 @@ function dump_report() {
         $result_fields,
         $detail_fields,
         $performance_fields,
+        $sort_field,
         $offset_field
     );
     $query['phases'] = $phases;
@@ -71,12 +73,6 @@ function dump_report() {
     # Execute query
     $resource = do_pg_query($cmd);
 
-    # Generate headers
-    foreach ($phases as $phase)
-        $keys = array_keys($result_fields['codes'][$phase]);
-        foreach ($keys as $result)
-            $results[] = $result;
-
     # Number of rows in this report
     $rowcount = pg_num_rows($resource);
     $n = rowcount($rowcount, $_GET);
@@ -86,7 +82,7 @@ function dump_report() {
     $headers['params']      = array_keys($query['select']);
     $headers['details']     = array_keys($query['select_more']);
     $headers['performance'] = array_keys($query['performance']);
-    $headers['results']     = $results;
+    $headers['results']     = array_keys($query['aggregates']);
     $headers['phases']      = $phases;
     $headers['offset']      = $o;
 
@@ -175,9 +171,10 @@ function summary_table($headers, $resource) {
     # Display headers
     $format = "\n<th bgcolor='$thcolor' rowspan=2>%s";
 
+    # Headers with up/down sort arrows
     print "<tr>" . sprintf($format, '#');
-    foreach ($headers['params'] as $header)
-        printf($format, label($header));
+    foreach (sorting_links($headers['params']) as $header)
+        printf($format, $header);
 
     # Setup sequence of result colors
     $phases = $headers['phases'];
@@ -186,7 +183,7 @@ function summary_table($headers, $resource) {
     # Create links for drilled-down queries
     $links = drilldown_links($headers['phases']);
 
-    # Print result headers
+    # Print phase headers
     $total_results_cols = 0;
     foreach (array_keys($links) as $phase) {
         $link = array_shift($links[$phase]);
@@ -201,9 +198,10 @@ function summary_table($headers, $resource) {
 
     print "\n<tr>";
 
+    # Print result headers
     foreach (array_keys($links) as $phase)
         foreach ($links[$phase] as $result)
-            printf("\n<th bgcolor='$thcolor'>%s", $result);
+            printf("\n<th id='result' bgcolor='$thcolor'>%s", $result);
 
     # Row numbering starts at the OFFEST arg to LIMIT
     $offset = $headers['offset'];
@@ -284,23 +282,9 @@ function summary_table($headers, $resource) {
         $row_n++;
     }
 
-    $i = 0;
+    print_totals($totals, $headers, $result_colors);
 
-    # Print results totals in last row
-    print "\n<tfoot><tr>" .
-          "\n<td align='left' " .
-                "bgcolor='$lgray' " .
-                "colspan='" . (sizeof($headers['params']) + 1) . "'>" .
-          "\n<b>Totals</b>";
-
-    foreach ($totals as $total) {
-        print "\n<td align='right' " .
-                     "bgcolor='" . (($total > 0) ? $result_colors[$i] : $lgray) . "'" .
-                 "><b>$total</b>";
-        $i++;
-    }
-    print "\n</tfoot>" .
-          "\n</table>" .
+    print "\n</table>" .
           "\n</table>" .
           "\n\n<!-- report_end -->\n\n";
 }
@@ -397,98 +381,6 @@ function detail_table($headers, $resource) {
           "\n\n<!-- report_end -->\n\n";
 }
 
-# Void function to print out a table of performance data
-function performance_table($headers, $resource) {
-
-    global $thcolor, $gray, $dgray, $lgray, $llgray,
-           $lllgray, $lred, $lgreen, $lyellow, $white;
-
-    # Print result headers
-    $phase_results_table = phase_results_table();
-    $num_cols['results'] = 0;
-    foreach ($headers['phases'] as $phase) {
-        $num_cols['results'] += sizeof($phase_results_table[$phase]);
-    }
-    $num_cols['details'] = sizeof($headers['details']);
-    $num_cols['params'] = sizeof($headers['params']);
-    $num_cols['performance'] = sizeof($headers['performance']);
-
-    foreach ($headers['results'] as $result) {
-        printf("\n<th bgcolor='$thcolor'>%s", $labels[$result]);
-    }
-
-    # Row numbering starts at the OFFEST arg to LIMIT
-    $offset = $headers['offset'];
-    $row_n = $offset;
-    $lastrow = $offset + 100;
-
-    # Remove duplicated headers
-    $headers = array_unique(
-        array_merge(
-            $headers['params'],
-            $headers['details'],
-            $headers['performance']
-        )
-    );
-
-    # Print data rows
-    while ($row = pg_fetch_row($resource)) {
-
-        if ($row_n >= $lastrow)
-            break;
-
-        # Results are always in the far right cols
-        $results = array_splice($row, $num_cols['params']);
-
-        # Details are always in the far far right cols
-        $details = array_splice($results, $num_cols['results']);
-
-        list($pass,
-             $fail,
-             $skip,
-             $time,
-             $perf) = $results;
-
-        if ($pass)
-            $bgcolor = (($pass > 0) ? $lgreen  : "");
-        elseif ($fail)
-            $bgcolor = (($fail > 0) ? $lred    : "");
-        elseif ($skip)
-            $bgcolor = (($skip > 0) ? $lyellow : "");
-        elseif ($time)
-            $bgcolor = (($time > 0) ? $lyellow : "");
-        elseif ($perf)
-            $bgcolor = (($time > 0) ? $lblue   : "");
-
-        print "<table border='1' width='100%'>" .
-              "<tr><td bgcolor='$bgcolor'>";
-
-        $td = "<td bgcolor='$lgray' width='10%' valign='top'>";
-        $tdl = "<td bgcolor='$white'>";
-
-        $values =
-            array_merge(
-                $row,
-                $details
-            );
-
-        $i = 0;
-        print "<table border='1' width='100%'>";
-        foreach ($headers as $header) {
-            print (($i % 1 == 0) ? "\n<tr>" : "") .
-                  "\n$td <b>" . label($header) . "</b> $tdl " .
-                  "\n<pre>" . wordwrap($values[$i], 100) . "</pre>";
-            $i++;
-        }
-        print "</table>";
-        print "</table>";
-    }
-
-    print "\n</table>" .
-          "\n</table>" .
-          "\n\n<!-- report_end -->\n\n";
-}
-
 # Void function to print out a summary table,
 # with a performance graph. (Legend the 
 # graph using the row numbers from the summary table)
@@ -512,8 +404,8 @@ function performance_graph($headers, $resource) {
     $format = "\n<th bgcolor='$thcolor' rowspan=2>%s";
 
     print "<tr>" . sprintf($format, '#');
-    foreach ($headers['params'] as $header)
-        printf($format, label($header));
+    foreach (sorting_links($headers['params']) as $header)
+        printf($format, $header);
 
     # Setup sequence of result colors
     $phases = $headers['phases'];
@@ -522,7 +414,7 @@ function performance_graph($headers, $resource) {
     # Create links for drilled-down queries
     $links = drilldown_links($headers['phases']);
 
-    # Print result headers
+    # Print phase headers
     $total_results_cols = 0;
     foreach (array_keys($links) as $phase) {
         $link = array_shift($links[$phase]);
@@ -537,9 +429,10 @@ function performance_graph($headers, $resource) {
 
     print "\n<tr>";
 
+    # Print result headers
     foreach (array_keys($links) as $phase)
         foreach ($links[$phase] as $result)
-            printf("\n<th bgcolor='$thcolor'>%s", $result);
+            printf("\n<th id='result' bgcolor='$thcolor'>%s", $result);
 
     # Print result headers
     $phase_results_table = phase_results_table();
@@ -650,6 +543,12 @@ function performance_graph($headers, $resource) {
         $row_n++;
     }
 
+    print_totals($totals, $headers, $result_colors);
+
+    print "\n</table>" .
+          "\n</table>" .
+          "\n\n<!-- report_end -->\n\n";
+
     print "\n</table>" .
           "\n</table>" .
           "\n\n<!-- report_end -->\n\n";
@@ -692,6 +591,25 @@ function performance_graph($headers, $resource) {
 
     # Clean up old graphs
     housekeeping('./images/tmp');
+}
+
+function print_totals($totals, $headers, $result_colors) {
+
+    # Print results totals in last row
+    $i = 0;
+    print "\n<tfoot><tr>" .
+          "\n<td align='left' " .
+                "bgcolor='$lgray' " .
+                "colspan='" . (sizeof($headers['params']) + 1) . "'>" .
+          "\n<b>Totals</b>";
+
+    foreach ($totals as $total) {
+        print "\n<td align='right' " .
+                     "bgcolor='" . (($total > 0) ? $result_colors[$i] : $lgray) . "'" .
+                 "><b>$total</b>";
+        $i++;
+    }
+    print "\n</tfoot>";
 }
 
 # Clean up old graphs
@@ -1099,6 +1017,8 @@ function next_n_rows($n, $limit, $date_fields, $params) {
         # Right arrow
         $ret .= "\n&nbsp;$next<br><br>";
     }
+    $ret .= "\n</table>";
+
     return $ret;
 }
 
@@ -1221,11 +1141,75 @@ function drilldown_links() {
 
             foreach ($phase_results_table[$phase] as $result) {
                 $qstring_arr['test_result'] = $result;
-                $ret[$phase][] =
-                    sprintf($format, arr2qstring($qstring_arr), label($result));
+
+                # Do label(label()) because we go from 
+                # "result code" to "column name" to "web page label"
+                $label = 
+                    sprintf($format, arr2qstring($qstring_arr), label(label($result)));
+                $header = sorting_links($result, $label);
+                $ret[$phase][] = $header;
             }
         }
     }
+    return $ret;
+}
+
+# Create headers wrapped by up/down sort arrows
+# (Rather have this an another if/else in drilldown_links.
+# Oh well.)
+# (Override the standard text label with 2nd argument)
+function sorting_links($headers, $label) {
+
+    $scalar_context = false;
+    $default_label = false;
+
+    # Arrayify the argument
+    if (! is_array($headers)) {
+        $headers = array($headers);
+        $scalar_context = true;
+    }
+
+    # Use standard label by default
+    if (is_null($label))
+        $default_label = true;
+
+    # Prepare a query string for manipulation
+    $qstring_arr = $_GET;
+
+    # Do not bring over LIMIT or ORDER BY info for a header link
+    unset($qstring_arr['orderby_up']);
+    unset($qstring_arr['orderby_down']);
+    unset($qstring_arr['rows']);
+    unset($qstring_arr['offset']);
+
+    # Setup printf formats
+    $self       = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
+    $a_format   = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
+    $img_format = "<img src='./images/%s_arrow.gif' border='0'>";
+
+    # ASC and DESC sort
+    $directions = array('up', 'down');
+
+    foreach ($headers as $header) {
+
+        foreach ($directions as $direction) {
+            $qstring_arr["orderby_$direction"] = $header;
+            $qstring = arr2qstring($qstring_arr);
+            $links[] = sprintf($a_format, $qstring, sprintf($img_format, $direction));
+            unset($qstring_arr["orderby_$direction"]);
+        }
+
+        if ($default_label)
+            $label = label($header);
+
+        $ret[] = array_shift($links) .
+                 $label .
+                 array_shift($links);
+    }
+
+    if ($scalar_context)
+        $ret = array_shift($ret);
+
     return $ret;
 }
 
@@ -1384,6 +1368,23 @@ function compose_sql($query) {
         )
     );
 
+    # Handle ORDER BY
+    if (isset($query['orderby_up']))
+        $orderby = $query['orderby_up'];
+    elseif (isset($query['orderby_down'])) {
+        $orderby = $query['orderby_down'] . ' DESC';
+    }
+
+    if (! is_null($orderby)) {
+        for ($i = 0; $i < sizeof($orderbys); $i++) {
+            if ($orderbys[$i] == $orderby) {
+                array_splice($orderbys, $i, 1);
+                break;
+            }
+        }
+        array_unshift($orderbys, $orderby);
+    }
+
     $offset = offset($query);
 
     # Piece together all the clauses
@@ -1403,7 +1404,8 @@ function compose_sql($query) {
                     "$nl" . join(",$nl ", $groupbys);
 
         $cmd .= "\n ORDER BY " .
-                    "$nl" . join(",$nl ", $orderbys);
+                    "$nl" . join(",$nl ", $orderbys) .
+                    "$nl $direction";
     }
     if ($offset)
         $cmd .= "\n LIMIT 100 OFFSET $offset;";
@@ -1670,34 +1672,19 @@ function process_result_fields($phases, $params) {
 
     $table = phase_results_table();
 
-    # THESE FILTER STRINGS MUST MATCH THE IDENTIFIERS USED
-    # IN [source:/trunk/server/sql/views.sql]
-    if (preg_match('/pass|true|1/i', $test_result))
-        $filter = 'pass';
-    elseif (preg_match('/fail|false|0/i', $test_result))
-        $filter = 'fail';
-    elseif (preg_match('/skip|2/i', $test_result))
-        $filter = 'skipped';
-    elseif (preg_match('/time|3/i', $test_result))
-        $filter = 'timed_out';
-    elseif (preg_match('/lat|band|perf/i', $test_result))
-        $filter = 'latency_bandwidth';
-
     $format = "COUNT(CASE WHEN %s THEN '%s' END) as %s";
 
     foreach (array_keys($table) as $phase) {
         foreach ($table[$phase] as $result) {
             if (array_search($phase, $phases) !== false) {
-                $str = result_str($phase, $result);
-                $results['codes'][$phase][$result] = $str;
-                $when[$result] = "$result = '$str'";
-                $results['aggregates'][$str] =
-                    sprintf($format, $when[$result], $str, $str);
+                $when[$result] = label($result) . " = '$result'";
+                $results['aggregates'][$result] =
+                    sprintf($format, $when[$result], $result, $result);
             }
         }
     }
 
-    $results['where'] = $when[$filter];
+    $results['where'] = $when[$test_result];
 
     return $results;
 }
@@ -1706,6 +1693,19 @@ function process_result_fields($phases, $params) {
 function process_offset_field($params) {
     $offset = $_GET['offset'];
     return array('offset' => $offset);
+}
+
+# Process OFFSET value for LIMIT clause
+function process_sort_field($params) {
+    $orderbys = array(
+        'orderby_up',
+        'orderby_down',
+    );
+    foreach ($orderbys as $orderby) {
+        $field = $_GET[$orderby];
+        if (! is_null($field))
+            return array($orderby => $field);
+    }
 }
 
 #########################################

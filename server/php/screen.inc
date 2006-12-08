@@ -437,7 +437,13 @@ function setup_layout_html($layout, $lasttime, $links) {
         # phase-selector radio-button click
         $defaults = setup_defaults($phase);
         $selections = form_carryover($defaults, $phase);
-        $selections['phase'] = $phase;
+        $selections['phase'] = strtolower($phase);
+
+        # Performance is enabled for test_run phase
+        $go = strtolower($selections['go']);
+        if ($go == 'performance' and $phase != 'test_run')
+            $selections['go'] = 'Summary';
+
         $qstring = arr2qstring($selections);
 
         $layout['top']['html'] .=
@@ -510,10 +516,25 @@ function form_buttons($params) {
 
     $format = "\n<input type='Submit' " .
                   "name='go' " .
+                  "onClick='%s' " .
                   "value='%s' %s>";
 
-    foreach ($types as $type)
-       $buttons[] = sprintf($format, $type, $disable[$type]);
+    # Setup printf formats
+    $self     = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
+    $javascript = "javascript:self.open(\"$self?%s\", \"_self\");";
+
+    # A button click means default sorting
+    unset($params['orderby_up']);
+    unset($params['orderby_down']);
+    unset($params['rows']);
+    unset($params['offset']);
+
+    foreach ($types as $type) {
+        $params['go'] = $type;
+        $qstring = arr2qstring($params);
+        $buttons[] = 
+            sprintf($format, sprintf($javascript, $qstring), $type, $disable[$type]);
+    }
 
     return $buttons;
 }
@@ -617,7 +638,7 @@ function selection_popups($defaults, $entries) {
 function hidden_carryover($params) {
 
     foreach (array_keys($params) as $k) {
-        if (preg_match('/^go$|^phase$|^more_|^show_|^text_/', $k))
+        if (preg_match('/^go$|^phase$|^more_|^show_|^text_|^orderby/', $k))
             continue;
         $str .= "\n<input type='hidden' name='$k' value='$params[$k]'>";
     }
@@ -658,6 +679,7 @@ EOT;
 
     td { font-size: 75%; } 
     th { font-size: 80%; } 
+    th#result { font-size: 55%; } 
 
 EOT;
 

@@ -44,11 +44,11 @@ function phase_results_table() {
     # IN [source:/trunk/server/sql/views.sql]
     return array(
         'mpi_install' => 
-            array('pass', 'fail'),
+            array('_ip', '_if'),
         'test_build'  => 
-            array('pass', 'fail'),
+            array('_bp', '_bf'),
         'test_run'    => 
-            array('pass', 'fail', 'skipped', 'timed_out', 'latency_bandwidth'),
+            array('_rp', '_rf', '_rs', '_rt', '_rl'),
     );
 }
 
@@ -64,7 +64,7 @@ function label($str) {
         "bitness"             => "Bitness",
         "client_serial"       => "Client serial",
         "command"             => "Command",
-        "compiler_name"       => "Compiler name",
+        "compiler_name"       => "Compiler",
         "compiler_version"    => "Compiler version",
         "configure_arguments" => "Configure arguments",
         "description"         => "Description",
@@ -78,7 +78,7 @@ function label($str) {
         "first_occurrence"    => "First occurrence",
         "gecos"               => "Gecos",
         "hostname"            => "Hostname",
-        "http_username"       => "HTTP username",
+        "http_username"       => "Org",
         "last_occurrence"     => "Last occurrence",
         "latency_avg"         => "Latency avg.",
         "latency_max"         => "Latency max.",
@@ -91,10 +91,10 @@ function label($str) {
         "mtt_version_major"   => "MTT version major",
         "mtt_version_minor"   => "MTT version minor",
         "np"                  => "np",
-        "os_name"             => "OS name",
+        "os_name"             => "OS",
         "os_version"          => "OS version",
         "phase"               => "Phase",
-        "platform_hardware"   => "Platform hardware",
+        "platform_hardware"   => "Hardware",
         "platform_name"       => "Platform name",
         "platform_type"       => "Platform type",
         "result_message"      => "Result message",
@@ -105,7 +105,7 @@ function label($str) {
         "stop_timestamp"      => "Date range",
         "subject"             => "Subject",
         "submit_timestamp"    => "Date range",
-        "suite_name"          => "Suite name",
+        "suite_name"          => "Suite",
         "test_name"           => "Test name",
         "test_result"         => "Test result",
         "url"                 => "Url",
@@ -121,6 +121,19 @@ function label($str) {
         "test_run"          => "Test run",
 
         # Result types
+
+        # Result string to column name
+        '_ip'               => 'pass',
+        '_if'               => 'fail',
+        '_bp'               => 'pass',
+        '_bf'               => 'fail',
+        '_rp'               => 'pass',
+        '_rf'               => 'fail',
+        '_rs'               => 'skipped',
+        '_rt'               => 'timed_out',
+        '_rl'               => 'latency_bandwidth',
+
+        # Column name to web page label
         "pass"              => "Pass",
         "fail"              => "Fail",
         "skip"              => "Skip",
