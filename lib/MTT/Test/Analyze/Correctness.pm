@@ -57,9 +57,11 @@ sub Analyze {
         np => $run->{np},
 # JMS: should this really be "status" on the left hand side?
         exit_status => $results->{exit_status},
-        signal => $results->{signal},
         test_result => $result,
     };
+
+    $report->{signal} = $results->{signal} if (defined($results->{signal}));
+
     my $want_output;
     my $str;
     $str = $msg;
