@@ -652,6 +652,7 @@ function do_graph($data, $type) {
     $arr[$i++] = 'bytes';
     $arr[$i++] = $unit;
 
+    # Note: There is no legend item that goes above message size
     foreach (array_keys($plots) as $p) {
         if (! is_null($legend_items[$p]))
             $arr[$i][] = $legend_items[$p];
@@ -659,10 +660,12 @@ function do_graph($data, $type) {
     $i++;
 
     for ($j = 0; $j < sizeof($message_sizes); $j++) {
-        $arr[$i][] = $message_sizes[$j];
+        $arr[$i][0] = $message_sizes[$j];
+        $k = 1;
         foreach (array_keys($plots) as $p) {
-            if ($plots[$p][$type])
-                $arr[$i][] = array_shift($plots[$p][$type]);
+            if ($plots[$p][$type]) {
+                $arr[$i][$k++] = $plots[$p][$type][$j];
+            }
         }
         $i++;
     }
@@ -687,68 +690,100 @@ function do_graph($data, $type) {
     if ($rwidth > 1200)
         $rwidth = 1200;
 
+    # Setup list of raw data formats
+    $styles = array('html', 'csv');
+
     # Provide popups for raw data
-    $raw =
-        "\n<a class='black_ln' href='javascript:popup(" .
-            "\n\"" . $rwidth . "\", " .
-            "\n\"" . $rheight . "\"," .
-            "\n\"Raw performance numbers\"," .
-            "\n\"\"," .
-            "\n\"" . htmlentities(raw2html($arr), ENT_QUOTES) . "\"," .
-            "\n\"font-family:Courier,monospace\"" .
-        ")'>" .
-        "\nhtml" .
-        "</a>&nbsp;";
+    foreach ($styles as $style) {
+        $raw .=
+            "\n<a class='black_ln' href='javascript:popup(" .
+                "\n\"" . $rwidth . "\", " .
+                "\n\"" . $rheight . "\"," .
+                "\n\"Raw performance numbers\"," .
+                "\n\"\"," .
+                "\n\"" . htmlentities(raw_data($arr, $style), ENT_QUOTES) . "\"," .
+                "\n\"font-family:Courier,monospace\"" .
+            ")' " .
+            ">" .
+            "\n$style" .
+            "</a>&nbsp;";
+    }
 
     # Return links to the image, raw data, and width
     $ret = array(
         'image' => $image,
-        'raw' => $raw,
+        'raw'   => $raw,
         'width' => $width
     );
 
     return $ret;
 }
 
-# Convert a 2D array (output by do_graph) to an html table
-function raw2html($arr) {
+# Convert a 2D array (output by do_graph) to an HTML or CSV table
+function raw_data($arr, $style) {
 
     global $lgray, $llgray;
 
     # Headers are always here
     $colspan = sizeof($arr[5]) - 1;
 
-    $tr = "<tr>";
-    $th = "<th bgcolor='$lgray'>";
-    $td = "<td bgcolor='$lgray'>";
-    $ths = "<th bgcolor='$lgray' colspan='$colspan'>";
-    $tdc = "<td bgcolor='$lgray' align='center'>";
+    # Number of plots = colspan
+    $plots = $colspan;
+
+    # HTML
+    if ($style == 'html') {
+        $tbl  = "\n<br><table border='1'>";
+        $tbl_ = "\n</table>";
+        $tr   = "\n<tr>";
+        $td   = "\n<td>";
+        $th   = "\n<th bgcolor = '$lgray'>";
+        $tdl  = "\n<td bgcolor = '$lgray'>";
+        $tdll = "\n<td bgcolor = '$llgray'>";
+        $ths  = "\n<th bgcolor = '$lgray' colspan = '$colspan'>";
+        $tdc  = "\n<td bgcolor = '$lgray' align   = 'center'>";
+    }
+    # CSV
+    else {
+        $tbl  = "\n<pre>";
+        $tbl_ = "\n</pre>";
+        $tr   = "<br>";
+        $td   = ",";
+        $th   = "";
+        $tdl  = "";
+        $tdll = "";
+        $ths  = ",";
+        $tdc  = "<br>,";
+    }
 
     $i = 0;
-    $html .= "<br><b>" . $arr[$i++] . "</b>";
-    $html .= "<br><b><i>" . 
-                    font('-1', nl2br($arr[$i++])) .
-                 "</b></i>";
 
-    $html .= "<br><table border='1'>";
+    # Title
+    $html .= "<br><b>" . $arr[$i++] . "</b>";
+    # Subtitle
+    $html .= "<br><b><i>" . font('-1', nl2br($arr[$i++])) . "</b></i>";
+
+    $html .= $tbl;
     $html .= $tr;
     $html .= $th  . font('-2', $arr[$i++]);
     $html .= $ths . font('-2', $arr[$i++]);
     $html .= $tr;
-    $html .= $td;
-
+    $html .= $tdl;
+    
     foreach ($arr[$i] as $cell)
         $html .= $tdc . font('-2', sp2br($cell));
 
+    # For each message size
     for ($i++; $i < sizeof($arr); $i++) {
-        $html .= "\n<tr>";
-        $html .= "\n<td bgcolor='$llgray'>". 
-                    font('-2', array_shift($arr[$i]));
-        for ($j = 0; $j < sizeof($arr[$i]); $j++) {
-            $html .= "<td>" . font('-2', $arr[$i][$j]);
+        $html .= $tr;
+        $html .= $tdll . font('-2', $arr[$i][0]);
+
+        # Print the corresponding latency/bandwidth values
+        # for the message size
+        for ($j = 1; $j <= $colspan; $j++) {
+            $html .= $td . font('-2', $arr[$i][$j]);
         }
     }
-    $html .= "</table>";
+    $html .= $tbl_;
 
     return $html;
 }
