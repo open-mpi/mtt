@@ -19,26 +19,29 @@
 $topdir = ".";
 include_once("$topdir/reporter.inc");
 include_once("$topdir/database.inc");
-include_once("$topdir/html.inc");
 
-# Print report
+# Top-level report printing function
+#   1. Print the query screen
+#   2. Print the report
 function dump_report() {
 
-    global $thcolor, $gray, $dgray, $lgray, $llgray, $lllgray, $white;
+    # Exit if a button hasn't been pressed
+    if (! isset($_GET['go']))
+        $nogo = true;
 
-    # Process buttons 
-    # (needs to come first, because _GET could be mutated here)
+    # Process/mutator controls 
+    # (they need to come first, because _GET could be mutated here)
     $button_press = process_buttons($_GET);
 
-    debug_cgi($_GET, "GET");
-
     # Process input params
-    $phases        = process_phase_field($_GET);
-    $date_fields   = process_date_field($_GET);
-    $input_fields  = process_input_fields($_GET);
-    $result_fields = process_result_fields($phases, $_GET);
-    $sort_field    = process_sort_field($_GET);
-    $offset_field  = process_offset_field($_GET);
+    $phases          = process_phase_field($_GET);
+    $date_fields     = process_date_field($_GET);
+    $input_fields    = process_input_fields($_GET);
+    $ttable_id_field = process_ttable_id_field($_GET);
+    $cherry_fields   = process_cherry_fields($_GET);
+    $result_fields   = process_result_fields($phases, $_GET);
+    $sort_field      = process_sort_field($_GET);
+    $offset_field    = process_offset_field($_GET);
 
     # Print either a summary or detail report,
     # depending on whether a 'select_more' parameter is set
@@ -47,7 +50,6 @@ function dump_report() {
         $detail_fields = detail_fields(get_scalar($phases));
     } elseif ($button_press == 'performance') {
         $do_performance = true;
-        $detail_fields = detail_fields(get_scalar($phases));
         $performance_fields = performance_fields();
     } else
         $do_summary = true;
@@ -55,6 +57,7 @@ function dump_report() {
     # Prepare query components
     $query = array_merge_recursive(
         $date_fields,
+        $ttable_id_field,
         $input_fields,
         $result_fields,
         $detail_fields,
@@ -62,10 +65,19 @@ function dump_report() {
         $sort_field,
         $offset_field
     );
-    $query['phases'] = $phases;
+
+    # Cherry picking overwrites the would-be WHERE
+    # clause with simple row number selections
+    if ($cherry_fields) {
+        unset($query['where']);
+        $query = array_merge_recursive($query, $cherry_fields);
+    }
 
     # Order columns left-to-right
     $query['select'] = order_columns($query['select']);
+
+    # Pass down phases field
+    $query['phases'] = $phases;
 
     # Compose query
     $cmd = compose_sql($query);
@@ -86,6 +98,13 @@ function dump_report() {
     $headers['phases']      = $phases;
     $headers['offset']      = $o;
 
+    # Print the user query screen
+    dump_query_screen($nogo);
+
+    # Exit if a button hasn't been pressed
+    if ($nogo)
+        return;
+
     # Print some basic, useful info atop each report table
     report_header($date_fields, $phases, $n);
     
@@ -96,7 +115,7 @@ function dump_report() {
     }
 
     # Report chunks index
-    $next_n_rows = next_n_rows($n, 100, $date_fields, $_GET);
+    $next_n_rows = next_n_rows($n, LIMIT, $date_fields, $_GET);
 
     print $next_n_rows;
 
@@ -110,51 +129,17 @@ function dump_report() {
 
     print $next_n_rows;
 
-    print "\n<hr></body></html>";
-
     pg_close();
-}
-
-# PHP5 has this function built-in
-function array_combine($keys, $values) {
-    $arr = array();
-    for ($i = 0; $i < sizeof($keys); $i++)
-        $arr[$keys[$i]] = $values[$i];
-
-    return $arr;
-}
-
-# Take keys and values and mutate hash
-# like so: list[keys][values] = 1
-function array_combine2(&$hash, $keys, $values) {
-    for ($i = 0; $i < sizeof($values); $i++) {
-        $hash[$keys[$i]][$values[$i]] = 1;
-    }
-}
-
-# Convert an SQL array (bracketed CSV) to a PHP array
-function csv2arr($str) {
-    if (preg_match("/{([^}]+)}/i", $str, $m)) {
-        $csv = $m[1];
-        $arr = explode(',', $csv);
-    }
-    else 
-        $arr = false;
-
-    return $arr;
 }
 
 #########################################
 #                                       
-#  Report Table Generating Functions (2)
+#  Report Table Generating Functions
 #                                     
 #########################################
 
-# Void function to print out a detail style HTML data table
+# Void function to print out a Detail style HTML table
 function detail_table($headers, $resource) {
-
-    global $thcolor, $gray, $dgray, $lgray, $llgray,
-           $lllgray, $lred, $lgreen, $lyellow, $white;
 
     # Print result headers
     $phase_results_table = phase_results_table();
@@ -168,13 +153,13 @@ function detail_table($headers, $resource) {
     print "\n<tr>";
 
     foreach ($headers['results'] as $result) {
-        printf("\n<th bgcolor='$thcolor'>%s", $labels[$result]);
+        printf("\n<th bgcolor='" . THCOLOR . "'>%s", $labels[$result]);
     }
 
     # Row numbering starts at the OFFEST arg to LIMIT
     $offset = $headers['offset'];
-    $row_n = $offset;
-    $lastrow = $offset + 100;
+    $php_row_n = $offset;
+    $lastrow = $offset + LIMIT;
 
     # Remove duplicated headers
     $headers = array_unique(
@@ -187,11 +172,14 @@ function detail_table($headers, $resource) {
     # Print data rows
     while ($row = pg_fetch_row($resource)) {
 
-        if ($row_n >= $lastrow)
+        if ($php_row_n >= $lastrow)
             break;
 
         # Results are always in the far right cols
         $results = array_splice($row, $num_cols['params']);
+
+        # Splice in the php_row_n in place of db_row_n
+        $db_row_n = array_shift(array_splice($row, 0, 1, ($php_row_n + 1)));
 
         # Details are always in the far far right cols
         $details = array_splice($results, $num_cols['results']);
@@ -203,21 +191,21 @@ function detail_table($headers, $resource) {
              $perf) = $results;
 
         if ($pass)
-            $bgcolor = (($pass > 0) ? $lgreen  : "");
+            $bgcolor = (($pass > 0) ? LGREEN  : "");
         elseif ($fail)
-            $bgcolor = (($fail > 0) ? $lred    : "");
+            $bgcolor = (($fail > 0) ? LRED    : "");
         elseif ($skip)
-            $bgcolor = (($skip > 0) ? $lyellow : "");
+            $bgcolor = (($skip > 0) ? LYELLOW : "");
         elseif ($time)
-            $bgcolor = (($time > 0) ? $lyellow : "");
+            $bgcolor = (($time > 0) ? LYELLOW : "");
         elseif ($perf)
-            $bgcolor = (($time > 0) ? $lblue   : "");
+            $bgcolor = (($time > 0) ? LBLUE   : "");
 
         print "<table border='1' width='100%'>" .
               "<tr><td bgcolor='$bgcolor'>";
 
-        $td = "<td bgcolor='$lgray' width='10%' valign='top'>";
-        $tdl = "<td bgcolor='$white'>";
+        $td = "<td bgcolor='" . LGRAY . "' width='10%' valign='top'>";
+        $tdl = "<td bgcolor='" . WHITE . "'>";
 
         $values =
             array_merge(
@@ -230,11 +218,13 @@ function detail_table($headers, $resource) {
         foreach ($headers as $header) {
             print (($i % 1 == 0) ? "\n<tr>" : "") .
                   "\n$td <b>" . label($header) . "</b> $tdl " .
-                  "\n<pre>" . wordwrap($values[$i], 100) . "</pre>";
+                  "\n<pre>" . wordwrap($values[$i], WRAP) . "</pre>";
             $i++;
         }
         print "</table>";
-        print "</table>";
+        print "</table><br>";
+
+        $php_row_n++;
     }
 
     print "\n</table>" .
@@ -243,27 +233,37 @@ function detail_table($headers, $resource) {
 }
 
 # Print out a summary table
-# (and maybe a performance graph). 
+# (and maybe a performance graph)
 function summary_table($headers, $resource) {
 
-    global $thcolor, $gray, $dgray, $lgray, $llgray,
-           $lllgray, $white;
+    # Are we dumping Performance graphs?
+    if (preg_match("/performance/i", $_GET['go']))
+        $do_performance = true;
 
     # Insert useful information on the left-hand side?
-    print "\n<div align=center>" .
+    print "\n<div align='center'>" .
 
-          "\n\n<!-- report_start -->\n\n" .
+          "\n<!-- report_start -->\n\n" .
 
-          "\n<table width='100%' cellpadding=5>" .
+          "\n<table width='100%' cellpadding='5'>" .
           "\n<tr>" .
-          "\n<td bgcolor='$lgray'>" .
-          "\n<div align=center>" .
-          "\n<table border=1 width='100%'>";
+          "\n<td bgcolor='" . LGRAY . "'>" .
+          "\n<table border='1' width='100%'>";
 
     # Display headers
-    $format = "\n<th bgcolor='$thcolor' rowspan=2>%s";
+    $format = "\n<th bgcolor='" . THCOLOR . "' rowspan=2>%s";
 
-    print "<tr>" . sprintf($format, '#');
+    print "<tr>" . 
+            sprintf($format, '') .
+            #             "<input " . 
+            #                 "type='checkbox' " . 
+            #                 "name='all_cherries' " . 
+            #                 "value='on' " . 
+            #                 "checked>") .
+            "";
+
+    $pound_sign = array_shift($headers['params']);
+    printf($format, label($pound_sign));
     foreach (sorting_links($headers['params']) as $header)
         printf($format, $header);
 
@@ -281,7 +281,7 @@ function summary_table($headers, $resource) {
         $colspan = sizeof($links[$phase]);
         $num_result_types[$phase] = $colspan;
 
-        printf("\n<th bgcolor='$thcolor' " .
+        printf("\n<th bgcolor='" . THCOLOR . "' " .
                      "colspan='$colspan'>%s",
                      $link);
         $total_results_cols += $colspan;
@@ -292,7 +292,7 @@ function summary_table($headers, $resource) {
     # Print phase headers
     foreach (array_keys($links) as $phase)
         foreach ($links[$phase] as $result)
-            printf("\n<th id='result' bgcolor='$thcolor'>%s", $result);
+            printf("\n<th id='result' bgcolor='" . THCOLOR . "'>%s", $result);
 
     # Calculate some colspans
     $phase_results_table = phase_results_table();
@@ -306,24 +306,32 @@ function summary_table($headers, $resource) {
 
     # Row numbering starts at the OFFEST arg to LIMIT
     $offset = $headers['offset'];
-    $row_n = $offset;
-    $lastrow = $offset + 100;
+    $php_row_n = $offset;
+    $lastrow = $offset + LIMIT;
 
     # printf formats
-    $format  = "\n<td bgcolor='%s' align='right'>%s";
-    $formatg = "\n<td bgcolor='$lgray' align='right'>%s";
-    $formatw = "\n<td bgcolor='$white'>%s";
+    $format   = "\n<td bgcolor='%s' align='right'>%s";
+    $formatg  = "\n<td bgcolor='" . LGRAY . "' align='right'>%s";
+    $formatgc = "\n<td bgcolor='" . LGRAY . "' align='center'>%s";
+    $formatw  = "\n<td bgcolor='" . WHITE . "'>%s";
 
     # Print data rows
     while ($row = pg_fetch_row($resource)) {
 
-        if ($row_n >= $lastrow)
+        if ($php_row_n >= $lastrow)
             break;
 
         # Results are always in the far right cols
-        $results = array_splice($row, $num_cols['params']);
+        $results = array_splice($row, $num_cols['params'] + 1); # (+1 for row #)
 
-        print "\n<tr>" . sprintf($formatg, $row_n);
+        # Grab the db_row_n
+        $db_row_n = array_shift($row);
+
+        # Checkbox off the db_row_n, but display ascending php_row_n
+        print "\n<tr>";
+        printf($formatgc, cherry_checkbox($db_row_n));
+        printf($formatg, ($php_row_n + 1));
+
         for ($i = 0; $i < sizeof($row); $i++)
             printf($formatw, drilldown_links($headers['params'][$i], $row[$i]));
 
@@ -354,24 +362,24 @@ function summary_table($headers, $resource) {
                  $perf_count) = $ret['counts'];
 
             printf($format,
-                    (($pass_count > 0) ? $result_colors[$j] : $lgray), $pass);
+                    (($pass_count > 0) ? $result_colors[$j] : LGRAY), $pass);
             $j++;
             printf($format,
-                    (($fail_count > 0) ? $result_colors[$j] : $lgray), $fail);
+                    (($fail_count > 0) ? $result_colors[$j] : LGRAY), $fail);
             $j++;
             if (! is_null($skip)) {
                 printf($format,
-                        (($skip_count > 0) ? $result_colors[$j] : $lgray), $skip);
+                        (($skip_count > 0) ? $result_colors[$j] : LGRAY), $skip);
                 $j++;
             }
             if (! is_null($time)) {
                 printf($format,
-                        (($time_count > 0) ? $result_colors[$j] : $lgray), $time);
+                        (($time_count > 0) ? $result_colors[$j] : LGRAY), $time);
                 $j++;
             }
             if (! is_null($perf)) {
                 printf($format,
-                        (($perf_count > 0) ? $result_colors[$j] : $lgray), $perf);
+                        (($perf_count > 0) ? $result_colors[$j] : LGRAY), $perf);
                 $j++;
             }
 
@@ -382,19 +390,17 @@ function summary_table($headers, $resource) {
 
         }
 
-        # Performance is always in the far far far right cols
-        if ($num_cols['details'])
-            $performance = array_splice($results, $num_cols['details']);
+        # Complile some performance data, if requested
+        if ($do_performance) {
 
-        # Complile some performance data, if there is any
-        if ($performance) {
+            $performance = array_slice($results, 0 - $num_cols['performance']);
 
             # Prepare perf data to be displayed in a graph
             $hash = array_combine(
                         $headers['performance'], 
                         array_map('csv2arr', $performance)
                     );
-            $graph_data['plots'][$row_n] = $hash;
+            $graph_data['plots'][$php_row_n] = $hash;
 
             # Prepare legend data for each individual line plot
             array_combine2($graph_data['legend'], $headers['params'], $row);
@@ -404,45 +410,69 @@ function summary_table($headers, $resource) {
                         $headers['params'], 
                         $row
                     );
-            $graph_data['params'][$row_n] = $hash;
+            $graph_data['params'][$php_row_n] = $hash;
         }
 
-        $row_n++;
+        $php_row_n++;
     }
 
-    print_totals($totals, $headers, $result_colors);
+    table_footer($totals, $headers, $result_colors);
 
     print "\n</table>" .
           "\n</table>" .
-          "\n\n<!-- report_end -->\n\n";
+          "\n<!-- report_end -->" .
+          "</div>";
 
     # Print performance graphs
-    if ($performance)
+    if ($do_performance)
         performance_graphs($graph_data);
 
     # Clean up old graphs
-    housekeeping('./images/tmp');
+    housekeeping_images('./images/tmp');
+    housekeeping_db('ttable');
 }
 
-# Print the totals at the foot the summary table
-function print_totals($totals, $headers, $result_colors) {
+# Output a checkbox for cherry-picking feature
+function cherry_checkbox($n) {
+    return "<input type='checkbox' " .
+            "name='cherry_$n' " . 
+            "value='on' " .
+            "checked>";
+}
 
-    # Print results totals in last row
-    $i = 0;
+# Print the totals and a cherry-picking button 
+# at the foot of the summary table
+function table_footer($totals, $headers, $result_colors) {
+
+    # Carryover the report type
+    $type = process_buttons($_GET);
+
+    # Print cherry button, and totals
     print "\n<tfoot><tr>" .
+          "\n<td bgcolor='" . LGRAY . "' align='center'>" .
+          "\n<button name='go' value='${type}_cherry' type='submit'>" .
+              "\n<img src='./images/cherries.gif' width='20' border='0'>" .
+          "\n</button>" .
           "\n<td align='left' " .
-                "bgcolor='$lgray' " .
+                "bgcolor='" . LGRAY . "' " .
                 "colspan='" . (sizeof($headers['params']) + 1) . "'>" .
           "\n<b>Totals</b>";
 
+    $i = 0;
     foreach ($totals as $total) {
         print "\n<td align='right' " .
-                     "bgcolor='" . (($total > 0) ? $result_colors[$i] : $lgray) . "'" .
+                     "bgcolor='" . (($total > 0) ? $result_colors[$i] : LGRAY) . "'" .
                  "><b>$total</b>";
         $i++;
     }
     print "\n</tfoot>";
 }
+
+#########################################
+#                                       
+#  Report Graph Generating Functions
+#                                     
+#########################################
 
 # Print all the available performance graphs
 function performance_graphs($data) {
@@ -470,9 +500,8 @@ function performance_graphs($data) {
 
     # Calculate how many graphs to show per row
     # (Using best guess screen size)
-    $screen_width = 1200;
-    $avg_width = $total_width / sizeof($widths);
-    $cols = floor($screen_width / $avg_width);
+    $avg_width = $total_width/sizeof($widths);
+    $cols = floor(SCREEN_WIDTH/$avg_width);
 
     # Display graphs
     print "<br><table width='100%'>";
@@ -556,14 +585,19 @@ function do_graph($data, $type) {
 
             $lineplots[$i] = new LinePlot($ydata);
 
+            # Human row numbers are +1
             $legend_items[$i] = 
-                "$i " . create_legend_item($params[$i], $legend);
+                ($i + 1) . ' ' . create_legend_item($params[$i], $legend);
 
             $lineplots[$i]->SetColor($color);
             $lineplots[$i]->SetWeight(2);
-            $lineplots[$i]->SetLegend($legend_items[$i]);
         }
     }
+
+    # Do not print a legend for a single line plot
+    if (sizeof($legend_items) > 1)
+        foreach (array_keys($legend_items) as $i)
+            $lineplots[$i]->SetLegend($legend_items[$i]);
 
     # Return nothing if we have no line plots
     if ($empty)
@@ -572,15 +606,23 @@ function do_graph($data, $type) {
     # Default margin sizes
     $margins['left']   = 60;
     $margins['right']  = 50;
-    $margins['top']    = 30;
+
+    # Top margin is adjusted automatically for
+    # title/subtitle 
+    $margins['top']    = 0;
+
+    # Bottom margin for legend
     $margins['bottom'] = 80;
 
     # Font width in pixels (NEED A WAY TO DETERMINE THESE
     # NUMBERS CORRECTLY!)
-    $fontwidth = 6;
+    $fontwidth = 6.2;
     $fontheight = 6;
-    $legend_height = $fontheight * sizeof($legend_items);
-    $legend_width = $fontwidth * max(array_map('strlen', $legend_items));
+    $legend_mark = 20;
+    $legend_entry_width = $fontwidth *
+                    max(array_map('strlen', $legend_items)) +
+                    $legend_mark;
+    $legend_width = $legend_entry_width;
 
     # Best guess for pixel:char and line:char ratios
     # WE WOULD HAVE TO GUESS AGAIN IF WE CHANGE FONT!
@@ -588,23 +630,34 @@ function do_graph($data, $type) {
     $c2p = 20;
     $l2p = 21;
     
+    # Set image dimensions 
+    # Width: based on ticks on the x-axis (and legend, if wide)
+    # Height: based on max latency/bw value
     $xticks = sizeof($message_sizes);
     $width = $xticks * $c2p;
     $height = 400;
+    #list($max, $avg) = max_avg($plots, $type);
 
-    # Max-out/bottom-out graph sizes
-    if ($width > 1200)
-        $width = 1200;
-    elseif ($width < 250)
-        $width = 250;
-    elseif ($legend_width > $width)
-        $width += abs($legend_width - $width) + 25;
+    list($width, $xfont) = constrain_graph_attrs($width);
 
-    # Legend sizing
-    $legend_cols       =  floor($width / $legend_width);
+    $legend_cols       =  floor($width / $legend_entry_width);
+    $legend_cols       =  max(1, $legend_cols);
     $legend_rows       =  ceil(sizeof($legend_items) / $legend_cols);
     $height            += $legend_rows * $l2p;
     $margins['bottom'] += $legend_rows * $l2p;
+
+    # Will the legend go off the edge?
+    if ($legend_cols)
+        $legend_width = $legend_entry_width * $legend_cols;
+
+    if ($legend_rows)
+        $legend_height = $fontheight * $legend_rows;
+
+    # Pad for a tight-fit legend
+    $diff = abs($legend_width - $width);
+    $width += $diff + 50;
+
+    list($width, $xfont) = constrain_graph_attrs($width);
 
     # Create the graph. These two calls are always required
     $graph = new Graph($width, $height, "auto");    
@@ -633,6 +686,7 @@ function do_graph($data, $type) {
 
     $graph->xaxis->SetTickLabels($message_sizes);
     $graph->xaxis->SetLabelAngle(90);
+    $graph->xaxis->SetFont($xfont);
     $graph->xaxis->SetTitleMargin(25);
     $graph->yaxis->SetTitleMargin(40);
     $graph->xaxis->setTitle($titles['xaxis'], "middle");
@@ -683,15 +737,15 @@ function do_graph($data, $type) {
     # Adjust size of raw data links
     $cols = max(array_map('sizeof', array_values($arr)));
     $rows = sizeof($arr);
-    $rwidth = (90 * $cols);
+    $rwidth = (90 * $cols) + 50;
     $rheight = ((20 * $rows) + 200);
     if ($rheight > 800)
         $rheight = 800;
-    if ($rwidth > 1200)
-        $rwidth = 1200;
+    if ($rwidth > SCREEN_WIDTH)
+        $rwidth = SCREEN_WIDTH;
 
     # Setup list of raw data formats
-    $styles = array('html', 'csv');
+    $styles = array('HTML', 'CSV');
 
     # Provide popups for raw data
     foreach ($styles as $style) {
@@ -719,10 +773,34 @@ function do_graph($data, $type) {
     return $ret;
 }
 
+# Max-out/bottom-out image/font size
+function constrain_graph_attrs($width) {
+    $font = FF_FONT1;
+    if ($width > SCREEN_WIDTH) {
+        $width = SCREEN_WIDTH;
+        $font = FF_FONT0;
+    } elseif ($width < 250)
+        $width = 250;
+
+    return array($width, $font);
+}
+
+# Return the maximum latency or bandwidth "leaf" value
+function max_avg($plots, $type) {
+    list($max, $sum, $count) = array(0,0,0);
+    foreach (array_keys($plots) as $p) {
+        foreach ($plots[$p][$type] as $v) {
+            $sum += $v;
+            $count++;
+            if ($v > $max)
+                $max = $v;
+        }
+    }
+    return array($max, ($sum/$count));
+}
+
 # Convert a 2D array (output by do_graph) to an HTML or CSV table
 function raw_data($arr, $style) {
-
-    global $lgray, $llgray;
 
     # Headers are always here
     $colspan = sizeof($arr[5]) - 1;
@@ -731,28 +809,32 @@ function raw_data($arr, $style) {
     $plots = $colspan;
 
     # HTML
-    if ($style == 'html') {
+    if (strtolower($style) == 'html') {
         $tbl  = "\n<br><table border='1'>";
         $tbl_ = "\n</table>";
         $tr   = "\n<tr>";
-        $td   = "\n<td>";
-        $th   = "\n<th bgcolor = '$lgray'>";
-        $tdl  = "\n<td bgcolor = '$lgray'>";
-        $tdll = "\n<td bgcolor = '$llgray'>";
-        $ths  = "\n<th bgcolor = '$lgray' colspan = '$colspan'>";
-        $tdc  = "\n<td bgcolor = '$lgray' align   = 'center'>";
+        $tdr  = "\n<td align='right'>";
+        $th   = "\n<th bgcolor='" . LGRAY . "'>";
+        $tdl  = "\n<td bgcolor='" . LGRAY . "'>";
+        $tdll = "\n<td bgcolor='" . LLGRAY . "'>";
+        $ths  = "\n<th bgcolor='" . LGRAY . "' colspan='$colspan'>";
+        $tdc  = "\n<td bgcolor='" . LGRAY . "' align='center'>";
+        $tdc_ = "\n<td bgcolor='" . LGRAY . "' align='center'>";
+        $sp2func  = "sp2br";
     }
     # CSV
     else {
         $tbl  = "\n<pre>";
         $tbl_ = "\n</pre>";
         $tr   = "<br>";
-        $td   = ",";
+        $tdr  = ",";
         $th   = "";
         $tdl  = "";
         $tdll = "";
         $ths  = ",";
         $tdc  = "<br>,";
+        $tdc_ = "<br>";
+        $sp2func  = "";
     }
 
     $i = 0;
@@ -764,23 +846,29 @@ function raw_data($arr, $style) {
 
     $html .= $tbl;
     $html .= $tr;
+
+    # "bytes", "usec or Mbps"
     $html .= $th  . font('-2', $arr[$i++]);
     $html .= $ths . font('-2', $arr[$i++]);
     $html .= $tr;
     $html .= $tdl;
     
-    foreach ($arr[$i] as $cell)
-        $html .= $tdc . font('-2', sp2br($cell));
+    # Headers (legend items)
+    $j = 0;
+    foreach ($arr[$i] as $cell) {
+        eval("\$cell = $sp2func('$cell');");
+        $html .= ($j++ ? $tdc : $tdc_) . font('-2', $cell);
+    }
 
-    # For each message size
+    # For each message size ...
     for ($i++; $i < sizeof($arr); $i++) {
         $html .= $tr;
         $html .= $tdll . font('-2', $arr[$i][0]);
 
-        # Print the corresponding latency/bandwidth values
-        # for the message size
+        # ... print the corresponding latency/bandwidth
+        # values for the message size
         for ($j = 1; $j <= $colspan; $j++) {
-            $html .= $td . font('-2', $arr[$i][$j]);
+            $html .= $tdr . font('-2', sprintf("%01.2f", $arr[$i][$j]));
         }
     }
     $html .= $tbl_;
@@ -796,39 +884,6 @@ function font($size, $str) {
 # ' ' -> '<br>'
 function sp2br($str) {
     return preg_replace('/\s+/', '<br>', $str);
-}
-
-# Clean up old graphs
-function housekeeping($dir) {
-
-    $res = opendir($dir);
-
-    $root = dirname($_SERVER["SCRIPT_FILENAME"]);
-
-    $img_types = array("\.gif$",
-                       "\.jpg$",
-                       "\.png$",
-                       "\.jpeg$",
-                       "\.pdf$");
-
-    # Threshold to unlink a file
-    $hours = 1;
-
-    $now = time();
-
-    # Loop through the files and delete any old ones
-    while ($filename = readdir($res)) {
-
-        # unlink needs a full path
-        $filename = "$root/$dir/$filename";
-
-        if (preg_match('/'.join('|', $img_types).'/i', $filename)) {
-            $age = $now - filemtime($filename);
-            if ($age > (60 * 60 * $hours))
-                unlink($filename);
-        }
-    }
-    closedir($res);
 }
 
 # Return HTML colors for the lineplots
@@ -904,23 +959,25 @@ function create_subtitle(&$legend) {
 # Return string for a given hash entry. 
 # $legend is keyed by params that are *not* in the subtitle,
 # because they differ across lineplots
+
 function create_legend_item($hash, $legend) {
     foreach (array_keys($legend) as $k)
         if (isset($legend[$k]))
             $items[] = $hash[$k];
 
-    return join(' ', $items);
+    $ret = join(' ', $items);
+    return $ret;
 }
 
 # Generate a random string
 function randstr($length) {
 
-    $pattern = "1234567890abcdefghijklmnopqrstuvwxyz";
+    $pattern = "abcdefghijklmnopqrstuvwxyz";
     for($i = 0; $i < $length; $i++) {
         if (isset($key))
-            $key .= $pattern{rand(0,35)};
+            $key .= $pattern{rand(0,26)};
         else
-            $key = $pattern{rand(0,35)};
+            $key = $pattern{rand(0,26)};
     }
     return $key;
 }
@@ -930,26 +987,24 @@ function randstr($length) {
 # Return a sequence of result cell bgcolors
 function result_colors($phases) {
 
-    global $lred, $lgreen, $lyellow, $lblue;
-
     # Arrayify the argument
     if (! is_array($phases))
         $phases = array($phases);
 
     if (array_search('mpi_install', $phases) !== false) {
-        $colors[] = $lgreen;
-        $colors[] = $lred;
+        $colors[] = LGREEN;
+        $colors[] = LRED;
     }
     if (array_search('test_build', $phases) !== false) {
-        $colors[] = $lgreen;
-        $colors[] = $lred;
+        $colors[] = LGREEN;
+        $colors[] = LRED;
     }
     if (array_search('test_run', $phases) !== false) {
-        $colors[] = $lgreen;
-        $colors[] = $lred;
-        $colors[] = $lyellow;
-        $colors[] = $lyellow;
-        $colors[] = $lblue;
+        $colors[] = LGREEN;
+        $colors[] = LRED;
+        $colors[] = LYELLOW;
+        $colors[] = LYELLOW;
+        $colors[] = LBLUE;
     }
     return $colors;
 }
@@ -992,7 +1047,7 @@ function next_n_rows($n, $limit, $date_fields, $params) {
 
     # Determine report type
     if (preg_match("/(summary|detail)/i", $go, $m))
-        $qstring_arr['go'] = $m[1]."_slice";
+        $qstring_arr['go'] = $m[1];
 
     # Report "slices" should use absolute date range
     # because the LIMIT clause may not make sense in
@@ -1000,6 +1055,13 @@ function next_n_rows($n, $limit, $date_fields, $params) {
     $absolute_date = handle_absolute_date($date_fields);
 
     $qstring_arr["text_start_timestamp"] = $absolute_date;
+
+    # Flag all the links as slices
+    $qstring_arr["slice"] = 1;
+
+    # Make lastgo equal go so we'll use ttable (see
+    # use_ttable)
+    $qstring_arr['lastgo'] = $go;
 
     $i = 0;
     while ($i < $n) {
@@ -1069,9 +1131,20 @@ function drilldown_links() {
     # Prepare a query string for manipulation
     $qstring_arr = $_GET;
 
+    # Mark this as a drilldown so we can use the tttable
+    $qstring_arr['drill'] = 1;
+
+    # Make these identical so ttable is used (see
+    # use_ttable)
+    $qstring_arr['lastgo'] = $qstring_arr['go'];
+
     # Do not bring over LIMIT clause for a drilldown
     unset($qstring_arr['rows']);
     unset($qstring_arr['offset']);
+    unset($qstring_arr['slice']);
+
+    # Cherries are not applicable for a drilldown report
+    unset_cherries($qstring_arr);
 
     $self = 'http://' . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'];
     $format = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
@@ -1086,6 +1159,14 @@ function drilldown_links() {
         $results = func_get_arg(2);
         $phase   = func_get_arg(3);
 
+        # Drilldowns are not allowed from a cherry-picked report
+        # Return plain non-clickable text labels
+        if (is_cherry_pick($_GET))
+            return array(
+                'links' => $results,
+                'counts' => $results,
+            );
+
         # Bring over phase-independent selections, and
         # combine them with phase-dependent defaults
         $defaults = setup_defaults($phase);
@@ -1095,6 +1176,7 @@ function drilldown_links() {
         # Do not bring over LIMIT clause for a drilldown
         unset($qstring_arr['rows']);
         unset($qstring_arr['offset']);
+        unset($qstring_arr['slice']);
 
         $j = 0;
         # Loop over result count values
@@ -1103,7 +1185,7 @@ function drilldown_links() {
             $i = 0;
             # Loop over header names
             foreach ($headers['params'] as $param) {
-                $qstring_arr["text_$param"] = exact($params[$i++]);
+                $qstring_arr["text_$param"] = exact_match($params[$i++]);
             }
             $qstring_arr['test_result'] = $phase_results_table[$phase][$j++];
 
@@ -1120,11 +1202,17 @@ function drilldown_links() {
         $header = func_get_arg(0);
         $param  = func_get_arg(1);
 
-        $qstring_arr["text_$header"] = exact($param);
+        # Drilldowns are not allowed from a cherry-picked report
+        # Return plain non-clickable text labels
+        if (is_cherry_pick($_GET))
+            return $param;
+
+        $qstring_arr["text_$header"] = exact_match($param);
 
         # Do not bring over LIMIT clause for a drilldown
         unset($qstring_arr['rows']);
         unset($qstring_arr['offset']);
+        unset($qstring_arr['slice']);
 
         $ret = sprintf($format, arr2qstring($qstring_arr), $param);
     }
@@ -1146,6 +1234,17 @@ function drilldown_links() {
 
         $phases = func_get_arg(0);
 
+        # Drilldowns are not allowed from a cherry-picked report
+        # Return plain non-clickable text labels
+        if (is_cherry_pick($_GET)) {
+            foreach ($phases as $phase) {
+                $ret[$phase][] = label($phase);
+                foreach ($phase_results_table[$phase] as $result)
+                    $ret[$phase][] = label(label($result));
+            }
+            return $ret;
+        }
+
         foreach ($phases as $phase) {
 
             # Bring over phase-independent selections, and
@@ -1157,6 +1256,7 @@ function drilldown_links() {
             # Do not bring over LIMIT clause for a drilldown
             unset($qstring_arr['rows']);
             unset($qstring_arr['offset']);
+            unset($qstring_arr['slice']);
 
             unset($qstring_arr['test_result']);
             $ret[$phase][] = sprintf($format, arr2qstring($qstring_arr), label($phase));
@@ -1173,13 +1273,30 @@ function drilldown_links() {
             }
         }
     }
+
     return $ret;
 }
 
+# Return true if the user has clicked the cherry button
+function is_cherry_pick($params) {
+    $go = $params['go'];
+    if (preg_match("/cherry/i", $go))
+        return true;
+    else
+        return false;
+}
+
+# Mutator function to clear out all cherry checkbox values
+function unset_cherries(&$arr) {
+    foreach (array_keys($arr) as $k)
+        if (preg_match("/cherry_\d+/i", $k))
+            unset($arr[$k]);
+}
+
 # Create headers wrapped by up/down sort arrows
-# (Rather have this an another if/else in drilldown_links.
-# Oh well.)
-# (Override the standard text label with 2nd argument)
+# (Rather have this as another if/else in drilldown_links.
+# Oh well.) (Override the standard text label with $label
+# argument)
 function sorting_links($headers, $label, $arrow_size) {
 
     $scalar_context = false;
@@ -1190,6 +1307,11 @@ function sorting_links($headers, $label, $arrow_size) {
         $headers = array($headers);
         $scalar_context = true;
     }
+
+    # Drilldowns are not allowed from a cherry-picked report
+    # Return plain non-clickable text labels
+    if (is_cherry_pick($_GET))
+        return array_map('label', $headers);
 
     # Use standard label by default
     if (is_null($label))
@@ -1209,6 +1331,7 @@ function sorting_links($headers, $label, $arrow_size) {
     unset($qstring_arr['orderby_down']);
     unset($qstring_arr['rows']);
     unset($qstring_arr['offset']);
+    unset($qstring_arr['slice']);
 
     # Setup printf formats
     $self       = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
@@ -1241,19 +1364,24 @@ function sorting_links($headers, $label, $arrow_size) {
     return $ret;
 }
 
-# Return the string with beginning/ending regexp match boundaries
-# (param/value drilldown links on table cells should use this)
-function exact($str) {
+# Return the string with beginning/ending regexp match
+# boundaries (param/value drilldown links on table cells
+# should use this)
+function exact_match($str) {
     return '^' . $str . '$';
 }
 
 # Return number of rows in report
+# (Needed becase if we have filtered by LIMIT, the PG
+# resource will contain only LIMIT rows despite the same
+# query minus the LIMIT clause returning more than LIMIT
+# rows)
 function rowcount($n, $params) {
     # LIMIT has not been used
     if (! isset($params['rows']))
         return $n;
     else
-         return $params['rows'];
+        return $params['rows'];
 }
 
 # Return offset integer from where this report is displaying
@@ -1361,6 +1489,49 @@ function compose_sql($query) {
     $selects = array();
     $nl = "\n\t";
 
+    # Setup a temporary TABLE/SEQUENCE 
+    # NOTE: the above so-called temporary SQL relations are
+    # NOT truly temporary, it is just that we do intend to
+    # delete them after the user's session expires
+    $new_ttable = $query['new_ttable'];
+    $ttable     = $query['ttable'];
+    $tseq       = $query['tseq'];
+
+    # Handle ORDER BY
+    if (isset($query['orderby_up']))
+        $orderby = $query['orderby_up'];
+    elseif (isset($query['orderby_down']))
+        $orderby = $query['orderby_down'] . ' DESC';
+
+    # Handle LIMIT + OFFSET
+    $offset = offset($query);
+
+    $select_star = "SELECT * FROM $ttable %s;";
+
+    # Just select from the last ttable if we do not need to
+    # prepare a new one
+    if (! $new_ttable) {
+
+        # We have already filtered by date range
+        remove_match($query['where'], 'start_timestamp');
+
+        $where = $query['where'];
+
+        if ($where)
+            $criteria .= "\nWHERE " . join(" AND $nl", $where);
+
+        if ($orderby)
+            $criteria .= "\nORDER BY " . $orderby;
+
+        if ($offset)
+            $criteria .= "\nLIMIT " . LIMIT . " OFFSET $offset";
+
+        $criteria .= ';';
+
+        return 
+            sprintf($select_star, $criteria);
+    }
+
     # Determine table (or views) to SELECT from
     if (sizeof($query['phases']) > 1)
         $tables = array('all_view');
@@ -1373,6 +1544,8 @@ function compose_sql($query) {
 
     # Compile values for SELECT, GROUP BY,
     # and ORDER BY, and LIMIT clauses
+    #
+    # (NOTE: SELECTs MUST BE ORDERED LIKE SO FOR *_table FUNCTIONS)
     $selects = array_unique(
         array_merge(
             $query['select'],
@@ -1381,6 +1554,9 @@ function compose_sql($query) {
             $query['performance']
         )
     );
+
+    # Do not GROUP BY or ORDER BY row number
+    unset($query['select']['n']);
 
     $groupbys = array_unique(
         array_merge(
@@ -1396,28 +1572,26 @@ function compose_sql($query) {
         )
     );
 
-    # Handle ORDER BY
-    if (isset($query['orderby_up']))
-        $orderby = $query['orderby_up'];
-    elseif (isset($query['orderby_down'])) {
-        $orderby = $query['orderby_down'] . ' DESC';
-    }
-
-    if (! is_null($orderby)) {
+    # Splice out orderby's old position, and place
+    # it at the front of the ORDER BY clause
+    if ($orderby) {
         for ($i = 0; $i < sizeof($orderbys); $i++) {
             if ($orderbys[$i] == $orderby) {
                 array_splice($orderbys, $i, 1);
                 break;
             }
         }
-        array_unshift($orderbys, $orderby);
+        array_unshift($orderbys, $orderby . $direction);
     }
-
+    
+    # Row numbering is always the hidden primary sort key
     $offset = offset($query);
 
     # Piece together all the clauses
     $cmd  = "\n SELECT " .
                 "$nl" . join(",$nl", $selects);
+
+    $cmd .= "\n INTO TABLE $ttable ";
 
     $cmd .= "\n FROM " .
                 "$nl" . join(",$nl", $tables);
@@ -1436,11 +1610,14 @@ function compose_sql($query) {
                     "$nl $direction";
     }
     if ($offset)
-        $cmd .= "\n LIMIT 100 OFFSET $offset;";
+        $cmd .= "\n LIMIT " . LIMIT . " OFFSET $offset";
 
-    debug_sql($cmd);
+    $cmd .= ";";
 
-    return $cmd;
+    debug_sql($cmd, 1);
+    do_pg_query($cmd);
+
+    return sprintf($select_star, '');
 }
 
 #########################################
@@ -1451,31 +1628,39 @@ function compose_sql($query) {
 # ready to be fed to compose_sql. The query array is
 # structured more or less like an SQL SELECT statement:
 #
-# (type)  
-# (all)    $query['select'][column alias]      => list of SELECT {string functions | column aliases}
-# (all)    $query['aggregates']                => list of COUNT clauses for result counts
-# (detail) $query['select_more'][column alias] => list of detail SELECT columns
-# (all)    $query['where']                     => list of WHERE clauses
-# (all)    $query['limit']                     => LIMIT value
-# (all)    $query['offset']                    => OFFSET value
+# All SELECT items (including aggregates) are formatted as:
+# [column alias] => {string functions|column alias}
+#
+# (type)
+# (all)    $query['ttable']      => session DB table to select from
+# (all)    $query['select']      => list of general SELECTs
+# (all)    $query['aggregates']  => list of COUNT clauses for result counts
+# (detail) $query['select_more'] => list of detail SELECT columns
+# (detail) $query['performance'] => list of performance SELECT columns
+# (all)    $query['where']       => list of WHERE clauses
+# (all)    $query['limit']       => LIMIT value
+# (all)    $query['offset']      => OFFSET value
+# (all)    $query['orderby_*']   => primary sort for ORDER BY
 #
 #########################################
 
 # Determine report type, Summary or Detail
-#
-# THIS FUNCTION CHANGES _GET BASED ON WHETHER A "SLICE"
-# REPORT IS BEING USED. REASON: THERE IS NO WAY TO CHANGE
-# TWO PARAMS IN A SINGLE BUTTON CLICK
 function process_buttons($params) {
     $go = strtolower($_GET['go']);
+    $slice = $params['slice'];
 
     # Determine report type, and
     # whether this is a "slice" report
     if (preg_match("/(summary|detail|performance|latency\w+)/i", $go, $m)) {
         $type = $m[1];
-        if (! preg_match("/slice/i", $go)) {
+        if (! $slice) {
             unset($_GET['rows']);
             unset($_GET['offset']);
+            unset($_GET['slice']);
+        }
+        # Do not carry cherry-picking over to next invocation
+        elseif (preg_match("/cherry/i", $go)) {
+            $_GET['go'] = $type;
         }
     }
 
@@ -1576,7 +1761,9 @@ function process_input_fields($params) {
 # 2. Optional timestamp string description (e.g.,
 #    "by second", "by hour", ...)
 #
-# Return the SQL date filter (and string function)
+# Returns: 
+#   - SQL date filter with string function
+#   - Absolute time stamp
 function process_date_field($params) {
 
     $date = array();
@@ -1723,6 +1910,36 @@ function process_offset_field($params) {
     return array('offset' => $offset);
 }
 
+# This function always returns a 'ttable_id' for
+# compose_sql, whether it is a new or recycled ttable
+function process_ttable_id_field($params) {
+
+    # Setup a temporary TABLE/SEQUENCE 
+    # NOTE: the above so-called temporary SQL relations are
+    # NOT truly temporary, it is just that we intend to DROP
+    # them after the user's session expires
+    $ttable_id = $params['ttable_id'];
+    $ttable    = "mtttemp_${ttable_id}_table";
+    $tseq      = "mtttemp_${ttable_id}_seq";
+
+    # Setup ttable stuff for compose_sql
+    $query['new_ttable']  = true;
+    $query['ttable']      = $ttable;
+    $query['select']['n'] = "nextval('$tseq') as n";
+
+    $use_ttable = use_ttable($params);
+
+    # Use last session's ttable
+    if ($use_ttable) {
+        $query['new_ttable'] = false;
+
+        # This will result in a simple SELECT * from the ttable
+        $query['select']['n'] = "n";
+    }
+
+    return $query;
+}
+
 # Process OFFSET value for LIMIT clause
 function process_sort_field($params) {
     $orderbys = array(
@@ -1736,6 +1953,60 @@ function process_sort_field($params) {
     }
 }
 
+# Generate WHERE clause for row numbers
+function process_cherry_fields($params) {
+
+    $go = $params['go'];
+
+    # Cherries are only picked with the cherry button
+    if (! preg_match("/cherry/i", $go))
+        return null;
+
+    # # Do not do anything if they're all checked
+    # if (is_homogenous($params) == 'on')
+    #     return;
+    # # Return 0 rows if all cherries are unchecked
+    # elseif (is_homogenous($params) == 'off')
+    #     return $query['where'] = 'false';
+        
+    # Compile all the cherry checkboxes and 
+    # place them in an array (eliminating duplicates)
+    foreach (array_keys($params) as $k) {
+
+        if (preg_match("/cherry_(\d+)/i", $k, $m)) {
+            $n = $m[1];
+            $clauses[] = "n = $n";
+        }
+    }
+
+    if ($clauses) {
+        $query['where'][] = "(" . join(" OR ", $clauses) . ")";
+        return $query;
+    }
+}
+
+# Return 'on' if all cherries are checked
+# Return 'off' if all cherries are unchecked
+# Return false if cherries are heterogeneous
+# function is_homogenous($params) {
+#     $on = 0;
+#     $off = 0;
+#     foreach (array_keys($params) as $k)
+#         if (preg_match("/^cherry:/i", $k))
+#             preg_match("/^on:/i", $params[$k]) ? $on++ : $off++;
+# 
+#     if (! $on)
+#         return 'off';
+#     elseif (! $off)
+#         return 'on';
+#     else
+#         return false;
+# }
+
+#########################################
+#                                       
+#  Column Processing
+#                                     
 #########################################
 
 # Loop through column aliases, and return
@@ -1743,6 +2014,9 @@ function process_sort_field($params) {
 function order_columns($columns) {
 
     $layout = array(
+
+        # row number
+        'n'                 => 1,
 
         # results
         'start_timestamp'   => 1,
@@ -1844,7 +2118,7 @@ function performance_fields() {
 
 #########################################
 #                                       
-#  String Processing Functions
+#  String & List Processing Functions
 #                                     
 #########################################
 
@@ -1897,6 +2171,98 @@ function result_str($phase, $result) {
     return '_' . $abbrevs[$phase] . substr($result, 0, 1);
 }
 
+# Convert an SQL array (bracketed CSV) to a PHP array
+function csv2arr($str) {
+    if (preg_match("/{([^}]+)}/i", $str, $m)) {
+        $csv = $m[1];
+        $arr = explode(',', $csv);
+    }
+    else 
+        $arr = false;
+
+    return $arr;
+}
+
+# PHP5 has this function built-in
+function array_combine($keys, $values) {
+    $arr = array();
+    for ($i = 0; $i < sizeof($keys); $i++)
+        $arr[$keys[$i]] = $values[$i];
+
+    return $arr;
+}
+
+# Take keys and values and mutate hash
+# like so: list[keys][values] = 1
+function array_combine2(&$hash, $keys, $values) {
+    for ($i = 0; $i < sizeof($values); $i++) {
+        $hash[$keys[$i]][$values[$i]] = 1;
+    }
+}
+
+# Remove array entries whose value matches pattern
+function remove_match(&$arr, $pattern) {
+    $i = 0;
+    foreach ($arr as $v)
+        if (preg_match("/$pattern/", $v))
+            unset($arr[$i++]);
+}
+
 #########################################
+#                                       
+#  Housekeeping
+#                                     
+#########################################
+
+# Clean up expired session db TABLE/SEQUENCEs listed in $listing
+function housekeeping_db($listing) {
+
+    # Cherry-picking sessions expire
+    # (Is 'accessed' more recent than '60 minutes ago'?)
+    $cmd = "SELECT tname FROM $listing WHERE accessed < now() - interval '60 minutes';";
+
+    $tables = simple_select($cmd);
+
+    foreach ($tables as $table) {
+        $tseq = preg_replace('/_table$/', '_seq', $table);
+
+        do_pg_query("DROP TABLE $table;", SILENT);
+        do_pg_query("DROP SEQUENCE $tseq;", SILENT);
+        do_pg_query("DELETE FROM $listing WHERE tname = '$table';", SILENT);
+    }
+}
+
+# Clean up old graphs
+function housekeeping_images($dir) {
+
+    $res = opendir($dir);
+
+    $root = dirname($_SERVER["SCRIPT_FILENAME"]);
+
+    $img_types = array("\.gif$",
+                       "\.jpg$",
+                       "\.png$",
+                       "\.jpeg$",
+                       "\.pdf$");
+
+    # Threshold to unlink a file
+    $hours = 1;
+
+    $now = time();
+
+    # Loop through the files and delete any old ones
+    while ($filename = readdir($res)) {
+
+        # unlink needs a full path
+        $filename = "$root/$dir/$filename";
+
+        if (preg_match('/'.join('|', $img_types).'/i', $filename)) {
+            $age = $now - filemtime($filename);
+            if ($age > (60 * 60 * $hours))
+                unlink($filename);
+        }
+    }
+    closedir($res);
+}
 
 ?>

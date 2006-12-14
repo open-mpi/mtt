@@ -12,29 +12,25 @@
 
 #
 #
-# Web-based Open MPI Tests Querying Tool -
-#   This tool is for drill-downs.
-#   For the one-size-fits-all report, see summary.php.
+# Web-based Open MPI Tests Querying Tool
 #
 #
 
-# Set debug levels
-if (isset($_GET['verbose']) or isset($_GET['debug'])) {
-    $GLOBALS['verbose'] = 1;
-    $GLOBALS['debug']   = 1;
-    $_GET['cgi']        = 'on';
-    $_GET['sql']        = 'on';
-} else {
-    $GLOBALS['verbose'] = 0;
-    $GLOBALS['debug']   = 0;
+# 'debug' is an aggregate trace
+if ($_GET['debug'] == 'on') {
+    $_GET['verbose'] = 'on';
+    $_GET['dev']     = 'on';
+    $_GET['cgi']     = 'on';
+    $_GET['stats']   = 'on';
 }
 
-# Set php trace levels
-if ($GLOBALS['verbose'])
+# Set PHP trace levels
+if ($_GET['verbose'])
     error_reporting(E_ALL);
 else
     error_reporting(E_ERROR | E_WARNING | E_PARSE);
 
+# Includes
 $topdir = ".";
 include_once("/l/osl/www/doc/www.open-mpi.org/dbpassword.inc");
 include_once("$topdir/reporter.inc");
@@ -54,10 +50,19 @@ if (! is_null($do_redir))
 elseif (! is_null($make_redir))
     make_redir($_GET);
 
-dump_query_screen();
+# Display input parameters
+debug_cgi($_GET, "GET " . __LINE__);
 
-if (isset($_GET['go']))
-    print dump_report();
+# Set 'ttable_id' for screen and report,
+$ttable_id = handle_ttable_id($_GET);
+
+# Put ttable_id into the environment.
+$_GET['ttable_id'] = $ttable_id;
+
+dump_report();
+
+print hidden_carryover($_GET) .
+      "\n<hr></form></body></html>";
 
 exit;
 

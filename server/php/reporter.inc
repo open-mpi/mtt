@@ -12,6 +12,38 @@
 
 #########################################
 #                                       #
+#  Definitions                          #
+#                                       #
+#########################################
+
+# Constant to mute SQL errors (set true to mute)
+define('SILENT', true);
+
+# Number of rows to show per page
+define('LIMIT', 100);
+
+# Text wrapping in Detail reports
+define('WRAP', 100);
+
+# Screen dimemsion constants for graphing
+define('SCREEN_WIDTH', 1200);
+define('SCREEN_HEIGHT', 700);
+
+# HTML colors
+define('GRAY',     "#A0A0A0");
+define('DGRAY',    "#808080");
+define('LGRAY',    "#C0C0C0");
+define('LLGRAY',   "#DEDEDE");
+define('LLLGRAY',  "#E8E8E8");
+define('LRED',     "#FFC0C0");
+define('LGREEN',   "#C0FFC0");
+define('LYELLOW',  "#FFFFC0");
+define('LBLUE',    "#C0C0FF");
+define('WHITE',    "#FFFFFF");
+define('THCOLOR',  LLGRAY);
+
+#########################################
+#                                       #
 #  Global arrays                        #
 #                                       #
 #########################################
@@ -106,7 +138,7 @@ function label($str) {
         "subject"             => "Subject",
         "submit_timestamp"    => "Date range",
         "suite_name"          => "Suite",
-        "test_name"           => "Test name",
+        "test_name"           => "Test",
         "test_result"         => "Test result",
         "url"                 => "Url",
         "username"            => "Username",
@@ -153,6 +185,9 @@ function label($str) {
         # Selection/unselection
         "show"  => "Show",
         "hide"  => "Hide",
+
+        # Row number
+        "n" => "#",
     );
 
     if (isset($labels[$str]))
@@ -239,9 +274,11 @@ function setup_defaults($phases) {
 
     # Developer params
     $ret['dev'] = array(
-        'sql'   => 'off',
-        'cgi'   => 'off',
+        'sql'   => null,
+        'cgi'   => null,
         'debug' => null,
+        'stats' => null,
+        'dev'   => null,
     );
 
     return $ret;
@@ -309,6 +346,7 @@ function form_carryover($defaults, $phase) {
     # ''next_n_rows'' link)
     unset($params['offset']);
     unset($params['rows']);
+    unset($params['slice']);
 
     return $params;
 }
@@ -384,56 +422,44 @@ function capitalize($str) {
 #########################################
 
 function debug($str) {
-    if ($GLOBALS['debug'] or $GLOBALS['verbose'])
+    if ($_GET['debug'] == 'on' or $_GET['verbose'] == 'on')
         print("\n<pre>$str</pre>");
 }
 
-function var_dump_($desc, $a) {
-    if ($GLOBALS['verbose'])
-        var_dump("\n$desc",$a);
-}
-
-function var_dump_debug($function, $line, $var_name, $var) {
-
-    $dir  = dirname(getcwd());
-    $file = $dir . "/submit/" . basename($_SERVER['PHP_SELF']) . ".out";
-    $fh   = fopen($file, 'a+');
-
-    if ($GLOBALS['verbose'] or $GLOBALS['debug']) {
-        $output = "\ndebug: $function:$line, $var_name = " . var_export($var, 1);
-        print($output);
-        if ($fh)
-            fwrite($fh, $output); # *BROKEN*
-    }
+function stats($str) {
+    if ($_GET['stats'] == 'on')
+        print("\n<pre>$str</pre>");
 }
 
 # Actually see the nice identation var_dump provides
-function var_dump_html($desc,$var) {
-    if ($GLOBALS['verbose'])
-        var_dump("\n<br><pre>$desc",$var,"</pre>");
+function var_dump_html($desc, $var) {
+    if ($_GET['debug'] == 'on' or
+        $_GET['dev'] == 'on')
+        var_dump("\n<br>" . 
+                    "<div align='left'>" .
+                    "<pre>$desc",$var,"</div>");
 }
 
 # Print SQL if they want it
-function debug_sql($cmd) {
-    if (isset($_GET['sql']))
-        print("\n<br><pre>SQL:\n$cmd</pre>");
+function debug_sql($cmd, $level) {
+    $trace = $_GET['sql'];
+    if ($trace == $level)
+        print("\n<pre>SQL: $cmd</pre>");
 }
 
 # Prints an HTML table of _GET and _POST vars
 function debug_cgi($params, $title) {
 
-    global $lgray, $dgray;
-
-    if (isset($_GET['cgi'])) {
+    if ($_GET['cgi'] == 'on') {
 
         $cols = 3;
         print "\n\n<table width='80%' border='1'>";
-        print "\n\n<tr><th bgcolor='$dgray' colspan=" . $cols * 2 . ">$title";
+        print "\n\n<tr><th bgcolor='" . DGRAY . "' colspan=" . $cols * 2 . ">$title";
 
         $i = 0;
         foreach (array_keys($params) as $k) {
             print "\n" . ((($i++ % $cols) == 0) ? "\n<tr>" : "") .
-                "<td bgcolor='$lgray'>" . $k . "<td>$params[$k]";
+                "<td bgcolor='" . LGRAY . "'>" . $k . "<td>$params[$k]";
         }
         print "\n\n</table>";
     }
@@ -441,7 +467,7 @@ function debug_cgi($params, $title) {
 
 # Show help text
 function help($str) {
-    if (! isset($_GET['no_help']))
+    if (! ($_GET['no_help'] == 'on'))
         return $str;
     else
         return null;

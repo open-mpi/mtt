@@ -88,6 +88,7 @@ function get_table_fields($table_name) {
 #
 ######################################################################
 
+# Connect to the Postgres database
 function do_pg_connect() {
     global $dbname;
     global $user;
@@ -109,23 +110,27 @@ function do_pg_connect() {
     }
 }
 
-function do_pg_query($cmd) {
+# Execute an SQL query
+function do_pg_query($cmd, $silent) {
     do_pg_connect();
 
     $start = time();
 
-    debug("\nSQL: $cmd\n");
+    debug_sql($cmd, 2);
     if (! ($db_res = pg_query($cmd))) {
-        print("\npostgres: " . pg_last_error() . "\n" .
-                    pg_result_error());
+        if (! $silent) {
+            print("\npostgres: " .
+                        pg_last_error() . "\n" .
+                        pg_result_error());
+        }
     }
 
     $finish = time();
     $elapsed = $finish - $start;
 
-    debug("\nExecution time: " . $elapsed . " seconds\n");
-    debug("\nRows affected: " . pg_affected_rows($db_res));
-    debug("\nRows retrieved: " . pg_num_rows($db_res));
+    stats("\nExecution time: " . $elapsed . " seconds" .
+          "\nRows affected: "  . pg_affected_rows($db_res) .
+          "\nRows retrieved: " . pg_num_rows($db_res));
 
     return $db_res;
 }
@@ -136,7 +141,7 @@ function select_scalar($cmd) {
 
     $rows = null;
 
-    debug("\nSQL: $cmd\n");
+    debug_sql($cmd, 2);
     if (! ($result = pg_query($cmd))) {
         print("\npostgres: " . pg_last_error() . "\n" .
                   pg_result_error());
@@ -155,7 +160,7 @@ function simple_select($cmd) {
 
     $rows = null;
 
-    debug("\nSQL: $cmd\n");
+    debug_sql($cmd, 2);
     if (! ($result = pg_query($cmd))) {
         print("\npostgres: " . pg_last_error() . "\n" .
                   pg_result_error());
@@ -172,7 +177,7 @@ function simple_select($cmd) {
 function select($cmd) {
     do_pg_connect();
 
-    debug("\nSQL: $cmd\n");
+    debug_sql($cmd, 2);
     if (! ($result = pg_query($cmd))) {
         print("\npostgres: " . pg_last_error() . "\n" .
                   pg_result_error());

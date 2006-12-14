@@ -19,14 +19,9 @@
 $topdir = ".";
 include_once("$topdir/reporter.inc");
 include_once("$topdir/database.inc");
-include_once("$topdir/html.inc");
 
 # Print user dash-board 
-function dump_query_screen() {
-
-    global $dgray;
-
-    debug_cgi($_GET, "GET");
+function dump_query_screen($nogo) {
 
     $phases   = process_phase_field($_GET);
     $defaults = setup_defaults($phases);
@@ -35,8 +30,11 @@ function dump_query_screen() {
     # Fill-in form using last invocation's input
     $lasttime = form_carryover($defaults);
 
-    # Generate advanced popup menus
-    $entries = get_menus_info($defaults);
+    # Fill menus with universe first-time only
+    if ($nogo)
+        $entries = get_menus_info($defaults);
+    else
+        $entries = get_menus_info2($_GET);
 
     # Generate advanced popup menus
     $links = selection_popups($defaults, $entries);
@@ -48,11 +46,11 @@ function dump_query_screen() {
     $phase_specific = $layout['farright']['html'] ? true : false;
 
     # Table cell tags
-    $tds2 = "<td rowspan='2' bgcolor='$dgray' width='1%'>";
-    $tds3 = "<td rowspan='3' bgcolor='$dgray' width='1%'>";
-    $td1  = "<td rowspan='1' bgcolor='$dgray'>";
-    $td2  = "<td rowspan='2' bgcolor='$dgray'>";
-    $td3  = "<td rowspan='3' bgcolor='$dgray'>";
+    $tds2 = "<td rowspan='2' bgcolor='" . DGRAY . "' width='1%'>";
+    $tds3 = "<td rowspan='3' bgcolor='" . DGRAY . "' width='1%'>";
+    $td1  = "<td rowspan='1' bgcolor='" . DGRAY . "'>";
+    $td2  = "<td rowspan='2' bgcolor='" . DGRAY . "'>";
+    $td3  = "<td rowspan='3' bgcolor='" . DGRAY . "'>";
 
     # Display some additional fields for phase-specific querying
     if ($phase_specific) {
@@ -66,8 +64,8 @@ function dump_query_screen() {
         $colspan = 3;
     }
 
-    $tdb = "\n<td align='center' bgcolor='$dgray' colspan='$colspan'>";
-    $tdt = "\n<td align='center' bgcolor='$dgray' colspan='" . ($colspan - 1) . "'>";
+    $tdb = "\n<td align='center' bgcolor='" . DGRAY . "' colspan='$colspan'>";
+    $tdt = "\n<td align='center' bgcolor='" . DGRAY . "' colspan='" . ($colspan - 1) . "'>";
 
     # Print the screen
     print "<html>" . 
@@ -94,11 +92,127 @@ function dump_query_screen() {
           "\n   <tr>" .
           "\n    $tdb" .
                  $layout['bottom']['html'] .
-                 hidden_carryover($_GET) .
           "\n </table>" .
-          "\n </div>" .
-          "\n </form>";
+          "\n </div>";
 }
+
+#########################################
+#                                       
+#  ttable Processing
+#                                     
+#########################################
+
+# For cherry-picking, we select values by row number from a
+# pseudo-temporary table.
+#
+# * No ttable_id
+#     Create a new table (using setup_ttable)
+# * ttable_id, but no cherry
+#     Drop ttable_id table
+#     Create a new table (using setup_ttable)
+# * ttable_id + cherry
+#     Use _GET[ttable_id], and update ttable.accessed
+#
+# This function always returns a 'ttable_id' for compose_sql
+# whether it is new or recycled
+#
+# X: RENAME ttable TO session
+function handle_ttable_id($params) {
+
+    # Setup a temporary TABLE/SEQUENCE 
+    # NOTE: the above so-called temporary SQL relations are
+    # NOT truly temporary, it is just that we intend to DROP
+    # them after the user's session expires
+    $ttable_id = $params['ttable_id'];
+    $go = $params['go'];
+
+    $use_ttable = use_ttable($params);
+
+    # Do not use last session's ttable
+    if (! $use_ttable) {
+
+        # Out with the old ...
+        if ($ttable_id) {
+            do_pg_query("DELETE FROM ttable WHERE tname = 'mtttemp_${ttable_id}_table';", SILENT);
+            do_pg_query("DROP TABLE mtttemp_${ttable_id}_table;", SILENT);
+            do_pg_query("DROP SEQUENCE mtttemp_${ttable_id}_seq;", SILENT);
+        }
+
+        # ... in with the new
+        list($ttable_id) = setup_ttable();
+    }
+    # Use last session's ttable (update access time)
+    else {
+        $ttable = "mtttemp_${ttable_id}_table";
+        do_pg_query("UPDATE ttable SET accessed = now() " . 
+                        "WHERE tname = '$ttable';", SILENT);
+    }
+
+    return $ttable_id;
+}
+
+# Return true if we should use the ttable
+# Return false if
+#   - Cherry picked report
+#   - Slice report
+#   - Up/down arrow click report
+#   - Drilldown [1]
+#
+# [1] We can use the ttable for a drilldown because
+# we know they can only filter down on a parameter
+# already in the table
+function use_ttable($params) {
+
+    var_dump_html(__FUNCTION__ . ":" . __LINE__ . " " . '$params = ',$params);
+
+    $lastgo       = strtolower($params['lastgo']);
+    $go           = strtolower($params['go']);
+    $orderby_up   = $params['orderby_up'];
+    $orderby_down = $params['orderby_down'];
+    $offset       = $params['offset'];
+    $drilldown    = $params['drill'];
+    $slice        = $params['slice'];
+
+    if ((preg_match("/cherry/i", $go) or
+        $orderby_up or
+        $orderby_down or
+        ! is_null($offset) or
+        $drilldown or
+        $slice)
+            and
+        ((base_type($lastgo) == base_type($go)) or 
+          is_null($lastgo)))
+        $ret = true;
+    else
+        $ret = false;
+
+    var_dump_html(__FUNCTION__ . ":" . __LINE__ . " " . '$ret = ',$ret);
+
+    return $ret;
+}
+
+# Create an ID for the ''temporary'' TABLE and SEQUENCE
+function setup_ttable() {
+    $ttable_id = get_ttable_id();
+    $ttable = "mtttemp_${ttable_id}_table";
+    $tseq   = "mtttemp_${ttable_id}_seq";
+    do_pg_query("INSERT INTO ttable (tname) VALUES ('$ttable');");
+    do_pg_query("CREATE SEQUENCE $tseq;");
+
+    return array($ttable_id, $ttable, $tseq);
+}
+
+# Get a UNIQUE ttable id
+function get_ttable_id() {
+    return select_scalar("SELECT nextval('ttable_id');");
+}
+
+# Remove report type suffix
+function base_type($str) {
+    return preg_replace('/_cherry|_slice/', '', $str);
+}
+
+#########################################
 
 # Populate menus with entries (listed in columns_arg) from database
 function get_menus_info($columns_arg) {
@@ -199,6 +313,49 @@ function get_menus_info($columns_arg) {
         'by month',
         'by year',
     );
+    return $entries;
+}
+
+# Populate menus with entries in ttable
+function get_menus_info2($params) {
+
+    $ttable_id = $params['ttable_id'];
+
+    $table = "mtttemp_${ttable_id}_table";
+
+    # Gather all available entries for the above columns
+    $cmd = "SELECT * FROM $table;";
+
+    $resource = do_pg_query($cmd);
+
+    $hash = pg_fetch_all($resource);
+
+    foreach (array_keys($hash) as $i)
+        foreach (array_keys($hash[$i]) as $k)
+            $arr[$k][] = $hash[$i][$k];
+
+    foreach (array_keys($arr) as $k)
+        $entries[$k][] = array_unique($arr[$k]);
+
+    $entries['start_timestamp'][] = array(
+        'today',
+        'yesterday',
+        'past 12 hours',
+        'past 24 hours',
+        'past 2 days',
+        'past 3 days',
+        'past 1 week',
+        'past 2 weeks',
+    );
+    $entries['start_timestamp'][] = array(
+        'by second',
+        'by minute',
+        'by hour',
+        'by day',
+        'by month',
+        'by year',
+    );
+
     return $entries;
 }
 
@@ -333,18 +490,16 @@ function setup_layout($phases) {
 # Return the query screen HTML components
 function setup_layout_html($layout, $lasttime, $links) {
 
-    global $lgray, $llgray;
-
     # Set up some table attributes
     $i    = 0;
     $cols = 1;
-    $ctd  = "<td bgcolor='$lgray' align='center'>";
-    $td33 = "<td bgcolor='$lgray' width='33%'>";
+    $ctd  = "<td bgcolor='" . LGRAY . "' align='center'>";
+    $td33 = "<td bgcolor='" . LGRAY . "' width='33%'>";
 
     # For the bottom buttons
-    $rtd1b = "<td bgcolor='$lgray' valign='bottom' align='right' rowspan='1' width='41%'>";
-    $rtd1t = "<td bgcolor='$lgray' valign='top'    align='right' rowspan='1' width='41%'>";
-    $ctd2  = "<td bgcolor='$lgray' align='left'                  rowspan='2' width='59%'>";
+    $rtd1b = "<td bgcolor='" . LGRAY . "' valign='bottom' align='right' rowspan='1' width='41%'>";
+    $rtd1t = "<td bgcolor='" . LGRAY . "' valign='top'    align='right' rowspan='1' width='41%'>";
+    $ctd2  = "<td bgcolor='" . LGRAY . "' align='left'                  rowspan='2' width='59%'>";
 
     $tbl  = "\n\n<table width='100%' cellspacing='1' cellpadding='5'>";
     $tbl2 = "\n\n<table width='100%' cellspacing='0' cellpadding='0'>";
@@ -367,11 +522,11 @@ function setup_layout_html($layout, $lasttime, $links) {
         # Display textfields and show/hide menus
         foreach ($layout[$section]['fields'] as $field) {
 
-            $td = "<td bgcolor='$lgray'>";
+            $td = "<td bgcolor='" . LGRAY . "'>";
             $veil = true;
             if (preg_match("/" . join('|', $veilless_cols) . "/i", $field)) {
                 $veil = false;
-                $td = "<td bgcolor='$lgray' colspan='2'>";
+                $td = "<td bgcolor='" . LGRAY . "' colspan='2'>";
             }
 
             # Textfield
@@ -428,7 +583,7 @@ function setup_layout_html($layout, $lasttime, $links) {
 
     $layout['top']['html'] =
         "\n$tbl" .
-        "\n<tr><td bgcolor='$lgray'>";
+        "\n<tr><td bgcolor='" . LGRAY . "'>";
 
     foreach ($layout['top']['fields'] as $phase) {
 
@@ -443,6 +598,12 @@ function setup_layout_html($layout, $lasttime, $links) {
         $go = strtolower($selections['go']);
         if ($go == 'performance' and $phase != 'test_run')
             $selections['go'] = 'Summary';
+
+        # Bring this ttable_id over so we know to DROP it
+        # next invoke
+        $ttable_id = $_GET['ttable_id'];
+        if (! is_null($ttable_id))
+            $selections['ttable_id'] = $ttable_id;
 
         $qstring = arr2qstring($selections);
 
@@ -520,14 +681,15 @@ function form_buttons($params) {
                   "value='%s' %s>";
 
     # Setup printf formats
-    $self     = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
+    $self = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
     $javascript = "javascript:self.open(\"$self?%s\", \"_self\");";
 
     # A button click means default sorting
     unset($params['orderby_up']);
     unset($params['orderby_down']);
-    unset($params['rows']);
     unset($params['offset']);
+    unset($params['drill']);
+    unset($params['slice']);
 
     foreach ($types as $type) {
         $params['go'] = $type;
@@ -542,13 +704,11 @@ function form_buttons($params) {
 # Return an array of selection menu popups
 function selection_popups($defaults, $entries) {
 
-    global $lgray, $llgray;
-
     # For small menus in popup windows
     $tbl = "\n<table align='center' border='1' cellspacing='1' cellpadding='5'>";
-    $td  = "<td align='center' bgcolor='$llgray'>";
-    $td2 = "<td align='center' bgcolor='$llgray' colspan='2'>";
-    $th2 = "<th align='center' bgcolor='$lgray' colspan='2'>";
+    $td  = "<td align='center' bgcolor='" . LLGRAY . "'>";
+    $td2 = "<td align='center' bgcolor='" . LLGRAY . "' colspan='2'>";
+    $th2 = "<th align='center' bgcolor='" . LGRAY . "' colspan='2'>";
 
     # Generate a popup window containing one or
     # more menus, for every textfield displayed in
@@ -637,11 +797,16 @@ function selection_popups($defaults, $entries) {
 # this string must be printed between the <form> tags
 function hidden_carryover($params) {
 
+    $lastgo = $params['go'];
+
     foreach (array_keys($params) as $k) {
-        if (preg_match('/^go$|^phase$|^more_|^show_|^text_|^orderby/', $k))
+        if (preg_match('/^go$|^phase$|^more_|^show_|^text_|^orderby|^cherry/', $k))
             continue;
         $str .= "\n<input type='hidden' name='$k' value='$params[$k]'>";
     }
+
+    $str .= "\n<input type='hidden' name='lastgo' value='$lastgo'>";
+
     return $str;
 }
 
