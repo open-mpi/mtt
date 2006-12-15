@@ -53,12 +53,7 @@ elseif (! is_null($make_redir))
 # Display input parameters
 debug_cgi($_GET, "GET " . __LINE__);
 
-# Set 'ttable_id' for screen and report,
-$ttable_id = handle_ttable_id($_GET);
-
-# Put ttable_id into the environment.
-$_GET['ttable_id'] = $ttable_id;
-
+# Display a query screen and report
 dump_report();
 
 print hidden_carryover($_GET) .

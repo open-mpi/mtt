@@ -116,7 +116,7 @@ function dump_query_screen($nogo) {
 # This function always returns a 'ttable_id' for compose_sql
 # whether it is new or recycled
 #
-# X: RENAME ttable TO session
+# X: RENAME "ttable" TO "session"?
 function handle_ttable_id($params) {
 
     # Setup a temporary TABLE/SEQUENCE 
@@ -124,7 +124,6 @@ function handle_ttable_id($params) {
     # NOT truly temporary, it is just that we intend to DROP
     # them after the user's session expires
     $ttable_id = $params['ttable_id'];
-    $go = $params['go'];
 
     $use_ttable = use_ttable($params);
 
@@ -143,30 +142,48 @@ function handle_ttable_id($params) {
     }
     # Use last session's ttable (update access time)
     else {
+
         $ttable = "mtttemp_${ttable_id}_table";
-        do_pg_query("UPDATE ttable SET accessed = now() " . 
-                        "WHERE tname = '$ttable';", SILENT);
+
+        $cmd = "SELECT 't' " .
+               "FROM information_schema.tables " .
+               "WHERE table_name = '$ttable';";
+
+        $bool = select_scalar($cmd);
+
+        # If the table is there, use it
+        if ($bool) {
+            do_pg_query("UPDATE ttable SET accessed = now() " . 
+                            "WHERE tname = '$ttable';", SILENT);
+
+        # Otherwise, we need to rebuild the ttable
+        } else {
+
+        }
     }
 
     return $ttable_id;
 }
 
-# Return true if we should use the ttable
-# Return false if
+# Return true if we should use the ttable.
+# Return false if:
 #   - Cherry picked report
 #   - Slice report
 #   - Up/down arrow click report
-#   - Drilldown [1]
+#   - Drilldown
 #
-# [1] We can use the ttable for a drilldown because
-# we know they can only filter down on a parameter
-# already in the table
+# * We can use the ttable for all of the above because we
+# know they can only filter down on a parameter already in
+# the table
 function use_ttable($params) {
 
-    var_dump_html(__FUNCTION__ . ":" . __LINE__ . " " . '$params = ',$params);
+    # 'go' can be any of:
+    #   * summary(_cherry)
+    #   * performance(_cherry)
+    #   * detail
+    $lastgo = strtolower($params['lastgo']);
+    $go     = strtolower($params['go']);
 
-    $lastgo       = strtolower($params['lastgo']);
-    $go           = strtolower($params['go']);
     $orderby_up   = $params['orderby_up'];
     $orderby_down = $params['orderby_down'];
     $offset       = $params['offset'];
@@ -181,21 +198,28 @@ function use_ttable($params) {
         $slice)
             and
         ((base_type($lastgo) == base_type($go)) or 
-          is_null($lastgo)))
+          ! $lastgo))
         $ret = true;
     else
         $ret = false;
-
-    var_dump_html(__FUNCTION__ . ":" . __LINE__ . " " . '$ret = ',$ret);
 
     return $ret;
 }
 
 # Create an ID for the ''temporary'' TABLE and SEQUENCE
-function setup_ttable() {
-    $ttable_id = get_ttable_id();
-    $ttable = "mtttemp_${ttable_id}_table";
-    $tseq   = "mtttemp_${ttable_id}_seq";
+function setup_ttable($ttable_id_arg) {
+
+    if ($ttable_id_arg)
+        $ttable_id = $ttable_id_arg;
+    else
+        $ttable_id = get_ttable_id();
+
+    $tformat = "mtttemp_%s_table";
+    $sformat = "mtttemp_%s_seq";
+
+    $ttable = sprintf($tformat, $ttable_id);
+    $tseq   = sprintf($sformat, $ttable_id);
+
     do_pg_query("INSERT INTO ttable (tname) VALUES ('$ttable');");
     do_pg_query("CREATE SEQUENCE $tseq;");
 
@@ -447,7 +471,7 @@ function setup_layout($phases) {
     $layout['bottomleft']['fields'] = array(
         'http_username',
         'local_username',
-        'hostname',
+        'platform_name',
     );
     # mpi_install
     $layout['right']['fields'] = array(
@@ -600,10 +624,15 @@ function setup_layout_html($layout, $lasttime, $links) {
             $selections['go'] = 'Summary';
 
         # Bring this ttable_id over so we know to DROP it
-        # next invoke
+        # next invocation
         $ttable_id = $_GET['ttable_id'];
         if (! is_null($ttable_id))
             $selections['ttable_id'] = $ttable_id;
+
+        # They may not have yet pressed a Summary|Detail|Perf
+        # button
+        if (is_null($_GET['go']))
+            unset($selections['go']);
 
         $qstring = arr2qstring($selections);
 
@@ -631,13 +660,9 @@ function setup_layout_html($layout, $lasttime, $links) {
 
     # Put buttons at the bottom of the panel
     $layout['bottom']['html'] =
-        $tbl2 .
-        "\n<tr>$rtd1b" .
-            "$reset&nbsp;&nbsp;" .
-        "\n$ctd2" .
+            "$reset&nbsp;" .
+            "$clear&nbsp;" .
             join('&nbsp;', $buttons) .
-        "\n<tr>$rtd1t" .
-            "$clear&nbsp;&nbsp;" .
         "\n</table>";
 
     return $layout;
@@ -668,17 +693,18 @@ function form_buttons($params) {
     $script = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
 
     # Reset and Clear 'buttons' are small links
-    $buttons[] = 
+    $buttons[] =
         "\n<a href='javascript:document.report.reset();' " .
-             "class='lgray_ln'>Reset</a>";
-    $buttons[] = 
+             "class='lgray_ln'>[Reset]</a>";
+    $buttons[] =
         "\n<a href='$script' " .
-             "class='lgray_ln'>Clear</a>";
+             "class='lgray_ln'>[Clear]</a>";
 
     $format = "\n<input type='Submit' " .
                   "name='go' " .
                   "onClick='%s' " .
-                  "value='%s' %s>";
+                  "value='%s' " .
+                  "%s>";
 
     # Setup printf formats
     $self = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
@@ -695,7 +721,10 @@ function form_buttons($params) {
         $params['go'] = $type;
         $qstring = arr2qstring($params);
         $buttons[] = 
-            sprintf($format, sprintf($javascript, $qstring), $type, $disable[$type]);
+            sprintf($format,
+                         sprintf($javascript, $qstring),
+                         $type,
+                         $disable[$type]);
     }
 
     return $buttons;
@@ -766,7 +795,7 @@ function selection_popups($defaults, $entries) {
         # Yippee, selection popup
         if ($linkto) {
             $link =
-                "\n<a class='black_ln' href='javascript:popup(" .
+                "\n<a class='black_ln' href='javascript:popup_html(" .
                     # Width
                     "\n\"" . (400 * $num_menus) . "\"," .
                     # Height
@@ -815,12 +844,20 @@ function html_head($title) {
 
     $javascript = <<<EOT
 
-    function popup(width,height,title,script,content,style) {
+    function popup_html(width,height,title,script,content,style) {
 
         newwindow2=window.open('','name','height=' + height + ',width=' + width + ',scrollbars=yes');
         var tmp = newwindow2.document;
         tmp.write('<html><head>' + script + '<title>' + title + '</title></head>');
         tmp.write('<body ' + style + '><form id=adv name=adv>' + content + '</form></body></html>');
+        tmp.close();
+    }
+
+    function popup_text(width,height,content) {
+
+        newwindow2=window.open('','name','height=' + height + ',width=' + width + ',scrollbars=yes');
+        var tmp = newwindow2.document;
+        tmp.write(content);
         tmp.close();
     }
 
@@ -837,10 +874,10 @@ EOT;
     a.black_ln:active  { color: #FFFFFF } /* when link is clicked */
     a.black_ln:hover   { color: #FFFF40 } /* when mouse is over link */
 
-    a.lgray_ln:link    { color: #F8F8F8; font-size: 65%; text-decoration:none; }
-    a.lgray_ln:visited { color: #555555; font-size: 65%; text-decoration:none; }
-    a.lgray_ln:active  { color: #FFFFFF; font-size: 65%; text-decoration:none; }
-    a.lgray_ln:hover   { color: #FFFF40; font-size: 65%; text-decoration:none; }
+    a.lgray_ln:link    { color: #F8F8F8; font-size: 105%; text-decoration:none; }
+    a.lgray_ln:visited { color: #F8F8F8; font-size: 105%; text-decoration:none; }
+    a.lgray_ln:active  { color: #FFFFFF; font-size: 105%; text-decoration:none; }
+    a.lgray_ln:hover   { color: #FFFF40; font-size: 105%; text-decoration:none; }
 
     td { font-size: 75%; } 
     th { font-size: 80%; } 

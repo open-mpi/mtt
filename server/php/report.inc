@@ -29,15 +29,18 @@ function dump_report() {
     if (! isset($_GET['go']))
         $nogo = true;
 
-    # Process/mutator controls 
+    # Process session/cache/temp-table thingy
+    $ttable_id_field = process_ttable_id_field($_GET);
+
+    # Process/mutator controls
     # (they need to come first, because _GET could be mutated here)
-    $button_press = process_buttons($_GET);
+    if (! $nogo)
+        $button_press = process_buttons($_GET);
 
     # Process input params
     $phases          = process_phase_field($_GET);
     $date_fields     = process_date_field($_GET);
     $input_fields    = process_input_fields($_GET);
-    $ttable_id_field = process_ttable_id_field($_GET);
     $cherry_fields   = process_cherry_fields($_GET);
     $result_fields   = process_result_fields($phases, $_GET);
     $sort_field      = process_sort_field($_GET);
@@ -128,6 +131,10 @@ function dump_report() {
     }
 
     print $next_n_rows;
+
+    # Clean up old graphs/ttables
+    housekeeping_images('./images/tmp');
+    housekeeping_db('ttable');
 
     pg_close();
 }
@@ -251,16 +258,18 @@ function summary_table($headers, $resource) {
           "\n<table border='1' width='100%'>";
 
     # Display headers
-    $format = "\n<th bgcolor='" . THCOLOR . "' rowspan=2>%s";
+    $format  = "\n<th bgcolor='" . THCOLOR . "' rowspan=2>%s";
+    $format2 = "\n<th bgcolor='" . THCOLOR . "' rowspan=2 width='1%%'>%s";
 
-    print "<tr>" . 
-            sprintf($format, '') .
-            #             "<input " . 
-            #                 "type='checkbox' " . 
-            #                 "name='all_cherries' " . 
-            #                 "value='on' " . 
-            #                 "checked>") .
-            "";
+    print "<tr>";
+    if (allow_cherry_picking($_GET))
+        print sprintf($format2, '') .
+                #             "<input " . 
+                #                 "type='checkbox' " . 
+                #                 "name='all_cherries' " . 
+                #                 "value='on' " . 
+                #                 "checked>") .
+                "";
 
     $pound_sign = array_shift($headers['params']);
     printf($format, label($pound_sign));
@@ -329,7 +338,10 @@ function summary_table($headers, $resource) {
 
         # Checkbox off the db_row_n, but display ascending php_row_n
         print "\n<tr>";
-        printf($formatgc, cherry_checkbox($db_row_n));
+
+        if (allow_cherry_picking($_GET))
+            printf($formatgc, cherry_checkbox($db_row_n));
+
         printf($formatg, ($php_row_n + 1));
 
         for ($i = 0; $i < sizeof($row); $i++)
@@ -426,10 +438,6 @@ function summary_table($headers, $resource) {
     # Print performance graphs
     if ($do_performance)
         performance_graphs($graph_data);
-
-    # Clean up old graphs
-    housekeeping_images('./images/tmp');
-    housekeeping_db('ttable');
 }
 
 # Output a checkbox for cherry-picking feature
@@ -440,6 +448,11 @@ function cherry_checkbox($n) {
             "checked>";
 }
 
+# Only allow cherry picking for Performance reports
+function allow_cherry_picking($params) {
+    return preg_match("/latency|perf/i", $params['go']);
+}
+
 # Print the totals and a cherry-picking button 
 # at the foot of the summary table
 function table_footer($totals, $headers, $result_colors) {
@@ -447,13 +460,17 @@ function table_footer($totals, $headers, $result_colors) {
     # Carryover the report type
     $type = process_buttons($_GET);
 
-    # Print cherry button, and totals
-    print "\n<tfoot><tr>" .
-          "\n<td bgcolor='" . LGRAY . "' align='center'>" .
-          "\n<button name='go' value='${type}_cherry' type='submit'>" .
-              "\n<img src='./images/cherries.gif' width='20' border='0'>" .
-          "\n</button>" .
-          "\n<td align='left' " .
+    print "\n<tfoot><tr>";
+
+    # Print cherry button
+    if (allow_cherry_picking($_GET))
+        print "\n<td bgcolor='" . LGRAY . "' align='center'>" .
+              "\n<button name='go' value='${type}_cherry' type='submit'>" .
+                  "\n<img src='./images/cherries.gif' width='20' border='0'>" .
+              "\n</button>";
+
+    # Print totals
+    print "\n<td align='left' " .
                 "bgcolor='" . LGRAY . "' " .
                 "colspan='" . (sizeof($headers['params']) + 1) . "'>" .
           "\n<b>Totals</b>";
@@ -745,22 +762,37 @@ function do_graph($data, $type) {
         $rwidth = SCREEN_WIDTH;
 
     # Setup list of raw data formats
-    $styles = array('HTML', 'CSV');
+    $styles = array(
+                'HTML' => 'html', 
+                'CSV'  => 'text');
 
     # Provide popups for raw data
-    foreach ($styles as $style) {
-        $raw .=
-            "\n<a class='black_ln' href='javascript:popup(" .
-                "\n\"" . $rwidth . "\", " .
-                "\n\"" . $rheight . "\"," .
-                "\n\"Raw performance numbers\"," .
-                "\n\"\"," .
-                "\n\"" . htmlentities(raw_data($arr, $style), ENT_QUOTES) . "\"," .
-                "\n\"font-family:Courier,monospace\"" .
-            ")' " .
-            ">" .
-            "\n$style" .
-            "</a>&nbsp;";
+    foreach (array_keys($styles) as $style) {
+        $ctype = $styles[$style];
+
+        if ($ctype == 'html')
+            $raw .=
+                "\n<a class='black_ln' href='javascript:popup_${ctype}(" .
+                    "\n\"" . $rwidth . "\", " .
+                    "\n\"" . $rheight . "\"," .
+                    "\n\"Raw performance numbers\"," .
+                    "\n\"\"," .
+                    "\n\"" . htmlentities(raw_data($arr, $style), ENT_QUOTES) . "\"," .
+                    "\n\"font-family:Courier,monospace\"" .
+                ")' " .
+                ">" .
+                "\n$style" .
+                "</a>&nbsp;";
+        elseif ($ctype == 'text')
+            $raw .=
+                "\n<a class='black_ln' href='javascript:popup_${ctype}(" .
+                    "\n\"" . $rwidth . "\", " .
+                    "\n\"" . $rheight . "\"," .
+                    "\n\"" . htmlentities(raw_data($arr, $style), ENT_QUOTES) . "\"" .
+                ")' " .
+                ">" .
+                "\n$style" .
+                "</a>&nbsp;";
     }
 
     # Return links to the image, raw data, and width
@@ -821,59 +853,90 @@ function raw_data($arr, $style) {
         $tdc  = "\n<td bgcolor='" . LGRAY . "' align='center'>";
         $tdc_ = "\n<td bgcolor='" . LGRAY . "' align='center'>";
         $sp2func  = "sp2br";
+        $nl2br  = "nl2br";
+        $br  = "<br>";
     }
     # CSV
     else {
         $tbl  = "\n<pre>";
         $tbl_ = "\n</pre>";
-        $tr   = "<br>";
+        $tr   = "\n<br>";
+        $tdll = "\ndata:";
         $tdr  = ",";
-        $th   = "";
-        $tdl  = "";
-        $tdll = "";
+        $th   = "\ncolumn-units:";
         $ths  = ",";
-        $tdc  = "<br>,";
-        $tdc_ = "<br>";
-        $sp2func  = "";
+        $tdc_ = "\ncolumn-names:message-size, ";
+        $tdc  = "\n,";
+        $br  = "\n<br>";
+        $nl2br  = "nl2br";
+        #$stripfunc  = "strip_html";
+        $stripfunc  = "";
+
+        # Repeat column unit (e.g., usec) per number of
+        # columns 
+        $str_repeat = 
+            '$str = ' .
+                'rtrim(' . 
+                    'str_repeat(' .
+                        '"," . $arr[$i + 1], ' .
+                        'sizeof($arr[$i + 2]) - 1' .
+                    '), ","' . 
+                ');';
     }
 
     $i = 0;
 
     # Title
-    $html .= "<br><b>" . $arr[$i++] . "</b>";
+    $content .= "$br<b>" . $arr[$i++] . "</b>";
+
     # Subtitle
-    $html .= "<br><b><i>" . font('-1', nl2br($arr[$i++])) . "</b></i>";
+    eval('$subtitle = ' . $nl2br . '($arr[$i++]);');
+    $content .= "$br<b><i>" . font('-1', $subtitle) . "</b></i>";
 
-    $html .= $tbl;
-    $html .= $tr;
+    $content .= $tbl;
+    $content .= $tr;
 
-    # "bytes", "usec or Mbps"
-    $html .= $th  . font('-2', $arr[$i++]);
-    $html .= $ths . font('-2', $arr[$i++]);
-    $html .= $tr;
-    $html .= $tdl;
+    # Repeat the unit for the number of legend columns
+    eval($str_repeat);
     
+    # "bytes", "usec or Mbps"
+    $content .= $th  . font('-2', $arr[$i++]);
+    $content .= $ths . font('-2', $arr[$i++] . $str);
+    $content .= $tr;
+    $content .= $tdl;
+
     # Headers (legend items)
     $j = 0;
     foreach ($arr[$i] as $cell) {
         eval("\$cell = $sp2func('$cell');");
-        $html .= ($j++ ? $tdc : $tdc_) . font('-2', $cell);
+        $content .= ($j++ ? $tdc : $tdc_) . font('-2', $cell);
     }
 
     # For each message size ...
     for ($i++; $i < sizeof($arr); $i++) {
-        $html .= $tr;
-        $html .= $tdll . font('-2', $arr[$i][0]);
+        $content .= $tr;
+        $content .= $tdll . font('-2', $arr[$i][0]);
 
         # ... print the corresponding latency/bandwidth
         # values for the message size
         for ($j = 1; $j <= $colspan; $j++) {
-            $html .= $tdr . font('-2', sprintf("%01.2f", $arr[$i][$j]));
+            if (! is_null($arr[$i][$j]))
+                $data = sprintf("%01.2f", $arr[$i][$j]);
+            else
+                $data = null;
+            $content .= $tdr . font('-2', $data);
         }
     }
-    $html .= $tbl_;
+    $content .= $tbl_;
 
-    return $html;
+    # If it's a CSV, strip all the tags out
+    eval("\$content = $stripfunc(\$content);");
+
+    return $content;
+}
+
+function strip_html($str) {
+    return '<pre>' . strip_tags($str) . '</pre>';
 }
 
 # Wrap a string in font tags
@@ -1034,8 +1097,8 @@ function next_n_rows($n, $limit, $date_fields, $params) {
 
     # Convenience arrow for going through 100s of rows
     $img  = "<img src='./images/%s_arrow.gif' border='0'>";
-    $prev = sprintf($img, "no");
-    $next = sprintf($img, "no");
+    $prev = sprintf($img, 'no');
+    $next = sprintf($img, 'no');
 
     $qstring_arr = $params;
     $qstring_arr['rows'] = $n;
@@ -1046,7 +1109,7 @@ function next_n_rows($n, $limit, $date_fields, $params) {
     $go = strtolower($params['go']);
 
     # Determine report type
-    if (preg_match("/(summary|detail)/i", $go, $m))
+    if (preg_match('/(summary|detail)/i', $go, $m))
         $qstring_arr['go'] = $m[1];
 
     # Report "slices" should use absolute date range
@@ -1054,14 +1117,14 @@ function next_n_rows($n, $limit, $date_fields, $params) {
     # the future
     $absolute_date = handle_absolute_date($date_fields);
 
-    $qstring_arr["text_start_timestamp"] = $absolute_date;
+    $qstring_arr['text_start_timestamp'] = $absolute_date;
 
     # Flag all the links as slices
-    $qstring_arr["slice"] = 1;
+    $qstring_arr['slice'] = 1;
 
-    # Make lastgo equal go so we'll use ttable (see
-    # use_ttable)
-    $qstring_arr['lastgo'] = $go;
+    # This is needed because the hidden 'lastgo' is 
+    # not passed on an href, only a submit
+    $qstring_arr['lastgo'] = $qstring_arr['go'];
 
     $i = 0;
     while ($i < $n) {
@@ -1121,6 +1184,12 @@ function next_n_rows($n, $limit, $date_fields, $params) {
 #    * For phase/result table header cells
 #
 # Note: this function takes a variable number of arguments
+#
+# X: THIS FUNCTION IS A MESS! IT SHOULD USE THE SAME
+# METHOD OF CREATING A DRILLDOWN FOR EACH CASE. THAT IS,
+# TAKE THE EXISTING _GET ARRAY, AND PRUNE/ADD WHAT'S NEEDED
+# FOR THE DRILLDOWN (IN OTHER WORDS, form_carryover SHOULD 
+# ONLY BE USED FOR AUTO-FILLING A FORM)
 function drilldown_links() {
 
     # This function has three forms (see above comment)
@@ -1133,10 +1202,6 @@ function drilldown_links() {
 
     # Mark this as a drilldown so we can use the tttable
     $qstring_arr['drill'] = 1;
-
-    # Make these identical so ttable is used (see
-    # use_ttable)
-    $qstring_arr['lastgo'] = $qstring_arr['go'];
 
     # Do not bring over LIMIT clause for a drilldown
     unset($qstring_arr['rows']);
@@ -1172,6 +1237,10 @@ function drilldown_links() {
         $defaults = setup_defaults($phase);
         $qstring_arr = form_carryover($defaults);
         $qstring_arr['phase'] = $phase;
+
+        # NOTE: WE CANNOT MARK THIS AS A TRUE DRILLDOWN,
+        # BECAUSE WE FETCH EXTRA PHASE-SPECIFIC FIELDS WHICH
+        # ARE NOT CACHED IN TTABLE.
 
         # Do not bring over LIMIT clause for a drilldown
         unset($qstring_arr['rows']);
@@ -1214,6 +1283,10 @@ function drilldown_links() {
         unset($qstring_arr['offset']);
         unset($qstring_arr['slice']);
 
+        # This is needed because the hidden 'lastgo' is 
+        # not passed on an href, only a submit
+        $qstring_arr['lastgo'] = $qstring_arr['go'];
+
         $ret = sprintf($format, arr2qstring($qstring_arr), $param);
     }
 
@@ -1234,8 +1307,8 @@ function drilldown_links() {
 
         $phases = func_get_arg(0);
 
-        # Drilldowns are not allowed from a cherry-picked report
-        # Return plain non-clickable text labels
+        # Drilldowns are not allowed from a cherry-picked
+        # report. Return plain non-clickable text labels.
         if (is_cherry_pick($_GET)) {
             foreach ($phases as $phase) {
                 $ret[$phase][] = label($phase);
@@ -1257,6 +1330,14 @@ function drilldown_links() {
             unset($qstring_arr['rows']);
             unset($qstring_arr['offset']);
             unset($qstring_arr['slice']);
+
+            # NOTE: WE CANNOT MARK THIS AS A TRUE DRILLDOWN,
+            # BECAUSE WE FETCH EXTRA PHASE-SPECIFIC FIELDS WHICH
+            # ARE NOT CACHED IN TTABLE.
+
+            # This is needed because the hidden 'lastgo' is 
+            # not passed on an href, only a submit
+            $qstring_arr['lastgo'] = $qstring_arr['go'];
 
             unset($qstring_arr['test_result']);
             $ret[$phase][] = sprintf($format, arr2qstring($qstring_arr), label($phase));
@@ -1410,6 +1491,11 @@ function permalinks($date_fields) {
 
     $params = $_GET;
 
+    # X: UNTIL WE CAN REBUILD TTABLES CORRECTLY FOR A 
+    # CHERRY PICKED REPORT, DISABLE PERMALINKS
+    if (is_cherry_pick($params))
+        return;
+
     $domain        = $_SERVER['SERVER_NAME'];
     $uri           = $_SERVER['REQUEST_URI'];
     $script        = $_SERVER['SCRIPT_NAME'];
@@ -1493,9 +1579,10 @@ function compose_sql($query) {
     # NOTE: the above so-called temporary SQL relations are
     # NOT truly temporary, it is just that we do intend to
     # delete them after the user's session expires
-    $new_ttable = $query['new_ttable'];
-    $ttable     = $query['ttable'];
-    $tseq       = $query['tseq'];
+    $new_ttable     = $query['new_ttable'];
+    $rebuild_ttable = $query['rebuild_ttable'];
+    $ttable         = $query['ttable'];
+    $tseq           = $query['tseq'];
 
     # Handle ORDER BY
     if (isset($query['orderby_up']))
@@ -1506,7 +1593,9 @@ function compose_sql($query) {
     # Handle LIMIT + OFFSET
     $offset = offset($query);
 
+    # Prepare default return statement
     $select_star = "SELECT * FROM $ttable %s;";
+    $ret = sprintf($select_star, '');
 
     # Just select from the last ttable if we do not need to
     # prepare a new one
@@ -1528,8 +1617,9 @@ function compose_sql($query) {
 
         $criteria .= ';';
 
-        return 
-            sprintf($select_star, $criteria);
+        $ret = sprintf($select_star, $criteria);
+
+        return $ret;
     }
 
     # Determine table (or views) to SELECT from
@@ -1617,7 +1707,7 @@ function compose_sql($query) {
     debug_sql($cmd, 1);
     do_pg_query($cmd);
 
-    return sprintf($select_star, '');
+    return $ret;
 }
 
 #########################################
@@ -1718,9 +1808,21 @@ function process_input_fields($params) {
             if (preg_match("/^\s*all\s*$|^\s*$/i", $params[$k]))
                 continue;
 
-            foreach (tokenize($params[$k]) as $t) {
-                $clauses[] = "$column ~* '$t'";
-            }
+            $str = $params[$k];
+
+            # Use LIKE if there is a '%'
+            if (strpos($str, '%') !== false)
+                $clauses[] = "$column LIKE '$str'";
+
+            # Exact match for '^...$'
+            elseif (preg_match('/^\^.*\$$/', $str))
+                $clauses[] = "$column = '" . trim($str, '^$') . "'";
+
+            # Otherwise, regular expression(s)
+            else
+                foreach (tokenize($params[$k]) as $str)
+                    $clauses[] = "$column ~* '$str'";
+
             $query['where'][] = "(" . join(" OR ", $clauses) . ")";
         }
         # If "show" is selected, add it to SELECT clause
@@ -1912,6 +2014,9 @@ function process_offset_field($params) {
 
 # This function always returns a 'ttable_id' for
 # compose_sql, whether it is a new or recycled ttable
+#
+# X: ALERT USER IF THEY TRY TO BRING UP A CHERRY PICKED
+# REPORT ON AN EXPIRED ttable!
 function process_ttable_id_field($params) {
 
     # Setup a temporary TABLE/SEQUENCE 
@@ -1919,24 +2024,70 @@ function process_ttable_id_field($params) {
     # NOT truly temporary, it is just that we intend to DROP
     # them after the user's session expires
     $ttable_id = $params['ttable_id'];
-    $ttable    = "mtttemp_${ttable_id}_table";
-    $tseq      = "mtttemp_${ttable_id}_seq";
 
-    # Setup ttable stuff for compose_sql
-    $query['new_ttable']  = true;
-    $query['ttable']      = $ttable;
-    $query['select']['n'] = "nextval('$tseq') as n";
+    $tformat = "mtttemp_%s_table";
+    $sformat = "mtttemp_%s_seq";
+
+    $ttable = sprintf($tformat, $ttable_id);
+    $tseq   = sprintf($sformat, $ttable_id);
 
     $use_ttable = use_ttable($params);
 
-    # Use last session's ttable
-    if ($use_ttable) {
-        $query['new_ttable'] = false;
+    # Do not use last session's ttable
+    if (! $use_ttable) {
 
-        # This will result in a simple SELECT * from the ttable
-        $query['select']['n'] = "n";
+        # Out with the old ...
+        do_pg_query("DELETE FROM ttable WHERE tname = '$ttable';", SILENT);
+        do_pg_query("DROP TABLE $ttable;", SILENT);
+        do_pg_query("DROP SEQUENCE $tseq;", SILENT);
+
+        # ... in with the new
+        list($ttable_id, $ttable, $tseq) = setup_ttable();
+
+        # Setup ttable stuff for compose_sql
+        $query['new_ttable']  = true;
+        $query['select']['n'] = "nextval('$tseq') as n";
+    }
+    # Use last session's ttable (update access time)
+    else {
+
+        $cmd = "SELECT 't' " .
+               "FROM information_schema.tables " .
+               "WHERE table_name = '$ttable';";
+
+        $bool = select_scalar($cmd);
+
+        # If the table is there, use it
+        if ($bool) {
+            $query['rebuild_ttable'] = false;
+
+            do_pg_query("UPDATE ttable SET accessed = now() " . 
+                        "WHERE tname = '$ttable';", SILENT);
+
+            # This will result in a simple SELECT * FROM 
+            # ttable [ limit | slice | drill | cherry ....]
+            $query['new_ttable'] = false;
+            $query['select']['n'] = "n";
+
+        # Otherwise, we need to rebuild the ttable
+        } else {
+            $query['rebuild_ttable'] = true;
+
+            list($ttable_id, $ttable, $tseq) = setup_ttable($ttable_id);
+
+            $query['new_ttable'] = true;
+            $query['select']['n'] = "nextval('$tseq') as n";
+        }
+
     }
 
+    $ttable = sprintf($tformat, $ttable_id);
+    $query['ttable'] = $ttable;
+
+    # Put ttable_id into the environment
+    $_GET['ttable_id'] = $ttable_id;
+
+    # Return ttable for compose_sql
     return $query;
 }
 
@@ -1962,13 +2113,6 @@ function process_cherry_fields($params) {
     if (! preg_match("/cherry/i", $go))
         return null;
 
-    # # Do not do anything if they're all checked
-    # if (is_homogenous($params) == 'on')
-    #     return;
-    # # Return 0 rows if all cherries are unchecked
-    # elseif (is_homogenous($params) == 'off')
-    #     return $query['where'] = 'false';
-        
     # Compile all the cherry checkboxes and 
     # place them in an array (eliminating duplicates)
     foreach (array_keys($params) as $k) {
@@ -2025,6 +2169,7 @@ function order_columns($columns) {
         'http_username'     => 1,
         'local_username'    => 1,
         'hostname'          => 1,
+        'platform_name'     => 1,
 
         # mpi_install
         'platform_hardware' => 1,
@@ -2201,11 +2346,21 @@ function array_combine2(&$hash, $keys, $values) {
 }
 
 # Remove array entries whose value matches pattern
+# Return array of removed entries
 function remove_match(&$arr, $pattern) {
     $i = 0;
-    foreach ($arr as $v)
-        if (preg_match("/$pattern/", $v))
+    foreach ($arr as $v) {
+        if (preg_match("/$pattern/", $v)) {
             unset($arr[$i++]);
+            $ret[] = $v;
+        }
+    }
+    return $ret;
+}
+
+# '%' -> '%%'
+function esc_percent($str) {
+    return preg_replace('/%/', '%%', $str);
 }
 
 #########################################

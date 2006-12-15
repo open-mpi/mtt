@@ -127,7 +127,7 @@ function label($str) {
         "os_version"          => "OS version",
         "phase"               => "Phase",
         "platform_hardware"   => "Hardware",
-        "platform_name"       => "Platform name",
+        "platform_name"       => "Cluster",
         "platform_type"       => "Platform type",
         "result_message"      => "Result message",
         "result_stderr"       => "Result stderr",
@@ -224,7 +224,7 @@ function setup_defaults($phases) {
         # submit
         'http_username'     => $http_username,
         'local_username'    => 'all',
-        'hostname'          => 'all',
+        'platform_name'     => 'all',
 
         # mpi_install
         'platform_hardware' => 'all',
@@ -284,14 +284,18 @@ function setup_defaults($phases) {
     return $ret;
 }
 
-# Take a 'defaults' array (output from setup_defaults)
-# Carry over textfields, show/hide menus, and radios from
-# the last invocation (Returns an arr2qstring-ready list)
+# Take a 'defaults' array (output from setup_defaults) Carry
+# over textfields, show/hide menus, and radios from the last
+# invocation (Returns an arr2qstring-ready list)
 #
 # Dual-purpose function:
-# 1. Used for filling in form controls from "last time"
-# 2. Used (in tandem with setup_defaults) for creating
-#    drilldown links
+# (1). Used for filling in form controls from "last time"
+# (2). Used (in tandem with setup_defaults) for creating
+#      drilldown links
+#
+# (X: FOR CONSISTENCY, THIS FUNCTION SHOULD ONLY BE USED FOR
+# (1) - AUTO-FILLING A FORM)
+#
 function form_carryover($defaults, $phase) {
 
     foreach (array_keys($defaults) as $k) {
@@ -321,13 +325,16 @@ function form_carryover($defaults, $phase) {
 
     # Press 'Summary' for them if they traverse from a
     # detailed report into multi-phase mode
-    if (preg_match("/^all/i", $phase))
-        $params['go'] = 'summary';
-    else {
-        $go = $_GET['go'];
-        if ($go)
+    $go = $_GET['go'];
+    if (! is_null($go)) {
+        if (preg_match("/^all/i", $phase))
+            $params['go'] = 'summary';
+        else
             $params['go'] = $go;
     }
+
+    # Carryover last ttable_id, so we know what to DELETE
+    $params['ttable_id'] = $_GET['ttable_id'];
 
     # Carryover phase
     $phase = $_GET['phase'];
