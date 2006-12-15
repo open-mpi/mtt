@@ -1415,9 +1415,11 @@ function sorting_links($headers, $label, $arrow_size) {
     unset($qstring_arr['slice']);
 
     # Setup printf formats
-    $self       = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
+    $self = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
+    $top = dirname($self);
+
     $a_format   = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
-    $img_format = "<img src='./images/%s_arrow.gif' $size border='0'>";
+    $img_format = "<img src='$top/images/%s_arrow.gif' $size border='0'>";
 
     # ASC and DESC sort
     $directions = array('up', 'down');

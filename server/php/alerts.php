@@ -15,7 +15,6 @@ $topdir = ".";
 include_once("$topdir/curl_get.inc");
 include_once("$topdir/ini.inc");
 include_once("$topdir/reporter.inc");
-include_once("$topdir/html.inc");
 
 $options = getopt("f:dv");
 
