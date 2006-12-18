@@ -20,6 +20,11 @@ $topdir = ".";
 include_once("$topdir/reporter.inc");
 include_once("$topdir/database.inc");
 
+# Global booleans
+$use_ttable;
+$rebuild_ttable;
+$date_fields;
+
 # Top-level report printing function
 #   1. Print the query screen
 #   2. Print the report
@@ -71,10 +76,10 @@ function dump_report() {
 
     # Cherry picking overwrites the would-be WHERE
     # clause with simple row number selections
-    if ($cherry_fields) {
-        unset($query['where']);
-        $query = array_merge_recursive($query, $cherry_fields);
-    }
+    # if ($cherry_fields) {
+    #     unset($query['where']);
+    #     $query = array_merge_recursive($query, $cherry_fields);
+    # }
 
     # Order columns left-to-right
     $query['select'] = order_columns($query['select']);
@@ -118,19 +123,19 @@ function dump_report() {
     }
 
     # Report chunks index
-    $next_n_rows = next_n_rows($n, LIMIT, $date_fields, $_GET);
+    $slices_links = slices_links($n, LIMIT, $_GET);
 
-    print $next_n_rows;
+    print $slices_links;
 
     if ($do_detailed)
         detail_table($headers, $resource);
     elseif ($do_summary)
-        summary_table($headers, $resource);
+        summary_table($headers, $resource, $cherry_fields);
     elseif ($do_performance) {
-        summary_table($headers, $resource);
+        summary_table($headers, $resource, $cherry_fields);
     }
 
-    print $next_n_rows;
+    print $slices_links;
 
     # Clean up old graphs/ttables
     housekeeping_images('./images/tmp');
@@ -241,7 +246,7 @@ function detail_table($headers, $resource) {
 
 # Print out a summary table
 # (and maybe a performance graph)
-function summary_table($headers, $resource) {
+function summary_table($headers, $resource, $filter) {
 
     # Are we dumping Performance graphs?
     if (preg_match("/performance/i", $_GET['go']))
@@ -335,6 +340,11 @@ function summary_table($headers, $resource) {
 
         # Grab the db_row_n
         $db_row_n = array_shift($row);
+
+        # Skip unchecked cherry rows
+        if ($filter)
+            if (! isset($filter[$db_row_n]))
+                continue;
 
         # Checkbox off the db_row_n, but display ascending php_row_n
         print "\n<tr>";
@@ -458,7 +468,7 @@ function allow_cherry_picking($params) {
 function table_footer($totals, $headers, $result_colors) {
 
     # Carryover the report type
-    $type = process_buttons($_GET);
+    $type = strtolower(process_buttons($_GET));
 
     print "\n<tfoot><tr>";
 
@@ -1088,7 +1098,10 @@ function get_scalar($var) {
 #########################################
 
 # Show links to report slices ('x' rows at a time)
-function next_n_rows($n, $limit, $date_fields, $params) {
+function slices_links($n, $limit, $params) {
+
+    # Globalize the date range
+    global $date_fields;
 
     # Prepare an href element to use for linking to report
     # slices
@@ -1116,7 +1129,6 @@ function next_n_rows($n, $limit, $date_fields, $params) {
     # because the LIMIT clause may not make sense in
     # the future
     $absolute_date = handle_absolute_date($date_fields);
-
     $qstring_arr['text_start_timestamp'] = $absolute_date;
 
     # Flag all the links as slices
@@ -1192,6 +1204,9 @@ function next_n_rows($n, $limit, $date_fields, $params) {
 # ONLY BE USED FOR AUTO-FILLING A FORM)
 function drilldown_links() {
 
+    # Globalize the date range
+    global $date_fields;
+
     # This function has three forms (see above comment)
     $argc = func_num_args();
 
@@ -1208,6 +1223,13 @@ function drilldown_links() {
     unset($qstring_arr['offset']);
     unset($qstring_arr['slice']);
 
+    # Drilldowns should use absolute date range in case
+    # the user walks away from the browser for awhile
+    # (some data points could slip out of a relative
+    # date range)
+    $absolute_date = handle_absolute_date($date_fields);
+    $qstring_arr['text_start_timestamp'] = $absolute_date;
+
     # Cherries are not applicable for a drilldown report
     unset_cherries($qstring_arr);
 
@@ -1217,6 +1239,8 @@ function drilldown_links() {
     # 1. Entire row or data
     #    * Phase, series of param/value pairs, result counts
     #    * For "colored" result count table cells
+    #
+    # USING TTABLE FOR THIS CASE
     if ($argc == 4) {
 
         $headers = func_get_arg(0);
@@ -1238,6 +1262,9 @@ function drilldown_links() {
         $qstring_arr = form_carryover($defaults);
         $qstring_arr['phase'] = $phase;
 
+        # Strip off _cherry|_slice|_click
+        $qstring_arr['go'] = base_type($qstring_arr['go']);
+
         # NOTE: WE CANNOT MARK THIS AS A TRUE DRILLDOWN,
         # BECAUSE WE FETCH EXTRA PHASE-SPECIFIC FIELDS WHICH
         # ARE NOT CACHED IN TTABLE.
@@ -1246,6 +1273,12 @@ function drilldown_links() {
         unset($qstring_arr['rows']);
         unset($qstring_arr['offset']);
         unset($qstring_arr['slice']);
+
+        # Drilldowns should use absolute date range in case
+        # the user walks away from the browser for awhile
+        # (some data points could slip out of a relative
+        # date range)
+        $qstring_arr['text_start_timestamp'] = $absolute_date;
 
         $j = 0;
         # Loop over result count values
@@ -1266,6 +1299,7 @@ function drilldown_links() {
     # 2. Just a single param/value pair
     #    * For "white" parameter table cells
     #    
+    # USING TTABLE FOR THIS CASE
     elseif ($argc == 2) {
 
         $header = func_get_arg(0);
@@ -1283,9 +1317,18 @@ function drilldown_links() {
         unset($qstring_arr['offset']);
         unset($qstring_arr['slice']);
 
+        # Drilldowns should use absolute date range in case
+        # the user walks away from the browser for awhile
+        # (some data points could slip out of a relative
+        # date range)
+        $qstring_arr['text_start_timestamp'] = $absolute_date;
+
         # This is needed because the hidden 'lastgo' is 
         # not passed on an href, only a submit
         $qstring_arr['lastgo'] = $qstring_arr['go'];
+
+        # Strip off _cherry|_slice|_click
+        $qstring_arr['go'] = base_type($qstring_arr['go']);
 
         $ret = sprintf($format, arr2qstring($qstring_arr), $param);
     }
@@ -1303,6 +1346,7 @@ function drilldown_links() {
     # * Test Run
     #   Pass, Fail, Skipped, Timed out
     #
+    # DO NOT USE TTABLE FOR THIS CASE
     elseif ($argc == 1) {
 
         $phases = func_get_arg(0);
@@ -1338,6 +1382,9 @@ function drilldown_links() {
             # This is needed because the hidden 'lastgo' is 
             # not passed on an href, only a submit
             $qstring_arr['lastgo'] = $qstring_arr['go'];
+
+            # Strip off _cherry|_slice|_click
+            $qstring_arr['go'] = base_type($qstring_arr['go']);
 
             unset($qstring_arr['test_result']);
             $ret[$phase][] = sprintf($format, arr2qstring($qstring_arr), label($phase));
@@ -1380,6 +1427,9 @@ function unset_cherries(&$arr) {
 # argument)
 function sorting_links($headers, $label, $arrow_size) {
 
+    # Globalize the date range
+    global $date_fields;
+
     $scalar_context = false;
     $default_label = false;
 
@@ -1414,11 +1464,16 @@ function sorting_links($headers, $label, $arrow_size) {
     unset($qstring_arr['offset']);
     unset($qstring_arr['slice']);
 
+    # Report "slices" should use absolute date range
+    # because the LIMIT clause may not make sense in
+    # the future
+    $absolute_date = handle_absolute_date($date_fields);
+    $qstring_arr['text_start_timestamp'] = $absolute_date;
+
     # Setup printf formats
     $self = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
     $top = dirname($self);
-
-    $a_format   = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
+    $a_format = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
     $img_format = "<img src='$top/images/%s_arrow.gif' $size border='0'>";
 
     # ASC and DESC sort
@@ -1492,11 +1547,6 @@ function report_header($date_fields, $phases, $n) {
 function permalinks($date_fields) {
 
     $params = $_GET;
-
-    # X: UNTIL WE CAN REBUILD TTABLES CORRECTLY FOR A 
-    # CHERRY PICKED REPORT, DISABLE PERMALINKS
-    if (is_cherry_pick($params))
-        return;
 
     $domain        = $_SERVER['SERVER_NAME'];
     $uri           = $_SERVER['REQUEST_URI'];
@@ -1762,6 +1812,12 @@ function process_buttons($params) {
     if ((sizeof($phases) > 1) and (! preg_match("/summary/i", $type))) {
         $type = 'summary';
         $_GET['go'] = $type;
+    } 
+    # Press 'Summary' for them if they go from a performance
+    # report to a non-test_run radio button
+    elseif (preg_match("/performance/i", $type) and $phases[0] != 'test_run') {
+        $type = 'summary';
+        $_GET['go'] = $type;
     }
 
     return $type;
@@ -1870,6 +1926,9 @@ function process_input_fields($params) {
 #   - Absolute time stamp
 function process_date_field($params) {
 
+    # Globalize the date range
+    global $date_fields;
+
     $date = array();
     $tokens = array();
 
@@ -1977,6 +2036,9 @@ function process_date_field($params) {
     $date['where'] = $where;
     $date['absolute'] = $absolute;
 
+    # Globalize the date range
+    $date_fields = $date;
+
     return $date;
 }
 
@@ -1987,6 +2049,8 @@ function process_date_field($params) {
 # (Reference: postgresql.org/docs/7.3/static/functions-conditional.html)
 function process_result_fields($phases, $params) {
 
+    global $use_ttable, $rebuild_ttable;
+
     $test_result = $params['test_result'];
 
     $table = phase_results_table();
@@ -1996,7 +2060,14 @@ function process_result_fields($phases, $params) {
     foreach (array_keys($table) as $phase) {
         foreach ($table[$phase] as $result) {
             if (array_search($phase, $phases) !== false) {
-                $when[$result] = label($result) . " = '$result'";
+
+                # The result alias has gone from
+                # pass|fail|... to _xx in the ttable
+                if (! $use_ttable or $rebuild_ttable)
+                    $when[$result] = label($result) . " = '$result'";
+                else
+                    $when[$result] = "$result > 0";
+
                 $results['aggregates'][$result] =
                     sprintf($format, $when[$result], $result, $result);
             }
@@ -2020,6 +2091,8 @@ function process_offset_field($params) {
 # X: ALERT USER IF THEY TRY TO BRING UP A CHERRY PICKED
 # REPORT ON AN EXPIRED ttable!
 function process_ttable_id_field($params) {
+
+    global $use_ttable, $rebuild_ttable;
 
     # Setup a temporary TABLE/SEQUENCE 
     # NOTE: the above so-called temporary SQL relations are
@@ -2062,6 +2135,7 @@ function process_ttable_id_field($params) {
         # If the table is there, use it
         if ($bool) {
             $query['rebuild_ttable'] = false;
+            $rebuild_ttable = false;
 
             do_pg_query("UPDATE ttable SET accessed = now() " . 
                         "WHERE tname = '$ttable';", SILENT);
@@ -2073,7 +2147,8 @@ function process_ttable_id_field($params) {
 
         # Otherwise, we need to rebuild the ttable
         } else {
-            $query['rebuild_ttable'] = true;
+            $rebuild_ttable = true;
+            $query['rebuild_ttable'] = $rebuild_ttable;
 
             list($ttable_id, $ttable, $tseq) = setup_ttable($ttable_id);
 
@@ -2121,14 +2196,18 @@ function process_cherry_fields($params) {
 
         if (preg_match("/cherry_(\d+)/i", $k, $m)) {
             $n = $m[1];
+            $filter[] = $n;
             $clauses[] = "n = $n";
         }
     }
 
-    if ($clauses) {
-        $query['where'][] = "(" . join(" OR ", $clauses) . ")";
-        return $query;
-    }
+    if ($filter)
+        return array_flip($filter);
+
+    # if ($clauses) {
+    #     $query['where'][] = "(" . join(" OR ", $clauses) . ")";
+    #     return $query;
+    # }
 }
 
 # Return 'on' if all cherries are checked
@@ -2376,7 +2455,12 @@ function housekeeping_db($listing) {
 
     # Cherry-picking sessions expire
     # (Is 'accessed' more recent than '60 minutes ago'?)
-    $cmd = "SELECT tname FROM $listing WHERE accessed < now() - interval '60 minutes';";
+
+    # no_cache option for developers
+    if (isset($_GET['no_cache']))
+        $cmd = "SELECT tname FROM $listing;";
+    else
+        $cmd = "SELECT tname FROM $listing WHERE accessed < now() - interval '60 minutes';";
 
     $tables = simple_select($cmd);
 

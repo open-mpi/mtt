@@ -102,69 +102,6 @@ function dump_query_screen($nogo) {
 #                                     
 #########################################
 
-# For cherry-picking, we select values by row number from a
-# pseudo-temporary table.
-#
-# * No ttable_id
-#     Create a new table (using setup_ttable)
-# * ttable_id, but no cherry
-#     Drop ttable_id table
-#     Create a new table (using setup_ttable)
-# * ttable_id + cherry
-#     Use _GET[ttable_id], and update ttable.accessed
-#
-# This function always returns a 'ttable_id' for compose_sql
-# whether it is new or recycled
-#
-# X: RENAME "ttable" TO "session"?
-function handle_ttable_id($params) {
-
-    # Setup a temporary TABLE/SEQUENCE 
-    # NOTE: the above so-called temporary SQL relations are
-    # NOT truly temporary, it is just that we intend to DROP
-    # them after the user's session expires
-    $ttable_id = $params['ttable_id'];
-
-    $use_ttable = use_ttable($params);
-
-    # Do not use last session's ttable
-    if (! $use_ttable) {
-
-        # Out with the old ...
-        if ($ttable_id) {
-            do_pg_query("DELETE FROM ttable WHERE tname = 'mtttemp_${ttable_id}_table';", SILENT);
-            do_pg_query("DROP TABLE mtttemp_${ttable_id}_table;", SILENT);
-            do_pg_query("DROP SEQUENCE mtttemp_${ttable_id}_seq;", SILENT);
-        }
-
-        # ... in with the new
-        list($ttable_id) = setup_ttable();
-    }
-    # Use last session's ttable (update access time)
-    else {
-
-        $ttable = "mtttemp_${ttable_id}_table";
-
-        $cmd = "SELECT 't' " .
-               "FROM information_schema.tables " .
-               "WHERE table_name = '$ttable';";
-
-        $bool = select_scalar($cmd);
-
-        # If the table is there, use it
-        if ($bool) {
-            do_pg_query("UPDATE ttable SET accessed = now() " . 
-                            "WHERE tname = '$ttable';", SILENT);
-
-        # Otherwise, we need to rebuild the ttable
-        } else {
-
-        }
-    }
-
-    return $ttable_id;
-}
-
 # Return true if we should use the ttable.
 # Return false if:
 #   - Cherry picked report
@@ -178,11 +115,11 @@ function handle_ttable_id($params) {
 function use_ttable($params) {
 
     # 'go' can be any of:
-    #   * summary(_cherry)
-    #   * performance(_cherry)
-    #   * detail
-    $lastgo = strtolower($params['lastgo']);
-    $go     = strtolower($params['go']);
+    #   * summary(_cherry|_click)
+    #   * performance(_cherry|_click)
+    #   * detail(_click)
+    $lastgo = $params['lastgo'];
+    $go     = $params['go'];
 
     $orderby_up   = $params['orderby_up'];
     $orderby_down = $params['orderby_down'];
@@ -190,14 +127,17 @@ function use_ttable($params) {
     $drilldown    = $params['drill'];
     $slice        = $params['slice'];
 
-    if ((preg_match("/cherry/i", $go) or
+    if (preg_match("/click/", $go))
+        return false;
+    elseif ((preg_match("/cherry/i", $go) or
         $orderby_up or
         $orderby_down or
         ! is_null($offset) or
         $drilldown or
         $slice)
             and
-        ((base_type($lastgo) == base_type($go)) or 
+        ((base_type($lastgo) == 
+          base_type($go)) or 
           ! $lastgo))
         $ret = true;
     else
@@ -233,7 +173,7 @@ function get_ttable_id() {
 
 # Remove report type suffix
 function base_type($str) {
-    return preg_replace('/_cherry|_slice/', '', $str);
+    return strtolower(preg_replace('/_cherry|_slice|_click/i', '', $str));
 }
 
 #########################################
@@ -597,7 +537,7 @@ function setup_layout_html($layout, $lasttime, $links) {
 
     # AFTERWARDS ...
 
-    # Put the logo in the far left
+    # Provide full path to images (needed for email)
     $script = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
     $top    = dirname($script);
     $logo   = "$top/images/reporter_logo.gif";
@@ -700,11 +640,15 @@ function form_buttons($params) {
         "\n<a href='$script' " .
              "class='lgray_ln'>[Clear]</a>";
 
-    $format = "\n<input type='Submit' " .
-                  "name='go' " .
-                  "onClick='%s' " .
-                  "value='%s' " .
-                  "%s>";
+    # $format = "\n<input type='Submit' " .
+    #               "name='go' " .
+    #               "onClick='%s' " .
+    #               "value='%s' " .
+    #               "%s>";
+
+    $format = "\n<button name='go' value='%s_click' type='submit' %s>" .
+                  "\n<img alt='%s'>" .
+              "\n</button>";
 
     # Setup printf formats
     $self = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
@@ -719,12 +663,9 @@ function form_buttons($params) {
 
     foreach ($types as $type) {
         $params['go'] = $type;
+
         $qstring = arr2qstring($params);
-        $buttons[] = 
-            sprintf($format,
-                         sprintf($javascript, $qstring),
-                         $type,
-                         $disable[$type]);
+        $buttons[] = sprintf($format, $type, $disable[$type], $type);
     }
 
     return $buttons;

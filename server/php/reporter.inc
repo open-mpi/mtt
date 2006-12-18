@@ -274,11 +274,12 @@ function setup_defaults($phases) {
 
     # Developer params
     $ret['dev'] = array(
-        'sql'   => null,
-        'cgi'   => null,
-        'debug' => null,
-        'stats' => null,
-        'dev'   => null,
+        'sql'      => null,
+        'cgi'      => null,
+        'debug'    => null,
+        'stats'    => null,
+        'dev'      => null,
+        'no_cache' => null,
     );
 
     return $ret;
