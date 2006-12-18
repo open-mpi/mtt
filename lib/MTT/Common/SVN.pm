@@ -97,11 +97,12 @@ sub Get {
     # Cache it
     Debug(">> svn: exporting\n");
     my $dir = cwd();
+    my $svn_rnum = Value($ini, $section, "svn_rnum");
     my $svn_username = Value($ini, $section, "svn_username");
     my $svn_password = Value($ini, $section, "svn_password");
     my $svn_password_cache = Value($ini, $section, "svn_password_cache");
     chdir($dir);
-    ($dir, $data->{r}) = MTT::Files::svn_checkout($data->{url}, $svn_username, $svn_password, $svn_password_cache, 1, 1);
+    ($dir, $data->{r}) = MTT::Files::svn_checkout($data->{url}, $svn_rnum, $svn_username, $svn_password, $svn_password_cache, 1, 1);
     if (!$dir) {
         $ret->{success} = 0;
         $ret->{result_message} = "Failed to SVN export";
