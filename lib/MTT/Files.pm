@@ -232,7 +232,7 @@ sub unpack_tarball {
 
 # do a svn checkout
 sub svn_checkout {
-    my ($url, $username, $pw, $pw_cache, $delete_first, $export) = @_;
+    my ($url, $rnum, $username, $pw, $pw_cache, $delete_first, $export) = @_;
 
     Debug("SVN checkout: $url\n");
 
@@ -245,6 +245,9 @@ sub svn_checkout {
         $str .= "export "
     } else {
         $str .= "co "
+    }
+    if ($rnum) {
+        $str .= "-r $rnum ";
     }
     if ($username) {
         $str .= "--username $username ";
