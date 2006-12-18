@@ -20,7 +20,7 @@ $topdir = ".";
 include_once("$topdir/reporter.inc");
 include_once("$topdir/database.inc");
 
-# Global booleans
+# Global variables
 $use_ttable;
 $rebuild_ttable;
 $date_fields;
@@ -30,7 +30,7 @@ $date_fields;
 #   2. Print the report
 function dump_report() {
 
-    # Exit if a button hasn't been pressed
+    # Fresh web page is brought up
     if (! isset($_GET['go']))
         $nogo = true;
 
@@ -46,10 +46,13 @@ function dump_report() {
     $phases          = process_phase_field($_GET);
     $date_fields     = process_date_field($_GET);
     $input_fields    = process_input_fields($_GET);
-    $cherry_fields   = process_cherry_fields($_GET);
     $result_fields   = process_result_fields($phases, $_GET);
     $sort_field      = process_sort_field($_GET);
     $offset_field    = process_offset_field($_GET);
+
+    # cherry_fields are the only fields that
+    # are filtered by PHP instead of SQL
+    $cherry_fields   = process_cherry_fields($_GET);
 
     # Print either a summary or detail report,
     # depending on whether a 'select_more' parameter is set
@@ -73,13 +76,6 @@ function dump_report() {
         $sort_field,
         $offset_field
     );
-
-    # Cherry picking overwrites the would-be WHERE
-    # clause with simple row number selections
-    # if ($cherry_fields) {
-    #     unset($query['where']);
-    #     $query = array_merge_recursive($query, $cherry_fields);
-    # }
 
     # Order columns left-to-right
     $query['select'] = order_columns($query['select']);

@@ -32,25 +32,23 @@ function dump_query_screen($nogo) {
 
     # Fill menus with universe first-time only
     if ($nogo)
-        $entries = get_menus_info($defaults);
+        $entries = get_form_universe($defaults);
     else
-        $entries = get_menus_info2($_GET);
+        list($entries, $disable) = get_form_universe2($_GET);
 
     # Generate advanced popup menus
     $links = selection_popups($defaults, $entries);
 
     # Generate each of the screen's HTML components
-    $layout = setup_layout_html($layout, $lasttime, $links);
+    $layout = setup_layout_html($layout, $lasttime, $links, $disable);
 
     $self = "http://" . $_SERVER['SERVER_NAME'] . $_SERVER['PHP_SELF'];
     $phase_specific = $layout['farright']['html'] ? true : false;
 
     # Table cell tags
-    $tds2 = "<td rowspan='2' bgcolor='" . DGRAY . "' width='1%'>";
     $tds3 = "<td rowspan='3' bgcolor='" . DGRAY . "' width='1%'>";
     $td1  = "<td rowspan='1' bgcolor='" . DGRAY . "'>";
     $td2  = "<td rowspan='2' bgcolor='" . DGRAY . "'>";
-    $td3  = "<td rowspan='3' bgcolor='" . DGRAY . "'>";
 
     # Display some additional fields for phase-specific querying
     if ($phase_specific) {
@@ -179,7 +177,7 @@ function base_type($str) {
 #########################################
 
 # Populate menus with entries (listed in columns_arg) from database
-function get_menus_info($columns_arg) {
+function get_form_universe($columns_arg) {
 
     $tables = array(
         'compute_cluster',
@@ -280,14 +278,16 @@ function get_menus_info($columns_arg) {
     return $entries;
 }
 
-# Populate menus with entries in ttable
-function get_menus_info2($params) {
+# Populate menus with entries in ttable,
+# and 'Performance' button ''disable'' value
+function get_form_universe2($params) {
 
     $ttable_id = $params['ttable_id'];
 
     $table = "mtttemp_${ttable_id}_table";
 
-    # Gather all available entries for the above columns
+    # Gather all available entries for the already
+    # created report
     $cmd = "SELECT * FROM $table;";
 
     $resource = do_pg_query($cmd);
@@ -300,6 +300,19 @@ function get_menus_info2($params) {
 
     foreach (array_keys($arr) as $k)
         $entries[$k][] = array_unique($arr[$k]);
+
+    # Disable the 'Performance' button if there
+    # is no performance data
+    
+    $perf_code = '_rl';
+    if ($arr[$perf_code]) {
+        # disabled
+        if (max(array_values($arr[$perf_code])) < 1)
+            $disable['Performance'] = 'disabled';
+        # enabled
+        else
+            $disable['Performance'] = '';
+    }
 
     $entries['start_timestamp'][] = array(
         'today',
@@ -320,7 +333,7 @@ function get_menus_info2($params) {
         'by year',
     );
 
-    return $entries;
+    return array($entries, $disable);
 }
 
 # Return the list of fields prefixed with "text_" in the input
@@ -452,7 +465,7 @@ function setup_layout($phases) {
 }
 
 # Return the query screen HTML components
-function setup_layout_html($layout, $lasttime, $links) {
+function setup_layout_html($layout, $lasttime, $links, $disable) {
 
     # Set up some table attributes
     $i    = 0;
@@ -594,7 +607,7 @@ function setup_layout_html($layout, $lasttime, $links) {
                "border='0' " .
                "src='$logo'></a>";
 
-    $buttons = form_buttons($_GET);
+    $buttons = form_buttons($_GET, $disable);
     $reset = array_shift($buttons);
     $clear = array_shift($buttons);
 
@@ -609,7 +622,7 @@ function setup_layout_html($layout, $lasttime, $links) {
 }
 
 # Return list of buttons for bottom of query panel
-function form_buttons($params) {
+function form_buttons($params, $disable_arg) {
 
     # Declare button types
     $types = array(
@@ -619,6 +632,13 @@ function form_buttons($params) {
     );
 
     $phases = process_phase_field($params);
+
+    # Disable 'Performance' button if we are
+    # in there are no perf results to report on
+    if (! is_null($disable_arg))
+        $disable = $disable_arg;
+    else
+        $disable['Performance'] = 'disabled';
 
     # Disable 'Detail' and 'Performance' buttons if we are
     # in multi-phase mode
@@ -639,12 +659,6 @@ function form_buttons($params) {
     $buttons[] =
         "\n<a href='$script' " .
              "class='lgray_ln'>[Clear]</a>";
-
-    # $format = "\n<input type='Submit' " .
-    #               "name='go' " .
-    #               "onClick='%s' " .
-    #               "value='%s' " .
-    #               "%s>";
 
     $format = "\n<button name='go' value='%s_click' type='submit' %s>" .
                   "\n<img alt='%s'>" .
@@ -759,6 +773,7 @@ function selection_popups($defaults, $entries) {
 
         $links[$field] = $link;
     }
+
     return $links;
 }
 
