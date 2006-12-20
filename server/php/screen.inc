@@ -65,12 +65,18 @@ function dump_query_screen($nogo) {
     $tdb = "\n<td align='center' bgcolor='" . DGRAY . "' colspan='$colspan'>";
     $tdt = "\n<td align='center' bgcolor='" . DGRAY . "' colspan='" . ($colspan - 1) . "'>";
 
+    # Need to define the Preferences in the opener form
+    # so they will have properties when exported from the
+    # Preferences popup
+    # $prefs = hidden_prefs($_GET);
+
     # Print the screen
     print "<html>" . 
           html_head("Open MPI Test Reporter") .
           "\n" .
           "\n<body>" .
           "\n<form method='get' id='report' name='report' action='$self'>" .
+          "\n$prefs" .
           "\n <div align='left'>" .
           "\n <table width='100%' align='center' border='1' cellspacing='1'>" .
           "\n   <tr>" .
@@ -118,6 +124,7 @@ function use_ttable($params) {
     #   * detail(_click)
     $lastgo = $params['lastgo'];
     $go     = $params['go'];
+    $click  = $params['click'];
 
     $orderby_up   = $params['orderby_up'];
     $orderby_down = $params['orderby_down'];
@@ -125,7 +132,7 @@ function use_ttable($params) {
     $drilldown    = $params['drill'];
     $slice        = $params['slice'];
 
-    if (preg_match("/click/", $go))
+    if (! is_null($click))
         return false;
     elseif ((preg_match("/cherry/i", $go) or
         $orderby_up or
@@ -171,7 +178,7 @@ function get_ttable_id() {
 
 # Remove report type suffix
 function base_type($str) {
-    return strtolower(preg_replace('/_cherry|_slice|_click/i', '', $str));
+    return strtolower(preg_replace('/_cherry|_slice/i', '', $str));
 }
 
 #########################################
@@ -299,7 +306,9 @@ function get_form_universe2($params) {
             $arr[$k][] = $hash[$i][$k];
 
     foreach (array_keys($arr) as $k)
-        $entries[$k][] = array_unique($arr[$k]);
+        # Do not collect timestamp entries from the ttable
+        if (! preg_match("/timestamp/", $k))
+            $entries[$k][] = array_unique($arr[$k]);
 
     # Disable the 'Performance' button if there
     # is no performance data
@@ -367,8 +376,7 @@ EOT;
             }
 EOT;
 
-    # THERE SHOULD BE NO NEED TO CREATE ''TWO'' FOR LOOPS
-    # HERE
+    # THERE SHOULD BE NO NEED TO CREATE MORE THAN ONE FOR LOOP HERE
     $i = 0;
     foreach ($entries as $entry) {
         $script .= sprintf($for_loop, $i, $i, $i);
@@ -381,6 +389,59 @@ EOT;
             if (items.length > 0) {
                 window.opener.document.report.text_$field.value = str;
             }
+            window.close();
+        }
+
+    </script>
+EOT;
+
+    return $script;
+}
+
+# Return javascript code to bring Preferences popup
+# selections back into the main window's textfields
+function jscript_export_prefs($prefs) {
+
+	$script .= <<<EOT
+
+    <script language='javascript'>
+
+        function exportVars() {
+            var str = '';
+            var items = new Array();
+EOT;
+
+    $non_select = <<<EOT
+            str = document.adv.%s.value;
+            window.opener.document.report.%s.value = str;
+EOT;
+
+    $select = <<<EOT
+
+            for (i = 0; i < document.adv.%s.length; i++) {
+                if (document.adv.%s.options[i].selected) {
+                    str = document.adv.%s.options[i].text;
+                }
+            }
+            window.opener.document.report.%s.value = str;
+EOT;
+
+    # X: THERE SHOULD BE NO NEED TO CREATE MORE THAN ONE FOR
+    # LOOP HERE. IN OTHER WORDS, DO THE LOOPING IN
+    # JAVASCRIPT INSTEAD OF PRINTING OUT ''N'' JAVASCRIPT
+    # STATEMENTS
+    foreach (array_keys($prefs) as $pref) {
+        if (is_array($prefs[$pref]))
+            $script .= sprintf($select, $pref, $pref, $pref, $pref, $pref);
+        else
+            $script .= sprintf($non_select, $pref, $pref, $pref);
+    }
+
+    # Set the cookie-ize flag, and close the window
+	$script .= <<<EOT
+
+            window.opener.document.report.make_cookie.value = 1;
+            window.opener.document.report.submit();
             window.close();
         }
 
@@ -582,11 +643,6 @@ function setup_layout_html($layout, $lasttime, $links, $disable) {
         if (! is_null($ttable_id))
             $selections['ttable_id'] = $ttable_id;
 
-        # They may not have yet pressed a Summary|Detail|Perf
-        # button
-        if (is_null($_GET['go']))
-            unset($selections['go']);
-
         $qstring = arr2qstring($selections);
 
         $layout['top']['html'] .=
@@ -610,12 +666,14 @@ function setup_layout_html($layout, $lasttime, $links, $disable) {
     $buttons = form_buttons($_GET, $disable);
     $reset = array_shift($buttons);
     $clear = array_shift($buttons);
+    #$prefs = array_pop($buttons);
 
     # Put buttons at the bottom of the panel
     $layout['bottom']['html'] =
             "$reset&nbsp;" .
             "$clear&nbsp;" .
-            join('&nbsp;', $buttons) .
+            join('&nbsp;', $buttons) . "&nbsp;" .
+            #"$prefs" .
         "\n</table>";
 
     return $layout;
@@ -660,13 +718,7 @@ function form_buttons($params, $disable_arg) {
         "\n<a href='$script' " .
              "class='lgray_ln'>[Clear]</a>";
 
-    $format = "\n<button name='go' value='%s_click' type='submit' %s>" .
-                  "\n<img alt='%s'>" .
-              "\n</button>";
-
-    # Setup printf formats
-    $self = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
-    $javascript = "javascript:self.open(\"$self?%s\", \"_self\");";
+    $format = "\n<input type='submit' name='click' value='%s' type='submit' %s>";
 
     # A button click means default sorting
     unset($params['orderby_up']);
@@ -679,8 +731,11 @@ function form_buttons($params, $disable_arg) {
         $params['go'] = $type;
 
         $qstring = arr2qstring($params);
-        $buttons[] = sprintf($format, $type, $disable[$type], $type);
+        $buttons[] = sprintf($format, $type, $disable[$type]);
     }
+
+    # Generate Preferences popup
+    # $buttons[] = prefs_popup(setup_prefs(), $_GET);
 
     return $buttons;
 }
@@ -774,8 +829,180 @@ function selection_popups($defaults, $entries) {
         $links[$field] = $link;
     }
 
+    # Enable/disable performance button
+    $links['Performance'] = $entries['performance'];
+
     return $links;
 }
+
+#########################################
+#                                       
+#  Preferences Processing
+#                                     
+#########################################
+
+# A string to define the hidden preferences
+function hidden_prefs($params) {
+    $prefs = setup_prefs();
+
+    foreach (array_keys($prefs) as $cat) {
+        foreach (array_keys($prefs[$cat]) as $field) {
+            $value = $params[$field];
+
+            if (! $value)
+                $ret .= "\n<input type='hidden' " . 
+                        "name='" . $field . "' " .
+                        "value='" . $value . "'>";
+        }
+    }
+
+    # Prepare make_cookie flag
+    $ret .= "\n<input type='hidden' name='make_cookie'>";
+
+    return $ret;
+}
+
+# Return an array of Preferences menu popups
+# (quite similar to selection_popups)
+function prefs_popup($prefs, $params) {
+
+    # For small menus in popup windows
+    $tbl = "\n<table align='center' border='1' cellspacing='1' cellpadding='5'>";
+    $tr  = "\n<tr>";
+    $td  = "\n<td align='left' bgcolor='" . LLGRAY . "'>";
+    $td2 = "\n<td align='left' bgcolor='" . LLGRAY . "' colspan='2'>";
+    $th2 = "\n<th align='center' bgcolor='" . LGRAY . "' colspan='2'>";
+
+    $menu = "\n<div align='center'>" .
+            "\n$tbl";
+
+    # Categories are: General and Graphing
+    foreach (array_keys($prefs) as $category) {
+
+        $menu .= $tr . $th2 . label($category);
+
+        # Create a form element for each preference based
+        # on the pref's data type:
+        #
+        #   1. Bool: checkbox 
+        #   2. Scalar: text 
+        #   3. Array: select (dropdown menu)
+        #
+        foreach (array_keys($prefs[$category]) as $field) {
+
+            $entries = $prefs[$category][$field];
+
+            # Compile list of prefs for jscript_export_prefs
+            $arr[$field] = $prefs[$category][$field];
+
+            # Fill-in field for default or last selection
+            $value = auto_fill($entries, $params[$field]);
+
+            $menu .= $tr . $td . label($field) . $td;
+
+            if (is_bool($entries))
+                $menu .= "\n<input type='checkbox' name='$field' value='on' $value>";
+
+            elseif (is_scalar($entries))
+                $menu .= "\n<input type='text' name='$field' value='" . $value . "'>";
+
+            elseif (is_array($entries)) {
+
+                $menu .= "\n<select name='$field'>";
+
+                $i = 0;
+                foreach ($entries as $v) {
+                    $v = strip_star($v);
+                    $menu .= sprintf("\n<option " .
+                                            "style='width: 200px;' " .
+                                            "name='%s' " .
+                                            "value='%s' %s>%s",
+                                            $v, $v, $value[$i++], $v);
+                }
+                $menu .= "\n</select>";
+            }
+        }
+    }
+
+    $menu .=
+        $tr . $th2 .
+        "\n<input type='submit' " .
+                  "name='Save' " .
+                  "onclick='javascript:exportVars();' " .
+                  "value='Save'>&nbsp;" .
+        "\n<input type='submit' " .
+                  "name='cancel' " .
+                  "onclick='javascript:window.close();' " .
+                   "value='Cancel'>" .
+        "\n</table>" .
+        "\n<br><i>Select Preferences</i>" .
+        "\n</div>";
+
+    $link =
+        "\n<a class='lgray_ln' href='javascript:popup_html(" .
+            # Width
+            "\n\"500\"," .
+            # Height
+            "\n\"500\"," .
+            # Title
+            "\n\"Select Preferences\"," .
+            # <script>
+            "\n\"" . htmlentities(jscript_export_prefs($arr), ENT_QUOTES) . "\"," .
+            # <body>
+            "\n\"" . htmlentities($menu, ENT_QUOTES) . "\"," .
+            # <body style>
+            "\n\"font-family:Courier,monospace\"" . 
+        ")'>" .
+        "\n<i>Preferences</i>" .
+        "</a>";
+
+    return $link;
+}
+
+# Return the "starred" default value,
+# or the index|value of $lastval
+#
+# Argument could be a bool, scalar, or array
+function auto_fill($entries, $lastval) {
+
+    # Checkbox
+    if (is_bool($entries)) {
+        if ($lastval == 'on')
+            $ret = 'checked';
+        else
+            $ret = null;
+
+    # Text
+    } elseif (is_scalar($entries)) {
+        if ($lastval)
+            $ret = $lastval;
+        else
+            $ret = $entries;
+
+    # Dropdown menu
+    } elseif (is_array($entries)) {
+
+        if ($lastval)
+            $match = "^$lastval$";
+        else
+            $match = '^\*';
+
+        $i = 0;
+        foreach ($entries as $v) {
+            if (preg_match("/$match/", $v))
+                $ret = array($i => 'selected');
+            $i++;
+        }
+    }
+
+    return $ret;
+}
+
+function strip_star($str) {
+    return preg_replace('/^\*/', '', $str);
+}
+
+#########################################
 
 # Carry over input params (that are not submitted via form
 # controls) between invocations of the script. Note:
@@ -784,8 +1011,10 @@ function hidden_carryover($params) {
 
     $lastgo = $params['go'];
 
+    # X: reverse this so we explicity print several hiddens
+    # E.g., ttable_id, sql, cgi, test_result, lastgo, ...
     foreach (array_keys($params) as $k) {
-        if (preg_match('/^go$|^phase$|^more_|^show_|^text_|^orderby|^cherry/', $k))
+        if (preg_match('/^go$|^click$|^phase$|^more_|^show_|^text_|^orderby|^cherry/', $k))
             continue;
         $str .= "\n<input type='hidden' name='$k' value='$params[$k]'>";
     }

@@ -19,12 +19,6 @@
 # Constant to mute SQL errors (set true to mute)
 define('SILENT', true);
 
-# Number of rows to show per page
-define('LIMIT', 100);
-
-# Text wrapping in Detail reports
-define('WRAP', 100);
-
 # Screen dimemsion constants for graphing
 define('SCREEN_WIDTH', 1200);
 define('SCREEN_HEIGHT', 700);
@@ -84,6 +78,28 @@ function phase_results_table() {
     );
 }
 
+# Return a list of preferences to hand off to prefs_popup
+function setup_prefs() {
+
+    return array(
+        'general'  => array(
+            'limit'    => array('10', '50', '*100', '200'),
+            'timezone' => array('*GMT', 'EST', 'CST', 'MST', 'PST'),
+            'wrap'     => 100,
+            'trial'    => false,
+        ),
+        'graphing' => array(
+            'graph_size'       => array('Small', '*Medium', 'Large'),
+            'legend_placement' => array('*Bottom', 'In plotting area'),
+            'yaxis_scale'      => array('Log', '*Linear'),
+            'xaxis_scale'      => array('Log', '*Linear'),
+            'graph_type'       => array('*Line', 'Bar', 'Points'),
+            'hide_subtitles'   => false,
+        ),
+    );
+
+}
+
 # Display more human-readable labels
 function label($str) {
 
@@ -127,7 +143,7 @@ function label($str) {
         "os_version"          => "OS version",
         "phase"               => "Phase",
         "platform_hardware"   => "Hardware",
-        "platform_name"       => "Cluster",
+        "platform_name"       => "Platform name",
         "platform_type"       => "Platform type",
         "result_message"      => "Result message",
         "result_stderr"       => "Result stderr",
@@ -183,8 +199,26 @@ function label($str) {
         "bandwidth_max"     => "Bandwidth (max)",
 
         # Selection/unselection
-        "show"  => "Show",
-        "hide"  => "Hide",
+        "show"                  => "Show",
+        "hide"                  => "Hide",
+
+        # General preferences
+        'general'              => 'General',
+
+        'limit'                => 'Max rows per page',
+        'timezone'             => 'Time zone',
+        'wrap'                 => 'Text wrap <i>(in Detail)</i>',
+        'trial'                => 'Show trial runs',
+
+        # Graphing preferences
+        'graphing'             => 'Graphing',
+
+        'graph_size'           => 'Graph size',
+        'legend_placement'     => 'Legend placement',
+        'yaxis_scale'          => 'Y-axis scale',
+        'xaxis_scale'          => 'X-axis scale',
+        'graph_type'           => 'Graph type',
+        'hide_subtitles'       => 'Hide subtitles',
 
         # Row number
         "n" => "#",
@@ -292,7 +326,8 @@ function setup_defaults($phases) {
 # Dual-purpose function:
 # (1). Used for filling in form controls from "last time"
 # (2). Used (in tandem with setup_defaults) for creating
-#      drilldown links
+#      drilldown links, for transitions between phase
+#      changes
 #
 # (X: FOR CONSISTENCY, THIS FUNCTION SHOULD ONLY BE USED FOR
 # (1) - AUTO-FILLING A FORM)
@@ -324,14 +359,17 @@ function form_carryover($defaults, $phase) {
             $params[$showfield] = $defaults['show'][$k];
     }
 
+    $clicks = array('go', 'click');
+
     # Press 'Summary' for them if they traverse from a
     # detailed report into multi-phase mode
-    $go = $_GET['go'];
-    if (! is_null($go)) {
-        if (preg_match("/^all/i", $phase))
-            $params['go'] = 'summary';
-        else
-            $params['go'] = $go;
+    foreach ($clicks as $click) {
+        if (! is_null($_GET[$click])) {
+            if (preg_match("/^all/i", $phase))
+                $params[$click] = 'summary';
+            else
+                $params[$click] = $_GET[$click];
+        }
     }
 
     # Carryover last ttable_id, so we know what to DELETE
@@ -351,7 +389,7 @@ function form_carryover($defaults, $phase) {
 
     # It would be nonsensical to carry these onward
     # (this is only done in the case of clicking a
-    # ''next_n_rows'' link)
+    # ''slices_index'' link)
     unset($params['offset']);
     unset($params['rows']);
     unset($params['slice']);

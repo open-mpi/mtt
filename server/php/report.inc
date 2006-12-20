@@ -30,17 +30,26 @@ $date_fields;
 #   2. Print the report
 function dump_report() {
 
+    # Create or update cookie, and set
+    # definitions accordingly
+    process_cookie($_GET, $_COOKIE);
+
     # Fresh web page is brought up
-    if (! isset($_GET['go']))
+    if (! isset($_GET['go']) and 
+        ! isset($_GET['click']))
         $nogo = true;
 
     # Process session/cache/temp-table thingy
     $ttable_id_field = process_ttable_id_field($_GET);
 
+    # cherry_fields are the only fields that
+    # are filtered by PHP instead of SQL
+    $cherry_fields = process_cherry_fields($_GET);
+
     # Process/mutator controls
     # (they need to come first, because _GET could be mutated here)
     if (! $nogo)
-        $button_press = process_buttons($_GET);
+        $report_type = process_report_type($_GET);
 
     # Process input params
     $phases          = process_phase_field($_GET);
@@ -50,16 +59,12 @@ function dump_report() {
     $sort_field      = process_sort_field($_GET);
     $offset_field    = process_offset_field($_GET);
 
-    # cherry_fields are the only fields that
-    # are filtered by PHP instead of SQL
-    $cherry_fields   = process_cherry_fields($_GET);
-
     # Print either a summary or detail report,
     # depending on whether a 'select_more' parameter is set
-    if ($button_press == 'detail') {
+    if ($report_type == 'detail') {
         $do_detailed = true;
         $detail_fields = detail_fields(get_scalar($phases));
-    } elseif ($button_press == 'performance') {
+    } elseif ($report_type == 'performance') {
         $do_performance = true;
         $performance_fields = performance_fields();
     } else
@@ -133,8 +138,8 @@ function dump_report() {
 
     print $slices_links;
 
-    # Clean up old graphs/ttables
-    housekeeping_images('./images/tmp');
+    # Clean up old graphs, csv dumps, and ttables
+    housekeeping('./tmp');
     housekeeping_db('ttable');
 
     pg_close();
@@ -464,7 +469,7 @@ function allow_cherry_picking($params) {
 function table_footer($totals, $headers, $result_colors) {
 
     # Carryover the report type
-    $type = strtolower(process_buttons($_GET));
+    $type = strtolower(process_report_type($_GET));
 
     print "\n<tfoot><tr>";
 
@@ -547,6 +552,7 @@ function do_graph($data, $type) {
     $jpgraph_dir = './jpgraph';
     include_once("$jpgraph_dir/jpgraph.php");
     include_once("$jpgraph_dir/jpgraph_line.php");
+    #include_once("$jpgraph_dir/jpgraph_log.php");
 
     # Process inputs
     $legend = $data['legend'];
@@ -750,7 +756,7 @@ function do_graph($data, $type) {
     $graph->SetShadow();
 
     # Write the graph to a file
-    $filename = 'images/tmp/' . randstr(10) . '.png';
+    $filename = './tmp/' . randstr(10) . '.png';
     $graph->Stroke($filename);
 
     $image = "<img src='$filename' " .
@@ -774,7 +780,7 @@ function do_graph($data, $type) {
 
     # Provide popups for raw data
     foreach (array_keys($styles) as $style) {
-        $ctype = $styles[$style];
+        $ctype = strtolower($styles[$style]);
 
         if ($ctype == 'html')
             $raw .=
@@ -791,14 +797,7 @@ function do_graph($data, $type) {
                 "</a>&nbsp;";
         elseif ($ctype == 'text')
             $raw .=
-                "\n<a class='black_ln' href='javascript:popup_${ctype}(" .
-                    "\n\"" . $rwidth . "\", " .
-                    "\n\"" . $rheight . "\"," .
-                    "\n\"" . htmlentities(raw_data($arr, $style), ENT_QUOTES) . "\"" .
-                ")' " .
-                ">" .
-                "\n$style" .
-                "</a>&nbsp;";
+                "\n<a href='" . raw_data($arr, $style) . "'>$style</a>&nbsp;";
     }
 
     # Return links to the image, raw data, and width
@@ -838,6 +837,11 @@ function max_avg($plots, $type) {
 }
 
 # Convert a 2D array (output by do_graph) to an HTML or CSV table
+# HTML: returns HTML string
+# CSV: returns .csv filename 
+#
+# X: IT WOULD BE PREFERABLE TO DO CSV THE SAME WAY WE DO HTML
+# SO THAT THE LINK NEVER "EXPIRES"
 function raw_data($arr, $style) {
 
     # Headers are always here
@@ -854,29 +858,32 @@ function raw_data($arr, $style) {
         $tdr  = "\n<td align='right'>";
         $th   = "\n<th bgcolor='" . LGRAY . "'>";
         $tdl  = "\n<td bgcolor='" . LGRAY . "'>";
-        $tdll = "\n<td bgcolor='" . LLGRAY . "'>";
+        $tdll = "\n<td bgcolor='" . LLGRAY . "' align='right'>";
         $ths  = "\n<th bgcolor='" . LGRAY . "' colspan='$colspan'>";
         $tdc  = "\n<td bgcolor='" . LGRAY . "' align='center'>";
         $tdc_ = "\n<td bgcolor='" . LGRAY . "' align='center'>";
+        $br  = "<br>";
+
+        # Functions for eval
         $sp2func  = "sp2br";
         $nl2br  = "nl2br";
-        $br  = "<br>";
     }
     # CSV
     else {
-        $tbl  = "\n<pre>";
-        $tbl_ = "\n</pre>";
-        $tr   = "\n<br>";
+        $tbl_ = "\n";
         $tdll = "\ndata:";
         $tdr  = ",";
-        $th   = "\ncolumn-units:";
+        $th   = "data:column-units:";
         $ths  = ",";
-        $tdc_ = "\ncolumn-names:message-size, ";
-        $tdc  = "\n,";
-        $br  = "\n<br>";
-        $nl2br  = "nl2br";
-        #$stripfunc  = "strip_html";
-        $stripfunc  = "";
+        $tdc_ = "\ndata:column-names:message-size, ";
+        $tdc  = ",";
+        $br_  = "title:";
+
+        # Functions for eval
+        $nl2br     = "";
+        $unalign   = "unalign";
+        $stripfunc = "strip_html";
+        $br2hyphen = "br2hyphen";
 
         # Repeat column unit (e.g., usec) per number of
         # columns 
@@ -893,11 +900,19 @@ function raw_data($arr, $style) {
     $i = 0;
 
     # Title
-    $content .= "$br<b>" . $arr[$i++] . "</b>";
+    eval("\$title = $br2hyphen(\$arr[\$i]);");
+    $content .= "$br_$br<b>" . $title . "</b>";
+    $i++;
 
     # Subtitle
-    eval('$subtitle = ' . $nl2br . '($arr[$i++]);');
+    eval("\$subtitle = $nl2br(\$arr[\$i]);");
+
+    # Prepare a logical filename for the CSV file
+    $filename = './tmp/' . title2filename($subtitle) . '.csv';
+
+    eval("\$subtitle = $unalign(\$subtitle);");
     $content .= "$br<b><i>" . font('-1', $subtitle) . "</b></i>";
+    $i++;
 
     $content .= $tbl;
     $content .= $tr;
@@ -938,11 +953,32 @@ function raw_data($arr, $style) {
     # If it's a CSV, strip all the tags out
     eval("\$content = $stripfunc(\$content);");
 
-    return $content;
+    # Write the CSV to a file
+    if (strtolower($style) == 'csv') {
+        unlink($filename);
+        $fh = fopen($filename, 'x');
+        fwrite($fh, $content);
+        fclose($fh);
+        return $filename;
+    }
+    # Return an HTML string
+    else
+        return $content;
+}
+
+function title2filename($str) {
+    $str = preg_replace('/\w+:\s+/', '_', $str);
+    $str = preg_replace('/\s+|\n+|\r+/', '_', $str);
+    return $str;
 }
 
 function strip_html($str) {
-    return '<pre>' . strip_tags($str) . '</pre>';
+    return strip_tags($str);
+}
+
+# For unaligning the subtitle
+function unalign($str) {
+    return preg_replace('/(\w+:)\s+/', 'subtitle:\\1', $str);
 }
 
 # Wrap a string in font tags
@@ -953,6 +989,11 @@ function font($size, $str) {
 # ' ' -> '<br>'
 function sp2br($str) {
     return preg_replace('/\s+/', '<br>', $str);
+}
+
+# '<br>' -> ' - '
+function br2hyphen($str) {
+    return preg_replace('/<br>/', ' - ', $str);
 }
 
 # Return HTML colors for the lineplots
@@ -1121,6 +1162,9 @@ function slices_links($n, $limit, $params) {
     if (preg_match('/(summary|detail)/i', $go, $m))
         $qstring_arr['go'] = $m[1];
 
+    # Differentiate between link clicks and button clicks
+    unset($qstring_arr['click']);
+
     # Report "slices" should use absolute date range
     # because the LIMIT clause may not make sense in
     # the future
@@ -1219,6 +1263,9 @@ function drilldown_links() {
     unset($qstring_arr['offset']);
     unset($qstring_arr['slice']);
 
+    # Differentiate between link clicks and button clicks
+    unset($qstring_arr['click']);
+
     # Drilldowns should use absolute date range in case
     # the user walks away from the browser for awhile
     # (some data points could slip out of a relative
@@ -1258,7 +1305,7 @@ function drilldown_links() {
         $qstring_arr = form_carryover($defaults);
         $qstring_arr['phase'] = $phase;
 
-        # Strip off _cherry|_slice|_click
+        # Strip off _cherry|_slice
         $qstring_arr['go'] = base_type($qstring_arr['go']);
 
         # NOTE: WE CANNOT MARK THIS AS A TRUE DRILLDOWN,
@@ -1269,6 +1316,9 @@ function drilldown_links() {
         unset($qstring_arr['rows']);
         unset($qstring_arr['offset']);
         unset($qstring_arr['slice']);
+
+        # Differentiate between link clicks and button clicks
+        unset($qstring_arr['click']);
 
         # Drilldowns should use absolute date range in case
         # the user walks away from the browser for awhile
@@ -1323,8 +1373,11 @@ function drilldown_links() {
         # not passed on an href, only a submit
         $qstring_arr['lastgo'] = $qstring_arr['go'];
 
-        # Strip off _cherry|_slice|_click
+        # Strip off _cherry|_slice
         $qstring_arr['go'] = base_type($qstring_arr['go']);
+
+        # Differentiate between link clicks and button clicks
+        unset($qstring_arr['click']);
 
         $ret = sprintf($format, arr2qstring($qstring_arr), $param);
     }
@@ -1379,9 +1432,14 @@ function drilldown_links() {
             # not passed on an href, only a submit
             $qstring_arr['lastgo'] = $qstring_arr['go'];
 
-            # Strip off _cherry|_slice|_click
+            # Strip off _cherry|_slice
             $qstring_arr['go'] = base_type($qstring_arr['go']);
 
+            # Differentiate between link clicks and button clicks
+            unset($qstring_arr['click']);
+
+            # test_result will be getting reset for each
+            # result count cell
             unset($qstring_arr['test_result']);
             $ret[$phase][] = sprintf($format, arr2qstring($qstring_arr), label($phase));
 
@@ -1459,6 +1517,9 @@ function sorting_links($headers, $label, $arrow_size) {
     unset($qstring_arr['rows']);
     unset($qstring_arr['offset']);
     unset($qstring_arr['slice']);
+
+    # Differentiate between link clicks and button clicks
+    unset($qstring_arr['click']);
 
     # Report "slices" should use absolute date range
     # because the LIMIT clause may not make sense in
@@ -1783,22 +1844,24 @@ function compose_sql($query) {
 #########################################
 
 # Determine report type, Summary or Detail
-function process_buttons($params) {
-    $go = strtolower($_GET['go']);
+function process_report_type($params) {
     $slice = $params['slice'];
+    $go    = strtolower($_GET['go']);
+    $click = strtolower($_GET['click']);
+
+    # Report type is carried onward, not the button click event
+    if ($click)
+        $go = $click;
 
     # Determine report type, and
     # whether this is a "slice" report
     if (preg_match("/(summary|detail|performance|latency\w+)/i", $go, $m)) {
         $type = $m[1];
+
         if (! $slice) {
             unset($_GET['rows']);
             unset($_GET['offset']);
             unset($_GET['slice']);
-        }
-        # Do not carry cherry-picking over to next invocation
-        elseif (preg_match("/cherry/i", $go)) {
-            $_GET['go'] = $type;
         }
     }
 
@@ -1807,14 +1870,18 @@ function process_buttons($params) {
     $phases = process_phase_field($_GET);
     if ((sizeof($phases) > 1) and (! preg_match("/summary/i", $type))) {
         $type = 'summary';
-        $_GET['go'] = $type;
     } 
     # Press 'Summary' for them if they go from a performance
     # report to a non-test_run radio button
     elseif (preg_match("/performance/i", $type) and $phases[0] != 'test_run') {
         $type = 'summary';
-        $_GET['go'] = $type;
     }
+
+    # Put the report type into the global env
+    $_GET['go'] = $type;
+
+    if (preg_match("/cherry/i", $go))
+        $_GET['go'] = $go;
 
     return $type;
 }
@@ -2189,21 +2256,12 @@ function process_cherry_fields($params) {
     # Compile all the cherry checkboxes and 
     # place them in an array (eliminating duplicates)
     foreach (array_keys($params) as $k) {
-
-        if (preg_match("/cherry_(\d+)/i", $k, $m)) {
-            $n = $m[1];
-            $filter[] = $n;
-            $clauses[] = "n = $n";
-        }
+        if (preg_match("/cherry_(\d+)/i", $k, $m))
+            $filter[] = $m[1];
     }
 
     if ($filter)
         return array_flip($filter);
-
-    # if ($clauses) {
-    #     $query['where'][] = "(" . join(" OR ", $clauses) . ")";
-    #     return $query;
-    # }
 }
 
 # Return 'on' if all cherries are checked
@@ -2223,6 +2281,62 @@ function process_cherry_fields($params) {
 #     else
 #         return false;
 # }
+
+# Read/create/update a cookie, and put its data into the
+# environment
+#
+# If (! make_cookie)
+#   Delete/create client's cookie
+# Else
+#   Define based on cookie
+function process_cookie($params, $cookie) {
+
+    $cookie_name = 'mttcookie';
+
+    static $defaults;
+    if (! $defaults)
+        $defaults = setup_prefs();
+
+    if ($cookie[$cookie_name])
+        $use_cookie = true;
+
+    foreach (array_keys($defaults) as $category) {
+        foreach (array_keys($defaults[$category]) as $p) {
+            if ($use_cookie) {
+                define(strtoupper($p), $cookie[$cookie_name][$p]);
+            } elseif ($params[$p]) {
+                define(strtoupper($p), $params[$p]);
+            } else {
+                define(strtoupper($p), prefs_default($p));
+            }
+        }
+    }
+}
+
+# Return the default value of preference named $pref
+function prefs_default($pref) {
+
+    # Compile the prefs hash
+    static $prefs;
+    if (! $prefs) {
+        $_prefs = setup_prefs();
+        foreach (array_keys($_prefs) as $cat)
+            foreach (array_keys($_prefs[$cat]) as $p)
+                $prefs[$p] = $_prefs[$cat][$p];
+    }
+
+    $value = $prefs[$pref];
+
+    if (is_bool($value) or is_scalar($value))
+        $ret = $value;
+    elseif (is_array($value)) {
+        foreach ($value as $v)
+            if (preg_match('/^\*/', $v))
+                $ret = strip_star($v);
+    
+    }
+    return $ret;
+}
 
 #########################################
 #                                       
@@ -2469,18 +2583,19 @@ function housekeeping_db($listing) {
     }
 }
 
-# Clean up old graphs
-function housekeeping_images($dir) {
+# Clean up old image and csv files
+function housekeeping($dir) {
 
     $res = opendir($dir);
 
     $root = dirname($_SERVER["SCRIPT_FILENAME"]);
 
-    $img_types = array("\.gif$",
+    $file_types = array("\.gif$",
                        "\.jpg$",
                        "\.png$",
                        "\.jpeg$",
-                       "\.pdf$");
+                       "\.pdf$",
+                       "\.csv$");
 
     # Threshold to unlink a file
     $hours = 1;
@@ -2493,8 +2608,8 @@ function housekeeping_images($dir) {
         # unlink needs a full path
         $filename = "$root/$dir/$filename";
 
-        if (preg_match('/'.join('|', $img_types).'/i', $filename)) {
-            $age = $now - filemtime($filename);
+        if (preg_match('/'.join('|', $file_types).'/i', $filename)) {
+            $age = $now - fileatime($filename);
             if ($age > (60 * 60 * $hours))
                 unlink($filename);
         }
