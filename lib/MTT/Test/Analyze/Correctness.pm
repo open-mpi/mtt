@@ -28,13 +28,13 @@ sub Analyze {
     }
 
     # result value: 0=fail, 1=pass, 2=skipped, 3=timed out
-    my $result = 0;
+    my $result = MTT::Test::FAIL;
     if ($skipped) {
-        $result = 2;
+        $result = MTT::Test::SKIPPED;
     } elsif ($results->{timed_out}) {
-        $result = 3;
+        $result = MTT::Test::TIMED_OUT;
     } elsif ($pass) {
-        $result = 1;
+        $result = MTT::Test::PASS;
     }
 
     # Queue up a report on this test

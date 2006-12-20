@@ -18,6 +18,7 @@ use MTT::Test::Get;
 use MTT::Test::Build;
 use MTT::Test::Run;
 use MTT::Files;
+use Data::Dumper;
 
 #--------------------------------------------------------------------------
 
@@ -30,6 +31,15 @@ our $builds;
 # Exported run tests handle
 our $runs;
 our $runs_to_be_saved;
+
+# Exported result values.  These values are in sync with the server --
+# do not change them without also changing the server!
+use constant {
+    FAIL => 0,
+    PASS => 1,
+    SKIPPED => 2,
+    TIMED_OUT => 3,
+};
 
 #--------------------------------------------------------------------------
 
@@ -84,6 +94,15 @@ sub LoadSources {
     my $data;
     MTT::Files::load_dumpfile("$dir/$sources_data_filename", \$data);
     $MTT::Test::sources = $data->{VAR1};
+
+
+    # Rebuild the refcounts
+    foreach my $test_key (keys(%{$MTT::Test::sources})) {
+        my $test = $MTT::Test::sources->{$test_key};
+
+        # Set this refcount to 0, because no one is using it yet.
+        $test->{refcount} = 0;
+    }
 }
 
 #--------------------------------------------------------------------------
@@ -107,6 +126,38 @@ sub LoadBuilds {
     my $data;
     MTT::Files::load_dumpfile("$dir/$builds_data_filename", \$data);
     $MTT::Test::builds = $data->{VAR1};
+
+    # Rebuild the refcounts
+    foreach my $get_key (keys(%{$MTT::Test::builds})) {
+        my $get = $MTT::Test::builds->{$get_key};
+
+        foreach my $version_key (keys(%{$get})) {
+            my $version = $get->{$version_key};
+
+            foreach my $install_key (keys(%{$version})) {
+                my $install = $version->{$install_key};
+
+                foreach my $build_key (keys(%{$install})) {
+                    my $build = $install->{$build_key};
+
+                    # Set the refcount of this test build to 0.
+                    $build->{refcount} = 0;
+
+                    # Bump the refcount of the corresponding MPI install.
+                    if (exists($MTT::MPI::installs->{$get_key}) &&
+                        exists($MTT::MPI::installs->{$get_key}->{$version_key}) &&
+                        exists($MTT::MPI::installs->{$get_key}->{$version_key}->{$install_key})) {
+                        ++$MTT::MPI::installs->{$get_key}->{$version_key}->{$install_key}->{refcount};
+                    }
+
+                    # Bump the refcount of the corresponding Test get.
+                    if (exists($MTT::Test::sources->{$build->{test_get_simple_section_name}})) {
+                        ++$MTT::Test::sources->{$build->{test_get_simple_section_name}}->{refcount};
+                    }
+                }
+            }
+        }
+    }
 }
 
 #--------------------------------------------------------------------------
@@ -134,6 +185,35 @@ sub LoadRuns {
     $load_run_file_start_dir = "$dir/$runs_subdir";
     find(\&load_run_file, $load_run_file_start_dir)
         if (-d $load_run_file_start_dir);
+
+    # Rebuild the refcounts
+    foreach my $get_key (keys(%{$MTT::Test::runs})) {
+        my $get = $MTT::Test::runs->{$get_key};
+
+        foreach my $version_key (keys(%{$get})) {
+            my $version = $get->{$version_key};
+
+            foreach my $install_key (keys(%{$version})) {
+                my $install = $version->{$install_key};
+
+                foreach my $build_key (keys(%{$install})) {
+                    my $build = $install->{$build_key};
+
+                    foreach my $run_key (keys(%{$build})) {
+                        my $run = $build->{$run_key};
+
+                        # Bump the refcount of the corresponding test build.
+                        if (exists($MTT::Test::builds->{$get_key}) &&
+                            exists($MTT::Test::builds->{$get_key}->{$version_key}) &&
+                            exists($MTT::Test::builds->{$get_key}->{$version_key}->{$install_key}) &&
+                            exists($MTT::Test::builds->{$get_key}->{$version_key}->{$install_key}->{$build_key})) {
+                            ++$MTT::Test::builds->{$get_key}->{$version_key}->{$install_key}->{$build_key}->{refcount};
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 sub load_run_file {
@@ -156,6 +236,10 @@ sub load_run_file {
     } while (exists($data->{VAR1}->{$k}));
     $str .= " = \$data->{VAR2}";
     eval $str;
+
+    # Note that no refcounts are needed here -- nothing uses test
+    # runs.  But if they were, we could easily set this record's
+    # refcount to 0 here.
 }
 
 #--------------------------------------------------------------------------

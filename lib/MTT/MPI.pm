@@ -64,6 +64,17 @@ sub LoadSources {
     my $data;
     MTT::Files::load_dumpfile("$dir/$sources_data_filename", \$data);
     $MTT::MPI::sources = $data->{VAR1};
+
+    # Rebuild the refcounts
+    foreach my $get_key (keys(%{$MTT::MPI::sources})) {
+        my $get = $MTT::MPI::sources->{$get_key};
+
+        foreach my $version_key (keys(%{$get})) {
+            my $version = $get->{$version_key};
+            # Set this refcount to 0, because no one is using it yet.
+            $version->{refcount} = 0;
+        }
+    }
 }
 
 #--------------------------------------------------------------------------
@@ -87,6 +98,27 @@ sub LoadInstalls {
     my $data;
     MTT::Files::load_dumpfile("$dir/$installs_data_filename", \$data);
     $MTT::MPI::installs = $data->{VAR1};
+
+    # Rebuild the refcounts
+    foreach my $get_key (keys(%{$MTT::MPI::installs})) {
+        my $get = $MTT::MPI::installs->{$get_key};
+
+        foreach my $version_key (keys(%{$get})) {
+            my $version = $get->{$version_key};
+
+            foreach my $install_key (keys(%{$version})) {
+                my $install = $version->{$install_key};
+                # Set the refcount of this MPI install to 0.
+                $install->{refcount} = 0;
+
+                # Bump the refcount of the corresponding MPI get.
+                if (exists($MTT::MPI::sources->{$get_key}) &&
+                    exists($MTT::MPI::sources->{$get_key}->{$version_key})) {
+                    ++$MTT::MPI::sources->{$get_key}->{$version_key}->{refcount};
+                }
+            }
+        }
+    }
 }
 
 #--------------------------------------------------------------------------

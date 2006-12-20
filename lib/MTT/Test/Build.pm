@@ -98,6 +98,20 @@ sub Build {
                 # Strip whitespace
                 $test_get_name =~ s/^\s*(.*?)\s*/\1/;
 
+                if (!$ini->SectionExists("test get: $test_get_name")) {
+                    Warning("Test Get section \"$test_get_name\" does not seem to exist in the INI file; skipping\n");
+                    next;
+                }
+
+                # If we have no sources for this name, then silently
+                # skip it.  Don't issue a warning because command line
+                # parameters may well have dictated to skip this
+                # section.
+                if (!exists($MTT::Test::sources->{$test_get_name})) {
+                    Debug("Have no sources for Test Get \"$test_get_name\", skipping\n");
+                    next;
+                }
+
                 # Find the matching test source
                 foreach my $test_get_key (keys(%{$MTT::Test::sources})) {
                     if ($test_get_key eq $test_get_name) {
@@ -255,9 +269,26 @@ sub _do_build {
     # the MPI library is at the build stage
     $MTT::Test::Run::test_prefix = $mpi_install->{installdir};
 
+    # Process loading of modules -- for both the MPI install and the
+    # test build sections
+    my @env_modules;
+    my $val = Value($ini, $section, "env_module");
+    if ($val && $mpi_install->{env_modules}) {
+        $config->{env_modules} = $mpi_install->{env_modules} . "," .
+            $config->{env_modules};
+    } elsif ($val) {
+        $config->{env_modules} = $val;
+    } elsif ($mpi_install->{env_modules}) {
+        $config->{env_modules} = $mpi_install->{env_modules};
+    }
+    if ($config->{env_modules}) {
+        @env_modules = split(",", $config->{env_modules});
+        Env::Modulecmd::load(@env_modules);
+        Debug("Loading environment modules: @env_modules\n");
+    }
+
     # Process setenv, unsetenv, prepend-path, and append-path -- for
-    # both the MPI that we're building with and the section of the ini
-    # file that we're building.
+    # both the MPI install and the test build sections
     my @save_env;
     ProcessEnvKeys($mpi_install, \@save_env);
     $config->{setenv} = Value($ini, $section, "setenv");
@@ -266,6 +297,11 @@ sub _do_build {
     $config->{append_path} = Value($ini, $section, "append_path");
     ProcessEnvKeys($config, \@save_env);
 
+    # Bump the refcount on the MPI install and test get sections.
+    # Even if this build fails, we need it.
+    ++$test_get->{refcount};
+    ++$mpi_install->{refcount};
+
     # Run the module
     my $start = timegm(gmtime());
     my $start_time = time();
@@ -273,6 +309,12 @@ sub _do_build {
                                "Build", $ini, $mpi_install, $config);
     my $duration = time() - $start_time . " seconds";
             
+    # Unload any loaded environment modules
+    if ($#env_modules >= 0) {
+        Debug("Unloading environment modules: @env_modules\n");
+        Env::Modulecmd::unload(@env_modules);
+    }
+
     # Analyze the return
     if ($ret) {
         $ret->{full_section_name} = $config->{full_section_name};
@@ -281,12 +323,15 @@ sub _do_build {
         $ret->{unsetenv} = $config->{unsetenv};
         $ret->{prepend_path} = $config->{prepend_path};
         $ret->{append_path} = $config->{append_path};
+        $ret->{env_modules} = $config->{env_modules};
         $ret->{srcdir} = $config->{srcdir};
         $ret->{mpi_name} = $mpi_install->{mpi_name};
         $ret->{mpi_get_simple_section_name} = $mpi_install->{mpi_get_simple_section_name};
         $ret->{mpi_install_simple_section_name} = $mpi_install->{simple_section_name};
         $ret->{mpi_version} = $mpi_install->{mpi_version};
+        $ret->{test_get_simple_section_name} = $test_get->{simple_section_name};
         $ret->{start_timestamp} = timegm(gmtime());
+        $ret->{refcount} = 0;
 
         $ret->{test_result} = 0
             if (!defined($ret->{test_result}));

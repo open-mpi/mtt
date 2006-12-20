@@ -89,6 +89,7 @@ sub _do_get {
             $ret->{simple_section_name} = $simple_section;
             $ret->{module_name} = "MTT::Test::Get::$module";
             $ret->{start_timestamp} = timegm(gmtime());
+            $ret->{refcount} = 0;
 
             # Add this into the $Test::sources hash
             $MTT::Test::sources->{$simple_section} = $ret;

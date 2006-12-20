@@ -73,6 +73,15 @@ sub Run {
                 # Strip whitespace
                 $test_build_name =~ s/^\s*(.*?)\s*/\1/;
 
+                if (!$ini->SectionExists("test build: $test_build_name")) {
+                    Warning("Test Build section \"$test_build_name\" does not seem to exist in the INI file; skipping\n");
+                    next;
+                }
+
+                # Don't bother explicitly searching for the test build
+                # and issuing a Debug/next because we'll implicitly do
+                # this below.
+
                 # Find the matching test build.  Test builds are
                 # indexed on (in order): MPI Get simple section name,
                 # MPI Install simple section name, Test Build simple
@@ -150,7 +159,7 @@ sub _do_run {
         Warning("Unable to find MPI details section for [MPI Install: $details_install_section]; skipping\n");
         return;
     }
-    
+
     # Get some details about running with this MPI
     my $mpi_details;
     $MTT::Test::Run::test_prefix = $mpi_install->{installdir};
@@ -201,13 +210,31 @@ sub _do_run {
         }
     }
 
+    # Process loading of modules -- for both the MPI install and the
+    # test build sections
+    my $config;
+    my @env_modules;
+    my $val = MTT::Values::Value($ini, $section, "env_module");
+    if ($val && $test_build->{env_modules}) {
+        $config->{env_modules} = $test_build->{env_modules} . "," .
+            $config->{env_modules};
+    } elsif ($val) {
+        $config->{env_modules} = $val;
+    } elsif ($test_build->{env_modules}) {
+        $config->{env_modules} = $test_build->{env_modules};
+    }
+    if ($config->{env_modules}) {
+        @env_modules = split(",", $config->{env_modules});
+        Env::Modulecmd::load(@env_modules);
+        Debug("Loading environment modules: @env_modules\n");
+    }
+
     # Process setenv, unsetenv, prepend-path, and append-path -- for
     # both the MPI that we're building with and the section of the ini
     # file that we're building.
     my @save_env;
     MTT::Values::ProcessEnvKeys($mpi_install, \@save_env);
     # JMS: Do we need to grab from Test::Build as well?
-    my $config;
     %$config = %$MTT::Defaults::Test_specify;
     $config->{setenv} = MTT::Values::Value($ini, $section, "setenv");
     $config->{unsetenv} = MTT::Values::Value($ini, $section, "unsetenv");
@@ -251,6 +278,9 @@ sub _do_run {
     $config->{timeout} = $tmp
         if (defined($tmp));
 
+    # Bump the refcount on the test build
+    ++$test_build->{refcount};
+
     # Run the specify module to get a list of tests to run
     my $ret = MTT::Test::Specify::Specify($specify_module, $ini, $section, 
                                           $test_build, $mpi_install, $config);
@@ -263,6 +293,12 @@ sub _do_run {
     if ($ret && $ret->{test_result}) {
         MTT::Test::RunEngine::RunEngine($section, $top_dir, $mpi_details,
                                         $test_build, $force, $ret);
+    }
+
+    # Unload any loaded environment modules
+    if ($#env_modules >= 0) {
+        Debug("Unloading environment modules: @env_modules\n");
+        Env::Modulecmd::unload(@env_modules);
     }
 }
 

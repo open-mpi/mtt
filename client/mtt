@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -110,6 +111,7 @@ my $trim_arg;
 my $version_arg;
 my $ini_args;
 my $time_arg;
+my $trial_arg;
 
 my @SAVE_ARGV = @ARGV;
 
@@ -132,6 +134,7 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
                                   "trim!" => \$trim_arg,
                                   "version" => \$version_arg,
                                   "print-time|p" => \$time_arg,
+                                  "trial!" => \$trial_arg,
                                   );
 # Everything ok?
 
@@ -181,6 +184,14 @@ if (!$ok || $help_arg) {
 --print-time|-p               Display the amount of time taken in each phase
 --force                       Do steps even if they would not normally
                               be executed
+--[no-]trial                  Use when testing your MTT client setup; 
+                              results that are generated and submitted
+                              to the database are marked as \"trials\"
+                              and are not included in normal
+                              reporting.  Alternatively,
+                              \"--no-trial\" can be specified to force
+                              a \"normal\" submission (this is the
+                              default).
 --[no-]mpi-get                Do the \"MPI get\" phase
 --[no-]mpi-install            Do the \"MPI install\" phase
 --[no-]test-get               Do the \"Test get\" phase
@@ -429,6 +440,9 @@ sub stop_time {
 foreach my $file (@file_arg) {
 
     my $orig_file = ($stdin_arg ? "stdin" : $file);
+    if (!$stdin_arg && ! -r $file) {
+        MTT::Messages::Abort("Could not read file: $file");
+    }
     my $temp_file = MTT::Files::copyfile($file);
 
     # Load up the ini file
@@ -462,6 +476,12 @@ foreach my $file (@file_arg) {
 
     MTT::Globals::load($ini);
     MTT::Messages::Messages($debug, $verbose, cwd());
+
+    # If "--trial" was specified, then set the "trail" flag to 1
+
+    if (defined($trial_arg)) {
+        $MTT::Globals::Values->{trial} = $trial_arg;
+    }
 
     # Run the phases
 

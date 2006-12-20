@@ -110,6 +110,7 @@ sub _do_get {
             $ret->{mpi_details} = $mpi_details;
             $ret->{module_name} = "MTT::MPI::Get::$module";
             $ret->{start_timestamp} = timegm(gmtime());
+            $ret->{refcount} = 0;
             
             # Add this into the $MPI::sources hash
             $MTT::MPI::sources->{$simple_section}->{$ret->{version}} = $ret;

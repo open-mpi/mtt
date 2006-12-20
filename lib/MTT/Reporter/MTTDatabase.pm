@@ -40,6 +40,9 @@ my $ua;
 my $invocation_serial_name = "client_serial";
 my $invocation_serial_value;
 
+# Field for the server; "trial" flag
+my $trial name = "trial";
+
 # Do we want debugging?
 my $debug_filename;
 my $debug_index;
@@ -232,6 +235,9 @@ sub Submit {
 
             # Fill in the client serial number
             $form->{$serial_name} = $serial_value;
+
+            # Fill in the trial flag
+            $form->{$trial_name} = $MTT::Globals::Values->{trial};
 
             # How many results are we submitting?
             $form->{number_of_results} = $#{$section_obj} + 1;

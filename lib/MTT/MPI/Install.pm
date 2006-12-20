@@ -95,6 +95,7 @@ use MTT::MPI;
 use MTT::Defaults;
 use Data::Dumper;
 use File::Basename;
+use Env::Modulecmd;
 
 # File to keep data about builds
 my $installed_file = "mpi_installed.ini";
@@ -147,6 +148,20 @@ sub Install {
             foreach my $mpi_get_name (@mpi_gets) {
                 # Strip whitespace
                 $mpi_get_name =~ s/^\s*(.*?)\s*/\1/;
+
+                if (!$ini->SectionExists("mpi get: $mpi_get_name")) {
+                    Warning("MPI Get section \"$mpi_get_name\" does not seem to exist in the INI file; skipping\n");
+                    next;
+                }
+
+                # If we have no sources for this name, then silently
+                # skip it.  Don't issue a warning because command line
+                # parameters may well have dictated to skip this MPI
+                # get section.
+                if (!exists($MTT::MPI::sources->{$mpi_get_name})) {
+                    Debug("Have no sources for MPI Get \"$mpi_get_name\", skipping\n");
+                    next;
+                }
 
                 # For each MPI source
                 foreach my $mpi_get_key (keys(%{$MTT::MPI::sources})) {
@@ -260,6 +275,15 @@ sub _do_install {
     $config->{version_dir} = _make_safe_dir($mpi_get->{version});
     MTT::DoCommand::Chdir($config->{version_dir});
     
+    # Load any environment modules?
+    my @env_modules;
+    $config->{env_modules} = Value($ini, $section, "env_module");
+    if ($config->{env_modules}) {
+        @env_modules = split(",", $config->{env_modules});
+        Env::Modulecmd::load(@env_modules);
+        Debug("Loading environment modules: @env_modules\n");
+    }
+
     # Process setenv, unsetenv, prepend_path, and
     # append_path
     $config->{setenv} = Value($ini, $section, "setenv");
@@ -335,7 +359,7 @@ sub _do_install {
     $config->{stdout_save_lines} = $tmp
         if (defined($tmp));
 
-    # We're in the section directory.  Make a subdir for wthe source
+    # We're in the section directory.  Make a subdir for the source
     # and build.
     MTT::DoCommand::Cmd(1, "rm -rf source");
     my $source_dir = MTT::Files::mkdir("source");
@@ -370,10 +394,13 @@ sub _do_install {
     MTT::DoCommand::Chdir($config->{builddir});
     
     # Installdir
-    
     $config->{installdir} = "$config->{version_dir}/install";
     MTT::Files::mkdir($config->{installdir});
-    
+
+    # Bump the refcount in the MPI get -- even if this install fails,
+    # we need the refcount to be accurate.
+    ++$mpi_get->{refcount};
+
     # Run the module
     my $start = timegm(gmtime());
     my $start_time = time;
@@ -386,6 +413,12 @@ sub _do_install {
         $config->{bitness} = $ret->{bitness};
     }
     
+    # Unload any loaded environment modules
+    if ($#env_modules >= 0) {
+        Debug("Unloading environment modules: @env_modules\n");
+        Env::Modulecmd::unload(@env_modules);
+    }
+
     # Analyze the return
     
     if ($ret) {
@@ -465,6 +498,7 @@ sub _do_install {
         foreach my $e (@save_env) {
             $report->{environment} .= "$e\n";
         }
+
         # Fill in which MPI we used
         $ret->{mpi_details} = $mpi_get->{mpi_details};
         $ret->{mpi_get_full_section_name} = $mpi_get->{full_section_name};
@@ -483,7 +517,9 @@ sub _do_install {
         $ret->{unsetenv} = $config->{unsetenv};
         $ret->{prepend_path} = $config->{prepend_path};
         $ret->{append_path} = $config->{append_path};
+        $ret->{env_modules} = $config->{env_modules};
         $ret->{start_timestamp} = timegm(gmtime());
+        $ret->{refcount} = 0;
 
         # Delete keys with empty values
         foreach my $k (keys(%$report)) {
