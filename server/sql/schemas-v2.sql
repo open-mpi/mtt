@@ -144,11 +144,15 @@ CREATE TABLE results (
     result_stderr text NOT NULL DEFAULT '',
     result_message text NOT NULL DEFAULT '',
     start_timestamp timestamp without time zone NOT NULL DEFAULT now() - interval '24 hours',
-    stop_timestamp timestamp without time zone NOT NULL DEFAULT now() - interval '24 hours',
     duration interval NOT NULL DEFAULT '-38 seconds',
 
     submit_timestamp timestamp without time zone NOT NULL DEFAULT now(),
+
+    -- keep track of individual MTT runs
     client_serial integer NOT NULL DEFAULT '-38',
+
+    -- flag data submitted by experimental MTT runs
+    trial boolean NOT NULL DEFAULT 'f',
 
     -- set if process exited
     exit_status integer NOT NULL DEFAULT '-38',

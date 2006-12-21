@@ -20,6 +20,7 @@ SELECT
     platform_hardware,
     platform_name,
     platform_type,
+    trial,
     (CASE WHEN
       test_result = 0
       THEN '_if' END) as fail,
@@ -59,6 +60,7 @@ SELECT
     platform_hardware,
     platform_name,
     platform_type,
+    trial,
     (CASE WHEN
       test_result = 0
       THEN '_bf' END) as fail,
@@ -99,6 +101,7 @@ SELECT
     platform_hardware,
     platform_name,
     platform_type,
+    trial,
     (CASE WHEN
       test_result = 0
       THEN '_rf' END) as fail,
@@ -164,6 +167,7 @@ SELECT
     result_stderr,
     environment,
     client_serial,
+    trial,
 
     (CASE WHEN
       test_result = 0
@@ -216,6 +220,7 @@ SELECT
     result_stderr,
     environment,
     client_serial,
+    trial,
 
     (CASE WHEN
       test_result = 0
@@ -272,6 +277,7 @@ SELECT
     result_stderr,
     environment,
     client_serial,
+    trial,
 
     -- latency_bandwidth
     message_size,
