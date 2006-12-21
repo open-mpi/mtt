@@ -41,7 +41,7 @@ my $invocation_serial_name = "client_serial";
 my $invocation_serial_value;
 
 # Field for the server; "trial" flag
-my $trial name = "trial";
+my $trial_name = "trial";
 
 # Do we want debugging?
 my $debug_filename;
