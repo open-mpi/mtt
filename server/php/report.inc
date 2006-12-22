@@ -34,6 +34,9 @@ function dump_report() {
     # definitions accordingly
     process_cookie($_GET, $_COOKIE);
 
+    # Display input parameters
+    debug_cgi($_GET, "GET " . __LINE__);
+
     # Fresh web page is brought up
     if (! isset($_GET['go']) and 
         ! isset($_GET['click']))
@@ -270,6 +273,8 @@ function summary_table($headers, $resource, $filter) {
     print "<tr>";
     if (allow_cherry_picking($_GET))
         print sprintf($format2, '') .
+                # X: MAKE THIS CHECKBOX ''CHECK ALL'' THE BOXES
+                #
                 #             "<input " . 
                 #                 "type='checkbox' " . 
                 #                 "name='all_cherries' " . 
@@ -549,88 +554,131 @@ function performance_graphs($data) {
 # type = latency*|bandwidth* 
 function do_graph($data, $type) {
 
+    $type = strtolower($type);
+
     $jpgraph_dir = './jpgraph';
     include_once("$jpgraph_dir/jpgraph.php");
     include_once("$jpgraph_dir/jpgraph_line.php");
-    #include_once("$jpgraph_dir/jpgraph_log.php");
+    include_once("$jpgraph_dir/jpgraph_log.php");
 
-    # Process inputs
-    $legend = $data['legend'];
-    unset($data['legend']);
+    # Set axis label unit
+    $unit = get_axis_unit($type);
 
-    $params = $data['params'];
-    unset($data['params']);
-
-    $plots = $data['plots'];
-    unset($data['plots']);
-
-    # Tests may have differing lists of message sizes,
-    # so find the longest series for the x-axis
-    $pad = 0;
-    foreach (array_keys($plots) as $i) {
-        $message_size = $plots[$i]['message_size'];
-        if ($pad < sizeof($message_size)) {
-            $message_sizes = $message_size;
-            $pad = sizeof($message_size);
-        }
-    }
-
-    # Set axis label units
-    if (preg_match("/latency/i", $type))
-        $unit = 'usec';
-    elseif (preg_match("/bandwidth/i", $type))
-        $unit = 'Mbps';
-
-    # Setup line plot colors
-    $colors = graph_colors();
-
-    # Set up titles
-    $title    = "MTT Performance Results";
-    $subtitle = create_subtitle($legend);
-
-    $j = 0;
-
-    $type = strtolower($type);
-
-    # jpgraph doesn't like empty graphs
-    $empty = true;
-
-    # Collect the line plots
-    foreach (array_keys($plots) as $i) {
-        
-        $line = $plots[$i][$type];
-
-        # Create the linear plot
-        if ($line) {
-            $empty = false;
-
-            $ydata = array_pad($line, $pad, null);
-
-            $color = $colors[$j++];
-
-            # Avoid null color error
-            if (! $color)
-                $color = 'black';
-
-            $lineplots[$i] = new LinePlot($ydata);
-
-            # Human row numbers are +1
-            $legend_items[$i] = 
-                ($i + 1) . ' ' . create_legend_item($params[$i], $legend);
-
-            $lineplots[$i]->SetColor($color);
-            $lineplots[$i]->SetWeight(2);
-        }
-    }
-
-    # Do not print a legend for a single line plot
-    if (sizeof($legend_items) > 1)
-        foreach (array_keys($legend_items) as $i)
-            $lineplots[$i]->SetLegend($legend_items[$i]);
+    # Collect graph data
+    list($lineplots,
+         $message_sizes,
+         $legend_items,
+         $title,
+         $subtitle) = collect_graph_data($data, $type);
 
     # Return nothing if we have no line plots
-    if ($empty)
-        return;
+    if (is_null($lineplots))
+      return;
+
+    list($width, 
+         $height,
+         $xfont,
+         $margins,
+         $legend_cols) = 
+            get_graph_dimensions($legend_items, $message_sizes);
+
+    # Create the graph. These two calls are always required
+    $graph = new Graph($width, $height, "auto");    
+
+    # Set axis scaling (default: 'textlin')
+    $yscale = YAXIS_SCALE;
+    $xscale = XAXIS_SCALE;
+
+    if (! $xscale)
+        $xscale = 'text';
+    if (! $yscale or $yscale == 'text')
+        $yscale = 'lin';
+
+    $scale = "$xscale$yscale";
+
+    $graph->SetScale($scale);
+
+    $gJpgBrandTiming = true;
+
+    list($lmargin,
+         $rmargin,
+         $tmargin,
+         $bmargin) = array_values($margins);
+    $graph->img->SetMargin($lmargin, $rmargin, $tmargin, $bmargin);
+    
+    # Setup legend
+    $graph->legend->SetPos(0.05,0.95, 'right','bottom');
+    $graph->legend->SetColumns($legend_cols);
+    $graph->legend->SetLineWeight(10);
+
+    # Setup titles
+    $graph->title->Set($title);
+
+    if (! HIDE_SUBTITLE)
+        $graph->subtitle->Set($subtitle);
+
+    $graph->subtitle->ParagraphAlign("left");
+    $graph->title->SetFont(FF_FONT1, FS_BOLD);
+    $graph->subtitle->SetFont(FF_FONT1, FS_NORMAL);
+
+    # Setup axes
+    $titles['xaxis'] = "Message size - bytes";
+    $titles['yaxis'] = label($type) . " - $unit";
+
+    $graph->xaxis->SetTickLabels($message_sizes);
+    $graph->xaxis->SetLabelAngle(90);
+    $graph->xaxis->SetFont($xfont);
+    $graph->xaxis->SetTitleMargin(25);
+    $graph->yaxis->SetTitleMargin(40);
+    $graph->xaxis->setTitle($titles['xaxis'], "middle");
+    $graph->yaxis->setTitle($titles['yaxis'], "middle");
+    $graph->xaxis->title->SetFont(FF_FONT1, FS_BOLD);
+    $graph->yaxis->title->SetFont(FF_FONT1, FS_BOLD);
+
+    # Plot the lines
+    foreach (array_keys($lineplots) as $i) {
+        $graph->Add($lineplots[$i]);
+    }
+
+    $graph->SetShadow();
+
+    # Write the graph to a file
+    # (Timestamp it so the browser doesn't reload a cached
+    # image when/if the user changes a graphing preference)
+    $filename = './tmp/' . time() . '_' . title2filename($title . $subtitle) . '.png';
+    unlink($filename);
+    $graph->Stroke($filename);
+
+    # Snarf plots argument
+    $plots = $data['plots'];
+
+    # Create 2D array to feed to raw data output function
+    $meta_data['title']          = $title;
+    $meta_data['subtitle']       = $subtitle;
+    $meta_data['unit']           = $unit;
+    $meta_data['type']           = $type;
+    $meta_data['legend_items']   = $legend_items;
+    $table_data['message_sizes'] = $message_sizes;
+    $table_data['plots']         = $plots;
+
+    $arr = prepare_raw_data_arr($meta_data, $table_data);
+    $raw = prepare_raw_data_links($arr);
+
+    $image = "<img src='$filename' " .
+                  "alt='$title' " .
+                  "border='0'>";
+
+    # Return links to the image, raw data, and width
+    $ret = array(
+        'image' => $image,
+        'raw'   => $raw,
+        'width' => $width
+    );
+
+    return $ret;
+}
+
+function get_graph_dimensions($legend_items, $message_sizes) {
 
     # Default margin sizes
     $margins['left']   = 60;
@@ -665,7 +713,6 @@ function do_graph($data, $type) {
     $xticks = sizeof($message_sizes);
     $width = $xticks * $c2p;
     $height = 400;
-    #list($max, $avg) = max_avg($plots, $type);
 
     list($width, $xfont) = constrain_graph_attrs($width);
 
@@ -688,47 +735,112 @@ function do_graph($data, $type) {
 
     list($width, $xfont) = constrain_graph_attrs($width);
 
-    # Create the graph. These two calls are always required
-    $graph = new Graph($width, $height, "auto");    
-    $graph->SetScale("textlin");
+    $ret = array(
+        $width, 
+        $height, 
+        $xfont,
+        $margins,
+        $legend_cols
+    );
 
-    $gJpgBrandTiming = true;
+    return $ret;
+}
 
-    list($l, $r, $t, $b) = array_values($margins);
-    $graph->img->SetMargin($l, $r, $t, $b);
-    
-    # Setup legend
-    $graph->legend->SetPos(0.05,0.95, 'right','bottom');
-    $graph->legend->SetColumns($legend_cols);
-    $graph->legend->SetLineWeight(10);
+function get_axis_unit($type) {
+    if (preg_match("/latency/i", $type))
+        $unit = 'usec';
+    elseif (preg_match("/bandwidth/i", $type))
+        $unit = 'Mbps';
 
-    # Setup titles
-    $graph->title->Set($title);
-    $graph->subtitle->Set($subtitle);
-    $graph->subtitle->ParagraphAlign("left");
-    $graph->title->SetFont(FF_FONT1, FS_BOLD);
-    $graph->subtitle->SetFont(FF_FONT1, FS_NORMAL);
+    return $unit;
+}
 
-    # Setup axes
-    $titles['xaxis'] = "Message size - bytes";
-    $titles['yaxis'] = label($type) . " - $unit";
+# Collect and massage graph data
+function collect_graph_data($data, $type) {
 
-    $graph->xaxis->SetTickLabels($message_sizes);
-    $graph->xaxis->SetLabelAngle(90);
-    $graph->xaxis->SetFont($xfont);
-    $graph->xaxis->SetTitleMargin(25);
-    $graph->yaxis->SetTitleMargin(40);
-    $graph->xaxis->setTitle($titles['xaxis'], "middle");
-    $graph->yaxis->setTitle($titles['yaxis'], "middle");
-    $graph->xaxis->title->SetFont(FF_FONT1, FS_BOLD);
-    $graph->yaxis->title->SetFont(FF_FONT1, FS_BOLD);
+    # Process inputs
+    $legend = $data['legend'];
+    unset($data['legend']);
 
-    # Plot the lines
-    foreach (array_keys($lineplots) as $i) {
-        $graph->Add($lineplots[$i]);
+    $params = $data['params'];
+    unset($data['params']);
+
+    $plots = $data['plots'];
+    unset($data['plots']);
+
+    # Setup line plot colors
+    static $colors;
+    if (! $colors)
+        $colors = graph_colors();
+
+    # Set up titles
+    $title = "MTT Performance Results";
+    $subtitle = create_subtitle($legend);
+
+    # Tests may have differing lists of message sizes,
+    # so find the longest series for the x-axis
+    $pad = 0;
+    foreach (array_keys($plots) as $i) {
+        $message_size = $plots[$i]['message_size'];
+        if ($pad < sizeof($message_size)) {
+            $message_sizes = $message_size;
+            $pad = sizeof($message_size);
+        }
     }
 
-    # Create 2D array to feed to raw data output function
+    $j = 0;
+
+    # Collect the line plots
+    foreach (array_keys($plots) as $i) {
+        
+        $line = $plots[$i][$type];
+
+        # Create the linear plot
+        if ($line) {
+            $empty = false;
+
+            $ydata = array_pad($line, $pad, null);
+
+            $color = $colors[$j++];
+
+            # Avoid null color error
+            if (! $color)
+                $color = 'black';
+
+            $lineplots[$i] = new LinePlot($ydata);
+
+            # Human row numbers are +1
+            $legend_items[$i] = 
+                ($i + 1) . ' ' . create_legend_item($params[$i], $legend);
+
+            $lineplots[$i]->SetColor($color);
+            $lineplots[$i]->SetWeight(2);
+        }
+    }
+
+    # Do not print a legend for a single line plot
+    if (sizeof($legend_items) > 1)
+        foreach (array_keys($legend_items) as $i)
+            $lineplots[$i]->SetLegend($legend_items[$i]);
+
+    return array($lineplots,
+                 $message_sizes,
+                 $legend_items,
+                 $title,
+                 $subtitle);
+}
+
+# Create 2D array to feed to raw data output function
+function prepare_raw_data_arr($meta, $data) {
+
+    $title         = $meta['title'];
+    $subtitle      = $meta['subtitle'];
+    $unit          = $meta['unit'];
+    $type          = $meta['type'];
+    $legend_items  = $meta['legend_items'];
+    $message_sizes = $data['message_sizes'];
+    $plots         = $data['plots'];
+
     $i = 0;
     $arr[$i++] = $title . "<br>" . label($type);
     $arr[$i++] = $subtitle;
@@ -753,15 +865,11 @@ function do_graph($data, $type) {
         $i++;
     }
 
-    $graph->SetShadow();
+    return $arr;
+}
 
-    # Write the graph to a file
-    $filename = './tmp/' . randstr(10) . '.png';
-    $graph->Stroke($filename);
-
-    $image = "<img src='$filename' " .
-                  "alt='$title' " .
-                  "border='0'>";
+# Return links to raw data in HTML and CSV format
+function prepare_raw_data_links($arr) {
 
     # Adjust size of raw data links
     $cols = max(array_map('sizeof', array_values($arr)));
@@ -799,15 +907,7 @@ function do_graph($data, $type) {
             $raw .=
                 "\n<a href='" . raw_data($arr, $style) . "'>$style</a>&nbsp;";
     }
-
-    # Return links to the image, raw data, and width
-    $ret = array(
-        'image' => $image,
-        'raw'   => $raw,
-        'width' => $width
-    );
-
-    return $ret;
+    return $raw;
 }
 
 # Max-out/bottom-out image/font size
@@ -820,20 +920,6 @@ function constrain_graph_attrs($width) {
         $width = 250;
 
     return array($width, $font);
-}
-
-# Return the maximum latency or bandwidth "leaf" value
-function max_avg($plots, $type) {
-    list($max, $sum, $count) = array(0,0,0);
-    foreach (array_keys($plots) as $p) {
-        foreach ($plots[$p][$type] as $v) {
-            $sum += $v;
-            $count++;
-            if ($v > $max)
-                $max = $v;
-        }
-    }
-    return array($max, ($sum/$count));
 }
 
 # Convert a 2D array (output by do_graph) to an HTML or CSV table
@@ -908,7 +994,7 @@ function raw_data($arr, $style) {
     eval("\$subtitle = $nl2br(\$arr[\$i]);");
 
     # Prepare a logical filename for the CSV file
-    $filename = './tmp/' . title2filename($subtitle) . '.csv';
+    $filename = './tmp/' . title2filename($title . $subtitle) . '.csv';
 
     eval("\$subtitle = $unalign(\$subtitle);");
     $content .= "$br<b><i>" . font('-1', $subtitle) . "</b></i>";
@@ -967,7 +1053,8 @@ function raw_data($arr, $style) {
 }
 
 function title2filename($str) {
-    $str = preg_replace('/\w+:\s+/', '_', $str);
+    $cclass = '[a-zA-Z0-9_ \t]';
+    $str = preg_replace("/$cclass+:\s+/", "_", $str);
     $str = preg_replace('/\s+|\n+|\r+/', '_', $str);
     return $str;
 }
@@ -1054,13 +1141,17 @@ function create_subtitle(&$legend) {
         }
     }
 
-    $subtitle_pad = max(array_map('strlen', array_keys($subtitle))) + 3;
+    $subtitle_pad = max(
+                      array_map('strlen', 
+                        array_map('label', 
+                          array_keys($subtitle)))) + 3;
 
     # Loop through the singletons and create a nicely aligned table
     foreach (array_keys($subtitle) as $k) {
         $item = $subtitle[$k];
-        $ret .= "\n" . str_pad("$k: ", $subtitle_pad) . $item;
+        $ret .= "\n" . str_pad(label($k) . ': ', $subtitle_pad) . $item;
     }
+
     $ret .= "\n";
 
     return $ret;
@@ -1069,28 +1160,29 @@ function create_subtitle(&$legend) {
 # Return string for a given hash entry. 
 # $legend is keyed by params that are *not* in the subtitle,
 # because they differ across lineplots
-
 function create_legend_item($hash, $legend) {
+
     foreach (array_keys($legend) as $k)
         if (isset($legend[$k]))
             $items[] = $hash[$k];
 
     $ret = join(' ', $items);
+    
     return $ret;
 }
 
 # Generate a random string
-function randstr($length) {
-
-    $pattern = "abcdefghijklmnopqrstuvwxyz";
-    for($i = 0; $i < $length; $i++) {
-        if (isset($key))
-            $key .= $pattern{rand(0,26)};
-        else
-            $key = $pattern{rand(0,26)};
-    }
-    return $key;
-}
+# function randstr($length) {
+# 
+#     $pattern = "abcdefghijklmnopqrstuvwxyz";
+#     for($i = 0; $i < $length; $i++) {
+#         if (isset($key))
+#             $key .= $pattern{rand(0,26)};
+#         else
+#             $key = $pattern{rand(0,26)};
+#     }
+#     return $key;
+# }
 
 #########################################
 
@@ -1244,37 +1336,12 @@ function slices_links($n, $limit, $params) {
 # ONLY BE USED FOR AUTO-FILLING A FORM)
 function drilldown_links() {
 
-    # Globalize the date range
-    global $date_fields;
-
     # This function has three forms (see above comment)
     $argc = func_num_args();
 
-    $phase_results_table = phase_results_table();
-
-    # Prepare a query string for manipulation
-    $qstring_arr = $_GET;
-
-    # Mark this as a drilldown so we can use the tttable
-    $qstring_arr['drill'] = 1;
-
-    # Do not bring over LIMIT clause for a drilldown
-    unset($qstring_arr['rows']);
-    unset($qstring_arr['offset']);
-    unset($qstring_arr['slice']);
-
-    # Differentiate between link clicks and button clicks
-    unset($qstring_arr['click']);
-
-    # Drilldowns should use absolute date range in case
-    # the user walks away from the browser for awhile
-    # (some data points could slip out of a relative
-    # date range)
-    $absolute_date = handle_absolute_date($date_fields);
-    $qstring_arr['text_start_timestamp'] = $absolute_date;
-
-    # Cherries are not applicable for a drilldown report
-    unset_cherries($qstring_arr);
+    static $phase_results_table;
+    if (! $phase_results_table)
+        $phase_results_table = phase_results_table();
 
     $self = 'http://' . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'];
     $format = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
@@ -1305,26 +1372,11 @@ function drilldown_links() {
         $qstring_arr = form_carryover($defaults);
         $qstring_arr['phase'] = $phase;
 
-        # Strip off _cherry|_slice
-        $qstring_arr['go'] = base_type($qstring_arr['go']);
-
         # NOTE: WE CANNOT MARK THIS AS A TRUE DRILLDOWN,
         # BECAUSE WE FETCH EXTRA PHASE-SPECIFIC FIELDS WHICH
         # ARE NOT CACHED IN TTABLE.
 
-        # Do not bring over LIMIT clause for a drilldown
-        unset($qstring_arr['rows']);
-        unset($qstring_arr['offset']);
-        unset($qstring_arr['slice']);
-
-        # Differentiate between link clicks and button clicks
-        unset($qstring_arr['click']);
-
-        # Drilldowns should use absolute date range in case
-        # the user walks away from the browser for awhile
-        # (some data points could slip out of a relative
-        # date range)
-        $qstring_arr['text_start_timestamp'] = $absolute_date;
+        sanitize_qstring_arr($qstring_arr);
 
         $j = 0;
         # Loop over result count values
@@ -1351,33 +1403,23 @@ function drilldown_links() {
         $header = func_get_arg(0);
         $param  = func_get_arg(1);
 
+        # Prepare a query string for manipulation
+        # Note the direct assignment from _GET, instead of using
+        # form_carryover
+        $qstring_arr = $_GET;
+
+        # Unset some fields that may be set illogicallly
+        sanitize_qstring_arr($qstring_arr);
+
+        # Mark this as a drilldown so we can use the tttable
+        $qstring_arr['drill'] = 1;
+
         # Drilldowns are not allowed from a cherry-picked report
         # Return plain non-clickable text labels
         if (is_cherry_pick($_GET))
             return $param;
 
         $qstring_arr["text_$header"] = exact_match($param);
-
-        # Do not bring over LIMIT clause for a drilldown
-        unset($qstring_arr['rows']);
-        unset($qstring_arr['offset']);
-        unset($qstring_arr['slice']);
-
-        # Drilldowns should use absolute date range in case
-        # the user walks away from the browser for awhile
-        # (some data points could slip out of a relative
-        # date range)
-        $qstring_arr['text_start_timestamp'] = $absolute_date;
-
-        # This is needed because the hidden 'lastgo' is 
-        # not passed on an href, only a submit
-        $qstring_arr['lastgo'] = $qstring_arr['go'];
-
-        # Strip off _cherry|_slice
-        $qstring_arr['go'] = base_type($qstring_arr['go']);
-
-        # Differentiate between link clicks and button clicks
-        unset($qstring_arr['click']);
 
         $ret = sprintf($format, arr2qstring($qstring_arr), $param);
     }
@@ -1419,24 +1461,11 @@ function drilldown_links() {
             $qstring_arr = form_carryover($defaults);
             $qstring_arr['phase'] = $phase;
 
-            # Do not bring over LIMIT clause for a drilldown
-            unset($qstring_arr['rows']);
-            unset($qstring_arr['offset']);
-            unset($qstring_arr['slice']);
-
             # NOTE: WE CANNOT MARK THIS AS A TRUE DRILLDOWN,
             # BECAUSE WE FETCH EXTRA PHASE-SPECIFIC FIELDS WHICH
             # ARE NOT CACHED IN TTABLE.
 
-            # This is needed because the hidden 'lastgo' is 
-            # not passed on an href, only a submit
-            $qstring_arr['lastgo'] = $qstring_arr['go'];
-
-            # Strip off _cherry|_slice
-            $qstring_arr['go'] = base_type($qstring_arr['go']);
-
-            # Differentiate between link clicks and button clicks
-            unset($qstring_arr['click']);
+            sanitize_qstring_arr($qstring_arr);
 
             # test_result will be getting reset for each
             # result count cell
@@ -1457,6 +1486,37 @@ function drilldown_links() {
     }
 
     return $ret;
+}
+
+function sanitize_qstring_arr(&$arr) {
+
+    # Globalize the date range
+    global $date_fields;
+
+    # Do not bring over LIMIT clause for a drilldown
+    unset($arr['rows']);
+    unset($arr['offset']);
+    unset($arr['slice']);
+
+    # Differentiate between link clicks and button clicks
+    unset($arr['click']);
+
+    # Drilldowns should use absolute date range in case
+    # the user walks away from the browser for awhile
+    # (some data points could slip out of a relative
+    # date range)
+    $absolute_date = handle_absolute_date($date_fields);
+    $arr['text_start_timestamp'] = $absolute_date;
+
+    # Cherries are not applicable for a drilldown report
+    unset_cherries($arr);
+
+    # Strip off _cherry|_slice
+    $arr['go'] = base_type($arr['go']);
+
+    # This is needed because the hidden 'lastgo' is 
+    # not passed on an href, only a submit
+    $arr['lastgo'] = $arr['go'];
 }
 
 # Return true if the user has clicked the cherry button
@@ -1520,6 +1580,9 @@ function sorting_links($headers, $label, $arrow_size) {
 
     # Differentiate between link clicks and button clicks
     unset($qstring_arr['click']);
+
+    # Cherries are not applicable for a sorted report
+    unset_cherries($arr);
 
     # Report "slices" should use absolute date range
     # because the LIMIT clause may not make sense in
@@ -1663,8 +1726,8 @@ function handle_absolute_date($date_fields) {
 function basic_info($date_fields, $phases, $num_rows) {
 
     $ret = "<table>" .
-          "<tr><td><b>Current time (GMT)</b>:<td>" . $date_fields["current"] . 
-          "<tr><td><b>Date range (GMT)</b>: <td>" . $date_fields["absolute"] .
+          "<tr><td><b>Current time (" . strtoupper(TIMEZONE) . ")</b>:<td>" . $date_fields["current"] . 
+          "<tr><td><b>Date range (" . strtoupper(TIMEZONE) . ")</b>: <td>" . $date_fields["absolute"] .
           "<tr><td><b>Phase(s)</b>:<td>" . en_join(array_map('label', $phases));
 
     if ($_GET["test_result"])
@@ -2001,11 +2064,18 @@ function process_date_field($params) {
     # Remove the GMT offset from fetched string
     $format = "replace(date_trunc('second', %s), '+00', '')";
 
-    $now = select_scalar("SELECT " . sprintf($format, "now()"));
+    # Put TIMEZONE into environment for the session
+    $timezone = strtoupper(TIMEZONE);
+    # putenv("PGTZ=$timezone");
+    # $_ENV['PGTZ'] = $timezone;
+    #do_pg_query("SET TIME ZONE '$timezone';");
+
+    $now = select_scalar("SELECT " . sprintf($format, "now() AT TIME ZONE '$timezone'"));
     $date['current'] = $now;
 
-    $timestamp_name = "start_timestamp";
-    $timestamp_param = $params["text_$timestamp_name"];
+    $timestamp_name   = "start_timestamp";
+    $time_at_timezone = "CAST($timestamp_name as TIMESTAMP WITH TIME ZONE) AT TIME ZONE '$timezone'";
+    $timestamp_param  = $params["text_$timestamp_name"];
 
     if (preg_match($c, $timestamp_param, $m))
         $tokens = tokenize($timestamp_param);
@@ -2019,15 +2089,15 @@ function process_date_field($params) {
 
             # Yesterday
             if (preg_match("/yesterday/i", $token, $m)) {
-                $operand = "timestamp without time zone 'yesterday'";
-                $where = "$timestamp_name > $operand";
+                $operand = "'yesterday' AT TIME ZONE '$timezone'";
+                $where = "$time_at_timezone > $operand";
                 $absolute =
                     select_scalar("SELECT " . sprintf($format, $operand)) . " - $now";
             }
             # Today
             elseif (preg_match("/today/i", $token, $m)) {
-                $operand = "timestamp without time zone 'today'";
-                $where = "$timestamp_name > $operand";
+                $operand = "'today' AT TIME ZONE '$timezone'";
+                $where = "$time_at_timezone > $operand";
                 $absolute =
                     select_scalar("SELECT " . sprintf($format, $operand)) . " - $now";
             }
@@ -2037,8 +2107,8 @@ function process_date_field($params) {
                         "(\w+)$sep*" .
                         "(\w+)/i", $token, $m)) {
 
-                $operand = "now() - interval '" . strtonumeral($m[1]) . " $m[2]'";
-                $where = "$timestamp_name > $operand";
+                $operand = "now()  AT TIME ZONE '$timezone' - interval '" . strtonumeral($m[1]) . " $m[2]'";
+                $where = "$time_at_timezone > $operand";
                 $absolute =
                     select_scalar("SELECT " . sprintf($format, $operand)) . " - $now";
             }
@@ -2048,19 +2118,19 @@ function process_date_field($params) {
                                 "(?:through|thru|and| - )" .
                                 "(.*)/i", $token, $m)) {
                 $where =
-                    "$timestamp_name > '$m[1]'" . " AND " .
-                    "$timestamp_name < '$m[2]'";
+                    "$time_at_timezone > '$m[1]'" . " AND " .
+                    "$time_at_timezone < '$m[2]'";
                 $absolute = "$m[1] - $m[2]";
             }
         }
         # Do date aggregation
         else {
 
-            $format2 = "\n substring($timestamp_name from 0 for %d) || ':00 - ' || " .
-                       "\n substring($timestamp_name + interval '1 %s' from 0 for %d)  || ':00' " .
+            $format2 = "\n substring($time_at_timezone from 0 for %d) || ':00 - ' || " .
+                       "\n substring($time_at_timezone + interval '1 %s' from 0 for %d)  || ':00' " .
                        "\n   as $timestamp_name";
-            $format3 = "\n substring($timestamp_name from 0 for %d) || ' - ' || " .
-                       "\n substring($timestamp_name + interval '1 %s' from 0 for %d) " .
+            $format3 = "\n substring($time_at_timezone from 0 for %d) || ' - ' || " .
+                       "\n substring($time_at_timezone + interval '1 %s' from 0 for %d) " .
                        "\n   as $timestamp_name";
 
             if (preg_match("/by(?:-| *)sec(?:onds?)?/i", $token)) {
@@ -2088,8 +2158,8 @@ function process_date_field($params) {
     # PROTECT AGAINST AN EMPTY DATE RANGE.
     # OUGHT TO PRINT A JAVASCRIPT ALERT AS WELL
     if (! $where) {
-        $operand = "now() - interval '24 hours'";
-        $where = "$timestamp_name > $operand";
+        $operand = "now() AT TIME ZONE '$timezone' - interval '24 hours'";
+        $where = "$time_at_timezone > $operand";
         $absolute =
             select_scalar("SELECT " . sprintf($format, $operand)) . " - $now";
         $date['select'][$timestamp_name] = $timestamp_name;
@@ -2289,9 +2359,25 @@ function process_cherry_fields($params) {
 #   Delete/create client's cookie
 # Else
 #   Define based on cookie
-function process_cookie($params, $cookie) {
+function process_cookie(&$params, $cookie) {
 
     $cookie_name = 'mttcookie';
+
+    $save_prefs = $params['save_prefs'];
+    unset($params['save_prefs']);
+
+    # 'click' the button for them according to the report
+    # type (which was exported from the Preferences window)
+    if ($save_prefs) {
+        unset($params['go']);
+        $params['click'] = $save_prefs;
+
+        # THIS HAS TO BE THE ''FIRST'' THING SENT TO THE CLIENT
+        # PER THE HTTP STANDARD
+        setcookie($cookie_name, "", time() - 99999);
+    }
+
+    debug_cgi($_COOKIE['mttcookie'], "COOKIE " . __LINE__);
 
     static $defaults;
     if (! $defaults)
@@ -2302,15 +2388,53 @@ function process_cookie($params, $cookie) {
 
     foreach (array_keys($defaults) as $category) {
         foreach (array_keys($defaults[$category]) as $p) {
-            if ($use_cookie) {
-                define(strtoupper($p), $cookie[$cookie_name][$p]);
+
+            # There's a cookie, but we're creating a new cookie
+            if ($use_cookie and ! $save_prefs) {
+                define(strtoupper($p), param2constant($cookie[$cookie_name][$p]));
+
+            # Use _GET (and maybe create a cookie based on GET)
             } elseif ($params[$p]) {
-                define(strtoupper($p), $params[$p]);
+                define(strtoupper($p), param2constant($params[$p]));
+
+                # Save preferences to a cookie
+                if ($save_prefs) {
+                    # THIS HAS TO BE THE ''FIRST'' THING SENT TO THE CLIENT
+                    # PER THE HTTP STANDARD
+                    setcookie($cookie_name.'['.$p.']', "", time() - 99999);
+                    setcookie($cookie_name.'['.$p.']', $params[$p]);
+                }
+                    
+            # None of the above, use the defaults
             } else {
-                define(strtoupper($p), prefs_default($p));
+                define(strtoupper($p), param2constant(prefs_default($p)));
             }
         }
     }
+}
+
+function param2constant($str) {
+
+    $str = strtolower(strip_star($str));
+
+    static $map;
+    if (! $map)
+        $map = array(
+            'on'  => true,
+            'off' => false,
+
+            # On the x-axis, linear scaling is actually
+            # ''text'' scaling because we are setting the
+            # tick labels manually (on the y-axis, linear
+            # is linear)
+            'linear'      => 'text',
+            'logarithmic' => 'log',
+        );
+
+    if (isset($map[$str]))
+        return $map[$str];
+    else 
+        return $str;
 }
 
 # Return the default value of preference named $pref

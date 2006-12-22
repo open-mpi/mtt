@@ -68,7 +68,7 @@ function dump_query_screen($nogo) {
     # Need to define the Preferences in the opener form
     # so they will have properties when exported from the
     # Preferences popup
-    # $prefs = hidden_prefs($_GET);
+    $prefs = hidden_prefs($_GET);
 
     # Print the screen
     print "<html>" . 
@@ -402,28 +402,61 @@ EOT;
 # selections back into the main window's textfields
 function jscript_export_prefs($prefs) {
 
+    $go = $_GET['go'];
+    $click = $_GET['click'];
+
+    if (! $go)
+        $go = $click;
+
 	$script .= <<<EOT
 
     <script language='javascript'>
+
+        function submitForm() {
+            exportVars();
+            window.opener.document.report.save_prefs.value = '$go';
+            window.opener.document.report.submit();
+            window.close();
+        }
 
         function exportVars() {
             var str = '';
             var items = new Array();
 EOT;
 
+    # CAREFUL - IS ''y'' GUARANTEED TO BE DEFINED?
+    # BEWARE OF undefined (OR null?) VARS WHICH CAUSE "NO PROPERTIES" 
+    # JAVASSCRIPT ERRORS
     $non_select = <<<EOT
-            str = document.adv.%s.value;
-            window.opener.document.report.%s.value = str;
+            var x = document.adv.%s;
+            var old = window.opener.document.report.%s;
+            old.value = x.value;
+EOT;
+
+    # CAREFUL - IS ''y'' GUARANTEED TO BE DEFINED?
+    # BEWARE OF undefined (OR null?) VARS WHICH CAUSE "NO PROPERTIES" 
+    # JAVASSCRIPT ERRORS
+    $checkbox = <<<EOT
+            var x = document.adv.%s;
+            var old = window.opener.document.report.%s;
+            if (x.checked) {
+                old.value = 'on';
+            } else {
+                old.value = 'off';
+            }
 EOT;
 
     $select = <<<EOT
 
-            for (i = 0; i < document.adv.%s.length; i++) {
-                if (document.adv.%s.options[i].selected) {
-                    str = document.adv.%s.options[i].text;
+            var x = document.adv.%s;
+            var old = window.opener.document.report.%s;
+
+            for (i = 0; i < x.length; i++) {
+                if (x.options[i].selected) {
+                    str = x.options[i].text;
                 }
             }
-            window.opener.document.report.%s.value = str;
+            old.value = str;
 EOT;
 
     # X: THERE SHOULD BE NO NEED TO CREATE MORE THAN ONE FOR
@@ -432,17 +465,21 @@ EOT;
     # STATEMENTS
     foreach (array_keys($prefs) as $pref) {
         if (is_array($prefs[$pref]))
-            $script .= sprintf($select, $pref, $pref, $pref, $pref, $pref);
+            $script .= sprintf($select, $pref, $pref);
+        elseif (is_bool($prefs[$pref]))
+            $script .= sprintf($checkbox, $pref, $pref);
         else
-            $script .= sprintf($non_select, $pref, $pref, $pref);
+            $script .= sprintf($non_select, $pref, $pref);
     }
 
     # Set the cookie-ize flag, and close the window
 	$script .= <<<EOT
 
-            window.opener.document.report.make_cookie.value = 1;
-            window.opener.document.report.submit();
-            window.close();
+            var str = '';
+            var x = window.opener.document.report;
+            for (var i = 0; i < x.length; i++) {
+                str += x.elements[i].name + ' = ' + x.elements[i].value + ';';
+            }
         }
 
     </script>
@@ -666,14 +703,14 @@ function setup_layout_html($layout, $lasttime, $links, $disable) {
     $buttons = form_buttons($_GET, $disable);
     $reset = array_shift($buttons);
     $clear = array_shift($buttons);
-    #$prefs = array_pop($buttons);
+    $prefs = array_pop($buttons);
 
     # Put buttons at the bottom of the panel
     $layout['bottom']['html'] =
             "$reset&nbsp;" .
             "$clear&nbsp;" .
             join('&nbsp;', $buttons) . "&nbsp;" .
-            #"$prefs" .
+            "$prefs" .
         "\n</table>";
 
     return $layout;
@@ -718,7 +755,7 @@ function form_buttons($params, $disable_arg) {
         "\n<a href='$script' " .
              "class='lgray_ln'>[Clear]</a>";
 
-    $format = "\n<input type='submit' name='click' value='%s' type='submit' %s>";
+    $format = "\n<input type='submit' id='click' name='click' value='%s' type='submit' %s>";
 
     # A button click means default sorting
     unset($params['orderby_up']);
@@ -735,7 +772,7 @@ function form_buttons($params, $disable_arg) {
     }
 
     # Generate Preferences popup
-    # $buttons[] = prefs_popup(setup_prefs(), $_GET);
+    $buttons[] = prefs_popup(setup_prefs(), $_GET);
 
     return $buttons;
 }
@@ -849,15 +886,15 @@ function hidden_prefs($params) {
         foreach (array_keys($prefs[$cat]) as $field) {
             $value = $params[$field];
 
-            if (! $value)
-                $ret .= "\n<input type='hidden' " . 
-                        "name='" . $field . "' " .
-                        "value='" . $value . "'>";
+            $ret .= "\n<input type='hidden' " . 
+                             "name='" . $field . "' " .
+                             "value='" . $value . "'>";
         }
     }
 
-    # Prepare make_cookie flag
-    $ret .= "\n<input type='hidden' name='make_cookie'>";
+    # Prepare save_prefs flag
+    if (is_null($params['save_prefs']))
+        $ret .= "\n<input type='hidden' name='save_prefs'>";
 
     return $ret;
 }
@@ -928,7 +965,7 @@ function prefs_popup($prefs, $params) {
         $tr . $th2 .
         "\n<input type='submit' " .
                   "name='Save' " .
-                  "onclick='javascript:exportVars();' " .
+                  "onclick='javascript:submitForm();' " .
                   "value='Save'>&nbsp;" .
         "\n<input type='submit' " .
                   "name='cancel' " .
@@ -983,7 +1020,7 @@ function auto_fill($entries, $lastval) {
     } elseif (is_array($entries)) {
 
         if ($lastval)
-            $match = "^$lastval$";
+            $match = "^.?$lastval$";
         else
             $match = '^\*';
 
@@ -1011,12 +1048,28 @@ function hidden_carryover($params) {
 
     $lastgo = $params['go'];
 
+    # Non-form fields that need to persist
+    $fields = array(
+
+        # Developer
+        'dev',
+        'sql',
+        'cgi',
+        'stats',
+        'debug',
+        'no_cache',
+
+        'ttable_id',
+
+        'test_result',
+        'phase',
+    );
+
     # X: reverse this so we explicity print several hiddens
     # E.g., ttable_id, sql, cgi, test_result, lastgo, ...
     foreach (array_keys($params) as $k) {
-        if (preg_match('/^go$|^click$|^phase$|^more_|^show_|^text_|^orderby|^cherry/', $k))
-            continue;
-        $str .= "\n<input type='hidden' name='$k' value='$params[$k]'>";
+        if (preg_match('/' . join('|', $fields) . '/', $k))
+            $str .= "\n<input type='hidden' name='$k' value='$params[$k]'>";
     }
 
     $str .= "\n<input type='hidden' name='lastgo' value='$lastgo'>";
@@ -1034,7 +1087,7 @@ function html_head($title) {
         newwindow2=window.open('','name','height=' + height + ',width=' + width + ',scrollbars=yes');
         var tmp = newwindow2.document;
         tmp.write('<html><head>' + script + '<title>' + title + '</title></head>');
-        tmp.write('<body ' + style + '><form id=adv name=adv>' + content + '</form></body></html>');
+        tmp.write('<body ' + style + '><form id=adv name=adv method=get>' + content + '</form></body></html>');
         tmp.close();
     }
 

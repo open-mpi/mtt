@@ -84,17 +84,17 @@ function setup_prefs() {
     return array(
         'general'  => array(
             'limit'    => array('10', '50', '*100', '200'),
-            'timezone' => array('*GMT', 'EST', 'CST', 'MST', 'PST'),
             'wrap'     => 100,
-            'trial'    => false,
+            'timezone' => array('*GMT', 'EST', 'CST', 'MST', 'PST'),
+            #'trial'    => false,
         ),
         'graphing' => array(
-            'graph_size'       => array('Small', '*Medium', 'Large'),
-            'legend_placement' => array('*Bottom', 'In plotting area'),
-            'yaxis_scale'      => array('Log', '*Linear'),
-            'xaxis_scale'      => array('Log', '*Linear'),
-            'graph_type'       => array('*Line', 'Bar', 'Points'),
-            'hide_subtitles'   => false,
+            'yaxis_scale'      => array('Logarithmic', '*Linear'),
+            'xaxis_scale'      => array('Logarithmic', '*Linear'),
+            'hide_subtitle'    => false,
+            #'graph_size'       => array('Small', '*Medium', 'Large'),
+            #'legend_placement' => array('*Bottom', 'In plotting area'),
+            #'graph_type'       => array('*Line', 'Bar', 'Points'),
         ),
     );
 
@@ -102,127 +102,131 @@ function setup_prefs() {
 
 # Display more human-readable labels
 function label($str) {
+    
+    static $labels;
 
-    $labels = array(
+    if (! $labels) {
+        $labels = array(
 
-        # Database column names
-        "bandwidth_avg"       => "Bandwidth avg.",
-        "bandwidth_max"       => "Bandwidth max.",
-        "bandwidth_min"       => "Bandwidth min.",
-        "bitness"             => "Bitness",
-        "client_serial"       => "Client serial",
-        "command"             => "Command",
-        "compiler_name"       => "Compiler",
-        "compiler_version"    => "Compiler version",
-        "configure_arguments" => "Configure arguments",
-        "description"         => "Description",
-        "duration"            => "Duration",
-        "email_address"       => "Email address",
-        "enabled"             => "Enabled",
-        "endian"              => "Endian",
-        "environment"         => "Environment",
-        "exit_status"         => "Exit status",
-        "field"               => "Field",
-        "first_occurrence"    => "First occurrence",
-        "gecos"               => "Gecos",
-        "hostname"            => "Hostname",
-        "http_username"       => "Org",
-        "last_occurrence"     => "Last occurrence",
-        "latency_avg"         => "Latency avg.",
-        "latency_max"         => "Latency max.",
-        "latency_min"         => "Latency min.",
-        "local_username"      => "Local username",
-        "merge_stdout_stderr" => "Merge stdout stderr",
-        "message_size"        => "Message size",
-        "mpi_name"            => "MPI name",
-        "mpi_version"         => "MPI version",
-        "mtt_version_major"   => "MTT version major",
-        "mtt_version_minor"   => "MTT version minor",
-        "np"                  => "np",
-        "os_name"             => "OS",
-        "os_version"          => "OS version",
-        "phase"               => "Phase",
-        "platform_hardware"   => "Hardware",
-        "platform_name"       => "Platform name",
-        "platform_type"       => "Platform type",
-        "result_message"      => "Result message",
-        "result_stderr"       => "Result stderr",
-        "result_stdout"       => "Result stdout",
-        "signal"              => "Signal",
-        "start_timestamp"     => "Date range",
-        "stop_timestamp"      => "Date range",
-        "subject"             => "Subject",
-        "submit_timestamp"    => "Date range",
-        "suite_name"          => "Suite",
-        "test_name"           => "Test",
-        "test_result"         => "Test result",
-        "url"                 => "Url",
-        "username"            => "Username",
-        "value"               => "Value",
-        "variant"             => "Variant",
-        "vpath_mode"          => "Vpath mode",
+            # Database column names
+            "bandwidth_avg"       => "Bandwidth avg.",
+            "bandwidth_max"       => "Bandwidth max.",
+            "bandwidth_min"       => "Bandwidth min.",
+            "bitness"             => "Bitness",
+            "client_serial"       => "Client serial",
+            "command"             => "Command",
+            "compiler_name"       => "Compiler",
+            "compiler_version"    => "Compiler version",
+            "configure_arguments" => "Configure arguments",
+            "description"         => "Description",
+            "duration"            => "Duration",
+            "email_address"       => "Email address",
+            "enabled"             => "Enabled",
+            "endian"              => "Endian",
+            "environment"         => "Environment",
+            "exit_status"         => "Exit status",
+            "field"               => "Field",
+            "first_occurrence"    => "First occurrence",
+            "gecos"               => "Gecos",
+            "hostname"            => "Hostname",
+            "http_username"       => "Org",
+            "last_occurrence"     => "Last occurrence",
+            "latency_avg"         => "Latency avg.",
+            "latency_max"         => "Latency max.",
+            "latency_min"         => "Latency min.",
+            "local_username"      => "Local username",
+            "merge_stdout_stderr" => "Merge stdout stderr",
+            "message_size"        => "Message size",
+            "mpi_name"            => "MPI name",
+            "mpi_version"         => "MPI version",
+            "mtt_version_major"   => "MTT version major",
+            "mtt_version_minor"   => "MTT version minor",
+            "np"                  => "np",
+            "os_name"             => "OS",
+            "os_version"          => "OS version",
+            "phase"               => "Phase",
+            "platform_hardware"   => "Hardware",
+            "platform_name"       => "Platform name",
+            "platform_type"       => "Platform type",
+            "result_message"      => "Result message",
+            "result_stderr"       => "Result stderr",
+            "result_stdout"       => "Result stdout",
+            "signal"              => "Signal",
+            "start_timestamp"     => "Date range",
+            "stop_timestamp"      => "Date range",
+            "subject"             => "Subject",
+            "submit_timestamp"    => "Date range",
+            "suite_name"          => "Suite",
+            "test_name"           => "Test",
+            "test_result"         => "Test result",
+            "url"                 => "Url",
+            "username"            => "Username",
+            "value"               => "Value",
+            "variant"             => "Variant",
+            "vpath_mode"          => "Vpath mode",
 
-        # MTT phase names
-        "all_phases"        => "All phases",
-        "mpi_install"       => "MPI install",
-        "test_build"        => "Test build",
-        "test_run"          => "Test run",
+            # MTT phase names
+            "all_phases"        => "All phases",
+            "mpi_install"       => "MPI install",
+            "test_build"        => "Test build",
+            "test_run"          => "Test run",
 
-        # Result types
+            # Result types
 
-        # Result string to column name
-        '_ip'               => 'pass',
-        '_if'               => 'fail',
-        '_bp'               => 'pass',
-        '_bf'               => 'fail',
-        '_rp'               => 'pass',
-        '_rf'               => 'fail',
-        '_rs'               => 'skipped',
-        '_rt'               => 'timed_out',
-        '_rl'               => 'latency_bandwidth',
+            # Result string to column name
+            '_ip'               => 'pass',
+            '_if'               => 'fail',
+            '_bp'               => 'pass',
+            '_bf'               => 'fail',
+            '_rp'               => 'pass',
+            '_rf'               => 'fail',
+            '_rs'               => 'skipped',
+            '_rt'               => 'timed_out',
+            '_rl'               => 'latency_bandwidth',
 
-        # Column name to web page label
-        "pass"              => "Pass",
-        "fail"              => "Fail",
-        "skip"              => "Skip",
-        "timed"             => "Timed",
-        "skipped"           => "Skip",
-        "timed_out"         => "Timed",
-        "latency_bandwidth" => "Perf",
-        
-        # Latency/bandwidth
-        "latency_avg"       => "Latency (avg)",
-        "latency_min"       => "Latency (min)",
-        "latency_max"       => "Latency (max)",
-        "bandwidth_avg"     => "Bandwidth (avg)",
-        "bandwidth_min"     => "Bandwidth (min)",
-        "bandwidth_max"     => "Bandwidth (max)",
+            # Column name to web page label
+            "pass"              => "Pass",
+            "fail"              => "Fail",
+            "skip"              => "Skip",
+            "timed"             => "Timed",
+            "skipped"           => "Skip",
+            "timed_out"         => "Timed",
+            "latency_bandwidth" => "Perf",
+            
+            # Latency/bandwidth
+            "latency_avg"       => "Latency (avg)",
+            "latency_min"       => "Latency (min)",
+            "latency_max"       => "Latency (max)",
+            "bandwidth_avg"     => "Bandwidth (avg)",
+            "bandwidth_min"     => "Bandwidth (min)",
+            "bandwidth_max"     => "Bandwidth (max)",
 
-        # Selection/unselection
-        "show"                  => "Show",
-        "hide"                  => "Hide",
+            # Selection/unselection
+            "show"                  => "Show",
+            "hide"                  => "Hide",
 
-        # General preferences
-        'general'              => 'General',
+            # General preferences
+            'general'              => 'General',
 
-        'limit'                => 'Max rows per page',
-        'timezone'             => 'Time zone',
-        'wrap'                 => 'Text wrap <i>(in Detail)</i>',
-        'trial'                => 'Show trial runs',
+            'limit'                => 'Max rows per page',
+            'timezone'             => 'Time zone',
+            'wrap'                 => 'Text wrap <i>(in Detail)</i>',
+            'trial'                => 'Show trial runs',
 
-        # Graphing preferences
-        'graphing'             => 'Graphing',
+            # Graphing preferences
+            'graphing'             => 'Graphing',
 
-        'graph_size'           => 'Graph size',
-        'legend_placement'     => 'Legend placement',
-        'yaxis_scale'          => 'Y-axis scale',
-        'xaxis_scale'          => 'X-axis scale',
-        'graph_type'           => 'Graph type',
-        'hide_subtitles'       => 'Hide subtitles',
+            'graph_size'           => 'Graph size',
+            'legend_placement'     => 'Legend placement',
+            'yaxis_scale'          => 'Y-axis scale',
+            'xaxis_scale'          => 'X-axis scale',
+            'graph_type'           => 'Graph type',
+            'hide_subtitle'        => 'Hide subtitle',
 
-        # Row number
-        "n" => "#",
-    );
+            # Row number
+            "n" => "#",
+        );
+    }
 
     if (isset($labels[$str]))
         return $labels[$str];

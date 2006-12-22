@@ -50,11 +50,11 @@ if (! is_null($do_redir))
 elseif (! is_null($make_redir))
     make_redir($_GET);
 
-# Display input parameters
-debug_cgi($_GET, "GET " . __LINE__);
-
 # Display a query screen and report
 dump_report();
+
+# Display input parameters
+debug_cgi($_COOKIE['mttcookie'], "COOKIE " . __LINE__);
 
 print hidden_carryover($_GET) .
       "\n<hr></form></body></html>";
