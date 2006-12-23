@@ -42,6 +42,7 @@ use MTT::Module;
 use MTT::Values;
 use MTT::Files;
 use MTT::Defaults;
+use MTT::Test;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -333,8 +334,9 @@ sub _do_build {
         $ret->{start_timestamp} = timegm(gmtime());
         $ret->{refcount} = 0;
 
-        $ret->{test_result} = 0
-            if (!defined($ret->{test_result}));
+        if (!defined($ret->{test_result})) {
+            $ret->{test_result} = MTT::Test::FAIL;
+        }
         
         # Save the results in an ini file
         Debug("Writing built file: $config->{srcdir}/$built_file\n");
@@ -364,7 +366,7 @@ sub _do_build {
 
         # See if we want to save the result_stdout
         my $want_save = 1;
-        if (1 == $ret->{test_result}) {
+        if (MTT::Test::PASS == $ret->{test_result}) {
             if (!$config->{save_stdout_on_success}) {
                 $want_save = 0;
             }
@@ -446,7 +448,7 @@ sub _do_build {
         MTT::Test::SaveBuilds($build_base);
         
         # Print
-        if (1 == $ret->{test_result}) {
+        if (MTT::Test::PASS == $ret->{test_result}) {
             Verbose("   Completed test build successfully\n");
         } else {
             Warning("Failed to build test [$section]: $ret->{result_message}\n");

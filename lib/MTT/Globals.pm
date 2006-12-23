@@ -29,12 +29,12 @@ my $_defaults = {
     textwrap => 76,
     drain_timeout => 5,
 
-    mpi_install_save_successful => 0,
-    mpi_install_save_failed => 1,
-    test_build_save_successful => 0,
-    test_build_save_failed => 1,
-    test_run_save_successful => 0,
-    test_run_save_failed => 0,
+    save_successful_mpi_installs => 0,
+    save_failed_mpi_installs => 1,
+    save_successful_test_builds => 0,
+    save_failed_test_builds => 1,
+    save_successful_test_runs => 0,
+    save_failed_test_runs => 0,
 
     trial => 0,
 };

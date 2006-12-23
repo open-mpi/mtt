@@ -90,50 +90,6 @@ sub mkdir {
 
 #--------------------------------------------------------------------------
 
-# Trim old build directories
-sub trim_builds {
-    my ($base_dir) = @_;
-
-    # Get all the directory entries in the top of the build tree.
-    # Currently determining trim by a simple sort; may need to do
-    # something better (like mtime?) in the futre...?
-    opendir(DIR, $base_dir);
-    my @entries = sort(grep { ! /^\./ && -d "$base_dir/$_" } readdir(DIR));
-    closedir(DIR);
-    print Dumper(@entries);
-
-    # Discard the last $keep_builds entries
-    my $len = $#entries - $keep_builds;
-    return if ($len < 0);
-
-    my $old_cwd = cwd();
-    MTT::DoCommand::Chdir($base_dir);
-
-    my $i = 0;
-    while ($i <= $len) {
-        my $trim = 1;
-        my $e = $entries[$i];
-        foreach my $tarball (@MTT::Download::tarballs) {
-            my $b = basename($tarball->{tarball});
-            if ($e eq $b) {
-                $trim = 0;
-                last;
-            }
-        }
-
-        if ($trim) {
-            Debug("Trimming build tree: $e\n");
-            MTT::DoCommand::Cmd(1, "rm -rf $e");
-        } else {
-            Debug("NOT trimming build tree: $e\n");
-        }
-        ++$i;
-    }
-    MTT::DoCommand::Chdir($old_cwd);
-}
-
-#--------------------------------------------------------------------------
-
 # unpack a tarball in the cwd and figure out what directory it
 # unpacked into
 sub unpack_tarball {

@@ -18,6 +18,7 @@ use File::Temp qw(tempfile);
 use MTT::Messages;
 use MTT::DoCommand;
 use MTT::Values;
+use MTT::Test;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -29,7 +30,7 @@ sub _do_compile {
     my $x = MTT::DoCommand::Cmd(1, "$wrapper $in_name -o $out_name");
     if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         my $ret;
-        $ret->{test_result} = 0;
+        $ret->{test_result} = MTT::Test::FAIL;
         $ret->{result_message} = "Failed to compile/link $out_name\n";
         $ret->{result_stdout} = $x->{result_stdout};
         return $ret;
@@ -47,7 +48,7 @@ sub Build {
     my $x;
 
     Debug("Building Trivial\n");
-    $ret->{test_result} = 0;
+    $ret->{test_result} = MTT::Test::FAIL;
 
     my $cflags = Value($ini, $config->{full_section_name}, 
                        "trivial_tests_cflags");
@@ -102,7 +103,7 @@ sub Build {
     }
 
     # All done
-    $ret->{test_result} = 1;
+    $ret->{test_result} = MTT::Test::PASS;
     $ret->{result_message} = "Success";
     return $ret;
 } 

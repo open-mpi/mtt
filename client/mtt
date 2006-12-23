@@ -517,7 +517,7 @@ foreach my $file (@file_arg) {
 
     if ($trim) {
         start_time();
-        MTT::Trim::Trim($ini);
+        MTT::Trim::Trim($ini, $source_dir, $install_dir);
         stop_time("Trim");
     }
 

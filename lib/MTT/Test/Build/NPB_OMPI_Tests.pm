@@ -18,6 +18,7 @@ use MTT::Messages;
 use MTT::DoCommand;
 use MTT::Values;
 use MTT::Files;
+use MTT::Test;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -27,7 +28,7 @@ sub Build {
     my $ret;
 
     Debug("Building NPB_ompi_tests\n");
-    $ret->{test_result} = 0;
+    $ret->{test_result} = MTT::Test::FAIL;
 
     # Clean it (just to be sure)
     MTT::DoCommand::Chdir("NPB2.3-MPI");
@@ -72,11 +73,11 @@ sub Build {
                     "benchmarks", "classes", "nprocs");
     }
     if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
-        $ret->{test_result} = 0;
+        $ret->{test_result} = MTT::Test::FAIL;
         $ret->{result_message} = $x->{result_message};
         $ret->{result_stdout} = $x->{result_stdout};
     } else {
-        $ret->{test_result} = 1;
+        $ret->{test_result} = MTT::Test::PASS;
         $ret->{result_message} = "Success";
     }
     return $ret;
@@ -101,7 +102,7 @@ sub _build {
                 my $cmd = "make $bm CLASS=$cl NPROCS=$np";
                 my $x = MTT::DoCommand::Cmd($merge, $cmd);
                 if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
-                    $ret->{test_result} = 0;
+                    $ret->{test_result} = MTT::Test::FAIL;
                     $ret->{result_message} =
                         "NPB_ompi_tests: $cmd failed; aborting";
                     $ret->{result_stdout} = $x->{result_stdout};
@@ -110,7 +111,7 @@ sub _build {
             }
         }
     }
-    $ret->{test_result} = 1;
+    $ret->{test_result} = MTT::Test::PASS;
     return $ret;
 }
 

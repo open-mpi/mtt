@@ -16,7 +16,7 @@ use Data::Dumper;
 use Text::Wrap;
 use vars qw(@EXPORT);
 use base qw(Exporter);
-@EXPORT = qw(Messages Error Warning Abort Debug Verbose Trace);
+@EXPORT = qw(Messages Error Warning Abort Debug Verbose Trace DebugDump);
 
 # Is debugging enabled?
 my $debug;
@@ -55,6 +55,12 @@ sub Abort {
 
 sub Debug {
     print wrap("", "   ", @_) if $debug;
+}
+
+sub DebugDump {
+    my $d = new Data::Dumper([@_]);
+    $d->Purity(1)->Indent(1);
+    print $d->Dump;
 }
 
 sub Verbose {

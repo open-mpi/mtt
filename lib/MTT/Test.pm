@@ -13,11 +13,25 @@
 package MTT::Test;
 
 use strict;
+
+# Exported result values.  These values are in sync with the server --
+# do not change them without also changing the server!  ARRGH.  These
+# constants must be before the rest of the "use" statements because
+# they are used in MTT::Test::*, which are "used" below.  #@$%@#$%!
+use constant {
+    FAIL => 0,
+    PASS => 1,
+    SKIPPED => 2,
+    TIMED_OUT => 3,
+};
+
 use File::Find;
 use MTT::Test::Get;
 use MTT::Test::Build;
 use MTT::Test::Run;
 use MTT::Files;
+use MTT::Messages;
+use MTT::DoCommand;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -31,15 +45,6 @@ our $builds;
 # Exported run tests handle
 our $runs;
 our $runs_to_be_saved;
-
-# Exported result values.  These values are in sync with the server --
-# do not change them without also changing the server!
-use constant {
-    FAIL => 0,
-    PASS => 1,
-    SKIPPED => 2,
-    TIMED_OUT => 3,
-};
 
 #--------------------------------------------------------------------------
 
@@ -245,7 +250,7 @@ sub load_run_file {
 #--------------------------------------------------------------------------
 
 sub SaveRuns {
-    my ($dir) = @_;
+    my ($topdir) = @_;
 
     # Because test run data can get very, very large, we break it up
     # and store it in lots of smaller files so that we can write out
@@ -283,12 +288,26 @@ sub SaveRuns {
                     # For each test run section
                     foreach my $test_run_key (keys(%{$test_build})) {
                         my $test_run = $test_build->{$test_run_key};
-                        
+
+                        # Only say this result if it was not marked as
+                        # "to be trimmed".
+                        if (defined($test_run->{$MTT::Trim::TRIM_KEY})) {
+                            print "THIS RUN IS TO BE TRIMMED!\n";
+                        }
+
                         # For each test name
                         foreach my $test_name_key (keys(%{$test_run})) {
                             my $test_name = $test_run->{$test_name_key};
 
-                            my $file = MTT::Files::safe_mkdir("$dir/$runs_subdir/$mpi_get_key/$mpi_version_key/$mpi_install_key/$test_build_key/$test_run_key/$test_name_key") . "/$runs_data_filename";
+                            my @parts = ($runs_subdir, $mpi_get_key, $mpi_version_key, $mpi_install_key, $test_build_key, $test_run_key, $test_name_key, $runs_data_filename);
+                            my $dir;
+                            my $file = "$topdir";
+                            foreach my $d (@parts) {
+                                $dir = $file;
+                                $file .= "/" .
+                                    MTT::Files::make_safe_filename($d);
+                            }
+                            MTT::Files::mkdir($dir);
 
                             # We need to save two items in test run
                             # data files -- the actual data and where
@@ -312,6 +331,80 @@ sub SaveRuns {
 
     # Explicitly reset the test runs to be saved
     $MTT::Test::runs_to_be_saved = undef;
+}
+
+#--------------------------------------------------------------------------
+
+sub TrimRuns {
+    my ($topdir) = @_;
+
+    # See "SaveRuns", above, for an explanation of the storage format
+    # of test runs.
+
+    # In this subroutine, we traverse MTT::Test::runs looking for the
+    # TRIM_KEY.  If we find it, remove the data from the hash and
+    # chase down all the files that need to be deleted.  Deleting
+    # files may also render parent directories empty (and grandparent
+    # and great-grandparent and ...) which should therefore also be
+    # deleted.
+
+    # For each MPI get section
+    foreach my $mpi_get_key (keys(%{$MTT::Test::runs})) {
+        my $mpi_get = $MTT::Test::runs->{$mpi_get_key};
+
+        # For each source of that MPI
+        foreach my $mpi_version_key (keys(%{$mpi_get})) {
+            my $mpi_version = $mpi_get->{$mpi_version_key};
+
+            # For each MPI install section
+            foreach my $mpi_install_key (keys(%{$mpi_version})) {
+                my $mpi_install = $mpi_version->{$mpi_install_key};
+                
+                # For each test build section
+                foreach my $test_build_key (keys(%{$mpi_install})) {
+                    my $test_build = $mpi_install->{$test_build_key};
+                    
+                    # For each test run section
+                    foreach my $test_run_key (keys(%{$test_build})) {
+                        my $test_run = $test_build->{$test_run_key};
+
+                        # Was this result marked "to be trimmed"?
+                        if (defined($test_run->{$MTT::Trim::TRIM_KEY})) {
+
+                            my @dirs;
+                            my $last = $topdir;
+                            my @parts = ($runs_subdir, $mpi_get_key, $mpi_version_key, $mpi_install_key, $test_build_key, $test_run_key);
+                            foreach my $d (@parts) {
+                                my $n = "$last/" . 
+                                    MTT::Files::make_safe_filename($d);
+                                push(@dirs, $n);
+                                $last = $n;
+                            }
+
+                            for (my $i = $#dirs; $i >= 0; --$i) {
+                                # If it's the first dir, cheat and
+                                # just "rm -rf" the whole tree
+                                # (because the first dir has dirs for
+                                # all the individual tests under it,
+                                # and we know we want to remove them
+                                # all)
+                                if ($#dirs == $i) {
+                                    MTT::DoCommand::Cmd(0, "rm -rf $dirs[$i]");
+                                } else {
+                                    # Try to remove it; rmdir will
+                                    # fail if the directory is not
+                                    # empty.
+                                    if (!rmdir($dirs[$i])) {
+                                        last;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 1;
