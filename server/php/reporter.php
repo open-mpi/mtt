@@ -54,7 +54,10 @@ elseif (! is_null($make_redir))
 dump_report();
 
 # Display input parameters
-debug_cgi($_COOKIE['mttcookie'], "COOKIE " . __LINE__);
+debug_cgi($_GET, "GET " . __LINE__);
+
+# Display cookie parameters
+debug_cgi($_COOKIE, "COOKIE " . __LINE__);
 
 print hidden_carryover($_GET) .
       "\n<hr></form></body></html>";

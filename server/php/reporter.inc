@@ -81,23 +81,27 @@ function phase_results_table() {
 # Return a list of preferences to hand off to prefs_popup
 function setup_prefs() {
 
-    return array(
-        'general'  => array(
-            'limit'    => array('10', '50', '*100', '200'),
-            'wrap'     => 100,
-            'timezone' => array('*GMT', 'EST', 'CST', 'MST', 'PST'),
-            #'trial'    => false,
-        ),
-        'graphing' => array(
-            'yaxis_scale'      => array('Logarithmic', '*Linear'),
-            'xaxis_scale'      => array('Logarithmic', '*Linear'),
-            'hide_subtitle'    => false,
-            #'graph_size'       => array('Small', '*Medium', 'Large'),
-            #'legend_placement' => array('*Bottom', 'In plotting area'),
-            #'graph_type'       => array('*Line', 'Bar', 'Points'),
-        ),
-    );
+    static $prefs;
 
+    if (! $prefs)
+        $prefs = array(
+            'general'  => array(
+                'limit'    => array('10', '50', '*100', '200'),
+                'wrap'     => 100,
+                'timezone' => array('*GMT', 'EST', 'CST', 'MST', 'PST'),
+                #'trial'    => false,
+            ),
+            'graphing' => array(
+                'yaxis_scale'      => array('Logarithmic', '*Linear'),
+                'xaxis_scale'      => array('Logarithmic', '*Linear'),
+                'hide_subtitle'    => false,
+                #'graph_size'       => array('Small', '*Medium', 'Large'),
+                #'legend_placement' => array('*Bottom', 'In plotting area'),
+                #'graph_type'       => array('*Line', 'Bar', 'Points'),
+            ),
+        );
+
+    return $prefs;
 }
 
 # Display more human-readable labels
@@ -311,16 +315,25 @@ function setup_defaults($phases) {
     $ret['phase'] = 'all_phases';
 
     # Developer params
-    $ret['dev'] = array(
-        'sql'      => null,
-        'cgi'      => null,
-        'debug'    => null,
-        'stats'    => null,
-        'dev'      => null,
-        'no_cache' => null,
-    );
+    $ret['dev'] = developer_params();
 
     return $ret;
+}
+
+# Some helpful params for validating reporter.php
+function developer_params() {
+    static $params;
+    if (! $params)
+        $params = array(
+            'dev'        => null,
+            'sql'        => null,
+            'cgi'        => null,
+            'debug'      => null,
+            'stats'      => null,
+            'no_cache'   => null,
+            'no_cookies' => null,
+        );
+    return $params;
 }
 
 # Take a 'defaults' array (output from setup_defaults) Carry

@@ -2354,57 +2354,36 @@ function process_cherry_fields($params) {
 
 # Read/create/update a cookie, and put its data into the
 # environment
-#
-# If (! make_cookie)
-#   Delete/create client's cookie
-# Else
-#   Define based on cookie
 function process_cookie(&$params, $cookie) {
-
-    $cookie_name = 'mttcookie';
 
     $save_prefs = $params['save_prefs'];
     unset($params['save_prefs']);
+
+    $no_cookies = isset($params['no_cookies']) ? 1 : 0;
 
     # 'click' the button for them according to the report
     # type (which was exported from the Preferences window)
     if ($save_prefs) {
         unset($params['go']);
         $params['click'] = $save_prefs;
-
-        # THIS HAS TO BE THE ''FIRST'' THING SENT TO THE CLIENT
-        # PER THE HTTP STANDARD
-        setcookie($cookie_name, "", time() - 99999);
     }
-
-    debug_cgi($_COOKIE['mttcookie'], "COOKIE " . __LINE__);
 
     static $defaults;
     if (! $defaults)
         $defaults = setup_prefs();
 
-    if ($cookie[$cookie_name])
-        $use_cookie = true;
-
     foreach (array_keys($defaults) as $category) {
         foreach (array_keys($defaults[$category]) as $p) {
 
-            # There's a cookie, but we're creating a new cookie
-            if ($use_cookie and ! $save_prefs) {
-                define(strtoupper($p), param2constant($cookie[$cookie_name][$p]));
+            # Use the cookie
+            if ($cookie["mtt_$p"] and ! $no_cookies) {
+                define(strtoupper($p), param2constant($cookie["mtt_$p"]));
 
-            # Use _GET (and maybe create a cookie based on GET)
+            # Their browser has cookies disabled, or
+            # they've been sent a link - use _GET
             } elseif ($params[$p]) {
                 define(strtoupper($p), param2constant($params[$p]));
 
-                # Save preferences to a cookie
-                if ($save_prefs) {
-                    # THIS HAS TO BE THE ''FIRST'' THING SENT TO THE CLIENT
-                    # PER THE HTTP STANDARD
-                    setcookie($cookie_name.'['.$p.']', "", time() - 99999);
-                    setcookie($cookie_name.'['.$p.']', $params[$p]);
-                }
-                    
             # None of the above, use the defaults
             } else {
                 define(strtoupper($p), param2constant(prefs_default($p)));

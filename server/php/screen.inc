@@ -419,7 +419,26 @@ function jscript_export_prefs($prefs) {
             window.close();
         }
 
+        function createCookie(name, value, days) {
+            if (days) {
+                var date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                var expires = '; expires=' + date.toGMTString();
+            }
+            else
+                var expires = '';
+
+            document.cookie = name + '=' + value + expires + '; path=/';
+        }
+
+        function eraseCookie(name) {
+            createCookie(name, '', -1);
+        }
+
         function exportVars() {
+
+            var cookieStr = '';
+
             var str = '';
             var items = new Array();
 EOT;
@@ -427,10 +446,14 @@ EOT;
     # CAREFUL - IS ''y'' GUARANTEED TO BE DEFINED?
     # BEWARE OF undefined (OR null?) VARS WHICH CAUSE "NO PROPERTIES" 
     # JAVASSCRIPT ERRORS
-    $non_select = <<<EOT
+    $text = <<<EOT
             var x = document.adv.%s;
             var old = window.opener.document.report.%s;
             old.value = x.value;
+
+            var cookieName = 'mtt_%s';
+            eraseCookie(cookieName);
+            createCookie(cookieName, x.value, 9999);
 EOT;
 
     # CAREFUL - IS ''y'' GUARANTEED TO BE DEFINED?
@@ -439,11 +462,16 @@ EOT;
     $checkbox = <<<EOT
             var x = document.adv.%s;
             var old = window.opener.document.report.%s;
+            var newValue = 'off';
+
             if (x.checked) {
-                old.value = 'on';
-            } else {
-                old.value = 'off';
+                newValue = 'on';
             }
+            old.value = newValue;
+
+            var cookieName = 'mtt_%s';
+            eraseCookie(cookieName);
+            createCookie(cookieName, newValue, 9999);
 EOT;
 
     $select = <<<EOT
@@ -457,6 +485,10 @@ EOT;
                 }
             }
             old.value = str;
+
+            var cookieName = 'mtt_%s';
+            eraseCookie(cookieName);
+            createCookie(cookieName, str, 9999);
 EOT;
 
     # X: THERE SHOULD BE NO NEED TO CREATE MORE THAN ONE FOR
@@ -465,11 +497,11 @@ EOT;
     # STATEMENTS
     foreach (array_keys($prefs) as $pref) {
         if (is_array($prefs[$pref]))
-            $script .= sprintf($select, $pref, $pref);
+            $script .= sprintf($select, $pref, $pref, $pref);
         elseif (is_bool($prefs[$pref]))
-            $script .= sprintf($checkbox, $pref, $pref);
+            $script .= sprintf($checkbox, $pref, $pref, $pref);
         else
-            $script .= sprintf($non_select, $pref, $pref);
+            $script .= sprintf($text, $pref, $pref, $pref);
     }
 
     # Set the cookie-ize flag, and close the window
@@ -1049,20 +1081,13 @@ function hidden_carryover($params) {
     $lastgo = $params['go'];
 
     # Non-form fields that need to persist
-    $fields = array(
-
-        # Developer
-        'dev',
-        'sql',
-        'cgi',
-        'stats',
-        'debug',
-        'no_cache',
-
-        'ttable_id',
-
-        'test_result',
-        'phase',
+    $fields = array_merge(
+                developer_params(),
+                array(
+                    'ttable_id',
+                    'test_result',
+                    'phase',
+                )
     );
 
     # X: reverse this so we explicity print several hiddens
