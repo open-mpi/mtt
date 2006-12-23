@@ -123,7 +123,9 @@ sub FilterINISections {
             # perform the regular expressions, and AND
             # them together.
             # (Conform to agrep ';' syntax for AND operations)
-            @patterns_and = split /\;/, $pattern;
+            my $tmp = $pattern;
+            $tmp =~ s/\//\\\//g;
+            @patterns_and = split /\;/, $tmp;
             $re = join(" and ", map { "\$section =~ /$_/i" } @patterns_and);
 
             my $eval = "
