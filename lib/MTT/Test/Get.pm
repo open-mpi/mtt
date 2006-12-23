@@ -79,7 +79,7 @@ sub _do_get {
                                "Get", $ini, $section, $force);
     
     # Did we get a source tree back?
-    if ($ret->{test_result}) {
+    if (MTT::Values::PASS == $ret->{test_result}) {
         if ($ret->{have_new}) {
 
             Verbose("   Got new test sources\n");

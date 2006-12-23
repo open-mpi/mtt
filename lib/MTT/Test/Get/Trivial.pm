@@ -56,7 +56,7 @@ sub Get {
     my $x;
 
     Debug("Getting Trivial\n");
-    $ret->{test_result} = 0;
+    $ret->{test_result} = MTT::Values::FAIL;
 
     # We're in the source tree, so just write out some files
 
@@ -156,7 +156,7 @@ end\n");
     }
 
     # All done
-    $ret->{test_result} = 1;
+    $ret->{test_result} = MTT::Values::PASS;
     $ret->{have_new} = $have_new;
     $ret->{prepare_for_install} = "MTT::Common::Copytree::PrepareForInstall";
     $ret->{module_data}->{directory} = cwd();

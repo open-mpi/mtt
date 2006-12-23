@@ -81,7 +81,12 @@ if (1 != $ret) {
 require Config::IniFiles;
 require MTT::Version;
 require MTT::MPI;
+require MTT::MPI::Get;
+require MTT::MPI::Install;
 require MTT::Test;
+require MTT::Test::Get;
+require MTT::Test::Build;
+require MTT::Test::Run;
 require MTT::Files;
 require MTT::Messages;
 require MTT::INI;
@@ -489,27 +494,27 @@ foreach my $file (@file_arg) {
 
     if ($mpi_get) {
         start_time();
-        MTT::MPI::Get($ini, $source_dir, $force_arg);
+        MTT::MPI::Get::Get($ini, $source_dir, $force_arg);
         stop_time("MPI Get");
     }
     if ($mpi_install) {
         start_time();
-        MTT::MPI::Install($ini, $install_dir, $force_arg);
+        MTT::MPI::Install::Install($ini, $install_dir, $force_arg);
         stop_time("MPI Install");
     }
     if ($test_get) {
         start_time();
-        MTT::Test::Get($ini, $source_dir, $force_arg);
+        MTT::Test::Get::Get($ini, $source_dir, $force_arg);
         stop_time("Test Get");
     }
     if ($test_build) {
         start_time();
-        MTT::Test::Build($ini, $install_dir, $force_arg);
+        MTT::Test::Build::Build($ini, $install_dir, $force_arg);
         stop_time("Test Build");
     }
     if ($test_run) {
         start_time();
-        MTT::Test::Run($ini, $install_dir, $force_arg);
+        MTT::Test::Run::Run($ini, $install_dir, $force_arg);
         stop_time("Test Run");
     }
 

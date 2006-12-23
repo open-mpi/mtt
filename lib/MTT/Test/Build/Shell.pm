@@ -18,7 +18,6 @@ use File::Temp qw(tempfile);
 use MTT::Messages;
 use MTT::DoCommand;
 use MTT::Values;
-use MTT::Test;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -28,7 +27,7 @@ sub Build {
     my $ret;
 
     Debug("Building Shell\n");
-    $ret->{test_result} = MTT::Test::FAIL;
+    $ret->{test_result} = MTT::Values::FAIL;
 
     # Now run that file -- remove it when done, regardless of the outcome
     my $cmd = Value($ini, $config->{full_section_name}, "shell_build_command");
@@ -49,7 +48,7 @@ sub Build {
     # All done
     $ret->{result_stdout} = $x->{result_stdout};
     $ret->{result_stderr} = $x->{result_stderr};
-    $ret->{test_result} = MTT::Test::PASS;
+    $ret->{test_result} = MTT::Values::PASS;
     $ret->{result_message} = "Success";
     return $ret;
 } 

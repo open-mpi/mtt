@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -18,6 +19,17 @@ use Config::IniFiles;
 use vars qw(@EXPORT);
 use base qw(Exporter);
 @EXPORT = qw(EvaluateString Value Logical ProcessEnvKeys);
+
+# Exported result values.  These values are in sync with the server --
+# do not change them without also changing the server!  ARRGH.  These
+# constants must be before the rest of the "use" statements because
+# they are used in MTT::Test::*, which are "used" below.  #@$%@#$%!
+use constant {
+    FAIL => 0,
+    PASS => 1,
+    SKIPPED => 2,
+    TIMED_OUT => 3,
+};
 
 #--------------------------------------------------------------------------
 

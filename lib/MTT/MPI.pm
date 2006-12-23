@@ -15,8 +15,6 @@
 package MTT::MPI;
 
 use strict;
-use MTT::MPI::Get;
-use MTT::MPI::Install;
 use MTT::Files;
 
 #--------------------------------------------------------------------------
@@ -34,22 +32,6 @@ my $sources_data_filename = "mpi_sources.dump";
 
 # Filename where list of MPI installs is kept
 my $installs_data_filename = "mpi_installs.dump";
-
-#--------------------------------------------------------------------------
-
-# This function exists solely so that we don't have to invoke
-# MTT::MPI::Get::Get in the top level
-sub Get {
-    return MTT::MPI::Get::Get(@_);
-}
-
-#--------------------------------------------------------------------------
-
-# This function exists solely so that we don't have to invoke
-# MTT::MPI::Install::Install in the top level
-sub Install {
-    return MTT::MPI::Install::Install(@_);
-}
 
 #--------------------------------------------------------------------------
 

@@ -51,7 +51,7 @@ sub Get {
         $src_md5 = MTT::Files::md5sum($data->{tarball});
         if ($src_md5 eq $previous_md5) {
             Debug(">> tarball: we already have this tarball\n");
-            $ret->{test_result} = 1;
+            $ret->{test_result} = MTT::Values::PASS;
             $ret->{have_new} = 0;
             $ret->{result_message} = "Tarball has not changed (did not re-copy)";
             return $ret;
@@ -64,7 +64,7 @@ sub Get {
     my $dir = cwd();
     my $x = MTT::DoCommand::Cmd(1, "cp $data->{tarball} .");
     if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
-        $ret->{test_result} = 0;
+        $ret->{test_result} = MTT::Values::FAIL;
         $ret->{result_message} = "Failed to copy tarball";
         Warning($ret->{result_message});
         return $ret;
@@ -95,7 +95,7 @@ sub Get {
 
     # All done
     Debug(">> tarball: returning successfully\n");
-    $ret->{test_result} = 1;
+    $ret->{test_result} = MTT::Values::PASS;
     $ret->{result_message} = "Success";
     return $ret;
 } 

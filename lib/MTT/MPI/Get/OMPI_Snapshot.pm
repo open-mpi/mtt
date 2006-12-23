@@ -15,11 +15,11 @@ package MTT::MPI::Get::OMPI_Snapshot;
 use strict;
 use Cwd;
 use File::Basename;
+use Data::Dumper;
 use MTT::Messages;
 use MTT::Files;
 use MTT::FindProgram;
 use MTT::Values;
-use Data::Dumper;
 
 # Checksum filenames
 my $md5_checksums = "md5sums.txt";
@@ -35,7 +35,7 @@ sub Get {
 
     my $ret;
     my $data;
-    $ret->{test_result} = 0;
+    $ret->{test_result} = MTT::Values::FAIL;
 
     # See if we got a url in the ini section
     my $url = Value($ini, $section, "ompi_snapshot_url");
@@ -98,7 +98,7 @@ sub Get {
                 # We have this tarball already.  If we're not forcing,
                 # return nothing.
                 if (!$force) {
-                    $ret->{test_result} = 1;
+                    $ret->{test_result} = MTT::Values::PASS;
                     $ret->{have_new} = 0;
                     $ret->{result_message} = "Snapshot tarball has not changed (did not re-download)";
                     return $ret;
@@ -168,7 +168,7 @@ sub Get {
 
     # All done
     Debug(">> OMPI_Snapshot complete\n");
-    $ret->{test_result} = 1;
+    $ret->{test_result} = MTT::Values::PASS;
     $ret->{result_message} = "Success";
     return $ret;
 } 

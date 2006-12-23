@@ -335,7 +335,7 @@ sub _do_build {
         $ret->{refcount} = 0;
 
         if (!defined($ret->{test_result})) {
-            $ret->{test_result} = MTT::Test::FAIL;
+            $ret->{test_result} = MTT::Values::FAIL;
         }
         
         # Save the results in an ini file
@@ -366,7 +366,7 @@ sub _do_build {
 
         # See if we want to save the result_stdout
         my $want_save = 1;
-        if (MTT::Test::PASS == $ret->{test_result}) {
+        if (MTT::Values::PASS == $ret->{test_result}) {
             if (!$config->{save_stdout_on_success}) {
                 $want_save = 0;
             }
@@ -448,7 +448,7 @@ sub _do_build {
         MTT::Test::SaveBuilds($build_base);
         
         # Print
-        if (MTT::Test::PASS == $ret->{test_result}) {
+        if (MTT::Values::PASS == $ret->{test_result}) {
             Verbose("   Completed test build successfully\n");
         } else {
             Warning("Failed to build test [$section]: $ret->{result_message}\n");

@@ -249,7 +249,7 @@ sub _do_install {
     $config->{bitness} = "to be filled in below";
         
     # Filled in by the module
-    $config->{test_result} = 0;
+    $config->{test_result} = MTT::Values::FAIL;
     $config->{result_message} = "to be filled in by module";
     $config->{c_bindings} = 0;
     $config->{cxx_bindings} = 0;
@@ -409,7 +409,8 @@ sub _do_install {
     my $duration = time - $start_time . " seconds";
     
     # Detect bitness
-    if (($ret->{test_result} == 1) and defined($ret->{bitness})) {
+    if ((MTT::Values::PASS == $ret->{test_result})
+        && defined($ret->{bitness})) {
         $config->{bitness} = $ret->{bitness};
     }
     
@@ -450,7 +451,7 @@ sub _do_install {
 
         # See if we want to save the result_stdout
         my $want_save = 1;
-        if (1 == $ret->{test_result}) {
+        if (MTT::Values::PASS == $ret->{test_result}) {
             if (!$config->{save_stdout_on_success}) {
                 $want_save = 0;
             }
@@ -557,7 +558,7 @@ sub _do_install {
         MTT::MPI::SaveInstalls($install_base);
 
         # Successful build?
-        if (1 == $ret->{test_result}) {
+        if (MTT::Values::PASS == $ret->{test_result}) {
             # If it was successful, there's no need for
             # the source or build trees anymore
             # JMS: this is not right -- if there is a problem with

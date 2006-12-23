@@ -29,12 +29,8 @@ my $_defaults = {
     textwrap => 76,
     drain_timeout => 5,
 
-    save_successful_mpi_installs => 0,
-    save_failed_mpi_installs => 1,
-    save_successful_test_builds => 0,
-    save_failed_test_builds => 1,
-    save_successful_test_runs => 0,
-    save_failed_test_runs => 0,
+    trim_save_successful => 0,
+    trim_save_failed => 1,
 
     trial => 0,
 };
@@ -71,7 +67,7 @@ sub load {
 
     # Simple parameters
 
-    my @names = qw/max_np textwrap drain_timeout save_successful_mpi_installs save_failed_mpi_installs save_successful_test_builds save_failed_test_builds save_successful_test_runs save_failed_test_runs trial/;
+    my @names = qw/max_np textwrap drain_timeout trim_save_successful trim_save_failed trial/;
 
     foreach my $name (@names) {
         my $val = MTT::Values::Value($ini, "MTT", $name);

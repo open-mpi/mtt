@@ -13,22 +13,7 @@
 package MTT::Test;
 
 use strict;
-
-# Exported result values.  These values are in sync with the server --
-# do not change them without also changing the server!  ARRGH.  These
-# constants must be before the rest of the "use" statements because
-# they are used in MTT::Test::*, which are "used" below.  #@$%@#$%!
-use constant {
-    FAIL => 0,
-    PASS => 1,
-    SKIPPED => 2,
-    TIMED_OUT => 3,
-};
-
 use File::Find;
-use MTT::Test::Get;
-use MTT::Test::Build;
-use MTT::Test::Run;
 use MTT::Files;
 use MTT::Messages;
 use MTT::DoCommand;
@@ -62,30 +47,6 @@ my $runs_data_filename = "test_runs.dump";
 
 # Helper variable for when we're loading test run data
 my $load_run_file_start_dir;
-
-#--------------------------------------------------------------------------
-
-# This function exists solely so that we don't have to invoke
-# MTT::Test::Get::Get in the top level
-sub Get {
-    return MTT::Test::Get::Get(@_);
-}
-
-#--------------------------------------------------------------------------
-
-# This function exists solely so that we don't have to invoke
-# MTT::Test::Build::Build in the top level
-sub Build {
-    return MTT::Test::Build::Build(@_);
-}
-
-#--------------------------------------------------------------------------
-
-# This function exists solely so that we don't have to invoke
-# MTT::Test::Run::Run in the top level
-sub Run {
-    return MTT::Test::Run::Run(@_);
-}
 
 #--------------------------------------------------------------------------
 

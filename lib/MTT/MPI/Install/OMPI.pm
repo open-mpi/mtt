@@ -14,10 +14,11 @@ package MTT::MPI::Install::OMPI;
 
 use strict;
 use Cwd;
+use Data::Dumper;
 use MTT::DoCommand;
 use MTT::Messages;
-use Data::Dumper;
 use MTT::FindProgram;
+use MTT::Values;
 
 #--------------------------------------------------------------------------
 
@@ -52,7 +53,7 @@ sub Install {
     # Prepare $ret
 
     my $ret;
-    $ret->{test_result} = 0;
+    $ret->{test_result} = MTT::Values::FAIL;
     $ret->{exit_status} = 0;
 
     # Run configure
@@ -182,11 +183,11 @@ sub Install {
 
     if ((0 != write_cleanup_script("$ret->{installdir}/bin")) 
         and (! $MTT::DoCommand::no_execute)) {
-        $ret->{test_result} = 0;
+        $ret->{test_result} = MTT::Values::FAIL;
         $ret->{exit_status} = $x->{status};
         $ret->{message} = "Failed to create cleanup script!";
     } else {
-        $ret->{test_result} = 1;
+        $ret->{test_result} = MTT::Values::PASS;
         $ret->{result_message} = "Success";
         $ret->{exit_status} = $x->{status};
         Debug("Build was a test_result\n");

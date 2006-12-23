@@ -29,7 +29,7 @@ sub Get {
     my $data;
 
     Debug(">> in SVN get\n");
-    $ret->{test_result} = 0;
+    $ret->{test_result} = MTT::Values::FAIL;
     # See if we got a url in the ini section
     $data->{url} = Value($ini, $section, "svn_url");
     if (!$data->{url}) {
@@ -84,7 +84,7 @@ sub Get {
                 Debug(">> svn: we have this URL, but the repository has changed and we need a new export\n");
             } else {
                 Debug(">> svn: we have this URL and the repository has not changed; skipping\n");
-                $ret->{test_result} = 1;
+                $ret->{test_result} = MTT::Values::PASS;
                 $ret->{have_new} = 0;
                 $ret->{result_message} = "Repository has not changed (did not re-export)";
                 return $ret;
@@ -104,7 +104,7 @@ sub Get {
     MTT::DoCommand::Chdir($dir);
     ($dir, $data->{r}) = MTT::Files::svn_checkout($data->{url}, $svn_r, "", $svn_username, $svn_password, $svn_password_cache, 1, 1);
     if (!$dir) {
-        $ret->{test_result} = 0;
+        $ret->{test_result} = MTT::Values::FAIL;
         $ret->{result_message} = "Failed to SVN export";
         return $ret;
     }
@@ -136,7 +136,7 @@ sub Get {
 
     # All done
     Debug(">> svn: returning successfully\n");
-    $ret->{test_result} = 1;
+    $ret->{test_result} = MTT::Values::PASS;
     $ret->{result_message} = "Success";
     return $ret;
 } 

@@ -44,7 +44,7 @@ sub Install {
     # Prepare $ret
 
     my $ret;
-    $ret->{test_result} = 0;
+    $ret->{test_result} = MTT::Values::FAIL;
 
     Debug(">> copytree copying to $config->{installdir}\n");
     if (-d $config->{installdir}) {
@@ -228,7 +228,7 @@ int main(int argc, char* argv[]) {
     # Dump $ret into a file in this directory in case we are not
     # building the tests now
 
-    $ret->{test_result} = 1;
+    $ret->{test_result} = MTT::Values::PASS;
     $ret->{result_message} = "Success";
 
     # All done

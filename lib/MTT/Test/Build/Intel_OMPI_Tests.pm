@@ -17,7 +17,6 @@ use Cwd;
 use MTT::DoCommand;
 use MTT::Messages;
 use MTT::Values;
-use MTT::Test;
 
 # default buildfile
 my $default_buildfile = "all_tests_no_perf";
@@ -30,7 +29,7 @@ sub Build {
     my $x;
 
     Debug("Building Intel OMPI tests (Intel tests from ompi-tests SVN repository)\n");
-    $ret->{test_result} = MTT::Test::FAIL;
+    $ret->{test_result} = MTT::Values::FAIL;
 
     my $cflags = Value($ini, $config->{full_section_name}, 
                        "intel_ompi_tests_cflags");
@@ -138,7 +137,7 @@ sub Build {
     }
 
     # All done
-    $ret->{test_result} = MTT::Test::PASS;
+    $ret->{test_result} = MTT::Values::PASS;
     $ret->{result_message} = "Success";
     return $ret;
 } 

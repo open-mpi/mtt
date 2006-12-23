@@ -12,8 +12,10 @@
 package MTT::Test::Analyze::Correctness;
 
 use strict;
-use MTT::Messages;
 use Data::Dumper;
+use MTT::Messages;
+use MTT::Values;
+use MTT::Test;
 
 # Return a ready-to-submit hash of correctness test results data
 sub Analyze {
@@ -28,13 +30,13 @@ sub Analyze {
     }
 
     # result value: 0=fail, 1=pass, 2=skipped, 3=timed out
-    my $result = MTT::Test::FAIL;
+    my $result = MTT::Values::FAIL;
     if ($skipped) {
-        $result = MTT::Test::SKIPPED;
+        $result = MTT::Values::SKIPPED;
     } elsif ($results->{timed_out}) {
-        $result = MTT::Test::TIMED_OUT;
+        $result = MTT::Values::TIMED_OUT;
     } elsif ($pass) {
-        $result = MTT::Test::PASS;
+        $result = MTT::Values::PASS;
     }
 
     # Queue up a report on this test
