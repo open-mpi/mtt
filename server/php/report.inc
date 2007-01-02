@@ -62,6 +62,8 @@ function dump_report() {
     $sort_field      = process_sort_field($_GET);
     $offset_field    = process_offset_field($_GET);
 
+    $trial_field     = process_trial_field(TRIAL);
+
     # Print either a summary or detail report,
     # depending on whether a 'select_more' parameter is set
     if ($report_type == 'detail') {
@@ -82,7 +84,8 @@ function dump_report() {
         $detail_fields,
         $performance_fields,
         $sort_field,
-        $offset_field
+        $offset_field,
+        $trial_field
     );
 
     # Order columns left-to-right
@@ -197,6 +200,9 @@ function detail_table($headers, $resource) {
         # Splice in the php_row_n in place of db_row_n
         $db_row_n = array_shift(array_splice($row, 0, 1, ($php_row_n + 1)));
 
+        # Stylize rows of "--trial" results
+        $trial = process_trial_value($row, 1);
+
         # Details are always in the far far right cols
         $details = array_splice($results, $num_cols['results']);
 
@@ -207,15 +213,15 @@ function detail_table($headers, $resource) {
              $perf) = $results;
 
         if ($pass)
-            $bgcolor = (($pass > 0) ? LGREEN  : "");
+            $bgcolor = (($pass > 0) ? stylize_trial_color(LGREEN, $trial)  : "");
         elseif ($fail)
-            $bgcolor = (($fail > 0) ? LRED    : "");
+            $bgcolor = (($fail > 0) ? stylize_trial_color(LRED, $trial)    : "");
         elseif ($skip)
-            $bgcolor = (($skip > 0) ? LYELLOW : "");
+            $bgcolor = (($skip > 0) ? stylize_trial_color(LYELLOW, $trial) : "");
         elseif ($time)
-            $bgcolor = (($time > 0) ? LYELLOW : "");
+            $bgcolor = (($time > 0) ? stylize_trial_color(LYELLOW, $trial) : "");
         elseif ($perf)
-            $bgcolor = (($time > 0) ? LBLUE   : "");
+            $bgcolor = (($time > 0) ? stylize_trial_color(LBLUE, $trial)   : "");
 
         print "<table border='1' width='100%'>" .
               "<tr><td bgcolor='$bgcolor'>";
@@ -233,8 +239,8 @@ function detail_table($headers, $resource) {
         print "<table border='1' width='100%'>";
         foreach ($headers as $header) {
             print (($i % 1 == 0) ? "\n<tr>" : "") .
-                  "\n$td <b>" . label($header) . "</b> $tdl " .
-                  "\n<pre>" . wordwrap($values[$i], WRAP) . "</pre>";
+                  "\n$td <b>" . stylize_trial_font(label($header), $trial) . "</b> $tdl " .
+                  "\n<pre>" . stylize_trial_font(wordwrap($values[$i], WRAP), $trial) . "</pre>";
             $i++;
         }
         print "</table>";
@@ -246,6 +252,18 @@ function detail_table($headers, $resource) {
     print "\n</table>" .
           "\n</table>" .
           "\n\n<!-- report_end -->\n\n";
+}
+
+# Return true if the row is a row flagged "--trial"
+# X: THE trial VALUE IS ALWAYS ON THE FAR LEFT (TO THE RIGHT
+# OF THE DB ROW NUMBER)
+function process_trial_value($row, $i) {
+    if (TRIAL) {
+        if ($row[$i] == 't')
+            return true;
+        else
+            return false;
+    }
 }
 
 # Print out a summary table
@@ -333,7 +351,7 @@ function summary_table($headers, $resource, $filter) {
     $format   = "\n<td bgcolor='%s' align='right'>%s";
     $formatg  = "\n<td bgcolor='" . LGRAY . "' align='right'>%s";
     $formatgc = "\n<td bgcolor='" . LGRAY . "' align='center'>%s";
-    $formatw  = "\n<td bgcolor='" . WHITE . "'>%s";
+    $formatw  = "\n<td bgcolor='%s'>";
 
     # Print data rows
     while ($row = pg_fetch_row($resource)) {
@@ -346,6 +364,9 @@ function summary_table($headers, $resource, $filter) {
 
         # Grab the db_row_n
         $db_row_n = array_shift($row);
+
+        # Grab the trial boolean
+        $trial = process_trial_value($row, 0);
 
         # Skip unchecked cherry rows
         if ($filter)
@@ -360,11 +381,14 @@ function summary_table($headers, $resource, $filter) {
 
         printf($formatg, ($php_row_n + 1));
 
-        for ($i = 0; $i < sizeof($row); $i++)
-            printf($formatw, drilldown_links($headers['params'][$i], $row[$i]));
+        for ($i = 0; $i < sizeof($row); $i++) {
+            printf($formatw, stylize_trial_color(WHITE, $trial));
+            print stylize_trial_font(
+                            drilldown_links($headers['params'][$i], $row[$i]),
+                            $trial);
+        }
 
         $j = 0;
-
         foreach ($headers['phases'] as $phase) {
             
             # Each phase has differing result types
@@ -390,24 +414,34 @@ function summary_table($headers, $resource, $filter) {
                  $perf_count) = $ret['counts'];
 
             printf($format,
-                    (($pass_count > 0) ? $result_colors[$j] : LGRAY), $pass);
+                    (($pass_count > 0) ? 
+                        stylize_trial_color($result_colors[$j], $trial) : LGRAY), 
+                        stylize_trial_font($pass, $trial));
             $j++;
             printf($format,
-                    (($fail_count > 0) ? $result_colors[$j] : LGRAY), $fail);
+                    (($fail_count > 0) ? 
+                        stylize_trial_color($result_colors[$j], $trial) : LGRAY), 
+                        stylize_trial_font($fail, $trial));
             $j++;
             if (! is_null($skip)) {
                 printf($format,
-                        (($skip_count > 0) ? $result_colors[$j] : LGRAY), $skip);
+                        (($skip_count > 0) ? 
+                            stylize_trial_color($result_colors[$j], $trial) : LGRAY), 
+                            stylize_trial_font($skip, $trial));
                 $j++;
             }
             if (! is_null($time)) {
                 printf($format,
-                        (($time_count > 0) ? $result_colors[$j] : LGRAY), $time);
+                        (($time_count > 0) ?
+                            stylize_trial_color($result_colors[$j], $trial) : LGRAY), 
+                            stylize_trial_font($time, $trial));
                 $j++;
             }
             if (! is_null($perf)) {
                 printf($format,
-                        (($perf_count > 0) ? $result_colors[$j] : LGRAY), $perf);
+                        (($perf_count > 0) ?
+                            stylize_trial_color($result_colors[$j], $trial) : LGRAY), 
+                            stylize_trial_font($perf, $trial));
                 $j++;
             }
 
@@ -454,6 +488,31 @@ function summary_table($headers, $resource, $filter) {
     # Print performance graphs
     if ($do_performance)
         performance_graphs($graph_data);
+}
+
+# Change font style for a row of "--trial" results
+function stylize_trial_font($str, $trial) {
+    if ($trial)
+        return '<i>' . $str . '</i>';
+    else
+        return $str;
+}
+
+# Change table cell color of "--trial" results
+function stylize_trial_color($color, $trial) {
+    if ($trial) {
+        if ($color == WHITE)
+            return LLLGRAY;
+        elseif ($color == LRED)
+            return DRED;
+        elseif ($color == LGREEN)
+            return DGREEN;
+        elseif ($color == LYELLOW)
+            return DYELLOW;
+        elseif ($color == LBLUE)
+            return DBLUE;
+    } else
+        return $color;
 }
 
 # Output a checkbox for cherry-picking feature
@@ -1776,6 +1835,20 @@ function compose_sql($query) {
         # We have already filtered by date range
         remove_match($query['where'], 'start_timestamp');
 
+        # Hack to whack a WHERE clause if the column is not
+        # in the ttable
+        #
+        # WARNING: IF A WHERE CLAUSE CONTAINS THE STRING
+        # 'trial =', IT WILL GET WHACKED!
+        #
+        # X: QUERY['WHERE'] SHOULD BE SETUP LIKE
+        # QUERY['SELECT'] (E.G., QUERY[COLUMN_NAME] => LIST
+        # OF WHERE CLAUSES) SUCH THAT WE CAN DO AN UNSET,
+        # INSTEAD OF A REMOVE_MATCH HERE ON THE QUERY
+        # STRUCTURE
+        if (! column_exists('trial', $ttable))
+            remove_match($query['where'], 'trial =');
+
         $where = $query['where'];
 
         if ($where)
@@ -1880,6 +1953,14 @@ function compose_sql($query) {
     do_pg_query($cmd);
 
     return $ret;
+}
+
+# Return 1 if $column exists in $table
+function column_exists($column, $table) {
+    return select_scalar("SELECT 1 FROM information_schema.columns " .
+                            "WHERE column_name = '$column' AND " .
+                                "table_name = '$table'");
+
 }
 
 #########################################
@@ -2334,6 +2415,18 @@ function process_cherry_fields($params) {
         return array_flip($filter);
 }
 
+# Generate WHERE and SELECT clause for ''trial'' boolean
+function process_trial_field($trial) {
+
+    if (! $trial) {
+        $query['where'] = "((trial = 'f') OR (trial IS NULL))";
+    } else {
+        $query['select']['trial'] = 'trial';
+    }
+
+    return $query;
+}
+
 # Return 'on' if all cherries are checked
 # Return 'off' if all cherries are unchecked
 # Return false if cherries are heterogeneous
@@ -2456,6 +2549,9 @@ function order_columns($columns) {
         # row number
         'n'                 => 1,
 
+        # trial
+        'trial'             => 1,
+
         # results
         'start_timestamp'   => 1,
 
@@ -2503,6 +2599,7 @@ function detail_fields($phase) {
     # MPI Install
     if ($phase == 'mpi_install')
         $phase_columns = array(
+            'configure_arguments' => 'configure_arguments',
             'compiler_version' => 'compiler_version',
             'vpath_mode' => 'vpath_mode',
         );
@@ -2642,11 +2739,11 @@ function array_combine2(&$hash, $keys, $values) {
 # Remove array entries whose value matches pattern
 # Return array of removed entries
 function remove_match(&$arr, $pattern) {
-    $i = 0;
-    foreach ($arr as $v) {
-        if (preg_match("/$pattern/", $v)) {
-            unset($arr[$i++]);
-            $ret[] = $v;
+
+    foreach (array_keys($arr) as $i) {
+        if (preg_match("/$pattern/", $arr[$i])) {
+            unset($arr[$i]);
+            $ret[] = $arr[$i];
         }
     }
     return $ret;

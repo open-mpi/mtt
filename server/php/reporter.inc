@@ -30,9 +30,13 @@ define('LGRAY',    "#C0C0C0");
 define('LLGRAY',   "#DEDEDE");
 define('LLLGRAY',  "#E8E8E8");
 define('LRED',     "#FFC0C0");
+define('DRED',     "#E0C0C0");
 define('LGREEN',   "#C0FFC0");
+define('DGREEN',   "#C0E0C0");
 define('LYELLOW',  "#FFFFC0");
+define('DYELLOW',  "#E0E0C0");
 define('LBLUE',    "#C0C0FF");
+define('DBLUE',    "#C0C0E0");
 define('WHITE',    "#FFFFFF");
 define('THCOLOR',  LLGRAY);
 
@@ -89,7 +93,7 @@ function setup_prefs() {
                 'limit'    => array('10', '50', '*100', '200'),
                 'wrap'     => 100,
                 'timezone' => array('*GMT', 'EST', 'CST', 'MST', 'PST'),
-                #'trial'    => false,
+                'trial'    => false,
             ),
             'graphing' => array(
                 'yaxis_scale'      => array('Logarithmic', '*Linear'),
@@ -215,7 +219,10 @@ function label($str) {
             'limit'                => 'Max rows per page',
             'timezone'             => 'Time zone',
             'wrap'                 => 'Text wrap <i>(in Detail)</i>',
-            'trial'                => 'Show trial runs',
+
+            # Two labels: one for the UI, one for the column header
+            'trial'                => 'Trial',
+            'Trial'                => 'Show trial runs',
 
             # Graphing preferences
             'graphing'             => 'Graphing',
@@ -398,6 +405,13 @@ function form_carryover($defaults, $phase) {
         $params['phase'] = $phase;
     else
         $params['phase'] = $defaults['phase'];
+
+    # Carryover trial field
+    $text_trial = $_GET['text_trial'];
+    if ($text_trial)
+        $params['text_trial'] = $text_trial;
+    else
+        $params['text_trial'] = $defaults['text_trial'];
 
     # Carryover developer params
     foreach (array_keys($defaults['dev']) as $k)

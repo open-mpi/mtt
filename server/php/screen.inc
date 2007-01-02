@@ -199,20 +199,20 @@ function get_form_universe($columns_arg) {
 
     # Do *not* provide menus for these fields
     $big_columns = array(
-        'command' => 1,
+        'command'             => 1,
         'configure_arguments' => 1,
-        'bitness' => 1,
-        'endian' => 1,
+        'bitness'             => 1,
+        'endian'              => 1,
 
         # Results
-        'environment' => 1,
+        'environment'         => 1,
         'merge_stdout_stderr' => 1,
-        'result_stdout' => 1,
-        'result_stderr' => 1,
-        'start_timestamp' => 1,
-        'stop_timestamp' => 1,
-        'duration' => 1,
-        'submit_timestamp' => 1,
+        'result_stdout'       => 1,
+        'result_stderr'       => 1,
+        'start_timestamp'     => 1,
+        'stop_timestamp'      => 1,
+        'duration'            => 1,
+        'submit_timestamp'    => 1,
     );
 
     # Gather database columns
@@ -965,9 +965,9 @@ function prefs_popup($prefs, $params) {
             $arr[$field] = $prefs[$category][$field];
 
             # Fill-in field for default or last selection
-            $value = auto_fill($entries, $params[$field]);
+            $value = auto_fill($entries, $params[$field], $_COOKIE["mtt_$field"]);
 
-            $menu .= $tr . $td . label($field) . $td;
+            $menu .= $tr . $td . label(label($field)) . $td;
 
             if (is_bool($entries))
                 $menu .= "\n<input type='checkbox' name='$field' value='on' $value>";
@@ -1028,22 +1028,28 @@ function prefs_popup($prefs, $params) {
     return $link;
 }
 
-# Return the "starred" default value,
-# or the index|value of $lastval
+# Return either:
+#   - the index|value of the _COOKIE value,
+#   - the index|value of the _GET value
+#   - or lastly, the "starred" default value
 #
 # Argument could be a bool, scalar, or array
-function auto_fill($entries, $lastval) {
+function auto_fill($entries, $lastval, $cookieval) {
 
     # Checkbox
     if (is_bool($entries)) {
-        if ($lastval == 'on')
+        if ($cookieval == 'on')
+            $ret = 'checked';
+        elseif ($lastval == 'on')
             $ret = 'checked';
         else
             $ret = null;
 
     # Text
     } elseif (is_scalar($entries)) {
-        if ($lastval)
+        if ($cookieval)
+            $ret = $cookieval;
+        elseif ($lastval)
             $ret = $lastval;
         else
             $ret = $entries;
@@ -1051,7 +1057,9 @@ function auto_fill($entries, $lastval) {
     # Dropdown menu
     } elseif (is_array($entries)) {
 
-        if ($lastval)
+        if ($cookieval)
+            $match = "^.?$cookieval$";
+        elseif ($lastval)
             $match = "^.?$lastval$";
         else
             $match = '^\*';
@@ -1082,7 +1090,7 @@ function hidden_carryover($params) {
 
     # Non-form fields that need to persist
     $fields = array_merge(
-                developer_params(),
+                array_keys(developer_params()),
                 array(
                     'ttable_id',
                     'test_result',
@@ -1094,8 +1102,19 @@ function hidden_carryover($params) {
     # E.g., ttable_id, sql, cgi, test_result, lastgo, ...
     foreach (array_keys($params) as $k) {
         if (preg_match('/' . join('|', $fields) . '/', $k))
-            $str .= "\n<input type='hidden' name='$k' value='$params[$k]'>";
+            $str .= 
+                "\n<input " .
+                        "type='hidden' " .
+                        "name='$k' " .
+                        "value='$params[$k]'>";
     }
+
+    if (TRIAL == 'on')
+        $str .= 
+            "\n<input " . 
+                    "type='hidden' " . 
+                    "name='text_trial' " . 
+                    "value='" . $params['text_trial'] . "'>";
 
     $str .= "\n<input type='hidden' name='lastgo' value='$lastgo'>";
 
