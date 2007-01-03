@@ -117,7 +117,7 @@ sub Submit {
     # Now send it
     
     MTT::Mail::Send($s, $to, $body);
-    Verbose(">> Reported to $to\n");
+    Verbose(">> Reported to e-mail: $to\n");
 }
 
 1;

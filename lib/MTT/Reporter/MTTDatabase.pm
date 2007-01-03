@@ -354,7 +354,8 @@ sub Submit {
         }
     }
 
-    Verbose(">> $successes successful submit" . plural($successes) .  ", " .
+    Verbose(">> Reported to MTTDatabase: $successes successful submit" . 
+            plural($successes) .  ", " .
             "$fails failed submit" . plural($fails) . 
             " (total of $num_results result" . plural($num_results) . ")\n");
 
