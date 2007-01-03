@@ -782,10 +782,10 @@ function form_buttons($params, $disable_arg) {
     # Reset and Clear 'buttons' are small links
     $buttons[] =
         "\n<a href='javascript:document.report.reset();' " .
-             "class='lgray_ln'>[Reset]</a>";
+             "class='lgray_ln'>[Reset form]</a>";
     $buttons[] =
         "\n<a href='$script' " .
-             "class='lgray_ln'>[Clear]</a>";
+             "class='lgray_ln'>[Start over]</a>";
 
     $format = "\n<input type='submit' id='click' name='click' value='%s' type='submit' %s>";
 
@@ -1022,7 +1022,7 @@ function prefs_popup($prefs, $params) {
             # <body style>
             "\n\"font-family:Courier,monospace\"" . 
         ")'>" .
-        "\n<i>Preferences</i>" .
+        "\n[Preferences]" .
         "</a>";
 
     return $link;

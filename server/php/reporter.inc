@@ -40,6 +40,11 @@ define('DBLUE',    "#C0C0E0");
 define('WHITE',    "#FFFFFF");
 define('THCOLOR',  LLGRAY);
 
+# Mask the trial column using HTML comments
+define('TRIAL_TRUE',  't');
+define('TRIAL_FALSE', 'f');
+
+
 #########################################
 #                                       #
 #  Global arrays                        #

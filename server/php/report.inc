@@ -21,8 +21,7 @@ include_once("$topdir/reporter.inc");
 include_once("$topdir/database.inc");
 
 # Global variables
-$use_ttable;
-$rebuild_ttable;
+$new_ttable;
 $date_fields;
 
 # Top-level report printing function
@@ -227,7 +226,7 @@ function detail_table($headers, $resource) {
               "<tr><td bgcolor='$bgcolor'>";
 
         $td = "<td bgcolor='" . LGRAY . "' width='10%' valign='top'>";
-        $tdl = "<td bgcolor='" . WHITE . "'>";
+        $tdl = "<td bgcolor='" . stylize_trial_color(WHITE, $trial) . "'>";
 
         $values =
             array_merge(
@@ -259,7 +258,7 @@ function detail_table($headers, $resource) {
 # OF THE DB ROW NUMBER)
 function process_trial_value($row, $i) {
     if (TRIAL) {
-        if ($row[$i] == 't')
+        if ($row[$i] == TRIAL_TRUE)
             return true;
         else
             return false;
@@ -1122,9 +1121,17 @@ function strip_html($str) {
     return strip_tags($str);
 }
 
-# For unaligning the subtitle
+# For unaligning the subtitle for the CSV dump
 function unalign($str) {
-    return preg_replace('/(\w+:)\s+/', 'subtitle:\\1', $str);
+    $arr = explode("\n", $str);
+    foreach ($arr as $l) {
+        if (preg_match('/^([^:]+):\s+(.*)$/', $l, $m)) {
+            $left = preg_replace('/\s+/', ':', strtolower($m[1]));
+            $right = $m[2];
+            $ret .= "\nsubtitle:" . $left . ':' . $right;
+        }
+    }
+    return $ret . "\n";
 }
 
 # Wrap a string in font tags
@@ -1444,7 +1451,8 @@ function drilldown_links() {
             $i = 0;
             # Loop over header names
             foreach ($headers['params'] as $param) {
-                $qstring_arr["text_$param"] = exact_match($params[$i++]);
+                $qstring_arr["text_$param"] = 
+                    exact_match($params[$i++]);
             }
             $qstring_arr['test_result'] = $phase_results_table[$phase][$j++];
 
@@ -1478,7 +1486,8 @@ function drilldown_links() {
         if (is_cherry_pick($_GET))
             return $param;
 
-        $qstring_arr["text_$header"] = exact_match($param);
+        $qstring_arr["text_$header"] = 
+            exact_match($param);
 
         $ret = sprintf($format, arr2qstring($qstring_arr), $param);
     }
@@ -1810,10 +1819,9 @@ function compose_sql($query) {
     # NOTE: the above so-called temporary SQL relations are
     # NOT truly temporary, it is just that we do intend to
     # delete them after the user's session expires
-    $new_ttable     = $query['new_ttable'];
-    $rebuild_ttable = $query['rebuild_ttable'];
-    $ttable         = $query['ttable'];
-    $tseq           = $query['tseq'];
+    $new_ttable = $query['new_ttable'];
+    $ttable     = $query['ttable'];
+    $tseq       = $query['tseq'];
 
     # Handle ORDER BY
     if (isset($query['orderby_up']))
@@ -2033,6 +2041,8 @@ function process_report_type($params) {
 # 1. Generate WHERE clause pieces from user-entered textfields
 # 2. Generate SELECT items from user-entered show/hide menus
 function process_input_fields($params) {
+
+    global $new_ttable;
 
     $query['where'] = array();
     $query['select'] = array();
@@ -2263,7 +2273,7 @@ function process_date_field($params) {
 # (Reference: postgresql.org/docs/7.3/static/functions-conditional.html)
 function process_result_fields($phases, $params) {
 
-    global $use_ttable, $rebuild_ttable;
+    global $new_ttable;
 
     $test_result = $params['test_result'];
 
@@ -2277,7 +2287,7 @@ function process_result_fields($phases, $params) {
 
                 # The result alias has gone from
                 # pass|fail|... to _xx in the ttable
-                if (! $use_ttable or $rebuild_ttable)
+                if ($new_ttable)
                     $when[$result] = label($result) . " = '$result'";
                 else
                     $when[$result] = "$result > 0";
@@ -2306,7 +2316,7 @@ function process_offset_field($params) {
 # REPORT ON AN EXPIRED ttable!
 function process_ttable_id_field($params) {
 
-    global $use_ttable, $rebuild_ttable;
+    global $new_ttable;
 
     # Setup a temporary TABLE/SEQUENCE 
     # NOTE: the above so-called temporary SQL relations are
@@ -2334,7 +2344,8 @@ function process_ttable_id_field($params) {
         list($ttable_id, $ttable, $tseq) = setup_ttable();
 
         # Setup ttable stuff for compose_sql
-        $query['new_ttable']  = true;
+        $query['new_ttable'] = true;
+        $new_ttable = true;
         $query['select']['n'] = "nextval('$tseq') as n";
     }
     # Use last session's ttable (update access time)
@@ -2348,8 +2359,6 @@ function process_ttable_id_field($params) {
 
         # If the table is there, use it
         if ($bool) {
-            $query['rebuild_ttable'] = false;
-            $rebuild_ttable = false;
 
             do_pg_query("UPDATE ttable SET accessed = now() " . 
                         "WHERE tname = '$ttable';", SILENT);
@@ -2357,16 +2366,16 @@ function process_ttable_id_field($params) {
             # This will result in a simple SELECT * FROM 
             # ttable [ limit | slice | drill | cherry ....]
             $query['new_ttable'] = false;
+            $new_ttable = false;
             $query['select']['n'] = "n";
 
         # Otherwise, we need to rebuild the ttable
         } else {
-            $rebuild_ttable = true;
-            $query['rebuild_ttable'] = $rebuild_ttable;
 
             list($ttable_id, $ttable, $tseq) = setup_ttable($ttable_id);
 
             $query['new_ttable'] = true;
+            $new_ttable = true;
             $query['select']['n'] = "nextval('$tseq') as n";
         }
 
@@ -2419,7 +2428,7 @@ function process_cherry_fields($params) {
 function process_trial_field($trial) {
 
     if (! $trial) {
-        $query['where'] = "((trial = 'f') OR (trial IS NULL))";
+        $query['where'] = "(trial = 'f')";
     } else {
         $query['select']['trial'] = 'trial';
     }
