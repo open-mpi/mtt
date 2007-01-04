@@ -322,7 +322,12 @@ function setup_defaults($phases) {
         $ret['show'][$k] = 'show';
 
     $ret['show']['local_username'] = 'hide';
-    $ret['show']['test_name'] = 'hide';
+
+    # In Detail view, they likely want to see test name
+    $go = get_go_or_click($_GET);
+
+    if (preg_match("/summary/i", $go) or is_null($go))
+        $ret['show']['test_name'] = 'hide';
 
     # Phase
     $ret['phase'] = 'all_phases';
@@ -331,6 +336,11 @@ function setup_defaults($phases) {
     $ret['dev'] = developer_params();
 
     return $ret;
+}
+
+# Grab the report type from either a button click or a drilldown's "go"
+function get_go_or_click($params) {
+    return isset($params['click']) ? $params['click'] : $params['go'];
 }
 
 # Some helpful params for validating reporter.php

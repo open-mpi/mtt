@@ -186,16 +186,25 @@ function base_type($str) {
 # Populate menus with entries (listed in columns_arg) from database
 function get_form_universe($columns_arg) {
 
+    $phases = process_phase_field($_GET);
+    if (sizeof($phases) == 1)
+        $phase = $phases[0];
+
     $tables = array(
         'compute_cluster',
         'submit',
         'mpi_get',
         'compiler',
-        'mpi_install',
-        'test_build',
-        'test_run',
-        'results',
     );
+
+    if ($phase == 'test_build')
+        $phase_tables = 
+            array('mpi_install', 'test_build');
+    elseif ($phase == 'test_run')
+        $phase_tables = 
+            array('mpi_install', 'test_build', 'test_run');
+
+    $tables = array_merge($tables, $phase_tables);
 
     # Do *not* provide menus for these fields
     $big_columns = array(
@@ -203,16 +212,6 @@ function get_form_universe($columns_arg) {
         'configure_arguments' => 1,
         'bitness'             => 1,
         'endian'              => 1,
-
-        # Results
-        'environment'         => 1,
-        'merge_stdout_stderr' => 1,
-        'result_stdout'       => 1,
-        'result_stderr'       => 1,
-        'start_timestamp'     => 1,
-        'stop_timestamp'      => 1,
-        'duration'            => 1,
-        'submit_timestamp'    => 1,
     );
 
     # Gather database columns
@@ -621,6 +620,8 @@ function setup_layout_html($layout, $lasttime, $links, $disable) {
          '^configure_arguments$'
     );
 
+    $disableds = disabled_showhides($_GET);
+
     # IMPORTANT: SET SECTIONS CONTAINING TEXT FIELDS FIRST, 
     # WE'LL OVERWRITE THE OTHER SECTIONS AFTERWARDS (see below)
     foreach (array_keys($layout) as $section) {
@@ -662,7 +663,7 @@ function setup_layout_html($layout, $lasttime, $links, $disable) {
             if ($veil) {
                 $layout[$section]['html'] .=
                     "\n$ctd" .
-                    "\n<select name='show_$field'>";
+                    "\n<select name='show_$field' " . $disableds[$field] . ">";
 
                 foreach ($selections as $selection) {
                     $layout[$section]['html'] .=
@@ -746,6 +747,15 @@ function setup_layout_html($layout, $lasttime, $links, $disable) {
         "\n</table>";
 
     return $layout;
+}
+
+# Disable show/hide menu for certain fields
+function disabled_showhides($params) {
+    $go = get_go_or_click($params);
+    if (preg_match("/detail/i", $go))
+        $disableds['test_name'] = 'disabled';
+
+    return $disableds;
 }
 
 # Return list of buttons for bottom of query panel

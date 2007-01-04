@@ -53,6 +53,9 @@ function dump_report() {
     if (! $nogo)
         $report_type = process_report_type($_GET);
 
+    # There are oddball field(s) that we constrain *for* the user
+    process_oddball_fields($_GET);
+
     # Process input params
     $phases          = process_phase_field($_GET);
     $date_fields     = process_date_field($_GET);
@@ -2130,6 +2133,20 @@ function process_input_fields($params) {
     }
 
     return $query;
+}
+
+# TEST_NAME IS AN ODDBALL FIELD. WE DO NOT ALLOW USERS
+# TO HIDE IT IN DETAIL VIEW
+function process_oddball_fields($params) {
+
+    $go = get_go_or_click($_GET);
+    $phase = array_shift(process_phase_field($_GET));
+
+    if (preg_match("/detail/i", $go) and 
+        $phase == 'test_run') {
+        $_GET['show_test_name'] = 'show';
+    }
+
 }
 
 # Arguments:
