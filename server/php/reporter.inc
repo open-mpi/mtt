@@ -322,6 +322,7 @@ function setup_defaults($phases) {
         $ret['show'][$k] = 'show';
 
     $ret['show']['local_username'] = 'hide';
+    $ret['show']['test_name'] = 'hide';
 
     # Phase
     $ret['phase'] = 'all_phases';

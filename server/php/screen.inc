@@ -1144,7 +1144,7 @@ function html_head($title) {
     }
 
     function littleWindow(link) {
-        open(link, 'Tiny link', 'resizable=yes, toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, width=50, height=30');
+        open(link, 'Tiny link', 'resizable=yes, toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, width=180, height=70');
     }
 
 EOT;

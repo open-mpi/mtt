@@ -93,12 +93,16 @@ function make_redir($params) {
         do_pg_query($insert);
     }
 
+    $tinyurl = "http://$domain$script?do_redir=$id";
+
     # Print tiny link in a tiny window
     print "<html>" . 
           html_head("Tiny link") .
           "<body>" .
           "<table><tr><td>" .
-          "<a class='black_ln' href='http://$domain$script?do_redir=$id'>Tiny link</a>" .
+          "The original permalink was " . strlen($url) . " chars long. " .
+          "Here's a <a class='black_ln' href='$tinyurl'>tiny link</a> " .
+              "that is only " . strlen($tinyurl) . " chars long." .
           "</table>" .
           "</body>" .
           "</html>";
