@@ -232,6 +232,7 @@ sub _do_build {
     # Unpack the source and find out the subdirectory name it created
 
     $config->{srcdir} = _prepare_source($test_get);
+    # We'll check for failure of this step later
     MTT::DoCommand::Chdir($config->{srcdir});
     $config->{srcdir} = cwd();
 
@@ -303,11 +304,18 @@ sub _do_build {
     ++$test_get->{refcount};
     ++$mpi_install->{refcount};
 
-    # Run the module
+    # If _prepare_source(), above, succeeded, run the module.
+    # Otherwise, just hard-wire in a failure.
     my $start = timegm(gmtime());
     my $start_time = time();
-    my $ret = MTT::Module::Run("MTT::Test::Build::$config->{build_module}",
-                               "Build", $ini, $mpi_install, $config);
+    my $ret;
+    if ($config->{srcdir}) {
+	$ret = MTT::Module::Run("MTT::Test::Build::$config->{build_module}",
+				"Build", $ini, $mpi_install, $config);
+    } else {
+	$ret->{test_result} = MTT::Values::FAIL;
+	$ret->{test_result_message} = "Preparing the test source failed -- see MTT client output for details";
+    }
     my $duration = time() - $start_time . " seconds";
             
     # Unload any loaded environment modules
