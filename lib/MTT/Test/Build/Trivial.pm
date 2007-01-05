@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -61,6 +61,9 @@ sub Build {
         $x = _do_compile("mpicc $cflags", "hello.c", "c_hello");
         return $x
             if (defined($x));
+        $x = _do_compile("mpicc $cflags", "ring.c", "c_ring");
+        return $x
+            if (defined($x));
     } else {
         Debug("MPI C bindings unavailable; skipping simple compile/link test\n");
     }
@@ -71,6 +74,9 @@ sub Build {
     if ($mpi_install->{cxx_bindings}) {
         Debug("Test compile/link sample C++ MPI application\n");
         $x = _do_compile("mpic++ $cflags", "hello.cc", "cxx_hello");
+        return $x
+            if (defined($x));
+        $x = _do_compile("mpic++ $cflags", "ring.cc", "cxx_ring");
         return $x
             if (defined($x));
     } else {
@@ -85,6 +91,9 @@ sub Build {
         $x = _do_compile("mpif77 $fflags", "hello.f", "f77_hello");
         return $x
             if (defined($x));
+        $x = _do_compile("mpif77 $fflags", "ring.f", "f77_ring");
+        return $x
+            if (defined($x));
     } else {
         Debug("MPI F77 bindings unavailable; skipping simple compile/link test\n");
     }
@@ -95,6 +104,9 @@ sub Build {
     if ($mpi_install->{f90_bindings}) {
         Debug("Test compile/link sample F90 MPI application\n");
         $x = _do_compile("mpif90 $fflags", "hello.f90", "f90_hello");
+        return $x
+            if (defined($x));
+        $x = _do_compile("mpif90 $fflags", "ring.f90", "f90_ring");
         return $x
             if (defined($x));
     } else {
