@@ -534,6 +534,10 @@ function allow_cherry_picking($params) {
 # at the foot of the summary table
 function table_footer($totals, $headers, $result_colors) {
 
+    # Use absolute path to images (needed for email)
+    $script = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
+    $top    = dirname($script);
+
     # Carryover the report type
     $type = strtolower(process_report_type($_GET));
 
@@ -543,7 +547,7 @@ function table_footer($totals, $headers, $result_colors) {
     if (allow_cherry_picking($_GET))
         print "\n<td bgcolor='" . LGRAY . "' align='center'>" .
               "\n<button name='go' value='${type}_cherry' type='submit'>" .
-                  "\n<img src='./images/cherries.gif' width='20' border='0'>" .
+                  "\n<img src='$top/images/cherries.gif' width='20' border='0'>" .
               "\n</button>";
 
     # Print totals
@@ -1305,9 +1309,10 @@ function slices_links($n, $limit, $params) {
     # slices
     $self = 'http://' . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'];
     $format = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
+    $top    = dirname($self);
 
     # Convenience arrow for going through 100s of rows
-    $img  = "<img src='./images/%s_arrow.gif' border='0'>";
+    $img  = "<img src='$top/images/%s_arrow.gif' border='0'>";
     $prev = sprintf($img, 'no');
     $next = sprintf($img, 'no');
 
@@ -2644,7 +2649,6 @@ function detail_fields($phase) {
     $results_columns = array(
         'exit_status'     => 'exit_status',
         'signal'          => 'signal',
-        'start_timestamp' => 'start_timestamp',
         'duration'        => 'duration',
         'result_message'  => 'result_message',
         'result_stdout'   => 'result_stdout',
