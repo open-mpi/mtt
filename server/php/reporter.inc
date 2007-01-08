@@ -113,6 +113,81 @@ function setup_prefs() {
     return $prefs;
 }
 
+# Return a list of columns to show/hide
+function setup_showhide_cols($params) {
+
+    $phases = process_phase_field($params);
+
+    static $menu;
+
+    if (! $menu) {
+
+        # Put hide first so it defaults as the shown menu item
+        $control = array('hide', 'show');
+
+        $menu = array(
+            'compute_cluster' => array(
+                'show_os_version'          => $control,
+                'show_platform_hardware'   => $control,
+                'show_platform_type'       => $control,
+                #'show_platform_name'       => $control,
+                #'show_os_name'             => $control,
+            ),
+            'submit' => array(
+                'show_hostname'            => $control,
+                #'show_local_username'      => $control,
+                #'show_http_username'       => $control,
+            ),
+            'mpi_install' => array(
+                'show_compiler_name'       => $control,
+                'show_compiler_version'    => $control,
+                'show_vpath_mode'          => $control,
+                'show_endian'              => $control,
+                'show_bitness'             => $control,
+                #'show_mpi_name'            => $control,
+                #'show_mpi_version'         => $control,
+                #'show_configure_arguments' => $control,
+            ),
+            'results' => array(
+                'show_exit_status'         => $control,
+                'show_duration'            => $control,
+                'show_client_serial'       => $control,
+                #'show_result_message'      => $control,
+                #'show_result_stdout'       => $control,
+                #'show_result_stderr'       => $control,
+                #'show_environment'         => $control,
+            ),
+        );
+
+        if (sizeof($phases) == 1) {
+
+            if (array_search('test_build', $phases) !== false or
+                array_search('test_run', $phases) !== false) {
+                $menu =
+                    array_merge(
+                        $menu,
+                        array('test_build' => array( 'show_suite_name' => $control))
+                    );
+            }
+            if (array_search('test_run', $phases) !== false) {
+                $menu =
+                    array_merge(
+                        $menu,
+                        array('test_run' => 
+                            array(
+                                'show_variant'   => $control,
+                                #'show_test_name' => $control,
+                                #'show_np'        => $control,
+                                #'show_command'   => $control,
+                            ))
+                    );
+            }
+        }
+    }
+
+    return $menu;
+}
+
 # Display more human-readable labels
 function label($str) {
     
@@ -184,6 +259,11 @@ function label($str) {
             "test_build"        => "Test build",
             "test_run"          => "Test run",
 
+            # Other schema tables
+            'compute_cluster'   => 'Compute_cluster',
+            'submit'            => 'Submit',
+            'results'           => 'Results',
+
             # Result types
 
             # Result string to column name
@@ -246,8 +326,16 @@ function label($str) {
 
     if (isset($labels[$str]))
         return $labels[$str];
+    elseif (isset($labels[strip_prefix($str)]))
+        return $labels[strip_prefix($str)];
     else 
         return $str;
+}
+
+# Remove the prefix part of the parameter,
+# which will leave only a database column name
+function strip_prefix($str) {
+    return preg_replace('/^more_|^show_|^text_/', '', $str);
 }
 
 #########################################

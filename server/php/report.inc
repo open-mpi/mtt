@@ -2058,7 +2058,6 @@ function process_input_fields($params) {
     # These fields will not be string searchable
     $special_fields = array(
         "timestamp",
-        "duration",
         "phase",
     );
 
@@ -2151,7 +2150,6 @@ function process_oddball_fields($params) {
         $phase == 'test_run') {
         $_GET['show_test_name'] = 'show';
     }
-
 }
 
 # Arguments:
@@ -2516,6 +2514,7 @@ function process_cookie(&$params, $cookie) {
     }
 }
 
+# Convert a _GET param to a define() constant
 function param2constant($str) {
 
     $str = strtolower(strip_star($str));
@@ -2583,7 +2582,7 @@ function order_columns($columns) {
         # trial
         'trial'             => 1,
 
-        # results
+        # results (left)
         'start_timestamp'   => 1,
 
         # submit
@@ -2599,6 +2598,7 @@ function order_columns($columns) {
         'mpi_version'       => 1,
         'bitness'           => 1,
         'endian'            => 1,
+        'vpath_mode'        => 1,
         'compiler_name'     => 1,
         'compiler_version'  => 1,
 
@@ -2606,6 +2606,12 @@ function order_columns($columns) {
         'suite_name'        => 1,
         'test_name'         => 1,
         'np'                => 1,
+        'variant'           => 1,
+
+        # results (right)
+        'exit_status'       => 1,
+        'duration'          => 1,
+        'client_serial'     => 1,
 
         # performance
         'message_size'      => 1,
@@ -2712,12 +2718,6 @@ function strtonumeral($str) {
         return $converted;
     else
         return $str;
-}
-
-# Remove the prefix part of the parameter,
-# which will leave only a database column name
-function strip_prefix($str) {
-    return preg_replace('/^more_|^show_|^text_/', '', $str);
 }
 
 function suffix_list($arr, $sfx) {

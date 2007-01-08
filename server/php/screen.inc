@@ -399,7 +399,7 @@ EOT;
 
 # Return javascript code to bring Preferences popup
 # selections back into the main window's textfields
-function jscript_export_prefs($prefs) {
+function jscript_export_prefs($prefs, $save_to_cookie) {
 
     $go = $_GET['go'];
     $click = $_GET['click'];
@@ -411,7 +411,7 @@ function jscript_export_prefs($prefs) {
 
     <script language='javascript'>
 
-        function submitForm() {
+        function SaveAndSubmit() {
             exportVars();
             window.opener.document.report.save_prefs.value = '$go';
             window.opener.document.report.submit();
@@ -438,6 +438,8 @@ function jscript_export_prefs($prefs) {
 
             var cookieStr = '';
 
+            var SaveToCookie = $save_to_cookie;
+
             var str = '';
             var items = new Array();
 EOT;
@@ -450,9 +452,11 @@ EOT;
             var old = window.opener.document.report.%s;
             old.value = x.value;
 
-            var cookieName = 'mtt_%s';
-            eraseCookie(cookieName);
-            createCookie(cookieName, x.value, 9999);
+            if (SaveToCookie) {
+                var cookieName = 'mtt_%s';
+                eraseCookie(cookieName);
+                createCookie(cookieName, x.value, 9999);
+            }
 EOT;
 
     # CAREFUL - IS ''y'' GUARANTEED TO BE DEFINED?
@@ -468,9 +472,11 @@ EOT;
             }
             old.value = newValue;
 
-            var cookieName = 'mtt_%s';
-            eraseCookie(cookieName);
-            createCookie(cookieName, newValue, 9999);
+            if (SaveToCookie) {
+                var cookieName = 'mtt_%s';
+                eraseCookie(cookieName);
+                createCookie(cookieName, newValue, 9999);
+            }
 EOT;
 
     $select = <<<EOT
@@ -485,9 +491,11 @@ EOT;
             }
             old.value = str;
 
-            var cookieName = 'mtt_%s';
-            eraseCookie(cookieName);
-            createCookie(cookieName, str, 9999);
+            if (SaveToCookie) {
+                var cookieName = 'mtt_%s';
+                eraseCookie(cookieName);
+                createCookie(cookieName, str, 9999);
+            }
 EOT;
 
     # X: THERE SHOULD BE NO NEED TO CREATE MORE THAN ONE FOR
@@ -649,7 +657,8 @@ function setup_layout_html($layout, $lasttime, $links, $disable) {
                     # Carried over from last invocation
                     "value='" . $lasttime["text_$field"] . "'>";
 
-            $selections = array('show', 'hide');
+            $selection_labels = array('show', 'hide');
+            $selection_values = array('show', 'hide');
 
             # Carryover from last invocation
             # or 'show' by default
@@ -665,13 +674,13 @@ function setup_layout_html($layout, $lasttime, $links, $disable) {
                     "\n$ctd" .
                     "\n<select name='show_$field' " . $disableds[$field] . ">";
 
-                foreach ($selections as $selection) {
+                foreach (array_keys($selection_labels) as $i) {
                     $layout[$section]['html'] .=
-                        "\n<option id='$selection' " .
-                                  "name='$selection' " .
-                                  "value='$selection' " . 
-                                  $autoselect[$selection] . ">" . 
-                              label($selection);
+                        "\n<option id='$selection_labels[$i]' " .
+                                  "name='$selection_labels[$i]' " .
+                                  "value='$selection_values[$i]' " . 
+                                  $autoselect[$selection_labels[$i]] . ">" . 
+                              label($selection_labels[$i]);
                 }
                 $layout[$section]['html'] .= "\n</select>";
             }
@@ -736,6 +745,7 @@ function setup_layout_html($layout, $lasttime, $links, $disable) {
     $buttons = form_buttons($_GET, $disable);
     $reset = array_shift($buttons);
     $clear = array_shift($buttons);
+    $showhide = array_pop($buttons);
     $prefs = array_pop($buttons);
 
     # Put buttons at the bottom of the panel
@@ -743,7 +753,8 @@ function setup_layout_html($layout, $lasttime, $links, $disable) {
             "$reset&nbsp;" .
             "$clear&nbsp;" .
             join('&nbsp;', $buttons) . "&nbsp;" .
-            "$prefs" .
+            "$prefs&nbsp;" .
+            "$showhide" .
         "\n</table>";
 
     return $layout;
@@ -814,7 +825,8 @@ function form_buttons($params, $disable_arg) {
     }
 
     # Generate Preferences popup
-    $buttons[] = prefs_popup(setup_prefs(), $_GET);
+    $buttons[] = form_popup(setup_prefs(), $_GET, 'Preferences', 'SaveAndSubmit()', 'Save', 'true');
+    $buttons[] = form_popup(setup_showhide_cols($_GET), $_GET, 'Columns', 'SaveAndSubmit()', 'Submit', 'false');
 
     return $buttons;
 }
@@ -941,9 +953,11 @@ function hidden_prefs($params) {
     return $ret;
 }
 
-# Return an array of Preferences menu popups
-# (quite similar to selection_popups)
-function prefs_popup($prefs, $params) {
+# Return a link to a JavaScript popup that contains an
+# HTML form (with checkboxes, menus, and/or textfields)
+# (quite similar to selection_popups).
+# Enter the string 'true' or 'false' for $save_to_cookie.
+function form_popup($prefs, $params, $title, $onclick, $button, $save_to_cookie) {
 
     # For small menus in popup windows
     $tbl = "\n<table align='center' border='1' cellspacing='1' cellpadding='5'>";
@@ -1006,15 +1020,15 @@ function prefs_popup($prefs, $params) {
     $menu .=
         $tr . $th2 .
         "\n<input type='submit' " .
-                  "name='Save' " .
-                  "onclick='javascript:submitForm();' " .
-                  "value='Save'>&nbsp;" .
+                  "name='$button' " .
+                  "onclick='javascript:$onclick;' " .
+                  "value='$button'>&nbsp;" .
         "\n<input type='submit' " .
                   "name='cancel' " .
                   "onclick='javascript:window.close();' " .
                    "value='Cancel'>" .
         "\n</table>" .
-        "\n<br><i>Select Preferences</i>" .
+        "\n<br><i>Select $title</i>" .
         "\n</div>";
 
     $link =
@@ -1024,15 +1038,15 @@ function prefs_popup($prefs, $params) {
             # Height
             "\n\"500\"," .
             # Title
-            "\n\"Select Preferences\"," .
+            "\n\"Select $title\"," .
             # <script>
-            "\n\"" . htmlentities(jscript_export_prefs($arr), ENT_QUOTES) . "\"," .
+            "\n\"" . htmlentities(jscript_export_prefs($arr, $save_to_cookie), ENT_QUOTES) . "\"," .
             # <body>
             "\n\"" . htmlentities($menu, ENT_QUOTES) . "\"," .
             # <body style>
             "\n\"font-family:Courier,monospace\"" . 
         ")'>" .
-        "\n[Preferences]" .
+        "\n[$title]" .
         "</a>";
 
     return $link;
@@ -1108,18 +1122,29 @@ function hidden_carryover($params) {
                 )
     );
 
-    # X: reverse this so we explicity print several hiddens
-    # E.g., ttable_id, sql, cgi, test_result, lastgo, ...
+    # printf format for 'hidden' tags
+    $format = "\n<input type='hidden' name='%s' value='%s'>";
+
     foreach (array_keys($params) as $k) {
         if (preg_match('/' . join('|', $fields) . '/', $k))
-            $str .= 
-                "\n<input " .
-                        "type='hidden' " .
-                        "name='$k' " .
-                        "value='$params[$k]'>";
+            $str .= sprintf($format, $k, $params[$k]);
     }
 
-    if (TRIAL == 'on')
+    static $showhides;
+    if (! $showhides) {
+        $showhide_cols = setup_showhide_cols($_GET);
+        foreach (array_keys($showhide_cols) as $table)
+            foreach (array_keys($showhide_cols[$table]) as $field)
+                $showhides[] = $field;
+    }
+
+    # Define the fields in the Show/Hide columns popup
+    # so they will be defined for the javascript export
+    foreach ($showhides as $k) {
+        $str .= sprintf($format, $k, $params[$k]);
+    }
+
+    if (TRIAL)
         $str .= 
             "\n<input " . 
                     "type='hidden' " . 

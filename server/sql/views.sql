@@ -10,6 +10,8 @@ SELECT
     local_username,
     hostname,
     bitness,
+    endian,
+    vpath_mode,
     compiler_name,
     compiler_version,
     configure_arguments,
@@ -20,6 +22,12 @@ SELECT
     platform_hardware,
     platform_name,
     platform_type,
+
+    -- results
+    exit_status,
+    signal,
+    duration,
+    client_serial,
     trial,
     (CASE WHEN
       test_result = 0
@@ -50,6 +58,8 @@ SELECT
     local_username,
     hostname,
     bitness,
+    endian,
+    vpath_mode,
     compiler_name,
     compiler_version,
     configure_arguments,
@@ -60,6 +70,12 @@ SELECT
     platform_hardware,
     platform_name,
     platform_type,
+
+    -- results
+    exit_status,
+    signal,
+    duration,
+    client_serial,
     trial,
     (CASE WHEN
       test_result = 0
@@ -91,6 +107,8 @@ SELECT
     local_username,
     hostname,
     bitness,
+    endian,
+    vpath_mode,
     compiler_name,
     compiler_version,
     configure_arguments,
@@ -101,6 +119,12 @@ SELECT
     platform_hardware,
     platform_name,
     platform_type,
+
+    -- results
+    exit_status,
+    signal,
+    duration,
+    client_serial,
     trial,
     (CASE WHEN
       test_result = 0
@@ -198,12 +222,15 @@ SELECT
     -- mpi_install
     mpi_name,
     mpi_version,
+    compiler_name,
+    compiler_version,
+    configure_arguments,
+    vpath_mode,
+    endian,
+    bitness,
 
     -- test_build
     suite_name,
-    compiler_name,
-    compiler_version,
-    bitness,
 
     -- submit
     http_username,
@@ -252,6 +279,12 @@ SELECT
     -- mpi_install
     mpi_name,
     mpi_version,
+    compiler_name,
+    compiler_version,
+    configure_arguments,
+    vpath_mode,
+    endian,
+    bitness,
 
     -- test_build
     suite_name,
