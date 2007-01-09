@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -45,6 +45,10 @@ sub Install {
 
     my $ret;
     $ret->{test_result} = MTT::Values::FAIL;
+    $ret->{exit_status} = 1;
+    Verbose("*** MPI INSTALL COPYTREE PLUGIN IS OUT OF DATE.  CONTACT AUTHORS\n");
+    return $ret;
+
 
     Debug(">> copytree copying to $config->{installdir}\n");
     if (-d $config->{installdir}) {
