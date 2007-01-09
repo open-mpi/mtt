@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -26,46 +26,46 @@ our $no_execute;
 sub _kill_proc {
     my ($pid) = @_;
 
-    # Try an easy kill
+    # See if the proc is alive first
     my $kid;
+    kill(0, $pid);
+    $kid = waitpid($pid, WNOHANG);
+    return if (-1 == $kid);
+
+    # Try an easy kill
     kill("TERM", $pid);
     $kid = waitpid($pid, WNOHANG);
-    if ($kid != 0) {
-        return $?;
-    }
+    # This sub is only invoked to forcibly kill the process (i.e.,
+    # it's over its timeout, so gotta kill it).  Hence, we don't care
+    # what the return status is -- just return if a) the process no
+    # longer exists (i.e., we get -1 back from waitpid), or we
+    # successfully killed it (i.e., we got the PID back from waitpid).
+    return if (0 != $kid);
     Verbose("** Kill TERM didn't work!\n");
 
     # Nope, that didn't work.  Sleep a few seconds and try again.
     sleep(1);
     $kid = waitpid($pid, WNOHANG);
-    if ($kid != 0) {
-        return $?;
-    }
+    return if (0 != $kid);
     Verbose("** Kill TERM (more waiting) didn't work!\n");
 
     # That didn't work either.  Try SIGINT;
     kill("INT", $pid);
     $kid = waitpid($pid, WNOHANG);
-    if ($kid != 0) {
-        return $?;
-    }
+    return if (0 != $kid);
     Verbose("** Kill INT didn't work!\n");
 
     # Nope, that didn't work.  Sleep a few seconds and try again.
     sleep(1);
     $kid = waitpid($pid, WNOHANG);
-    if ($kid != 0) {
-        return $?;
-    }
+    return if (0 != $kid);
     Verbose("** Kill INT (more waiting) didn't work!\n");
 
     # Ok, now we're mad.  Be violent.
     while (1) {
         kill("KILL", $pid);
         $kid = waitpid($pid, WNOHANG);
-        if ($kid != 0) {
-            return $?;
-        }
+        return if (0 != $kid);
         Verbose("** Kill KILL didn't work!\n");
         sleep(1);
     }
@@ -283,10 +283,12 @@ sub Cmd {
             my $over = time() - $end_time;
             if ($over > $last_over) {
                 Verbose("*** Past timeout of $timeout seconds by $over seconds\n");
-                my $st = _kill_proc($pid);
-                if (!defined($killed_status)) {
-                    $ret->{exit_status} = $killed_status = $st;
-                }
+                _kill_proc($pid);
+                # We don't care about the exit status if we timed out
+                # -- fill it with a bogus value.
+                $ret->{exit_status} = 0;
+
+                # Set that we timed out.
                 $ret->{timed_out} = 1;
             }
             $last_over = $over;
@@ -304,7 +306,6 @@ sub Cmd {
 
     # If we didn't timeout, we need to reap the process (timeouts will
     # have already been reaped).
-
     my $msg = "Command ";
     if (!$ret->{timed_out}) {
         waitpid($pid, 0);
