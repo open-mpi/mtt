@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #
 # Copyright (c) 2006 Sun Microsystems, Inc. All rights reserved.
-# Copyright (c) 2006 Cisco Systems, Inc. All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc. All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -67,7 +67,15 @@ sub Analyze {
     my $want_output;
     my $str;
     $str = $msg;
-    if (!$pass) {
+    if ($pass) {
+        Verbose("$str Passed\n");
+        $report->{result_message} = "Passed";
+        $want_output = $run->{save_stdout_on_pass};
+    } elsif ($skipped) {
+        Verbose("$str Skipped\n");
+        $report->{result_message} = "Skipped";
+        $want_output = $run->{save_stdout_on_pass};
+    } else {
         $str =~ s/^ +//;
         if ($results->{timed_out}) {
             Warning("$str TIMED OUT (failed)\n");
@@ -75,7 +83,7 @@ sub Analyze {
             Warning("$str FAILED\n");
         }
         $want_output = 1;
-        if ($run->{stop_time} - $run->{start_time} > $run->{timeout}) {
+        if ($results->{timed_out}) {
             $report->{result_message} = "Failed; timeout expired ($run->{timeout} seconds)";
         } else {
             $report->{result_message} = "Failed; ";
@@ -86,10 +94,6 @@ sub Analyze {
                 $report->{result_message} .= "termination signal: $sig\n";
             }
         }
-    } else {
-        Verbose("$str Passed\n");
-        $report->{result_message} = "Passed";
-        $want_output = $run->{save_stdout_on_pass};
     }
     if ($want_output) {
         $report->{result_stdout} = $results->{result_stdout};
