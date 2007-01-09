@@ -544,7 +544,9 @@ function do_pg_query($cmd) {
 
     debug("\nSQL: $cmd\n");
     if (! ($db_res = pg_query($cmd))) {
-        mtt_error(pg_last_error() . "; " . pg_result_error());
+        mtt_error("\nSQL QUERY: " . $cmd .
+                  "\nSQL ERROR: " . pg_last_error() .
+                  "\nSQL ERROR: " . pg_result_error());
     }
     debug("\nDatabase rows affected: " . pg_affected_rows($db_res) . "\n");
 }
@@ -557,7 +559,9 @@ function simple_select($cmd) {
 
     debug("\nSQL: $cmd\n");
     if (! ($result = pg_query($cmd))) {
-        mtt_error(pg_last_error() . "; " .  pg_result_error());
+        mtt_error("\nSQL QUERY: " . $cmd .
+                  "\nSQL ERROR: " . pg_last_error() .
+                  "\nSQL ERROR: " . pg_result_error());
     }
     $max = pg_num_rows($result);
     for ($i = 0; $i < $max; ++$i) {
@@ -573,7 +577,9 @@ function select($cmd) {
 
     debug("\nSQL: $cmd\n");
     if (! ($result = pg_query($cmd))) {
-        mtt_error(pg_last_error() . "; " .  pg_result_error());
+        mtt_error("\nSQL QUERY: " . $cmd .
+                  "\nSQL ERROR: " . pg_last_error() .
+                  "\nSQL ERROR: " . pg_result_error());
     }
     return pg_fetch_all($result);
 }
