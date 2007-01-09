@@ -232,7 +232,7 @@ sub SaveRuns {
 
     # For each MPI get section
     foreach my $mpi_get_key (keys(%{$MTT::Test::runs_to_be_saved})) {
-        my $mpi_get = $MTT::Test::runs->{$mpi_get_key};
+        my $mpi_get = $MTT::Test::runs_to_be_saved->{$mpi_get_key};
 
         # For each source of that MPI
         foreach my $mpi_version_key (keys(%{$mpi_get})) {
@@ -249,12 +249,6 @@ sub SaveRuns {
                     # For each test run section
                     foreach my $test_run_key (keys(%{$test_build})) {
                         my $test_run = $test_build->{$test_run_key};
-
-                        # Only say this result if it was not marked as
-                        # "to be trimmed".
-                        if (defined($test_run->{$MTT::Trim::TRIM_KEY})) {
-                            print "THIS RUN IS TO BE TRIMMED!\n";
-                        }
 
                         # For each test name
                         foreach my $test_name_key (keys(%{$test_run})) {
