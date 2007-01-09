@@ -154,15 +154,18 @@ foreach my $file (@ARGV) {
 }
 
 # Get command-line overridden ini params
-my $key_val_regexp = '([^=]+)\=(.*)';
+my $key_val_regexp = '([^=:]+)\=(.*)';
 foreach my $arg (@ARGV) {
-    if ($arg =~ /([^:]+)\:$key_val_regexp$/) {
-        $ini_args->{$2}->{value} = $3; 
-        $ini_args->{$2}->{match} = $1; 
-    }
-    elsif ($arg =~ /$key_val_regexp$/) {
+    if ($arg =~ /$key_val_regexp$/) {
         $ini_args->{$1}->{value} = $2; 
         $ini_args->{$1}->{match} = '.'; 
+    }
+
+    # Check if an INI section was specified for the override
+    # (See client/mtt --help for rundown of how INI param overriding
+    # syntax works)
+    if ($arg =~ /^([^=:]+):([^=]+)=/) {
+        $ini_args->{$2}->{match} = $1; 
     }
 }
 if (! @file_arg and ! $stdin_arg) {
