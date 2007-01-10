@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -467,14 +467,22 @@ foreach my $file (@file_arg) {
 
     # Check for duplicate entries in the ini file
     MTT::INI::ValidateINI($temp_file);
-    MTT::DoCommand::Cmd(1, "rm $temp_file");
+
+    # Load an unfiltered version of the INI file for error checking
+    my $ini_full = new Config::IniFiles(-file => $temp_file, 
+                                        -nocase => 1,
+                                        -allowcontinue => 1);
+
+    # Whack the tmp file
+    unlink($temp_file);
 
     # Override ini file params with those supplied at command-line
     $ini = MTT::INI::OverrideINIParams($ini, $ini_args);
+    $ini_full = MTT::INI::OverrideINIParams($ini_full, $ini_args);
 
     # Filter ini sections at command line
     $ini = MTT::INI::FilterINISections($ini, \@section_arg, \@no_section_arg);
-
+    
     if (! $ini) {
         MTT::Messages::Warning("Could not read INI file: $file; skipping\n");
         next;
@@ -482,7 +490,7 @@ foreach my $file (@file_arg) {
 
     # Examine the [MTT] global defaults section
 
-    MTT::Globals::load($ini);
+    MTT::Globals::load($ini_full);
     MTT::Messages::Messages($debug, $verbose, cwd());
 
     # If "--trial" was specified, then set the "trail" flag to 1
@@ -502,7 +510,7 @@ foreach my $file (@file_arg) {
     }
     if ($mpi_install) {
         start_time();
-        MTT::MPI::Install::Install($ini, $install_dir, $force_arg);
+        MTT::MPI::Install::Install($ini, $ini_full, $install_dir, $force_arg);
         stop_time("MPI Install");
     }
     if ($test_get) {
@@ -512,12 +520,12 @@ foreach my $file (@file_arg) {
     }
     if ($test_build) {
         start_time();
-        MTT::Test::Build::Build($ini, $install_dir, $force_arg);
+        MTT::Test::Build::Build($ini, $ini_full, $install_dir, $force_arg);
         stop_time("Test Build");
     }
     if ($test_run) {
         start_time();
-        MTT::Test::Run::Run($ini, $install_dir, $force_arg);
+        MTT::Test::Run::Run($ini, $ini_full, $install_dir, $force_arg);
         stop_time("Test Run");
     }
 

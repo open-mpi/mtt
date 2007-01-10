@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -118,7 +118,7 @@ sub _make_safe_dir {
 #--------------------------------------------------------------------------
 
 sub Install {
-    my ($ini, $install_dir, $force) = @_;
+    my ($ini, $ini_full, $install_dir, $force) = @_;
 
     Verbose("*** MPI install phase starting\n");
     
@@ -149,9 +149,10 @@ sub Install {
                 # Strip whitespace
                 $mpi_get_name =~ s/^\s*(.*?)\s*/\1/;
 
-                if (!$ini->SectionExists("mpi get: $mpi_get_name")) {
-                    Warning("MPI Get section \"$mpi_get_name\" does not seem to exist in the INI file; skipping\n");
-                    next;
+                # This is only warning about the INI file; we'll see
+                # if we find meta data for the MPI get later
+                if (!$ini_full->SectionExists("mpi get: $mpi_get_name")) {
+                    Warning("Warning: MPI Get section \"$mpi_get_name\" does not seem to exist in the INI file\n");
                 }
 
                 # If we have no sources for this name, then silently

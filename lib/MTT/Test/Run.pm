@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -43,7 +43,7 @@ our $test_exit_status;
 #--------------------------------------------------------------------------
 
 sub Run {
-    my ($ini, $top_dir, $force) = @_;
+    my ($ini, $ini_full, $top_dir, $force) = @_;
 
     # Save the environment
     my %ENV_SAVE = %ENV;
@@ -73,9 +73,10 @@ sub Run {
                 # Strip whitespace
                 $test_build_name =~ s/^\s*(.*?)\s*/\1/;
 
-                if (!$ini->SectionExists("test build: $test_build_name")) {
-                    Warning("Test Build section \"$test_build_name\" does not seem to exist in the INI file; skipping\n");
-                    next;
+                # This is only warning about the INI file; we'll see
+                # if we find meta data for the test build later
+                if (!$ini_full->SectionExists("test build: $test_build_name")) {
+                    Warning("Test Build section \"$test_build_name\" does not seem to exist in the INI file\n");
                 }
 
                 # Don't bother explicitly searching for the test build
