@@ -2593,6 +2593,7 @@ function order_columns($columns) {
 
         # mpi_install
         'platform_hardware' => 1,
+        'platform_type'     => 1,
         'os_name'           => 1,
         'mpi_name'          => 1,
         'mpi_version'       => 1,
@@ -2609,7 +2610,8 @@ function order_columns($columns) {
         'variant'           => 1,
 
         # results (right)
-        'exit_status'       => 1,
+        'exit_value'        => 1,
+        'exit_signal'       => 1,
         'duration'          => 1,
         'client_serial'     => 1,
 
@@ -2653,8 +2655,8 @@ function detail_fields($phase) {
         );
 
     $results_columns = array(
-        'exit_status'     => 'exit_status',
-        'signal'          => 'signal',
+        'exit_value'      => 'exit_value',
+        'exit_signal'     => 'exit_signal',
         'duration'        => 'duration',
         'result_message'  => 'result_message',
         'result_stdout'   => 'result_stdout',

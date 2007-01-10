@@ -155,9 +155,9 @@ CREATE TABLE results (
     trial boolean NOT NULL DEFAULT 'f',
 
     -- set if process exited
-    exit_status integer NOT NULL DEFAULT '-38',
+    exit_value integer NOT NULL DEFAULT '-38',
     -- set if process was signaled
-    signal integer NOT NULL DEFAULT '-38',
+    exit_signal integer NOT NULL DEFAULT '-38',
     -- result value: 0=fail, 1=pass, 2=skipped, 3=timed out
     test_result smallint NOT NULL DEFAULT '-38',
     -- set to DEFAULT for correctness tests

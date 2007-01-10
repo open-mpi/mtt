@@ -128,8 +128,8 @@ function setup_showhide_cols($params) {
         $menu = array(
             'compute_cluster' => array(
                 'show_os_version'          => $control,
-                'show_platform_hardware'   => $control,
                 'show_platform_type'       => $control,
+                #'show_platform_hardware'   => $control,
                 #'show_platform_name'       => $control,
                 #'show_os_name'             => $control,
             ),
