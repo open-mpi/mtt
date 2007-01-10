@@ -24,8 +24,8 @@ SELECT
     platform_type,
 
     -- results
-    exit_status,
-    signal,
+    exit_value,
+    exit_signal,
     duration,
     client_serial,
     trial,
@@ -72,8 +72,8 @@ SELECT
     platform_type,
 
     -- results
-    exit_status,
-    signal,
+    exit_value,
+    exit_signal,
     duration,
     client_serial,
     trial,
@@ -121,8 +121,8 @@ SELECT
     platform_type,
 
     -- results
-    exit_status,
-    signal,
+    exit_value,
+    exit_signal,
     duration,
     client_serial,
     trial,
@@ -182,8 +182,8 @@ SELECT
     hostname,
 
     -- results
-    exit_status,
-    signal,
+    exit_value,
+    exit_signal,
     start_timestamp,
     duration,
     result_message,
@@ -238,8 +238,8 @@ SELECT
     hostname,
 
     -- results
-    exit_status,
-    signal,
+    exit_value,
+    exit_signal,
     start_timestamp,
     duration,
     result_message,
@@ -301,8 +301,8 @@ SELECT
     hostname,
 
     -- results
-    exit_status,
-    signal,
+    exit_value,
+    exit_signal,
     start_timestamp,
     duration,
     result_message,
