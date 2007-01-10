@@ -95,18 +95,18 @@ function setup_prefs() {
     if (! $prefs)
         $prefs = array(
             'general'  => array(
-                'limit'    => array('10', '50', '*100', '200'),
-                'wrap'     => 100,
-                'timezone' => array('*GMT', 'EST', 'CST', 'MST', 'PST'),
-                'trial'    => false,
+                'limit'    => array(array('10', '50', '*100', '200')),
+                'wrap'     => array(100),
+                'timezone' => array(array('*GMT', 'EST', 'CST', 'MST', 'PST')),
+                'trial'    => array(false),
             ),
             'graphing' => array(
-                'yaxis_scale'      => array('Logarithmic', '*Linear'),
-                'xaxis_scale'      => array('Logarithmic', '*Linear'),
-                'hide_subtitle'    => false,
-                #'graph_size'       => array('Small', '*Medium', 'Large'),
-                #'legend_placement' => array('*Bottom', 'In plotting area'),
-                #'graph_type'       => array('*Line', 'Bar', 'Points'),
+                'yaxis_scale'      => array(array('Logarithmic', '*Linear')),
+                'xaxis_scale'      => array(array('Logarithmic', '*Linear')),
+                'hide_subtitle'    => array(false),
+                #'graph_size'       => array(array('Small', '*Medium', 'Large')),
+                #'legend_placement' => array(array('*Bottom', 'In plotting area')),
+                #'graph_type'       => array(array('*Line', 'Bar', 'Points')),
             ),
         );
 
@@ -114,7 +114,7 @@ function setup_prefs() {
 }
 
 # Return a list of columns to show/hide
-function setup_showhide_cols($params) {
+function setup_advanced($params) {
 
     $phases = process_phase_field($params);
 
@@ -127,35 +127,36 @@ function setup_showhide_cols($params) {
 
         $menu = array(
             'compute_cluster' => array(
-                'show_os_version'          => $control,
-                'show_platform_type'       => $control,
-                #'show_platform_hardware'   => $control,
-                #'show_platform_name'       => $control,
-                #'show_os_name'             => $control,
+                'os_version'          => array('', $control),
+                'platform_type'       => array('', $control),
+               #'platform_hardware'   => array('', $control),
+               #'platform_name'       => array('', $control),
+               #'os_name'             => array('', $control),
             ),
             'submit' => array(
-                'show_hostname'            => $control,
-                #'show_local_username'      => $control,
-                #'show_http_username'       => $control,
+                'hostname'            => array('', $control),
+               #'local_username'      => array('', $control),
+               #'http_username'       => array('', $control),
             ),
             'mpi_install' => array(
-                'show_compiler_name'       => $control,
-                'show_compiler_version'    => $control,
-                'show_vpath_mode'          => $control,
-                'show_endian'              => $control,
-                'show_bitness'             => $control,
-                #'show_mpi_name'            => $control,
-                #'show_mpi_version'         => $control,
-                #'show_configure_arguments' => $control,
+                'compiler_name'       => array('', $control),
+                'compiler_version'    => array('', $control),
+                'vpath_mode'          => array('', $control),
+                'endian'              => array('', $control),
+                'bitness'             => array('', $control),
+               #'mpi_name'            => array('', $control),
+               #'mpi_version'         => array('', $control),
+               #'configure_arguments' => array('', $control),
             ),
             'results' => array(
-                'show_exit_status'         => $control,
-                'show_duration'            => $control,
-                'show_client_serial'       => $control,
-                #'show_result_message'      => $control,
-                #'show_result_stdout'       => $control,
-                #'show_result_stderr'       => $control,
-                #'show_environment'         => $control,
+                'exit_value'          => array('', $control),
+                'exit_signal'         => array('', $control),
+                'duration'            => array('', $control),
+                'client_serial'       => array('', $control),
+                'result_message'      => array(''),
+                'result_stdout'       => array(''),
+                'result_stderr'       => array(''),
+                'environment'         => array(''),
             ),
         );
 
@@ -166,7 +167,9 @@ function setup_showhide_cols($params) {
                 $menu =
                     array_merge(
                         $menu,
-                        array('test_build' => array( 'show_suite_name' => $control))
+                        array('test_build' => array(
+                            'suite_name' => array('', $control)
+                        ))
                     );
             }
             if (array_search('test_run', $phases) !== false) {
@@ -175,10 +178,10 @@ function setup_showhide_cols($params) {
                         $menu,
                         array('test_run' => 
                             array(
-                                'show_variant'   => $control,
-                                #'show_test_name' => $control,
-                                #'show_np'        => $control,
-                                #'show_command'   => $control,
+                                'variant'   => array('', $control),
+                                #'test_name' => array('', $control),
+                                #'np'        => array('', $control),
+                                #'command'   => array('', $control),
                             ))
                     );
             }
@@ -237,11 +240,10 @@ function label($str) {
             "platform_name"       => "Platform name",
             "platform_type"       => "Platform type",
             "result_message"      => "Result message",
-            "result_stderr"       => "Result stderr",
-            "result_stdout"       => "Result stdout",
+            "result_stderr"       => "Stderr",
+            "result_stdout"       => "Stdout",
             "exit_signal"         => "Signal",
             "start_timestamp"     => "Date range",
-            "stop_timestamp"      => "Date range",
             "subject"             => "Subject",
             "submit_timestamp"    => "Date range",
             "suite_name"          => "Suite",
@@ -260,7 +262,7 @@ function label($str) {
             "test_run"          => "Test run",
 
             # Other schema tables
-            'compute_cluster'   => 'Compute_cluster',
+            'compute_cluster'   => 'Cluster',
             'submit'            => 'Submit',
             'results'           => 'Results',
 

@@ -2478,16 +2478,16 @@ function process_trial_field($trial) {
 # environment
 function process_cookie(&$params, $cookie) {
 
-    $save_prefs = $params['save_prefs'];
-    unset($params['save_prefs']);
+    $remote_go = $params['remote_go'];
+    unset($params['remote_go']);
 
     $no_cookies = isset($params['no_cookies']) ? 1 : 0;
 
     # 'click' the button for them according to the report
     # type (which was exported from the Preferences window)
-    if ($save_prefs) {
+    if ($remote_go) {
         unset($params['go']);
-        $params['click'] = $save_prefs;
+        $params['click'] = $remote_go;
     }
 
     static $defaults;
@@ -2497,14 +2497,14 @@ function process_cookie(&$params, $cookie) {
     foreach (array_keys($defaults) as $category) {
         foreach (array_keys($defaults[$category]) as $p) {
 
-            # Use the cookie
-            if ($cookie["mtt_$p"] and ! $no_cookies) {
-                define(strtoupper($p), param2constant($cookie["mtt_$p"]));
-
             # Their browser has cookies disabled, or
             # they've been sent a link - use _GET
-            } elseif ($params[$p]) {
+            if ($params[$p] != "") {
                 define(strtoupper($p), param2constant($params[$p]));
+
+            # Use the cookie
+            } elseif ($cookie["mtt_$p"] and ! $no_cookies) {
+                define(strtoupper($p), param2constant($cookie["mtt_$p"]));
 
             # None of the above, use the defaults
             } else {
@@ -2551,7 +2551,7 @@ function prefs_default($pref) {
                 $prefs[$p] = $_prefs[$cat][$p];
     }
 
-    $value = $prefs[$pref];
+    $value = array_shift($prefs[$pref]);
 
     if (is_bool($value) or is_scalar($value))
         $ret = $value;
@@ -2561,6 +2561,7 @@ function prefs_default($pref) {
                 $ret = strip_star($v);
     
     }
+
     return $ret;
 }
 
@@ -2570,8 +2571,11 @@ function prefs_default($pref) {
 #                                     
 #########################################
 
-# Loop through column aliases, and return
-# a left-to-right ordering of SELECT clauses
+# Loop through column aliases, and return a
+# left-to-right ordering of SELECT clauses
+#
+# X: CAN WE GRAB THIS ORDERING FROM A setup_*
+# FUNCTION?
 function order_columns($columns) {
 
     $layout = array(
@@ -2591,10 +2595,13 @@ function order_columns($columns) {
         'hostname'          => 1,
         'platform_name'     => 1,
 
-        # mpi_install
+        # compute_cluster
         'platform_hardware' => 1,
         'platform_type'     => 1,
         'os_name'           => 1,
+        'os_version'        => 1,
+
+        # mpi_install
         'mpi_name'          => 1,
         'mpi_version'       => 1,
         'bitness'           => 1,

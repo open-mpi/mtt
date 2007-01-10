@@ -27,6 +27,10 @@ SELECT
     exit_value,
     exit_signal,
     duration,
+    result_message,
+    result_stdout,
+    result_stderr,
+    environment,
     client_serial,
     trial,
     (CASE WHEN
@@ -75,6 +79,10 @@ SELECT
     exit_value,
     exit_signal,
     duration,
+    result_message,
+    result_stdout,
+    result_stderr,
+    environment,
     client_serial,
     trial,
     (CASE WHEN
@@ -124,6 +132,10 @@ SELECT
     exit_value,
     exit_signal,
     duration,
+    result_message,
+    result_stdout,
+    result_stderr,
+    environment,
     client_serial,
     trial,
     (CASE WHEN

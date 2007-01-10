@@ -214,43 +214,49 @@ function get_form_universe($columns_arg) {
         'endian'              => 1,
     );
 
-    # Gather database columns
-    $columns = array();
-    $entries = array();
-    $tmp = array();
-    foreach ($tables as $table) {
-        $tmp = get_table_fields($table);
+    # COMMENT THIS OUT FOR NOW, IT'S NOT REALLY HELPING THE
+    # TOOL AND IT SLOWS DOWN BRING-UP TIME TO MAKE IT MORE
+    # EFFICIENT, THE ENTIRE DB UNIVERSE SHOULD BE CACHED
+    # EVERY ''N'' MINUTES TO AVOID THE LARGE TABLE SCANS ON
+    # BRING-UP, AND THE COLUMN DATA SHOULD BE GATHERED FROM THERE
 
-        $size = sizeof($tmp['column_name']);
-        for ($i = 0; $i < $size; $i++) {
-            $column = $tmp['column_name'][$i];
-            $default = $tmp['column_default'][$i];
-            $default = preg_replace("/::.*$/i", '', $default);
-            $columns[$table][$column] = $default;
-        }
-    }
+    # Gather database columns
+    # $columns = array();
+    # $entries = array();
+    # $tmp = array();
+    # foreach ($tables as $table) {
+    #     $tmp = get_table_fields($table);
+
+    #     $size = sizeof($tmp['column_name']);
+    #     for ($i = 0; $i < $size; $i++) {
+    #         $column = $tmp['column_name'][$i];
+    #         $default = $tmp['column_default'][$i];
+    #         $default = preg_replace("/::.*$/i", '', $default);
+    #         $columns[$table][$column] = $default;
+    #     }
+    # }
 
     # Gather all available entries for the above columns
-    foreach ($tables as $table) {
-        foreach (array_keys($columns[$table]) as $column) {
-            if ($big_columns[$column] or
-                ! isset($columns_arg[$column]))
-                continue;
+    # foreach ($tables as $table) {
+    #     foreach (array_keys($columns[$table]) as $column) {
+    #         if ($big_columns[$column] or
+    #             ! isset($columns_arg[$column]))
+    #             continue;
 
-            # Put most recent 'r' numbers at the top of the menu
-            $ordering = "ASC";
-            if (preg_match("/mpi_version/i", $column))
-                $ordering = "DESC";
+    #         # Put most recent 'r' numbers at the top of the menu
+    #         $ordering = "ASC";
+    #         if (preg_match("/mpi_version/i", $column))
+    #             $ordering = "DESC";
 
-            $cmd = "SELECT $column FROM $table " .
-                   "WHERE $column != " . $columns[$table][$column] . " " .
-                   "GROUP BY $column ORDER BY $column $ordering;";
-            $entries[$column][] = array_merge(
-                                    array("all"),
-                                    simple_select($cmd)
-                                  );
-        }
-    }
+    #         $cmd = "SELECT $column FROM $table " .
+    #                "WHERE $column != " . $columns[$table][$column] . " " .
+    #                "GROUP BY $column ORDER BY $column $ordering;";
+    #         $entries[$column][] = array_merge(
+    #                                 array("all"),
+    #                                 simple_select($cmd)
+    #                               );
+    #     }
+    # }
 
     # Some special enumerated types
     $enums = enums_table();
@@ -399,7 +405,7 @@ EOT;
 
 # Return javascript code to bring Preferences popup
 # selections back into the main window's textfields
-function jscript_export_prefs($prefs, $save_to_cookie) {
+function jscript_export_form($elements, $save_to_cookie) {
 
     $go = $_GET['go'];
     $click = $_GET['click'];
@@ -413,7 +419,7 @@ function jscript_export_prefs($prefs, $save_to_cookie) {
 
         function SaveAndSubmit() {
             exportVars();
-            window.opener.document.report.save_prefs.value = '$go';
+            window.opener.document.report.remote_go.value = '$go';
             window.opener.document.report.submit();
             window.close();
         }
@@ -442,12 +448,15 @@ function jscript_export_prefs($prefs, $save_to_cookie) {
 
             var str = '';
             var items = new Array();
+
 EOT;
 
-    # CAREFUL - IS ''y'' GUARANTEED TO BE DEFINED?
-    # BEWARE OF undefined (OR null?) VARS WHICH CAUSE "NO PROPERTIES" 
-    # JAVASSCRIPT ERRORS
+    # CAREFUL - IS ''x'' GUARANTEED TO BE DEFINED?  BEWARE
+    # OF undefined (OR null?) VARS WHICH CAUSE "NO
+    # PROPERTIES" JAVASSCRIPT ERRORS. (WE NEED TO HAVE
+    # 'HIDDEN' FORM PARAMETERS TO PREVENT SUCH ERRORS)
     $text = <<<EOT
+
             var x = document.adv.%s;
             var old = window.opener.document.report.%s;
             old.value = x.value;
@@ -457,11 +466,13 @@ EOT;
                 eraseCookie(cookieName);
                 createCookie(cookieName, x.value, 9999);
             }
+
 EOT;
 
-    # CAREFUL - IS ''y'' GUARANTEED TO BE DEFINED?
-    # BEWARE OF undefined (OR null?) VARS WHICH CAUSE "NO PROPERTIES" 
-    # JAVASSCRIPT ERRORS
+    # CAREFUL - IS ''x'' GUARANTEED TO BE DEFINED?  BEWARE
+    # OF undefined (OR null?) VARS WHICH CAUSE "NO
+    # PROPERTIES" JAVASSCRIPT ERRORS. (WE NEED TO HAVE
+    # 'HIDDEN' FORM PARAMETERS TO PREVENT SUCH ERRORS)
     $checkbox = <<<EOT
             var x = document.adv.%s;
             var old = window.opener.document.report.%s;
@@ -477,6 +488,7 @@ EOT;
                 eraseCookie(cookieName);
                 createCookie(cookieName, newValue, 9999);
             }
+
 EOT;
 
     $select = <<<EOT
@@ -496,22 +508,23 @@ EOT;
                 eraseCookie(cookieName);
                 createCookie(cookieName, str, 9999);
             }
+
 EOT;
 
     # X: THERE SHOULD BE NO NEED TO CREATE MORE THAN ONE FOR
     # LOOP HERE. IN OTHER WORDS, DO THE LOOPING IN
     # JAVASCRIPT INSTEAD OF PRINTING OUT ''N'' JAVASCRIPT
     # STATEMENTS
-    foreach (array_keys($prefs) as $pref) {
-        if (is_array($prefs[$pref]))
+    foreach (array_keys($elements) as $pref) {
+        if (is_array($elements[$pref]))
             $script .= sprintf($select, $pref, $pref, $pref);
-        elseif (is_bool($prefs[$pref]))
+        elseif (is_bool($elements[$pref]))
             $script .= sprintf($checkbox, $pref, $pref, $pref);
         else
             $script .= sprintf($text, $pref, $pref, $pref);
     }
 
-    # Set the cookie-ize flag, and close the window
+    # Generate a debug string to print using e.g., alert()
 	$script .= <<<EOT
 
             var str = '';
@@ -522,6 +535,7 @@ EOT;
         }
 
     </script>
+
 EOT;
 
     return $script;
@@ -825,8 +839,28 @@ function form_buttons($params, $disable_arg) {
     }
 
     # Generate Preferences popup
-    $buttons[] = form_popup(setup_prefs(), $_GET, 'Preferences', 'SaveAndSubmit()', 'Save', 'true');
-    $buttons[] = form_popup(setup_showhide_cols($_GET), $_GET, 'Columns', 'SaveAndSubmit()', 'Submit', 'false');
+    $specs['title']          = 'Preferences';
+    $specs['width']          = 500;
+    $specs['height']         = 500;
+    $specs['dropdown_width'] = 200;
+    $specs['onclick']        = 'SaveAndSubmit()';
+    $specs['button']         = 'Save';
+    $specs['save_to_cookie'] = 'true';
+    $specs['are_columns']    = false;
+
+    $buttons[] = form_popup(setup_prefs(), $_GET, $specs);
+
+    # Generate Advanced popup
+    $specs['title']          = 'Advanced';
+    $specs['width']          = 500;
+    $specs['height']         = 800;
+    $specs['dropdown_width'] = 50;
+    $specs['onclick']        = 'SaveAndSubmit()';
+    $specs['button']         = 'Submit';
+    $specs['save_to_cookie'] = 'false';
+    $specs['are_columns']    = true;
+
+    $buttons[] = form_popup(setup_advanced($_GET), $_GET, $specs);
 
     return $buttons;
 }
@@ -946,9 +980,9 @@ function hidden_prefs($params) {
         }
     }
 
-    # Prepare save_prefs flag
-    if (is_null($params['save_prefs']))
-        $ret .= "\n<input type='hidden' name='save_prefs'>";
+    # Prepare remote_go flag
+    if (is_null($params['remote_go']))
+        $ret .= "\n<input type='hidden' name='remote_go'>";
 
     return $ret;
 }
@@ -957,68 +991,138 @@ function hidden_prefs($params) {
 # HTML form (with checkboxes, menus, and/or textfields)
 # (quite similar to selection_popups).
 # Enter the string 'true' or 'false' for $save_to_cookie.
-function form_popup($prefs, $params, $title, $onclick, $button, $save_to_cookie) {
+
+# This function is used for the [Preferences] and [Advanced]
+# popups. This is perhaps a stretch.
+function form_popup($elements, $params, $specs) {
+
+    # Specifications for the popup
+
+    # title          = popup window title
+    # width          = popup window width
+    # height         = popup window height
+    # dropdown_width = dropdown menu width
+    # onclick        = javascript onclick event name
+    # button         = button name in popup
+    # save_to_cookie = save to cookie boolean
+    # are_columns    = each element maps to a DB column
+
+    $title          = $specs['title'];
+    $width          = $specs['width'];
+    $height         = $specs['height'];
+    $dropdown_width = $specs['dropdown_width'];
+    $onclick        = $specs['onclick'];
+    $button         = $specs['button'];
+    $save_to_cookie = $specs['save_to_cookie'];
+    $are_columns    = $specs['are_columns'];
+
+    # Determine the colspan
+    $max = 0;
+    foreach (array_keys($elements) as $category) {
+        foreach (array_keys($elements[$category]) as $field) {
+            $size = sizeof($elements[$category][$field]);
+            if ($size > $max)
+                $max = $size;
+        }
+    }
+    $colspan = $max;
 
     # For small menus in popup windows
     $tbl = "\n<table align='center' border='1' cellspacing='1' cellpadding='5'>";
     $tr  = "\n<tr>";
     $td  = "\n<td align='left' bgcolor='" . LLGRAY . "'>";
-    $td2 = "\n<td align='left' bgcolor='" . LLGRAY . "' colspan='2'>";
-    $th2 = "\n<th align='center' bgcolor='" . LGRAY . "' colspan='2'>";
+    $td2 = "\n<td align='left' bgcolor='" . LLGRAY . "' colspan='%d'>";
+    $th2 = "\n<th align='center' bgcolor='" . LGRAY . "' colspan='%d'>";
 
     $menu = "\n<div align='center'>" .
             "\n$tbl";
 
+    # Indicate that the fields in this popup are database columns,
+    # because database columns are always handled by having them be
+    # two input params, one prepends the name with 'text_', the other
+    # with 'show_'
+    if ($are_columns) {
+        $text_ = 'text_';
+        $show_ = 'show_';
+
+        # Export the vars in JavaScript and prepend these
+        $col_types = array($text_, $show_);
+    }
+
     # Categories are: General and Graphing
-    foreach (array_keys($prefs) as $category) {
+    foreach (array_keys($elements) as $category) {
 
-        $menu .= $tr . $th2 . label($category);
+        # +1 colspan for the label
+        $menu .= $tr . sprintf($th2, $colspan + 1) . label($category);
 
-        # Create a form element for each preference based
-        # on the pref's data type:
+        # Create an HTML form element for each element based
+        # on the element's data type:
         #
         #   1. Bool: checkbox 
         #   2. Scalar: text 
         #   3. Array: select (dropdown menu)
         #
-        foreach (array_keys($prefs[$category]) as $field) {
+        foreach (array_keys($elements[$category]) as $field) {
+            $array = $elements[$category][$field];
 
-            $entries = $prefs[$category][$field];
+            $menu .= $tr . $td . label(label($field));
 
-            # Compile list of prefs for jscript_export_prefs
-            $arr[$field] = $prefs[$category][$field];
+            # Set the colspan based on the number of
+            # elements in the array since that will equal
+            # the number of table cells
+            if (sizeof($array) == $colspan) 
+                $td_colspan = 1;
+            else
+                $td_colspan = $colspan;
 
-            # Fill-in field for default or last selection
-            $value = auto_fill($entries, $params[$field], $_COOKIE["mtt_$field"]);
+            foreach (array_keys($array) as $i) {
 
-            $menu .= $tr . $td . label(label($field)) . $td;
+                $entries = $array[$i];
 
-            if (is_bool($entries))
-                $menu .= "\n<input type='checkbox' name='$field' value='on' $value>";
+                # Compile list of elements for jscript_export_form
+                if ($are_columns) {
+                    $type = $col_types[$i];
+                    $arr["$type$field"] = $entries;
 
-            elseif (is_scalar($entries))
-                $menu .= "\n<input type='text' name='$field' value='" . $value . "'>";
-
-            elseif (is_array($entries)) {
-
-                $menu .= "\n<select name='$field'>";
-
-                $i = 0;
-                foreach ($entries as $v) {
-                    $v = strip_star($v);
-                    $menu .= sprintf("\n<option " .
-                                            "style='width: 200px;' " .
-                                            "name='%s' " .
-                                            "value='%s' %s>%s",
-                                            $v, $v, $value[$i++], $v);
+                    # Fill-in field for default or last selection
+                    $value = auto_fill($entries, $params["$type$field"]);
                 }
-                $menu .= "\n</select>";
+                else {
+                    $arr[$field] = $entries;
+
+                    # Fill-in field for default or last selection
+                    $value = auto_fill($entries, $params[$field], $_COOKIE["mtt_$field"]);
+                }
+
+                $menu .= sprintf($td2, $td_colspan);
+
+                if (is_bool($entries))
+                    $menu .= "\n<input type='checkbox' name='$field' value='on' $value>";
+
+                elseif (is_scalar($entries))
+                    $menu .= "\n<input type='text' name='$text_$field' value='" . $value . "'>";
+
+                elseif (is_array($entries)) {
+
+                    $menu .= "\n<select name='$show_$field'>";
+
+                    $i = 0;
+                    foreach ($entries as $v) {
+                        $v = strip_star($v);
+                        $menu .= sprintf("\n<option " .
+                                                "style='width: ${dropdown_width}px;' " .
+                                                "name='%s' " .
+                                                "value='%s' %s>%s",
+                                                $v, $v, $value[$i++], $v);
+                    }
+                    $menu .= "\n</select>";
+                }
             }
         }
     }
 
     $menu .=
-        $tr . $th2 .
+        $tr . sprintf($th2, $colspan + 1) .
         "\n<input type='submit' " .
                   "name='$button' " .
                   "onclick='javascript:$onclick;' " .
@@ -1028,19 +1132,19 @@ function form_popup($prefs, $params, $title, $onclick, $button, $save_to_cookie)
                   "onclick='javascript:window.close();' " .
                    "value='Cancel'>" .
         "\n</table>" .
-        "\n<br><i>Select $title</i>" .
+        "\n<br><i>Make one or more selections from the [$title] menu.</i>" .
         "\n</div>";
 
     $link =
         "\n<a class='lgray_ln' href='javascript:popup_html(" .
             # Width
-            "\n\"500\"," .
+            "\n\"$width\"," .
             # Height
-            "\n\"500\"," .
+            "\n\"$height\"," .
             # Title
             "\n\"Select $title\"," .
             # <script>
-            "\n\"" . htmlentities(jscript_export_prefs($arr, $save_to_cookie), ENT_QUOTES) . "\"," .
+            "\n\"" . htmlentities(jscript_export_form($arr, $save_to_cookie), ENT_QUOTES) . "\"," .
             # <body>
             "\n\"" . htmlentities($menu, ENT_QUOTES) . "\"," .
             # <body style>
@@ -1130,17 +1234,26 @@ function hidden_carryover($params) {
             $str .= sprintf($format, $k, $params[$k]);
     }
 
-    static $showhides;
-    if (! $showhides) {
-        $showhide_cols = setup_showhide_cols($_GET);
-        foreach (array_keys($showhide_cols) as $table)
-            foreach (array_keys($showhide_cols[$table]) as $field)
-                $showhides[] = $field;
+    static $advanced_fields;
+    if (! $advanced_fields) {
+        $col_types = array('text_', 'show_');
+
+        $setup_advanced = setup_advanced($_GET);
+        foreach (array_keys($setup_advanced) as $table) {
+            foreach (array_keys($setup_advanced[$table]) as $field) {
+                $arr = $setup_advanced[$table][$field];
+
+                foreach (array_keys($arr) as $i) {
+                    $type = $col_types[$i];
+                    $advanced_fields[] = "$type$field";
+                }
+            }
+        }
     }
 
     # Define the fields in the Show/Hide columns popup
     # so they will be defined for the javascript export
-    foreach ($showhides as $k) {
+    foreach ($advanced_fields as $k) {
         $str .= sprintf($format, $k, $params[$k]);
     }
 
