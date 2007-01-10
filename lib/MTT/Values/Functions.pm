@@ -548,6 +548,34 @@ sub rm_max_procs {
 
 #--------------------------------------------------------------------------
 
+# Return the name of the run-time enviornment that we're using
+sub env_name {
+    Debug("&env_name\n");
+
+    # Resource managers
+    return "SLURM"
+        if slurm_job();
+    return "TM"
+        if pbs_job();
+    return "N1GE"
+        if n1ge_job();
+    return "loadleveler"
+        if loadleveler_job();
+
+    # Hostfile
+    return "hostfile"
+        if have_hostfile();
+
+    # Hostlist
+    return "hostlist"
+        if have_hostlist();
+
+    # No clue, Jack...
+    return "unknown";
+}
+
+#--------------------------------------------------------------------------
+
 # Find the max procs that we can run with.  Check several things in
 # order:
 #
@@ -558,7 +586,7 @@ sub rm_max_procs {
 #
 # If none of those things are found, return "2".
 sub env_max_procs {
-    Debug("&rm_max_procs\n");
+    Debug("&env_max_procs\n");
 
     # Resource managers
     return slurm_max_procs()
