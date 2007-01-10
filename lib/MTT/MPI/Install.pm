@@ -443,6 +443,8 @@ sub _do_install {
             mpi_version => $mpi_get->{version},
 
             test_result => $ret->{test_result},
+            exit_value => MTT::DoCommand::exit_value($ret->{exit_status}),
+            exit_signal => MTT::DoCommand::exit_signal($ret->{exit_status}),
             result_message => $ret->{result_message},
             client_serial => $ret->{client_serial},
             mpi_install_id => $ret->{mpi_install_id},
@@ -521,6 +523,11 @@ sub _do_install {
         $ret->{append_path} = $config->{append_path};
         $ret->{env_modules} = $config->{env_modules};
         $ret->{start_timestamp} = timegm(gmtime());
+        $ret->{get_section_dir} = $this_install_base;
+        $ret->{install_section_dir} = $config->{install_section_dir};
+        $ret->{version_dir} = $config->{version_dir};
+        $ret->{source_dir} = $config->{srcdir};
+        $ret->{build_dir} = $config->{builddir};
         $ret->{refcount} = 0;
 
         # Delete keys with empty values

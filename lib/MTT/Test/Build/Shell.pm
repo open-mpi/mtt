@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -39,6 +39,7 @@ sub Build {
         $ret->{result_message} = "Shell: command failed \"$cmd\"";
         $ret->{result_message} .= " (timed out)"
             if ($x->{timed_out});
+        $ret->{exit_status} = $x->{exit_status};
         $ret->{result_stdout} = $x->{result_stdout};
         $ret->{result_stderr} = $x->{result_stderr}
             if ($x->{result_stderr});
@@ -48,6 +49,7 @@ sub Build {
     # All done
     $ret->{result_stdout} = $x->{result_stdout};
     $ret->{result_stderr} = $x->{result_stderr};
+    $ret->{exit_status} = 0;
     $ret->{test_result} = MTT::Values::PASS;
     $ret->{result_message} = "Success";
     return $ret;

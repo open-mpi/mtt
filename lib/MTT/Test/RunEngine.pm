@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -210,7 +210,13 @@ sub _run_one_test {
     MTT::Reporter::QueueAdd("Test Run", $run->{simple_section_name}, $report);
 
     # If there is an after_each step, run it
+    $ENV{MTT_TEST_RUN_RESULT} = 
+        (MTT::Values::PASS == $report->{test_result} ? "passed" :
+         (MTT::Values::FAIL == $report->{test_result} ? "failed" :
+          (MTT::Values::SKIPPED == $report->{test_result} ? "skipped" :
+           (MTT::Values::TIMED_OUT == $report->{test_result} ? "timed_out" : "unknown"))));
     _run_step($mpi_details, "after_each");
+    delete $ENV{MTT_TEST_RUN_RESULT};
 
     return $run->{pass};
 }
@@ -223,14 +229,15 @@ sub _run_step {
         Debug("Running step: $step\n");
         my $x = MTT::DoCommand::CmdScript(1, $mpi_details->{$step}, 10);
         if ($x->{timed_out}) {
-            Verbose("  Warning: step $step TIMED OUT; skipping\n");
+            Verbose("  Warning: step $step TIMED OUT\n");
         } elsif (MTT::DoCommand::wifsignaled($x->{exit_status})) {
             my $ret = MTT::DoCommand::wtermsig($x->{exit_status});
             Verbose("  Warning: step $step finished via signal $ret; skipping\n");
         } elsif (!MTT::DoCommand::wsuccess($x->{exit_status})) {
             my $success = MTT::DoCommand::wsuccess($x->{exit_status});
             my $exited = MTT::DoCommand::wifexited($x->{exit_status});
-            Verbose("  Warning: step $step ($x->{exit_status} : success $success : exited $exited) finished with nonzero exit status ($x->{status}); skipping\n");
+            my $exit_value = MTT::DoCommand::wexitstatus($x->{exit_status});
+            Verbose("  Warning: step $step ($x->{exit_status} : success $success : exited $exited) finished with nonzero exit status ($exit_value)\n");
         }
     }
 }

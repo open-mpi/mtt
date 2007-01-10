@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -28,6 +28,10 @@ sub Build {
 
     Debug("Building NPB_ompi_tests\n");
     $ret->{test_result} = MTT::Values::FAIL;
+    $ret->{exit_status} = -1;
+    $ret->{result_message} = "*** TEST BUILD NPB PLUGIN IS OUT OF DATE AND DOES NOT WORK";
+    Verbose("*** $ret->{result_message}\n");
+    return $ret;
 
     # Clean it (just to be sure)
     MTT::DoCommand::Chdir("NPB2.3-MPI");

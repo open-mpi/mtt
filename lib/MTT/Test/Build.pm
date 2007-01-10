@@ -362,6 +362,8 @@ sub _do_build {
             compiler_version => $mpi_install->{compiler_version},
             result_message => $ret->{result_message},
             environment => "filled in below",
+            exit_value => MTT::DoCommand::exit_value($ret->{exit_status}),
+            exit_signal => MTT::DoCommand::exit_signal($ret->{exit_status}),
             result_stdout => "filled in below",
             result_stderr => "filled in below",
 

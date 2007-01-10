@@ -46,7 +46,8 @@ sub Install {
     my $ret;
     $ret->{test_result} = MTT::Values::FAIL;
     $ret->{exit_status} = 1;
-    Verbose("*** MPI INSTALL COPYTREE PLUGIN IS OUT OF DATE.  CONTACT AUTHORS\n");
+    $ret->{result_message} = "MPI INSTALL COPYTREE PLUGIN IS OUT OF DATE.  CONTACT AUTHORS";
+    Verbose("*** $ret->{result_message}\n");
     return $ret;
 
 

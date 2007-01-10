@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -70,7 +70,7 @@ sub Install {
         # Put the output of the failure into $ret so that it gets
         # reported (result_stdout/result_stderr was combined into just result_stdout)
         $ret->{result_stdout} = $result_stdout;
-        $ret->{exit_status} = $x->{status};
+        $ret->{exit_status} = $x->{exit_status};
         return $ret;
     }
     # We don't need this in the main result_stdout
@@ -97,7 +97,7 @@ sub Install {
         # both -- if they were combined, then $result_stderr will be empty)
         $ret->{result_stdout} = $result_stdout;
         $ret->{result_stderr} = $result_stderr;
-        $ret->{exit_status} = $x->{status};
+        $ret->{exit_status} = $x->{exit_status};
         return $ret;
     }
     $ret->{make_all_stdout} = $result_stdout;
@@ -135,7 +135,7 @@ sub Install {
             # Put the output of the failure into $ret so that it gets
             # reported (result_stdout/result_stderr were combined)
             $ret->{result_stdout} = $x->{result_stdout};
-            $ret->{exit_status} = $x->{status};
+            $ret->{exit_status} = $x->{exit_status};
             return $ret;
         }
         $ret->{make_check_stdout} = $result_stdout;
@@ -143,10 +143,11 @@ sub Install {
         Debug("Not running make check\n");
     }
 
-    # Install it.  Merge the result_stdout/result_stderr because we really only want
-    # to see the output if something went wrong.  Things sent to
-    # result_stderr are common during "make install" (e.g., notices about
-    # re-linking libraries when they are installed)
+    # Install it.  Merge the result_stdout/result_stderr because we
+    # really only want to see the output if something went wrong.
+    # Things sent to result_stderr are common during "make install"
+    # (e.g., notices about re-linking libraries when they are
+    # installed)
 
     $x = MTT::DoCommand::Cmd(1, "make install", -1, $config->{stdout_save_lines}, $config->{stderr_save_lines});
     if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
@@ -156,7 +157,7 @@ sub Install {
         # Put the output of the failure into $ret so that it gets
         # reported (result_stdout/result_stderr were combined)
         $ret->{result_stdout} = $x->{result_stdout};
-        $ret->{exit_status} = $x->{status};
+        $ret->{exit_status} = $x->{exit_status};
         return $ret;
     }
     $ret->{make_install_stdout} = $result_stdout;
@@ -184,12 +185,12 @@ sub Install {
     if ((0 != write_cleanup_script("$ret->{installdir}/bin")) 
         and (! $MTT::DoCommand::no_execute)) {
         $ret->{test_result} = MTT::Values::FAIL;
-        $ret->{exit_status} = $x->{status};
+        $ret->{exit_status} = $x->{exit_status};
         $ret->{message} = "Failed to create cleanup script!";
     } else {
         $ret->{test_result} = MTT::Values::PASS;
         $ret->{result_message} = "Success";
-        $ret->{exit_status} = $x->{status};
+        $ret->{exit_status} = $x->{exit_status};
         Debug("Build was a test_result\n");
     }
 

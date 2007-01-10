@@ -30,6 +30,7 @@ sub _do_compile {
     if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         my $ret;
         $ret->{test_result} = MTT::Values::FAIL;
+        $ret->{exit_status} = $x->{exit_status};
         $ret->{result_message} = "Failed to compile/link $out_name\n";
         $ret->{result_stdout} = $x->{result_stdout};
         return $ret;
@@ -115,6 +116,7 @@ sub Build {
 
     # All done
     $ret->{test_result} = MTT::Values::PASS;
+    $ret->{exit_status} = 0;
     $ret->{result_message} = "Success";
     return $ret;
 } 

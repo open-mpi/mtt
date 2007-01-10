@@ -57,8 +57,8 @@ sub Analyze {
         test_build_section_name => $run->{test_build_simple_section_name},
         test_run_section_name => $run->{simple_section_name},
         np => $run->{np},
-# JMS: should this really be "status" on the left hand side?
-        exit_status => $results->{exit_status},
+        exit_value => MTT::DoCommand::exit_value($results->{exit_status}),
+        exit_signal => MTT::DoCommand::exit_signal($results->{exit_status}),
         test_result => $result,
     };
 
@@ -88,7 +88,8 @@ sub Analyze {
         } else {
             $report->{result_message} = "Failed; ";
             if (MTT::DoCommand::wifexited($results->{exit_status})) {
-                $report->{result_message} .= "exit status: $results->{status}\n";
+                my $s = MTT::DoCommand::wexitstatus($results->{exit_status});
+                $report->{result_message} .= "exit status: $s\n";
             } else {
                 my $sig = MTT::DoCommand::wtermsig($results->{exit_status});
                 $report->{result_message} .= "termination signal: $sig\n";

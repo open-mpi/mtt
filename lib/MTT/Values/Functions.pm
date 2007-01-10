@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -15,8 +15,12 @@ package MTT::Values::Functions;
 use strict;
 use File::Find;
 use MTT::Messages;
-use MTT::Test::Run;
 use MTT::Globals;
+
+# Do NOT use MTT::Test::Run here, even though we use some
+# MTT::Test::Run values below.  This will create a "use loop".  Be
+# confident that we'll get the values as appropriate when we need them
+# through other "use" statements.
 
 #--------------------------------------------------------------------------
 

@@ -312,6 +312,7 @@ sub Cmd {
         $ret->{exit_status} = $?;
         $msg .= "complete";
     } else {
+        $ret->{exit_status} = 0;
         $msg .= "timed out";
     }
 
@@ -324,13 +325,11 @@ sub Cmd {
                 $msg .= " (core dump)";
             }
         }
-        $ret->{signal} = $s;
-        $ret->{status} = -1;
     }
     # No, it was not signaled
     else {
-        $ret->{status} = wexitstatus($ret->{exit_status});
-        $msg .= ", exit status: $ret->{status}";
+        my $s = wexitstatus($ret->{exit_status});
+        $msg .= ", exit status: $s";
     }
     $msg .= "\n";
     Debug($msg);
@@ -418,6 +417,22 @@ sub wcoredump {
 sub wsuccess {
     my ($val) = @_;
     return (1 == wifexited($val) && 0 == wexitstatus($val)) ? 1 : 0;
+}
+
+#--------------------------------------------------------------------------
+
+# Simple wrapper to avoid the same "if" test all throughout the code base
+sub exit_value {
+    my ($val) = @_;
+    return (wifexited($val) ? wexitstatus($val) : -1);
+}
+
+#--------------------------------------------------------------------------
+
+# Simple wrapper to avoid the same "if" test all throughout the code base
+sub exit_signal {
+    my ($val) = @_;
+    return (wifsignaled($val) ? wtermsig($val) : -1);
 }
 
 1;
