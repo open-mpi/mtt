@@ -407,8 +407,16 @@ EOT;
 # selections back into the main window's textfields
 function jscript_export_form($elements, $save_to_cookie) {
 
+    $path = PATH;
+
     $go = $_GET['go'];
     $click = $_GET['click'];
+
+    if ($save_to_cookie) {
+        $cookie_ize_expression = <<<EOT
+            window.opener.document.report.do_cookies.value = 1;
+EOT;
+    }
 
     if (! $go)
         $go = $click;
@@ -420,31 +428,14 @@ function jscript_export_form($elements, $save_to_cookie) {
         function SaveAndSubmit() {
             exportVars();
             window.opener.document.report.remote_go.value = '$go';
+
+            $cookie_ize_expression
+
             window.opener.document.report.submit();
             window.close();
         }
 
-        function createCookie(name, value, days) {
-            if (days) {
-                var date = new Date();
-                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-                var expires = '; expires=' + date.toGMTString();
-            }
-            else
-                var expires = '';
-
-            document.cookie = name + '=' + value + expires + '; path=/';
-        }
-
-        function eraseCookie(name) {
-            createCookie(name, '', -1);
-        }
-
         function exportVars() {
-
-            var cookieStr = '';
-
-            var SaveToCookie = $save_to_cookie;
 
             var str = '';
             var items = new Array();
@@ -460,12 +451,6 @@ EOT;
             var x = document.adv.%s;
             var old = window.opener.document.report.%s;
             old.value = x.value;
-
-            if (SaveToCookie) {
-                var cookieName = 'mtt_%s';
-                eraseCookie(cookieName);
-                createCookie(cookieName, x.value, 9999);
-            }
 
 EOT;
 
@@ -483,12 +468,6 @@ EOT;
             }
             old.value = newValue;
 
-            if (SaveToCookie) {
-                var cookieName = 'mtt_%s';
-                eraseCookie(cookieName);
-                createCookie(cookieName, newValue, 9999);
-            }
-
 EOT;
 
     $select = <<<EOT
@@ -502,12 +481,6 @@ EOT;
                 }
             }
             old.value = str;
-
-            if (SaveToCookie) {
-                var cookieName = 'mtt_%s';
-                eraseCookie(cookieName);
-                createCookie(cookieName, str, 9999);
-            }
 
 EOT;
 
@@ -704,9 +677,8 @@ function setup_layout_html($layout, $lasttime, $links, $disable) {
 
     # AFTERWARDS ...
 
-    # Provide full path to images (needed for email)
-    $script = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
-    $top    = dirname($script);
+    $top = DOCROOT;
+
     $logo   = "$top/images/reporter_logo.gif";
     list($width, $height, $type, $attr) = getimagesize($logo);
 
@@ -983,6 +955,10 @@ function hidden_prefs($params) {
     # Prepare remote_go flag
     if (is_null($params['remote_go']))
         $ret .= "\n<input type='hidden' name='remote_go'>";
+
+    # Prepare do_cookies flag
+    if (! isset($params['do_cookies']))
+        $ret .= "\n<input type='hidden' name='do_cookies'>";
 
     return $ret;
 }

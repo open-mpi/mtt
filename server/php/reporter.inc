@@ -44,6 +44,9 @@ define('THCOLOR',  LLGRAY);
 define('TRIAL_TRUE',  't');
 define('TRIAL_FALSE', 'f');
 
+# Define paths
+define('DOCROOT', dirname('http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME']));
+define('PATH',    dirname($_SERVER['SCRIPT_NAME']));
 
 #########################################
 #                                       #

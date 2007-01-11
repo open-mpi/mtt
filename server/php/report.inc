@@ -534,9 +534,7 @@ function allow_cherry_picking($params) {
 # at the foot of the summary table
 function table_footer($totals, $headers, $result_colors) {
 
-    # Use absolute path to images (needed for email)
-    $script = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
-    $top    = dirname($script);
+    $top = DOCROOT;
 
     # Carryover the report type
     $type = strtolower(process_report_type($_GET));
@@ -1305,11 +1303,7 @@ function slices_links($n, $limit, $params) {
     # Globalize the date range
     global $date_fields;
 
-    # Prepare an href element to use for linking to report
-    # slices
-    $self = 'http://' . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'];
-    $format = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
-    $top    = dirname($self);
+    $top = DOCROOT;
 
     # Convenience arrow for going through 100s of rows
     $img  = "<img src='$top/images/%s_arrow.gif' border='0'>";
@@ -1667,8 +1661,8 @@ function sorting_links($headers, $label, $arrow_size) {
     $qstring_arr['text_start_timestamp'] = $absolute_date;
 
     # Setup printf formats
-    $self = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
-    $top = dirname($self);
+    $top = DOCROOT;
+
     $a_format = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
     $img_format = "<img src='$top/images/%s_arrow.gif' $size border='0'>";
 
@@ -2476,10 +2470,16 @@ function process_trial_field($trial) {
 
 # Read/create/update a cookie, and put its data into the
 # environment
-function process_cookie(&$params, $cookie) {
+function process_cookie(&$params, &$cookie) {
 
     $remote_go = $params['remote_go'];
+    $do_cookies = $params['do_cookies'];
+
+    # Keep cookies around for 1 yr
+    $days = 365;
+
     unset($params['remote_go']);
+    unset($params['do_cookies']);
 
     $no_cookies = isset($params['no_cookies']) ? 1 : 0;
 
@@ -2501,6 +2501,14 @@ function process_cookie(&$params, $cookie) {
             # they've been sent a link - use _GET
             if ($params[$p] != "") {
                 define(strtoupper($p), param2constant($params[$p]));
+
+                # Set the cookies, if asked to
+                if ($do_cookies) {
+                    setcookie("mtt_$p",
+                              $params[$p],
+                              time() + ($days * 24 * 60 * 60)
+                    );
+                }
 
             # Use the cookie
             } elseif ($cookie["mtt_$p"] and ! $no_cookies) {
