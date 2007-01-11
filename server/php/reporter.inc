@@ -167,13 +167,9 @@ function setup_advanced($params) {
 
             if (array_search('test_build', $phases) !== false or
                 array_search('test_run', $phases) !== false) {
-                $menu =
-                    array_merge(
-                        $menu,
-                        array('test_build' => array(
-                            'suite_name' => array('', $control)
-                        ))
-                    );
+
+                # There are no test_build fields for [Advanced] window
+
             }
             if (array_search('test_run', $phases) !== false) {
                 $menu =
