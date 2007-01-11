@@ -1,7 +1,7 @@
 <?php
 
 #
-# Copyright (c) 2006 Sun Microsystems, Inc.
+# Copyright (c) 2006-2007 Sun Microsystems, Inc.
 #                         All rights reserved.
 # $COPYRIGHT$
 #

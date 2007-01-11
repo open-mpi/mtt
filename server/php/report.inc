@@ -1,7 +1,7 @@
 <?php
 
 #
-# Copyright (c) 2006 Sun Microsystems, Inc.
+# Copyright (c) 2006-2007 Sun Microsystems, Inc.
 #                         All rights reserved.
 # $COPYRIGHT$
 #
@@ -708,7 +708,7 @@ function do_graph($data, $type) {
     # Write the graph to a file
     # (Timestamp it so the browser doesn't reload a cached
     # image when/if the user changes a graphing preference)
-    $filename = './tmp/' . time() . '_' . title2filename($title . $subtitle) . '.png';
+    $filename = "./tmp/".time().'_'.title2filename($title.' '.$type.' '.$subtitle).'.png';
     unlink($filename);
     $graph->Stroke($filename);
 
@@ -1057,7 +1057,7 @@ function raw_data($arr, $style) {
     eval("\$subtitle = $nl2br(\$arr[\$i]);");
 
     # Prepare a logical filename for the CSV file
-    $filename = './tmp/' . title2filename($title . $subtitle) . '.csv';
+    $filename = './tmp/'.title2filename($title.$subtitle).'.csv';
 
     eval("\$subtitle = $unalign(\$subtitle);");
     $content .= "$br<b><i>" . font('-1', $subtitle) . "</b></i>";
@@ -2325,9 +2325,6 @@ function process_offset_field($params) {
 
 # This function always returns a 'ttable_id' for
 # compose_sql, whether it is a new or recycled ttable
-#
-# X: ALERT USER IF THEY TRY TO BRING UP A CHERRY PICKED
-# REPORT ON AN EXPIRED ttable!
 function process_ttable_id_field($params) {
 
     global $new_ttable;
