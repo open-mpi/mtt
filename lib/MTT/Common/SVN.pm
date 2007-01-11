@@ -102,7 +102,7 @@ sub Get {
     my $svn_password = Value($ini, $section, "svn_password");
     my $svn_password_cache = Value($ini, $section, "svn_password_cache");
     MTT::DoCommand::Chdir($dir);
-    ($dir, $data->{r}) = MTT::Files::svn_checkout($data->{url}, $svn_r, "", $svn_username, $svn_password, $svn_password_cache, 1, 1);
+    ($dir, $data->{r}) = MTT::Files::svn_checkout($data->{url}, $svn_r, $svn_username, $svn_password, $svn_password_cache, 1, 1);
     if (!$dir) {
         $ret->{test_result} = MTT::Values::FAIL;
         $ret->{result_message} = "Failed to SVN export";
