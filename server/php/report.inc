@@ -628,7 +628,8 @@ function do_graph($data, $type) {
     $unit = get_axis_unit($type);
 
     # Collect graph data
-    list($lineplots,
+    list($datapoints,
+         $lineplots,
          $message_sizes,
          $legend_items,
          $title,
@@ -660,6 +661,16 @@ function do_graph($data, $type) {
     $scale = "$xscale$yscale";
 
     $graph->SetScale($scale);
+
+    # Do not let the plots go off the bottom of the graph!
+    $ymin = min(array_map('min', $datapoints));
+    $ymin2 = array_map('min', $datapoints);
+
+    # For logarithmic axis scaling, JpGraph incorrectly
+    # defaults to 10^0 when the min approaches zero, set the
+    # y-minimum to 10^-2 (0.01)
+    if ($ymin < 0.01 and $yscale == 'log')
+        $graph->yaxis->scale->SetAutoMin(-2);
 
     $gJpgBrandTiming = true;
 
@@ -871,6 +882,7 @@ function collect_graph_data($data, $type) {
                 $color = 'black';
 
             $lineplots[$i] = new LinePlot($ydata);
+            $datapoints[$i] = $ydata;
 
             # Human row numbers are +1
             $legend_items[$i] = 
@@ -886,7 +898,8 @@ function collect_graph_data($data, $type) {
         foreach (array_keys($legend_items) as $i)
             $lineplots[$i]->SetLegend($legend_items[$i]);
 
-    return array($lineplots,
+    return array($datapoints,
+                 $lineplots,
                  $message_sizes,
                  $legend_items,
                  $title,
