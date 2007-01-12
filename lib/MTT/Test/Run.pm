@@ -100,6 +100,28 @@ sub Run {
                                         next;
                                     }
                                     my $mpi_install = $MTT::MPI::installs->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key};
+                                    my $mpi_get = $MTT::MPI::sources->{$mpi_get_key}->{$mpi_version_key};
+
+                                    # See if we're supposed to skip
+                                    # this MPI get or this MPI install
+                                    my $skip_mpi_get = 
+                                        MTT::Values::Value($ini, $section, 
+                                                           "skip_mpi_get");
+                                    if ($skip_mpi_get &&
+                                        $skip_mpi_get eq $mpi_get_key) {
+                                        Verbose("   Skipping run for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] per INI configuration\n");
+                                        next;
+                                    }
+                                    my $skip_mpi_install = 
+                                        MTT::Values::Value($ini, $section, 
+                                                           "skip_mpi_install");
+                                    if ($skip_mpi_install &&
+                                        $skip_mpi_install eq $mpi_install_key) {
+                                        Verbose("   Skipping run for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] per INI configuration\n");
+                                        next;
+                                    }
+
+                                    # Alles gut.  Go do it.
                                     _do_run($ini, $section, $test_build, 
                                             $mpi_install, $top_dir, $force);
                                     %ENV = %ENV_SAVE;

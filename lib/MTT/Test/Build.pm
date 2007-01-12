@@ -151,6 +151,25 @@ sub Build {
                                         next;
                                     }
 
+                                    # See if we're supposed to skip
+                                    # this MPI get or this MPI install
+                                    my $skip_mpi_get = 
+                                        MTT::Values::Value($ini, $section, 
+                                                           "skip_mpi_get");
+                                    if ($skip_mpi_get &&
+                                        $skip_mpi_get eq $mpi_get_key) {
+                                        Verbose("   Skipping build for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] per INI configuration\n");
+                                        next;
+                                    }
+                                    my $skip_mpi_install = 
+                                        MTT::Values::Value($ini, $section, 
+                                                           "skip_mpi_install");
+                                    if ($skip_mpi_install &&
+                                        $skip_mpi_install eq $mpi_install_key) {
+                                        Verbose("   Skipping build for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] per INI configuration\n");
+                                        next;
+                                    }
+
                                     # We don't have a test build for
                                     # this particular MPI source
                                     # instance.  So cd into the MPI
