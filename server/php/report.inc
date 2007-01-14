@@ -1320,6 +1320,7 @@ function slices_links($n, $limit, $params) {
 
     # Convenience arrow for going through 100s of rows
     $img  = "<img src='$top/images/%s_arrow.gif' border='0'>";
+    $format = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
     $prev = sprintf($img, 'no');
     $next = sprintf($img, 'no');
 
