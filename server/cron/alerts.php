@@ -4,14 +4,14 @@
 <?php
 
 #
-# Copyright (c) 2006 Sun Microsystems, Inc.
+# Copyright (c) 2006-2007 Sun Microsystems, Inc.
 #                          All rights reserved.
 # 
 # Email reporter -
 #   (Set this script up as a cron job)
 #
 
-$topdir = ".";
+$topdir = "../php";
 include_once("$topdir/curl_get.inc");
 include_once("$topdir/ini.inc");
 include_once("$topdir/reporter.inc");
