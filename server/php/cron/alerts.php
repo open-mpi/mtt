@@ -11,7 +11,7 @@
 #   (Set this script up as a cron job)
 #
 
-$topdir = "../php";
+$topdir = "..";
 include_once("$topdir/curl_get.inc");
 include_once("$topdir/ini.inc");
 include_once("$topdir/reporter.inc");
