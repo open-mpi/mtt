@@ -24,7 +24,7 @@ include_once("$topdir/database.inc");
 function dump_query_screen($nogo) {
 
     $phases   = process_phase_field($_GET);
-    $defaults = setup_defaults($phases);
+    $defaults = setup_mainwin_fields($phases);
     $layout   = setup_layout($phases);
 
     # Fill-in form using last invocation's input
@@ -207,12 +207,12 @@ function get_form_universe($columns_arg) {
     $tables = array_merge($tables, $phase_tables);
 
     # Do *not* provide menus for these fields
-    $big_columns = array(
-        'command'             => 1,
-        'configure_arguments' => 1,
-        'bitness'             => 1,
-        'endian'              => 1,
-    );
+    # $big_columns = array(
+    #     'command'             => 1,
+    #     'configure_arguments' => 1,
+    #     'bitness'             => 1,
+    #     'endian'              => 1,
+    # );
 
     # COMMENT THIS OUT FOR NOW, IT'S NOT REALLY HELPING THE
     # TOOL AND IT SLOWS DOWN BRING-UP TIME TO MAKE IT MORE
@@ -693,7 +693,7 @@ function setup_layout_html($layout, $lasttime, $links, $disable) {
         # Bring over phase-independent selections, and
         # combine them with phase-dependent defaults on the
         # phase-selector radio-button click
-        $defaults = setup_defaults($phase);
+        $defaults = setup_mainwin_fields($phase);
         $selections = form_carryover($defaults, $phase);
         $selections['phase'] = strtolower($phase);
 
@@ -1289,6 +1289,8 @@ EOT;
     th { font-size: 80%; } 
     th#result { font-size: 55%; } 
     img#result { width: 55%; height: 55%; } 
+
+    highlight { background-color:yellow; }
 
 EOT;
 

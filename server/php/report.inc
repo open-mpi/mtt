@@ -59,6 +59,7 @@ function dump_report() {
     # Process input params
     $phases          = process_phase_field($_GET);
     $date_fields     = process_date_field($_GET);
+    $large_fields    = process_large_fields($_GET);
     $input_fields    = process_input_fields($_GET);
     $result_fields   = process_result_fields($phases, $_GET);
     $sort_field      = process_sort_field($_GET);
@@ -70,10 +71,10 @@ function dump_report() {
     # depending on whether a 'select_more' parameter is set
     if ($report_type == 'detail') {
         $do_detailed = true;
-        $detail_fields = detail_fields(get_scalar($phases));
+        $detail_fields = setup_detail_fields(get_scalar($phases));
     } elseif ($report_type == 'performance') {
         $do_performance = true;
-        $performance_fields = performance_fields();
+        $performance_fields = setup_performance_fields();
     } else
         $do_summary = true;
 
@@ -82,6 +83,7 @@ function dump_report() {
         $date_fields,
         $ttable_id_field,
         $input_fields,
+        $large_fields,
         $result_fields,
         $detail_fields,
         $performance_fields,
@@ -91,7 +93,8 @@ function dump_report() {
     );
 
     # Order columns left-to-right
-    $query['select'] = order_columns($query['select']);
+    $query['select']      = order_columns($query['select']);
+    $query['select_more'] = order_columns($query['select_more']);
 
     # Pass down phases field
     $query['phases'] = $phases;
@@ -242,7 +245,7 @@ function detail_table($headers, $resource) {
         foreach ($headers as $header) {
             print (($i % 1 == 0) ? "\n<tr>" : "") .
                   "\n$td <b>" . stylize_trial_font(label($header), $trial) . "</b> $tdl " .
-                  "\n<pre>" . stylize_trial_font(wordwrap($values[$i], WRAP), $trial) . "</pre>";
+                  "\n<pre>" . stylize_trial_font(highlight_match($header, wordwrap($values[$i], WRAP)), $trial) . "</pre>";
             $i++;
         }
         print "</table>";
@@ -254,6 +257,19 @@ function detail_table($headers, $resource) {
     print "\n</table>" .
           "\n</table>" .
           "\n\n<!-- report_end -->\n\n";
+}
+
+# Wrap matches with HTML FONT tags to visually highlight them
+function highlight_match($param, $value) {
+
+    $match = $_GET["text_$param"];
+    $match = preg_replace("/;/", "|", $match);
+
+    return preg_replace(
+                "/($match)/i",
+                "<font style=\"background-color:yellow\">$1</font>",
+                $value
+           );
 }
 
 # Return true if the row is a row flagged "--trial"
@@ -1312,7 +1328,7 @@ function get_scalar($var) {
 
 # Show links to report slices ('x' rows at a time)
 function slices_links($n, $limit, $params) {
-
+    
     # Globalize the date range
     global $date_fields;
 
@@ -1320,7 +1336,7 @@ function slices_links($n, $limit, $params) {
 
     # Convenience arrow for going through 100s of rows
     $img  = "<img src='$top/images/%s_arrow.gif' border='0'>";
-    $format = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
+    $href = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
     $prev = sprintf($img, 'no');
     $next = sprintf($img, 'no');
 
@@ -1363,21 +1379,21 @@ function slices_links($n, $limit, $params) {
         if ($i == $offset)
             $links[] = $label;
         else
-            $links[] = sprintf($format, $qstring, $label);
+            $links[] = sprintf($href, $qstring, $label);
 
         # Arrows
         $prevn = $offset - $limit;
         $nextn = $offset + $limit;
         if ($i == $prevn)
-             $prev = sprintf($format, $qstring, sprintf($img, "left"));
+             $prev = sprintf($href, $qstring, sprintf($img, "left"));
         elseif ($i == $nextn)
-             $next = sprintf($format, $qstring, sprintf($img, "right"));
+             $next = sprintf($href, $qstring, sprintf($img, "right"));
 
         $i += $limit;
     }
     $ret .= "\n<br>";
 
-    # Do not print a lone '0'
+    # Do not print a lone '1'
     if (sizeof($links) > 1) {
         $ret .= "\n<table width='100%'><tr><td align='center'>";
 
@@ -1450,7 +1466,7 @@ function drilldown_links() {
 
         # Bring over phase-independent selections, and
         # combine them with phase-dependent defaults
-        $defaults = setup_defaults($phase);
+        $defaults = setup_mainwin_fields($phase);
         $qstring_arr = form_carryover($defaults);
         $qstring_arr['phase'] = $phase;
 
@@ -1468,7 +1484,7 @@ function drilldown_links() {
             # Loop over header names
             foreach ($headers['params'] as $param) {
                 $qstring_arr["text_$param"] = 
-                    exact_match($params[$i++]);
+                    exact_match($param, $params[$i++]);
             }
             $qstring_arr['test_result'] = $phase_results_table[$phase][$j++];
 
@@ -1503,7 +1519,7 @@ function drilldown_links() {
             return $param;
 
         $qstring_arr["text_$header"] = 
-            exact_match($param);
+            exact_match($header, $param);
 
         $ret = sprintf($format, arr2qstring($qstring_arr), $param);
     }
@@ -1541,7 +1557,7 @@ function drilldown_links() {
 
             # Bring over phase-independent selections, and
             # combine them with phase-dependent defaults
-            $defaults = setup_defaults($phase);
+            $defaults = setup_mainwin_fields($phase);
             $qstring_arr = form_carryover($defaults);
             $qstring_arr['phase'] = $phase;
 
@@ -1706,11 +1722,21 @@ function sorting_links($headers, $label, $arrow_size) {
     return $ret;
 }
 
-# Return the string with beginning/ending regexp match
-# boundaries (param/value drilldown links on table cells
-# should use this)
-function exact_match($str) {
-    return '^' . $str . '$';
+# If the param is not a ''large_field'', return the string with
+# beginning/ending regexp match boundaries (param/value drilldown links on
+# table cells should use this)
+function exact_match($param, $str) {
+
+    static $special_fields;
+    if (! $special_fields)
+        $special_fields = setup_large_fields();
+
+    # A few fields are *highly*  unlikely to be searched 
+    # for in the ''exact'' sense
+    if (! preg_match("/" . join("|", $special_fields) . "/i", $param))
+        return '^' . $str . '$';
+    else
+        return $str;
 }
 
 # Return number of rows in report
@@ -2060,13 +2086,19 @@ function process_input_fields($params) {
 
     global $new_ttable;
 
+    static $query;
+    if ($query)
+        return $query;
+
     $query['where'] = array();
     $query['select'] = array();
 
     # These fields will not be string searchable
-    $special_fields = array(
-        "timestamp",
-        "phase",
+    $special_fields = array_merge(
+        array("timestamp", "phase"),
+
+        # Handle these with process_large_fields()
+        setup_large_fields()
     );
 
     $enums = enums_table();
@@ -2185,9 +2217,6 @@ function process_date_field($params) {
 
     # Put TIMEZONE into environment for the session
     $timezone = strtoupper(TIMEZONE);
-    # putenv("PGTZ=$timezone");
-    # $_ENV['PGTZ'] = $timezone;
-    #do_pg_query("SET TIME ZONE '$timezone';");
 
     $now = select_scalar("SELECT " . sprintf($format, "now() AT TIME ZONE '$timezone'"));
     $date['current'] = $now;
@@ -2461,6 +2490,9 @@ function process_trial_field($trial) {
     return $query;
 }
 
+# X: COULD USING THIS BE AN OPTIMZATION? OR IS
+# IT USELESS?
+#
 # Return 'on' if all cherries are checked
 # Return 'off' if all cherries are unchecked
 # Return false if cherries are heterogeneous
@@ -2533,6 +2565,68 @@ function process_cookie(&$params, &$cookie) {
     }
 }
 
+# Large fields are categorized as fields that often contain
+# more than ~32 chars.  Return a list of fields that need to
+# be ''substring-ed'' out in order to fit properly in a
+# Summary table
+function setup_large_fields() {
+
+    static $ret;
+    if ($ret)
+        return $ret;
+
+    $ret = array(
+        'configure_arguments',
+        'command',
+        'result_message',
+        'result_stdout',
+        'result_stderr',
+        'environment',
+    );
+
+    return $ret;
+}
+
+# Generate WHERE clause pieces from user-entered textfields
+function process_large_fields($params) {
+
+    static $query;
+    if ($query)
+        return $query;
+
+    $type = strtolower(process_report_type($_GET));
+
+    $fields = setup_large_fields();
+
+    foreach ($fields as $field) {
+        $value = $params["text_$field"];
+
+        if ($value and $value != 'all') {
+
+            $value = preg_replace("/;/", "|", $value);
+
+            # In Summary view, use a string function to extract the match
+            # for display in the table
+            if ($type == 'summary' or 
+                $type == 'performance') {
+                $query['select'][$field] =
+                    "substring($field from '$value') as $field";
+
+            # In Detail view, display the entire field (with the matches highlighted)
+            #
+            # X: WE SHOULD PUT THE RETURN VALUES HERE THROUGH A PL/pgSQL FUNCTION OF 
+            # SOME KIND TO DO THE HIGHLIGHTING THERE
+            } else {
+                $query['select_more'][$field] = $field;
+            }
+
+            $query['where'][] = "(" . "$field ~* '$value')";
+        }
+    }
+
+    return $query;
+}
+
 # Convert a _GET param to a define() constant
 function param2constant($str) {
 
@@ -2600,55 +2694,63 @@ function order_columns($columns) {
     $layout = array(
 
         # row number
-        'n'                 => 1,
+        'n'                   => 1,
 
         # trial
-        'trial'             => 1,
+        'trial'               => 1,
 
         # results (left)
-        'start_timestamp'   => 1,
+        'start_timestamp'     => 1,
 
         # submit
-        'http_username'     => 1,
-        'local_username'    => 1,
-        'hostname'          => 1,
-        'platform_name'     => 1,
+        'http_username'       => 1,
+        'local_username'      => 1,
+        'hostname'            => 1,
+        'platform_name'       => 1,
 
         # compute_cluster
-        'platform_hardware' => 1,
-        'platform_type'     => 1,
-        'os_name'           => 1,
-        'os_version'        => 1,
+        'platform_hardware'   => 1,
+        'platform_type'       => 1,
+        'os_name'             => 1,
+        'os_version'          => 1,
 
         # mpi_install
-        'mpi_name'          => 1,
-        'mpi_version'       => 1,
-        'bitness'           => 1,
-        'endian'            => 1,
-        'vpath_mode'        => 1,
-        'compiler_name'     => 1,
-        'compiler_version'  => 1,
+        'mpi_name'            => 1,
+        'mpi_version'         => 1,
+        'bitness'             => 1,
+        'endian'              => 1,
+        'vpath_mode'          => 1,
+        'compiler_name'       => 1,
+        'compiler_version'    => 1,
+        'configure_arguments' => 1,
 
-        # phase-specific
-        'suite_name'        => 1,
-        'test_name'         => 1,
-        'np'                => 1,
-        'variant'           => 1,
+        # test_build
+        'suite_name'          => 1,
+
+        # test_run
+        'test_name'           => 1,
+        'np'                  => 1,
+        'variant'             => 1,
+        'command'             => 1,
 
         # results (right)
-        'exit_value'        => 1,
-        'exit_signal'       => 1,
-        'duration'          => 1,
-        'client_serial'     => 1,
+        'exit_value'          => 1,
+        'exit_signal'         => 1,
+        'duration'            => 1,
+        'client_serial'       => 1,
+        'result_message'      => 1,
+        'result_stdout'       => 1,
+        'result_stderr'       => 1,
+        'environment'         => 1,
 
         # performance
-        'message_size'      => 1,
-        'bandwidth_min'     => 1,
-        'bandwidth_max'     => 1,
-        'bandwidth_avg'     => 1,
-        'latency_min'       => 1,
-        'latency_max'       => 1,
-        'latency_avg'       => 1,
+        'message_size'        => 1,
+        'bandwidth_min'       => 1,
+        'bandwidth_max'       => 1,
+        'bandwidth_avg'       => 1,
+        'latency_min'         => 1,
+        'latency_max'         => 1,
+        'latency_avg'         => 1,
     );
 
     foreach (array_keys($layout) as $column)
@@ -2659,14 +2761,18 @@ function order_columns($columns) {
 }
 
 # Add these to select statements for Detail reports
-function detail_fields($phase) {
+function setup_detail_fields($phase) {
+
+    static $ret;
+    if ($ret)
+        return $ret;
 
     # MPI Install
     if ($phase == 'mpi_install')
         $phase_columns = array(
             'configure_arguments' => 'configure_arguments',
-            'compiler_version' => 'compiler_version',
-            'vpath_mode' => 'vpath_mode',
+            'compiler_version'    => 'compiler_version',
+            'vpath_mode'          => 'vpath_mode',
         );
 
     # Test Build
@@ -2691,18 +2797,42 @@ function detail_fields($phase) {
         'client_serial'   => 'client_serial',
     );
     
-    return 
-        array('select_more' => 
+    $ret =
+        array('select_more' =>
             array_merge(
                 $phase_columns,
                 $results_columns
             )
         );
+
+    # Whack fields set in this function that have already been filtered on
+    $large_fields = process_large_fields($_GET);
+    $input_fields = process_input_fields($_GET);
+
+    $query = array_merge_recursive(
+        $large_fields,
+        $input_fields
+    );
+
+    foreach (array_keys($ret['select_more']) as $k) {
+        foreach ($query['where'] as $q) {
+            if (preg_match("/$k/", $q)) {
+                unset($ret['select_more'][$k]);
+            }
+        }
+    }
+
+    return $ret;
 }
 
 # Return performance columns
-function performance_fields() {
-    return 
+function setup_performance_fields() {
+
+    static $ret;
+    if ($ret)
+        return $ret;
+
+    $ret =
         array('performance' =>
             array(
                 'message_size'  => 'message_size',
@@ -2714,6 +2844,7 @@ function performance_fields() {
                 'latency_avg'   => 'latency_avg',
             )
         );
+    return $ret;
 }
 
 #########################################

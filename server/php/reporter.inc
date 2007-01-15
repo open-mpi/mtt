@@ -119,73 +119,93 @@ function setup_prefs() {
 # Return a list of columns to show/hide
 function setup_advanced($params) {
 
-    $phases = process_phase_field($params);
-
     static $menu;
 
-    if (! $menu) {
+    if ($menu)
+        return $menu;
 
-        # Put hide first so it defaults as the shown menu item
-        $control = array('hide', 'show');
+    # Put hide first so it defaults as the shown menu item
+    $control = array('hide', 'show');
 
-        $menu = array(
-            'compute_cluster' => array(
-                'os_version'          => array('', $control),
-                'platform_type'       => array('', $control),
-               #'platform_hardware'   => array('', $control),
-               #'platform_name'       => array('', $control),
-               #'os_name'             => array('', $control),
-            ),
-            'submit' => array(
-                'hostname'            => array('', $control),
-               #'local_username'      => array('', $control),
-               #'http_username'       => array('', $control),
-            ),
-            'mpi_install' => array(
-                'compiler_name'       => array('', $control),
-                'compiler_version'    => array('', $control),
-                'vpath_mode'          => array('', $control),
-                'endian'              => array('', $control),
-                'bitness'             => array('', $control),
-               #'mpi_name'            => array('', $control),
-               #'mpi_version'         => array('', $control),
-               #'configure_arguments' => array('', $control),
-            ),
-            'results' => array(
-                'exit_value'          => array('', $control),
-                'exit_signal'         => array('', $control),
-                'duration'            => array('', $control),
-                'client_serial'       => array('', $control),
-                'result_message'      => array(''),
-                'result_stdout'       => array(''),
-                'result_stderr'       => array(''),
-                'environment'         => array(''),
-            ),
-        );
+    $phases = process_phase_field($params);
+    $main_window = setup_mainwin_fields($phases);
 
-        if (sizeof($phases) == 1) {
+    $menu = array(
+        'compute_cluster' => array(
+            'os_version'          => array('', $control),
+            'platform_type'       => array('', $control),
+            'platform_hardware'   => array('', $control),
+            'platform_name'       => array('', $control),
+            'os_name'             => array('', $control),
+        ),
+        'submit' => array(
+            'hostname'            => array('', $control),
+            'local_username'      => array('', $control),
+            'http_username'       => array('', $control),
+        ),
+        'mpi_install' => array(
+            'compiler_name'       => array('', $control),
+            'compiler_version'    => array('', $control),
+            'vpath_mode'          => array('', $control),
+            'endian'              => array('', $control),
+            'bitness'             => array('', $control),
+            'mpi_name'            => array('', $control),
+            'mpi_version'         => array('', $control),
+            'configure_arguments' => array(''),
+        ),
+        'results' => array(
+            'exit_value'          => array('', $control),
+            'exit_signal'         => array('', $control),
+            'duration'            => array('', $control),
+            'client_serial'       => array('', $control),
+            'result_message'      => array(''),
+            'result_stdout'       => array(''),
+            'result_stderr'       => array(''),
+            'environment'         => array(''),
+        ),
+    );
 
-            if (array_search('test_build', $phases) !== false or
-                array_search('test_run', $phases) !== false) {
+    if (sizeof($phases) == 1) {
 
-                # There are no test_build fields for [Advanced] window
+        if (array_search('test_build', $phases) !== false or
+            array_search('test_run', $phases) !== false) {
+            $menu =
+                array_merge(
+                    $menu,
+                    array('test_build' =>
+                        array(
+                            'suite_name' => array('', $control),
+                        ))
+                );
+        }
+        if (array_search('test_run', $phases) !== false) {
+            $menu =
+                array_merge(
+                    $menu,
+                    array('test_run' => 
+                        array(
+                            'variant'   => array('', $control),
+                            'test_name' => array('', $control),
+                            'np'        => array('', $control),
+                            'command'   => array('', $control),
+                        ))
+                );
+        }
+    }
 
-            }
-            if (array_search('test_run', $phases) !== false) {
-                $menu =
-                    array_merge(
-                        $menu,
-                        array('test_run' => 
-                            array(
-                                'variant'   => array('', $control),
-                                #'test_name' => array('', $control),
-                                #'np'        => array('', $control),
-                                #'command'   => array('', $control),
-                            ))
-                    );
+    # Exclude fields that are already in the main window
+    # to avoid overlapping of form controls
+    foreach (array_keys($menu) as $table) {
+        foreach (array_keys($menu[$table]) as $k) {
+            if (isset($main_window[$k])) {
+                unset($menu[$table][$k]);
             }
         }
     }
+    # Whack any empty advanced categories
+    foreach (array_keys($menu) as $table)
+        if (sizeof($menu[$table]) == 0)
+            unset($menu[$table]);
 
     return $menu;
 }
@@ -347,7 +367,7 @@ function strip_prefix($str) {
 
 # Return an array of default values for textfields
 # (Feed this too form_carryover)
-function setup_defaults($phases) {
+function setup_mainwin_fields($phases) {
 
     # Arrayify the argument
     if (! is_array($phases))
@@ -397,7 +417,7 @@ function setup_defaults($phases) {
                 'suite_name' => 'all',
                 'test_name'  => 'all',
                 'np'         => 'all',
-                'command'    => 'all',
+                'command'    => '',
             );
     }
 
@@ -448,13 +468,13 @@ function developer_params() {
     return $params;
 }
 
-# Take a 'defaults' array (output from setup_defaults) Carry
+# Take a 'defaults' array (output from setup_mainwin_fields) Carry
 # over textfields, show/hide menus, and radios from the last
 # invocation (Returns an arr2qstring-ready list)
 #
 # Dual-purpose function:
 # (1). Used for filling in form controls from "last time"
-# (2). Used (in tandem with setup_defaults) for creating
+# (2). Used (in tandem with setup_mainwin_fields) for creating
 #      drilldown links, for transitions between phase
 #      changes
 #
