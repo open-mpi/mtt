@@ -1892,23 +1892,15 @@ function compose_sql($query) {
     if (! $new_ttable) {
 
         # We have already filtered by date range
-        remove_match($query['where'], 'start_timestamp');
+        unset($query['where']['start_timestamp']);
 
-        # Hack to whack a WHERE clause if the column is not
+        # Whack WHERE clause if the column is not
         # in the ttable
-        #
-        # WARNING: IF A WHERE CLAUSE CONTAINS THE STRING
-        # 'trial =', IT WILL GET WHACKED!
-        #
-        # X: QUERY['WHERE'] SHOULD BE SETUP LIKE
-        # QUERY['SELECT'] (E.G., QUERY[COLUMN_NAME] => LIST
-        # OF WHERE CLAUSES) SUCH THAT WE CAN DO AN UNSET,
-        # INSTEAD OF A REMOVE_MATCH HERE ON THE QUERY
-        # STRUCTURE
-        if (! column_exists('trial', $ttable))
-            remove_match($query['where'], 'trial =');
+        foreach (array_keys($query['where']) as $column)
+            if (! column_exists($column, $ttable))
+                unset($query['where'][$column]);
 
-        $where = $query['where'];
+        $where = array_values2($query['where']);
 
         if ($where)
             $criteria .= "\nWHERE " . join(" AND $nl", $where);
@@ -1966,6 +1958,8 @@ function compose_sql($query) {
         )
     );
 
+    $wheres = array_values2($query['where']);
+
     # Splice out orderby's old position, and place
     # it at the front of the ORDER BY clause
     if ($orderby) {
@@ -1990,9 +1984,9 @@ function compose_sql($query) {
     $cmd .= "\n FROM " .
                 "$nl" . join(",$nl", $tables);
 
-    if ($query['where']) {
+    if ($wheres) {
         $cmd .= "\n WHERE " .
-                    "$nl" . join("$nl AND $nl", $query['where']);
+                    "$nl" . join("$nl AND $nl", $wheres);
     }
 
     if (array_keys($query['select'])) {
@@ -2010,6 +2004,15 @@ function compose_sql($query) {
 
     debug_sql($cmd, 1);
     do_pg_query($cmd);
+
+    return $ret;
+}
+
+# Return the array values that are a depth of 
+# 2 away from the argument passed
+function array_values2($arr) {
+    foreach (array_keys($arr) as $k)
+        $ret[] = $arr[$k];
 
     return $ret;
 }
@@ -2149,6 +2152,9 @@ function process_input_fields($params) {
                 $clauses[] = "$column LIKE '$str'";
 
             # Exact match for '^...$'
+            # (Optimize here, by doing a straight '='
+            # comparison instead of using the regular
+            # expression engine)
             elseif (preg_match('/^\^.*\$$/', $str))
                 $clauses[] = "$column = '" . trim($str, '^$') . "'";
 
@@ -2157,7 +2163,7 @@ function process_input_fields($params) {
                 foreach (tokenize($params[$k]) as $str)
                     $clauses[] = "$column ~* '$str'";
 
-            $query['where'][] = "(" . join(" OR ", $clauses) . ")";
+            $query['where'][$column] = "(" . join(" OR ", $clauses) . ")";
         }
         # If "show" is selected, add it to SELECT clause
         elseif (preg_match("/^show_/i", $k)) {
@@ -2347,7 +2353,7 @@ function process_date_field($params) {
     }
 
     $date['select'][$timestamp_name] = $clause;
-    $date['where'] = $where;
+    $date['where'][$timestamp_name] = $where;
     $date['absolute'] = $absolute;
 
     # Globalize the date range
@@ -2388,7 +2394,8 @@ function process_result_fields($phases, $params) {
         }
     }
 
-    $results['where'] = $when[$test_result];
+    if ($test_result)
+        $results['where'][$test_result] = $when[$test_result];
 
     return $results;
 }
@@ -2515,7 +2522,7 @@ function process_cherry_fields($params) {
 function process_trial_field($trial) {
 
     if (! $trial) {
-        $query['where'] = "(trial = 'f')";
+        $query['where']['trial'] = "(trial = 'f')";
     } else {
         $query['select']['trial'] = 'trial';
     }
@@ -2653,7 +2660,7 @@ function process_large_fields($params) {
                 $query['select_more'][$field] = $field;
             }
 
-            $query['where'][] = "(" . "$field ~* '$value')";
+            $query['where'][$field] = "(" . "$field ~* '$value')";
         }
     }
 
@@ -2847,16 +2854,9 @@ function setup_detail_fields($phase) {
         $input_fields
     );
 
-    # CAUTION: ON THE OFF CHANCE SOMEONE DOES A SEARCH ON A
-    # PATTERN THAT HAPPENS TO BE A DATABASE COLUMN_NAME, WE
-    # ARE WHACKING THE COLUMN HERE.
-    foreach (array_keys($ret['select_more']) as $k) {
-        foreach ($query['where'] as $q) {
-            if (preg_match("/$k/", $q)) {
-                unset($ret['select_more'][$k]);
-            }
-        }
-    }
+    foreach (array_keys($ret['select_more']) as $k)
+        if (isset($query['where'][$k]))
+            unset($ret['select_more'][$k]);
 
     return $ret;
 }
@@ -2959,19 +2959,6 @@ function array_combine2(&$hash, $keys, $values) {
     for ($i = 0; $i < sizeof($values); $i++) {
         $hash[$keys[$i]][$values[$i]] = 1;
     }
-}
-
-# Remove array entries whose value matches pattern
-# Return array of removed entries
-function remove_match(&$arr, $pattern) {
-
-    foreach (array_keys($arr) as $i) {
-        if (preg_match("/$pattern/", $arr[$i])) {
-            unset($arr[$i]);
-            $ret[] = $arr[$i];
-        }
-    }
-    return $ret;
 }
 
 # '%' -> '%%'
