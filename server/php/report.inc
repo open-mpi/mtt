@@ -40,6 +40,8 @@ function dump_report() {
     if (! isset($_GET['go']) and 
         ! isset($_GET['click']))
         $nogo = true;
+    else
+        $nogo = false;
 
     # Process session/cache/temp-table thingy
     $ttable_id_field = process_ttable_id_field($_GET);
@@ -1835,9 +1837,16 @@ function handle_absolute_date($date_fields) {
 # result filter for the report
 function basic_info($date_fields, $phases, $num_rows) {
 
+    $current = $date_fields["current"];
+    $absolute = $date_fields["absolute"];
+
+    # Strip off regexp for the report header
+    if (preg_match('/^\^(.*)\$$/', $absolute, $m))
+        $absolute = $m[1];
+
     $ret = "<table>" .
-          "<tr><td><b>Current time (" . strtoupper(TIMEZONE) . ")</b>:<td>" . $date_fields["current"] . 
-          "<tr><td><b>Date range (" . strtoupper(TIMEZONE) . ")</b>: <td>" . $date_fields["absolute"] .
+          "<tr><td><b>Current time (" . strtoupper(TIMEZONE) . ")</b>:<td>" . $current . 
+          "<tr><td><b>Date range (" . strtoupper(TIMEZONE) . ")</b>: <td>" .  $absolute .
           "<tr><td><b>Phase(s)</b>:<td>" . en_join(array_map('label', $phases));
 
     if ($_GET["test_result"])
@@ -2038,7 +2047,10 @@ function column_exists($column, $table) {
 #########################################
 
 # Determine report type, Summary or Detail
+#
+# SHOULD THIS FUNCTION BE "PASS BY REFERENCE"?
 function process_report_type($params) {
+
     $slice = $params['slice'];
     $go    = strtolower($_GET['go']);
     $click = strtolower($_GET['click']);
@@ -2215,7 +2227,7 @@ function process_date_field($params) {
     # Remove the GMT offset from fetched string
     $format = "replace(date_trunc('second', %s), '+00', '')";
 
-    # Put TIMEZONE into environment for the session
+    # Grab global TIMEZONE constant
     $timezone = strtoupper(TIMEZONE);
 
     $now = select_scalar("SELECT " . sprintf($format, "now() AT TIME ZONE '$timezone'"));
@@ -2224,6 +2236,16 @@ function process_date_field($params) {
     $timestamp_name   = "start_timestamp";
     $time_at_timezone = "CAST($timestamp_name as TIMESTAMP WITH TIME ZONE) AT TIME ZONE '$timezone'";
     $timestamp_param  = $params["text_$timestamp_name"];
+
+    # Date-string functions
+    $format2 = "\n substring($time_at_timezone from 0 for %d) || ':00 - ' || " .
+               "\n substring($time_at_timezone + interval '1 %s' from 0 for %d)  || ':00' " .
+               "\n   as $timestamp_name";
+    $format3 = "\n substring($time_at_timezone from 0 for %d) || ' - ' || " .
+               "\n substring($time_at_timezone + interval '1 %s' from 0 for %d) " .
+               "\n   as $timestamp_name";
+    $format4 = "\n $time_at_timezone " .
+               "\n   as $timestamp_name";
 
     if (preg_match($c, $timestamp_param, $m))
         $tokens = tokenize($timestamp_param);
@@ -2270,19 +2292,22 @@ function process_date_field($params) {
                     "$time_at_timezone < '$m[2]'";
                 $absolute = "$m[1] - $m[2]";
             }
+            # Exact date
+            elseif (preg_match("/-|\//", $token)) {
+                $where = "$time_at_timezone = '$token'";
+                $absolute = $token;
+            }
+            # Nothing (used to prevent an SQL error on a
+            # clean bring-up of reporter.php)
+            else {
+                $where = "$time_at_timezone = 'now()'";
+            }
         }
         # Do date aggregation
         else {
 
-            $format2 = "\n substring($time_at_timezone from 0 for %d) || ':00 - ' || " .
-                       "\n substring($time_at_timezone + interval '1 %s' from 0 for %d)  || ':00' " .
-                       "\n   as $timestamp_name";
-            $format3 = "\n substring($time_at_timezone from 0 for %d) || ' - ' || " .
-                       "\n substring($time_at_timezone + interval '1 %s' from 0 for %d) " .
-                       "\n   as $timestamp_name";
-
             if (preg_match("/by(?:-| *)sec(?:onds?)?/i", $token)) {
-                $clause = sprintf($format3, 20, "second", 20);
+                $clause = $format4;
 
             } elseif (preg_match("/by(?:-| *)min(?:utes?)?/i", $token)) {
                 $clause = sprintf($format3, 17, "minute", 17);
@@ -2301,6 +2326,14 @@ function process_date_field($params) {
             }
             $date["rollup"] = $token;
         }
+    }
+
+    $type = strtolower(process_report_type($_GET));
+
+    # Always show ''by second'' timestamps in Detail view
+    if ($type == 'detail') {
+        $clause = $format4;
+        $date["rollup"] = 'by second';
     }
 
     # PROTECT AGAINST AN EMPTY DATE RANGE.
@@ -2814,6 +2847,9 @@ function setup_detail_fields($phase) {
         $input_fields
     );
 
+    # CAUTION: ON THE OFF CHANCE SOMEONE DOES A SEARCH ON A
+    # PATTERN THAT HAPPENS TO BE A DATABASE COLUMN_NAME, WE
+    # ARE WHACKING THE COLUMN HERE.
     foreach (array_keys($ret['select_more']) as $k) {
         foreach ($query['where'] as $q) {
             if (preg_match("/$k/", $q)) {
