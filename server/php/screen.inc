@@ -791,7 +791,7 @@ function form_buttons($params, $disable_arg) {
         "\n<a href='javascript:document.report.reset();' " .
              "class='lgray_ln'>[Reset form]</a>";
     $buttons[] =
-        "\n<a href='$script' " .
+        "\n<a href='javascript:StartOver();' " .
              "class='lgray_ln'>[Start over]</a>";
 
     $format = "\n<input type='submit' id='click' name='click' value='%s' type='submit' %s>";
@@ -1273,6 +1273,26 @@ function html_head($title) {
 
 EOT;
 
+    $phases = process_phase_field($_GET);
+    $main_window = setup_mainwin_fields($phases);
+
+    # Create a function to set all the form data to its default
+    $javascript .= <<<EOT
+    function StartOver() {
+EOT;
+
+    foreach (array_keys($main_window) as $field) {
+        $value = $main_window[$field];
+
+        $javascript .= <<<EOT
+        document.report.text_$field.value = '$value';
+EOT;
+    }
+
+    $javascript .= <<<EOT
+    }
+EOT;
+
     $style = <<<EOT
 
     a.black_ln:link    { color: #000000 } /* for unvisited links */
@@ -1289,8 +1309,6 @@ EOT;
     th { font-size: 80%; } 
     th#result { font-size: 55%; } 
     img#result { width: 55%; height: 55%; } 
-
-    highlight { background-color:yellow; }
 
 EOT;
 

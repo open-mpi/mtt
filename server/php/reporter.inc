@@ -538,6 +538,16 @@ function form_carryover($defaults, $phase) {
     else
         $params['text_trial'] = $defaults['text_trial'];
 
+    # Carryover preferences in query string
+    static $prefs;
+    if (! $prefs)
+        $prefs = setup_prefs();
+
+    foreach (array_keys($prefs) as $category)
+        foreach (array_keys($prefs[$category]) as $pref)
+            if ($_GET[$pref] != '')
+                $params[$pref] = $_GET[$pref];
+
     # Carryover developer params
     foreach (array_keys($defaults['dev']) as $k)
         if (isset($_GET[$k]))
