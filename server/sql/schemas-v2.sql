@@ -75,7 +75,7 @@ CREATE TABLE mpi_install (
     --> put this into separate table because substring searchs will be much faster,
     --> but rich says that this is a fairly uncommon way to search for our results, so
     --> the PITA for putting this in another table might not be worth it
-    configure_arguments character varying(512) NOT NULL DEFAULT '', 
+    configure_arguments text NOT NULL DEFAULT '', 
     --> 0=no vpath, 1=relative vpath, 2=absolute vpath
     vpath_mode smallint NOT NULL DEFAULT '0',
     --> 1=32bit, 2=64bit, 3=both
