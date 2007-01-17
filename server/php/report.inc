@@ -2239,9 +2239,12 @@ function process_date_field($params) {
     $now = select_scalar("SELECT " . sprintf($format, "now() AT TIME ZONE '$timezone'"));
     $date['current'] = $now;
 
-    $timestamp_name   = "start_timestamp";
-    $time_at_timezone = "CAST($timestamp_name as TIMESTAMP WITH TIME ZONE) AT TIME ZONE '$timezone'";
-    $timestamp_param  = $params["text_$timestamp_name"];
+    $timestamp_name      = "start_timestamp";
+    $time_at_timezone    = "CAST($timestamp_name as TIMESTAMP WITH TIME ZONE) AT TIME ZONE '$timezone'";
+    $timestamp_param     = $params["text_$timestamp_name"];
+
+    # This will immediately put reporter.php in ''absolute date range'' mode
+    $force_absolute_date = $params["force_absolute_date"];
 
     # Date-string functions
     $format2 = "\n substring($time_at_timezone from 0 for %d) || ':00 - ' || " .
@@ -2355,6 +2358,11 @@ function process_date_field($params) {
     $date['select'][$timestamp_name] = $clause;
     $date['where'][$timestamp_name] = $where;
     $date['absolute'] = $absolute;
+
+    # Put reporter.php in absolute date range mode
+    # (This is an option for cron/alerts.php)
+    if ($force_absolute_date)
+        $_GET["text_$timestamp_name"] = $absolute;
 
     # Globalize the date range
     $date_fields = $date;
