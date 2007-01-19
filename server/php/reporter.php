@@ -20,7 +20,7 @@
 deny_mirror();
 
 # 'debug' is an aggregate trace
-if ($_GET['debug'] == 'on') {
+if (isset($_GET['debug'])) {
     $_GET['verbose'] = 'on';
     $_GET['dev']     = 'on';
     $_GET['cgi']     = 'on';
@@ -28,10 +28,10 @@ if ($_GET['debug'] == 'on') {
 }
 
 # Set PHP trace levels
-if ($_GET['verbose'])
+if (isset($_GET['verbose']))
     error_reporting(E_ALL);
 else
-    error_reporting(E_ERROR | E_WARNING | E_PARSE);
+    error_reporting(E_ERROR | E_PARSE);
 
 # Includes
 $topdir = ".";
