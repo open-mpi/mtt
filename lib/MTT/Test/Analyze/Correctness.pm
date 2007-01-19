@@ -90,10 +90,10 @@ sub Analyze {
             $report->{result_message} = "Failed; ";
             if (MTT::DoCommand::wifexited($results->{exit_status})) {
                 my $s = MTT::DoCommand::wexitstatus($results->{exit_status});
-                $report->{result_message} .= "exit status: $s\n";
+                $report->{result_message} .= "exit status: $s";
             } else {
                 my $sig = MTT::DoCommand::wtermsig($results->{exit_status});
-                $report->{result_message} .= "termination signal: $sig\n";
+                $report->{result_message} .= "termination signal: $sig";
             }
         }
     }
