@@ -1504,6 +1504,13 @@ function drilldown_links() {
         $header = func_get_arg(0);
         $param  = func_get_arg(1);
 
+        # We do not know how to provide drilldowns for start_timestamp right
+        # now. It would require a lot of conditionalizing about whether a
+        # ttable is being used, carrying over the date rollup ('by interval'),
+        # etc.
+        if ($header == 'start_timestamp')
+            return $param;
+
         # Prepare a query string for manipulation
         # Note the direct assignment from _GET, instead of using
         # form_carryover
