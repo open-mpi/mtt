@@ -879,9 +879,9 @@ sub get_icc_version {
     Debug("&get_icc_version\n");
     my $ret = "unknown";
 
-    if (open GCC, "icc --version|") {
-        my $str = <GCC>;
-        close(GCC);
+    if (open ICC, "icc --version|") {
+        my $str = <ICC>;
+        close(ICC);
         chomp($str);
 
         my @vals = split(" ", $str);
@@ -889,6 +889,27 @@ sub get_icc_version {
     }
     
     Debug("&get_icc_version returning: $ret\n");
+    return $ret;
+}
+
+#--------------------------------------------------------------------------
+
+# Return the version of the PGI C compiler
+sub get_pgcc_version {
+    Debug("&get_pgcc_version\n");
+    my $ret = "unknown";
+
+    if (open PGCC, "pgcc -V|") {
+        my $str = <PGCC>;
+        $str = <PGCC>;
+        close(PGCC);
+        chomp($str);
+
+        my @vals = split(" ", $str);
+        $ret = "$vals[1] ($vals[2] $vals[5] $vals[6])";
+    }
+    
+    Debug("&get_pgcc_version returning: $ret\n");
     return $ret;
 }
 
