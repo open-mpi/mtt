@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2007      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -95,7 +96,7 @@ sub _stringify {
         # we want this to be a multi-line output.  
         my $val = $hash->{$k};
         next
-            if (!$val);
+            if (!defined($val));
         my $want_multi = ($val =~ /\n/);
 
         # We currently have 2 conventions (bonk!) for field names --
