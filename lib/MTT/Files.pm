@@ -463,4 +463,30 @@ sub save_dumpfile {
     rename("$filename.new", $filename);
 }
 
+# Write out a file
+sub SafeWrite {
+    my ($force, $filename, $body) = @_;
+    my $ret;
+
+    $ret->{success} = 0;
+
+    # Does the file already exist?
+    if (-r $filename && !$force) {
+        return $ret;
+    }
+
+    # Write out the file
+    if (!open FILE, ">$filename") {
+        $ret->{result_message} = "Failed to write to file: $@";
+        return $ret;
+    }
+    print FILE $body;
+    close FILE;
+
+    # All done
+    $ret->{success} = 1;
+
+    return $ret;
+}
+
 1;

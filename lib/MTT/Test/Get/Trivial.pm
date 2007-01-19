@@ -18,35 +18,7 @@ use File::Temp qw(tempfile);
 use MTT::Messages;
 use MTT::DoCommand;
 use MTT::Values;
-
-#--------------------------------------------------------------------------
-
-# Local variable indicating whether we're written any new files or not
-my $have_new;
-
-#--------------------------------------------------------------------------
-
-sub _do_write {
-    my ($force, $filename, $body) = @_;
-    my $ret;
-
-    # Does the file already exist?
-    if (-r $filename && !$force) {
-        return undef;
-    }
-
-    # Write out the file
-    if (!open FILE, ">$filename") {
-        $ret->{result_message} = "Failed to write to file: $@";
-        return $ret;
-    }
-    print FILE $body;
-    close FILE;
-
-    # All done
-    $have_new = 1;
-    return undef;
-}
+use MTT::Files;
 
 #--------------------------------------------------------------------------
 
@@ -60,13 +32,13 @@ sub Get {
 
     # We're in the source tree, so just write out some files
 
-    $have_new = $ret->{have_new} = 0;
+    $ret->{have_new} = 0;
 
     #
     # C
     #
 
-    $x = _do_write($force, "hello.c", "/*
+    $x = MTT::Files::SafeWrite($force, "hello.c", "/*
  * This program is automatically generated via the \"Trivial\" Test::Get
  * module of the MPI Testing Tool (MTT).  Any changes you make here may
  * get lost!
@@ -85,12 +57,12 @@ int main(int argc, char* argv[]) {
     MPI_Finalize();
     return 0;
 }\n");
-    if ($x) {
+    if (! $x->{success}) {
         $ret->{result_message} = $x->{result_message};
         return $ret;
     }
 
-    $x = _do_write($force, "ring.c", "/*
+    $x = MTT::Files::SafeWrite($force, "ring.c", "/*
  * This program is automatically generated via the \"Trivial\" Test::Get
  * module of the MPI Testing Tool (MTT).  Any changes you make here may
  * get lost!
@@ -156,7 +128,7 @@ int main(int argc, char *argv[])
     MPI_Finalize();
     return 0;
 }\n");
-    if ($x) {
+    if (! $x->{success}) {
         $ret->{result_message} = $x->{result_message};
         return $ret;
     }
@@ -165,7 +137,7 @@ int main(int argc, char *argv[])
     # C++
     #
 
-    $x = _do_write($force, "hello.cc", "//
+    $x = MTT::Files::SafeWrite($force, "hello.cc", "//
 // This program is automatically generated via the \"Trivial\" Test::Get
 // module of the MPI Testing Tool (MTT).  Any changes you make here may
 // get lost!
@@ -185,12 +157,12 @@ int main(int argc, char* argv[]) {
     MPI::Finalize();
     return 0;
 }\n");
-    if ($x) {
+    if (! $x->{success}) {
         $ret->{result_message} = $x->{result_message};
         return $ret;
     }
 
-    $x = _do_write($force, "ring.cc", "//
+    $x = MTT::Files::SafeWrite($force, "ring.cc", "//
 // This program is automatically generated via the \"Trivial\" Test::Get
 // module of the MPI Testing Tool (MTT).  Any changes you make here may
 // get lost!
@@ -252,7 +224,7 @@ int main(int argc, char *argv[])
     MPI::Finalize();
     return 0;
 }\n");
-    if ($x) {
+    if (! $x->{success}) {
         $ret->{result_message} = $x->{result_message};
         return $ret;
     }
@@ -261,7 +233,7 @@ int main(int argc, char *argv[])
     # Fortran 77
     #
 
-    $x = _do_write($force, "hello.f", "C
+    $x = MTT::Files::SafeWrite($force, "hello.f", "C
 C This program is automatically generated via the \"Trivial\" Test::Get
 C module of the MPI Testing Tool (MTT).  Any changes you make here may
 C get lost!
@@ -279,12 +251,12 @@ C
         print *, 'Hello, Fortran 77 world, I am ', rank, ' of ', size
         call MPI_FINALIZE(ierr)
         end\n");
-    if ($x) {
+    if (! $x->{success}) {
         $ret->{result_message} = $x->{result_message};
         return $ret;
     }
 
-    $x = _do_write($force, "ring.f", "C
+    $x = MTT::Files::SafeWrite($force, "ring.f", "C
 C This program is automatically generated via the \"Trivial\" Test::Get
 C module of the MPI Testing Tool (MTT).  Any changes you make here may
 C get lost!
@@ -338,7 +310,7 @@ C
       call mpi_barrier(MPI_COMM_WORLD, ierr)
       call mpi_finalize(ierr)
       end\n");
-    if ($x) {
+    if (! $x->{success}) {
         $ret->{result_message} = $x->{result_message};
         return $ret;
     }
@@ -347,7 +319,7 @@ C
     # Fortran 90
     #
 
-    $x = _do_write($force, "hello.f90", "!
+    $x = MTT::Files::SafeWrite($force, "hello.f90", "!
 ! This program is automatically generated via the \"Trivial\" Test::Get
 ! module of the MPI Testing Tool (MTT).  Any changes you make here may
 ! get lost!
@@ -364,12 +336,12 @@ program main
     print *, 'Hello, Fortran 90 world, I am ', rank, ' of ', size
     call MPI_FINALIZE(ierr)
 end\n");
-    if ($x) {
+    if (! $x->{success}) {
         $ret->{result_message} = $x->{result_message};
         return $ret;
     }
 
-    $x = _do_write($force, "ring.f90", "!
+    $x = MTT::Files::SafeWrite($force, "ring.f90", "!
 ! This program is automatically generated via the \"Trivial\" Test::Get
 ! module of the MPI Testing Tool (MTT).  Any changes you make here may
 ! get lost!
@@ -419,14 +391,14 @@ program ring_f90
   call mpi_barrier(MPI_COMM_WORLD, ierr)
   call mpi_finalize(ierr)
 end\n");
-    if ($x) {
+    if (! $x->{success}) {
         $ret->{result_message} = $x->{result_message};
         return $ret;
     }
 
     # All done
     $ret->{test_result} = MTT::Values::PASS;
-    $ret->{have_new} = $have_new;
+    $ret->{have_new} = $x->{success};
     $ret->{prepare_for_install} = "MTT::Common::Copytree::PrepareForInstall";
     $ret->{module_data}->{directory} = cwd();
     $ret->{result_message} = "Success";

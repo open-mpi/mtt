@@ -19,6 +19,7 @@ use MTT::DoCommand;
 use MTT::Messages;
 use MTT::FindProgram;
 use MTT::Values;
+use MTT::Files;
 
 #--------------------------------------------------------------------------
 
@@ -162,10 +163,6 @@ sub Install {
     }
     $ret->{make_install_stdout} = $result_stdout;
 
-    # Detect the library's pointer-size
-
-    $ret->{bitness} = get_mpi_type();
-
     # Set which bindings were compiled
 
     $ret->{c_bindings} = 1;
@@ -191,7 +188,7 @@ sub Install {
         $ret->{test_result} = MTT::Values::PASS;
         $ret->{result_message} = "Success";
         $ret->{exit_status} = $x->{exit_status};
-        Debug("Build was a test_result\n");
+        Debug("Build was a success\n");
     }
 
     return $ret;
@@ -326,33 +323,5 @@ sub en_join {
     return 0;
 }
 
-# Determine the pointer-size (32-bit or
-# 64-bit) of the installed Open MPI library
-sub get_mpi_type {
-
-    my $tmp;
-    my $libmpi;
-    my $filetype;
-    my @binaries = (
-        "opal_wrapper",
-        "orted",
-        "orteprobe",
-        "orterun",
-    );
-
-    $tmp        = FindProgram(@binaries);
-    $tmp        =~ s#\bbin/.*#lib\/libmpi.so#;
-    $libmpi     = $tmp;
-    $filetype   = `file $libmpi`;
-    ($filetype) =~ m/\:(.*)$/;
-
-    if ($filetype =~ /\b32\b/) {
-        return 32;
-    } elsif ($filetype =~ /\b64\b/) {
-        return 64;
-    } else {
-        return undef;
-    }
-}
 
 1;

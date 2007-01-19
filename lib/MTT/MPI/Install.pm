@@ -106,6 +106,9 @@ my $installed_section = "mpi_installed";
 # Where the top-level installation tree is
 my $install_base;
 
+# Where the MPI library is
+our $install_dir;
+
 #--------------------------------------------------------------------------
 
 sub _make_safe_dir {
@@ -294,19 +297,8 @@ sub _do_install {
     my @save_env;
     ProcessEnvKeys($config, \@save_env);
     
-    # bitness
-    my $tmp;
-    $tmp = Value($ini, $section, "bitness");
-    if ($tmp == 32) {
-        $config->{bitness} = 1;
-    } elsif ($tmp == 64) {
-        $config->{bitness} = 2;
-    } else {
-        $config->{bitness} = undef;
-    }
-
     # configure_arguments
-    $tmp = Value($ini, $section, "configure_arguments");
+    my $tmp = Value($ini, $section, "configure_arguments");
     $config->{configure_arguments} = $tmp
         if (defined($tmp));
     
@@ -408,12 +400,20 @@ sub _do_install {
     my $ret = MTT::Module::Run("MTT::MPI::Install::$config->{module}",
                                "Install", $ini, $section, $config);
     my $duration = time - $start_time . " seconds";
+
+    # Set install_dir for the global environment
+    # (it is needed by post-install funclets such as get_bitness)
+    $install_dir = $config->{installdir};
     
-    # Detect bitness
-    if ((MTT::Values::PASS == $ret->{test_result})
-        && defined($ret->{bitness})) {
-        $config->{bitness} = $ret->{bitness};
+    # bitness (must be processed *after* installation)
+    my $bitness = Value($ini, $section, "bitness");
+
+    # If they did not use a funclet, translate the
+    # bitness(es) for the MTT database
+    if ($bitness !~ /\&/) {
+        $bitness = EvaluateString("&get_mpi_install_bitness(\"$bitness\")");
     }
+    $config->{bitness} = $bitness;
     
     # Unload any loaded environment modules
     if ($#env_modules >= 0) {
@@ -429,6 +429,7 @@ sub _do_install {
             phase => "MPI Install",
 
             mpi_install_section_name => $config->{simple_section_name},
+            bitness => $config->{bitness},
             compiler_name => $config->{compiler_name},
             compiler_version => $config->{compiler_version},
             configure_arguments => $config->{configure_arguments},

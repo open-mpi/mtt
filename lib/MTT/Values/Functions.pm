@@ -16,6 +16,8 @@ use strict;
 use File::Find;
 use MTT::Messages;
 use MTT::Globals;
+use MTT::Files;
+use Data::Dumper;
 
 # Do NOT use MTT::Test::Run here, even though we use some
 # MTT::Test::Run values below.  This will create a "use loop".  Be
@@ -852,6 +854,7 @@ sub loadleveler_max_procs {
     return $ret;
 }
 
+
 #--------------------------------------------------------------------------
 
 # Return the version of the GNU C compiler
@@ -910,6 +913,191 @@ sub get_pgcc_version {
     }
     
     Debug("&get_pgcc_version returning: $ret\n");
+    return $ret;
+}
+
+#--------------------------------------------------------------------------
+
+# Return the version of the Sun Studio C compiler
+sub get_sun_cc_version {
+    Debug("&get_sun_cc_version\n");
+    my $ret = "unknown";
+
+    if (open SUNCC, "cc -V 2>&1 | head -n 1 | nawk '{print $4}'") {
+        my $str = <SUNCC>;
+        $str = <SUNCC>;
+        close(SUNCC);
+        chomp($str);
+
+        $ret = $str;
+    }
+    
+    Debug("&get_sun_cc_version returning: $ret\n");
+    return $ret;
+}
+
+#--------------------------------------------------------------------------
+
+# Detect the bitness of the MPI library in this order:
+#   1) User overridden (CSV of 1 or more valid bitnesses)
+#   2) Small test C program (using void*)
+#   3) /usr/bin/file command output
+#
+# Return a database-ready bitmapped value
+sub get_mpi_install_bitness {
+    Debug("&get_mpi_intall_bitness\n");
+
+    my $override   = shift;
+    my $installdir = $MTT::MPI::Install::install_dir;
+    my $force      = 1;
+    my $ret        = undef;
+
+    # 1)
+    # Users can override the automatic bitness detection
+    # (useful in cases where the MPI has multiple bitnesses
+    # e.g., Sun packages or Mac OSX universal binaries)
+    if ($override) {
+        $ret = _bitness_to_bitmapped($override);
+        Debug("&get_mpi_install_bitness returning: $ret\n");
+        return $ret;
+    }
+
+    # 2)
+    # Write out a simple C program to output the bitness
+    my $prog_name  = "get_bitness_c";
+    my $executable = "$installdir/$prog_name";
+    my $mpicc      = "$installdir/bin/mpicc";
+    my $mpirun     = "$installdir/bin/mpirun";
+
+    my $x = MTT::Files::SafeWrite($force, "$executable.c", "/*
+ * This program is automatically generated via the \"get_bitness\"
+ * function of the MPI Testing Tool (MTT).  Any changes you make here may
+ * get lost!
+ *
+ * Copyrights and licenses of this file are the same as for the MTT.
+ */
+
+#include <stdio.h>
+
+int main(int argc, char* argv[]) {
+    printf(\"%d\\n\", sizeof(void *) * 8);
+    return 0;
+}
+");
+
+    # Compile the program
+    $x = MTT::DoCommand::Cmd(1, "$mpicc $executable.c -o $executable", -1, 0, 0);
+
+    if ($x->{exit_value} != 0) {
+        Warning("Couldn't compile $prog_name.c.\n");
+    }
+        
+    if (-f $executable) {
+        $x = MTT::DoCommand::Cmd(1, "$mpirun $executable", -1, 0, 0);
+    } else {
+        Warning("$prog_name does not exist!\n");
+    }
+
+    if ($x->{exit_value} != 0) {
+        Warning("Couldn't execute $prog_name.\n");
+    } else {
+        $ret = _validate_bitness($x->{result_stdout});
+
+        if (! $ret) {
+            Warning("$prog_name did not execute properly.\n" .
+                    "Here is what it output: " . $x->{result_stdout} . "\n");
+        } else {
+            Debug("$prog_name executed properly.\n");
+
+            $ret = _bitness_to_bitmapped($ret);
+            Debug("&get_mpi_install_bitness returning: $ret\n");
+            return $ret;
+        }
+    }
+
+    # 3)
+    # Try snarfing bitness using the /usr/bin/file command
+    my $libmpi;
+    my $filetype;
+
+    # Try to find a libmpi (either .so or .a)
+    $libmpi = "$installdir/lib/libmpi.so";
+
+    if (! -e $libmpi) {
+        $libmpi = "$installdir/lib/libmpi.a";
+    }
+
+    $filetype = `file $libmpi`;
+    ($filetype)  =~ m/\:(.*)$/;
+
+    $ret = _validate_bitness($filetype);
+
+    if (! defined($ret)) {
+        Warning("Could not get bitness using \"file\" command.\n");
+    } else {
+        Debug("Got bitness using \"file\" command.\n");
+    }
+
+    $ret = _bitness_to_bitmapped($ret);
+    Debug("&get_mpi_install_bitness returning: $ret\n");
+    return $ret;
+}
+
+# Make sure the bitness value makes sense
+sub _validate_bitness {
+
+    my $str = shift;
+    my $ret;
+
+    Debug("Validating bitness string ($str)\n");
+
+    # Valid bitnesses
+    my $v = "8|16|32|64|128";
+
+    # file command output
+    if ($str =~ /^[^\s]+:.*\b($v)-bit\b.*$/i) {
+        $ret = $1;
+    }
+    # get_bitness_c output
+    elsif ($str =~ /^($v)$/) {
+        $ret = $1;
+    }
+    # INI parameter (CSV of one or more bitnesses)
+    elsif ($str =~ /^((?:$v)
+                      (?:\s*,\s*(?:$v))*)$/x) {
+        $ret = $1;
+    }
+    # None of the above
+    else {
+        $ret = undef;
+    }
+
+    return $ret;
+}
+
+# Convert the human-readable CSV of bitness(es) to
+# its representation in the MTT database.
+sub _bitness_to_bitmapped {
+
+    my $csv = shift;
+    my $ret = 0;
+    my $shift;
+
+    Debug("Converting bitness string ($csv) to a bitmapped value\n");
+
+    return $ret if (! $csv);
+
+    my @bitnesses = split(/,/, $csv);
+
+    # Smallest bitness possible
+    my $smallest = 8;
+
+    # Generate a bitmap of all bitnesses
+    foreach my $bitness (@bitnesses) {
+        $shift = log($bitness)/log(2) - log($smallest)/log(2);
+        $ret |= (1 << $shift);
+    }
+
     return $ret;
 }
 
