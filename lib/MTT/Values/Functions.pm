@@ -852,4 +852,44 @@ sub loadleveler_max_procs {
     return $ret;
 }
 
+#--------------------------------------------------------------------------
+
+# Return the version of the GNU C compiler
+sub get_gcc_version {
+    Debug("&get_gcc_version\n");
+    my $ret = "unknown";
+
+    if (open GCC, "gcc --version|") {
+        my $str = <GCC>;
+        close(GCC);
+        chomp($str);
+
+        my @vals = split(" ", $str);
+        $ret = $vals[2];
+    }
+    
+    Debug("&get_gcc_version returning: $ret\n");
+    return $ret;
+}
+
+#--------------------------------------------------------------------------
+
+# Return the version of the Intel C compiler
+sub get_icc_version {
+    Debug("&get_icc_version\n");
+    my $ret = "unknown";
+
+    if (open GCC, "icc --version|") {
+        my $str = <GCC>;
+        close(GCC);
+        chomp($str);
+
+        my @vals = split(" ", $str);
+        $ret = "$vals[2] $vals[3]";
+    }
+    
+    Debug("&get_icc_version returning: $ret\n");
+    return $ret;
+}
+
 1;
