@@ -76,18 +76,20 @@ CREATE TABLE mpi_install (
     --> but rich says that this is a fairly uncommon way to search for our results, so
     --> the PITA for putting this in another table might not be worth it
     configure_arguments text NOT NULL DEFAULT '', 
-    --> 0=no vpath, 1=relative vpath, 2=absolute vpath
+    --> bitmapped field (LSB to MSB) 'none', 'relative', and 'absolute'
     vpath_mode smallint NOT NULL DEFAULT '0',
-    --> 1=32bit, 2=64bit, 3=both
-    bitness smallint NOT NULL DEFAULT '1',
-    --> 0=unknown, 1=big, 2=little
+    --> bitmapped field (LSB to MSB) 8, 16, 32, 64, and 128
+    bitness smallint NOT NULL DEFAULT '0',
+    --> bitmapped field (LSB to MSB) 'little' and 'big'
     endian smallint NOT NULL DEFAULT '0',
     UNIQUE (
             compute_cluster_id,
             mpi_get_id,
             compiler_id,
             configure_arguments,
-            vpath_mode
+            vpath_mode,
+            bitness,
+            endian
     )
 );
 
@@ -99,12 +101,13 @@ CREATE TABLE test_build (
     --> *** do not know how to standardize this 
     suite_name character varying(64) NOT NULL DEFAULT 'bogus',
     compiler_id integer NOT NULL DEFAULT '-38' REFERENCES compiler,
-    --> 1=32bit, 2=64bit, 3=both
-    bitness smallint NOT NULL DEFAULT '1',
+    --> bitmapped field (LSB to MSB) 8, 16, 32, 64, and 128
+    bitness smallint NOT NULL DEFAULT '0',
     UNIQUE (
             mpi_install_id,
             suite_name,
-            compiler_id
+            compiler_id,
+            bitness
     )
 );
 
