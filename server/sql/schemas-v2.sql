@@ -101,13 +101,10 @@ CREATE TABLE test_build (
     --> *** do not know how to standardize this 
     suite_name character varying(64) NOT NULL DEFAULT 'bogus',
     compiler_id integer NOT NULL DEFAULT '-38' REFERENCES compiler,
-    --> bitmapped field (LSB to MSB) 8, 16, 32, 64, and 128
-    bitness smallint NOT NULL DEFAULT '0',
     UNIQUE (
             mpi_install_id,
             suite_name,
-            compiler_id,
-            bitness
+            compiler_id
     )
 );
 
