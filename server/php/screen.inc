@@ -259,13 +259,22 @@ function get_form_universe($columns_arg) {
     # }
 
     # Some special enumerated types
-    $enums = enums_table();
+    $enums   = enums_table();
+    $bitmaps = bitmaps_table();
 
     # Hmmm. "all" and "unknown" are treated the same
     foreach (array_keys($enums) as $enum)
         $entries[$enum][] = array_merge(
             array("all"),
             array_values($enums[$enum]), 
+            array('unknown')
+        );
+
+    # Hmmm. "all" and "unknown" are treated the same
+    foreach (array_keys($bitmaps) as $enum)
+        $entries[$enum][] = array_merge(
+            array("all"),
+            array_values($bitmaps[$enum]), 
             array('unknown')
         );
 
@@ -1273,10 +1282,11 @@ function html_head($title) {
 
 EOT;
 
+    # Create a JavaScript function to set all the
+    # main window form fields to their defaults
     $phases = process_phase_field($_GET);
     $main_window = setup_mainwin_fields($phases);
 
-    # Create a function to set all the form data to its default
     $javascript .= <<<EOT
     function StartOver() {
 EOT;

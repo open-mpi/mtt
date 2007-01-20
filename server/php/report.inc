@@ -1443,6 +1443,17 @@ function drilldown_links() {
     if (! $phase_results_table)
         $phase_results_table = phase_results_table();
 
+    # SWAP THESE TWO VARIABLES OUT WITH CALL(S) TO A NICE
+    # PL/PGSQL FUNCTION(S) IS WHEN ONE GETS WRITTEN AND
+    # INSTALLED IN THE MTT DATABASE
+    static $enums;
+    if (! $enums)
+        $enums = enums_table();
+
+    static $bitmaps;
+    if (! $bitmaps)
+        $bitmaps = bitmaps_table();
+
     $self = 'http://' . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'];
     $format = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
 
@@ -1485,6 +1496,14 @@ function drilldown_links() {
             $i = 0;
             # Loop over header names
             foreach ($headers['params'] as $param) {
+
+                # REMOVE THIS IF STATEMENT WHEN A NICE PL/pgSQL FUNCTION IS
+                # INSTALLED IN THE MTT DATABASE
+                if (isset($bitmaps[$param])) {
+                    $i++;
+                    continue;
+                }
+
                 $qstring_arr["text_$param"] = 
                     exact_match($param, $params[$i++]);
             }
@@ -1509,6 +1528,11 @@ function drilldown_links() {
         # ttable is being used, carrying over the date rollup ('by interval'),
         # etc.
         if ($header == 'start_timestamp')
+            return $param;
+
+        # REMOVE THIS IF STATEMENT WHEN A NICE PL/pgSQL FUNCTION IS
+        # INSTALLED IN THE MTT DATABASE
+        if (isset($bitmaps[$header]))
             return $param;
 
         # Prepare a query string for manipulation
@@ -2124,6 +2148,7 @@ function process_input_fields($params) {
     );
 
     $enums = enums_table();
+    $bitmaps = bitmaps_table();
 
     foreach (array_keys($params) as $k) {
 
@@ -2138,8 +2163,10 @@ function process_input_fields($params) {
             $clauses = array();
 
             # Compose WHERE clause(s) on special enumerated types
-            if (preg_match("/" . join('|', array_keys($enums)) . "/i", $column)) {
-                $filters = array_flip($enums[$column]);
+            #
+            # X: SCRUB THIS BLOCK FOR A NICE CLEAN PL/PGSQL FUNCTION!
+            if (preg_match("/" . join('|', array_keys($bitmaps)) . "/i", $column)) {
+                $filters = array_flip($bitmaps[$column]);
                 foreach (tokenize($params[$k]) as $t) {
                     if (preg_match("/unknown/i", $t))
                         continue;
@@ -2188,18 +2215,42 @@ function process_input_fields($params) {
         }
     }
 
+    $nl = "\n\t\t";
+
+    #
+    # X: HANDLE WHERE CLAUSE HERE TOO FOR THE SPECIAL VALUES
+    #
+
     # Compose SELECT clause(s) on special enumerated types
     foreach (array_keys($enums) as $enum) {
         if (isset($query['select'][$enum])) {
             $query['select'][$enum] =
                 "(CASE ";
-            foreach (array_keys($enums[$enum]) as $k)
+            foreach (array_keys($enums[$enum]) as $k) {
                 $query['select'][$enum] .=
-                    "WHEN $enum = $k THEN '" . $enums[$enum][$k] . "' ";
+                    "$nl WHEN $enum = $k THEN '" . $enums[$enum][$k] . "' ";
+            }
             $query['select'][$enum] .=
-                "ELSE 'unknown' END) as $enum";
+                "$nl ELSE 'unknown' END) as $enum";
         }
     }
+
+    # Compose SELECT clause(s) on special bitmapped types
+    foreach (array_keys($bitmaps) as $bitmap) {
+        if (isset($query['select'][$bitmap])) {
+            $query['select'][$bitmap] =
+                "(CASE ";
+            foreach (array_keys($bitmaps[$bitmap]) as $k) {
+                $mask = "(0 | (1 << $k))";
+                $query['select'][$bitmap] .=
+                    "$nl WHEN ($bitmap & $mask) != 0 THEN '" . $bitmaps[$bitmap][$k] . "' ";
+            }
+            $query['select'][$bitmap] .=
+                "$nl ELSE 'unknown' END) as $bitmap";
+        }
+    }
+
+    var_dump_html(__FUNCTION__ . ":" . __LINE__ . " " .  '$query = ',$query);
 
     return $query;
 }
@@ -2236,6 +2287,7 @@ function process_date_field($params) {
 
     $sep = '[\s\+]';
     $c = '/\s*;\s*/';
+    $nl = "\n\t";
 
     # Remove the GMT offset from fetched string
     $format = "replace(date_trunc('second', %s), '+00', '')";
@@ -2304,7 +2356,7 @@ function process_date_field($params) {
                                 "(?:through|thru|and| - )" .
                                 "(.*)/i", $token, $m)) {
                 $where =
-                    "$time_at_timezone > '$m[1]'" . " AND " .
+                    "$time_at_timezone > '$m[1]'" . " AND $nl" .
                     "$time_at_timezone < '$m[2]'";
                 $absolute = "$m[1] - $m[2]";
             }

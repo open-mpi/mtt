@@ -56,23 +56,42 @@ define('PATH',    dirname($_SERVER['SCRIPT_NAME']));
 
 # Some special enumerated types
 function enums_table() {
+    
+    static $ret;
+    if ($ret)
+        return $ret;
 
-    return array(
+    # Currently, there are no enum types
+
+    return $ret;
+}
+
+# Some special bitmapped types
+function bitmaps_table() {
+
+    static $ret;
+    if ($ret)
+        return $ret;
+
+    $ret = array(
         'bitness' => array(
-            1 => 32,
-            2 => 64,
-            3 => '32/64',
+            8,
+            16,
+            32,
+            64,
+            128,
         ),
         'endian' => array(
-            1 => 'little',
-            2 => 'big',
+            'little',
+            'big',
         ),
         'vpath_mode' => array(
-            1 => 'no vpath',
-            2 => 'relative',
-            3 => 'absolute',
+            'relative',
+            'absolute',
         ),
     );
+
+    return $ret;
 }
 
 # Return a listing of which results go with which phase
