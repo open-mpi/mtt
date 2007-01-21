@@ -9,9 +9,26 @@ SELECT
     http_username,
     local_username,
     hostname,
-    bitness,
-    endian,
-    vpath_mode,
+    
+    -- Ordering matters here
+	(CASE
+		 WHEN (bitness)                               = 0 THEN 'unknown'
+		 WHEN (bitness # (0 | (1 << 2) | (1 << 3)))   = 0 THEN '32/64'
+		 WHEN (bitness & (0 | (1 << 2)))             != 0 THEN '32'
+		 WHEN (bitness & (0 | (1 << 3)))             != 0 THEN '64'
+		 WHEN (bitness & (0 | (1 << 0)))             != 0 THEN '8'
+		 WHEN (bitness & (0 | (1 << 1)))             != 0 THEN '16'
+		 WHEN (bitness & (0 | (1 << 4)))             != 0 THEN '128'
+		 ELSE 'unknown' END) as bitness,
+	(CASE
+		 WHEN (endian & (0 | (1 << 0)))              != 0 THEN 'little'
+		 WHEN (endian & (0 | (1 << 1)))              != 0 THEN 'big'
+		 ELSE 'unknown' END) as endian,
+	(CASE
+		 WHEN (vpath_mode & (0 | (1 << 0)))          != 0 THEN 'relative'
+		 WHEN (vpath_mode & (0 | (1 << 1)))          != 0 THEN 'absolute'
+		 ELSE 'unknown' END) as vpath_mode,
+
     compiler_name,
     compiler_version,
     configure_arguments,
@@ -61,9 +78,26 @@ SELECT
     http_username,
     local_username,
     hostname,
-    bitness,
-    endian,
-    vpath_mode,
+    
+    -- Ordering matters here
+	(CASE
+		 WHEN (bitness)                               = 0 THEN 'unknown'
+		 WHEN (bitness # (0 | (1 << 2) | (1 << 3)))   = 0 THEN '32/64'
+		 WHEN (bitness & (0 | (1 << 2)))             != 0 THEN '32'
+		 WHEN (bitness & (0 | (1 << 3)))             != 0 THEN '64'
+		 WHEN (bitness & (0 | (1 << 0)))             != 0 THEN '8'
+		 WHEN (bitness & (0 | (1 << 1)))             != 0 THEN '16'
+		 WHEN (bitness & (0 | (1 << 4)))             != 0 THEN '128'
+		 ELSE 'unknown' END) as bitness,
+	(CASE
+		 WHEN (endian & (0 | (1 << 0)))              != 0 THEN 'little'
+		 WHEN (endian & (0 | (1 << 1)))              != 0 THEN 'big'
+		 ELSE 'unknown' END) as endian,
+	(CASE
+		 WHEN (vpath_mode & (0 | (1 << 0)))          != 0 THEN 'relative'
+		 WHEN (vpath_mode & (0 | (1 << 1)))          != 0 THEN 'absolute'
+		 ELSE 'unknown' END) as vpath_mode,
+
     compiler_name,
     compiler_version,
     configure_arguments,
@@ -114,9 +148,26 @@ SELECT
     http_username,
     local_username,
     hostname,
-    bitness,
-    endian,
-    vpath_mode,
+    
+    -- Ordering matters here
+	(CASE
+		 WHEN (bitness)                               = 0 THEN 'unknown'
+		 WHEN (bitness # (0 | (1 << 2) | (1 << 3)))   = 0 THEN '32/64'
+		 WHEN (bitness & (0 | (1 << 2)))             != 0 THEN '32'
+		 WHEN (bitness & (0 | (1 << 3)))             != 0 THEN '64'
+		 WHEN (bitness & (0 | (1 << 0)))             != 0 THEN '8'
+		 WHEN (bitness & (0 | (1 << 1)))             != 0 THEN '16'
+		 WHEN (bitness & (0 | (1 << 4)))             != 0 THEN '128'
+		 ELSE 'unknown' END) as bitness,
+	(CASE
+		 WHEN (endian & (0 | (1 << 0)))              != 0 THEN 'little'
+		 WHEN (endian & (0 | (1 << 1)))              != 0 THEN 'big'
+		 ELSE 'unknown' END) as endian,
+	(CASE
+		 WHEN (vpath_mode & (0 | (1 << 0)))          != 0 THEN 'relative'
+		 WHEN (vpath_mode & (0 | (1 << 1)))          != 0 THEN 'absolute'
+		 ELSE 'unknown' END) as vpath_mode,
+
     compiler_name,
     compiler_version,
     configure_arguments,
@@ -184,9 +235,25 @@ SELECT
     compiler_name,
     compiler_version,
     configure_arguments,
-    vpath_mode,
-    endian,
-    bitness,
+    
+    -- Ordering matters here
+	(CASE
+		 WHEN (bitness)                               = 0 THEN 'unknown'
+		 WHEN (bitness # (0 | (1 << 2) | (1 << 3)))   = 0 THEN '32/64'
+		 WHEN (bitness & (0 | (1 << 2)))             != 0 THEN '32'
+		 WHEN (bitness & (0 | (1 << 3)))             != 0 THEN '64'
+		 WHEN (bitness & (0 | (1 << 0)))             != 0 THEN '8'
+		 WHEN (bitness & (0 | (1 << 1)))             != 0 THEN '16'
+		 WHEN (bitness & (0 | (1 << 4)))             != 0 THEN '128'
+		 ELSE 'unknown' END) as bitness,
+	(CASE
+		 WHEN (endian & (0 | (1 << 0)))              != 0 THEN 'little'
+		 WHEN (endian & (0 | (1 << 1)))              != 0 THEN 'big'
+		 ELSE 'unknown' END) as endian,
+	(CASE
+		 WHEN (vpath_mode & (0 | (1 << 0)))          != 0 THEN 'relative'
+		 WHEN (vpath_mode & (0 | (1 << 1)))          != 0 THEN 'absolute'
+		 ELSE 'unknown' END) as vpath_mode,
 
     -- submit
     http_username,
@@ -237,9 +304,25 @@ SELECT
     compiler_name,
     compiler_version,
     configure_arguments,
-    vpath_mode,
-    endian,
-    bitness,
+    
+    -- Ordering matters here
+	(CASE
+		 WHEN (bitness)                               = 0 THEN 'unknown'
+		 WHEN (bitness # (0 | (1 << 2) | (1 << 3)))   = 0 THEN '32/64'
+		 WHEN (bitness & (0 | (1 << 2)))             != 0 THEN '32'
+		 WHEN (bitness & (0 | (1 << 3)))             != 0 THEN '64'
+		 WHEN (bitness & (0 | (1 << 0)))             != 0 THEN '8'
+		 WHEN (bitness & (0 | (1 << 1)))             != 0 THEN '16'
+		 WHEN (bitness & (0 | (1 << 4)))             != 0 THEN '128'
+		 ELSE 'unknown' END) as bitness,
+	(CASE
+		 WHEN (endian & (0 | (1 << 0)))              != 0 THEN 'little'
+		 WHEN (endian & (0 | (1 << 1)))              != 0 THEN 'big'
+		 ELSE 'unknown' END) as endian,
+	(CASE
+		 WHEN (vpath_mode & (0 | (1 << 0)))          != 0 THEN 'relative'
+		 WHEN (vpath_mode & (0 | (1 << 1)))          != 0 THEN 'absolute'
+		 ELSE 'unknown' END) as vpath_mode,
 
     -- test_build
     suite_name,
@@ -294,9 +377,25 @@ SELECT
     compiler_name,
     compiler_version,
     configure_arguments,
-    vpath_mode,
-    endian,
-    bitness,
+    
+    -- Ordering matters here
+	(CASE
+		 WHEN (bitness)                               = 0 THEN 'unknown'
+		 WHEN (bitness # (0 | (1 << 2) | (1 << 3)))   = 0 THEN '32/64'
+		 WHEN (bitness & (0 | (1 << 2)))             != 0 THEN '32'
+		 WHEN (bitness & (0 | (1 << 3)))             != 0 THEN '64'
+		 WHEN (bitness & (0 | (1 << 0)))             != 0 THEN '8'
+		 WHEN (bitness & (0 | (1 << 1)))             != 0 THEN '16'
+		 WHEN (bitness & (0 | (1 << 4)))             != 0 THEN '128'
+		 ELSE 'unknown' END) as bitness,
+	(CASE
+		 WHEN (endian & (0 | (1 << 0)))              != 0 THEN 'little'
+		 WHEN (endian & (0 | (1 << 1)))              != 0 THEN 'big'
+		 ELSE 'unknown' END) as endian,
+	(CASE
+		 WHEN (vpath_mode & (0 | (1 << 0)))          != 0 THEN 'relative'
+		 WHEN (vpath_mode & (0 | (1 << 1)))          != 0 THEN 'absolute'
+		 ELSE 'unknown' END) as vpath_mode,
 
     -- test_build
     suite_name,

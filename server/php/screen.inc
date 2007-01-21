@@ -258,26 +258,6 @@ function get_form_universe($columns_arg) {
     #     }
     # }
 
-    # Some special enumerated types
-    $enums   = enums_table();
-    $bitmaps = bitmaps_table();
-
-    # Hmmm. "all" and "unknown" are treated the same
-    foreach (array_keys($enums) as $enum)
-        $entries[$enum][] = array_merge(
-            array("all"),
-            array_values($enums[$enum]), 
-            array('unknown')
-        );
-
-    # Hmmm. "all" and "unknown" are treated the same
-    foreach (array_keys($bitmaps) as $enum)
-        $entries[$enum][] = array_merge(
-            array("all"),
-            array_values($bitmaps[$enum]), 
-            array('unknown')
-        );
-
     $entries['start_timestamp'][] = array(
         'today',
         'yesterday',
