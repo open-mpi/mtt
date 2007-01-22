@@ -5,18 +5,12 @@
 #
 
 use Getopt::Std qw(getopts);
-getopts('dvhb:u:f:m:');
+use Data::Dumper;
+getopts('dvhb:u:f:m:t:');
 
 my $user = "mtt";
 my $db = "mtt3";
 my $logfile;
-
-# Choose which tables to report on (presumably,
-# these are the *big* ones)
-my @tables = (
-    'results',
-    'test_run',
-);
 
 # Grab command-line options
 if ($opt_d) { $debug   = 1; }
@@ -26,18 +20,34 @@ if ($opt_b) { $db      = $opt_b; }
 if ($opt_u) { $user    = $opt_u; }
 if ($opt_f) { $logfile = $opt_f; }
 if ($opt_m) { $method  = $opt_m; }
+if ($opt_t) { @tables  = split /,/, $opt_t; }
 
+# Default to using SQL
+$method = 'sql' if (! $method);
+
+# Choose which tables to report on (presumably,
+# these are the *big* ones)
+if (! @tables) {
+    @tables = (
+        'results',
+        'test_run',
+    );
+}
+$tables_csv = join(',', @tables);
+
+# Display help menu
 if ($help) {
     print "$0:
-         b (dataBase) : Database to use
-         u (User)     : Postgres user to execute commands as
-         f (logFile)  : Filename to write to
-         m (Method)   : { oid2name | sql }
+         b (dataBase) : Database to use (default: $db)
+         u (User)     : Postgres user to execute commands as (default: $user)
+         f (logFile)  : Filename to write to (default: stdout)
+         m (Method)   : { oid2name | sql } (default: $method)
+         t (Tables)   : Tables in $db to monitor (default: $tables_csv)
          h (Help)     : This help
-         d (Debug)    : Debug mode
-         v (Verbose)  : Verbose mode
+         d (Debug)    : Debug mode (default: off)
+         v (Verbose)  : Verbose mode (default: off)
 ";
-
+    exit;
 }
 
 # Setup logfile to write to
@@ -46,6 +56,8 @@ if ($logfile) {
 } else {
     open(logfile, ">-");
 }
+
+print "\n" . '@tables = ' . Dumper(@tables);
 
 # Monitor using oid2name
 if ($method =~ /oid2name/i) {
@@ -61,6 +73,18 @@ exit;
 # ---
 
 sub monitor_using_oid2name {
+
+    #
+    # To setup oid2name:
+    # 
+    # * Download postgres tarball here:
+    #       http://www.postgresql.org/ftp/source/v7.4.13/
+    # * gzip -dc postgresql-7.4.13.tar.gz | tar xvf -
+    # * cd postgresql-7.4.13
+    # * ./configure
+    # * cd src/port; gmake all
+    # * cd ../../contrib/oid2name; gmake all
+    #
 
     my $home     = $ENV{HOME};
     my $oid2name = "$home/bin/oid2name";
