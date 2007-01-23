@@ -986,14 +986,14 @@ int main(int argc, char* argv[]) {
 ");
 
     # Compile the program
-    $x = MTT::DoCommand::Cmd(1, "$mpicc $executable.c -o $executable", -1, 0, 0);
+    $x = MTT::DoCommand::Cmd(1, "$mpicc $executable.c -o $executable");
 
     if ($x->{exit_value} != 0) {
         Warning("Couldn't compile $prog_name.c.\n");
     }
         
     if (-f $executable) {
-        $x = MTT::DoCommand::Cmd(1, "$mpirun $executable", -1, 0, 0);
+        $x = MTT::DoCommand::Cmd(1, "$mpirun -np 1 $executable", 30);
     } else {
         Warning("$prog_name does not exist!\n");
     }
@@ -1098,6 +1098,46 @@ sub _bitness_to_bitmapped {
         $ret |= (1 << $shift);
     }
 
+    return $ret;
+}
+
+#--------------------------------------------------------------------------
+
+# Return a database-ready bitmapped value for endian-ness
+sub get_mpi_install_endian {
+    Debug("&get_mpi_intall_endian\n");
+
+    my $override   = shift;
+    my $ret        = undef;
+    my $bit_little = 0;
+    my $bit_big    = 1;
+
+    # Users can override the automatic endian detection
+    # (useful in cases where the MPI has multiple endians
+    # e.g., Mac OSX universal binaries)
+    if ($override) {
+        $ret = 0;
+
+        if ($override =~ /little/i) {
+            $ret |= $ret | (1 << $bit_little);
+        }
+        if ($override =~ /big/i) {
+            $ret |= $ret | (1 << $bit_big);
+        }
+        if ($override =~ /both/i) {
+            $ret |= $ret | (1 << $bit_little) | (1 << $bit_big);
+        }
+
+        Debug("&get_mpi_install_endian returning: $ret\n");
+        return $ret;
+    }
+
+    # Auto-detect by casting an int to a char
+    $ret = unpack("c2", pack("i", 1)) ?
+                    (1 << $bit_little) :
+                    (1 << $bit_big);
+
+    Debug("&get_mpi_install_endianness returning: $ret\n");
     return $ret;
 }
 

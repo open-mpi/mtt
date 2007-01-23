@@ -415,6 +415,16 @@ sub _do_install {
     }
     $config->{bitness} = $bitness;
     
+    # endian
+    my $endian = Value($ini, $section, "endian");
+
+    # If they did not use a funclet, translate the
+    # endian(es) for the MTT database
+    if ($endian !~ /\&/) {
+        $endian = EvaluateString("&get_mpi_install_endian(\"$endian\")");
+    }
+    $config->{endian} = $endian;
+    
     # Unload any loaded environment modules
     if ($#env_modules >= 0) {
         Debug("Unloading environment modules: @env_modules\n");
@@ -430,6 +440,7 @@ sub _do_install {
 
             mpi_install_section_name => $config->{simple_section_name},
             bitness => $config->{bitness},
+            endian => $config->{endian},
             compiler_name => $config->{compiler_name},
             compiler_version => $config->{compiler_version},
             configure_arguments => $config->{configure_arguments},
