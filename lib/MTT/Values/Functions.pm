@@ -947,10 +947,10 @@ sub get_sun_cc_version {
 sub get_mpi_install_bitness {
     Debug("&get_mpi_intall_bitness\n");
 
-    my $override   = shift;
-    my $installdir = $MTT::MPI::Install::install_dir;
-    my $force      = 1;
-    my $ret        = undef;
+    my $override    = shift;
+    my $install_dir = $MTT::MPI::Install::install_dir;
+    my $force       = 1;
+    my $ret         = undef;
 
     # 1)
     # Users can override the automatic bitness detection
@@ -965,9 +965,9 @@ sub get_mpi_install_bitness {
     # 2)
     # Write out a simple C program to output the bitness
     my $prog_name  = "get_bitness_c";
-    my $executable = "$installdir/$prog_name";
-    my $mpicc      = "$installdir/bin/mpicc";
-    my $mpirun     = "$installdir/bin/mpirun";
+    my $executable = "$install_dir/$prog_name";
+    my $mpicc      = "$install_dir/bin/mpicc";
+    my $mpirun     = "$install_dir/bin/mpirun";
 
     my $x = MTT::Files::SafeWrite($force, "$executable.c", "/*
  * This program is automatically generated via the \"get_bitness\"
@@ -1001,11 +1001,11 @@ int main(int argc, char* argv[]) {
     if ($x->{exit_value} != 0) {
         Warning("Couldn't execute $prog_name.\n");
     } else {
-        $ret = _validate_bitness($x->{result_stdout});
+        $ret = _extract_valid_bitness($x->{result_stdout});
 
         if (! $ret) {
-            Warning("$prog_name did not execute properly.\n" .
-                    "Here is what it output: " . $x->{result_stdout} . "\n");
+            Warning("$prog_name did not execute properly.\n");
+            Warning("$prog_name output: " . $x->{result_stdout} . "\n");
         } else {
             Debug("$prog_name executed properly.\n");
 
@@ -1017,20 +1017,33 @@ int main(int argc, char* argv[]) {
 
     # 3)
     # Try snarfing bitness using the /usr/bin/file command
-    my $libmpi;
-    my $filetype;
+    my $libmpi = _find_libmpi();
+    my $leader = "[^:]+:";
+    my $bitnesses;
 
-    # Try to find a libmpi (either .so or .a)
-    $libmpi = "$installdir/lib/libmpi.so";
+    # Split up file command's output
+    my @file_out = split /\n/, `file $libmpi`;
 
-    if (! -e $libmpi) {
-        $libmpi = "$installdir/lib/libmpi.a";
+    foreach my $line (@file_out) {
+
+        # Mac OSX *implies* 32-bit for ppc and i386
+        if ($line =~ /$leader.*\bmach-o\b.*\b(?:ppc|i386)\b/i) {
+            $bitnesses->{32} = 1;
+
+        # 64-bit
+        } elsif ($line =~ /$leader.*\b64-bit\b/i) {
+            $bitnesses->{64} = 1;
+
+        # 32-bit
+        } elsif ($line =~ /$leader.*\b32-bit\b/i) {
+            $bitnesses->{32} = 1;
+        }
     }
 
-    $filetype = `file $libmpi`;
-    ($filetype)  =~ m/\:(.*)$/;
+    # Compose CSV of bitness(es)
+    my $str = join(',', keys %{$bitnesses});
 
-    $ret = _validate_bitness($filetype);
+    $ret = _extract_valid_bitness($str);
 
     if (! defined($ret)) {
         Warning("Could not get bitness using \"file\" command.\n");
@@ -1044,7 +1057,7 @@ int main(int argc, char* argv[]) {
 }
 
 # Make sure the bitness value makes sense
-sub _validate_bitness {
+sub _extract_valid_bitness {
 
     my $str = shift;
     my $ret;
@@ -1054,21 +1067,10 @@ sub _validate_bitness {
     # Valid bitnesses
     my $v = "8|16|32|64|128";
 
-    # file command output
-    if ($str =~ /^[^\s]+:.*\b($v)-bit\b.*$/i) {
+    # CSV of one or more bitnesses
+    if ($str =~ /^((?:$v) (?:\s*,\s*(?:$v))*)$/x) {
         $ret = $1;
-    }
-    # get_bitness_c output
-    elsif ($str =~ /^($v)$/) {
-        $ret = $1;
-    }
-    # INI parameter (CSV of one or more bitnesses)
-    elsif ($str =~ /^((?:$v)
-                      (?:\s*,\s*(?:$v))*)$/x) {
-        $ret = $1;
-    }
-    # None of the above
-    else {
+    } else {
         $ret = undef;
     }
 
@@ -1107,37 +1109,121 @@ sub _bitness_to_bitmapped {
 sub get_mpi_install_endian {
     Debug("&get_mpi_intall_endian\n");
 
-    my $override   = shift;
-    my $ret        = undef;
-    my $bit_little = 0;
-    my $bit_big    = 1;
+    my $override = shift;
+    my $ret      = undef;
 
+    # 1)
     # Users can override the automatic endian detection
     # (useful in cases where the MPI has multiple endians
     # e.g., Mac OSX universal binaries)
     if ($override) {
-        $ret = 0;
-
-        if ($override =~ /little/i) {
-            $ret |= $ret | (1 << $bit_little);
-        }
-        if ($override =~ /big/i) {
-            $ret |= $ret | (1 << $bit_big);
-        }
-        if ($override =~ /both/i) {
-            $ret |= $ret | (1 << $bit_little) | (1 << $bit_big);
-        }
+        $ret = _endian_to_bitmapped($override);
 
         Debug("&get_mpi_install_endian returning: $ret\n");
         return $ret;
     }
 
+
+    # 2)
+    # Try snarfing endian(s) using the /usr/bin/file command
+    my $libmpi          = _find_libmpi();
+    my $leader          = "[^:]+:";
+    my $hardware_little = 'i386|x86_64';
+    my $hardware_big    = 'ppc|ppc64';
+    my $endians;
+
+    # Split up file command's output
+    my @file_out = split /\n/, `file $libmpi`;
+
+    foreach my $line (@file_out) {
+
+        # Mac OSX
+        if ($line =~ /$leader.*\bmach-o\b.*(?:$hardware_little)\b/i) {
+            $endians->{little} = 1;
+
+        # Mac OSX
+        } elsif ($line =~ /$leader.*\bmach-o\b.*(?:$hardware_big)\b/i) {
+            $endians->{big} = 1;
+
+        # Look for 'MSB' (Most Significant Bit)
+        } elsif ($line =~ /$leader.*\bMSB\b/i) {
+            $endians->{big} = 1;
+
+        # Look for 'LSB' (Least Significant Bit)
+        } elsif ($line =~ /$leader.*\bLSB\b/i) {
+            $endians->{little} = 1;
+        }
+    }
+
+    # Compose CSV of endian(s)
+    my $str = join(',', keys %{$endians});
+
+    $ret = _endian_to_bitmapped($str);
+
+    if (! $ret) {
+        Warning("Could not get endian-ness using \"file\" command.\n");
+    } else {
+        Debug("Got endian-ness using \"file\" command.\n");
+        return $ret;
+    }
+
+    # 3)
     # Auto-detect by casting an int to a char
-    $ret = unpack("c2", pack("i", 1)) ?
-                    (1 << $bit_little) :
-                    (1 << $bit_big);
+    my $str = unpack('c2', pack('i', 1)) ? 'little' : 'big';
+    $ret = _endian_to_bitmapped($str);
 
     Debug("&get_mpi_install_endianness returning: $ret\n");
+    return $ret;
+}
+
+# Convert the human-readable CSV of endian(s) to
+# its representation in the MTT database.
+sub _endian_to_bitmapped {
+
+    my $csv        = shift;
+    my $ret        = 0;
+    my $bit_little = 0;
+    my $bit_big    = 1;
+
+    Debug("Converting endian string ($csv) to a bitmapped value\n");
+
+    return $ret if (! $csv);
+
+    if ($csv =~ /little/i) {
+        $ret |= $ret | (1 << $bit_little);
+    }
+    if ($csv =~ /big/i) {
+        $ret |= $ret | (1 << $bit_big);
+    }
+    if ($csv =~ /both/i) {
+        $ret |= $ret | (1 << $bit_little) | (1 << $bit_big);
+    }
+
+    Debug("&_endian_to_bitmapped returning: $ret\n");
+    return $ret;
+}
+
+# Return the MPI library that will be passed to the file command
+sub _find_libmpi {
+
+    my $install_dir = $MTT::MPI::Install::install_dir;
+    my $ret = undef;
+
+    # Try to find a libmpi
+    my @libmpis = (
+        "$install_dir/lib/libmpi.dylib",
+        "$install_dir/lib/libmpi.a",
+        "$install_dir/lib/libmpi.so",
+    );
+
+    foreach my $libmpi (@libmpis) {
+        if (-e $libmpi) {
+            $ret = $libmpi;
+            last;
+        }
+    }
+
+    Debug("&_find_libmpi returning: $ret\n");
     return $ret;
 }
 
