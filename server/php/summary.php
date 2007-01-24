@@ -27,6 +27,7 @@
 $topdir = ".";
 include_once("$topdir/curl_get.inc");
 include_once("$topdir/http.inc");
+include_once("$topdir/html.inc");
 include_once("$topdir/reporter.inc");
 
 # In case we're using this script from the command-line
@@ -36,12 +37,12 @@ if ($argv)
 $GLOBALS['verbose'] = isset($_GET['verbose']) ? $_GET['verbose'] : 0;
 $GLOBALS['debug']   = isset($_GET['debug'])   ? $_GET['debug']   : 0;
 
-$domain       = 'http://www.open-mpi.org';
 $default_date = 'Yesterday';
 
-$self = $_SERVER['PHP_SELF'];
-$url  = preg_replace('/summary.php/', 'reporter.php', $self);
-$url  = "$domain$url";
+$reporter = 'reporter.php';
+$self     = $_SERVER['PHP_SELF'];
+$url      = preg_replace('/summary.php/', $reporter, $self);
+$url      = "$domain$url";
 
 $url_template = $url .  '?' .
 
@@ -116,7 +117,7 @@ $config['aggs'] = array(
     "&agg_os_version=on" .
     "",
 
-    "&" . $cgi_abbrevs["mainfield"] . "agg_timestamp=Hour-by-Hour" .
+    "&" . $cgi_abbrevs["mainfield"] . "agg_timestamp=-" .
     "&agg_test_name=on" .
     "&agg_test_np=on" .
     "&agg_os_version=on" .
@@ -176,7 +177,7 @@ $config['details'] = array(
 $config['description'] = array(
     "",
     "",
-    "hour-by-hour",
+    "",
     "just_failures, second-by-second",
 );
 
@@ -191,7 +192,7 @@ print <<<EOT
         <font size='+7'>Open&nbsp;MPI Test&nbsp;Results</font>
         <br>
         <font size='-1'>Time frame: $default_date - Now</font><br>
-        <font size='-1'>See also: <a href="./reporter.php">Open MPI Tests Reporter</a></font><br>
+        <font size='-1'>See also: <a href="./$reporter">Open MPI Tests Reporter</a></font><br>
 </table>
 EOT;
 

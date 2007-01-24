@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -18,52 +18,55 @@ use File::Temp qw(tempfile);
 use MTT::Messages;
 use Data::Dumper;
 
+# Want to see what MTT *would* do?
+our $no_execute;
+
 #--------------------------------------------------------------------------
 
 sub _kill_proc {
     my ($pid) = @_;
 
-    # Try an easy kill
+    # See if the proc is alive first
     my $kid;
+    kill(0, $pid);
+    $kid = waitpid($pid, WNOHANG);
+    return if (-1 == $kid);
+
+    # Try an easy kill
     kill("TERM", $pid);
     $kid = waitpid($pid, WNOHANG);
-    if ($kid != 0) {
-        return $?;
-    }
-    Verbose("** Kill TERM didn't work! (got $kid)\n");
+    # This sub is only invoked to forcibly kill the process (i.e.,
+    # it's over its timeout, so gotta kill it).  Hence, we don't care
+    # what the return status is -- just return if a) the process no
+    # longer exists (i.e., we get -1 back from waitpid), or we
+    # successfully killed it (i.e., we got the PID back from waitpid).
+    return if (0 != $kid);
+    Verbose("** Kill TERM didn't work!\n");
 
     # Nope, that didn't work.  Sleep a few seconds and try again.
     sleep(1);
     $kid = waitpid($pid, WNOHANG);
-    if ($kid != 0) {
-        return $?;
-    }
-    Verbose("** Kill TERM (more waiting) didn't work! (got $kid)\n");
+    return if (0 != $kid);
+    Verbose("** Kill TERM (more waiting) didn't work!\n");
 
     # That didn't work either.  Try SIGINT;
     kill("INT", $pid);
     $kid = waitpid($pid, WNOHANG);
-    if ($kid != 0) {
-        return $?;
-    }
-    Verbose("** Kill INT didn't work! (got $kid)\n");
+    return if (0 != $kid);
+    Verbose("** Kill INT didn't work!\n");
 
     # Nope, that didn't work.  Sleep a few seconds and try again.
     sleep(1);
     $kid = waitpid($pid, WNOHANG);
-    if ($kid != 0) {
-        return $?;
-    }
+    return if (0 != $kid);
     Verbose("** Kill INT (more waiting) didn't work!\n");
 
     # Ok, now we're mad.  Be violent.
     while (1) {
         kill("KILL", $pid);
         $kid = waitpid($pid, WNOHANG);
-        if ($kid != 0) {
-            return $?;
-        }
-        Verbose("** Kill KILL didn't work! (got $kid)\n");
+        return if (0 != $kid);
+        Verbose("** Kill KILL didn't work!\n");
         sleep(1);
     }
 }
@@ -163,40 +166,62 @@ sub Cmd {
     # Child
 
     my $pid;
-    if (($pid = fork()) == 0) {
-        close OUTread;
-        close ERRread
-            if (!$merge_output);
 
-        close(STDERR);
-        if ($merge_output) {
-            open STDERR, ">&OUTwrite" ||
-                die "Can't redirect stderr\n";
-        } else {
-            open STDERR, ">&ERRwrite" ||
-                die "Can't redirect stderr\n";
+    # Turn shell-quoted words ("foo bar baz") into individual tokens
+
+    my $tokens = _quote_escape($cmd);
+
+    if (! $no_execute) {
+
+        if (($pid = fork()) == 0) {
+            close OUTread;
+            close ERRread
+                if (!$merge_output);
+
+            close(STDERR);
+            if ($merge_output) {
+                open STDERR, ">&OUTwrite" ||
+                    die "Can't redirect stderr\n";
+            } else {
+                open STDERR, ">&ERRwrite" ||
+                    die "Can't redirect stderr\n";
+            }
+            select STDERR;
+            $| = 1;
+
+            close(STDOUT);
+            open STDOUT, ">&OUTwrite" || 
+                die "Can't redirect stdout\n";
+            select STDOUT;
+            $| = 1;
+
+            # Remove leading/trailing quotes, which
+            # protects against a common funclet syntax error
+            @$tokens[(@$tokens - 1)] =~ s/\"$//
+                if (@$tokens[0] =~ s/^\"//);
+
+            # Run it!
+
+            exec(@$tokens) ||
+                die "Can't execute command: $cmd\n";
         }
-        select STDERR;
-        $| = 1;
-
-        close(STDOUT);
-        open STDOUT, ">&OUTwrite" || 
-            die "Can't redirect stdout\n";
-        select STDOUT;
-        $| = 1;
-
-        # Turn shell-quoted words ("foo bar baz") into individual tokens
-
-        my $tokens = _quote_escape($cmd);
-
-        # Run it!
-
-        exec(@$tokens) ||
-            die "Can't execute command: $cmd\n";
+    }
+    else {
+        print join(" ", @$tokens);
     }
     close OUTwrite;
     close ERRwrite
         if (!$merge_output);
+
+
+    # Return if --no-execute, no output to see
+    if ($no_execute) {
+        $ret->{timed_out} = 0;
+        $ret->{exit_status} = 0;
+        $ret->{result_stdout} = "";
+        $ret->{result_stderr} = "";
+        return $ret;
+    }
 
     # Parent
 
@@ -258,10 +283,12 @@ sub Cmd {
             my $over = time() - $end_time;
             if ($over > $last_over) {
                 Verbose("*** Past timeout of $timeout seconds by $over seconds\n");
-                my $st = _kill_proc($pid);
-                if (!defined($killed_status)) {
-                    $ret->{exit_status} = $killed_status = $st;
-                }
+                _kill_proc($pid);
+                # We don't care about the exit status if we timed out
+                # -- fill it with a bogus value.
+                $ret->{exit_status} = 0;
+
+                # Set that we timed out.
                 $ret->{timed_out} = 1;
             }
             $last_over = $over;
@@ -279,13 +306,13 @@ sub Cmd {
 
     # If we didn't timeout, we need to reap the process (timeouts will
     # have already been reaped).
-
     my $msg = "Command ";
     if (!$ret->{timed_out}) {
         waitpid($pid, 0);
         $ret->{exit_status} = $?;
         $msg .= "complete";
     } else {
+        $ret->{exit_status} = 0;
         $msg .= "timed out";
     }
 
@@ -298,20 +325,19 @@ sub Cmd {
                 $msg .= " (core dump)";
             }
         }
-        $ret->{status} = -1;
     }
     # No, it was not signaled
     else {
-        $ret->{status} = wexitstatus($ret->{exit_status});
-        $msg .= ", exit status: $ret->{status}";
+        my $s = wexitstatus($ret->{exit_status});
+        $msg .= ", exit status: $s";
     }
     $msg .= "\n";
     Debug($msg);
 
     # Return an anonymous hash containing the relevant data
 
-    $ret->{stdout} = join('', @out);
-    $ret->{stderr} = join('', @err),
+    $ret->{result_stdout} = join('', @out);
+    $ret->{result_stderr} = join('', @err),
         if (!$merge_output);
     return $ret;
 }
@@ -323,6 +349,12 @@ sub CmdScript {
         $max_stdout_lines, $max_stderr_lines) = @_;
 
     my ($fh, $filename) = tempfile();
+
+    # Remove leading/trailing quotes, which
+    # protects against a common funclet syntax error
+    $cmds =~ s/\"$//
+        if ($cmds =~ s/^\"//);
+
     print $fh ":\n$cmds\n";
     close($fh);
     chmod(0700, $filename);
@@ -330,6 +362,14 @@ sub CmdScript {
     my $x = Cmd($merge_output, $filename, $timeout);
     unlink($filename);
     return $x;
+}
+
+#--------------------------------------------------------------------------
+
+sub Chdir {
+    my($dir) = @_;
+    Debug("chdir $dir\n");
+    chdir $dir;
 }
 
 #--------------------------------------------------------------------------
@@ -377,6 +417,22 @@ sub wcoredump {
 sub wsuccess {
     my ($val) = @_;
     return (1 == wifexited($val) && 0 == wexitstatus($val)) ? 1 : 0;
+}
+
+#--------------------------------------------------------------------------
+
+# Simple wrapper to avoid the same "if" test all throughout the code base
+sub exit_value {
+    my ($val) = @_;
+    return (wifexited($val) ? wexitstatus($val) : -1);
+}
+
+#--------------------------------------------------------------------------
+
+# Simple wrapper to avoid the same "if" test all throughout the code base
+sub exit_signal {
+    my ($val) = @_;
+    return (wifsignaled($val) ? wtermsig($val) : -1);
 }
 
 1;

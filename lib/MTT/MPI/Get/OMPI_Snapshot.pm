@@ -15,11 +15,11 @@ package MTT::MPI::Get::OMPI_Snapshot;
 use strict;
 use Cwd;
 use File::Basename;
+use Data::Dumper;
 use MTT::Messages;
 use MTT::Files;
 use MTT::FindProgram;
 use MTT::Values;
-use Data::Dumper;
 
 # Checksum filenames
 my $md5_checksums = "md5sums.txt";
@@ -35,7 +35,7 @@ sub Get {
 
     my $ret;
     my $data;
-    $ret->{success} = 0;
+    $ret->{test_result} = MTT::Values::FAIL;
 
     # See if we got a url in the ini section
     my $url = Value($ini, $section, "ompi_snapshot_url");
@@ -57,9 +57,12 @@ sub Get {
     chdir($data_dir);
     unlink($latest_filename);
     MTT::Files::http_get("$url/$latest_filename");
-    Abort("Could not download latest snapshot number -- aborting")
-        if (! -f $latest_filename);
+
+    Abort("Could not download latest snapshot number -- aborting\n")
+        if (! -f $latest_filename and ! $MTT::DoCommand::no_execute);
     $ret->{version} = `cat $latest_filename`;
+    $ret->{version} = 'no_version' if ($MTT::DoCommand::no_execute);
+
     chomp($ret->{version});
 
     # see if we need to download the tarball
@@ -95,7 +98,7 @@ sub Get {
                 # We have this tarball already.  If we're not forcing,
                 # return nothing.
                 if (!$force) {
-                    $ret->{success} = 1;
+                    $ret->{test_result} = MTT::Values::PASS;
                     $ret->{have_new} = 0;
                     $ret->{result_message} = "Snapshot tarball has not changed (did not re-download)";
                     return $ret;
@@ -124,8 +127,8 @@ sub Get {
     chdir($tarball_dir);
     unlink("$tarball_dir/$tarball_name");
     MTT::Files::http_get("$url/$tarball_name");
-    Abort ("Could not download tarball -- aborting")
-        if (! -f $tarball_name);
+    Abort ("Could not download tarball -- aborting\n")
+        if (! -f $tarball_name and ! $MTT::DoCommand::no_execute);
     chdir($data_dir);
         
     # get the checksums
@@ -165,7 +168,7 @@ sub Get {
 
     # All done
     Debug(">> OMPI_Snapshot complete\n");
-    $ret->{success} = 1;
+    $ret->{test_result} = MTT::Values::PASS;
     $ret->{result_message} = "Success";
     return $ret;
 } 

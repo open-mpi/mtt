@@ -4,182 +4,215 @@
 -- Usage: $ psql -d dbname -U dbusername < this_filename
 --
 
-DROP TABLE cluster;
-CREATE TABLE cluster (
-       cluster_id serial,
-       platform_id character varying(256) NOT NULL,
-       platform_hardware character varying(256) NOT NULL,
-       platform_type character varying(256) NOT NULL,
-       os_name character varying(256) NOT NULL,
-       os_version character varying(256) NOT NULL,
-       UNIQUE (os_name,os_version,platform_hardware,platform_type,platform_id)
+DROP TABLE compute_cluster CASCADE;
+CREATE TABLE compute_cluster (
+    compute_cluster_id serial PRIMARY KEY,
+    platform_name character varying(256) NOT NULL DEFAULT 'bogus',
+    platform_hardware character varying(256) NOT NULL DEFAULT 'bogus',
+    platform_type character varying(256) NOT NULL DEFAULT 'bogus',
+    os_name character varying(256) NOT NULL DEFAULT 'bogus',
+    os_version character varying(256) NOT NULL DEFAULT 'bogus',
+    UNIQUE (
+            os_name,
+            os_version,
+            platform_hardware,
+            platform_type,
+            platform_name
+    )
 );
-
-DROP TABLE users;
-CREATE TABLE users (
-       users_id serial,
-       address character(64) NOT NULL,
-       gecos character(32) NOT NULL
-);
-
-DROP TABLE cluster_owner;
-CREATE TABLE cluster_owner (
-       cluster_owner_id serial,
-       cluster_id integer, --> refers to cluster table
-       users_id integer --> refers to users table
-);
-
-DROP INDEX cluster_owner_users_idx;
-CREATE INDEX cluster_owner_users_idx ON cluster_owner(users_id);
-DROP INDEX cluster_owner_cluster_idx;
-CREATE INDEX cluster_owner_cluster_idx ON cluster_owner(cluster_id);
 
 -- Serial number used for individual MTT runs
 DROP SEQUENCE client_serial;
 CREATE SEQUENCE client_serial;
 
-DROP TABLE submit;
+DROP TABLE submit CASCADE;
 CREATE TABLE submit (
-	submit_id serial,
-	serial_id integer, --> refers to the serial sequence
-	mtt_version_major smallint,
-	mtt_version_minor smallint,
-	hostname character varying(128) NOT NULL,
-	local_username character varying(16) NOT NULL,
-	http_username character varying(16) NOT NULL,
-	tstamp timestamp without time zone,
-	-- phase value: 1=mpi_install, 2=test_build, 3=test_run
-	phase smallint,
-	-- phase_id will be an index into mpi_install, test_build, or
-        -- test_run tables, depending on value of phase
-	phase_id integer
+    submit_id serial PRIMARY KEY,
+    mtt_version_major smallint NOT NULL DEFAULT '-38',
+    mtt_version_minor smallint NOT NULL DEFAULT '-38',
+    hostname character varying(128) NOT NULL DEFAULT 'bogus',
+    local_username character varying(16) NOT NULL DEFAULT 'bogus',
+    http_username character varying(16) NOT NULL DEFAULT 'bogus',
+    UNIQUE (
+            mtt_version_major,
+            mtt_version_minor,
+            hostname,
+            local_username,
+            http_username
+    )
 );
 
-DROP INDEX submit_serial_idx;
-CREATE INDEX submit_serial_idx ON submit(serial_id);
-DROP INDEX submit_tstamp_idx;
-CREATE INDEX submit_tstamp_idx ON submit(tstamp);
-DROP INDEX submit_phase_idx;
-CREATE INDEX submit_phase_idx ON submit(phase_id);
-
-DROP TABLE mpi_get;
+DROP TABLE mpi_get CASCADE;
 CREATE TABLE mpi_get (
-	mpi_get_id serial,
-	name character varying(64) NOT NULL,
-	version character varying(32) NOT NULL
+    mpi_get_id serial PRIMARY KEY,
+    mpi_name character varying(64) NOT NULL DEFAULT 'bogus',
+    mpi_version character varying(32) NOT NULL DEFAULT 'bogus',
+    UNIQUE (
+            mpi_name,
+            mpi_version
+    )
 );
 
-DROP TABLE compiler;
+DROP TABLE compiler CASCADE;
 CREATE TABLE compiler (
-	compiler_id serial,
-	compiler_name character varying(64) NOT NULL,
-	compiler_version character varying(64) NOT NULL
+    compiler_id serial PRIMARY KEY,
+    compiler_name character varying(64) NOT NULL DEFAULT 'bogus',
+    compiler_version character varying(64) NOT NULL DEFAULT 'bogus',
+    UNIQUE (
+            compiler_name,
+            compiler_version
+    )
 );
 
-DROP TABLE mpi_install;
+DROP TABLE mpi_install CASCADE;
 CREATE TABLE mpi_install (
-	mpi_install_id serial,
+    mpi_install_id serial PRIMARY KEY,
 
-	cluster_id integer, --> refers to cluster table
-	mpi_get_id integer, --> refers to mpi_get table
-	compiler_id integer, --> refers to compiler table
-	configure_arguments character varying(512), --> put this into separate table because substring searchs will be much faster, but rich says that this is a fairly uncommon way to search for our results, so the PITA for putting this in another table might not be worth it
-	vpath_mode smallint,
+    compute_cluster_id integer NOT NULL DEFAULT '-38' REFERENCES compute_cluster,
+    mpi_get_id integer NOT NULL DEFAULT '-38' REFERENCES mpi_get,
+    compiler_id integer NOT NULL DEFAULT '-38' REFERENCES compiler,
 
-	results_id integer --> refers to results table, this changes every night
+    --> put this into separate table because substring searchs will be much faster,
+    --> but rich says that this is a fairly uncommon way to search for our results, so
+    --> the PITA for putting this in another table might not be worth it
+    configure_arguments text NOT NULL DEFAULT '', 
+    --> bitmapped field (LSB to MSB) 'none', 'relative', and 'absolute'
+    vpath_mode smallint NOT NULL DEFAULT '0',
+    --> bitmapped field (LSB to MSB) 8, 16, 32, 64, and 128
+    bitness smallint NOT NULL DEFAULT '0',
+    --> bitmapped field (LSB to MSB) 'little' and 'big'
+    endian smallint NOT NULL DEFAULT '0',
+    UNIQUE (
+            compute_cluster_id,
+            mpi_get_id,
+            compiler_id,
+            configure_arguments,
+            vpath_mode,
+            bitness,
+            endian
+    )
 );
 
-DROP INDEX mpi_install_cluster_idx;
-CREATE INDEX mpi_install_cluster_idx ON mpi_install(cluster_id);
-DROP INDEX mpi_install_mpi_get_idx;
-CREATE INDEX mpi_install_mpi_get_idx ON mpi_install(mpi_get_id);
-DROP INDEX mpi_install_compiler_idx;
-CREATE INDEX mpi_install_compiler_idx ON mpi_install(compiler_id);
-DROP INDEX mpi_install_results_idx;
-CREATE INDEX mpi_install_results_idx ON mpi_install(results_id);
-
-DROP TABLE test_build;
+DROP TABLE test_build CASCADE;
 CREATE TABLE test_build (
-	test_build_id serial, --> this changes every night
-	mpi_install_id integer, --> refers to mpi_install table
+    test_build_id serial PRIMARY KEY,
+    mpi_install_id integer NOT NULL DEFAULT '-38' REFERENCES mpi_install,
 
-	suite_name character varying(64) NOT NULL,  --> *** do not know how to standardize this
-	compiler_id integer, --> refers to compiler table
-
-	results_id integer --> refers to results table, this changes every night
+    --> *** do not know how to standardize this 
+    suite_name character varying(64) NOT NULL DEFAULT 'bogus',
+    compiler_id integer NOT NULL DEFAULT '-38' REFERENCES compiler,
+    UNIQUE (
+            mpi_install_id,
+            suite_name,
+            compiler_id
+    )
 );
 
-DROP INDEX test_build_mpi_install_idx;
-CREATE INDEX test_build_mpi_install_idx ON test_build(mpi_install_id);
-DROP INDEX test_build_compiler_idx;
-CREATE INDEX test_build_compiler_idx ON test_build(compiler_id);
-DROP INDEX test_build_results_idx;
-CREATE INDEX test_build_results_idx ON test_build(results_id);
-
-DROP TABLE test_run;
+DROP TABLE test_run CASCADE;
 CREATE TABLE test_run (
-	test_run_id serial,
-	test_build_id integer,--> refers to test_build table
+    test_run_id serial PRIMARY KEY,
+    test_build_id integer NOT NULL DEFAULT '-38' REFERENCES test_build,
 
-	variant smallint,
-	name character varying(64) NOT NULL,
-	command text NOT NULL,
-	np smallint,
-
-	results_id integer --> refers to results table
+    variant smallint NOT NULL DEFAULT '-38',
+    test_name character varying(64) NOT NULL DEFAULT 'bogus',
+    command text NOT NULL DEFAULT 'bogus',
+    np smallint NOT NULL DEFAULT '-38',
+    UNIQUE (
+        test_build_id,
+        variant,
+        test_name,
+        command,
+        np
+    )
 );
 
-DROP INDEX test_build_idx;
-CREATE INDEX test_build_idx ON test_run(test_build_id);
-DROP INDEX results_idx;
-CREATE INDEX results_idx ON test_run(results_id);
-
-DROP TABLE results;
+DROP TABLE results CASCADE;
 CREATE TABLE results (
-	results_id serial,
+    results_id serial PRIMARY KEY,
+    submit_id integer NOT NULL DEFAULT '-38' REFERENCES submit,
 
-	environment text,
-	merge_stdout_stderr boolean,
-	result_stdout text, --> what is the largest text blob we can put in PG?  Rich says default might be 8k!
-	result_stderr text,
-	start_timestamp timestamp without time zone,
-	stop_timestamp timestamp without time zone,
-	-- do we want exit status?
-	exit_status smallint,
-	-- result value: 1=pass, 2=fail, 3=skipped, 4=timed out
-	result smallint
+    -- refer to the index of one of the three phases 
+    phase_id integer NOT NULL DEFAULT '-38',
+    -- 1=mpi_install, 2=test_build, 3=test_run
+    phase smallint NOT NULL DEFAULT '-38',
+
+    environment text NOT NULL DEFAULT '',
+    merge_stdout_stderr boolean NOT NULL DEFAULT 't',
+
+    --> what is the largest text blob we can put in PG?  Rich says default might be 8k!
+    result_stdout text NOT NULL DEFAULT '', 
+    result_stderr text NOT NULL DEFAULT '',
+    result_message text NOT NULL DEFAULT '',
+    start_timestamp timestamp without time zone NOT NULL DEFAULT now() - interval '24 hours',
+    duration interval NOT NULL DEFAULT '-38 seconds',
+
+    submit_timestamp timestamp without time zone NOT NULL DEFAULT now(),
+
+    -- keep track of individual MTT runs
+    client_serial integer NOT NULL DEFAULT '-38',
+
+    -- flag data submitted by experimental MTT runs
+    trial boolean NOT NULL DEFAULT 'f',
+
+    -- set if process exited
+    exit_value integer NOT NULL DEFAULT '-38',
+    -- set if process was signaled
+    exit_signal integer NOT NULL DEFAULT '-38',
+    -- result value: 0=fail, 1=pass, 2=skipped, 3=timed out
+    test_result smallint NOT NULL DEFAULT '-38',
+    -- set to DEFAULT for correctness tests
+    latency_bandwidth_id integer NOT NULL DEFAULT '-38'
 );
 
-DROP INDEX results_result_idx;
-CREATE INDEX results_result_idx ON results(result);
+DROP TABLE latency_bandwidth CASCADE;
+CREATE TABLE latency_bandwidth (
+    latency_bandwidth_id serial PRIMARY KEY,
+    message_size integer[] DEFAULT '{}',
+    bandwidth_min double precision[] DEFAULT '{}',
+    bandwidth_max double precision[] DEFAULT '{}',
+    bandwidth_avg double precision[] DEFAULT '{}',
+    latency_min double precision[] DEFAULT '{}',
+    latency_max double precision[] DEFAULT '{}',
+    latency_avg double precision[] DEFAULT '{}'
+);
 
---> All fields in "failure" map to fiels in "results"
+DROP TABLE alerts CASCADE;
+CREATE TABLE alerts (
+    alerts_id serial PRIMARY KEY,
+    users_id integer NOT NULL DEFAULT '-38' REFERENCES users,
+    enabled smallint,
+    url text NOT NULL DEFAULT 'bogus',
+    subject character(64) NOT NULL DEFAULT 'bogus',
+    description character(64) NOT NULL DEFAULT 'bogus'
+);
 
-DROP TABLE failure;
+DROP TABLE users CASCADE;
+CREATE TABLE users (
+    users_id serial PRIMARY KEY,
+    username character(16) NOT NULL DEFAULT 'bogus',
+    email_address character(64) NOT NULL DEFAULT 'bogus',
+    gecos character(32) NOT NULL DEFAULT 'bogus'
+);
+
+-- For "new" failure reporting
+DROP TABLE failure CASCADE;
 CREATE TABLE failure (
-	failure_id serial,
+    failure_id serial NOT NULL DEFAULT '-38',
 
-    --> Some well-selected keywords should go in the following text fields.
-    --> E.g., we can take the following text fields from the result, and strip
-    --> the following types of tokens from the text field to create an easily
-    --> identifiable "signature" for the failure:
-    --> 
-    -->    * dictionary words
-    -->    * numbers
-    -->    * user specific text (paths)
-    -->    * machine specific text
+    -- refer to the index of one of the three phases 
+    phase_id integer NOT NULL DEFAULT '-38' REFERENCES phase,
+    -- 1=mpi_install, 2=test_build, 3=test_run
+    phase smallint NOT NULL DEFAULT '-38',
 
-	result_stdout text, 
-	result_stderr text,
+    first_occurrence timestamp without time zone, --> first occurrence
+    last_occurrence timestamp without time zone,  --> most recent occurrence
+    field character varying(16) NOT NULL DEFAULT 'bogus', --> maps to any non *_id field name in mtt database
+    value character varying(16) NOT NULL DEFAULT 'bogus'  --> value of field
+);
 
-    --> We can use the timestamp of the failure"s first and last occurence to allow
-    --> some flexibility in the retrospective of detecting "new" failures. What is
-    --> the oldest possible "new" failure? A failure should be considered "new" if
-    --> it was fixed, but then reappears later.
-
-	first_occurence timestamp without time zone,
-	last_occurence timestamp without time zone,
-
-	exit_status smallint,
-	result smallint
+DROP TABLE cluster_owner CASCADE;
+CREATE TABLE cluster_owner (
+    cluster_owner_id serial PRIMARY KEY,
+    compute_cluster_id integer NOT NULL DEFAULT '-38' REFERENCES compute_cluster,
+    users_id integer NOT NULL DEFAULT '-38'
 );

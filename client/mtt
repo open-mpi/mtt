@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -80,7 +81,12 @@ if (1 != $ret) {
 require Config::IniFiles;
 require MTT::Version;
 require MTT::MPI;
+require MTT::MPI::Get;
+require MTT::MPI::Install;
 require MTT::Test;
+require MTT::Test::Get;
+require MTT::Test::Build;
+require MTT::Test::Run;
 require MTT::Files;
 require MTT::Messages;
 require MTT::INI;
@@ -89,6 +95,7 @@ require MTT::Defaults;
 require MTT::Globals;
 require MTT::FindProgram;
 require MTT::Trim;
+require MTT::DoCommand;
 
 my @file_arg;
 my $stdin_arg;
@@ -96,6 +103,7 @@ my $scratch_arg;
 my $help_arg;
 my $debug_arg;
 my $verbose_arg;
+my $no_execute_arg;
 my $force_arg;
 my $mpi_get_arg;
 my $mpi_install_arg;
@@ -108,6 +116,7 @@ my $trim_arg;
 my $version_arg;
 my $ini_args;
 my $time_arg;
+my $trial_arg;
 
 my @SAVE_ARGV = @ARGV;
 
@@ -118,6 +127,7 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
                                   "help|h" => \$help_arg,
                                   "debug|d" => \$debug_arg,
                                   "verbose|v" => \$verbose_arg,
+                                  "no-execute|n" => \$no_execute_arg,
                                   "force" => \$force_arg,
                                   "mpi-get!" => \$mpi_get_arg,
                                   "mpi-install!" => \$mpi_install_arg,
@@ -129,6 +139,7 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
                                   "trim!" => \$trim_arg,
                                   "version" => \$version_arg,
                                   "print-time|p" => \$time_arg,
+                                  "trial!" => \$trial_arg,
                                   );
 # Everything ok?
 
@@ -143,15 +154,18 @@ foreach my $file (@ARGV) {
 }
 
 # Get command-line overridden ini params
-my $key_val_regexp = '([^=]+)\=(.*)';
+my $key_val_regexp = '([^=:]+)\=(.*)';
 foreach my $arg (@ARGV) {
-    if ($arg =~ /([^:]+)\:$key_val_regexp$/) {
-        $ini_args->{$2}->{value} = $3; 
-        $ini_args->{$2}->{match} = $1; 
-    }
-    elsif ($arg =~ /$key_val_regexp$/) {
+    if ($arg =~ /$key_val_regexp$/) {
         $ini_args->{$1}->{value} = $2; 
         $ini_args->{$1}->{match} = '.'; 
+    }
+
+    # Check if an INI section was specified for the override
+    # (See client/mtt --help for rundown of how INI param overriding
+    # syntax works)
+    if ($arg =~ /^([^=:]+):([^=]+)=/) {
+        $ini_args->{$2}->{match} = $1; 
     }
 }
 if (! @file_arg and ! $stdin_arg) {
@@ -174,9 +188,18 @@ if (!$ok || $help_arg) {
 --debug|-d                    Output lots of debug messages
 --verbose|-v                  Output some status / verbose messages
                               while processing
+--no-execute|-n               Do not execute any commands (developers only)
 --print-time|-p               Display the amount of time taken in each phase
 --force                       Do steps even if they would not normally
                               be executed
+--[no-]trial                  Use when testing your MTT client setup; 
+                              results that are generated and submitted
+                              to the database are marked as \"trials\"
+                              and are not included in normal
+                              reporting.  Alternatively,
+                              \"--no-trial\" can be specified to force
+                              a \"normal\" submission (this is the
+                              default).
 --[no-]mpi-get                Do the \"MPI get\" phase
 --[no-]mpi-install            Do the \"MPI install\" phase
 --[no-]test-get               Do the \"Test get\" phase
@@ -234,9 +257,11 @@ To perform sections NOT matching \"intel\" OR \"ibm\":
 
 my $debug = ($debug_arg ? 1 : 0);
 my $verbose = ($verbose_arg ? 1 : $debug);
-MTT::Messages::Messages($debug, $verbose);
+MTT::Messages::Messages($debug, $verbose, cwd());
 MTT::Messages::Debug("Debug is $debug, Verbose is $verbose\n");
 MTT::Messages::Verbose("*** MTT: $0 @SAVE_ARGV\n");
+
+$MTT::DoCommand::no_execute = $no_execute_arg;
 
 MTT::FindProgram::FindZeroDir();
 
@@ -422,25 +447,42 @@ sub stop_time {
 
 foreach my $file (@file_arg) {
 
-    my $orig_file = $file;
+    my $orig_file = ($stdin_arg ? "stdin" : $file);
+    if (!$stdin_arg && ! -r $file) {
+        MTT::Messages::Abort("Could not read file: $file");
+    }
     my $temp_file = MTT::Files::copyfile($file);
 
     # Load up the ini file
-    MTT::Messages::Debug("Reading ini file: " . (($stdin_arg) ? "stdin" : $orig_file) . "\n");
+    MTT::Messages::Debug("Reading ini file: $orig_file\n");
     my $ini = new Config::IniFiles(-file => $temp_file, 
                                    -nocase => 1,
                                    -allowcontinue => 1);
 
-    # Check for problems in the ini file
+    # Check for syntax errors in the ini file
+    if (! $ini) {
+        MTT::Messages::Abort("Syntax error in $orig_file: " .
+            join("\n", @Config::IniFiles::errors));
+    }
+
+    # Check for duplicate entries in the ini file
     MTT::INI::ValidateINI($temp_file);
-    MTT::DoCommand::Cmd(1, "rm $temp_file");
+
+    # Load an unfiltered version of the INI file for error checking
+    my $ini_full = new Config::IniFiles(-file => $temp_file, 
+                                        -nocase => 1,
+                                        -allowcontinue => 1);
+
+    # Whack the tmp file
+    unlink($temp_file);
 
     # Override ini file params with those supplied at command-line
     $ini = MTT::INI::OverrideINIParams($ini, $ini_args);
+    $ini_full = MTT::INI::OverrideINIParams($ini_full, $ini_args);
 
     # Filter ini sections at command line
     $ini = MTT::INI::FilterINISections($ini, \@section_arg, \@no_section_arg);
-
+    
     if (! $ini) {
         MTT::Messages::Warning("Could not read INI file: $file; skipping\n");
         next;
@@ -448,7 +490,14 @@ foreach my $file (@file_arg) {
 
     # Examine the [MTT] global defaults section
 
-    MTT::Globals::load($ini);
+    MTT::Globals::load($ini_full);
+    MTT::Messages::Messages($debug, $verbose, cwd());
+
+    # If "--trial" was specified, then set the "trail" flag to 1
+
+    if (defined($trial_arg)) {
+        $MTT::Globals::Values->{trial} = $trial_arg;
+    }
 
     # Run the phases
 
@@ -456,27 +505,27 @@ foreach my $file (@file_arg) {
 
     if ($mpi_get) {
         start_time();
-        MTT::MPI::Get($ini, $source_dir, $force_arg);
+        MTT::MPI::Get::Get($ini, $source_dir, $force_arg);
         stop_time("MPI Get");
     }
     if ($mpi_install) {
         start_time();
-        MTT::MPI::Install($ini, $install_dir, $force_arg);
+        MTT::MPI::Install::Install($ini, $ini_full, $install_dir, $force_arg);
         stop_time("MPI Install");
     }
     if ($test_get) {
         start_time();
-        MTT::Test::Get($ini, $source_dir, $force_arg);
+        MTT::Test::Get::Get($ini, $source_dir, $force_arg);
         stop_time("Test Get");
     }
     if ($test_build) {
         start_time();
-        MTT::Test::Build($ini, $install_dir, $force_arg);
+        MTT::Test::Build::Build($ini, $ini_full, $install_dir, $force_arg);
         stop_time("Test Build");
     }
     if ($test_run) {
         start_time();
-        MTT::Test::Run($ini, $install_dir, $force_arg);
+        MTT::Test::Run::Run($ini, $ini_full, $install_dir, $force_arg);
         stop_time("Test Run");
     }
 
@@ -484,7 +533,7 @@ foreach my $file (@file_arg) {
 
     if ($trim) {
         start_time();
-        MTT::Trim::Trim($ini);
+        MTT::Trim::Trim($ini, $source_dir, $install_dir);
         stop_time("Trim");
     }
 

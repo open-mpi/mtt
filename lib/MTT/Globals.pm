@@ -28,6 +28,11 @@ my $_defaults = {
     max_np => undef,
     textwrap => 76,
     drain_timeout => 5,
+
+    trim_save_successful => 0,
+    trim_save_failed => 1,
+
+    trial => 0,
 };
 
 # Reset $Globals per a specific ini file
@@ -43,10 +48,6 @@ sub load {
     # because this file includes MTT::Value which includes
     # MTT::Value::Functions, but MTT::Value::Functions includes this
     # file (i.e., a circular dependency).
-
-    my $val = MTT::Values::Value($ini, "MTT", "max_np");
-    $Values->{max_np} = $val
-        if ($val);
 
     # Hostfile
 
@@ -64,11 +65,14 @@ sub load {
         parse_hostlist($val);
     }
 
-    # Output display preference
+    # Simple parameters
 
-    my $val = MTT::Values::Value($ini, "MTT", "drain_timeout");
-    if ($val) {
-        $Values->{drain_timeout} = $val;
+    my @names = qw/max_np textwrap drain_timeout trim_save_successful trim_save_failed trial/;
+
+    foreach my $name (@names) {
+        my $val = MTT::Values::Value($ini, "MTT", $name);
+        $Values->{$name} = $val
+            if ($val);
     }
 }
 

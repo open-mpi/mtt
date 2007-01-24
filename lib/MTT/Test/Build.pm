@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -42,6 +42,7 @@ use MTT::Module;
 use MTT::Values;
 use MTT::Files;
 use MTT::Defaults;
+use MTT::Test;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -67,7 +68,7 @@ sub _make_safe_dir {
 #--------------------------------------------------------------------------
 
 sub Build {
-    my ($ini, $build_base, $force) = @_;
+    my ($ini, $ini_full, $build_base, $force) = @_;
 
     Verbose("*** Test build phase starting\n");
 
@@ -76,7 +77,7 @@ sub Build {
 
     # Go through all the sections in the ini file looking for section
     # names that begin with "Test build:"
-    chdir($build_base);
+    MTT::DoCommand::Chdir($build_base);
     foreach my $section ($ini->Sections()) {
         if ($section =~ /^\s*test build:/) {
             Verbose(">> Test build [$section]\n");
@@ -98,11 +99,26 @@ sub Build {
                 # Strip whitespace
                 $test_get_name =~ s/^\s*(.*?)\s*/\1/;
 
+                # This is only warning about the INI file; we'll see
+                # if we find meta data for the test get later
+                if (!$ini_full->SectionExists("test get: $test_get_name")) {
+                    Warning("Test Get section \"$test_get_name\" does not seem to exist in the INI file\n");
+                }
+
+                # If we have no sources for this name, then silently
+                # skip it.  Don't issue a warning because command line
+                # parameters may well have dictated to skip this
+                # section.
+                if (!exists($MTT::Test::sources->{$test_get_name})) {
+                    Debug("Have no sources for Test Get \"$test_get_name\", skipping\n");
+                    next;
+                }
+
                 # Find the matching test source
                 foreach my $test_get_key (keys(%{$MTT::Test::sources})) {
                     if ($test_get_key eq $test_get_name) {
                         my $test_get = $MTT::Test::sources->{$test_get_key};
-            
+
                         # For each MPI source
                         foreach my $mpi_get_key (keys(%{$MTT::MPI::installs})) {
                             my $mpi_get = $MTT::MPI::installs->{$mpi_get_key};
@@ -114,9 +130,8 @@ sub Build {
                                 # For each installation of that version
                                 foreach my $mpi_install_key (keys(%{$mpi_version})) {
                                     my $mpi_install = $mpi_version->{$mpi_install_key};
-
                                     # Only take sucessful MPI installs
-                                    if (!$mpi_install->{success}) {
+                                    if (!$mpi_install->{test_result}) {
                                         Verbose("   Failed build for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] -- skipping\n");
                                         next;
                                     }
@@ -136,6 +151,25 @@ sub Build {
                                         next;
                                     }
 
+                                    # See if we're supposed to skip
+                                    # this MPI get or this MPI install
+                                    my $skip_mpi_get = 
+                                        MTT::Values::Value($ini, $section, 
+                                                           "skip_mpi_get");
+                                    if ($skip_mpi_get &&
+                                        $skip_mpi_get eq $mpi_get_key) {
+                                        Verbose("   Skipping build for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] per INI configuration\n");
+                                        next;
+                                    }
+                                    my $skip_mpi_install = 
+                                        MTT::Values::Value($ini, $section, 
+                                                           "skip_mpi_install");
+                                    if ($skip_mpi_install &&
+                                        $skip_mpi_install eq $mpi_install_key) {
+                                        Verbose("   Skipping build for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] per INI configuration\n");
+                                        next;
+                                    }
+
                                     # We don't have a test build for
                                     # this particular MPI source
                                     # instance.  So cd into the MPI
@@ -144,10 +178,10 @@ sub Build {
 
                                     Verbose("   Building for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section]\n");
                                     
-                                    chdir($build_base);
-                                    chdir(MTT::Files::make_safe_filename($mpi_install->{mpi_get_simple_section_name}));
-                                    chdir(MTT::Files::make_safe_filename($mpi_install->{simple_section_name}));
-                                    chdir(MTT::Files::make_safe_filename($mpi_install->{mpi_version}));
+                                    MTT::DoCommand::Chdir($build_base);
+                                    MTT::DoCommand::Chdir(MTT::Files::make_safe_filename($mpi_install->{mpi_get_simple_section_name}));
+                                    MTT::DoCommand::Chdir(MTT::Files::make_safe_filename($mpi_install->{simple_section_name}));
+                                    MTT::DoCommand::Chdir(MTT::Files::make_safe_filename($mpi_install->{mpi_version}));
                                     
                                     # Do the build and restore the environment
                                     _do_build($ini, $section, $build_base, $test_get, $mpi_install);
@@ -198,9 +232,9 @@ sub _do_build {
     $config->{append_path} = "to be filled in below";
         
     # Filled in by the module
-    $config->{success} = 0;
+    $config->{test_result} = 0;
     $config->{msg} = "";
-    $config->{stdout} = "";
+    $config->{result_stdout} = "";
 
     # Find the build module
     $config->{build_module} = Value($ini, $section, "module");
@@ -211,17 +245,18 @@ sub _do_build {
 
     # Make a directory just for this ini section
     my $tests_dir = MTT::Files::mkdir("tests");
-    chdir($tests_dir);
+    MTT::DoCommand::Chdir($tests_dir);
     my $build_section_dir = _make_safe_dir($simple_section);
-    chdir($build_section_dir);
+    MTT::DoCommand::Chdir($build_section_dir);
 
     # Unpack the source and find out the subdirectory name it created
 
     $config->{srcdir} = _prepare_source($test_get);
-    chdir($config->{srcdir});
+    # We'll check for failure of this step later
+    MTT::DoCommand::Chdir($config->{srcdir});
     $config->{srcdir} = cwd();
 
-    # What to do with stdout/stderr?
+    # What to do with result_stdout/result_stderr?
     my $tmp;
     $tmp = Logical($ini, $section, "save_stdout_on_success");
     $config->{save_stdout_on_success} = $tmp
@@ -252,9 +287,30 @@ sub _do_build {
         }
     }
 
+    # Some test suites require knowledge of where
+    # the MPI library is at the build stage
+    $MTT::Test::Run::test_prefix = $mpi_install->{installdir};
+
+    # Process loading of modules -- for both the MPI install and the
+    # test build sections
+    my @env_modules;
+    my $val = Value($ini, $section, "env_module");
+    if ($val && $mpi_install->{env_modules}) {
+        $config->{env_modules} = $mpi_install->{env_modules} . "," .
+            $config->{env_modules};
+    } elsif ($val) {
+        $config->{env_modules} = $val;
+    } elsif ($mpi_install->{env_modules}) {
+        $config->{env_modules} = $mpi_install->{env_modules};
+    }
+    if ($config->{env_modules}) {
+        @env_modules = split(",", $config->{env_modules});
+        Env::Modulecmd::load(@env_modules);
+        Debug("Loading environment modules: @env_modules\n");
+    }
+
     # Process setenv, unsetenv, prepend-path, and append-path -- for
-    # both the MPI that we're building with and the section of the ini
-    # file that we're building.
+    # both the MPI install and the test build sections
     my @save_env;
     ProcessEnvKeys($mpi_install, \@save_env);
     $config->{setenv} = Value($ini, $section, "setenv");
@@ -263,13 +319,31 @@ sub _do_build {
     $config->{append_path} = Value($ini, $section, "append_path");
     ProcessEnvKeys($config, \@save_env);
 
-    # Run the module
+    # Bump the refcount on the MPI install and test get sections.
+    # Even if this build fails, we need it.
+    ++$test_get->{refcount};
+    ++$mpi_install->{refcount};
+
+    # If _prepare_source(), above, succeeded, run the module.
+    # Otherwise, just hard-wire in a failure.
     my $start = timegm(gmtime());
     my $start_time = time();
-    my $ret = MTT::Module::Run("MTT::Test::Build::$config->{build_module}",
-                               "Build", $ini, $mpi_install, $config);
+    my $ret;
+    if ($config->{srcdir}) {
+	$ret = MTT::Module::Run("MTT::Test::Build::$config->{build_module}",
+				"Build", $ini, $mpi_install, $config);
+    } else {
+	$ret->{test_result} = MTT::Values::FAIL;
+	$ret->{test_result_message} = "Preparing the test source failed -- see MTT client output for details";
+    }
     my $duration = time() - $start_time . " seconds";
             
+    # Unload any loaded environment modules
+    if ($#env_modules >= 0) {
+        Debug("Unloading environment modules: @env_modules\n");
+        Env::Modulecmd::unload(@env_modules);
+    }
+
     # Analyze the return
     if ($ret) {
         $ret->{full_section_name} = $config->{full_section_name};
@@ -278,18 +352,19 @@ sub _do_build {
         $ret->{unsetenv} = $config->{unsetenv};
         $ret->{prepend_path} = $config->{prepend_path};
         $ret->{append_path} = $config->{append_path};
+        $ret->{env_modules} = $config->{env_modules};
         $ret->{srcdir} = $config->{srcdir};
         $ret->{mpi_name} = $mpi_install->{mpi_name};
         $ret->{mpi_get_simple_section_name} = $mpi_install->{mpi_get_simple_section_name};
         $ret->{mpi_install_simple_section_name} = $mpi_install->{simple_section_name};
         $ret->{mpi_version} = $mpi_install->{mpi_version};
-        $ret->{timestamp} = timegm(gmtime());
+        $ret->{test_get_simple_section_name} = $test_get->{simple_section_name};
+        $ret->{start_timestamp} = timegm(gmtime());
+        $ret->{refcount} = 0;
 
-        my $perfbase_xml = Value($ini, $section, "perfbase_xml");
-        $perfbase_xml = "inp_test_build.xml"
-            if (!$perfbase_xml);
-        $ret->{success} = 0
-            if (!defined($ret->{success}));
+        if (!defined($ret->{test_result})) {
+            $ret->{test_result} = MTT::Values::FAIL;
+        }
         
         # Save the results in an ini file
         Debug("Writing built file: $config->{srcdir}/$built_file\n");
@@ -299,18 +374,19 @@ sub _do_build {
         # Send the results back to the reporter
         my $report = {
             phase => "Test Build",
-            start_test_timestamp => $start,
-            test_duration_interval => $duration,
-            success => $ret->{success},
+            start_timestamp => $start,
+            duration => $duration,
+            test_result => $ret->{test_result},
             compiler_name => $mpi_install->{compiler_name},
             compiler_version => $mpi_install->{compiler_version},
             result_message => $ret->{result_message},
             environment => "filled in below",
-            stdout => "filled in below",
-            stderr => "filled in below",
-            perfbase_xml => $perfbase_xml,
+            exit_value => MTT::DoCommand::exit_value($ret->{exit_status}),
+            exit_signal => MTT::DoCommand::exit_signal($ret->{exit_status}),
+            result_stdout => "filled in below",
+            result_stderr => "filled in below",
 
-            test_build_section_name => $config->{simple_section_name},
+            suite_name => $config->{simple_section_name},
 
             mpi_name => $mpi_install->{mpi_get_simple_section_name},
             mpi_get_section_name => $mpi_install->{mpi_get_simple_section_name},
@@ -318,52 +394,52 @@ sub _do_build {
             mpi_version => $mpi_install->{mpi_version},
         };
 
-        # See if we want to save the stdout
+        # See if we want to save the result_stdout
         my $want_save = 1;
-        if (1 == $ret->{success}) {
+        if (MTT::Values::PASS == $ret->{test_result}) {
             if (!$config->{save_stdout_on_success}) {
                 $want_save = 0;
             }
-        } elsif (!$ret->{stdout}) {
+        } elsif (!$ret->{result_stdout}) {
             $want_save = 0;
         }
 
         # If we want to save, see how many lines we want to save
         if ($want_save) {
             if ($config->{stdout_save_lines} == -1) {
-                $report->{stdout} = "$ret->{stdout}\n";
+                $report->{result_stdout} = "$ret->{result_stdout}\n";
             } elsif ($config->{stdout_save_lines} == 0) {
-                delete $report->{stdout};
+                delete $report->{result_stdout};
             } else {
-                if ($ret->{stdout} =~ m/((.*\n){$config->{stdout_save_lines}})$/) {
-                    $report->{stdout} = $1;
+                if ($ret->{result_stdout} =~ m/((.*\n){$config->{stdout_save_lines}})$/) {
+                    $report->{result_stdout} = $1;
                 } else {
                     # There were less lines available than we asked
                     # for, so just take them all
-                    $report->{stdout} = $ret->{stdout};
+                    $report->{result_stdout} = $ret->{result_stdout};
                 }
             }
         } else {
-            delete $report->{stdout};
+            delete $report->{result_stdout};
         }
 
-        # Always fill in the last bunch of lines for stderr
-        if ($ret->{stderr}) {
+        # Always fill in the last bunch of lines for result_stderr
+        if ($ret->{result_stderr}) {
             if ($config->{stderr_save_lines} == -1) {
-                $report->{stderr} = "$ret->{stderr}\n";
+                $report->{result_stderr} = "$ret->{result_stderr}\n";
             } elsif ($config->{stderr_save_lines} == 0) {
-                delete $report->{stderr};
+                delete $report->{result_stderr};
             } else {
-                if ($ret->{stderr} =~ m/((.*\n){$config->{stderr_save_lines}})$/) {
-                    $report->{stderr} = $1;
+                if ($ret->{result_stderr} =~ m/((.*\n){$config->{stderr_save_lines}})$/) {
+                    $report->{result_stderr} = $1;
                 } else {
                     # There were less lines available than we asked
                     # for, so just take them all
-                    $report->{stderr} = $ret->{stderr};
+                    $report->{result_stderr} = $ret->{result_stderr};
                 }
             }
         } else {
-            delete $report->{stderr};
+            delete $report->{result_stderr};
         }
 
         # Did we have any environment?
@@ -378,20 +454,31 @@ sub _do_build {
             }
         }
         
-        # Submit it!
-        MTT::Reporter::Submit("Test Build", $simple_section, $report);
+        # Fetch mpi install serial
+        my $mpi_install_id = $MTT::MPI::installs->{$mpi_install->{mpi_get_simple_section_name}}->{$mpi_install->{mpi_version}}->{$mpi_install->{simple_section_name}}->{mpi_install_id};
+        $report->{mpi_install_id} = $mpi_install_id;
+        $ret->{mpi_install_id} = $mpi_install_id;
 
-        # It's been saved, so reclaim potentially a good chunk of
+        # Submit it!
+        my $serials = MTT::Reporter::Submit("Test Build", $simple_section, $report);
+
+        # Merge in the serials from the MTTDatabase
+        my $module = "MTTDatabase";
+        foreach my $k (keys %{$serials->{$module}}) {
+            $ret->{$k} = $serials->{$module}->{$k};
+        }
+
+        # Data has been submitted, so reclaim potentially a good chunk of
         # memory...
-        delete $ret->{stdout};
-        delete $ret->{stderr};
+        delete $ret->{result_stdout};
+        delete $ret->{result_stderr};
         
         # Save it
         $MTT::Test::builds->{$mpi_install->{mpi_get_simple_section_name}}->{$mpi_install->{mpi_version}}->{$mpi_install->{simple_section_name}}->{$simple_section} = $ret;
         MTT::Test::SaveBuilds($build_base);
         
         # Print
-        if (1 == $ret->{success}) {
+        if (MTT::Values::PASS == $ret->{test_result}) {
             Verbose("   Completed test build successfully\n");
         } else {
             Warning("Failed to build test [$section]: $ret->{result_message}\n");

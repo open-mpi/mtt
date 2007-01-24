@@ -29,7 +29,7 @@ sub Get {
     my $data;
 
     Debug(">> in SVN get\n");
-    $ret->{success} = 0;
+    $ret->{test_result} = MTT::Values::FAIL;
     # See if we got a url in the ini section
     $data->{url} = Value($ini, $section, "svn_url");
     if (!$data->{url}) {
@@ -59,18 +59,18 @@ sub Get {
             # last R number.
 
             # 2. one or more entries of log messages.  In this case,
-            # we need to look at the r number of the # first entry
-            # that comes along.  It may be the old # r number (i.e.,
-            # it's still the HEAD), in which # case we don't need a
-            # new checkout.  Or it may be # a different r number, in
-            # which case we need a # new checkout.
+            # we need to look at the r number of the first entry
+            # that comes along.  It may be the old r number (i.e.,
+            # it's still the HEAD), in which case we don't need a
+            # new checkout.  Or it may be a different r number, in
+            # which case we need a new checkout.
 
             my $need_new;
-            if ($x->{stdout} =~ /^-+\n$/) {
+            if ($x->{result_stdout} =~ /^-+\n$/) {
                 $need_new = 0;
                 Debug("Got one line of dashes -- no need for new export\n");
             } else {
-                $x->{stdout} =~ m/^-+\nr(\d+)\s/;
+                $x->{result_stdout} =~ m/^-+\nr(\d+)\s/;
                 if ($1 eq $previous_r) {
                     $need_new = 0;
                     Debug("Got old r number -- no need for new export\n");
@@ -84,7 +84,7 @@ sub Get {
                 Debug(">> svn: we have this URL, but the repository has changed and we need a new export\n");
             } else {
                 Debug(">> svn: we have this URL and the repository has not changed; skipping\n");
-                $ret->{success} = 1;
+                $ret->{test_result} = MTT::Values::PASS;
                 $ret->{have_new} = 0;
                 $ret->{result_message} = "Repository has not changed (did not re-export)";
                 return $ret;
@@ -97,14 +97,14 @@ sub Get {
     # Cache it
     Debug(">> svn: exporting\n");
     my $dir = cwd();
-    my $svn_rnum = Value($ini, $section, "svn_rnum");
+    my $svn_r = Value($ini, $section, "svn_r");
     my $svn_username = Value($ini, $section, "svn_username");
     my $svn_password = Value($ini, $section, "svn_password");
     my $svn_password_cache = Value($ini, $section, "svn_password_cache");
-    chdir($dir);
-    ($dir, $data->{r}) = MTT::Files::svn_checkout($data->{url}, $svn_rnum, $svn_username, $svn_password, $svn_password_cache, 1, 1);
+    MTT::DoCommand::Chdir($dir);
+    ($dir, $data->{r}) = MTT::Files::svn_checkout($data->{url}, $svn_r, $svn_username, $svn_password, $svn_password_cache, 1, 1);
     if (!$dir) {
-        $ret->{success} = 0;
+        $ret->{test_result} = MTT::Values::FAIL;
         $ret->{result_message} = "Failed to SVN export";
         return $ret;
     }
@@ -136,7 +136,7 @@ sub Get {
 
     # All done
     Debug(">> svn: returning successfully\n");
-    $ret->{success} = 1;
+    $ret->{test_result} = MTT::Values::PASS;
     $ret->{result_message} = "Success";
     return $ret;
 } 

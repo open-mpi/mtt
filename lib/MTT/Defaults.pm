@@ -36,7 +36,6 @@ our $User_config = {
 
 # MPI install phase
 our $MPI_install = {
-    perfbase_xml => "inp_mpi_install.xml",
     vpath_mode => "none",
     make_all_arguments => "",
     configure_arguments => "",
@@ -50,7 +49,6 @@ our $MPI_install = {
 
 # Test build phase
 our $Test_build = {
-    perfbase_xml => "inp_test_build.xml",
     mpi_install => "all",
     save_stdout_on_success => 0,
     merge_stdout_stderr => 1,
@@ -61,8 +59,9 @@ our $Test_build = {
 # Test specify phase
 our $Test_specify = {
     pass => "&eq(&test_exit_status(), 0)",
+    skipped => "&eq(&test_exit_status(), 77)",
     argv => "",
-    np => "&env_max_np()",
+    np => "&env_max_procs()",
     np_ok => 1,
     timeout => 30,
 

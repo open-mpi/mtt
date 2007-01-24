@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -29,8 +29,9 @@ sub Build {
     my $x;
 
     Debug("Building Intel OMPI tests (Intel tests from ompi-tests SVN repository)\n");
-    $ret->{success} = 0;
-
+    $ret->{test_result} = MTT::Values::FAIL;
+    $ret->{exit_status} = -1;
+    
     my $cflags = Value($ini, $config->{full_section_name}, 
                        "intel_ompi_tests_cflags");
     my $fflags = Value($ini, $config->{full_section_name}, 
@@ -116,10 +117,11 @@ sub Build {
     }
 
     # Clean it (just to be sure)
-    my $x = MTT::DoCommand::Cmd(1, "make clean"); 
+    my $x = MTT::DoCommand::Cmd(1, "make clean");
     if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         $ret->{result_message} = "Intel_ompi_tests: make clean failed; skipping";
-        $ret->{stdout} = $x->{stdout};
+        $ret->{result_stdout} = $x->{result_stdout};
+        $ret->{exit_status} = $x->{exit_status};
         return $ret;
     }
 
@@ -130,14 +132,16 @@ sub Build {
     $cmd .= " \"FFLAGS=$fflags\""
         if ($fflags);
     $x = MTT::DoCommand::Cmd(1, $cmd);
-    $ret->{stdout} = $x->{stdout};
+    $ret->{result_stdout} = $x->{result_stdout};
     if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         $ret->{result_message} = "Failed to build intel suite: $buildfile; skipping";
+        $ret->{exit_status} = $x->{exit_status};
         return $ret;
     }
 
     # All done
-    $ret->{success} = 1;
+    $ret->{test_result} = MTT::Values::PASS;
+    $ret->{exit_status} = 0;
     $ret->{result_message} = "Success";
     return $ret;
 } 

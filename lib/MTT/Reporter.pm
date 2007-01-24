@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2007      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -63,7 +64,7 @@ sub _fill_cache {
     $cache->{os_version} = `$whatami -r`;
     chomp($cache->{os_version});
     $cache->{hostname} = $hostname;
-    $cache->{submitting_local_username} = getpwuid($<);
+    $cache->{local_username} = getpwuid($<);
 }
 
 #--------------------------------------------------------------------------
@@ -95,7 +96,7 @@ sub _stringify {
         # we want this to be a multi-line output.  
         my $val = $hash->{$k};
         next
-            if (!$val);
+            if (!defined($val));
         my $want_multi = ($val =~ /\n/);
 
         # We currently have 2 conventions (bonk!) for field names --
@@ -144,7 +145,7 @@ sub Init {
     _fill_cache();
 
     # Record start time for the overall MTT run
-    $cache->{start_run_timestamp} = gmtime;
+    $cache->{start_timestamp} = gmtime;
 
     # Go through all the sections in the ini file looking for section
     # names that begin with "reporter:"
@@ -184,6 +185,7 @@ sub Finalize {
 
 sub Submit {
     my ($phase, $section, $report) = @_;
+    my ($serials, $x);
 
     _fill_cache()
         if (!$cache);
@@ -194,10 +196,18 @@ sub Submit {
     push(@{$entries->{$phase}->{$section}}, $report);
 
     # Call all the reporters.  Use the GMT ctime() as the timestamp.
-    $cache->{submit_test_timestamp} = gmtime;
+    $cache->{submit_timestamp} = gmtime;
     foreach my $m (@modules) {
-        MTT::Module::Run("MTT::Reporter::$m", "Submit", $cache, $entries);
+        $x = MTT::Module::Run("MTT::Reporter::$m", "Submit", $cache, $entries);
+        # Some reporters are not yet returning serials (e.g., text file)
+        if (ref($x) ne "") {
+            foreach my $k (keys %$x) {
+                $serials->{$m}->{$k} = $x->{$k};
+            }
+        }
     }
+
+    return $serials;
 }
 
 #--------------------------------------------------------------------------
@@ -215,7 +225,7 @@ sub QueueSubmit {
         if (!$cache);
 
     # Call all the reporters.  Use the GMT ctime() as the timestamp.
-    $cache->{submit_test_timestamp} = gmtime;
+    $cache->{submit_timestamp} = gmtime;
     foreach my $m (@modules) {
         MTT::Module::Run("MTT::Reporter::$m", "Submit", $cache, $queue);
     }

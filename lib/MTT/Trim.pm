@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -15,230 +16,426 @@ use strict;
 
 use Config::IniFiles;
 use Data::Dumper;
+use File::Basename;
 use MTT::Messages;
 use MTT::Values;
+use MTT::Globals;
+use MTT::Test;
+use MTT::MPI;
+use MTT::DoCommand;
 
 #--------------------------------------------------------------------------
 
-# Number of trees to save
-my $save_successful_gets;
-my $save_failed_gets;
-
-my $save_successful_installs;
-my $save_failed_installs;
-
-my $save_successful_builds;
-my $save_failed_builds;
-
-my $save_successful_runs;
-my $save_failed_runs;
+# Exported constant
+use constant {
+    TRIM_KEY => "TO_BE_TRIMMED",
+};
 
 #--------------------------------------------------------------------------
 
 # Trim old trees after a run
 sub Trim {
-    my ($ini) = @_;
+    my ($ini, $source_dir, $install_dir) = @_;
 
     Verbose("*** Trim phase starting\n");
 
-    # Look up various values from the ini file
-    _load_values($ini);
+    # General algorithm for trim:
 
-    # Go in "reverse" order:
-    #
-    # - delete expired failed test runs
-    # - delete expired successful test runs
-    # - delete expired failed test builds
-    # - delete expired successful test builds
-    # - delete expired failed MPI installs
-    # - delete expired successful MPI installs
-    # - delete expired failed MPI gets
-    # - delete expired successful MPI gets
-    #
-    # Do it in this order because deleting, for example, test runs may
-    # orphan some test builds, MPI installs, and MPI gets.  If we did
-    # the deleting the other way around, then we'd have to go back and
-    # look for the orphans to delete them.
+    # 1. The units of trimming are in terms of "MPI get"s.  If any
+    # test from any phase stemming from an individual MPI get fails,
+    # the entire "MPI get" is deemed a failure.  Otherwise, it is
+    # deemed a success.
 
-    _trim_runs();
-    _trim_builds();
-    _trim_installs();
-    _trim_gets();
+    # 2. Trim the last N successes and M failures, meaning keep only
+    # the last N success and M failure chains.  Remove all others
+    # (i.e., remove *everything* that stemmed from trimmed MPI gets --
+    # the corresponding MPI installs, test builds, and test runs).
 
+    # 3. For failures that are kept, trim the successful sub-parts
+    # (this helps keep disk utilization down).  Since you can view MTT
+    # phases as a tree, simply trim out any sub trees that contain
+    # only successes.  This helps limit disk space that is used.
+
+    # 4. Trimming occurs on a per-MPI-get-section basis (i.e., all the
+    # versions for a particular MPI get are grouped together and then
+    # trimmed accordingly).
+
+    my $succeeded;
+    my $failed;
+
+    # For each MPI get
+    foreach my $get_key (keys(%{$MTT::MPI::sources})) {
+        my $get = $MTT::MPI::sources->{$get_key};
+        Debug("=== trimming mpi get: $get_key\n");
+
+        # Flag indicating whether *everything* in this version of the
+        # MPI get succeeded or not.
+        my $successful = 1;
+
+        # For each version of each MPI get
+        foreach my $version_key (keys(%{$get})) {
+            my $version = $get->{$version_key};
+            my $timestamp = time;
+
+            # For each installation of that MPI version
+            foreach my $install_key (keys(%{$MTT::MPI::installs->{$get_key}->{$version_key}})) {
+                my $install = $MTT::MPI::installs->{$get_key}->{$version_key}->{$install_key};
+
+                # Was the install successful?
+                if (MTT::Values::PASS != $install->{test_result}) {
+                    Debug("  MPI install failed: $version_key / $install_key\n");
+                    $successful = 0;
+                    last;
+                }
+
+                # For each test build that used that MPI version
+                foreach my $build_key (keys(%{$MTT::Test::builds->{$get_key}->{$version_key}->{$install_key}})) {
+                    my $build = $MTT::Test::builds->{$get_key}->{$version_key}->{$install_key}->{$build_key};
+
+                    # Was the build successful?
+                    if (MTT::Values::PASS != $build->{test_result}) {
+                        Debug("  Test build failed: $version_key / $install_key / $build_key\n");
+                        $successful = 0;
+                        last;
+                    }
+
+                    # For each run section that used that test build
+                    foreach my $run_key (keys(%{$MTT::Test::runs->{$get_key}->{$version_key}->{$install_key}->{$build_key}})) {
+                        my $run = $MTT::Test::runs->{$get_key}->{$version_key}->{$install_key}->{$build_key}->{$run_key};
+
+                        # For each test in that run section
+                        foreach my $test_key (keys(%{$run})) {
+                            my $test = $run->{$test_key};
+
+                            # For each NP value in that test
+                            foreach my $np_key (keys(%{$test})) {
+                                my $np = $test->{$np_key};
+
+                                # For each variant in that NP value
+                                foreach my $cmd_key (keys(%{$np})) {
+                                    my $cmd = $np->{$cmd_key};
+
+                                    # Did this individual test pass?
+                                    if (MTT::Values::PASS !=
+                                        $cmd->{test_result}) {
+                                        Debug("  Test run failed: $get_key / $version_key / $install_key / $build_key / $run_key / $test_key / $np_key / $cmd_key\n");
+                                        $successful = 0;
+                                        last;
+                                    }
+                                }
+
+                                # If we were not successful in a
+                                # deeper level, there's no point in
+                                # continuing
+                                last if (!$successful);
+                            }
+
+                            # If we were not successful in a deeper
+                            # level, there's no point in continuing
+                            last if (!$successful);
+                        }
+
+                        # If we were not successful in a deeper level,
+                        # there's no point in continuing
+                        last if (!$successful);
+                    }
+
+                    # If we were not successful in a deeper level,
+                    # there's no point in continuing
+                    last if (!$successful);
+                }
+
+                # If we were not successful in a deeper level, there's
+                # no point in continuing
+                last if (!$successful);
+            }
+
+            my $item = {
+                timestamp => $MTT::MPI::sources->{$get_key}->{$version_key}->{start_timestamp},
+                get => $get,
+                version => $version,
+
+                get_key => $get_key,
+                version_key => $version_key,
+            };
+            # Save this version in the relevant list
+            if ($successful) {
+                Debug("THIS VERSION CHAIN PASSED: $get_key / $version_key\n");
+                push(@{$succeeded->{$get_key}}, $item);
+            } else {
+                Debug("THIS VERSION CHAIN FAILED: $get_key / $version_key\n");
+                push(@{$failed->{$get_key}}, $item);
+            }
+        }
+    }
+
+    # Remove trimmed successes
+    foreach my $key (keys(%{$succeeded})) {
+        sort _timestamp_compare $succeeded->{$key};
+        for (my $i = $#{$succeeded->{$key}} - 
+             $MTT::Globals::Values->{trim_save_successful};
+             $i >= 0; --$i) {
+            my $item = ${$succeeded->{$key}}[$i];
+            _trim_mpi_install($item, 1);
+        }
+    }
+
+    # Remove trimmed failures
+    foreach my $key (keys(%{$failed})) {
+        sort _timestamp_compare $failed->{$key};
+        for (my $i = $#{$failed->{$key}} - 
+             $MTT::Globals::Values->{trim_save_failed};
+             $i >= 0; --$i) {
+            my $item = $$failed->{$key}[$i];
+            _trim_mpi_install($item, 1);
+        }
+
+        # For the failures that we're saving, trim the successful sub-trees
+        for (my $i = 0; $i < $MTT::Globals::Values->{trim_save_failed}; ++$i) {
+            my $item = $$failed->{$key}[$i];
+            _trim_mpi_install($item, 0);
+        }
+    }
+
+    # Directories have been deleted and meta data tables have been
+    # updated.  Re-save all the meta-data.
+    MTT::MPI::SaveSources();
+    MTT::MPI::SaveInstalls();
+    MTT::Test::SaveSources();
+    MTT::Test::SaveBuilds();
+    MTT::Test::TrimRuns();
+
+    # All done
     Verbose("*** Trim phase complete\n");
 }
 
 #--------------------------------------------------------------------------
 
-sub _load_values {
-    my ($ini) = @_;
-    my $val;
+sub _trim_mpi_get {
+    my ($item) = @_;
 
-    # Look for the overall "saved_failed" and "save_successful" params
-    # that provide defaults for all the rest
-    $val = Value($ini, "MTT", "save_successful");
-    $save_successful_gets = $save_successful_installs = 
-        $save_successful_builds = $save_successful_runs = $val
-        if (defined($val));
-
-    $val = Value($ini, "MTT", "save_failed");
-    $save_failed_gets = $save_failed_installs = 
-        $save_failed_builds = $save_failed_runs = $val
-        if (defined($val));
-
-    # Now look for the individual values
-    $val = Value($ini, "MTT", "save_successful_gets");
-    $save_successful_gets = $val
-        if (defined($val));
-    $val = Value($ini, "MTT", "save_failed_gets");
-    $save_failed_gets = $val
-        if (defined($val));
-
-    $val = Value($ini, "MTT", "save_successful_installs");
-    $save_successful_installs = $val
-        if (defined($val));
-    $val = Value($ini, "MTT", "save_failed_installs");
-    $save_failed_installs = $val
-        if (defined($val));
-
-    $val = Value($ini, "MTT", "save_successful_builds");
-    $save_successful_builds = $val
-        if (defined($val));
-    $val = Value($ini, "MTT", "save_failed_builds");
-    $save_failed_builds = $val
-        if (defined($val));
-
-    $val = Value($ini, "MTT", "save_successful_runs");
-    $save_successful_runs = $val
-        if (defined($val));
-    $val = Value($ini, "MTT", "save_failed_runs");
-    $save_failed_runs = $val
-        if (defined($val));
+    Debug("=== Trimming mpi get\n");
+    # JMS Continue here
+    Debug("=== Trimming mpi get done\n");
 }
 
 #--------------------------------------------------------------------------
 
-sub _trim_runs {
+# We always trim successfull sub-trees.  The question is whether the
+# caller wants us to trim failed sub-trees or not.
+sub _trim_mpi_install {
+    my ($item, $want_trim_failed) = @_;
 
-    # We're actually trimming test builds here, (i.e., same as
-    # _trim_builds()), but different criteria than _test_builds().
-    # We'll only have successful or failed runs if the test builds
-    # were successful.  So here in _trim_runs(), we're determining if
-    # the *runs* were successful or failed, and using that as the
-    # criteria to determine whether to whack a test build or not.
+    Debug("=== Trimming mpi install\n");
+    my $data_still_in_tree = 0;
+    Verbose("   Trimming mpi install: [$item->{get_key}] / [$item->{version_key}]\n");
 
-    # For each build, we declare it successful if *all* of its tests
-    # passed.  Otherwise, it's classified as failed.
-    my @successful;
-    my @failed;
+    # For each installation of that MPI version
+    foreach my $install_key (keys(%{$MTT::MPI::installs->{$item->{get_key}}->{$item->{version_key}}})) {
+        my $install = $MTT::MPI::installs->{$item->{get_key}}->{$item->{version_key}}->{$install_key};
 
-    # For each MPI source
-    foreach my $mpi_get_key (keys(%{$MTT::Test::runs})) {
-        my $mpi_get = $MTT::Test::runs->{$mpi_get_key};
+        # Deep copy the item and add some more fields
+        my $derived_item;
+        %{$derived_item} = %{$item};
+        $derived_item->{install} = $install;
+        $derived_item->{install_key} = $install_key;
 
-        # For each install of that source
-        foreach my $install_section_key (keys(%{$mpi_get})) {
-            my $install_section = $mpi_get->{$install_section_key};
-            
-            # For each test build
-            foreach my $test_build_key (keys(%{$install_section})) {
-                my $test_build = $install_section->{$test_build_key};
-                my $found_failed = 0;
-                
-                # For each test run section
-                foreach my $test_run_key (keys(%{$test_build})) {
-                    my $test_run = $test_build->{$test_run_key};
-                    
-                    # Increment the refcounts
+        my $children_still_exist = 
+            _trim_test_build($derived_item, $want_trim_failed);
 
+        # If there's nothing left in the tree, this item is eligible
+        # for trimming
+        if (!$children_still_exist) {
+            if (MTT::Values::PASS == $install->{test_result} ||
+                $want_trim_failed) {
+                # Ok, trim it.
 
+                _trim_mpi_get($item);
 
-                    # JMS CONTINUE HERE
+                # Delete the directories associated with the MPI install
+                DebugDump($install);
+                MTT::DoCommand::Cmd(0, "rm -rf $install->{version_dir}");
 
+                # These rmdir()'s will succeed if they are empty
+                # (i.e., this is the last directory in the tree),
+                # otherwise they'll fail (which is ok, because there
+                # are still subdirs lieft).
+                rmdir($install->{install_section_dir});
+                rmdir($install->{get_section_dir});
 
+                # Delete data from the hash tree
+                delete $MTT::MPI::installs->{$item->{get_key}}->{$item->{version_key}}->{$install_key};
 
-                    $MTT::MPI::sources->{$mpi_get_key}->{refcount}++;
-                    
-                    # For each test name
-                    foreach my $test_name_key (keys(%{$test_run})) {
-                        my $test_name = $test_run->{$test_name_key};
-                        
-                        # For each np
-                        foreach my $test_np_key (keys(%{$test_name})) {
-                            my $test_np = $test_name->{$test_np_key};
-                            
-                            # For each cmd
-                            foreach my $test_cmd_key (keys(%{$test_np})) {
-                                my $test_cmd = $test_np->{$test_cmd_key};
-                                
-                                # Check to see if this was a
-                                # successful test build
-                                if (!$test_cmd->{success}) {
-                                    $found_failed = 1;
-                                    last;
-                                }
-                            }
-                            last if ($found_failed);
-                        }
-                        last if ($found_failed);
+                # If the version_key had no other children, whack it
+                # as well
+                my @tmp = keys(%{$MTT::MPI::installs->{$item->{get_key}}->{$item->{version_key}}});
+                if ($#tmp < 0) {
+                    delete $MTT::MPI::installs->{$item->{get_key}}->{$item->{version_key}};
+                    # If the get_key had no other children, whack it
+                    # as well
+                    my @tmp = keys(%{$MTT::MPI::installs->{$item->{get_key}}});
+                    if ($#tmp < 0) {
+                        delete $MTT::MPI::installs->{$item->{get_key}};
                     }
-                    last if ($found_failed);
-                }
-                
-                # Is this a pass or fail?
-                if ($found_failed) {
-                    push(@failed, $test_build);
-                } else {
-                    push(@successful, $test_build);
                 }
             }
+        } else {
+            $data_still_in_tree = 1;
         }
     }
 
-    # Now we've got them all -- sort so that the oldest is first and
-    # the youngest is last.
-
-    print "Successful: $#successful\n";
-    print "Failed: $#failed\n";
-    sort _compare @successful;
-    _remove($save_successful_runs, "srcdir", \@successful);
-    sort _compare @failed;
-    _remove($save_failed_runs, "srcdir", \@failed);
+    if ($data_still_in_tree) {
+        Verbose("   --> Some data still exists for manual examination\n");
+    }
+    Debug("=== Trimming mpi install done: data still in tree - $data_still_in_tree\n");
+    return $data_still_in_tree;
 }
 
 #--------------------------------------------------------------------------
 
-sub _trim_builds {
+sub _trim_test_get {
+    my ($f, $want_trim_failed, $install) = @_;
+
+    Debug("=== Trimming test get\n");
+# JMS continue here
+    Debug("=== Trimming test get done\n");
 }
 
 #--------------------------------------------------------------------------
 
-sub _trim_installs {
+sub _trim_test_build {
+    my ($item, $want_trim_failed) = @_;
+
+    my $data_still_in_tree = 0;
+    Debug("=== Trimming test build\n");
+#    DebugDump($item);
+
+    foreach my $build_key (keys(%{$MTT::Test::builds->{$item->{get_key}}->{$item->{version_key}}->{$item->{install_key}}})) {
+        my $build = $MTT::Test::builds->{$item->{get_key}}->{$item->{version_key}}->{$item->{install_key}}->{$build_key};
+
+        # Deep copy the item and add some more fields
+        my $derived_item;
+        %{$derived_item} = %{$item};
+        $derived_item->{build} = $build;
+        $derived_item->{build_key} = $build_key;
+
+        my $children_still_exist = 
+            _trim_test_run($derived_item, $want_trim_failed);
+
+        # If there's nothing left in the tree, this item is eligible
+        # for trimming
+        if (!$children_still_exist) {
+            if (MTT::Values::PASS == $build->{test_result} || 
+                $want_trim_failed) {
+                # Ok, trim it.
+
+                _trim_test_get($item);
+
+                # Delete the directories associated with the Test build
+                my $d = dirname($build->{srcdir});
+                MTT::DoCommand::Cmd(0, "rm -rf $d");
+                
+                # These rmdir()'s will succeed if they are empty
+                # (i.e., this is the last directory in the tree),
+                # otherwise they'll fail (which is ok, because there
+                # are still subdirs lieft).
+                rmdir(dirname($d));
+
+                # Delete data from the hash tree
+                delete $MTT::Test::builds->{$item->{get_key}}->{$item->{version_key}}->{$item->{install_key}}->{$build_key};
+
+                # If the install_key had no other children, whack it
+                # as well
+                my @tmp = keys(%{$MTT::Test::builds->{$item->{get_key}}->{$item->{version_key}}->{$item->{install_key}}});
+                if ($#tmp < 0) {
+                    delete $MTT::Test::builds->{$item->{get_key}}->{$item->{version_key}}->{$item->{install_key}};
+
+                    # If the version_key had no other children, whack
+                    # it as well
+                    @tmp = keys(%{$MTT::Test::builds->{$item->{get_key}}->{$item->{version_key}}});
+                    if ($#tmp < 0) {
+                        delete $MTT::Test::builds->{$item->{get_key}}->{$item->{version_key}};
+
+                        # If the get_key had no other children,
+                        # whack it as well
+                        @tmp = keys(%{$MTT::Test::builds->{$item->{get_key}}});
+                        if ($#tmp < 0) {
+                            delete $MTT::Test::builds->{$item->{get_key}};
+                        }
+                    }
+                }
+            }
+        } else {
+            $data_still_in_tree = 1;
+        }
+    }
+
+    Debug("=== Trimming test build done: data still in tree - $data_still_in_tree\n");
+    return $data_still_in_tree;
 }
 
 #--------------------------------------------------------------------------
 
-sub _trim_gets {
+sub _trim_test_run {
+    my ($item, $want_trim_failed) = @_;
+
+    Debug("=== Trimming test run\n");
+    my $data_still_in_tree = 0;
+#    DebugDump($item);
+
+    foreach my $run_key (keys(%{$MTT::Test::runs->{$item->{get_key}}->{$item->{version_key}}->{$item->{install_key}}->{$item->{build_key}}})) {
+        my $run = $MTT::Test::runs->{$item->{get_key}}->{$item->{version_key}}->{$item->{install_key}}->{$item->{build_key}}->{$run_key};
+
+        my $ok_to_trim = 1;
+
+        # For each test in that run section
+        foreach my $test_key (keys(%{$run})) {
+            my $test = $run->{$test_key};
+
+            # For each NP value in that test
+            foreach my $np_key (keys(%{$test})) {
+                my $np = $test->{$np_key};
+
+                # For each variant in that NP value
+                foreach my $cmd_key (keys(%{$np})) {
+                    my $cmd = $np->{$cmd_key};
+
+                    # Is this test eligible for trimming?
+                    if (MTT::Values::PASS == $cmd->{test_result} ||
+                        MTT::Values::SKIPPED == $cmd->{test_result} ||
+                        $want_trim_failed) {
+                        # Ok, trim it.
+
+                        next;
+                    } else {
+                        $ok_to_trim = 0;
+                    }
+                }
+            }
+        }
+
+        # Were all the tests successful?  If so, set the trim key to
+        # 1.  Because test run data is not stored in a single meta
+        # data file, we have to mark the trees in the MTT::Test::runs
+        # hash that we want deleted and then call a back-end function
+        # (in MTT::Test) to do the actual deletion.
+
+        if ($ok_to_trim) {
+            $run->{$MTT::Trim::TRIM_KEY} = 1;
+        } else {
+            $data_still_in_tree = 1;
+        }
+    }
+
+    Debug("=== Trimming test run done: data still in tree - $data_still_in_tree\n");
+    return $data_still_in_tree;
 }
 
 #--------------------------------------------------------------------------
 
-sub _compare {
+sub _timestamp_compare {
     my ($a, $b) = @_;
     return ($a->{timestamp} - $b->{timestamp});
 }
-
-#--------------------------------------------------------------------------
-
-sub _remove {
-    my ($num, $name, $entries) = @_;
-
-    print "Entries: $#$entries -- saving $num\n";
-    for (my $i = $#$entries - $num; $i >= 0; $i--) {
-#        print Dumper($$entries[$i]);
-        print "$i: rm -rf " . $$entries[$i]->{$name} . "\n";
-    }
-}
-
 
 1;

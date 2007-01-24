@@ -46,11 +46,11 @@ sub Get {
             if ($source->{module_name} eq "MTT::MPI::Get::Tarball" &&
                 basename($source->{module_data}->{tarball}) eq
                 basename($tarball)) {
-
+                
                 # If we find one of the same name, that may not be
                 # enough (e.g., "mpi-latest.tar.gz").  So check the
                 # md5sum's.
-
+                
                 $previous_md5 = $source->{module_data}->{md5sum};
                 last;
             }

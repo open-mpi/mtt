@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -27,15 +27,19 @@ sub Build {
     my $ret;
 
     Debug("Building NPB_ompi_tests\n");
-    $ret->{success} = 0;
+    $ret->{test_result} = MTT::Values::FAIL;
+    $ret->{exit_status} = -1;
+    $ret->{result_message} = "*** TEST BUILD NPB PLUGIN IS OUT OF DATE AND DOES NOT WORK";
+    Verbose("*** $ret->{result_message}\n");
+    return $ret;
 
     # Clean it (just to be sure)
-    chdir("NPB2.3-MPI");
+    MTT::DoCommand::Chdir("NPB2.3-MPI");
     my $x = MTT::DoCommand::Cmd($config->{merge_stdout_stderr}, "make clean");
     if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         $ret->{result_message} = "NPB_ompi_tests: make clean failed; skipping";
-        $ret->{stdout} = $x->{stdout};
-        $ret->{stderr} = $x->{stderr};
+        $ret->{result_stdout} = $x->{result_stdout};
+        $ret->{result_stderr} = $x->{result_stderr};
         return $ret;
     }
     MTT::Files::mkdir("bin") if (! -x "bin");
@@ -59,7 +63,7 @@ sub Build {
                             $config->{merge_stdout_stderr},
                             "benchmarks_$n",
                             "classes_$n", "nprocs_$n");
-                if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
+                if (MTT::DoCommand::wsuccess($x->{exit_status})) {
                     last;
                 }
             }
@@ -72,11 +76,11 @@ sub Build {
                     "benchmarks", "classes", "nprocs");
     }
     if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
-        $ret->{success} = 0;
+        $ret->{test_result} = MTT::Values::FAIL;
         $ret->{result_message} = $x->{result_message};
-        $ret->{stdout} = $x->{stdout};
+        $ret->{result_stdout} = $x->{result_stdout};
     } else {
-        $ret->{success} = 1;
+        $ret->{test_result} = MTT::Values::PASS;
         $ret->{result_message} = "Success";
     }
     return $ret;
@@ -100,17 +104,17 @@ sub _build {
             foreach my $np (@$nprocs) {
                 my $cmd = "make $bm CLASS=$cl NPROCS=$np";
                 my $x = MTT::DoCommand::Cmd($merge, $cmd);
-                if ($x->{status} != 0) {
-                    $ret->{success} = 0;
+                if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
+                    $ret->{test_result} = MTT::Values::FAIL;
                     $ret->{result_message} =
                         "NPB_ompi_tests: $cmd failed; aborting";
-                    $ret->{stdout} = $x->{stdout};
+                    $ret->{result_stdout} = $x->{result_stdout};
                     return $ret;
                 }
             }
         }
     }
-    $ret->{success} = 1;
+    $ret->{test_result} = MTT::Values::PASS;
     return $ret;
 }
 

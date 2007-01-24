@@ -54,7 +54,7 @@ sub Get {
 
     # Go through all the sections in the ini file looking for section
     # names that begin with "MPI Get:"
-    chdir($source_dir);
+    MTT::DoCommand::Chdir($source_dir);
     foreach my $section ($ini->Sections()) {
         if ($section =~ /^\s*mpi get:/) {
             Verbose(">> MPI get: [$section]\n");
@@ -89,17 +89,17 @@ sub _do_get {
     }
 
     # Make a directory just for this section
-    chdir($source_dir);
+    MTT::DoCommand::Chdir($source_dir);
     my $section_dir = MTT::Files::make_safe_filename($section);
     $section_dir = MTT::Files::mkdir($section_dir);
-    chdir($section_dir);
+    MTT::DoCommand::Chdir($section_dir);
 
     # Run the module
     my $ret = MTT::Module::Run("MTT::MPI::Get::$module",
                                "Get", $ini, $section, $force);
     
     # Did we get a source tree back?
-    if ($ret->{success}) {
+    if (MTT::Values::PASS == $ret->{test_result}) {
         if ($ret->{have_new}) {
 
             Verbose("   Got new MPI sources: version $ret->{version}\n");
@@ -109,7 +109,8 @@ sub _do_get {
             $ret->{simple_section_name} = $simple_section;
             $ret->{mpi_details} = $mpi_details;
             $ret->{module_name} = "MTT::MPI::Get::$module";
-            $ret->{timestamp} = timegm(gmtime());
+            $ret->{start_timestamp} = timegm(gmtime());
+            $ret->{refcount} = 0;
             
             # Add this into the $MPI::sources hash
             $MTT::MPI::sources->{$simple_section}->{$ret->{version}} = $ret;

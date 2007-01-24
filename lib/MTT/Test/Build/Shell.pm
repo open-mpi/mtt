@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -27,7 +27,7 @@ sub Build {
     my $ret;
 
     Debug("Building Shell\n");
-    $ret->{success} = 0;
+    $ret->{test_result} = MTT::Values::FAIL;
 
     # Now run that file -- remove it when done, regardless of the outcome
     my $cmd = Value($ini, $config->{full_section_name}, "shell_build_command");
@@ -39,16 +39,18 @@ sub Build {
         $ret->{result_message} = "Shell: command failed \"$cmd\"";
         $ret->{result_message} .= " (timed out)"
             if ($x->{timed_out});
-        $ret->{stdout} = $x->{stdout};
-        $ret->{stderr} = $x->{stderr}
-            if ($x->{stderr});
+        $ret->{exit_status} = $x->{exit_status};
+        $ret->{result_stdout} = $x->{result_stdout};
+        $ret->{result_stderr} = $x->{result_stderr}
+            if ($x->{result_stderr});
         return $ret;
     }
 
     # All done
-    $ret->{stdout} = $x->{stdout};
-    $ret->{stderr} = $x->{stderr};
-    $ret->{success} = 1;
+    $ret->{result_stdout} = $x->{result_stdout};
+    $ret->{result_stderr} = $x->{result_stderr};
+    $ret->{exit_status} = 0;
+    $ret->{test_result} = MTT::Values::PASS;
     $ret->{result_message} = "Success";
     return $ret;
 } 

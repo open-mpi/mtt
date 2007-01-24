@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -29,9 +29,10 @@ sub _do_compile {
     my $x = MTT::DoCommand::Cmd(1, "$wrapper $in_name -o $out_name");
     if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         my $ret;
-        $ret->{success} = 0;
+        $ret->{test_result} = MTT::Values::FAIL;
+        $ret->{exit_status} = $x->{exit_status};
         $ret->{result_message} = "Failed to compile/link $out_name\n";
-        $ret->{stdout} = $x->{stdout};
+        $ret->{result_stdout} = $x->{result_stdout};
         return $ret;
     }
 
@@ -47,7 +48,7 @@ sub Build {
     my $x;
 
     Debug("Building Trivial\n");
-    $ret->{success} = 0;
+    $ret->{test_result} = MTT::Values::FAIL;
 
     my $cflags = Value($ini, $config->{full_section_name}, 
                        "trivial_tests_cflags");
@@ -59,6 +60,9 @@ sub Build {
     if ($mpi_install->{c_bindings}) {
         Debug("Test compile/link sample C MPI application\n");
         $x = _do_compile("mpicc $cflags", "hello.c", "c_hello");
+        return $x
+            if (defined($x));
+        $x = _do_compile("mpicc $cflags", "ring.c", "c_ring");
         return $x
             if (defined($x));
     } else {
@@ -73,6 +77,9 @@ sub Build {
         $x = _do_compile("mpic++ $cflags", "hello.cc", "cxx_hello");
         return $x
             if (defined($x));
+        $x = _do_compile("mpic++ $cflags", "ring.cc", "cxx_ring");
+        return $x
+            if (defined($x));
     } else {
         Debug("MPI C++ bindings unavailable; skipping simple compile/link test\n");
     }
@@ -83,6 +90,9 @@ sub Build {
     if ($mpi_install->{f77_bindings}) {
         Debug("Test compile/link sample F77 MPI application\n");
         $x = _do_compile("mpif77 $fflags", "hello.f", "f77_hello");
+        return $x
+            if (defined($x));
+        $x = _do_compile("mpif77 $fflags", "ring.f", "f77_ring");
         return $x
             if (defined($x));
     } else {
@@ -97,12 +107,16 @@ sub Build {
         $x = _do_compile("mpif90 $fflags", "hello.f90", "f90_hello");
         return $x
             if (defined($x));
+        $x = _do_compile("mpif90 $fflags", "ring.f90", "f90_ring");
+        return $x
+            if (defined($x));
     } else {
         Debug("MPI F90 bindings unavailable; skipping simple compile/link test\n");
     }
 
     # All done
-    $ret->{success} = 1;
+    $ret->{test_result} = MTT::Values::PASS;
+    $ret->{exit_status} = 0;
     $ret->{result_message} = "Success";
     return $ret;
 } 

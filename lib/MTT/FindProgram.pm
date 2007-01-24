@@ -34,7 +34,7 @@ sub FindProgram {
     while ($i <= $#names) {
         foreach my $dir (split(/:/, $ENV{PATH})) {
             if (-x "$dir/$names[$i]") {
-                return $names[$i];
+                return "$dir/$names[$i]";
             }
         }
         ++$i;
@@ -57,9 +57,9 @@ sub FindZeroDir {
     my $dir = dirname($0);
     my $cmd = basename($0);
     if (-x "$dir/$cmd") {
-        chdir($dir);
+        MTT::DoCommand::Chdir($dir);
         $zero_dir = cwd();
-        chdir($start);
+        MTT::DoCommand::Chdir($start);
         return $zero_dir;
     }
 
@@ -67,9 +67,9 @@ sub FindZeroDir {
     if ($0 !~ /\//) {
         foreach my $p (split(/:/, $ENV{PATH})) {
             if (-x "$p/$0") {
-                chdir($p);
+                MTT::DoCommand::Chdir($p);
                 $zero_dir = cwd();
-                chdir($start);
+                MTT::DoCommand::Chdir($start);
                 return $zero_dir;
             }
         }

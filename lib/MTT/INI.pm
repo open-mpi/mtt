@@ -112,18 +112,20 @@ sub FilterINISections {
     # Iterate through the ini file, section by section
     foreach $section ($ini->Sections) {
 
+        # Always process the "mtt" and "mpi details" sections
+        next if ($section =~ /\bmtt\b|mpi\s+details/i);
+
         # Iterate through every ---[no]-section argument,
         # and OR them together
         foreach my $pattern (@$patterns) {
-
-            # Always process the mtt section
-            next if ($section =~ /\bmtt\b/i);
 
             # Generate on-the-fly, perl code that will
             # perform the regular expressions, and AND
             # them together.
             # (Conform to agrep ';' syntax for AND operations)
-            @patterns_and = split /\;/, $pattern;
+            my $tmp = $pattern;
+            $tmp =~ s/\//\\\//g;
+            @patterns_and = split /\;/, $tmp;
             $re = join(" and ", map { "\$section =~ /$_/i" } @patterns_and);
 
             my $eval = "

@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -25,12 +25,12 @@ package MTT::MPI::Install;
 # ------------------------------
 
 # module (IN) => name of the module that built the MPI
-# success (OUT) => 0 or 1; whether the build succeeded or not
+# test_result (OUT) => 0 or 1; whether the build succeeded or not
 # result_message (OUT) => a message describing the result
 # mpi_get_section_name (IN) => name of the INI file section for this build
 # configure_arguments (IN) => arguments passed to configure when built
-# configure_stdout (OUT) => stdout and stderr from running configure
-# vpath_mode (IN) => none, relative, absolute
+# configure_stdout (OUT) => result_stdout and result_stderr from running configure
+# vpath_mode (IN) => none, relative, absolute (0, 1, 2)
 # configdir (IN) => where configure was invoked relative to the source
 #     tree
 # builddir (IN) => location of build dir (will not exist if build was
@@ -38,12 +38,12 @@ package MTT::MPI::Install;
 # srcdir (IN) => (relative) source tree
 # abs_srcdir (IN) => absolute source tree (will not exist if build was
 #     successful)
-# merge_stdout_stderr (IN) => 0 or 1; whether stdout was combined with stderr
+# merge_stdout_stderr (IN) => 0 or 1; whether result_stdout was combined with result_stderr
 #     or not
 # make_all_arguments (IN) => arguments passed to "make all"
-# stdout (OUT) => stdout from the installation process (or stdout and
-#     stderr if merge_stdout_stderr == 1)
-# stderr (OUT) => stderr from the installation process (or nonexistant
+# result_stdout (OUT) => result_stdout from the installation process (or result_stdout and
+#     result_stderr if merge_stdout_stderr == 1)
+# result_stderr (OUT) => result_stderr from the installation process (or nonexistant
 #     if merge_stdout_stderr == 1)
 
 # Other fields:
@@ -95,6 +95,7 @@ use MTT::MPI;
 use MTT::Defaults;
 use Data::Dumper;
 use File::Basename;
+use Env::Modulecmd;
 
 # File to keep data about builds
 my $installed_file = "mpi_installed.ini";
@@ -104,6 +105,9 @@ my $installed_section = "mpi_installed";
 
 # Where the top-level installation tree is
 my $install_base;
+
+# Where the MPI library is
+our $install_dir;
 
 #--------------------------------------------------------------------------
 
@@ -117,7 +121,7 @@ sub _make_safe_dir {
 #--------------------------------------------------------------------------
 
 sub Install {
-    my ($ini, $install_dir, $force) = @_;
+    my ($ini, $ini_full, $install_dir, $force) = @_;
 
     Verbose("*** MPI install phase starting\n");
     
@@ -127,7 +131,7 @@ sub Install {
     # Go through all the sections in the ini file looking for section
     # names that begin with "MPI Install:"
     $install_base = $install_dir;
-    chdir($install_base);
+    MTT::DoCommand::Chdir($install_base);
     foreach my $section ($ini->Sections()) {
         if ($section =~ /^\s*mpi install:/) {
             Verbose(">> MPI install [$section]\n");
@@ -147,6 +151,21 @@ sub Install {
             foreach my $mpi_get_name (@mpi_gets) {
                 # Strip whitespace
                 $mpi_get_name =~ s/^\s*(.*?)\s*/\1/;
+
+                # This is only warning about the INI file; we'll see
+                # if we find meta data for the MPI get later
+                if (!$ini_full->SectionExists("mpi get: $mpi_get_name")) {
+                    Warning("Warning: MPI Get section \"$mpi_get_name\" does not seem to exist in the INI file\n");
+                }
+
+                # If we have no sources for this name, then silently
+                # skip it.  Don't issue a warning because command line
+                # parameters may well have dictated to skip this MPI
+                # get section.
+                if (!exists($MTT::MPI::sources->{$mpi_get_name})) {
+                    Debug("Have no sources for MPI Get \"$mpi_get_name\", skipping\n");
+                    next;
+                }
 
                 # For each MPI source
                 foreach my $mpi_get_key (keys(%{$MTT::MPI::sources})) {
@@ -171,9 +190,9 @@ sub Install {
                             } else {
                                 Verbose("   Installing MPI: [$mpi_get_key] / [$mpi_version_key] / [$simple_section]...\n");
                             
-                                chdir($install_base);
+                                MTT::DoCommand::Chdir($install_base);
                                 my $mpi_dir = _make_safe_dir($mpi_version->{simple_section_name});
-                                chdir($mpi_dir);
+                                MTT::DoCommand::Chdir($mpi_dir);
                             
                                 # Install and restore the environment
                                 _do_install($section, $ini,
@@ -231,9 +250,10 @@ sub _do_install {
     $config->{unsetenv} = "to be filled in below";
     $config->{prepend_path} = "to be filled in below";
     $config->{append_path} = "to be filled in below";
+    $config->{bitness} = "to be filled in below";
         
     # Filled in by the module
-    $config->{success} = 0;
+    $config->{test_result} = MTT::Values::FAIL;
     $config->{result_message} = "to be filled in by module";
     $config->{c_bindings} = 0;
     $config->{cxx_bindings} = 0;
@@ -251,14 +271,23 @@ sub _do_install {
     }
     
     # Make a directory just for this section
-    chdir($this_install_base);
+    MTT::DoCommand::Chdir($this_install_base);
     $config->{section_dir} = _make_safe_dir($simple_section);
-    chdir($config->{section_dir});
+    MTT::DoCommand::Chdir($config->{section_dir});
 
     # Make a directory just for this version
     $config->{version_dir} = _make_safe_dir($mpi_get->{version});
-    chdir($config->{version_dir});
+    MTT::DoCommand::Chdir($config->{version_dir});
     
+    # Load any environment modules?
+    my @env_modules;
+    $config->{env_modules} = Value($ini, $section, "env_module");
+    if ($config->{env_modules}) {
+        @env_modules = split(",", $config->{env_modules});
+        Env::Modulecmd::load(@env_modules);
+        Debug("Loading environment modules: @env_modules\n");
+    }
+
     # Process setenv, unsetenv, prepend_path, and
     # append_path
     $config->{setenv} = Value($ini, $section, "setenv");
@@ -269,8 +298,7 @@ sub _do_install {
     ProcessEnvKeys($config, \@save_env);
     
     # configure_arguments
-    my $tmp;
-    $tmp = Value($ini, $section, "configure_arguments");
+    my $tmp = Value($ini, $section, "configure_arguments");
     $config->{configure_arguments} = $tmp
         if (defined($tmp));
     
@@ -309,7 +337,7 @@ sub _do_install {
     $config->{compiler_version} =
         Value($ini, $section, "compiler_version");
 
-    # What to do with stdout/stderr?
+    # What to do with result_stdout/result_stderr?
     my $tmp;
     $tmp = Logical($ini, $section, "save_stdout_on_success");
     $config->{save_stdout_on_success} = $tmp
@@ -324,55 +352,85 @@ sub _do_install {
     $config->{stdout_save_lines} = $tmp
         if (defined($tmp));
 
-    # XML
-    $tmp = Value($ini, $section, "perfbase_xml");
-    $config->{perfbase_xml} = $tmp
-        if (defined($tmp));
-
-    # We're in the section directory.  Make a subdir for wthe source
+    # We're in the section directory.  Make a subdir for the source
     # and build.
     MTT::DoCommand::Cmd(1, "rm -rf source");
     my $source_dir = MTT::Files::mkdir("source");
-    chdir($source_dir);
+    MTT::DoCommand::Chdir($source_dir);
     
     # Unpack the source and find out the subdirectory
     # name it created
     $config->{srcdir} = _prepare_source($mpi_get);
-    chdir($config->{srcdir});
+    MTT::DoCommand::Chdir($config->{srcdir});
     $config->{abs_srcdir} = cwd();
     
     # vpath mode (error checking was already done above)
     
     if (!$config->{vpath_mode} || $config->{vpath_mode} eq "" ||
         $config->{vpath_mode} eq "none") {
-        $config->{vpath_mode} eq "none";
+        $config->{vpath_mode} = 0;
         $config->{configdir} = ".";
         $config->{builddir} = $config->{abs_srcdir};
     } else {
         if ($config->{vpath_mode} eq "absolute") {
+            $config->{vpath_mode} = 2;
             $config->{configdir} = $config->{abs_srcdir};
             $config->{builddir} = "$config->{version_dir}/build_vpath_absolute";
         } else {
+            $config->{vpath_mode} = 1;
             $config->{configdir} = "../$config->{srcdir}";
             $config->{builddir} = "$config->{version_dir}/build_vpath_relative";
         }
         
         MTT::Files::mkdir($config->{builddir});
     }
-    chdir($config->{builddir});
+    MTT::DoCommand::Chdir($config->{builddir});
     
     # Installdir
-    
     $config->{installdir} = "$config->{version_dir}/install";
     MTT::Files::mkdir($config->{installdir});
-    
+
+    # Bump the refcount in the MPI get -- even if this install fails,
+    # we need the refcount to be accurate.
+    ++$mpi_get->{refcount};
+
     # Run the module
     my $start = timegm(gmtime());
     my $start_time = time;
     my $ret = MTT::Module::Run("MTT::MPI::Install::$config->{module}",
                                "Install", $ini, $section, $config);
     my $duration = time - $start_time . " seconds";
+
+    # Set install_dir for the global environment
+    # (it is needed by post-install funclets such as get_bitness)
+    $install_dir = $config->{installdir};
     
+    # bitness (must be processed *after* installation)
+    my $bitness = Value($ini, $section, "bitness");
+
+    # If they did not use a funclet, translate the
+    # bitness(es) for the MTT database
+    if ($bitness !~ /\&/) {
+        $bitness = EvaluateString("&get_mpi_install_bitness(\"$bitness\")");
+    }
+    $config->{bitness} = $bitness;
+    
+    # endian
+    my $endian = Value($ini, $section, "endian");
+
+    # If they did not use a funclet, translate the
+    # endian(es) for the MTT database
+    if ($endian !~ /\&/) {
+        $endian = EvaluateString("&get_mpi_install_endian(\"$endian\")");
+    }
+    $config->{endian} = $endian;
+    
+    # Unload any loaded environment modules
+    if ($#env_modules >= 0) {
+        Debug("Unloading environment modules: @env_modules\n");
+        Env::Modulecmd::unload(@env_modules);
+    }
+
     # Analyze the return
     
     if ($ret) {
@@ -381,6 +439,8 @@ sub _do_install {
             phase => "MPI Install",
 
             mpi_install_section_name => $config->{simple_section_name},
+            bitness => $config->{bitness},
+            endian => $config->{endian},
             compiler_name => $config->{compiler_name},
             compiler_version => $config->{compiler_version},
             configure_arguments => $config->{configure_arguments},
@@ -388,74 +448,65 @@ sub _do_install {
             merge_stdout_stderr => "$config->{merge_stdout_stderr}",
             environment => "filled in below",
 
-            perfbase_xml => $config->{perfbase_xml},
-            start_test_timestamp => $start,
-            test_duration_interval => $duration,
+            start_timestamp => $start,
+            duration => $duration,
             mpi_details => $mpi_get->{mpi_details},
             mpi_name => $mpi_get->{simple_section_name},
             mpi_version => $mpi_get->{version},
 
-            success => $ret->{success},
+            test_result => $ret->{test_result},
+            exit_value => MTT::DoCommand::exit_value($ret->{exit_status}),
+            exit_signal => MTT::DoCommand::exit_signal($ret->{exit_status}),
             result_message => $ret->{result_message},
-            stdout => "filled in below",
-            stderr => "filled in below",
+            client_serial => $ret->{client_serial},
+            mpi_install_id => $ret->{mpi_install_id},
+            result_stdout => "filled in below",
+            result_stderr => "filled in below",
         };
 
-        # See if we want to save the stdout
+        # See if we want to save the result_stdout
         my $want_save = 1;
-        if (1 == $ret->{success}) {
+        if (MTT::Values::PASS == $ret->{test_result}) {
             if (!$config->{save_stdout_on_success}) {
                 $want_save = 0;
             }
-        } elsif (!$ret->{stdout}) {
+        } elsif (!$ret->{result_stdout}) {
             $want_save = 0;
         }
 
-        # If we want to save, see how many lines we want to save
+        # If we want to, save stdout
         if ($want_save) {
-            if ($config->{stdout_save_lines} == -1) {
-                $report->{stdout} = "$ret->{stdout}\n";
-            } elsif ($config->{stdout_save_lines} == 0) {
-                delete $report->{stdout};
-            } else {
-        if ($ret->{stdout} =~ m/((.*\n){$config->{stdout_save_lines}})$/) {
-                    $report->{stdout} = $1;
-                } else {
-                    # There were less lines available than we asked
-                    # for, so just take them all
-                    $report->{stdout} = $ret->{stdout};
-                }
-            }
+            $report->{result_stdout} = $ret->{result_stdout};
         } else {
-            delete $report->{stdout};
+            delete $report->{result_stdout};
         }
 
-        # $ret->{stderr} will be filled in on error.  If there was no
+        # $ret->{result_stderr} will be filled in on error.  If there was no
         # error, then take $ret->{make_all_stderr}.
-        my $stderr;
-        if ($ret->{stderr}) {
-            $stderr = $ret->{stderr};
+        my $result_stderr;
+        if ($ret->{result_stderr}) {
+            $result_stderr = $ret->{result_stderr};
         } else {
-            $stderr = $ret->{make_all_stderr};
+            $result_stderr = $ret->{make_all_stderr};
         }
 
-        # Always fill in the last bunch of lines for stderr
-        if ($stderr) {
+        # Always fill in the last bunch of lines for result_stderr
+        if ($result_stderr) {
             if ($config->{stderr_save_lines} == -1) {
-                $report->{stderr} = "$stderr\n";
+                $report->{result_stderr} = "$result_stderr\n";
             } elsif ($config->{stderr_save_lines} == 0) {
-                delete $report->{stderr};
+                delete $report->{result_stderr};
             } else {
-                if ($stderr =~ m/((.*\n){$config->{stderr_save_lines}})$/) {
-                    $report->{stderr} = $1;
+                if ($result_stderr =~ m/((.*\n){$config->{stderr_save_lines}})$/) {
+                    $report->{result_stderr} = $1;
                 } else {
                     # There were less lines available than we asked
                     # for, so just take them all
-                    $report->{stderr} = $stderr;
+                    $report->{result_stderr} = $result_stderr;
                 }
             }
         } else {
-            delete $report->{stderr};
+            delete $report->{result_stderr};
         }
 
         # Did we have any environment?
@@ -463,6 +514,7 @@ sub _do_install {
         foreach my $e (@save_env) {
             $report->{environment} .= "$e\n";
         }
+
         # Fill in which MPI we used
         $ret->{mpi_details} = $mpi_get->{mpi_details};
         $ret->{mpi_get_full_section_name} = $mpi_get->{full_section_name};
@@ -472,7 +524,6 @@ sub _do_install {
         # Some additional values
         $ret->{full_section_name} = $config->{full_section_name};
         $ret->{simple_section_name} = $config->{simple_section_name};
-        $ret->{test_status} = "installed";
         $ret->{compiler_name} = $config->{compiler_name};
         $ret->{compiler_version} = $config->{compiler_version};
         $ret->{configure_arguments} = $config->{configure_arguments};
@@ -482,7 +533,14 @@ sub _do_install {
         $ret->{unsetenv} = $config->{unsetenv};
         $ret->{prepend_path} = $config->{prepend_path};
         $ret->{append_path} = $config->{append_path};
-        $ret->{timestamp} = timegm(gmtime());
+        $ret->{env_modules} = $config->{env_modules};
+        $ret->{start_timestamp} = timegm(gmtime());
+        $ret->{get_section_dir} = $this_install_base;
+        $ret->{install_section_dir} = $config->{install_section_dir};
+        $ret->{version_dir} = $config->{version_dir};
+        $ret->{source_dir} = $config->{srcdir};
+        $ret->{build_dir} = $config->{builddir};
+        $ret->{refcount} = 0;
 
         # Delete keys with empty values
         foreach my $k (keys(%$report)) {
@@ -492,29 +550,35 @@ sub _do_install {
         }
         
         # Save the results in an ini file so that we save all the
-        # stdout, etc.
+        # result_stdout, etc.
         WriteINI("$config->{version_dir}/$installed_file",
                  $installed_section, $ret);
         
         # All of the data has been saved to an INI file, so reclaim
         # potentially a big chunk of memory...
-        delete $ret->{stdout};
-        delete $ret->{stderr};
+        delete $ret->{result_stdout};
+        delete $ret->{result_stderr};
         delete $ret->{configure_stdout};
         delete $ret->{make_all_stdout};
         delete $ret->{make_all_stderr};
         delete $ret->{make_check_stdout};
         delete $ret->{make_install_stdout};
         
-        # Submit to the reporter
-        MTT::Reporter::Submit("MPI install", $simple_section, $report);
+        # Submit to the reporter, and receive a serial
+        my $serials = MTT::Reporter::Submit("MPI install", $simple_section, $report);
+
+        # Merge in the serials from the MTTDatabase
+        my $module = "MTTDatabase";
+        foreach my $k (keys %{$serials->{$module}}) {
+            $ret->{$k} = $serials->{$module}->{$k};
+        }
 
         # Add the data in the global $MTT::MPI::installs table
         $MTT::MPI::installs->{$mpi_get->{simple_section_name}}->{$mpi_get->{version}}->{$simple_section} = $ret;
         MTT::MPI::SaveInstalls($install_base);
 
         # Successful build?
-        if (1 == $ret->{success}) {
+        if (MTT::Values::PASS == $ret->{test_result}) {
             # If it was successful, there's no need for
             # the source or build trees anymore
             # JMS: this is not right -- if there is a problem with

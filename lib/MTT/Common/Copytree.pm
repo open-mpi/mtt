@@ -29,7 +29,7 @@ sub Get {
     my $ret;
     my $data;
     my $src_mtime;
-    $ret->{success} = 0;
+    $ret->{test_result} = MTT::Values::FAIL;
 
     # See if we got a directory in the ini section
     $data->{src_directory} = Value($ini, $section, "copytree_directory");
@@ -52,7 +52,7 @@ sub Get {
 
         if ($src_mtime <= $previous_mtime) {
             Debug(">> copytree: we already have this tree, and it hasn't changed\n");
-            $ret->{success} = 1;
+            $ret->{test_result} = MTT::Values::PASS;
             $ret->{have_new} = 0;
             $ret->{result_message} = "Tree has not changed (did not re-copy)";
             return $ret;
@@ -70,7 +70,7 @@ sub Get {
     $ret->{module_data} = $data;
     my $dir = PrepareForInstall($ret, cwd());
     if (!$dir) {
-        $ret->{success} = 0;
+        $ret->{test_result} = MTT::Values::FAIL;
         $ret->{result_message} = "Failed to copy tree";
         return $ret;
     }
@@ -101,7 +101,7 @@ sub Get {
 
     # All done
     Debug(">> copytree: returning successfully\n");
-    $ret->{success} = 1;
+    $ret->{test_result} = MTT::Values::PASS;
     $ret->{result_message} = "Success";
     return $ret;
 } 
@@ -133,7 +133,7 @@ sub PrepareForInstall {
     # Post copy
     if ($data->{post_copy}) {
         my $old = cwd();
-        chdir($ret);
+        MTT::DoCommand::Chdir($ret);
 
         Debug("copytree running post_copy command: $data->{post_copy}\n");
         my $x = MTT::DoCommand::CmdScript(1, $data->{post_copy});
@@ -142,7 +142,7 @@ sub PrepareForInstall {
             return undef;
         }
 
-        chdir($old);
+        MTT::DoCommand::Chdir($old);
     }
 
     # All done

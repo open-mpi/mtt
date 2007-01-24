@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -15,12 +15,18 @@ package MTT::Values::Functions;
 use strict;
 use File::Find;
 use MTT::Messages;
-use MTT::Test::Run;
 use MTT::Globals;
+use MTT::Files;
+use Data::Dumper;
+
+# Do NOT use MTT::Test::Run here, even though we use some
+# MTT::Test::Run values below.  This will create a "use loop".  Be
+# confident that we'll get the values as appropriate when we need them
+# through other "use" statements.
 
 #--------------------------------------------------------------------------
 
-# Returns the stdout of running a shell command
+# Returns the result_stdout of running a shell command
 sub shell {
     Debug("&shell: got @_\n");
     my $cmd = join(/ /, @_);
@@ -440,7 +446,7 @@ sub test_argv {
 
 #--------------------------------------------------------------------------
 
-# Return the exit status from the last test run
+# Return the exit exit_status from the last test run
 # DEPRECATED
 sub test_exit_status {
     Debug("&test_exit_status: this function is deprecated; please call test_wexitstatus()\n");
@@ -548,6 +554,34 @@ sub rm_max_procs {
 
 #--------------------------------------------------------------------------
 
+# Return the name of the run-time enviornment that we're using
+sub env_name {
+    Debug("&env_name\n");
+
+    # Resource managers
+    return "SLURM"
+        if slurm_job();
+    return "TM"
+        if pbs_job();
+    return "N1GE"
+        if n1ge_job();
+    return "loadleveler"
+        if loadleveler_job();
+
+    # Hostfile
+    return "hostfile"
+        if have_hostfile();
+
+    # Hostlist
+    return "hostlist"
+        if have_hostlist();
+
+    # No clue, Jack...
+    return "unknown";
+}
+
+#--------------------------------------------------------------------------
+
 # Find the max procs that we can run with.  Check several things in
 # order:
 #
@@ -558,7 +592,7 @@ sub rm_max_procs {
 #
 # If none of those things are found, return "2".
 sub env_max_procs {
-    Debug("&rm_max_procs\n");
+    Debug("&env_max_procs\n");
 
     # Resource managers
     return slurm_max_procs()
@@ -817,6 +851,379 @@ sub loadleveler_max_procs {
     }
 
     Debug("&loadleveler_max_procs returning: $ret\n");
+    return $ret;
+}
+
+
+#--------------------------------------------------------------------------
+
+# Return the version of the GNU C compiler
+sub get_gcc_version {
+    Debug("&get_gcc_version\n");
+    my $ret = "unknown";
+
+    if (open GCC, "gcc --version|") {
+        my $str = <GCC>;
+        close(GCC);
+        chomp($str);
+
+        my @vals = split(" ", $str);
+        $ret = $vals[2];
+    }
+    
+    Debug("&get_gcc_version returning: $ret\n");
+    return $ret;
+}
+
+#--------------------------------------------------------------------------
+
+# Return the version of the Intel C compiler
+sub get_icc_version {
+    Debug("&get_icc_version\n");
+    my $ret = "unknown";
+
+    if (open ICC, "icc --version|") {
+        my $str = <ICC>;
+        close(ICC);
+        chomp($str);
+
+        my @vals = split(" ", $str);
+        $ret = "$vals[2] $vals[3]";
+    }
+    
+    Debug("&get_icc_version returning: $ret\n");
+    return $ret;
+}
+
+#--------------------------------------------------------------------------
+
+# Return the version of the PGI C compiler
+sub get_pgcc_version {
+    Debug("&get_pgcc_version\n");
+    my $ret = "unknown";
+
+    if (open PGCC, "pgcc -V|") {
+        my $str = <PGCC>;
+        $str = <PGCC>;
+        close(PGCC);
+        chomp($str);
+
+        my @vals = split(" ", $str);
+        $ret = "$vals[1] ($vals[2] $vals[5] $vals[6])";
+    }
+    
+    Debug("&get_pgcc_version returning: $ret\n");
+    return $ret;
+}
+
+#--------------------------------------------------------------------------
+
+# Return the version of the Sun Studio C compiler
+sub get_sun_cc_version {
+    Debug("&get_sun_cc_version\n");
+    my $ret = "unknown";
+
+    if (open SUNCC, "cc -V 2>&1 | head -n 1 | nawk '{print $4}'") {
+        my $str = <SUNCC>;
+        $str = <SUNCC>;
+        close(SUNCC);
+        chomp($str);
+
+        $ret = $str;
+    }
+    
+    Debug("&get_sun_cc_version returning: $ret\n");
+    return $ret;
+}
+
+#--------------------------------------------------------------------------
+
+# Detect the bitness of the MPI library in this order:
+#   1) User overridden (CSV of 1 or more valid bitnesses)
+#   2) Small test C program (using void*)
+#   3) /usr/bin/file command output
+#
+# Return a database-ready bitmapped value
+sub get_mpi_install_bitness {
+    Debug("&get_mpi_intall_bitness\n");
+
+    my $override    = shift;
+    my $install_dir = $MTT::MPI::Install::install_dir;
+    my $force       = 1;
+    my $ret         = undef;
+
+    # 1)
+    # Users can override the automatic bitness detection
+    # (useful in cases where the MPI has multiple bitnesses
+    # e.g., Sun packages or Mac OSX universal binaries)
+    if ($override) {
+        $ret = _bitness_to_bitmapped($override);
+        Debug("&get_mpi_install_bitness returning: $ret\n");
+        return $ret;
+    }
+
+    # 2)
+    # Write out a simple C program to output the bitness
+    my $prog_name  = "get_bitness_c";
+    my $executable = "$install_dir/$prog_name";
+    my $mpicc      = "$install_dir/bin/mpicc";
+    my $mpirun     = "$install_dir/bin/mpirun";
+
+    my $x = MTT::Files::SafeWrite($force, "$executable.c", "/*
+ * This program is automatically generated via the \"get_bitness\"
+ * function of the MPI Testing Tool (MTT).  Any changes you make here may
+ * get lost!
+ *
+ * Copyrights and licenses of this file are the same as for the MTT.
+ */
+
+#include <stdio.h>
+
+int main(int argc, char* argv[]) {
+    printf(\"%d\\n\", sizeof(void *) * 8);
+    return 0;
+}
+");
+
+    # Compile the program
+    $x = MTT::DoCommand::Cmd(1, "$mpicc $executable.c -o $executable");
+
+    if ($x->{exit_value} != 0) {
+        Warning("Couldn't compile $prog_name.c.\n");
+    }
+        
+    if (-f $executable) {
+        $x = MTT::DoCommand::Cmd(1, "$mpirun -np 1 $executable", 30);
+    } else {
+        Warning("$prog_name does not exist!\n");
+    }
+
+    if ($x->{exit_value} != 0) {
+        Warning("Couldn't execute $prog_name.\n");
+    } else {
+        $ret = _extract_valid_bitness($x->{result_stdout});
+
+        if (! $ret) {
+            Warning("$prog_name did not execute properly.\n");
+            Warning("$prog_name output: " . $x->{result_stdout} . "\n");
+        } else {
+            Debug("$prog_name executed properly.\n");
+
+            $ret = _bitness_to_bitmapped($ret);
+            Debug("&get_mpi_install_bitness returning: $ret\n");
+            return $ret;
+        }
+    }
+
+    # 3)
+    # Try snarfing bitness using the /usr/bin/file command
+    my $libmpi = _find_libmpi();
+    my $leader = "[^:]+:";
+    my $bitnesses;
+
+    # Split up file command's output
+    my @file_out = split /\n/, `file $libmpi`;
+
+    foreach my $line (@file_out) {
+
+        # Mac OSX *implies* 32-bit for ppc and i386
+        if ($line =~ /$leader.*\bmach-o\b.*\b(?:ppc|i386)\b/i) {
+            $bitnesses->{32} = 1;
+
+        # 64-bit
+        } elsif ($line =~ /$leader.*\b64-bit\b/i) {
+            $bitnesses->{64} = 1;
+
+        # 32-bit
+        } elsif ($line =~ /$leader.*\b32-bit\b/i) {
+            $bitnesses->{32} = 1;
+        }
+    }
+
+    # Compose CSV of bitness(es)
+    my $str = join(',', keys %{$bitnesses});
+
+    $ret = _extract_valid_bitness($str);
+
+    if (! defined($ret)) {
+        Warning("Could not get bitness using \"file\" command.\n");
+    } else {
+        Debug("Got bitness using \"file\" command.\n");
+    }
+
+    $ret = _bitness_to_bitmapped($ret);
+    Debug("&get_mpi_install_bitness returning: $ret\n");
+    return $ret;
+}
+
+# Make sure the bitness value makes sense
+sub _extract_valid_bitness {
+
+    my $str = shift;
+    my $ret;
+
+    Debug("Validating bitness string ($str)\n");
+
+    # Valid bitnesses
+    my $v = "8|16|32|64|128";
+
+    # CSV of one or more bitnesses
+    if ($str =~ /^((?:$v) (?:\s*,\s*(?:$v))*)$/x) {
+        $ret = $1;
+    } else {
+        $ret = undef;
+    }
+
+    return $ret;
+}
+
+# Convert the human-readable CSV of bitness(es) to
+# its representation in the MTT database.
+sub _bitness_to_bitmapped {
+
+    my $csv = shift;
+    my $ret = 0;
+    my $shift;
+
+    Debug("Converting bitness string ($csv) to a bitmapped value\n");
+
+    return $ret if (! $csv);
+
+    my @bitnesses = split(/,/, $csv);
+
+    # Smallest bitness possible
+    my $smallest = 8;
+
+    # Generate a bitmap of all bitnesses
+    foreach my $bitness (@bitnesses) {
+        $shift = log($bitness)/log(2) - log($smallest)/log(2);
+        $ret |= (1 << $shift);
+    }
+
+    return $ret;
+}
+
+#--------------------------------------------------------------------------
+
+# Return a database-ready bitmapped value for endian-ness
+sub get_mpi_install_endian {
+    Debug("&get_mpi_intall_endian\n");
+
+    my $override = shift;
+    my $ret      = undef;
+
+    # 1)
+    # Users can override the automatic endian detection
+    # (useful in cases where the MPI has multiple endians
+    # e.g., Mac OSX universal binaries)
+    if ($override) {
+        $ret = _endian_to_bitmapped($override);
+
+        Debug("&get_mpi_install_endian returning: $ret\n");
+        return $ret;
+    }
+
+
+    # 2)
+    # Try snarfing endian(s) using the /usr/bin/file command
+    my $libmpi          = _find_libmpi();
+    my $leader          = "[^:]+:";
+    my $hardware_little = 'i386|x86_64';
+    my $hardware_big    = 'ppc|ppc64';
+    my $endians;
+
+    # Split up file command's output
+    my @file_out = split /\n/, `file $libmpi`;
+
+    foreach my $line (@file_out) {
+
+        # Mac OSX
+        if ($line =~ /$leader.*\bmach-o\b.*(?:$hardware_little)\b/i) {
+            $endians->{little} = 1;
+
+        # Mac OSX
+        } elsif ($line =~ /$leader.*\bmach-o\b.*(?:$hardware_big)\b/i) {
+            $endians->{big} = 1;
+
+        # Look for 'MSB' (Most Significant Bit)
+        } elsif ($line =~ /$leader.*\bMSB\b/i) {
+            $endians->{big} = 1;
+
+        # Look for 'LSB' (Least Significant Bit)
+        } elsif ($line =~ /$leader.*\bLSB\b/i) {
+            $endians->{little} = 1;
+        }
+    }
+
+    # Compose CSV of endian(s)
+    my $str = join(',', keys %{$endians});
+
+    $ret = _endian_to_bitmapped($str);
+
+    if (! $ret) {
+        Warning("Could not get endian-ness using \"file\" command.\n");
+    } else {
+        Debug("Got endian-ness using \"file\" command.\n");
+        return $ret;
+    }
+
+    # 3)
+    # Auto-detect by casting an int to a char
+    my $str = unpack('c2', pack('i', 1)) ? 'little' : 'big';
+    $ret = _endian_to_bitmapped($str);
+
+    Debug("&get_mpi_install_endianness returning: $ret\n");
+    return $ret;
+}
+
+# Convert the human-readable CSV of endian(s) to
+# its representation in the MTT database.
+sub _endian_to_bitmapped {
+
+    my $csv        = shift;
+    my $ret        = 0;
+    my $bit_little = 0;
+    my $bit_big    = 1;
+
+    Debug("Converting endian string ($csv) to a bitmapped value\n");
+
+    return $ret if (! $csv);
+
+    if ($csv =~ /little/i) {
+        $ret |= $ret | (1 << $bit_little);
+    }
+    if ($csv =~ /big/i) {
+        $ret |= $ret | (1 << $bit_big);
+    }
+    if ($csv =~ /both/i) {
+        $ret |= $ret | (1 << $bit_little) | (1 << $bit_big);
+    }
+
+    Debug("&_endian_to_bitmapped returning: $ret\n");
+    return $ret;
+}
+
+# Return the MPI library that will be passed to the file command
+sub _find_libmpi {
+
+    my $install_dir = $MTT::MPI::Install::install_dir;
+    my $ret = undef;
+
+    # Try to find a libmpi
+    my @libmpis = (
+        "$install_dir/lib/libmpi.dylib",
+        "$install_dir/lib/libmpi.a",
+        "$install_dir/lib/libmpi.so",
+    );
+
+    foreach my $libmpi (@libmpis) {
+        if (-e $libmpi) {
+            $ret = $libmpi;
+            last;
+        }
+    }
+
+    Debug("&_find_libmpi returning: $ret\n");
     return $ret;
 }
 

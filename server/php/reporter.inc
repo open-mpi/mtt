@@ -1,7 +1,7 @@
 <?php
 
 #
-# Copyright (c) 2006 Sun Microsystems, Inc.
+# Copyright (c) 2006-2007 Sun Microsystems, Inc.
 #                         All rights reserved.
 # $COPYRIGHT$
 #
@@ -10,182 +10,601 @@
 # $HEADER$
 #
 
-#
-#
-# Catch-all include file for Reporting Tools
-#
-#
-
-$GLOBALS['verbose'] = $_GET['verbose'] ? $_GET['verbose'] : 0;
-$GLOBALS['debug']   = $_GET['debug']   ? $_GET['debug']   : 0;
-$GLOBALS['res']     = 0;
-
-$form_id = "report";
-
-$words_to_numerals = array(
-    #"One"   => 1,
-    "Two"   => 2,
-    "Three" => 3,
-    "Four"  => 4,
-    "Five"  => 5,
-    "Six"   => 6,
-    "Seven" => 7,
-    "Eight" => 8,
-    "Nine"  => 9,
-    "Ten"   => 10,
-);
-
-# db field name => html column header This could be done using the SQL 'as'
-# construct (?), but that's a lot of regexp-ing
-#
-# Or use pg_fetch_all which returns a hash, not a numerically indexed array
-# (we're okay as long as php can preserve the array creation order)
-$sp = "&nbsp;";
-$field_labels = array(
-
-    # not an actual db field
-    "phase"                    => "Phase",
-
-    # phase-independent fields
-    "platform_hardware"        => "Hardware",
-    "platform_type"            => "Os",
-    "platform_id"              => "Cluster",
-    "cluster"                  => "Cluster",
-    "os_name"                  => "Os",
-    "os_version"               => "Os".$sp."ver",
-    "mpi_name"                 => "Mpi",
-    "mpi_version"              => "Mpi".$sp."rev",
-    "hostname"                 => "Host",
-
-    # timestamp related
-    "start_test_timestamp"     => "Timestamp" .$sp."(GMT)",
-    "start_run_timestamp"      => "Timestamp" .$sp."(GMT)",
-    "submit_test_timestamp"    => "Submit".$sp."time",
-    "test_duration_interval"   => "Test".$sp."duration",
-    "agg_timestamp"            => "Timestamp".$sp."aggregation",
-
-    "mpi_get_section_name"     => "Section".$sp."(MPI Get)",
-    "mpi_install_section_name" => "Section".$sp."(MPI Install)",
-    "mpi_details"              => "MPI Details",
-    "test_build_section_name"  => "Suite".$sp."(Build)",
-    "test_run_section_name"    => "Suite".$sp."(Run)",
-    "section"                  => "Section",
-    "merge_stdout_stderr"      => "Merge".$sp."outputs",
-    "stderr"                   => "Stderr",
-    "stdout"                   => "Stdout",
-    "environment"              => "Env",
-    "mtt_version_major"        => "Mtt".$sp."ver".$sp."maj",
-    "mtt_version_minor"        => "Mtt".$sp."ver".$sp."min",
-    "compiler_name"            => "Compiler",
-    "compiler"                 => "Compiler",
-    "compiler_version"         => "Compiler".$sp."ver",
-    "configure_arguments"      => "Config".$sp."args",
-    "vpath_mode"               => "Vpath",
-    "result_message"           => "Result".$sp."msg",
-    "test_name"                => "Test".$sp."name",
-    "name"                     => "Test name",
-    "section_name"             => "Test name",
-    "test_command"             => "Mpirun".$sp."cmd",
-    "test_np"                  => "Np",
-    "result_message"           => "Test".$sp."msg",
-    "test_message"             => "Test".$sp."msg",
-    "test_pass"                => "Result",
-    "success"                  => "Result",
-    "count"                    => "Count",
-    "date"                     => "Date",
-    "time"                     => "Time",
-);
-$menu_labels = array(
-    "all" => "All",
-);
-$All = "All";
-
-# Encode cgi param name prefixes as a means to slim down the query string
-# X: Encode cgi param field names
-$cgi_abbrevs = array(
-    'hidden_menufield' => 'hmef_',
-    'menufield'        => 'mef_',
-    'mainfield'        => 'maf_',
-    'textfield'        => 'tf_',
-    'filter_types'     => 'ft_',
-);
-
 #########################################
 #                                       #
-#  String Processing Functions          #
+#  Definitions                          #
 #                                       #
 #########################################
 
-# Return string concatenated to itself x times
-function repeat($str, $x) {
+# Constant to mute SQL errors (set true to mute)
+define('SILENT', true);
 
-    $orig = $str;
-    for ($i = 0; $i < $x-1; $i++){
-        $orig .= $str;
-    }
-    return $orig;
+# Screen dimemsion constants for graphing
+define('SCREEN_WIDTH', 1200);
+define('SCREEN_HEIGHT', 700);
+
+# HTML colors
+define('GRAY',     "#A0A0A0");
+define('DGRAY',    "#808080");
+define('LGRAY',    "#C0C0C0");
+define('LLGRAY',   "#DEDEDE");
+define('LLLGRAY',  "#E8E8E8");
+define('LRED',     "#FFC0C0");
+define('DRED',     "#E0C0C0");
+define('LGREEN',   "#C0FFC0");
+define('DGREEN',   "#C0E0C0");
+define('LYELLOW',  "#FFFFC0");
+define('DYELLOW',  "#E0E0C0");
+define('LBLUE',    "#C0C0FF");
+define('DBLUE',    "#C0C0E0");
+define('WHITE',    "#FFFFFF");
+define('THCOLOR',  LLGRAY);
+
+# Mask the trial column using HTML comments
+define('TRIAL_TRUE',  't');
+define('TRIAL_FALSE', 'f');
+
+# Define paths
+define('DOCROOT', dirname('http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME']));
+define('PATH',    dirname($_SERVER['SCRIPT_NAME']));
+
+#########################################
+#                                       #
+#  Global arrays                        #
+#                                       #
+#########################################
+
+# Return a listing of which results go with which phase
+function phase_results_table() {
+
+    # THESE RESULT STRINGS MUST MATCH THE IDENTIFIERS USED
+    # IN [source:/trunk/server/sql/views.sql]
+    return array(
+        'mpi_install' => 
+            array('_ip', '_if'),
+        'test_build'  => 
+            array('_bp', '_bf'),
+        'test_run'    => 
+            array('_rp', '_rf', '_rs', '_rt', '_rl'),
+    );
 }
 
-# sprintf for arrays. Return the entire array sent through
-# sprintf, concatenated
-# This really seems like an array_map sort of thing, but
-# php has a different concept of map than perl
+# Return a list of preferences to hand off to prefs_popup
+function setup_prefs() {
+
+    static $prefs;
+
+    if (! $prefs)
+        $prefs = array(
+            'general'  => array(
+                'limit'    => array(array('10', '50', '*100', '200')),
+                'wrap'     => array(100),
+                'timezone' => array(array('*GMT', 'EST', 'CST', 'MST', 'PST')),
+                'trial'    => array(false),
+            ),
+            'graphing' => array(
+                'yaxis_scale'      => array(array('Logarithmic', '*Linear')),
+                'xaxis_scale'      => array(array('Logarithmic', '*Linear')),
+                'hide_subtitle'    => array(false),
+                #'graph_size'       => array(array('Small', '*Medium', 'Large')),
+                #'legend_placement' => array(array('*Bottom', 'In plotting area')),
+                #'graph_type'       => array(array('*Line', 'Bar', 'Points')),
+            ),
+        );
+
+    return $prefs;
+}
+
+# Return a list of columns to show/hide
+function setup_advanced($params) {
+
+    static $menu;
+
+    if ($menu)
+        return $menu;
+
+    # Put hide first so it defaults as the shown menu item
+    $control = array('hide', 'show');
+
+    $phases = process_phase_field($params);
+    $main_window = setup_mainwin_fields($phases);
+
+    $menu = array(
+        'compute_cluster' => array(
+            'os_version'          => array('', $control),
+            'platform_type'       => array('', $control),
+            'platform_hardware'   => array('', $control),
+            'platform_name'       => array('', $control),
+            'os_name'             => array('', $control),
+        ),
+        'submit' => array(
+            'hostname'            => array('', $control),
+            'local_username'      => array('', $control),
+            'http_username'       => array('', $control),
+        ),
+        'mpi_install' => array(
+            'compiler_name'       => array('', $control),
+            'compiler_version'    => array('', $control),
+            'vpath_mode'          => array('', $control),
+            'endian'              => array('', $control),
+            'bitness'             => array('', $control),
+            'mpi_name'            => array('', $control),
+            'mpi_version'         => array('', $control),
+            'configure_arguments' => array(''),
+        ),
+        'results' => array(
+            'exit_value'          => array('', $control),
+            'exit_signal'         => array('', $control),
+            'duration'            => array('', $control),
+            'client_serial'       => array('', $control),
+            'result_message'      => array(''),
+            'result_stdout'       => array(''),
+            'result_stderr'       => array(''),
+            'environment'         => array(''),
+        ),
+    );
+
+    if (sizeof($phases) == 1) {
+
+        if (array_search('test_build', $phases) !== false or
+            array_search('test_run', $phases) !== false) {
+            $menu =
+                array_merge(
+                    $menu,
+                    array('test_build' =>
+                        array(
+                            'suite_name' => array('', $control),
+                        ))
+                );
+        }
+        if (array_search('test_run', $phases) !== false) {
+            $menu =
+                array_merge(
+                    $menu,
+                    array('test_run' => 
+                        array(
+                            'variant'   => array('', $control),
+                            'test_name' => array('', $control),
+                            'np'        => array('', $control),
+                            'command'   => array('', $control),
+                        ))
+                );
+        }
+    }
+
+    # Exclude fields that are already in the main window
+    # to avoid overlapping of form controls
+    foreach (array_keys($menu) as $table) {
+        foreach (array_keys($menu[$table]) as $k) {
+            if (isset($main_window[$k])) {
+                unset($menu[$table][$k]);
+            }
+        }
+    }
+    # Whack any empty advanced categories
+    foreach (array_keys($menu) as $table)
+        if (sizeof($menu[$table]) == 0)
+            unset($menu[$table]);
+
+    return $menu;
+}
+
+# Display more human-readable labels
+function label($str) {
+    
+    static $labels;
+
+    if (! $labels) {
+        $labels = array(
+
+            # Database column names
+            "bandwidth_avg"       => "Bandwidth avg.",
+            "bandwidth_max"       => "Bandwidth max.",
+            "bandwidth_min"       => "Bandwidth min.",
+            "bitness"             => "Bitness",
+            "client_serial"       => "Client serial",
+            "command"             => "Command",
+            "compiler_name"       => "Compiler",
+            "compiler_version"    => "Compiler version",
+            "configure_arguments" => "Configure arguments",
+            "description"         => "Description",
+            "duration"            => "Duration",
+            "email_address"       => "Email address",
+            "enabled"             => "Enabled",
+            "endian"              => "Endian",
+            "environment"         => "Environment",
+            "exit_value"          => "Exit value",
+            "field"               => "Field",
+            "first_occurrence"    => "First occurrence",
+            "gecos"               => "Gecos",
+            "hostname"            => "Hostname",
+            "http_username"       => "Org",
+            "last_occurrence"     => "Last occurrence",
+            "latency_avg"         => "Latency avg.",
+            "latency_max"         => "Latency max.",
+            "latency_min"         => "Latency min.",
+            "local_username"      => "Local username",
+            "merge_stdout_stderr" => "Merge stdout stderr",
+            "message_size"        => "Message size",
+            "mpi_name"            => "MPI name",
+            "mpi_version"         => "MPI version",
+            "mtt_version_major"   => "MTT version major",
+            "mtt_version_minor"   => "MTT version minor",
+            "np"                  => "np",
+            "os_name"             => "OS",
+            "os_version"          => "OS version",
+            "phase"               => "Phase",
+            "platform_hardware"   => "Hardware",
+            "platform_name"       => "Platform name",
+            "platform_type"       => "Platform type",
+            "result_message"      => "Result message",
+            "result_stderr"       => "Stderr",
+            "result_stdout"       => "Stdout",
+            "exit_signal"         => "Signal",
+            "start_timestamp"     => "Date range",
+            "subject"             => "Subject",
+            "submit_timestamp"    => "Date range",
+            "suite_name"          => "Suite",
+            "test_name"           => "Test",
+            "test_result"         => "Test result",
+            "url"                 => "Url",
+            "username"            => "Username",
+            "value"               => "Value",
+            "variant"             => "Variant",
+            "vpath_mode"          => "Vpath mode",
+
+            # MTT phase names
+            "all_phases"        => "All phases",
+            "mpi_install"       => "MPI install",
+            "test_build"        => "Test build",
+            "test_run"          => "Test run",
+
+            # Other schema tables
+            'compute_cluster'   => 'Cluster',
+            'submit'            => 'Submit',
+            'results'           => 'Results',
+
+            # Result types
+
+            # Result string to column name
+            '_ip'               => 'pass',
+            '_if'               => 'fail',
+            '_bp'               => 'pass',
+            '_bf'               => 'fail',
+            '_rp'               => 'pass',
+            '_rf'               => 'fail',
+            '_rs'               => 'skipped',
+            '_rt'               => 'timed_out',
+            '_rl'               => 'latency_bandwidth',
+
+            # Column name to web page label
+            "pass"              => "Pass",
+            "fail"              => "Fail",
+            "skip"              => "Skip",
+            "timed"             => "Timed",
+            "skipped"           => "Skip",
+            "timed_out"         => "Timed",
+            "latency_bandwidth" => "Perf",
+            
+            # Latency/bandwidth
+            "latency_avg"       => "Latency (avg)",
+            "latency_min"       => "Latency (min)",
+            "latency_max"       => "Latency (max)",
+            "bandwidth_avg"     => "Bandwidth (avg)",
+            "bandwidth_min"     => "Bandwidth (min)",
+            "bandwidth_max"     => "Bandwidth (max)",
+
+            # Selection/unselection
+            "show"                  => "Show",
+            "hide"                  => "Hide",
+
+            # General preferences
+            'general'              => 'General',
+
+            'limit'                => 'Max rows per page',
+            'timezone'             => 'Time zone',
+            'wrap'                 => 'Text wrap <i>(in Detail)</i>',
+
+            # Two labels: one for the UI, one for the column header
+            'trial'                => 'Trial',
+            'Trial'                => 'Show trial runs',
+
+            # Graphing preferences
+            'graphing'             => 'Graphing',
+
+            'graph_size'           => 'Graph size',
+            'legend_placement'     => 'Legend placement',
+            'yaxis_scale'          => 'Y-axis scale',
+            'xaxis_scale'          => 'X-axis scale',
+            'graph_type'           => 'Graph type',
+            'hide_subtitle'        => 'Hide subtitle',
+
+            # Row number
+            "n" => "#",
+        );
+    }
+
+    if (isset($labels[$str]))
+        return $labels[$str];
+    elseif (isset($labels[strip_prefix($str)]))
+        return $labels[strip_prefix($str)];
+    else 
+        return $str;
+}
+
+# Remove the prefix part of the parameter,
+# which will leave only a database column name
+function strip_prefix($str) {
+    return preg_replace('/^more_|^show_|^text_/', '', $str);
+}
+
+#########################################
+#                                       #
+#  Common screen/report functions       #
+#                                       #
+#########################################
+
+# Return an array of default values for textfields
+# (Feed this too form_carryover)
+function setup_mainwin_fields($phases) {
+
+    # Arrayify the argument
+    if (! is_array($phases))
+        $phases = array($phases);
+
+    $single_phase = (sizeof($phases) == 1) ? true : false;
+
+    # ompi does not submit results
+    $http_username = $_SERVER['PHP_AUTH_USER'];
+    if (! $http_username or preg_match("/ompi/i", $http_username))
+        $http_username = 'all';
+
+    $defaults = array(
+        # results
+        'start_timestamp'   => 'past 24 hours',
+
+        # submit
+        'http_username'     => $http_username,
+        'local_username'    => 'all',
+        'platform_name'     => 'all',
+
+        # mpi_install
+        'platform_hardware' => 'all',
+        'os_name'           => 'all',
+        'mpi_name'          => 'all',
+        'mpi_version'       => 'all',
+    );
+
+    # Phase-specific
+    if ($single_phase) {
+        if (array_search('mpi_install', $phases) !== false)
+            $specific = array(
+                'configure_arguments' => '',
+                'compiler_name'       => 'all',
+                'bitness'             => 'all',
+                'endian'              => 'all',
+            );
+        elseif (array_search('test_build', $phases) !== false)
+            $specific = array(
+                'suite_name'       => 'all',
+                'compiler_name'    => 'all',
+                'compiler_version' => 'all',
+                'bitness'          => 'all',
+            );
+        elseif (array_search('test_run', $phases) !== false)
+            $specific = array(
+                'suite_name' => 'all',
+                'test_name'  => 'all',
+                'np'         => 'all',
+                'command'    => '',
+            );
+    }
+
+    $ret = array_merge(
+        $defaults,
+        $specific
+    );
+
+    # Show all columns (except local_username)
+    foreach (array_keys($ret) as $k)
+        $ret['show'][$k] = 'show';
+
+    $ret['show']['local_username'] = 'hide';
+
+    # In Detail view, they likely want to see test name
+    $go = get_go_or_click($_GET);
+
+    if (preg_match("/summary/i", $go) or is_null($go))
+        $ret['show']['test_name'] = 'hide';
+
+    # Phase
+    $ret['phase'] = 'all_phases';
+
+    # Developer params
+    $ret['dev'] = developer_params();
+
+    return $ret;
+}
+
+# Grab the report type from either a button click or a drilldown's "go"
+function get_go_or_click($params) {
+    return isset($params['click']) ? $params['click'] : $params['go'];
+}
+
+# Some helpful params for validating reporter.php
+function developer_params() {
+    static $params;
+    if (! $params)
+        $params = array(
+            'dev'        => null,
+            'sql'        => null,
+            'cgi'        => null,
+            'debug'      => null,
+            'stats'      => null,
+            'no_cache'   => null,
+            'no_cookies' => null,
+            'db'         => null,
+        );
+    return $params;
+}
+
+# Take a 'defaults' array (output from setup_mainwin_fields) Carry
+# over textfields, show/hide menus, and radios from the last
+# invocation (Returns an arr2qstring-ready list)
 #
-# Returns a string
-function sprintf_($format, $arr) {
-    $str = "";
-    foreach ($arr as $s) {
-        $str .= sprintf($format,$s);
-    }
-    return $str;
-}
-
-# sprintf for arrays. Return the entire array sent through
-# sprintf
-# This really seems like an array_map sort of thing, but
-# php has a different concept of map than perl
+# Dual-purpose function:
+# (1). Used for filling in form controls from "last time"
+# (2). Used (in tandem with setup_mainwin_fields) for creating
+#      drilldown links, for transitions between phase
+#      changes
 #
-# Returns an array()
-function lsprintf_($format, $arr) {
-    $arr2 = array();
-    foreach ($arr as $s) {
-        array_push($arr2, sprintf($format,$s));
+# (X: FOR CONSISTENCY, THIS FUNCTION SHOULD ONLY BE USED FOR
+# (1) - AUTO-FILLING A FORM)
+#
+function form_carryover($defaults, $phase) {
+
+    foreach (array_keys($defaults) as $k) {
+
+        # Only deal with text fields
+        if ($k == 'show' or 
+            $k == 'phase' or
+            $k == 'go' or
+            $k == 'dev')
+            continue;
+
+        $textfield = "text_$k";
+        $showfield = "show_$k";
+
+        # Carryover textfields
+        if (isset($_GET[$textfield]))
+            $params[$textfield] = $_GET[$textfield];
+        else
+            $params[$textfield] = $defaults[$k];
+
+        # Carryover show/hide menus
+        if ($_GET[$showfield])
+            $params[$showfield] = $_GET[$showfield];
+        else
+            $params[$showfield] = $defaults['show'][$k];
     }
-    return $arr2;
+
+    $clicks = array('go', 'click');
+
+    # Press 'Summary' for them if they traverse from a
+    # detailed report into multi-phase mode
+    foreach ($clicks as $click) {
+        if (! is_null($_GET[$click])) {
+            if (preg_match("/^all/i", $phase))
+                $params[$click] = 'summary';
+            else
+                $params[$click] = $_GET[$click];
+        }
+    }
+
+    # Carryover last ttable_id, so we know what to DELETE
+    $params['ttable_id'] = $_GET['ttable_id'];
+
+    # Carryover phase
+    $phase = $_GET['phase'];
+    if ($phase)
+        $params['phase'] = $phase;
+    else
+        $params['phase'] = $defaults['phase'];
+
+    # Carryover trial field
+    $text_trial = $_GET['text_trial'];
+    if ($text_trial)
+        $params['text_trial'] = $text_trial;
+    else
+        $params['text_trial'] = $defaults['text_trial'];
+
+    # Carryover preferences in query string
+    static $prefs;
+    if (! $prefs)
+        $prefs = setup_prefs();
+
+    foreach (array_keys($prefs) as $category)
+        foreach (array_keys($prefs[$category]) as $pref)
+            if ($_GET[$pref] != '')
+                $params[$pref] = $_GET[$pref];
+
+    # Carryover developer params
+    foreach (array_keys($defaults['dev']) as $k)
+        if (isset($_GET[$k]))
+            $params[$k] = $_GET[$k];
+
+    # It would be nonsensical to carry these onward
+    # (this is only done in the case of clicking a
+    # ''slices_index'' link)
+    unset($params['offset']);
+    unset($params['rows']);
+    unset($params['slice']);
+
+    return $params;
 }
 
-# Convert some txt chars to html codes
-function txt_to_html($str) {
-    $str = preg_replace('/\n\r|\n|\r/','<br>',$str);
-    #$str = preg_replace('/\s+/','&nbsp;',$str);
+# Grab phase field
+function process_phase_field($params) {
+    if (isset($params['phase'])) {
+        if (preg_match('/^all/', $params['phase']))
+            return array("mpi_install", "test_build", "test_run");
+        else
+            return tokenize($params['phase']);
+    }
+    else
+        return array("mpi_install", "test_build", "test_run");
+}
+
+# Reference: http://www.php.net/strtok
+function tokenize($string) {
+    $tokens = array();
+
+    $c = "/\s*;\s*/";
+    if (preg_match($c, $string))
+        return preg_split($c, $string);
+
+    for ($next_token = strtok($string, ' ');
+         $next_token !== false;
+         $next_token = strtok(' ')) {
+
+        if ($next_token{0} == '"')
+            $next_token =
+                $next_token{strlen($next_token) - 1} == '"' ?
+                     substr($next_token, 1, -1) :
+                     substr($next_token, 1) . ' ' . strtok('"');
+        $tokens[] = $next_token;
+    }
+
+    return $tokens;
+}
+
+# Convert an associative array to an HTTP-ready query string
+function arr2qstring($arr) {
+    foreach (array_keys($arr) as $key)
+        $str .= "&$key=$arr[$key]";
     return $str;
 }
 
-# Convert some html codes to txt chars
-function html_to_txt($str) {
-    $str = preg_replace('/<\w+>/','*tag*',$str);
-    return $str;
+# Return an English-formatted list
+function en_join($list) {
+
+    $size = sizeof($list);
+
+    if ($size == 0)
+        return null;
+    elseif ($size == 1)
+        return $list[0];
+    elseif ($size == 2)
+        return $list[0] . " and " . $list[1];
+    elseif ($size > 2)
+        return join(", ", array_slice($list, 0, -1)) .
+                ", and " . $list[$size-1];
 }
 
-# Convert some html codes to txt chars
-function html_to_txt2($str) {
-    $str = preg_replace('/<br>/',' - ',$str);
-    $str = preg_replace('/<\w+>/','',$str);
-    return $str;
-}
-
-# ' = 047 x27
-# " = 042 x22
-# Strip quotes from html.
-# Needed for sending 'content' argument to a javascript popup function
-function strip_quotes($str) {
-    return preg_replace('/\x22|\x27/','',$str);
-}
-
-# Useful for preventing browser text-wrapping
-function ascii_sp_to_html_sp($str) {
-    $str = preg_replace('/\s+/','&nbsp;',$str);
-    return $str;
+# Capitalize the first char of a string
+function capitalize($str) {
+    $len = strlen($str);
+    return strtoupper(substr($str, 0, 1)) . substr($str, 1, $len);
 }
 
 #########################################
@@ -195,31 +614,52 @@ function ascii_sp_to_html_sp($str) {
 #########################################
 
 function debug($str) {
-    if ($GLOBALS['debug'] or $GLOBALS['verbose'])
-        print("\n$str");
+    if ($_GET['debug'] == 'on' or $_GET['verbose'] == 'on')
+        print("\n<pre>$str</pre>");
 }
 
-function var_dump_($desc, $a) {
-    if ($GLOBALS['verbose'])
-        var_dump("\n$desc",$a);
+function stats($str) {
+    if ($_GET['stats'] == 'on')
+        print("\n<pre>$str</pre>");
 }
 
 # Actually see the nice identation var_dump provides
-function var_dump_html($desc,$var) {
-    if ($GLOBALS['verbose'])
-        var_dump("\n<br><pre>$desc",$var,"</pre>");
+function var_dump_html($desc, $var) {
+    if ($_GET['debug'] == 'on' or
+        $_GET['dev'] == 'on')
+        var_dump("\n<br>" . 
+                    "<div align='left'>" .
+                    "<pre>$desc",$var,"</div>");
 }
 
 # Print SQL if they want it
-function debug_sql($cmd) {
-    if (isset($_GET['sql']))
-        if ($_GET['sql'] == 'on')
-            print("\n<br>SQL: <pre>" . html_to_txt($cmd) . "</pre>");
+function debug_sql($cmd, $level) {
+    $trace = $_GET['sql'];
+    if ($trace == $level)
+        print("\n<pre>SQL: $cmd</pre>");
+}
+
+# Prints an HTML table of _GET and _POST vars
+function debug_cgi($params, $title) {
+
+    if ($_GET['cgi'] == 'on') {
+
+        $cols = 3;
+        print "\n\n<table width='80%' border='1'>";
+        print "\n\n<tr><th bgcolor='" . DGRAY . "' colspan=" . $cols * 2 . ">$title";
+
+        $i = 0;
+        foreach (array_keys($params) as $k) {
+            print "\n" . ((($i++ % $cols) == 0) ? "\n<tr>" : "") .
+                "<td bgcolor='" . LGRAY . "'>" . $k . "<td>$params[$k]";
+        }
+        print "\n\n</table>";
+    }
 }
 
 # Show help text
 function help($str) {
-    if (! isset($_GET['no_help']))
+    if (! ($_GET['no_help'] == 'on'))
         return $str;
     else
         return null;
@@ -232,12 +672,6 @@ function getoptions($argv) {
        $_GET[$it[0]] = $it[1];
     }
     return $_GET;
-}
-
-# Print a message and exit
-function exit_($str) {
-    print $str;
-    exit;
 }
 
 ?>

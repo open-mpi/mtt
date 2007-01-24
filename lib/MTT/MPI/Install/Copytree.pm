@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -44,7 +44,12 @@ sub Install {
     # Prepare $ret
 
     my $ret;
-    $ret->{success} = 0;
+    $ret->{test_result} = MTT::Values::FAIL;
+    $ret->{exit_status} = 1;
+    $ret->{result_message} = "MPI INSTALL COPYTREE PLUGIN IS OUT OF DATE.  CONTACT AUTHORS";
+    Verbose("*** $ret->{result_message}\n");
+    return $ret;
+
 
     Debug(">> copytree copying to $config->{installdir}\n");
     if (-d $config->{installdir}) {
@@ -65,9 +70,9 @@ sub Install {
 
     # Copy the tree
     my $start_dir = cwd();
-    chdir($config->{installdir});
+    MTT::DoCommand::Chdir($config->{installdir});
     $x = MTT::Files::copy_tree("$config->{abs_srcdir}", 1);
-    chdir($start_dir);
+    MTT::DoCommand::Chdir($start_dir);
     return undef
         if (!$x);
 
@@ -109,7 +114,7 @@ sub Install {
     $ret->{f90_bindings} = _find_bindings($config, "f90");
 
     ######################################################################
-    # At this point, we could just set $ret->{success} and
+    # At this point, we could just set $ret->{test_result} and
     # $ret->{result_message} and return $ret -- that would meet the
     # requirements of this module.  But we choose to do some basic
     # compile/link tests with "hello world" MPI apps just to verify
@@ -118,16 +123,16 @@ sub Install {
 
     # Try compiling and linking a simple C application
 
-    chdir($config->{section_dir});
+    MTT::DoCommand::Chdir($config->{section_dir});
     if (! -d "test-compile") {
         mkdir("test-compile", 0777);
         if (-d "test_compile") {
             $ret->{result_message} = "Could not make test compile directory: $@\n";
-            $x->{stdout} = $@;
+            $x->{result_stdout} = $@;
             return $ret;
         }
     }
-    chdir("test-compile");
+    MTT::DoCommand::Chdir("test-compile");
 
     Debug("Test compile/link sample C MPI application\n");
     open C, ">hello.c";
@@ -141,8 +146,8 @@ int main(int argc, char* argv[]) {
     $x = MTT::DoCommand::Cmd(1, "$ret->{bindir}/mpicc hello.c -o hello");
     if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         $ret->{result_message} = "Failed to compile/link C \"hello world\" MPI app: $@\n";
-        $ret->{stdout} = $x->{stdout};
-        print "Stdout: $ret->{stdout}\n";
+        $ret->{result_stdout} = $x->{result_stdout};
+        print "test_Stdout: $ret->{result_stdout}\n";
         return $ret;
     }
     unlink "hello.c", "hello";
@@ -163,7 +168,7 @@ int main(int argc, char* argv[]) {
         $x = MTT::DoCommand::Cmd(1, "$ret->{bindir}/mpic++ hello.cc -o hello");
         if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
             $ret->{result_message} = "Failed to compile/link C++ \"hello world\" MPI app\n";
-            $ret->{stdout} = $x->{stdout};
+            $ret->{result_stdout} = $x->{result_stdout};
             return $ret;
         }
         unlink "hello.cc", "hello";
@@ -188,7 +193,7 @@ int main(int argc, char* argv[]) {
         $x = MTT::DoCommand::Cmd(1, "$ret->{bindir}/mpif77 hello.f -o hello");
         if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
             $ret->{result_message} = "Failed to compile/link F77 \"hello world\" MPI app\n";
-            $ret->{stdout} = $x->{stdout};
+            $ret->{result_stdout} = $x->{result_stdout};
             return $ret;
         }
         unlink "hello.f", "hello";
@@ -212,7 +217,7 @@ int main(int argc, char* argv[]) {
         $x = MTT::DoCommand::Cmd(1, "$ret->{bindir}/mpif90 hello.F -o hello");
         if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
             $ret->{result_message} = "Failed to compile/link F90 \"hello world\" MPI app\n";
-            $ret->{stdout} = $x->{stdout};
+            $ret->{result_stdout} = $x->{result_stdout};
             return $ret;
         }
         unlink "hello.F", "hello";
@@ -222,13 +227,13 @@ int main(int argc, char* argv[]) {
 
     # Remove test compiles dir
 
-    chdir("..");
+    MTT::DoCommand::Chdir("..");
     MTT::DoCommand::Cmd(1, "rm -rf test-compile");
 
     # Dump $ret into a file in this directory in case we are not
     # building the tests now
 
-    $ret->{success} = 1;
+    $ret->{test_result} = MTT::Values::PASS;
     $ret->{result_message} = "Success";
 
     # All done

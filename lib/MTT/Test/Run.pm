@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -13,18 +13,15 @@
 package MTT::Test::Run;
 
 use strict;
-use Cwd;
 use File::Basename;
 use Time::Local;
 use MTT::Messages;
 use MTT::Values;
 use MTT::Reporter;
 use MTT::Defaults;
+use MTT::Test::Specify;
+use MTT::Test::RunEngine;
 use Data::Dumper;
-
-#--------------------------------------------------------------------------
-
-my $verbose_out;
 
 #--------------------------------------------------------------------------
 
@@ -40,13 +37,13 @@ our $test_executable;
 # Exported current argv under test
 our $test_argv;
 
-# Exported exit status of the last test run
+# Exported exit_status of the last test run
 our $test_exit_status;
 
 #--------------------------------------------------------------------------
 
 sub Run {
-    my ($ini, $top_dir, $force) = @_;
+    my ($ini, $ini_full, $top_dir, $force) = @_;
 
     # Save the environment
     my %ENV_SAVE = %ENV;
@@ -76,6 +73,16 @@ sub Run {
                 # Strip whitespace
                 $test_build_name =~ s/^\s*(.*?)\s*/\1/;
 
+                # This is only warning about the INI file; we'll see
+                # if we find meta data for the test build later
+                if (!$ini_full->SectionExists("test build: $test_build_name")) {
+                    Warning("Test Build section \"$test_build_name\" does not seem to exist in the INI file\n");
+                }
+
+                # Don't bother explicitly searching for the test build
+                # and issuing a Debug/next because we'll implicitly do
+                # this below.
+
                 # Find the matching test build.  Test builds are
                 # indexed on (in order): MPI Get simple section name,
                 # MPI Install simple section name, Test Build simple
@@ -88,11 +95,33 @@ sub Run {
                                 if ($test_build_key eq $test_build_name) {
                                     my $test_build = $MTT::Test::builds->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key}->{$test_build_key};
                                     Debug("Found a match! $test_build_key [$simple_section\n");
-                                    if (!$test_build->{success}) {
+                                    if (!$test_build->{test_result}) {
                                         Debug("But that build was borked -- skipping\n");
                                         next;
                                     }
                                     my $mpi_install = $MTT::MPI::installs->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key};
+                                    my $mpi_get = $MTT::MPI::sources->{$mpi_get_key}->{$mpi_version_key};
+
+                                    # See if we're supposed to skip
+                                    # this MPI get or this MPI install
+                                    my $skip_mpi_get = 
+                                        MTT::Values::Value($ini, $section, 
+                                                           "skip_mpi_get");
+                                    if ($skip_mpi_get &&
+                                        $skip_mpi_get eq $mpi_get_key) {
+                                        Verbose("   Skipping run for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] per INI configuration\n");
+                                        next;
+                                    }
+                                    my $skip_mpi_install = 
+                                        MTT::Values::Value($ini, $section, 
+                                                           "skip_mpi_install");
+                                    if ($skip_mpi_install &&
+                                        $skip_mpi_install eq $mpi_install_key) {
+                                        Verbose("   Skipping run for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] per INI configuration\n");
+                                        next;
+                                    }
+
+                                    # Alles gut.  Go do it.
                                     _do_run($ini, $section, $test_build, 
                                             $mpi_install, $top_dir, $force);
                                     %ENV = %ENV_SAVE;
@@ -113,9 +142,12 @@ sub Run {
 sub _do_run {
     my ($ini, $section, $test_build, $mpi_install, $top_dir, $force) = @_;
 
-    # Check for the module
-    my $module = MTT::Values::Value($ini, $section, "module");
-    if (!$module) {
+    # Check both specify_module and module (for backcompatibility)
+    my $specify_module;
+    $specify_module = MTT::Values::Value($ini, $section, "specify_module");
+    $specify_module = MTT::Values::Value($ini, $section, "module") if (!$specify_module);
+
+    if (!$specify_module) {
         Warning("No module specified in [$section]; skipping\n");
         return;
     }
@@ -123,23 +155,34 @@ sub _do_run {
     Verbose(">> Running with [$mpi_install->{mpi_get_simple_section_name}] / [$mpi_install->{mpi_version}] / [$mpi_install->{simple_section_name}]\n");
     # Find an MPI details section for this MPI
     my $match = 0;
-    my $mpi_details_section;
+    my ($mpi_details_section,
+        $details_install_section,
+        $mpi_install_section);
+
     foreach my $s ($ini->Sections()) {
         if ($s =~ /^\s*mpi details:/) {
-            my $section_mpi_name = MTT::Values::Value($ini, $s, "mpi_name");
-            if ($section_mpi_name eq $mpi_install->{mpi_name}) {
-                Debug("Found MPI details\n");
+            Debug("Found MPI details: [$s]\n");
+
+            # MPI Details can be specified per MPI Install,
+            # or globally for every MPI Install
+            $details_install_section = MTT::Values::Value($ini, $s, "mpi_name");
+            $mpi_install_section = $mpi_install->{simple_section_name};
+            $mpi_details_section = $s;
+
+            if (($details_install_section eq $mpi_install_section) or
+                ! $details_install_section) {
+
+                Debug("Using [$s] with [MPI Install: $mpi_install_section]\n");
                 $match = 1;
-                $mpi_details_section = $s;
                 last;
             }
         }
     }
-    if (!$match) {
-        Warning("Unable to find MPI details section; skipping\n");
+    if (!$match and !$mpi_details_section) {
+        Warning("Unable to find MPI details section for [MPI Install: $details_install_section]; skipping\n");
         return;
     }
-    
+
     # Get some details about running with this MPI
     my $mpi_details;
     $MTT::Test::Run::test_prefix = $mpi_install->{installdir};
@@ -171,7 +214,7 @@ sub _do_run {
     $mpi_details->{version} = $mpi_install->{mpi_version};
 
     # Go to the right dir
-    chdir($test_build->{srcdir});
+    MTT::DoCommand::Chdir($test_build->{srcdir});
 
     # Set the PATH and LD_LIBRARY_PATH
     if ($mpi_install->{bindir}) {
@@ -190,13 +233,31 @@ sub _do_run {
         }
     }
 
+    # Process loading of modules -- for both the MPI install and the
+    # test build sections
+    my $config;
+    my @env_modules;
+    my $val = MTT::Values::Value($ini, $section, "env_module");
+    if ($val && $test_build->{env_modules}) {
+        $config->{env_modules} = $test_build->{env_modules} . "," .
+            $config->{env_modules};
+    } elsif ($val) {
+        $config->{env_modules} = $val;
+    } elsif ($test_build->{env_modules}) {
+        $config->{env_modules} = $test_build->{env_modules};
+    }
+    if ($config->{env_modules}) {
+        @env_modules = split(",", $config->{env_modules});
+        Env::Modulecmd::load(@env_modules);
+        Debug("Loading environment modules: @env_modules\n");
+    }
+
     # Process setenv, unsetenv, prepend-path, and append-path -- for
     # both the MPI that we're building with and the section of the ini
     # file that we're building.
     my @save_env;
     MTT::Values::ProcessEnvKeys($mpi_install, \@save_env);
     # JMS: Do we need to grab from Test::Build as well?
-    my $config;
     %$config = %$MTT::Defaults::Test_specify;
     $config->{setenv} = MTT::Values::Value($ini, $section, "setenv");
     $config->{unsetenv} = MTT::Values::Value($ini, $section, "unsetenv");
@@ -221,8 +282,11 @@ sub _do_run {
     $tmp = $ini->val($section, "pass");
     $config->{pass} = $tmp
         if (defined($tmp));
-    $tmp = $ini->val($section, "save_output_on_pass");
-    $config->{save_output_on_pass} = $tmp
+    $tmp = $ini->val($section, "skipped");
+    $config->{skipped} = $tmp
+        if (defined($tmp));
+    $tmp = $ini->val($section, "save_stdout_on_pass");
+    $config->{save_stdout_on_pass} = $tmp
         if (defined($tmp));
     $tmp = $ini->val($section, "stderr_save_lines");
     $config->{stderr_save_lines} = $tmp
@@ -237,249 +301,27 @@ sub _do_run {
     $config->{timeout} = $tmp
         if (defined($tmp));
 
-    # Run the module to get a list of tests to run
-    my $ret = MTT::Module::Run("MTT::Test::Run::$module",
-                               "Specify", $ini, $section, $test_build,
-                               $mpi_install, $config);
+    # Bump the refcount on the test build
+    ++$test_build->{refcount};
 
-    # Analyze the return -- should give us a list of tests to run and
-    # potentially a Perfbase XML file to analyze the results with
-    if ($ret && $ret->{success}) {
-        my $test_results;
-        my $total = $#{$ret->{tests}} + 1;
+    # Run the specify module to get a list of tests to run
+    my $ret = MTT::Test::Specify::Specify($specify_module, $ini, $section, 
+                                          $test_build, $mpi_install, $config);
 
-        # Loop through all the tests
-        $verbose_out = 0;
-        my $count = 0;
-        Verbose("   Total of $total tests to run in this section\n");
-        foreach my $run (@{$ret->{tests}}) {
-            if (!exists($run->{executable})) {
-                Warning("No executable specified for text; skipped\n");
-                next;
-            }
+    # Grab the output-parser plugin, if there is one
+    $ret->{analyze_module} = MTT::Values::Value($ini, $section, "analyze_module");
 
-            # Get the values for this test
-            $run->{perfbase_xml} =
-                $ret->{perfbase_xml} ? $ret->{perfbase_xml} :
-                $MTT::Defaults::Test_run->{perfbase_xml};
-            $run->{full_section_name} = $section;
-            $run->{simple_section_name} = $section;
-            $run->{simple_section_name} =~ s/^\s*test run:\s*//;
-
-            $run->{test_build_simple_section_name} = $test_build->{simple_section_name};
-
-            # Setup some globals
-            $test_executable = $run->{executable};
-            $test_argv = $run->{argv};
-            my $all_np = MTT::Values::EvaluateString($run->{np});
-
-            # Just one np, or an array of np values?
-            if (ref($all_np) eq "") {
-                $test_results->{$all_np} =
-                    _run_one_np($top_dir, $run, $mpi_details, $all_np, $force);
-            } else {
-                foreach my $this_np (@$all_np) {
-                    $test_results->{$this_np} =
-                        _run_one_np($top_dir, $run, $mpi_details, $this_np,
-                                    $force);
-                }
-            }
-            ++$count;
-
-            # Output a progress bar
-            if ($verbose_out > 50) {
-                $verbose_out = 0;
-                my $per = sprintf("%d%%", $count / $total * 100);
-                Verbose("   ### Test progress: $count of $total section tests complete ($per)\n");
-            }
-        }
-        Verbose("   ### Test progress: $count of $total section tests complete (100%)\n
-");
-
-        # If we ran any tests at all, then run the after_all step and
-        # submit the results to the Reporter
-        if (exists($mpi_details->{ran_some_tests})) {
-            _run_step($mpi_details, "after_all");
-
-            MTT::Reporter::QueueSubmit();
-        }
-    }
-}
-
-sub _run_one_np {
-    my ($top_dir, $run, $mpi_details, $np, $force) = @_;
-
-    my $name = basename($test_executable);
-
-    # Load up the final global
-    $test_np = $np;
-
-    # Is this np ok for this test?
-    my $ok = MTT::Values::EvaluateString($run->{np_ok});
-    if ($ok) {
-
-        # Get all the exec's for this one np
-        my $execs = MTT::Values::EvaluateString($mpi_details->{exec});
-
-        # If we just got one, run it.  Otherwise, loop over running them.
-        if (ref($execs) eq "") {
-            _run_one_test($top_dir, $run, $mpi_details, $execs, $name, 1,
-                          $force);
-        } else {
-            my $variant = 1;
-            foreach my $e (@$execs) {
-                _run_one_test($top_dir, $run, $mpi_details, $e, $name,
-                              $variant++, $force);
-            }
-        }
-    }
-}
-
-sub _run_one_test {
-    my ($top_dir, $run, $mpi_details, $cmd, $name, $variant, $force) = @_;
-
-    # Have we run this test already?  Wow, Perl sucks sometimes -- you
-    # can't check for the entire thing because the very act of
-    # checking will bring all the intermediary hash levels into
-    # existence if they didn't already exist.
-
-    my $str = "   Test: " . basename($name) .
-        ", np=$test_np, variant=$variant:";
-
-    if (!$force &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$test_np}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$test_np}->{$cmd})) {
-        Verbose("$str Skipped (already ran)\n");
-        ++$verbose_out;
-        return;
+    # If we got a list of tests to run, invoke the run engine to
+    # actually run them.
+    if ($ret && $ret->{test_result}) {
+        MTT::Test::RunEngine::RunEngine($section, $top_dir, $mpi_details,
+                                        $test_build, $force, $ret);
     }
 
-    # Setup some environment variables for steps
-    delete $ENV{MTT_TEST_NP};
-    $ENV{MTT_TEST_PREFIX} = $test_prefix;
-    if (MTT::Values::Functions::have_hostfile()) {
-        $ENV{MTT_TEST_HOSTFILE} = MTT::Values::Functions::hostfile();
-    } else {
-        $ENV{MTT_TEST_HOSTFILE} = "";
-    }
-    if (MTT::Values::Functions::have_hostlist()) {
-        $ENV{MTT_TEST_HOSTLIST} = MTT::Values::Functions::hostlist();
-    } else {
-        $ENV{MTT_TEST_HOSTLIST} = "";
-    }
-
-    # See if we need to run the before_all step.
-    if (! exists($mpi_details->{ran_some_tests})) {
-        _run_step($mpi_details, "before_any");
-    }
-    $mpi_details->{ran_some_tests} = 1;
-
-    # If there is a before_each step, run it
-    $ENV{MTT_TEST_NP} = $test_np;
-    _run_step($mpi_details, "before_each");
-
-    my $timeout = MTT::Values::EvaluateString($run->{timeout});
-    my $out_lines = MTT::Values::EvaluateString($run->{stdout_save_lines});
-    my $err_lines = MTT::Values::EvaluateString($run->{stderr_save_lines});
-    my $merge = MTT::Values::EvaluateString($run->{merge_stdout_stderr});
-    my $start_time = time;
-    my $start = timegm(gmtime());
-    my $x = MTT::DoCommand::Cmd($merge, $cmd, $timeout, 
-                                $out_lines, $err_lines);
-    my $stop_time = time;
-    my $duration = $stop_time - $start_time . " seconds";
-    $test_exit_status = $x->{exit_status};
-    # If we timeout, automatically fail the test.  Otherwise, it's
-    # possible that the "pass" criteria could incorrectly report
-    # success.
-    my $pass = 0;
-    if (!$x->{timed_out}) {
-        $pass = MTT::Values::EvaluateString($run->{pass});
-    }
-
-    # Queue up a report on this test
-    my $report = {
-        phase => "Test run",
-
-        start_test_timestamp => $start,
-        test_duration_interval => $duration,
-
-        mpi_name => $mpi_details->{name},
-        mpi_version => $mpi_details->{version},
-        mpi_name => $mpi_details->{mpi_get_simple_section_name},
-        mpi_install_section_name => $mpi_details->{mpi_install_simple_section_name},
-
-        perfbase_xml => $run->{perfbase_xml},
-
-        test_build_section_name => $run->{test_build_simple_section_name},
-        test_run_section_name => $run->{simple_section_name},
-        test_np => $test_np,
-        success => $pass,
-        timed_out => $x->{timed_out},
-        test_name => $name,
-        test_command => $cmd,
-    };
-    my $want_output;
-    if (!$pass) {
-        $str =~ s/^ +//;
-        if ($x->{timed_out}) {
-            Warning("$str TIMED OUT (failed)\n");
-        } else {
-            Warning("$str FAILED\n");
-        }
-        $want_output = 1;
-        if ($stop_time - $start_time > $timeout) {
-            $report->{result_message} = "Failed; timeout expired ($timeout seconds)";
-        } else {
-            $report->{result_message} = "Failed; ";
-            if (MTT::DoCommand::wifexited($x->{exit_status})) {
-                $report->{result_message} .= "exit status: $x->{status}\n";
-            } else {
-                my $sig = MTT::DoCommand::wtermsig($x->{exit_status});
-                $report->{result_message} .= "termination signal: $sig\n";
-            }
-        }
-    } else {
-        Verbose("$str Passed\n");
-        $report->{result_message} = "Passed";
-        $want_output = $run->{save_output_on_pass};
-    }
-    ++$verbose_out;
-    if ($want_output) {
-        $report->{stdout} = $x->{stdout};
-        $report->{stderr} = $x->{stderr};
-    }
-    $MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$test_np}->{$cmd} = $report;
-    MTT::Test::SaveRuns($top_dir);
-    MTT::Reporter::QueueAdd("Test Run", $run->{simple_section_name}, $report);
-
-    # If there is an after_each step, run it
-    _run_step($mpi_details, "after_each");
-
-    return $pass;
-}
-
-sub _run_step {
-    my ($mpi_details, $step) = @_;
-
-    $step .= "_exec";
-    if (exists($mpi_details->{$step}) && $mpi_details->{$step}) {
-        Debug("Running step: $step\n");
-        my $x = MTT::DoCommand::CmdScript(1, $mpi_details->{$step}, 10);
-        if ($x->{timed_out}) {
-            Verbose("  Warning: step $step TIMED OUT; skipping\n");
-        } elsif (MTT::DoCommand::wifsignaled($x->{exit_status})) {
-            my $ret = MTT::DoCommand::wtermsig($x->{exit_status});
-            Verbose("  Warning: step $step finished via signal $ret; skipping\n");
-        } elsif (!MTT::DoCommand::wsuccess($x->{exit_status})) {
-            Verbose("  Warning: step $step finished with nonzero exit status ($x->{status}); skipping\n");
-        }
+    # Unload any loaded environment modules
+    if ($#env_modules >= 0) {
+        Debug("Unloading environment modules: @env_modules\n");
+        Env::Modulecmd::unload(@env_modules);
     }
 }
 

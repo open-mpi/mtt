@@ -12,77 +12,131 @@
 
 #
 #
-# Web-based Open MPI Tests Querying Tool -
-#   This tool is for drill-downs.
-#   For the one-size-fits-all report, see summary.php.
+# Web-based Open MPI Tests Querying Tool
 #
 #
 
-# Set debug levels
-if (isset($_GET['verbose']) or isset($_GET['debug'])) {
-    $GLOBALS['verbose'] = 1;
-    $GLOBALS['debug']   = 1;
-    $_GET['cgi']        = 'on';
-    $_GET['sql']        = 'on';
-} else {
-    $GLOBALS['verbose'] = 0;
-    $GLOBALS['debug']   = 0;
+# Deny mirrors access to MTT results
+deny_mirror();
+
+# 'debug' is an aggregate trace
+if (isset($_GET['debug'])) {
+    $_GET['verbose'] = 'on';
+    $_GET['dev']     = 'on';
+    $_GET['cgi']     = 'on';
+    $_GET['stats']   = 'on';
 }
 
-# Set php trace levels
-if ($GLOBALS['verbose'])
+# Set PHP trace levels
+if (isset($_GET['verbose']))
     error_reporting(E_ALL);
 else
-    error_reporting(E_ERROR | E_WARNING | E_PARSE);
+    error_reporting(E_ERROR | E_PARSE);
 
-# X: which .inc's do we really need?
+# Includes
 $topdir = ".";
 include_once("/l/osl/www/doc/www.open-mpi.org/dbpassword.inc");
 include_once("$topdir/reporter.inc");
 include_once("$topdir/screen.inc");
 include_once("$topdir/report.inc");
-include_once("$topdir/head.inc");
-include_once("$topdir/http.inc");
-include_once("$topdir/html.inc");
 include_once("$topdir/database.inc");
 
 # In case we're using this script from the command-line
 if ($argv)
     $_GET = getoptions($argv);
 
-$form_id = "report";
+# Create or redirect to a permalink
+$do_redir = $_GET['do_redir'];
+$make_redir = $_GET['make_redir'];
+if (! is_null($do_redir))
+    do_redir($do_redir);
+elseif (! is_null($make_redir))
+    make_redir($_GET);
 
-# Print html head (query frame & results frame may need this script/style)
-$html_head = "";
-$html_head .= "\n<html>";
-$html_head .= "\n<head><title>Open MPI Test Reporter</title>";
+# Display a query screen and report
+dump_report();
 
-$html_head .= "\n<script language='javascript' type='text/javascript'>";
-$html_head .= "\n$javascript";
-$html_head .= "\n</script>";
+# Display input parameters
+debug_cgi($_GET, "GET " . __LINE__);
 
-$html_head .= "\n<style type='text/css'>";
-$html_head .= "\n$style";
-$html_head .= "\n</style>";
-$html_head .= "\n</head>";
+# Display cookie parameters
+debug_cgi($_COOKIE, "COOKIE " . __LINE__);
 
-print $html_head;
-
-$_GET['1-page'] = isset($_GET['1-page']) ? $_GET['1-page'] : 'off';
-
-# If no parameter is passed in, show the query screen
-if (((! isset($_GET['go'])) and ! isset($_GET['just_results'])) or
-    ($_GET['1-page'] == 'on')) {
-
-    print dump_query_screen();
-}
-
-if (isset($_GET['go'])) {
-    print dump_report();
-}
+print hidden_carryover($_GET) .
+      "\n<hr></form></body></html>";
 
 exit;
 
+# Create a tiny URL permalink (using the current URL), and exit
+function make_redir($params) {
+
+    unset($params["make_redir"]);
+    unset($params["do_redir"]);
+
+    $qstring = arr2qstring($params);
+
+    $domain = $_SERVER['SERVER_NAME'];
+    $script = $_SERVER['SCRIPT_NAME'];
+    $url    = "http://$domain$script?$qstring";
+
+    # Create tiny URLs for the permalinks
+    $query = "SELECT permalink_id FROM permalinks WHERE permalink = '$url'";
+    $id = select_scalar($query);
+
+    if (is_null($id)) {
+        $query = "SELECT nextval('permalinks_permalink_id_seq')";
+        $id = select_scalar($query);
+        $insert = 
+            "INSERT INTO " .
+                "permalinks (permalink_id, permalink) " . 
+                "VALUES ('$id', '$url');";
+        do_pg_query($insert);
+    }
+
+    $tinyurl = "http://$domain$script?do_redir=$id";
+
+    # Print tiny link in a tiny window
+    print "<html>" . 
+          html_head("Tiny link") .
+          "<body>" .
+          "<table><tr><td>" .
+          "The original permalink was " . strlen($url) . " chars long. " .
+          "Here's a <a class='black_ln' href='$tinyurl'>tiny link</a> " .
+              "that is only " . strlen($tinyurl) . " chars long." .
+          "</table>" .
+          "</body>" .
+          "</html>";
+    exit;
+}
+
+# Redirect the browser to the permalink shortcut
+function do_redir($id) {
+    $query = "SELECT permalink FROM permalinks WHERE permalink_id = '$id'";
+    $url = select_scalar($query);
+    header("Location: $url");
+    exit;
+}
+
+# Deny mirrors access to MTT results
+function deny_mirror() {
+
+    $mother_site = "www.open-mpi.org";
+    $server_dir = "/";
+
+    # Are we the "mother site" or a mirror?
+    if ($_SERVER["SERVER_NAME"] == $mother_site)
+        $is_mirror = false;
+    else
+        $is_mirror = true;
+
+    if ($is_mirror) {
+        $equiv_dir = ereg_replace("^$server_dir", '', $_SERVER["REQUEST_URI"]);
+        print "Sorry, this page is not mirrored.  " .
+               "Please see the <a href=\"http://$mother_site/$equiv_dir\">" .
+               "original version of this page</a> " .
+               "on the main Open MPI web site.\n";
+        exit();
+    }
+}
+
 ?>
-</body>
-</html>

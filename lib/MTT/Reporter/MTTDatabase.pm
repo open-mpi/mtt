@@ -5,9 +5,9 @@
 # Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2006      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
-#
+# 
 # Additional copyrights may follow
-#
+# 
 # $HEADER$
 #
 
@@ -20,8 +20,8 @@ use MTT::Values;
 use MTT::Version;
 use LWP::UserAgent;
 use HTTP::Request::Common qw(POST);
-use File::Basename;
 use Data::Dumper;
+use File::Basename;
 
 # http credentials
 my $username;
@@ -35,6 +35,13 @@ my $platform;
 
 # LWP user agent
 my $ua;
+
+# Serial per mtt client invocation
+my $invocation_serial_name = "client_serial";
+my $invocation_serial_value;
+
+# Field for the server; "trial" flag
+my $trial_name = "trial";
 
 # Do we want debugging?
 my $debug_filename;
@@ -124,28 +131,37 @@ sub Init {
 
     # Do a test ping to ensure that we can reach this URL
 
-    Debug("MTTDatabase testing submit URL with a ping...\n");
+    Debug("MTTDatabase getting a client serial number...\n");
     my $form = {
-        PING => 1,
+        SERIAL => 1,
     };
     my $req = POST ($url, $form);
     $req->authorization_basic($username, $password);
     my $response = $ua->request($req);
     if (! $response->is_success()) {
         Warning(">> Failed test ping to MTTDatabase URL: $url\n");
-        Warning(">> Error was: " . $response->status_line . "\n" .
+        Warning(">> Error was: " . $response->status_line . "\n" . 
                 $response->content);
         Error(">> Do not want to continue with possible bad submission URL -- aborting\n");
     }
-    Debug("MTTDatabase ping successful: " . $response->status_line . "\n" .
-          $response->content);
+
+    Debug("MTTDatabase got response: " . $response->content . "\n");
+    if ($response->content =~ m/===\s+$invocation_serial_name\s+=\s+([0-9]+)\s+===/) {
+        $invocation_serial_value = $1;
+        Debug("MTTDatabase parsed invocation serial: $invocation_serial_value\n");
+    } else {
+        Warning("MTTDatabase did not get a serial\n");
+    }
+    
+    # If we have a debug filename, make it an absolute filename,
+    # because there's oodles of chdir()'s within the testing.  Whack
+    # the file if it's already there.
 
     # If filename given is relative, branch it off the scratch tree
     if ($debug_filename !~ /\//) {
         $debug_filename = cwd() . "/mttdatabase-submit/$debug_filename";
     }
     MTT::Files::mkdir(dirname($debug_filename));
-        
     Debug("MTTDatabase reporter writing to debug file ($debug_filename)\n");
 
     Debug("MTTDatabase reporter initialized ($realm, $username, XXXXXX, $url, $platform)\n");
@@ -196,6 +212,10 @@ sub Submit {
         mtt_version_major => $MTT::Version::Major,
         mtt_version_minor => $MTT::Version::Minor,
     };
+    my $phase_serials;
+    my $serial_name = $invocation_serial_name;
+    my $serial_value = $invocation_serial_value;
+
     foreach my $k (keys %{$id}) {
         $default_form->{$k} = $id->{$k};
     }
@@ -213,9 +233,15 @@ sub Submit {
             my $form;
             %$form = %{$default_form};
 
+            # Fill in the client serial number
+            $form->{$serial_name} = $serial_value;
+
+            # Fill in the trial flag
+            $form->{$trial_name} = $MTT::Globals::Values->{trial};
+
             # How many results are we submitting?
             $form->{number_of_results} = $#{$section_obj} + 1;
-            $form->{platform_id} = $platform;
+            $form->{platform_name} = $platform;
 
             # First, go through and union all the field names to come
             # up with a comprehensive list of fields that we're
@@ -230,7 +256,6 @@ sub Submit {
             # JMS: Current brokenness on the server's db scehema:
             # these fields are recorded per result rather than in the
             # "once" table.
-            $form->{fields} .= ",start_run_timestamp,submit_test_timestamp";
             $form->{phase} = $phase;
 
             # Now go through and actually attach all the result to
@@ -240,18 +265,20 @@ sub Submit {
 
                 # Go through all the keys in the results
                 foreach my $key (keys(%$result)) {
-                    # If the field that has the word "timestamp" in it
-                    # and convert it to GMT ctime.
-                    my $name = $key . "_" . $count;
+
+                    # Do not number serial fields (which by convention are
+                    # named "name_id")
+                    my $name = $key . ($key !~ /_id$/ ? "_" . $count : "");
+
+                    # If the field that has the word "timestamp" in it,
+                    # convert it to GMT ctime.
                     if ($key =~ /timestamp/ && $result->{$key} =~ /\d+/) {
                         $form->{$name} = gmtime($result->{$key});
-                    }
+                    } 
 
                     # We can skip the phase key because it's already
-                    # in the top.  Also skip the perfbase_xml field,
-                    # too -- we'll come back to performance results
-                    # someday.
-                    elsif ($key eq "phase" || $key eq "perfbase_xml") {
+                    # in the top.  
+                    elsif ($key eq "phase") {
                         next;
                     }
 
@@ -268,15 +295,6 @@ sub Submit {
                         $form->{$name} = $result->{$key};
                     }
                 }
-
-                # Some other brokenness with the current schema on the
-                # server: these fields are recorded with each entry
-                # rather than in the once table.  This will also
-                # someday be fixed.
-                my $name = "start_run_timestamp_$count";
-                $form->{$name} = $form->{start_run_timestamp};
-                $name = "submit_test_timestamp_$count";
-                $form->{$name} = $form->{submit_test_timestamp};
 
                 # Increment and repeat for all results
                 ++$count;
@@ -301,9 +319,22 @@ sub Submit {
                 ++$fails;
                 push(@fail_outputs, $response->content);
             }
+
+            Debug("MTTDatabase got response: " . $response->content . "\n");
+
+            # The following parses the returned serial which will index either
+            # an "MPI Install" or a "Test Build"
+            if ($response->content =~ m/===\s+(\S+)\s+=\s+([0-9\,]+)\s+===/) {
+                eval "\$phase_serials->{$1} = $2;";
+                Debug("MTTDatabase parsed serial: $1 = $2\n");
+            } else {
+                Warning("MTTDatabase did not get a serial; " .
+                        "phases will be isolated from each other in the reports\n");
+            }
+
             $num_results += ($count - 1);
             Debug("MTTDatabase submit complete\n");
-
+            
             # Write out what we *would* have sent via HTTP to a
             # file
             my $f;
@@ -317,13 +348,14 @@ sub Submit {
                 print OUT Dumper($form);
                 close OUT;
                 Debug("Debug MTTDatabase file write complete\n");
+                
+                push(@success_outputs, "Wrote to file $f\n");
             }
-
-            push(@success_outputs, "Wrote to file $f\n");
         }
     }
 
-    Verbose(">> $successes successful submit" . plural($successes) .  ", " .
+    Verbose(">> Reported to MTTDatabase: $successes successful submit" . 
+            plural($successes) .  ", " .
             "$fails failed submit" . plural($fails) . 
             " (total of $num_results result" . plural($num_results) . ")\n");
 
@@ -337,6 +369,8 @@ sub Submit {
                 "\n#" .
                 "\n" . "#" x 60 . "\n");
     }
+
+    return $phase_serials;
 }
 
 sub plural {

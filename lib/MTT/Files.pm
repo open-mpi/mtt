@@ -40,8 +40,15 @@ sub make_safe_filename {
 
 #--------------------------------------------------------------------------
 
-sub mkdir {
+sub safe_mkdir {
     my ($dir) = @_;
+    MTT::Files::mkdir($dir, 1);
+}
+
+#--------------------------------------------------------------------------
+
+sub mkdir {
+    my ($dir, $safe) = @_;
 
     my $c = cwd();
     Debug("Making dir: $dir (cwd: $c)\n");
@@ -58,6 +65,9 @@ sub mkdir {
     foreach my $p (@parts) {
         next if (! $p);
 
+        $p = make_safe_filename($p)
+            if ($safe);
+
         $str .= "$p";
         if (! -d $str) {
             Debug("$str does not exist -- creating\n");
@@ -72,55 +82,11 @@ sub mkdir {
     # Return an absolute version of the created directory
 
     my $orig = cwd();
-    chdir($str);
+    MTT::DoCommand::Chdir($str);
     my $newdir = cwd();
-    chdir($orig);
+    MTT::DoCommand::Chdir($orig);
     $newdir;
 } 
-
-#--------------------------------------------------------------------------
-
-# Trim old build directories
-sub trim_builds {
-    my ($base_dir) = @_;
-
-    # Get all the directory entries in the top of the build tree.
-    # Currently determining trim by a simple sort; may need to do
-    # something better (like mtime?) in the futre...?
-    opendir(DIR, $base_dir);
-    my @entries = sort(grep { ! /^\./ && -d "$base_dir/$_" } readdir(DIR));
-    closedir(DIR);
-    print Dumper(@entries);
-
-    # Discard the last $keep_builds entries
-    my $len = $#entries - $keep_builds;
-    return if ($len < 0);
-
-    my $old_cwd = cwd();
-    chdir($base_dir);
-
-    my $i = 0;
-    while ($i <= $len) {
-        my $trim = 1;
-        my $e = $entries[$i];
-        foreach my $tarball (@MTT::Download::tarballs) {
-            my $b = basename($tarball->{tarball});
-            if ($e eq $b) {
-                $trim = 0;
-                last;
-            }
-        }
-
-        if ($trim) {
-            Debug("Trimming build tree: $e\n");
-            MTT::DoCommand::Cmd(1, "rm -rf $e");
-        } else {
-            Debug("NOT trimming build tree: $e\n");
-        }
-        ++$i;
-    }
-    chdir($old_cwd);
-}
 
 #--------------------------------------------------------------------------
 
@@ -186,7 +152,7 @@ sub unpack_tarball {
         my $b = basename($tarball);
         Debug("GOT FILES IN TARBALL\n");
         $tarball_dir = MTT::Files::mkdir("slimy_tarball_$b");
-        chdir($tarball_dir);
+        MTT::DoCommand::Chdir($tarball_dir);
     } else {
         my @k = keys(%$dirs);
         if ($#k != 0) {
@@ -194,7 +160,7 @@ sub unpack_tarball {
             Debug("GOT MULTI DIRS IN TARBALL\n");
             print Dumper($dirs);
             $tarball_dir = MTT::Files::mkdir("slimy_tarball_$b");
-            chdir($tarball_dir);
+            MTT::DoCommand::Chdir($tarball_dir);
         } else {
             $tarball_dir = $k[0];
         }
@@ -206,7 +172,7 @@ sub unpack_tarball {
         if ($delete_first);
 
     # Untar the tarball.  Do not use DoCommand here
-    # because we don't want the stdout intercepted.
+    # because we don't want the result_stdout intercepted.
 
     system("$unpacker -c $tarball | tar xf -");
     my $ret = $? >> 8;
@@ -255,7 +221,7 @@ sub svn_checkout {
         return undef;
     }
     my $r = undef;
-    if ($ret->{stdout} =~ m/Exported revision (\d+)\.\n$/) {
+    if ($ret->{result_stdout} =~ m/Exported revision (\d+)\.\n$/) {
         $r = $1;
     }
 
@@ -318,7 +284,7 @@ sub md5sum {
         Warning("md5sum unable to run properly\n");
         return undef;
     }
-    $x->{stdout} =~ m/^(\w{32})/;
+    $x->{result_stdout} =~ m/^(\w{32})/;
     return $1;
 }
 
@@ -350,7 +316,7 @@ sub sha1sum {
         Warning("sha1sum unable to run properly\n");
         return undef;
     }
-    $x->{stdout} =~ m/^(\w{40})/;
+    $x->{result_stdout} =~ m/^(\w{40})/;
     return $1;
 }
 
@@ -405,6 +371,8 @@ sub http_get {
     return 1;
 }
 
+#--------------------------------------------------------------------------
+
 # Copy infile or stdin to a unique file in /tmp
 sub copyfile {
 
@@ -422,7 +390,7 @@ sub copyfile {
         $opener = "< $infile";
     }
     open(in, $opener);
-    open(out, "> $outfile");
+    open(out, "> $outfile") or warn "Could not open $outfile for writing";
 
     Debug("Copying: $infile to $outfile\n");
 
@@ -434,6 +402,91 @@ sub copyfile {
 
     return $outfile;
 }
+
+#--------------------------------------------------------------------------
+
+sub load_dumpfile {
+    my ($filename, $data) = @_;
+
+    # Check that the file is there
+    return
+        if (! -r $filename);
+
+    # Get the file size
+    my ($dev, $ino, $mode, $nlink, $uid, $gid, $rdev, $size,
+        $atime, $mtime, $ctime, $blksize, $blocks) = stat($filename);
+
+    # Read it in
+    open IN, $filename;
+    my $tmp;
+    read(IN, $tmp, $size);
+    close IN;
+    
+    # It's in Dumper format.  How many $VARx's are there?
+    return
+        if (! $tmp =~ m/\$VAR[0-9]+/g);
+    my $count = 0;
+    ++$count
+        while ($tmp =~ m/\$VAR[0-9]+/g);
+
+    # We know how many $VARx's there are.  Build up a string to eval.
+    my $str;
+    my $var_num = 1;
+    while ($var_num <= $count) {
+        $str .= "my \$VAR$var_num;\n";
+        ++$var_num;
+    }
+    $str .= "eval \$tmp;\n";
+    my $var_num = 1;
+    while ($var_num <= $count) {
+        $str .= "\$\$data->{VAR$var_num} = \$VAR$var_num;\n";
+        ++$var_num;
+    }
+    eval $str;
+}
+
+#--------------------------------------------------------------------------
+
+sub save_dumpfile {
+    my ($filename) = @_;
+    shift;
+
+    # Serialize
+    my $d = new Data::Dumper([@_]);
+    $d->Purity(1)->Indent(1);
+
+    open FILE, ">$filename.new";
+    print FILE $d->Dump;
+    close FILE;
+
+    # Atomically move it onto the old file
+    rename("$filename.new", $filename);
+}
+
+# Write out a file
+sub SafeWrite {
+    my ($force, $filename, $body) = @_;
+    my $ret;
+
+    $ret->{success} = 0;
+
+    # Does the file already exist?
+    if (-r $filename && !$force) {
+        return $ret;
+    }
+
+    # Write out the file
+    if (!open FILE, ">$filename") {
+        $ret->{result_message} = "Failed to write to file: $@";
+        return $ret;
+    }
+    print FILE $body;
+    close FILE;
+
+    # All done
+    $ret->{success} = 1;
+
+    return $ret;
+}
+
 1;
-
-

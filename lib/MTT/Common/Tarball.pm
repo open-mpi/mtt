@@ -51,7 +51,7 @@ sub Get {
         $src_md5 = MTT::Files::md5sum($data->{tarball});
         if ($src_md5 eq $previous_md5) {
             Debug(">> tarball: we already have this tarball\n");
-            $ret->{success} = 1;
+            $ret->{test_result} = MTT::Values::PASS;
             $ret->{have_new} = 0;
             $ret->{result_message} = "Tarball has not changed (did not re-copy)";
             return $ret;
@@ -64,7 +64,7 @@ sub Get {
     my $dir = cwd();
     my $x = MTT::DoCommand::Cmd(1, "cp $data->{tarball} .");
     if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
-        $ret->{success} = 0;
+        $ret->{test_result} = MTT::Values::FAIL;
         $ret->{result_message} = "Failed to copy tarball";
         Warning($ret->{result_message});
         return $ret;
@@ -95,7 +95,7 @@ sub Get {
 
     # All done
     Debug(">> tarball: returning successfully\n");
-    $ret->{success} = 1;
+    $ret->{test_result} = MTT::Values::PASS;
     $ret->{result_message} = "Success";
     return $ret;
 } 
@@ -108,7 +108,7 @@ sub PrepareForInstall {
     Debug(">> tarball extracting to $build_dir\n");
 
     my $orig = cwd();
-    chdir($build_dir);
+    MTT::DoCommand::Chdir($build_dir);
     my $data = $source->{module_data};
 
     # Pre extract
@@ -123,14 +123,14 @@ sub PrepareForInstall {
     # Extract the tarball
     my $ret = MTT::Files::unpack_tarball($data->{tarball}, 1);
     if (!$ret) {
-        chdir($orig);
+        MTT::DoCommand::Chdir($orig);
         return undef;
     }
 
     # Post extract
     if ($data->{post_extract}) {
         my $old = cwd();
-        chdir($ret);
+        MTT::DoCommand::Chdir($ret);
 
         my $x = MTT::DoCommand::Cmds(1, $data->{pre_copy});
         if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
@@ -138,12 +138,12 @@ sub PrepareForInstall {
             return undef;
         }
 
-        chdir($old);
+        MTT::DoCommand::Chdir($old);
     }
 
     # All done
 
-    chdir($orig);
+    MTT::DoCommand::Chdir($orig);
     Debug(">> tarball finished extracting\n");
     return $ret;
 }

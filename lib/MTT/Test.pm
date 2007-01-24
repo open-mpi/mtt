@@ -13,10 +13,10 @@
 package MTT::Test;
 
 use strict;
-use MTT::Test::Get;
-use MTT::Test::Build;
-use MTT::Test::Run;
-use XML::Simple;
+use File::Find;
+use MTT::Files;
+use MTT::Messages;
+use MTT::DoCommand;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -29,62 +29,24 @@ our $builds;
 
 # Exported run tests handle
 our $runs;
+our $runs_to_be_saved;
 
 #--------------------------------------------------------------------------
 
 # Filename where list of test sources information is kept
-my $sources_data_filename = "test_sources.xml";
-
-# XML options for the test builds
-my $sources_xs;
+my $sources_data_filename = "test_sources.dump";
 
 # Filename where list of test build information is kept
-my $builds_data_filename = "test_builds.xml";
+my $builds_data_filename = "test_builds.dump";
 
-# XML options for the test builds
-my $builds_xs;
+# Subdir where test runs are kept
+my $runs_subdir = "test_runs";
 
 # Filename where list of test run information is kept
-my $runs_data_filename = "test_runs.xml";
+my $runs_data_filename = "test_runs.dump";
 
-# XML options for the test runs
-my $runs_xs;
-
-#--------------------------------------------------------------------------
-
-# This function exists solely so that we don't have to invoke
-# MTT::Test::Get::Get in the top level
-sub Get {
-    return MTT::Test::Get::Get(@_);
-}
-
-#--------------------------------------------------------------------------
-
-# This function exists solely so that we don't have to invoke
-# MTT::Test::Build::Build in the top level
-sub Build {
-    return MTT::Test::Build::Build(@_);
-}
-
-#--------------------------------------------------------------------------
-
-# This function exists solely so that we don't have to invoke
-# MTT::Test::Run::Run in the top level
-sub Run {
-    return MTT::Test::Run::Run(@_);
-}
-
-#--------------------------------------------------------------------------
-
-sub _setup_sources_xml {
-    $sources_xs = new XML::Simple(KeyAttr => { test_get => "simple_section_name",
-                                           },
-                                  ForceArray => [ "test_get", 
-                                                  ],
-                                  AttrIndent => 1,
-                                  RootName => "test_sources",
-                                  );
-}
+# Helper variable for when we're loading test run data
+my $load_run_file_start_dir;
 
 #--------------------------------------------------------------------------
 
@@ -94,23 +56,18 @@ sub LoadSources {
     # Explicitly delete anything that was there
     $MTT::Test::sources = undef;
 
-    _setup_sources_xml()
-        if (!$sources_xs);
-    
     # If the file exists, read it in
-    if (-f "$dir/$sources_data_filename") {
-        my $in = $sources_xs->XMLin("$dir/$sources_data_filename");
+    my $data;
+    MTT::Files::load_dumpfile("$dir/$sources_data_filename", \$data);
+    $MTT::Test::sources = $data->{VAR1};
 
-        # Now transform this to the form suitable for
-        # $MTT::Test::sources (see comment in SaveSources)
 
-        # For each Test get section
-        foreach my $test_get_key (keys(%{$in->{test_get}})) {
-            my $test_get = $in->{test_get}->{$test_get_key};
+    # Rebuild the refcounts
+    foreach my $test_key (keys(%{$MTT::Test::sources})) {
+        my $test = $MTT::Test::sources->{$test_key};
 
-            $MTT::Test::sources->{$test_get_key} = $test_get;
-            $MTT::Test::sources->{$test_get_key}->{simple_section_name} = $test_get_key;
-        }
+        # Set this refcount to 0, because no one is using it yet.
+        $test->{refcount} = 0;
     }
 }
 
@@ -119,46 +76,8 @@ sub LoadSources {
 sub SaveSources {
     my ($dir) = @_;
 
-    _setup_sources_xml()
-        if (!$sources_xs);
-
-    # Transform $MTT::Test::sources to something XML::Simple can write
-    # into valid XML (since our values can [and will] contain :'s,
-    # which are the namespace identifiers in XML)
-    my $transformed;
-
-    # For each Test get section
-    foreach my $test_get_key (keys(%$MTT::Test::sources)) {
-        my $test_get = $MTT::Test::sources->{$test_get_key};
-
-        $transformed->{test_get}->{$test_get_key} = $test_get;
-    }
-
-    # Write out the file
-    my $xml = $sources_xs->XMLout($transformed);
-    my $file = "$dir/$sources_data_filename";
-    open(FILE, ">$file.new");
-    print FILE $xml;
-    close(FILE);
-    system("mv $file.new $file");
-}
-
-#--------------------------------------------------------------------------
-
-sub _setup_builds_xml {
-    $builds_xs = new XML::Simple(KeyAttr => { mpi_get => "simple_section_name",
-                                              mpi_version => "version",
-                                              mpi_install => "simple_section_name",
-                                              test_build => "simple_section_name",
-                                            },
-                                   ForceArray => [ "mpi_get", 
-                                                   "mpi_version",
-                                                   "mpi_install",
-                                                   "test_build",
-                                                   ],
-                                   AttrIndent => 1,
-                                   RootName => "test_builds",
-                                   );
+    MTT::Files::save_dumpfile("$dir/$sources_data_filename", 
+                              $MTT::Test::sources);
 }
 
 #--------------------------------------------------------------------------
@@ -169,34 +88,37 @@ sub LoadBuilds {
     # Explicitly delete anything that was there
     $MTT::Test::builds = undef;
 
-    _setup_builds_xml()
-        if (!$builds_xs);
-    
     # If the file exists, read it in
-    if (-f "$dir/$builds_data_filename") {
-        my $in = $builds_xs->XMLin("$dir/$builds_data_filename");
+    my $data;
+    MTT::Files::load_dumpfile("$dir/$builds_data_filename", \$data);
+    $MTT::Test::builds = $data->{VAR1};
 
-        # Now transform this to the form suitable for
-        # $MTT::Test::builds (see comment in SaveSources).  Wow.
-        # For each MPI get section
-        foreach my $mpi_get_key (keys(%{$in->{mpi_get}})) {
-            my $mpi_get = $in->{mpi_get}->{$mpi_get_key};
+    # Rebuild the refcounts
+    foreach my $get_key (keys(%{$MTT::Test::builds})) {
+        my $get = $MTT::Test::builds->{$get_key};
 
-            # For each version of that MPI
-            foreach my $mpi_version_key (keys(%{$mpi_get->{mpi_version}})) {
-                my $mpi_version = $mpi_get->{mpi_version}->{$mpi_version_key};
+        foreach my $version_key (keys(%{$get})) {
+            my $version = $get->{$version_key};
 
-                # For each MPI install section
-                foreach my $mpi_install_key (keys(%{$mpi_version->{mpi_install}})) {
-                    my $mpi_install = $mpi_version->{mpi_install}->{$mpi_install_key};
-                    
-                    # For each test build section
-                    foreach my $test_build_key (keys(%{$mpi_install->{test_build}})) {
-                        my $test_build = $mpi_install->{test_build}->{$test_build_key};
-                        
-                        $MTT::Test::builds->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key}->{$test_build_key} = 
-                            $in->{mpi_get}->{$mpi_get_key}->{mpi_version}->{$mpi_version_key}->{mpi_install}->{$mpi_install_key}->{test_build}->{$test_build_key};
-                        $MTT::Test::builds->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key}->{$test_build_key}->{simple_section_name} = $test_build_key;
+            foreach my $install_key (keys(%{$version})) {
+                my $install = $version->{$install_key};
+
+                foreach my $build_key (keys(%{$install})) {
+                    my $build = $install->{$build_key};
+
+                    # Set the refcount of this test build to 0.
+                    $build->{refcount} = 0;
+
+                    # Bump the refcount of the corresponding MPI install.
+                    if (exists($MTT::MPI::installs->{$get_key}) &&
+                        exists($MTT::MPI::installs->{$get_key}->{$version_key}) &&
+                        exists($MTT::MPI::installs->{$get_key}->{$version_key}->{$install_key})) {
+                        ++$MTT::MPI::installs->{$get_key}->{$version_key}->{$install_key}->{refcount};
+                    }
+
+                    # Bump the refcount of the corresponding Test get.
+                    if (exists($MTT::Test::sources->{$build->{test_get_simple_section_name}})) {
+                        ++$MTT::Test::sources->{$build->{test_get_simple_section_name}}->{refcount};
                     }
                 }
             }
@@ -209,125 +131,49 @@ sub LoadBuilds {
 sub SaveBuilds {
     my ($dir) = @_;
 
-    _setup_builds_xml()
-        if (!$builds_xs);
-
-    # Transform $MTT::Test::builds to something XML::Simple can write
-    # into valid XML (see comment in SaveSources).  Wow.
-    my $transformed;
-
-    # For each MPI get section
-    foreach my $mpi_get_key (keys(%{$MTT::Test::builds})) {
-        my $mpi_get = $MTT::Test::builds->{$mpi_get_key};
-
-        # For each version of that MPI
-        foreach my $mpi_version_key (keys(%{$mpi_get})) {
-            my $mpi_version = $mpi_get->{$mpi_version_key};
-            
-            # For each MPI install section
-            foreach my $mpi_install_key (keys(%{$mpi_version})) {
-                my $mpi_install = $mpi_version->{$mpi_install_key};
-            
-                # For each test build section
-                foreach my $test_build_key (keys(%{$mpi_install})) {
-                    my $test_build = $mpi_install->{$test_build_key};
-                    
-                    $transformed->{mpi_get}->{$mpi_get_key}->{mpi_version}->{$mpi_version_key}->{mpi_install}->{$mpi_install_key}->{test_build}->{$test_build_key} =
-                        $MTT::Test::builds->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key}->{$test_build_key};
-                }
-            }
-        }
-    }
-
-    # Write out the file
-    my $xml = $builds_xs->XMLout($transformed);
-    my $file = "$dir/$builds_data_filename";
-    open(FILE, ">$file.new");
-    print FILE $xml;
-    close(FILE);
-    system("mv $file.new $file");
+    MTT::Files::save_dumpfile("$dir/$builds_data_filename", 
+                              $MTT::Test::builds);
 }
 
 #--------------------------------------------------------------------------
 
-sub _setup_runs_xml {
-    $runs_xs = new XML::Simple(KeyAttr => { mpi_get => "simple_section_name",
-                                            mpi_version => "version",
-                                            mpi_install => "simple_section_name",
-                                            test_build => "simple_section_name",
-                                            test_run => "simple_section_name",
-                                            test_name => "name",
-                                            test_np => "nprocs",
-                                            test_cmd => "argv",
-                                        },
-                               ForceArray => [ "mpi_get", 
-                                               "mpi_version",
-                                               "mpi_install",
-                                               "test_build",
-                                               "test_run",
-                                               "test_name",
-                                               "test_np",
-                                               "test_cmd",
-                                               ],
-                               AttrIndent => 1,
-                               RootName => "test_runs",
-                               );
-}
-
-#--------------------------------------------------------------------------
-
+use Data::Dumper;
 sub LoadRuns {
     my ($dir) = @_;
 
     # Explicitly delete anything that was there
     $MTT::Test::runs = undef;
 
-    _setup_runs_xml()
-        if (!$runs_xs);
-    
-    # If the file exists, read it in
-    if (-f "$dir/$runs_data_filename") {
-        my $in = $runs_xs->XMLin("$dir/$runs_data_filename");
+    # See SaveRuns, below, for an explanation.  We traverse
+    # directories looking for dump files and read them into the
+    # appropriate section of the $MTT::Test::runs hash.
 
-        # Now transform this to the form suitable for
-        # $MTT::Test::runs (see comment in SaveSources).  Wow.
-        # For each MPI get section
-        foreach my $mpi_get_key (keys(%{$in->{mpi_get}})) {
-            my $mpi_get = $in->{mpi_get}->{$mpi_get_key};
+    $load_run_file_start_dir = "$dir/$runs_subdir";
+    find(\&load_run_file, $load_run_file_start_dir)
+        if (-d $load_run_file_start_dir);
 
-            # For each MPI source
-            foreach my $mpi_version_key (keys(%{$mpi_get->{mpi_version}})) {
-                my $mpi_version = $mpi_get->{mpi_version}->{$mpi_version_key};
+    # Rebuild the refcounts
+    foreach my $get_key (keys(%{$MTT::Test::runs})) {
+        my $get = $MTT::Test::runs->{$get_key};
 
-                # For each MPI install section
-                foreach my $mpi_install_key (keys(%{$mpi_version->{mpi_install}})) {
-                    my $mpi_install = $mpi_version->{mpi_install}->{$mpi_install_key};
+        foreach my $version_key (keys(%{$get})) {
+            my $version = $get->{$version_key};
 
-                    # For each test build section
-                    foreach my $test_build_key (keys(%{$mpi_install->{test_build}})) {
-                        my $test_build = $mpi_install->{test_build}->{$test_build_key};
-                        
-                        # For each test run section
-                        foreach my $test_run_key (keys(%{$test_build->{test_run}})) {
-                            my $test_run = $test_build->{test_run}->{$test_run_key};
-                            
-                            # For each test name
-                            foreach my $test_name_key (keys(%{$test_run->{test_name}})) {
-                                my $test_name = $test_run->{test_name}->{$test_name_key};
-                                
-                                # For each np
-                                foreach my $test_np_key (keys(%{$test_name->{test_np}})) {
-                                    my $test_np = $test_name->{test_np}->{$test_np_key};
-                                    
-                                    # For each test command
-                                    foreach my $test_cmd_key (keys(%{$test_np->{test_cmd}})) {
-                                        my $test_cmd = $test_np->{test_cmd}->{$test_cmd_key};
-                                        
-                                        $MTT::Test::runs->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key}->{$test_build_key}->{$test_run_key}->{$test_name_key}->{$test_np_key}->{$test_cmd_key} = 
-                                            $in->{mpi_get}->{$mpi_get_key}->{mpi_version}->{$mpi_version_key}->{mpi_install}->{$mpi_install_key}->{test_build}->{$test_build_key}->{test_run}->{$test_run_key}->{test_name}->{$test_name_key}->{test_np}->{$test_np_key}->{test_cmd}->{$test_cmd_key};
-                                    }
-                                }
-                            }
+            foreach my $install_key (keys(%{$version})) {
+                my $install = $version->{$install_key};
+
+                foreach my $build_key (keys(%{$install})) {
+                    my $build = $install->{$build_key};
+
+                    foreach my $run_key (keys(%{$build})) {
+                        my $run = $build->{$run_key};
+
+                        # Bump the refcount of the corresponding test build.
+                        if (exists($MTT::Test::builds->{$get_key}) &&
+                            exists($MTT::Test::builds->{$get_key}->{$version_key}) &&
+                            exists($MTT::Test::builds->{$get_key}->{$version_key}->{$install_key}) &&
+                            exists($MTT::Test::builds->{$get_key}->{$version_key}->{$install_key}->{$build_key})) {
+                            ++$MTT::Test::builds->{$get_key}->{$version_key}->{$install_key}->{$build_key}->{refcount};
                         }
                     }
                 }
@@ -336,17 +182,126 @@ sub LoadRuns {
     }
 }
 
+sub load_run_file {
+    # We only want files named $runs_data_filename
+    return 0
+        if (! -f $_ || $runs_data_filename ne $_);
+
+    # Read in the file
+    my $data;
+    MTT::Files::load_dumpfile($File::Find::name, \$data);
+
+    # Put the loaded data in the hash in the right place.  Per
+    # SaveRuns(), below, we look at the key values in $data->{VAR1} to
+    # know where to put $data->{VAR2} in the $MTT::Test::runs hash.
+    my $str = "\$MTT::Test::runs";
+    my $k = 1;
+    do {
+        $str .= "->{\"" . $data->{VAR1}->{$k} . "\"}";
+        ++$k;
+    } while (exists($data->{VAR1}->{$k}));
+    $str .= " = \$data->{VAR2}";
+    eval $str;
+
+    # Note that no refcounts are needed here -- nothing uses test
+    # runs.  But if they were, we could easily set this record's
+    # refcount to 0 here.
+}
+
 #--------------------------------------------------------------------------
 
 sub SaveRuns {
-    my ($dir) = @_;
+    my ($topdir) = @_;
 
-    _setup_runs_xml()
-        if (!$runs_xs);
+    # Because test run data can get very, very large, we break it up
+    # and store it in lots of smaller files so that we can write out
+    # to disk in small portions.
 
-    # Transform $MTT::Test::runs to something XML::Simple can write
-    # into valid XML (see comment in SaveSources).  Wow.
-    my $transformed;
+    # Test runs are stored in the hash with this order of keys:
+
+    # mpi_get_simple_section_name
+    # mpi_version
+    # mpi_install_simple_section_name
+    # test_build_simple_section_name
+    # test_run_simple_section_name
+    # test_name
+    # np
+    # command
+
+    # We save from test_name and down in a single file.
+
+    # For each MPI get section
+    foreach my $mpi_get_key (keys(%{$MTT::Test::runs_to_be_saved})) {
+        my $mpi_get = $MTT::Test::runs_to_be_saved->{$mpi_get_key};
+
+        # For each source of that MPI
+        foreach my $mpi_version_key (keys(%{$mpi_get})) {
+            my $mpi_version = $mpi_get->{$mpi_version_key};
+
+            # For each MPI install section
+            foreach my $mpi_install_key (keys(%{$mpi_version})) {
+                my $mpi_install = $mpi_version->{$mpi_install_key};
+                
+                # For each test build section
+                foreach my $test_build_key (keys(%{$mpi_install})) {
+                    my $test_build = $mpi_install->{$test_build_key};
+                    
+                    # For each test run section
+                    foreach my $test_run_key (keys(%{$test_build})) {
+                        my $test_run = $test_build->{$test_run_key};
+
+                        # For each test name
+                        foreach my $test_name_key (keys(%{$test_run})) {
+                            my $test_name = $test_run->{$test_name_key};
+
+                            my @parts = ($runs_subdir, $mpi_get_key, $mpi_version_key, $mpi_install_key, $test_build_key, $test_run_key, $test_name_key, $runs_data_filename);
+                            my $dir;
+                            my $file = "$topdir";
+                            foreach my $d (@parts) {
+                                $dir = $file;
+                                $file .= "/" .
+                                    MTT::Files::make_safe_filename($d);
+                            }
+                            MTT::Files::mkdir($dir);
+
+                            # We need to save two items in test run
+                            # data files -- the actual data and where
+                            # it belongs in the $MTT::Test::runs hash.
+                            my $hashname = {
+                                1 => $mpi_get_key,
+                                2 => $mpi_version_key,
+                                3 => $mpi_install_key,
+                                4 => $test_build_key,
+                                5 => $test_run_key,
+                                6 => $test_name_key,
+                            };
+                            MTT::Files::save_dumpfile($file, $hashname, 
+                                                      $test_name);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    # Explicitly reset the test runs to be saved
+    $MTT::Test::runs_to_be_saved = undef;
+}
+
+#--------------------------------------------------------------------------
+
+sub TrimRuns {
+    my ($topdir) = @_;
+
+    # See "SaveRuns", above, for an explanation of the storage format
+    # of test runs.
+
+    # In this subroutine, we traverse MTT::Test::runs looking for the
+    # TRIM_KEY.  If we find it, remove the data from the hash and
+    # chase down all the files that need to be deleted.  Deleting
+    # files may also render parent directories empty (and grandparent
+    # and great-grandparent and ...) which should therefore also be
+    # deleted.
 
     # For each MPI get section
     foreach my $mpi_get_key (keys(%{$MTT::Test::runs})) {
@@ -367,21 +322,36 @@ sub SaveRuns {
                     # For each test run section
                     foreach my $test_run_key (keys(%{$test_build})) {
                         my $test_run = $test_build->{$test_run_key};
-                        
-                        # For each test name
-                        foreach my $test_name_key (keys(%{$test_run})) {
-                            my $test_name = $test_run->{$test_name_key};
-                            
-                            # For each np
-                            foreach my $test_np_key (keys(%{$test_name})) {
-                                my $test_np = $test_name->{$test_np_key};
-                                
-                                # For each cmd
-                                foreach my $test_cmd_key (keys(%{$test_np})) {
-                                    my $test_cmd = $test_np->{$test_cmd_key};
-                                    
-                                    $transformed->{mpi_get}->{$mpi_get_key}->{mpi_version}->{$mpi_version_key}->{mpi_install}->{$mpi_install_key}->{test_build}->{$test_build_key}->{test_run}->{$test_run_key}->{test_name}->{$test_name_key}->{test_np}->{$test_np_key}->{test_cmd}->{$test_cmd_key} = 
-                                        $MTT::Test::runs->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key}->{$test_build_key}->{$test_run_key}->{$test_name_key}->{$test_np_key}->{$test_cmd_key};
+
+                        # Was this result marked "to be trimmed"?
+                        if (defined($test_run->{$MTT::Trim::TRIM_KEY})) {
+
+                            my @dirs;
+                            my $last = $topdir;
+                            my @parts = ($runs_subdir, $mpi_get_key, $mpi_version_key, $mpi_install_key, $test_build_key, $test_run_key);
+                            foreach my $d (@parts) {
+                                my $n = "$last/" . 
+                                    MTT::Files::make_safe_filename($d);
+                                push(@dirs, $n);
+                                $last = $n;
+                            }
+
+                            for (my $i = $#dirs; $i >= 0; --$i) {
+                                # If it's the first dir, cheat and
+                                # just "rm -rf" the whole tree
+                                # (because the first dir has dirs for
+                                # all the individual tests under it,
+                                # and we know we want to remove them
+                                # all)
+                                if ($#dirs == $i) {
+                                    MTT::DoCommand::Cmd(0, "rm -rf $dirs[$i]");
+                                } else {
+                                    # Try to remove it; rmdir will
+                                    # fail if the directory is not
+                                    # empty.
+                                    if (!rmdir($dirs[$i])) {
+                                        last;
+                                    }
                                 }
                             }
                         }
@@ -390,14 +360,6 @@ sub SaveRuns {
             }
         }
     }
-
-    # Write out the file
-    my $xml = $runs_xs->XMLout($transformed);
-    my $file = "$dir/$runs_data_filename";
-    open(FILE, ">$file.new");
-    print FILE $xml;
-    close(FILE);
-    system("mv $file.new $file");
 }
 
 1;
