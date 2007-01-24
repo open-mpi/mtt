@@ -267,11 +267,21 @@ function highlight_match($param, $value) {
     $match = $_GET["text_$param"];
     $match = preg_replace("/;/", "|", $match);
 
-    return preg_replace(
-                "/($match)/i",
-                "<font style=\"background-color:yellow\">$1</font>",
-                $value
-           );
+    # "all" is the magic word for *no filter*
+    if ($match == 'all')
+        return $value;
+    else
+        return preg_replace(
+                    "/(" . escape_nonword_chars($match) . ")/i",
+                    "<font style=\"background-color:yellow\">$1</font>",
+                    $value
+               );
+}
+
+# Escape non-word characters ([0-9a-zA-Z_]),
+# except ^ and $ ... we really mean those
+function escape_nonword_chars($str) {
+    return preg_replace('/([^\w\^\$])/', "\\\\$1", $str);
 }
 
 # Return true if the row is a row flagged "--trial"
