@@ -43,82 +43,84 @@ function dump_report() {
     else
         $nogo = false;
 
-    # Process session/cache/temp-table thingy
-    $ttable_id_field = process_ttable_id_field($_GET);
+    if (! $nogo) {
 
-    # cherry_fields are the only fields that
-    # are filtered by PHP instead of SQL
-    $cherry_fields = process_cherry_fields($_GET);
+        # Process session/cache/temp-table thingy
+        $ttable_id_field = process_ttable_id_field($_GET);
 
-    # Process/mutator controls
-    # (they need to come first, because _GET could be mutated here)
-    if (! $nogo)
+        # cherry_fields are the only fields that
+        # are filtered by PHP instead of SQL
+        $cherry_fields = process_cherry_fields($_GET);
+
+        # Process/mutator controls
+        # (they need to come first, because _GET could be mutated here)
         $report_type = process_report_type($_GET);
 
-    # There are oddball field(s) that we constrain *for* the user
-    process_oddball_fields($_GET);
+        # There are oddball field(s) that we constrain *for* the user
+        process_oddball_fields($_GET);
 
-    # Process input params
-    $phases          = process_phase_field($_GET);
-    $date_fields     = process_date_field($_GET);
-    $large_fields    = process_large_fields($_GET);
-    $input_fields    = process_input_fields($_GET);
-    $result_fields   = process_result_fields($phases, $_GET);
-    $sort_field      = process_sort_field($_GET);
-    $offset_field    = process_offset_field($_GET);
+        # Process input params
+        $phases          = process_phase_field($_GET);
+        $date_fields     = process_date_field($_GET);
+        $large_fields    = process_large_fields($_GET);
+        $input_fields    = process_input_fields($_GET);
+        $result_fields   = process_result_fields($phases, $_GET);
+        $sort_field      = process_sort_field($_GET);
+        $offset_field    = process_offset_field($_GET);
 
-    $trial_field     = process_trial_field(TRIAL);
+        $trial_field     = process_trial_field(TRIAL);
 
-    # Print either a summary or detail report,
-    # depending on whether a 'select_more' parameter is set
-    if ($report_type == 'detail') {
-        $do_detailed = true;
-        $detail_fields = setup_detail_fields(get_scalar($phases));
-    } elseif ($report_type == 'performance') {
-        $do_performance = true;
-        $performance_fields = setup_performance_fields();
-    } else
-        $do_summary = true;
+        # Print either a summary or detail report,
+        # depending on whether a 'select_more' parameter is set
+        if ($report_type == 'detail') {
+            $do_detailed = true;
+            $detail_fields = setup_detail_fields(get_scalar($phases));
+        } elseif ($report_type == 'performance') {
+            $do_performance = true;
+            $performance_fields = setup_performance_fields();
+        } else
+            $do_summary = true;
 
-    # Prepare query components
-    $query = array_merge_recursive(
-        $date_fields,
-        $ttable_id_field,
-        $input_fields,
-        $large_fields,
-        $result_fields,
-        $detail_fields,
-        $performance_fields,
-        $sort_field,
-        $offset_field,
-        $trial_field
-    );
+        # Prepare query components
+        $query = array_merge_recursive(
+            $date_fields,
+            $ttable_id_field,
+            $input_fields,
+            $large_fields,
+            $result_fields,
+            $detail_fields,
+            $performance_fields,
+            $sort_field,
+            $offset_field,
+            $trial_field
+        );
 
-    # Order columns left-to-right
-    $query['select']      = order_columns($query['select']);
-    $query['select_more'] = order_columns($query['select_more']);
+        # Order columns left-to-right
+        $query['select']      = order_columns($query['select']);
+        $query['select_more'] = order_columns($query['select_more']);
 
-    # Pass down phases field
-    $query['phases'] = $phases;
+        # Pass down phases field
+        $query['phases'] = $phases;
 
-    # Compose query
-    $cmd = compose_sql($query);
+        # Compose query
+        $cmd = compose_sql($query);
 
-    # Execute query
-    $resource = do_pg_query($cmd);
+        # Execute query
+        $resource = do_pg_query($cmd);
 
-    # Number of rows in this report
-    $rowcount = pg_num_rows($resource);
-    $n = rowcount($rowcount, $_GET);
-    $o = offset($_GET);
+        # Number of rows in this report
+        $rowcount = pg_num_rows($resource);
+        $n = rowcount($rowcount, $_GET);
+        $o = offset($_GET);
 
-    # Prepare headers array for *_table functions
-    $headers['params']      = array_keys($query['select']);
-    $headers['details']     = array_keys($query['select_more']);
-    $headers['performance'] = array_keys($query['performance']);
-    $headers['results']     = array_keys($query['aggregates']);
-    $headers['phases']      = $phases;
-    $headers['offset']      = $o;
+        # Prepare headers array for *_table functions
+        $headers['params']      = array_keys($query['select']);
+        $headers['details']     = array_keys($query['select_more']);
+        $headers['performance'] = array_keys($query['performance']);
+        $headers['results']     = array_keys($query['aggregates']);
+        $headers['phases']      = $phases;
+        $headers['offset']      = $o;
+    }
 
     # Print the user query screen
     dump_query_screen($nogo);
