@@ -23,7 +23,7 @@ our $System_config = {
     source_subdir => "sources",
     install_subdir => "installs",
 
-    http_agents => "wget lynx curl",
+    http_agents => [ "wget -nv \$url", "curl -# -# \$url -o \$outfile" ],
 
     known_compiler_names => "gnu pgi ibm intel kai absoft pathscale sun none",
 };

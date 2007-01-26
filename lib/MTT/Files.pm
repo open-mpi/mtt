@@ -358,13 +358,23 @@ sub http_get {
 
     # figure out what download command to use
     if (!$http_agent) {
-        my @agents = split(/ /, $MTT::Defaults::System_config->{http_agents});
-        $http_agent = FindProgram(@agents);
+        foreach my $agent (@{$MTT::Defaults::System_config->{http_agents}}) {
+            my @tokens = split(" ", $agent);
+            my $found = FindProgram($tokens[0]);
+            if ($found) {
+                $http_agent = $agent;
+                last;
+            }
+        }
     }
     Abort("Cannot find downloading program -- aborting in despair\n")
         if (!defined($http_agent));
 
-    my $x = MTT::DoCommand::Cmd(1, "$http_agent $url");
+    my $outfile = basename($url);
+    my $cmd;
+    my $str = "\$cmd = \"$http_agent\"";
+    eval $str;
+    my $x = MTT::DoCommand::Cmd(1, $cmd);
     if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         return undef;
     }
