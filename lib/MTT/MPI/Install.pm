@@ -300,15 +300,15 @@ sub _do_install {
     # points to (and the sym link)
     MTT::DoCommand::Chdir("..");
     if (-l $sym_link_name) {
-	my $start = cwd();
+        my $start = cwd();
         MTT::DoCommand::Chdir($sym_link_name);
         my $dir_to_die = cwd();
-	MTT::DoCommand::Chdir($start);
-	# If the link was pointing somewhere valid, whack the previous
-	# directory
-	if ($dir_to_die ne $start) {
-	    my $x = MTT::DoCommand::Cmd(1, "rm -rf $dir_to_die");
-	}
+        MTT::DoCommand::Chdir($start);
+        # If the link was pointing somewhere valid, whack the previous
+        # directory
+        if ($dir_to_die ne $start) {
+            my $x = MTT::DoCommand::Cmd(1, "rm -rf $dir_to_die");
+        }
         unlink($sym_link_name);
     } elsif (-d $sym_link_name) {
         # Can't think of why this would happen, but let's cover the bases.
