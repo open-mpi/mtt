@@ -28,7 +28,7 @@ my $verbose_out;
 #--------------------------------------------------------------------------
 
 sub RunEngine {
-    my ($section, $top_dir, $mpi_details, $test_build, $force, $ret) = @_;
+    my ($section, $install_dir, $runs_data_dir, $mpi_details, $test_build, $force, $ret) = @_;
     my $test_results;
     my $total = $#{$ret->{tests}} + 1;
 
@@ -58,18 +58,18 @@ sub RunEngine {
         # Just one np, or an array of np values?
         if (ref($all_np) eq "") {
             $test_results->{$all_np} =
-                _run_one_np($top_dir, $run, $mpi_details, $all_np, $force);
+                _run_one_np($install_dir, $run, $mpi_details, $all_np, $force);
         } else {
             foreach my $this_np (@$all_np) {
                 $test_results->{$this_np} =
-                    _run_one_np($top_dir, $run, $mpi_details, $this_np,
+                    _run_one_np($install_dir, $run, $mpi_details, $this_np,
                                 $force);
             }
         }
         ++$count;
 
         # Write out the "to be saved" test run results
-        MTT::Test::SaveRuns($top_dir);
+        MTT::Test::SaveRuns($runs_data_dir);
         
         # Output a progress bar
         if ($verbose_out > 50) {
@@ -90,7 +90,7 @@ sub RunEngine {
 }
 
 sub _run_one_np {
-    my ($top_dir, $run, $mpi_details, $np, $force) = @_;
+    my ($install_dir, $run, $mpi_details, $np, $force) = @_;
 
     my $name = basename($MTT::Test::Run::test_executable);
     $run->{name} = $name;
@@ -107,12 +107,12 @@ sub _run_one_np {
 
         # If we just got one, run it.  Otherwise, loop over running them.
         if (ref($execs) eq "") {
-            _run_one_test($top_dir, $run, $mpi_details, $execs, $name, 1,
+            _run_one_test($install_dir, $run, $mpi_details, $execs, $name, 1,
                           $force);
         } else {
             my $variant = 1;
             foreach my $e (@$execs) {
-                _run_one_test($top_dir, $run, $mpi_details, $e, $name,
+                _run_one_test($install_dir, $run, $mpi_details, $e, $name,
                               $variant++, $force);
             }
         }
@@ -120,7 +120,7 @@ sub _run_one_np {
 }
 
 sub _run_one_test {
-    my ($top_dir, $run, $mpi_details, $cmd, $name, $variant, $force) = @_;
+    my ($install_dir, $run, $mpi_details, $cmd, $name, $variant, $force) = @_;
 
     # Have we run this test already?  Wow, Perl sucks sometimes -- you
     # can't check for the entire thing because the very act of

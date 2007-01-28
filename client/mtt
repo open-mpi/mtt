@@ -336,6 +336,8 @@ my $source_dir =
     MTT::Files::mkdir("$scratch_arg/$MTT::Defaults::System_config->{source_subdir}");
 my $install_dir = 
     MTT::Files::mkdir("$scratch_arg/$MTT::Defaults::System_config->{install_subdir}");
+my $runs_data_dir = 
+    MTT::Files::mkdir("$scratch_arg/$MTT::Defaults::System_config->{runs_data_subdir}");
 
 # Load up all the MPI sources that this system has previously obtained
 MTT::MPI::LoadSources($source_dir)
@@ -354,7 +356,7 @@ MTT::Test::LoadBuilds($install_dir)
     if ($test_build || $test_run || $trim);
 
 # Load up the run tests for each install
-MTT::Test::LoadRuns($install_dir)
+MTT::Test::LoadRuns($runs_data_dir)
     if ($test_run || $trim);
 
 
@@ -525,7 +527,8 @@ foreach my $file (@file_arg) {
     }
     if ($test_run) {
         start_time();
-        MTT::Test::Run::Run($ini, $ini_full, $install_dir, $force_arg);
+        MTT::Test::Run::Run($ini, $ini_full, $install_dir, $runs_data_dir,
+                            $force_arg);
         stop_time("Test Run");
     }
 

@@ -231,11 +231,21 @@ sub ProcessEnvKeys {
     }
 }
 
-# This function generates random strings of a given length
-sub RandomString {
+#--------------------------------------------------------------------------
 
+# This function generates random strings of a given length
+my $_seeded = 0;
+sub RandomString {
     # length of the random string to generate
     my $length_of_randomstring = shift;
+
+    # Need something at least sorta random -- doesn't have to be
+    # entirely unique (see "srand" in perlfunc(1))
+    if (!$_seeded) {
+        srand(time() ^ $$ ^ unpack "%L*", `hostname`);
+        $_seeded = 1;
+    }
+
     my @chars = ('a'..'z','A'..'Z','0'..'9','_');
     my $random_string;
 

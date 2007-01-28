@@ -111,6 +111,22 @@ our $install_dir;
 
 #--------------------------------------------------------------------------
 
+sub _make_random_dir {
+    my ($len) = @_;
+
+    # Make a directory and ensure it's mine and mine alone (NOTE:
+    # assumes a single writer)
+    while (1) {
+        my $ret = MTT::Values::RandomString($len);
+        if (! -d $ret) {
+            Debug("Unique directory: $ret\n");
+            return _make_safe_dir($ret);
+        }
+    }
+}
+
+#--------------------------------------------------------------------------
+
 sub _make_safe_dir {
     my ($ret) = @_;
 
@@ -191,7 +207,7 @@ sub Install {
                                 Verbose("   Installing MPI: [$mpi_get_key] / [$mpi_version_key] / [$simple_section]...\n");
                             
                                 MTT::DoCommand::Chdir($install_base);
-                                my $mpi_dir = _make_safe_dir($mpi_version->{simple_section_name});
+                                my $mpi_dir = _make_random_dir(4);
                                 MTT::DoCommand::Chdir($mpi_dir);
                             
                                 # Install and restore the environment
@@ -236,10 +252,9 @@ sub _do_install {
     %$config = %$MTT::Defaults::MPI_install;
     # Possibly filled in by ini files
     $config->{module} = "";
-        
+
     # Filled in automatically below
     $config->{ident} = "to be filled in below";
-    $config->{section_dir} = "to be filled in below";
     $config->{version_dir} = "to be filled in below";
     $config->{srcdir} = "to be filled in below";
     $config->{abs_srcdir} = "to be filled in below";
@@ -251,7 +266,7 @@ sub _do_install {
     $config->{prepend_path} = "to be filled in below";
     $config->{append_path} = "to be filled in below";
     $config->{bitness} = "to be filled in below";
-        
+
     # Filled in by the module
     $config->{test_result} = MTT::Values::FAIL;
     $config->{result_message} = "to be filled in by module";
@@ -259,7 +274,7 @@ sub _do_install {
     $config->{cxx_bindings} = 0;
     $config->{f77_bindings} = 0;
     $config->{f90_bindings} = 0;
-    
+
     $config->{full_section_name} = $section;
     $config->{simple_section_name} = $simple_section;
 
@@ -269,15 +284,36 @@ sub _do_install {
         Warning("module not specified in [$section]; skipped\n");
         return undef;
     }
-    
-    # Make a directory just for this section
-    MTT::DoCommand::Chdir($this_install_base);
-    $config->{section_dir} = _make_safe_dir($simple_section);
-    MTT::DoCommand::Chdir($config->{section_dir});
 
-    # Make a directory just for this version
-    $config->{version_dir} = _make_safe_dir($mpi_get->{version});
-    MTT::DoCommand::Chdir($config->{version_dir});
+    # Make a directory just for this section.  It's gotta be darn
+    # short because some compilers will run out of room and complain
+    # about filenames that are too long (doh!).
+    MTT::DoCommand::Chdir($this_install_base);
+    $config->{version_dir} = $this_install_base;
+    my $sym_link_name = 
+      MTT::Files::make_safe_filename($mpi_get->{simple_section_name}) .
+      "#" . MTT::Files::make_safe_filename($simple_section) . "#" .
+      MTT::Files::make_safe_filename($mpi_get->{version});
+    $config->{sym_link_name} = $sym_link_name;
+
+    # If the sym link already exists, whack the old directory that it
+    # points to (and the sym link)
+    MTT::DoCommand::Chdir("..");
+    if (-l $sym_link_name) {
+        MTT::DoCommand::Chdir($sym_link_name);
+        my $dir_to_die = cwd();
+        MTT::DoCommand::Chdir("..");
+        my $x = MTT::DoCommand::Cmd(1, "rm -rf $dir_to_die");
+        unlink($sym_link_name);
+    } elsif (-d $sym_link_name) {
+        # Can't think of why this would happen, but let's cover the bases.
+        MTT::DoCommand::Cmd(1, "rm -rf $sym_link_name");
+    }
+
+    # Make the sym link
+    symlink(basename($this_install_base), $sym_link_name);
+    MTT::DoCommand::Chdir($this_install_base);
+    Debug("Sym linked: " . basename($this_install_base) . " to $sym_link_name\n");
     
     # Load any environment modules?
     my @env_modules;
@@ -296,12 +332,12 @@ sub _do_install {
     $config->{append_path} = Value($ini, $section, "append_path");
     my @save_env;
     ProcessEnvKeys($config, \@save_env);
-    
+
     # configure_arguments
     my $tmp = Value($ini, $section, "configure_arguments");
     $config->{configure_arguments} = $tmp
         if (defined($tmp));
-    
+
     # vpath
     $tmp = lc(Value($ini, $section, "vpath_mode"));
     $config->{vpath_mode} = $tmp
@@ -316,17 +352,17 @@ sub _do_install {
             $config->{vpath_mode} = "none";
         }
     }
-    
+
     # make all arguments
     $tmp = Value($ini, $section, "make_all_arguments");
     $config->{make_all_arguments} = $tmp
         if (defined($tmp));
-    
+
     # make check
     $tmp = Logical($ini, $section, "make_check");
     $config->{make_check} = $tmp
         if (defined($tmp));
-    
+
     # compiler name and version
     $config->{compiler_name} =
         Value($ini, $section, "compiler_name");
@@ -354,18 +390,17 @@ sub _do_install {
 
     # We're in the section directory.  Make a subdir for the source
     # and build.
-    MTT::DoCommand::Cmd(1, "rm -rf source");
-    my $source_dir = MTT::Files::mkdir("source");
+    MTT::DoCommand::Cmd(1, "rm -rf src");
+    my $source_dir = MTT::Files::mkdir("src");
     MTT::DoCommand::Chdir($source_dir);
-    
+
     # Unpack the source and find out the subdirectory
     # name it created
     $config->{srcdir} = _prepare_source($mpi_get);
     MTT::DoCommand::Chdir($config->{srcdir});
     $config->{abs_srcdir} = cwd();
-    
+
     # vpath mode (error checking was already done above)
-    
     if (!$config->{vpath_mode} || $config->{vpath_mode} eq "" ||
         $config->{vpath_mode} eq "none") {
         $config->{vpath_mode} = 0;
@@ -381,11 +416,11 @@ sub _do_install {
             $config->{configdir} = "../$config->{srcdir}";
             $config->{builddir} = "$config->{version_dir}/build_vpath_relative";
         }
-        
+
         MTT::Files::mkdir($config->{builddir});
     }
     MTT::DoCommand::Chdir($config->{builddir});
-    
+
     # Installdir
     $config->{installdir} = "$config->{version_dir}/install";
     MTT::Files::mkdir($config->{installdir});
@@ -404,7 +439,7 @@ sub _do_install {
     # Set install_dir for the global environment
     # (it is needed by post-install funclets such as get_bitness)
     $install_dir = $config->{installdir};
-    
+
     # bitness (must be processed *after* installation)
     my $bitness = Value($ini, $section, "bitness");
 
@@ -414,7 +449,7 @@ sub _do_install {
         $bitness = EvaluateString("&get_mpi_install_bitness(\"$bitness\")");
     }
     $config->{bitness} = $bitness;
-    
+
     # endian
     my $endian = Value($ini, $section, "endian");
 
@@ -424,7 +459,7 @@ sub _do_install {
         $endian = EvaluateString("&get_mpi_install_endian(\"$endian\")");
     }
     $config->{endian} = $endian;
-    
+
     # Unload any loaded environment modules
     if ($#env_modules >= 0) {
         Debug("Unloading environment modules: @env_modules\n");
@@ -432,7 +467,6 @@ sub _do_install {
     }
 
     # Analyze the return
-    
     if ($ret) {
         # Send the results back to the reporter
         my $report = {
@@ -535,8 +569,7 @@ sub _do_install {
         $ret->{append_path} = $config->{append_path};
         $ret->{env_modules} = $config->{env_modules};
         $ret->{start_timestamp} = timegm(gmtime());
-        $ret->{get_section_dir} = $this_install_base;
-        $ret->{install_section_dir} = $config->{install_section_dir};
+        $ret->{sym_link_name} = $config->{sym_link_name};
         $ret->{version_dir} = $config->{version_dir};
         $ret->{source_dir} = $config->{srcdir};
         $ret->{build_dir} = $config->{builddir};
@@ -548,12 +581,12 @@ sub _do_install {
                 delete $report->{$k};
             }
         }
-        
+
         # Save the results in an ini file so that we save all the
         # result_stdout, etc.
         WriteINI("$config->{version_dir}/$installed_file",
                  $installed_section, $ret);
-        
+
         # All of the data has been saved to an INI file, so reclaim
         # potentially a big chunk of memory...
         delete $ret->{result_stdout};
@@ -563,7 +596,7 @@ sub _do_install {
         delete $ret->{make_all_stderr};
         delete $ret->{make_check_stdout};
         delete $ret->{make_install_stdout};
-        
+
         # Submit to the reporter, and receive a serial
         my $serials = MTT::Reporter::Submit("MPI install", $simple_section, $report);
 
@@ -584,7 +617,7 @@ sub _do_install {
             # JMS: this is not right -- if there is a problem with
             # (for example) test build, then we might want the MPI
             # source around (e.g., running a debugger)
-            
+
             if (exists $ret->{abs_srcdir}) {
                 Verbose("Removing source dir: $ret->{abs_srcdir}\n");
                 MTT::DoCommand::Cmd(1, "rm -rf $ret->{abs_srcdir}");

@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -22,7 +22,8 @@ use strict;
 our $System_config = {
     source_subdir => "sources",
     install_subdir => "installs",
-
+    runs_data_subdir => "test_runs",
+    
     http_agents => [ "wget -nv \$url", "curl -# -# \$url -o \$outfile" ],
 
     known_compiler_names => "gnu pgi ibm intel kai absoft pathscale sun none",
