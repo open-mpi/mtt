@@ -950,7 +950,7 @@ sub get_mpi_install_bitness {
     my $override    = shift;
     my $install_dir = $MTT::MPI::Install::install_dir;
     my $force       = 1;
-    my $ret         = "";
+    my $ret         = "0";
 
     # 1)
     # Users can override the automatic bitness detection
@@ -1022,7 +1022,7 @@ int main(int argc, char* argv[]) {
     my $libmpi = _find_libmpi();
     if (! -f $libmpi) {
         Debug("Couldn't find libmpi!\n");
-        return "";
+        return "0";
     }
 
     my $leader = "[^:]+:";
@@ -1117,7 +1117,7 @@ sub get_mpi_install_endian {
     Debug("&get_mpi_intall_endian\n");
 
     my $override = shift;
-    my $ret      = "";
+    my $ret      = "0";
 
     # 1)
     # Users can override the automatic endian detection
@@ -1138,7 +1138,7 @@ sub get_mpi_install_endian {
         # No need to Warn() -- the fact that the MPI failed to install
         # should be good enough...
         Debug("*** Could not find libmpi to calculate endian-ness\n");
-        return "";
+        return "0";
     }
 
     my $leader          = "[^:]+:";
