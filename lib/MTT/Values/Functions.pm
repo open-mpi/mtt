@@ -923,7 +923,7 @@ sub get_sun_cc_version {
     Debug("&get_sun_cc_version\n");
     my $ret = "unknown";
 
-    if (open SUNCC, "cc -V 2>&1 | head -n 1 | nawk '{print $4}'") {
+    if (open SUNCC, "cc -V 2>&1 | head -n 1 | cut -d\  -f4-") {
         my $str = <SUNCC>;
         $str = <SUNCC>;
         close(SUNCC);
@@ -1135,7 +1135,9 @@ sub get_mpi_install_endian {
     # Try snarfing endian(s) using the /usr/bin/file command
     my $libmpi          = _find_libmpi();
     if (! -f $libmpi) {
-        Debug("Couldn't find libmpi!\n");
+        # No need to Warn() -- the fact that the MPI failed to install
+        # should be good enough...
+        Debug("*** Could not find libmpi to calculate endian-ness\n");
         return "";
     }
 
@@ -1173,9 +1175,9 @@ sub get_mpi_install_endian {
     $ret = _endian_to_bitmapped($str);
 
     if (! $ret) {
-        Warning("Could not get endian-ness using \"file\" command.\n");
+        Debug("Could not get endian-ness from $libmpi using \"file\" command.\n");
     } else {
-        Debug("Got endian-ness using \"file\" command.\n");
+        Debug("Got endian-ness using \"file\" command on $libmpi.\n");
         return $ret;
     }
 
@@ -1230,6 +1232,15 @@ sub _find_libmpi {
 
     foreach my $libmpi (@libmpis) {
         if (-e $libmpi) {
+            while (-l $libmpi) {
+                $libmpi = readlink($libmpi);
+                next if (-e $libmpi);
+                $libmpi = "$install_dir/lib/$libmpi";
+                next if (-e $libmpi);
+                Warning("*** Got bogus sym link for libmpi -- points to nothing\n");
+                return $ret;
+            }
+
             $ret = $libmpi;
             last;
         }
