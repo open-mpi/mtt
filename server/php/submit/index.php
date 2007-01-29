@@ -544,9 +544,11 @@ function do_pg_query($cmd) {
 
     debug("\nSQL: $cmd\n");
     if (! ($db_res = pg_query($cmd))) {
-        mtt_error("\nSQL QUERY: " . $cmd .
-                  "\nSQL ERROR: " . pg_last_error() .
-                  "\nSQL ERROR: " . pg_result_error());
+        $out = "\nSQL QUERY: " . $cmd .
+               "\nSQL ERROR: " . pg_last_error() .
+               "\nSQL ERROR: " . pg_result_error();
+        mtt_error($out);
+        mtt_send_mail($out);
     }
     debug("\nDatabase rows affected: " . pg_affected_rows($db_res) . "\n");
 }
@@ -559,9 +561,11 @@ function simple_select($cmd) {
 
     debug("\nSQL: $cmd\n");
     if (! ($result = pg_query($cmd))) {
-        mtt_error("\nSQL QUERY: " . $cmd .
-                  "\nSQL ERROR: " . pg_last_error() .
-                  "\nSQL ERROR: " . pg_result_error());
+        $out = "\nSQL QUERY: " . $cmd .
+               "\nSQL ERROR: " . pg_last_error() .
+               "\nSQL ERROR: " . pg_result_error();
+        mtt_error($out);
+        mtt_send_mail($out);
     }
     $max = pg_num_rows($result);
     for ($i = 0; $i < $max; ++$i) {
@@ -577,9 +581,11 @@ function select($cmd) {
 
     debug("\nSQL: $cmd\n");
     if (! ($result = pg_query($cmd))) {
-        mtt_error("\nSQL QUERY: " . $cmd .
-                  "\nSQL ERROR: " . pg_last_error() .
-                  "\nSQL ERROR: " . pg_result_error());
+        $out = "\nSQL QUERY: " . $cmd .
+               "\nSQL ERROR: " . pg_last_error() .
+               "\nSQL ERROR: " . pg_result_error();
+        mtt_error($out);
+        mtt_send_mail($out);
     }
     return pg_fetch_all($result);
 }
@@ -605,6 +611,23 @@ function mtt_error($str) {
 # Function for reporting notices back to the client
 function mtt_notice($str) {
     print("MTTDatabase server notice: $str\n");
+}
+
+# Function for emailing SQL errors
+function mtt_send_mail($str) {
+
+    # Initialize To: addresses
+    $user    = $_GET['email'];
+    $admin   = 'ethan.mallove@sun.com';
+    $headers = "From: $admin\r\n" .
+               "Reply-To: $admin\r\n";
+
+    # Email the MTT database administrator
+    mail($admin, "MTT server error", $str, $headers);
+
+    # Email the user of the offending MTT client
+    if ($user)
+        mail($user, "MTT server error", $str, $headers);
 }
 
 ######################################################################
