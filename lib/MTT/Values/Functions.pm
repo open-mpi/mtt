@@ -923,7 +923,7 @@ sub get_sun_cc_version {
     Debug("&get_sun_cc_version\n");
     my $ret = "unknown";
 
-    if (open SUNCC, "cc -V 2>&1 | head -n 1 | nawk '{print $4}'") {
+    if (open SUNCC, "cc -V 2>&1 | head -n 1 | cut -d\  -f4-") {
         my $str = <SUNCC>;
         $str = <SUNCC>;
         close(SUNCC);
@@ -950,7 +950,7 @@ sub get_mpi_install_bitness {
     my $override    = shift;
     my $install_dir = $MTT::MPI::Install::install_dir;
     my $force       = 1;
-    my $ret         = undef;
+    my $ret         = "0";
 
     # 1)
     # Users can override the automatic bitness detection
@@ -969,7 +969,10 @@ sub get_mpi_install_bitness {
     my $mpicc      = "$install_dir/bin/mpicc";
     my $mpirun     = "$install_dir/bin/mpirun";
 
-    my $x = MTT::Files::SafeWrite($force, "$executable.c", "/*
+    # Make sure we have a valid mpicc and mpirun before attempting
+    # this
+    if (-x $mpicc && -x $mpirun) {
+        my $x = MTT::Files::SafeWrite($force, "$executable.c", "/*
  * This program is automatically generated via the \"get_bitness\"
  * function of the MPI Testing Tool (MTT).  Any changes you make here may
  * get lost!
@@ -985,39 +988,43 @@ int main(int argc, char* argv[]) {
 }
 ");
 
-    # Compile the program
-    $x = MTT::DoCommand::Cmd(1, "$mpicc $executable.c -o $executable");
+        # Compile the program
+        unlink($executable);
+        $x = MTT::DoCommand::Cmd(1, "$mpicc $executable.c -o $executable");
 
-    if ($x->{exit_value} != 0) {
-        Warning("Couldn't compile $prog_name.c.\n");
-    }
-        
-    if (-f $executable) {
-        $x = MTT::DoCommand::Cmd(1, "$mpirun -np 1 $executable", 30);
-    } else {
-        Warning("$prog_name does not exist!\n");
-    }
+        if (0 == $x->{exit_value} && -x $executable) {
 
-    if ($x->{exit_value} != 0) {
-        Warning("Couldn't execute $prog_name.\n");
-    } else {
-        $ret = _extract_valid_bitness($x->{result_stdout});
+            # It compiled ok, so now run it.  Use mpirun so that
+            # various paths and whatnot are set properly.
+            $x = MTT::DoCommand::Cmd(1, "$mpirun -np 1 $executable", 30);
+            if (0 == $x->{exit_value}) {
+                $ret = _extract_valid_bitness($x->{result_stdout});
 
-        if (! $ret) {
-            Warning("$prog_name did not execute properly.\n");
-            Warning("$prog_name output: " . $x->{result_stdout} . "\n");
+                if (! $ret) {
+                    Warning("&get_mpi_instaled_bitness(): Sample compiled program $prog_name did not execute properly.\n");
+                    Warning("&get_mpi_instaled_bitness(): $prog_name output: " . $x->{result_stdout} . "\n");
+                } else {
+                    Debug("$prog_name executed properly.\n");
+                    $ret = _bitness_to_bitmapped($ret);
+                    Debug("&get_mpi_install_bitness returning: $ret\n");
+                    return $ret;
+                }
+            } else {
+                Warning("&get_mpi_install_bitness(): Couldn't execute sample compiled program: $prog_name.\n");
+            }
         } else {
-            Debug("$prog_name executed properly.\n");
-
-            $ret = _bitness_to_bitmapped($ret);
-            Debug("&get_mpi_install_bitness returning: $ret\n");
-            return $ret;
+            Warning("&get_mpi_instaled_bitness(): Couldn't compile sample $prog_name.c.\n");
         }
     }
 
     # 3)
     # Try snarfing bitness using the /usr/bin/file command
     my $libmpi = _find_libmpi();
+    if (! -f $libmpi) {
+        Debug("Couldn't find libmpi!\n");
+        return "0";
+    }
+
     my $leader = "[^:]+:";
     my $bitnesses;
 
@@ -1110,7 +1117,7 @@ sub get_mpi_install_endian {
     Debug("&get_mpi_intall_endian\n");
 
     my $override = shift;
-    my $ret      = undef;
+    my $ret      = "0";
 
     # 1)
     # Users can override the automatic endian detection
@@ -1127,6 +1134,13 @@ sub get_mpi_install_endian {
     # 2)
     # Try snarfing endian(s) using the /usr/bin/file command
     my $libmpi          = _find_libmpi();
+    if (! -f $libmpi) {
+        # No need to Warn() -- the fact that the MPI failed to install
+        # should be good enough...
+        Debug("*** Could not find libmpi to calculate endian-ness\n");
+        return "0";
+    }
+
     my $leader          = "[^:]+:";
     my $hardware_little = 'i386|x86_64';
     my $hardware_big    = 'ppc|ppc64';
@@ -1161,9 +1175,9 @@ sub get_mpi_install_endian {
     $ret = _endian_to_bitmapped($str);
 
     if (! $ret) {
-        Warning("Could not get endian-ness using \"file\" command.\n");
+        Debug("Could not get endian-ness from $libmpi using \"file\" command.\n");
     } else {
-        Debug("Got endian-ness using \"file\" command.\n");
+        Debug("Got endian-ness using \"file\" command on $libmpi.\n");
         return $ret;
     }
 
@@ -1218,6 +1232,15 @@ sub _find_libmpi {
 
     foreach my $libmpi (@libmpis) {
         if (-e $libmpi) {
+            while (-l $libmpi) {
+                $libmpi = readlink($libmpi);
+                next if (-e $libmpi);
+                $libmpi = "$install_dir/lib/$libmpi";
+                next if (-e $libmpi);
+                Warning("*** Got bogus sym link for libmpi -- points to nothing\n");
+                return $ret;
+            }
+
             $ret = $libmpi;
             last;
         }

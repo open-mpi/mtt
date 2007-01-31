@@ -43,7 +43,7 @@ our $test_exit_status;
 #--------------------------------------------------------------------------
 
 sub Run {
-    my ($ini, $ini_full, $top_dir, $force) = @_;
+    my ($ini, $ini_full, $install_dir, $runs_data_dir, $force) = @_;
 
     # Save the environment
     my %ENV_SAVE = %ENV;
@@ -123,7 +123,8 @@ sub Run {
 
                                     # Alles gut.  Go do it.
                                     _do_run($ini, $section, $test_build, 
-                                            $mpi_install, $top_dir, $force);
+                                            $mpi_install, $install_dir, 
+                                            $runs_data_dir, $force);
                                     %ENV = %ENV_SAVE;
                                 }
                             }
@@ -140,7 +141,8 @@ sub Run {
 #--------------------------------------------------------------------------
 
 sub _do_run {
-    my ($ini, $section, $test_build, $mpi_install, $top_dir, $force) = @_;
+    my ($ini, $section, $test_build, $mpi_install, $install_dir, 
+        $runs_data_dir, $force) = @_;
 
     # Check both specify_module and module (for backcompatibility)
     my $specify_module;
@@ -314,7 +316,8 @@ sub _do_run {
     # If we got a list of tests to run, invoke the run engine to
     # actually run them.
     if ($ret && $ret->{test_result}) {
-        MTT::Test::RunEngine::RunEngine($section, $top_dir, $mpi_details,
+        MTT::Test::RunEngine::RunEngine($section, $install_dir, 
+                                        $runs_data_dir, $mpi_details,
                                         $test_build, $force, $ret);
     }
 

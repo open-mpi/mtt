@@ -179,9 +179,7 @@ sub Build {
                                     Verbose("   Building for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section]\n");
                                     
                                     MTT::DoCommand::Chdir($build_base);
-                                    MTT::DoCommand::Chdir(MTT::Files::make_safe_filename($mpi_install->{mpi_get_simple_section_name}));
-                                    MTT::DoCommand::Chdir(MTT::Files::make_safe_filename($mpi_install->{simple_section_name}));
-                                    MTT::DoCommand::Chdir(MTT::Files::make_safe_filename($mpi_install->{mpi_version}));
+                                    MTT::DoCommand::Chdir($mpi_install->{version_dir});
                                     
                                     # Do the build and restore the environment
                                     _do_build($ini, $section, $build_base, $test_get, $mpi_install);

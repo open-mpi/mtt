@@ -15,11 +15,21 @@ package MTT::DoCommand;
 use strict;
 use POSIX ":sys_wait_h";
 use File::Temp qw(tempfile);
+use Socket;
+use Fcntl qw(F_GETFL F_SETFL O_NONBLOCK);
 use MTT::Messages;
 use Data::Dumper;
 
 # Want to see what MTT *would* do?
 our $no_execute;
+
+#--------------------------------------------------------------------------
+
+my $server_socket;
+
+my $server_addr;
+
+my $tcp_proto;
 
 #--------------------------------------------------------------------------
 
@@ -154,29 +164,79 @@ sub Cmd {
         $max_stdout_lines, $max_stderr_lines) = @_;
 
     Debug("Running command: $cmd\n");
-    pipe OUTread, OUTwrite;
-    pipe ERRread, ERRwrite
-        if (!$merge_output);
+
+    # Perl kills me here.  It does its own buffering of pipes which
+    # interferes with trying to loop over select() and read() from
+    # them (you can end up in a race condition where either select()
+    # lies and the pipe is not ready to read() or the read() ends up
+    # blocking, which pretty much defeats the point).  You also can't
+    # set pipes to be O_NONBLOCK, so that's no good.  You're supposed
+    # to use sysread() with select(), anyway, but sysread requires an
+    # explicit number of bytes to read (which we don't know).  So
+    # that's no good.
+
+    # There are several other non-portable solutions to this (e.g.,
+    # open2(), open3(), the Expect.pm, etc.), but they all require
+    # additional perl items installed.  So just open a pair of tcp
+    # sockets over loopback and do everything that way (because we can
+    # set those to O_NONBLOCK and then select()/sysread() over that).
+    # Sigh.
+    
+    # If we have not already, setup a listening socket
+
+    if (!defined($server_addr)) {
+
+        # This is cached for the client
+        $tcp_proto = getprotobyname('tcp');
+
+        # Open a TCP socket in the top-level global scope
+        socket($server_socket, PF_INET, SOCK_STREAM, $tcp_proto) 
+            || die "socket: $!";
+
+        # Be gentle
+        setsockopt($server_socket, SOL_SOCKET, SO_REUSEADDR, pack("l", 1))
+            || die "setsockopt: $!";
+
+        # Bind it to a random port
+        bind($server_socket, sockaddr_in(undef, INADDR_LOOPBACK))
+            || die "bind: $!";
+
+        # Cache the resulting address ([port,addr] tuple) for the
+        # client
+        $server_addr = getsockname($server_socket);
+
+        # Start listening
+        listen($server_socket, SOMAXCONN)
+            || die "listen: $!";
+    }
 
     # Return value
 
     my $ret;
     $ret->{timed_out} = 0;
 
-    # Child
-
-    my $pid;
-
     # Turn shell-quoted words ("foo bar baz") into individual tokens
 
     my $tokens = _quote_escape($cmd);
 
+    my $pid;
     if (! $no_execute) {
 
+        # Child
         if (($pid = fork()) == 0) {
-            close OUTread;
-            close ERRread
-                if (!$merge_output);
+
+            # Open socket(s) back up to the parent
+
+            socket(OUTwrite, PF_INET, SOCK_STREAM, $tcp_proto)
+                || die "socket: $!";
+            connect(OUTwrite, $server_addr)
+                || die "connect: $!";
+            if (!$merge_output) {
+                socket(ERRwrite, PF_INET, SOCK_STREAM, $tcp_proto)
+                    || die "socket: $!";
+                connect(ERRwrite, $server_addr)
+                    || die "connect: $!";
+            }
 
             close(STDERR);
             if ($merge_output) {
@@ -205,14 +265,30 @@ sub Cmd {
             exec(@$tokens) ||
                 die "Can't execute command: $cmd\n";
         }
-    }
-    else {
+    } else {
+        # For no_execute, just print the command
         print join(" ", @$tokens);
     }
-    close OUTwrite;
-    close ERRwrite
+
+    # Accept two connections from the child
+
+    accept(OUTread, $server_socket);
+    accept(ERRread, $server_socket)
         if (!$merge_output);
 
+    # Set the sockets to be non-blocking
+
+    my $flags;
+    $flags = fcntl(OUTread, F_GETFL, 0)
+        or die "Can't get flags for the socket: $!\n";
+    fcntl(OUTread, F_SETFL, $flags | O_NONBLOCK)
+        or die "Can't set flags for the socket: $!\n";
+    if (!$merge_output) {
+        $flags = fcntl(ERRread, F_GETFL, 0)
+            or die "Can't get flags for the socket: $!\n";
+        fcntl(ERRread, F_SETFL, $flags | O_NONBLOCK)
+            or die "Can't set flags for the socket: $!\n";
+    }
 
     # Return if --no-execute, no output to see
     if ($no_execute) {
@@ -248,8 +324,13 @@ sub Cmd {
     while ($done > 0) {
         my $nfound = select($rout = $rin, undef, undef, $t);
         if (vec($rout, fileno(OUTread), 1) == 1) {
-            my $data = <OUTread>;
-            if (!defined($data)) {
+            # Cannot use normal <OUTread> here, per
+            # http://perldoc.perl.org/functions/select.html.  Do a
+            # sysread() with an arbitrarily large length (pipe is
+            # set to non-blocking, so we're ok).
+            my $data;
+            my $len = sysread(OUTread, $data, 99999);
+            if (0 == $len) {
                 vec($rin, fileno(OUTread), 1) = 0;
                 --$done;
             } else {
@@ -263,8 +344,10 @@ sub Cmd {
         }
 
         if (!$merge_output && vec($rout, fileno(ERRread), 1) == 1) {
-            my $data = <ERRread>;
-            if (!defined($data)) {
+            # See comment above - can't use <ERRread> here
+            my $data;
+            my $len = sysread(ERRread, $data, 99999);
+            if (0 == $len) {
                 vec($rin, fileno(ERRread), 1) = 0;
                 --$done;
             } else {

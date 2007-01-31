@@ -37,6 +37,10 @@ sub Messages {
 
     my $textwrap = $MTT::Globals::Values->{textwrap};
     $Text::Wrap::columns = ($textwrap ? $textwrap : 76);
+
+    # Set autoflush
+    select STDOUT;
+    $| = 1;
 }
 
 sub Error {

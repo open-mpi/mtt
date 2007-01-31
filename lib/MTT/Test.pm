@@ -148,7 +148,7 @@ sub LoadRuns {
     # directories looking for dump files and read them into the
     # appropriate section of the $MTT::Test::runs hash.
 
-    $load_run_file_start_dir = "$dir/$runs_subdir";
+    $load_run_file_start_dir = $dir;
     find(\&load_run_file, $load_run_file_start_dir)
         if (-d $load_run_file_start_dir);
 
@@ -183,9 +183,9 @@ sub LoadRuns {
 }
 
 sub load_run_file {
-    # We only want files named $runs_data_filename
+    # We only want files named "np=[0-9+].$runs_data_filename"
     return 0
-        if (! -f $_ || $runs_data_filename ne $_);
+        if (! -f $_ || $_ !~ /np=[0-9]+.$runs_data_filename/);
 
     # Read in the file
     my $data;
@@ -254,12 +254,11 @@ sub SaveRuns {
                         foreach my $test_name_key (keys(%{$test_run})) {
                             my $test_name = $test_run->{$test_name_key};
 
-                            my @parts = ($runs_subdir, $mpi_get_key, $mpi_version_key, $mpi_install_key, $test_build_key, $test_run_key, $test_name_key, $runs_data_filename);
-                            my $dir;
-                            my $file = "$topdir";
+                            my @parts = ($runs_subdir, $mpi_get_key, $mpi_version_key, $mpi_install_key, $test_build_key, $test_run_key, $test_name_key);
+#, $runs_data_filename);
+                            my $dir = "$topdir";
                             foreach my $d (@parts) {
-                                $dir = $file;
-                                $file .= "/" .
+                                $dir .= "/" .
                                     MTT::Files::make_safe_filename($d);
                             }
                             MTT::Files::mkdir($dir);
@@ -275,8 +274,16 @@ sub SaveRuns {
                                 5 => $test_run_key,
                                 6 => $test_name_key,
                             };
-                            MTT::Files::save_dumpfile($file, $hashname, 
-                                                      $test_name);
+
+                            # Save one file per np value; allows
+                            # multiple np values to be running in
+                            # simultaneous mtt invocations
+                            foreach my $np_key (keys(%{$test_name})) {
+                                $hashname->{7} = $np_key;
+                                my $file = "$dir/np=$np_key.$runs_data_filename";
+                                MTT::Files::save_dumpfile($file, $hashname, 
+                                                          $test_name->{$np_key});
+                            }
                         }
                     }
                 }
