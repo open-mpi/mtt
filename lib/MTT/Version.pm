@@ -16,6 +16,6 @@ use strict;
 # Major and minor version number of the MTT
 
 our $Major = "2";
-our $Minor = "0";
+our $Minor = "1devel";
 
 1;
