@@ -465,6 +465,10 @@ sub _do_install {
     }
     $config->{endian} = $endian;
 
+    # Fetch cluster info (platform and hardware)
+    my $cluster_info = _get_cluster_info();
+    %$config = (%$config, %$cluster_info);
+
     # Unload any loaded environment modules
     if ($#env_modules >= 0) {
         Debug("Unloading environment modules: @env_modules\n");
@@ -477,19 +481,24 @@ sub _do_install {
         my $report = {
             phase => "MPI Install",
 
-            mpi_install_section_name => $config->{simple_section_name},
             bitness => $config->{bitness},
             endian => $config->{endian},
             compiler_name => $config->{compiler_name},
             compiler_version => $config->{compiler_version},
             configure_arguments => $config->{configure_arguments},
             vpath_mode => $config->{vpath_mode},
-            merge_stdout_stderr => "$config->{merge_stdout_stderr}",
+            merge_stdout_stderr => $config->{merge_stdout_stderr},
+            platform_type => $config->{platform_type},
+            platform_hardware => $config->{platform_hardware},
+            os_name => $config->{os_name},
+            os_version => $config->{os_version},
+            hostname => $config->{hostname},
+
             environment => "filled in below",
 
             start_timestamp => $start,
+
             duration => $duration,
-            mpi_details => $mpi_get->{mpi_details},
             mpi_name => $mpi_get->{simple_section_name},
             mpi_version => $mpi_get->{version},
 
@@ -691,6 +700,39 @@ prepend-path LD_LIBRARY_PATH $ret->{libdir}\n";
     } else {
         Verbose("   Skipped MPI install\n");
     }
+}
+
+# Return a hash of hardware and platform information
+sub _get_cluster_info {
+
+    my $info = undef;
+
+    # Try to get a FQDN
+
+    my $hostname = `hostname`;
+    chomp($hostname);
+    Debug("Got hostname: $hostname\n");
+
+    # Find whatami
+
+    my $dir = MTT::FindProgram::FindZeroDir();
+    my $whatami = "$dir/whatami/whatami";
+    if (! -x $whatami) {
+        Error("Cannot find 'whatami' program -- cannot continue\n");
+    }
+    Debug("Found whatami: $whatami\n");
+
+    $info->{platform_type} = `$whatami -t`;
+    chomp($info->{platform_type});
+    $info->{platform_hardware} = `$whatami -m`;
+    chomp($info->{platform_hardware});
+    $info->{os_name} = `$whatami -n`;
+    chomp($info->{os_name});
+    $info->{os_version} = `$whatami -r`;
+    chomp($info->{os_version});
+    $info->{hostname} = $hostname;
+
+    return $info;
 }
 
 1;

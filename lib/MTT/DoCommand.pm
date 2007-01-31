@@ -268,6 +268,12 @@ sub Cmd {
     } else {
         # For no_execute, just print the command
         print join(" ", @$tokens);
+
+        $ret->{timed_out} = 0;
+        $ret->{exit_status} = 0;
+        $ret->{result_stdout} = "";
+        $ret->{result_stderr} = "";
+        return $ret;
     }
 
     # Accept two connections from the child
@@ -288,15 +294,6 @@ sub Cmd {
             or die "Can't get flags for the socket: $!\n";
         fcntl(ERRread, F_SETFL, $flags | O_NONBLOCK)
             or die "Can't set flags for the socket: $!\n";
-    }
-
-    # Return if --no-execute, no output to see
-    if ($no_execute) {
-        $ret->{timed_out} = 0;
-        $ret->{exit_status} = 0;
-        $ret->{result_stdout} = "";
-        $ret->{result_stderr} = "";
-        return $ret;
     }
 
     # Parent

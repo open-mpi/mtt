@@ -203,9 +203,6 @@ sub Submit {
     my $num_results = 0;
     my $server_errors_count = 0;
 
-    # Get a bunch of information about this host
-    my $id = MTT::Reporter::GetID();
-
     # Make a default form that will be used to seed all the forms that
     # will be sent
     my $default_form = {
@@ -216,9 +213,7 @@ sub Submit {
     my $serial_name = $invocation_serial_name;
     my $serial_value = $invocation_serial_value;
 
-    foreach my $k (keys %{$id}) {
-        $default_form->{$k} = $id->{$k};
-    }
+    $default_form->{local_username} = getpwuid($<);
 
     # Now iterate through all the records that were given to submit
     foreach my $phase (keys(%$entries)) {

@@ -61,7 +61,9 @@ sub Get {
     Abort("Could not download latest snapshot number -- aborting\n")
         if (! -f $latest_filename and ! $MTT::DoCommand::no_execute);
     $ret->{version} = `cat $latest_filename`;
-    $ret->{version} = 'no_version' if ($MTT::DoCommand::no_execute);
+
+    # This is useful for scale testing the database
+    $ret->{version} = MTT::Values::RandomString(10) if ($MTT::DoCommand::no_execute);
 
     chomp($ret->{version});
 
