@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2007      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -16,6 +17,12 @@ use strict;
 # Major and minor version number of the MTT
 
 our $Major = "2";
-our $Minor = "0.1";
+our $Minor = "0";
+our $Release = "2";
+our $Greek;
+
+our $Combined = "$Major.$Minor";
+$Combined .= ".$Release" if ("0" ne $Release);
+$Combined .= $Greek if ($Greek);
 
 1;
