@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2006      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -206,8 +206,7 @@ sub Submit {
     # Make a default form that will be used to seed all the forms that
     # will be sent
     my $default_form = {
-        mtt_version_major => $MTT::Version::Major,
-        mtt_version_minor => $MTT::Version::Minor,
+        mtt_client_version => $MTT::Version::Combined,
     };
     my $phase_serials;
     my $serial_name = $invocation_serial_name;
