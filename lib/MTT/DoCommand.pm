@@ -267,7 +267,7 @@ sub Cmd {
         }
     } else {
         # For no_execute, just print the command
-        print join(" ", @$tokens);
+        print join(" ", @$tokens) . "\n";
 
         $ret->{timed_out} = 0;
         $ret->{exit_status} = 0;
