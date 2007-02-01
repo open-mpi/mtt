@@ -618,7 +618,7 @@ function mtt_notice($str) {
 function mtt_send_mail($str) {
 
     # Initialize To: addresses
-    $user    = $_GET['email'];
+    $user    = $_POST['email'];
     $admin   = 'ethan.mallove@sun.com';
     $headers = "From: $admin\r\n" .
                "Reply-To: $admin\r\n";
