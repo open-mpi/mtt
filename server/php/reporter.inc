@@ -57,16 +57,112 @@ define('PATH',    dirname($_SERVER['SCRIPT_NAME']));
 # Return a listing of which results go with which phase
 function phase_results_table() {
 
-    # THESE RESULT STRINGS MUST MATCH THE IDENTIFIERS USED
-    # IN [source:/trunk/server/sql/views.sql]
-    return array(
-        'mpi_install' => 
+    # NOTE: WE CAN'T MAKE $ret STATIC, SINCE IT GETS USED
+    # FOR COMPOSING THE QUERY, AND ALSO FOR SUMMARY TABLE
+    # HEADERS 
+
+    # Setup results cases for the *temporary* view
+    $result_name = 'test_result';
+    $ret['cases'] = array(
+        'mpi_install' =>
+            array(
+                "(CASE WHEN
+                  $result_name = 1
+                  THEN '_ip' END) as pass",
+                "(CASE WHEN
+                  $result_name = 0
+                  THEN '_if' END) as fail",
+                "'' as skipped",
+                "'' as timed_out",
+                "'' as latency_bandwidth"
+            ),
+        "test_build"  =>
+            array(
+                "(CASE WHEN
+                  $result_name = 1
+                  THEN '_bp' END) as pass",
+                "(CASE WHEN
+                  $result_name = 0
+                  THEN '_bf' END) as fail",
+                "'' as skipped",
+                "'' as timed_out",
+                "'' as latency_bandwidth"
+            ),
+        "test_run"    =>
+            array(
+                "(CASE WHEN
+                  $result_name = 1
+                  THEN '_rp' END) as pass",
+                "(CASE WHEN
+                  $result_name = 0
+                  THEN '_rf' END) as fail",
+                "(CASE WHEN
+                  $result_name = 2
+                  THEN '_rs' END) as skipped",
+                "(CASE WHEN
+                  $result_name = 3
+                  THEN '_rt' END) as timed_out",
+                "(CASE WHEN
+                  results.latency_bandwidth_id != -38
+                  THEN '_rl' END) as latency_bandwidth"
+            ),
+    );
+
+    # Setup aggregate clauses for to get from the
+    # *temporary* table
+    $ret['aggregates'] = array(
+        'mpi_install' =>
             array('_ip', '_if'),
-        'test_build'  => 
+        'test_build'  =>
             array('_bp', '_bf'),
-        'test_run'    => 
+        'test_run'    =>
             array('_rp', '_rf', '_rs', '_rt', '_rl'),
     );
+
+    return $ret;
+}
+
+# Return a listing JOIN clauses for each phase type
+function setup_joins() {
+
+    static $ret;
+    if ($ret)
+        return $ret;
+
+    # Indent these JOIN clauses so they'll line up
+    # in the SQL debug output correctly
+    $ret = array(
+
+    'mpi_install' => '
+        (results NATURAL JOIN submit) JOIN 
+            (mpi_install NATURAL JOIN
+              compute_cluster NATURAL JOIN
+                compiler NATURAL JOIN
+                    mpi_get)
+        ON (results.phase = 1 AND phase_id = mpi_install_id)',
+
+    'test_build' => '
+        (results NATURAL JOIN submit) JOIN 
+            (test_build NATURAL JOIN
+                (mpi_install NATURAL JOIN
+                  compute_cluster NATURAL JOIN
+                    compiler NATURAL JOIN
+                        mpi_get))
+        ON (results.phase = 2 AND phase_id = test_build_id)',
+    'test_run' => '
+        (results NATURAL JOIN submit) JOIN
+            (test_run NATURAL JOIN
+                test_build NATURAL JOIN
+                    (mpi_install NATURAL JOIN
+                      compute_cluster NATURAL JOIN
+                        compiler NATURAL JOIN
+                            mpi_get))
+        ON (results.phase = 3 AND phase_id = test_run_id)
+        LEFT OUTER JOIN latency_bandwidth 
+            USING (latency_bandwidth_id)',
+    );
+
+    return $ret;
 }
 
 # Return a list of preferences to hand off to prefs_popup
@@ -161,7 +257,7 @@ function setup_advanced($params) {
             $menu =
                 array_merge(
                     $menu,
-                    array('test_run' => 
+                    array('test_run' =>
                         array(
                             'variant'   => array('', $control),
                             'test_name' => array('', $control),
@@ -191,7 +287,7 @@ function setup_advanced($params) {
 
 # Display more human-readable labels
 function label($str) {
-    
+
     static $labels;
 
     if (! $labels) {
@@ -285,7 +381,7 @@ function label($str) {
             "skipped"           => "Skip",
             "timed_out"         => "Timed",
             "latency_bandwidth" => "Perf",
-            
+
             # Latency/bandwidth
             "latency_avg"       => "Latency (avg)",
             "latency_min"       => "Latency (min)",
@@ -328,7 +424,7 @@ function label($str) {
         return $labels[$str];
     elseif (isset($labels[strip_prefix($str)]))
         return $labels[strip_prefix($str)];
-    else 
+    else
         return $str;
 }
 
@@ -426,6 +522,35 @@ function setup_mainwin_fields($phases) {
     return $ret;
 }
 
+function setup_bitmapped_fields() {
+
+    static $ret;
+    if ($ret)
+        return $ret;
+    
+    $ret = array(
+        "bitness" => "(CASE
+             WHEN (bitness)                               = 0 THEN 'unknown'
+             WHEN (bitness # (0 | (1 << 2) | (1 << 3)))   = 0 THEN '32/64'
+             WHEN (bitness & (0 | (1 << 2)))             != 0 THEN '32'
+             WHEN (bitness & (0 | (1 << 3)))             != 0 THEN '64'
+             WHEN (bitness & (0 | (1 << 0)))             != 0 THEN '8'
+             WHEN (bitness & (0 | (1 << 1)))             != 0 THEN '16'
+             WHEN (bitness & (0 | (1 << 4)))             != 0 THEN '128'
+             ELSE 'unknown' END) as bitness",
+        "endian" => "(CASE
+             WHEN (endian & (0 | (1 << 0)))              != 0 THEN 'little'
+             WHEN (endian & (0 | (1 << 1)))              != 0 THEN 'big'
+             ELSE 'unknown' END) as endian",
+        "vpath_mode" => "(CASE
+             WHEN (vpath_mode & (0 | (1 << 0)))          != 0 THEN 'relative'
+             WHEN (vpath_mode & (0 | (1 << 1)))          != 0 THEN 'absolute'
+             ELSE 'unknown' END) as vpath_mode",
+    );
+    return $ret;
+}
+
+
 # Grab the report type from either a button click or a drilldown's "go"
 function get_go_or_click($params) {
     return isset($params['click']) ? $params['click'] : $params['go'];
@@ -436,14 +561,17 @@ function developer_params() {
     static $params;
     if (! $params)
         $params = array(
-            'dev'        => null,
-            'sql'        => null,
-            'cgi'        => null,
-            'debug'      => null,
-            'stats'      => null,
-            'no_cache'   => null,
-            'no_cookies' => null,
-            'db'         => null,
+            'dev'          => null,
+            'sql'          => null,
+            'cgi'          => null,
+            'debug'        => null,
+            'stats'        => null,
+            'explain'      => null,
+            'analyze'      => null,
+            'no_cache'     => null,
+            'no_cookies'   => null,
+            'db'           => null,
+            'dynamic_view' => null,
         );
     return $params;
 }
@@ -466,10 +594,11 @@ function form_carryover($defaults, $phase) {
     foreach (array_keys($defaults) as $k) {
 
         # Only deal with text fields
-        if ($k == 'show' or 
+        if ($k == 'show' or
             $k == 'phase' or
             $k == 'go' or
-            $k == 'dev')
+            $k == 'dev' or
+            $k == 'archive')
             continue;
 
         $textfield = "text_$k";
@@ -539,6 +668,10 @@ function form_carryover($defaults, $phase) {
     unset($params['offset']);
     unset($params['rows']);
     unset($params['slice']);
+
+    # 'archive' boolean setting
+    if (isset($_GET['archive']))
+        $params['archive'] = 1;
 
     return $params;
 }
@@ -619,7 +752,7 @@ function debug($str) {
 }
 
 function stats($str) {
-    if ($_GET['stats'] == 'on')
+    if (isset($_GET['stats']) == 'on')
         print("\n<pre>$str</pre>");
 }
 
@@ -627,7 +760,7 @@ function stats($str) {
 function var_dump_html($desc, $var) {
     if ($_GET['debug'] == 'on' or
         $_GET['dev'] == 'on')
-        var_dump("\n<br>" . 
+        var_dump("\n<br>" .
                     "<div align='left'>" .
                     "<pre>$desc",$var,"</div>");
 }
@@ -635,7 +768,7 @@ function var_dump_html($desc, $var) {
 # Print SQL if they want it
 function debug_sql($cmd, $level) {
     $trace = $_GET['sql'];
-    if ($trace == $level)
+    if ($trace >= $level)
         print("\n<pre>SQL: $cmd</pre>");
 }
 

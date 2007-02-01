@@ -20,12 +20,15 @@ $ompi_home = '/l/osl/www/doc/www.open-mpi.org';
 include_once("$ompi_home/dbpassword.inc");
 include_once("$topdir/reporter.inc");
 
-$dbname = 'mtt3';
-
-# Setup db connection
-if (isset($_GET['db']))
-    if (preg_match("/mtt/i", $_GET['db']))
-        $dbname = $_GET['db'];
+# Select a database name
+# (No archive database in place a the moment)
+if (isset($_GET['archive'])) {
+    $dbname = "mtt3";
+} elseif (preg_match("/mtt/i", $_GET['db'])) {
+    $dbname = $_GET['db'];
+} else {
+    $dbname = "mtt3";
+}
 
 # Function used to determine which _POST fields
 # to INSERT. Prevent non-existent fields from being
@@ -103,7 +106,7 @@ function do_pg_connect() {
         $pgsql_conn = 
             pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass");
         if (!$pgsql_conn) {
-            print("\nCould not connect to database.");
+            print("\nCould not connect to '$dbname' database.");
             exit;
         }
         $connected = true;

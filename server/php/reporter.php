@@ -24,7 +24,13 @@ if (isset($_GET['debug'])) {
     $_GET['verbose'] = 'on';
     $_GET['dev']     = 'on';
     $_GET['cgi']     = 'on';
-    $_GET['stats']   = 'on';
+}
+
+# 'stats' and 'explain' would not make sense without 'sql'
+if (isset($_GET['stats']) or 
+    isset($_GET['explain']) or 
+    isset($_GET['analyze'])) {
+    $_GET['sql'] = '2';
 }
 
 # Set PHP trace levels
@@ -53,8 +59,16 @@ if (! is_null($do_redir))
 elseif (! is_null($make_redir))
     make_redir($_GET);
 
+# Keep track of time
+$start = time();
+
 # Display a query screen and report
 dump_report();
+
+# Report on script's execution time
+$finish = time();
+$elapsed = $finish - $start;
+stats("\nTotal script execution time: " . $elapsed . " seconds");
 
 # Display input parameters
 debug_cgi($_GET, "GET " . __LINE__);

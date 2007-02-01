@@ -56,6 +56,9 @@ function dump_report() {
         # (they need to come first, because _GET could be mutated here)
         $report_type = process_report_type($_GET);
 
+        # Tweak some postgres options for this session
+        process_postgres_options($_GET);
+
         # There are oddball field(s) that we constrain *for* the user
         process_oddball_fields($_GET);
 
@@ -68,7 +71,11 @@ function dump_report() {
         $sort_field      = process_sort_field($_GET);
         $offset_field    = process_offset_field($_GET);
 
-        $trial_field     = process_trial_field(TRIAL);
+        # Display results run with --trial option
+        $trial_field = process_trial_field(TRIAL);
+
+        # Display what the query planner is thinking
+        $explain = process_explain_field($_GET);
 
         # Print either a summary or detail report,
         # depending on whether a 'select_more' parameter is set
@@ -103,14 +110,16 @@ function dump_report() {
         $query['phases'] = $phases;
 
         # Compose query
-        $cmd = compose_sql($query);
+        $ret = compose_sql_select($query);
+
+        $sql_cmd   = $ret['sql_cmd'];
+        $row_count = $ret['row_count'];
 
         # Execute query
-        $resource = do_pg_query($cmd);
+        $resource = do_pg_query($sql_cmd);
 
         # Number of rows in this report
-        $rowcount = pg_num_rows($resource);
-        $n = rowcount($rowcount, $_GET);
+        $n = row_count($row_count, $_GET);
         $o = offset($_GET);
 
         # Prepare headers array for *_table functions
@@ -123,7 +132,7 @@ function dump_report() {
     }
 
     # Print the user query screen
-    dump_query_screen($nogo);
+    dump_query_screen($nogo, $sql_cmd);
 
     # Exit if a button hasn't been pressed
     if ($nogo)
@@ -170,7 +179,8 @@ function dump_report() {
 function detail_table($headers, $resource) {
 
     # Print result headers
-    $phase_results_table = phase_results_table();
+    $arr = phase_results_table();
+    $phase_results_table = $arr['aggregates'];
     $num_cols['results'] = 0;
     foreach ($headers['phases'] as $phase) {
         $num_cols['results'] += sizeof($phase_results_table[$phase]);
@@ -365,7 +375,8 @@ function summary_table($headers, $resource, $filter) {
             printf("\n<th id='result' bgcolor='" . THCOLOR . "'>%s", $result);
 
     # Calculate some colspans
-    $phase_results_table = phase_results_table();
+    $arr = phase_results_table();
+    $phase_results_table = $arr['aggregates'];
     $num_cols['results'] = 0;
     foreach ($headers['phases'] as $phase) {
         $num_cols['results'] += sizeof($phase_results_table[$phase]);
@@ -666,8 +677,9 @@ function do_graph($data, $type) {
          $subtitle) = collect_graph_data($data, $type);
 
     # Return nothing if we have no line plots
-    if (is_null($lineplots))
-      return;
+    if (is_null($lineplots)) {
+        return;
+    }
 
     list($width, 
          $height,
@@ -749,7 +761,7 @@ function do_graph($data, $type) {
     # Write the graph to a file
     # (Timestamp it so the browser doesn't reload a cached
     # image when/if the user changes a graphing preference)
-    $filename = "./tmp/".time().'_'.title2filename($title.' '.$type.' '.$subtitle).'.png';
+    $filename = "tmp/".time().'_'.title2filename($title.' '.$type.' '.$subtitle).'.png';
     unlink($filename);
     $graph->Stroke($filename);
 
@@ -767,8 +779,9 @@ function do_graph($data, $type) {
 
     $arr = prepare_raw_data_arr($meta_data, $table_data);
     $raw = prepare_raw_data_links($arr);
+    $top = DOCROOT;
 
-    $image = "<img src='$filename' " .
+    $image = "<img src='$top/$filename' " .
                   "alt='$title' " .
                   "border='0'>";
 
@@ -989,31 +1002,35 @@ function prepare_raw_data_links($arr) {
 
     # Setup list of raw data formats
     $styles = array(
-                'HTML' => 'html', 
+                'HTML' => 'html',
                 'CSV'  => 'text');
 
     # Provide popups for raw data
     foreach (array_keys($styles) as $style) {
         $ctype = strtolower($styles[$style]);
 
-        if ($ctype == 'html')
-            $raw .=
+        if ($ctype == 'html') {
+            $raw_links .=
                 "\n<a class='black_ln' href='javascript:popup_${ctype}(" .
                     "\n\"" . $rwidth . "\", " .
                     "\n\"" . $rheight . "\"," .
                     "\n\"Raw performance numbers\"," .
                     "\n\"\"," .
-                    "\n\"" . htmlentities(raw_data($arr, $style), ENT_QUOTES) . "\"," .
+                    "\n\"" . htmlentities(raw_data_content($arr, $style), ENT_QUOTES) . "\"," .
                     "\n\"font-family:Courier,monospace\"" .
                 ")' " .
                 ">" .
                 "\n$style" .
                 "</a>&nbsp;";
-        elseif ($ctype == 'text')
-            $raw .=
-                "\n<a href='" . raw_data($arr, $style) . "'>$style</a>&nbsp;";
+
+        } elseif ($ctype == 'text') {
+            $top = DOCROOT;
+            $raw_links .=
+                "\n<a href='$top/" . raw_data_content($arr, $style) . "'>$style</a>&nbsp;";
+        }
     }
-    return $raw;
+
+    return $raw_links;
 }
 
 # Max-out/bottom-out image/font size
@@ -1032,9 +1049,12 @@ function constrain_graph_attrs($width) {
 # HTML: returns HTML string
 # CSV: returns .csv filename 
 #
-# X: IT WOULD BE PREFERABLE TO DO CSV THE SAME WAY WE DO HTML
-# SO THAT THE LINK NEVER "EXPIRES"
-function raw_data($arr, $style) {
+# X: IT WOULD BE PREFERABLE TO DO CSV THE SAME WAY WE DO HTML.
+# FOR BOTH CONSITENCY, AND SO THAT THE LINK NEVER "EXPIRES"
+function raw_data_content($arr, $style) {
+
+    # Prepare a var to store all the content
+    $content = '';
 
     # Headers are always here
     $colspan = sizeof($arr[5]) - 1;
@@ -1100,7 +1120,7 @@ function raw_data($arr, $style) {
     eval("\$subtitle = $nl2br(\$arr[\$i]);");
 
     # Prepare a logical filename for the CSV file
-    $filename = './tmp/'.title2filename($title.$subtitle).'.csv';
+    $filename = "tmp/".title2filename($title.$subtitle).".csv";
 
     eval("\$subtitle = $unalign(\$subtitle);");
     $content .= "$br<b><i>" . font('-1', $subtitle) . "</b></i>";
@@ -1147,22 +1167,68 @@ function raw_data($arr, $style) {
 
     # Write the CSV to a file
     if (strtolower($style) == 'csv') {
-        unlink($filename);
-        $fh = fopen($filename, 'x');
-        fwrite($fh, $content);
-        fclose($fh);
+        $filename = write_to_file($filename, $content);
         return $filename;
     }
     # Return an HTML string
-    else
+    else {
         return $content;
+    }
 }
 
+# Write content to a file
+function write_to_file($filename, $content) {
+    unlink($filename);
+    $fh = fopen($filename, 'x');
+    fwrite($fh, $content);
+    fclose($fh);
+    return $filename;
+}
+
+# Convert an graph's title to a filename
+# (for use in links to .csv files)
 function title2filename($str) {
     $cclass = '[a-zA-Z0-9_ \t]';
     $str = preg_replace("/$cclass+:\s+/", "_", $str);
     $str = preg_replace('/\s+|\n+|\r+/', '_', $str);
     return $str;
+}
+
+# Convert input parameters to a filename
+# (for use in links to *-explain.txt files)
+function params2filename($params) {
+
+    $tokens[] = process_report_type($_GET);
+
+    foreach (array_keys($params) as $k) {
+        $value = $params[$k];
+
+        # Phase and text fields
+        if (((strpos($k, 'text_') !== false) or
+             (strpos($k, 'phase') !== false)) 
+            and
+            (($value != 'all') and
+             ($value != ''))) {
+
+            $str = $value;
+            $str = preg_replace('/\s+/', '_', $str);
+            $str = preg_replace('/\W+/', '', $str);
+            $filename .= $str . '_';
+        }
+        # postgres options
+        elseif (strpos($k, 'pg_') !== false) {
+            $filename .= "$k=${value}_";
+        }
+    }
+
+    # Other SQL params
+    $tokens[] = isset($params['dynamic_view']) ? 'dynamic_view_' : '';
+    $tokens[] = isset($params['explain'])      ? 'explain_'      : '';
+    $tokens[] = isset($params['analyze'])      ? 'analyze_'      : '';
+
+    $filename .= '_' . join('_', $tokens);
+
+    return $filename;
 }
 
 function strip_html($str) {
@@ -1452,8 +1518,10 @@ function drilldown_links() {
     $argc = func_num_args();
 
     static $phase_results_table;
-    if (! $phase_results_table)
-        $phase_results_table = phase_results_table();
+    if (! $phase_results_table) {
+        $arr = phase_results_table();
+        $phase_results_table = $arr['aggregates'];
+    }
 
     $self = 'http://' . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'];
     $format = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
@@ -1766,7 +1834,7 @@ function exact_match($param, $str) {
 # resource will contain only LIMIT rows despite the same
 # query minus the LIMIT clause returning more than LIMIT
 # rows)
-function rowcount($n, $params) {
+function row_count($n, $params) {
     # LIMIT has not been used
     if (! isset($params['rows']))
         return $n;
@@ -1881,10 +1949,15 @@ function basic_info($date_fields, $phases, $num_rows) {
 #########################################
 
 # Compose an SQL SELECT statement
-function compose_sql($query) {
+function compose_sql_select($query) {
 
     $selects = array();
     $nl = "\n\t";
+
+    # Process SQL params
+    $dynamic_view = isset($_GET['dynamic_view']) ? 1 : 0;
+    $explain      = isset($_GET['explain'])      ? 1 : 0;
+    $analyze      = isset($_GET['analyze'])      ? 1 : 0;
 
     # Setup a temporary TABLE/SEQUENCE 
     # NOTE: the above so-called temporary SQL relations are
@@ -1902,10 +1975,15 @@ function compose_sql($query) {
 
     # Handle LIMIT + OFFSET
     $offset = offset($query);
+    $limit  = LIMIT;
 
-    # Prepare default return statement
-    $select_star = "SELECT * FROM $ttable %s;";
-    $ret = sprintf($select_star, '');
+    # Prepare printf format for default return query
+    $select_star  = "";
+    $select_star .= "\nSELECT * FROM $ttable ";
+    $select_star .= "  %s";
+    $select_star .= "\nLIMIT $limit OFFSET $offset";
+    $select_star .= "\n;";
+    $ret['sql_cmd']   = sprintf($select_star, '');
 
     # Just select from the last ttable if we do not need to
     # prepare a new one
@@ -1928,21 +2006,20 @@ function compose_sql($query) {
         if ($orderby)
             $criteria .= "\nORDER BY " . $orderby;
 
-        if ($offset)
-            $criteria .= "\nLIMIT " . LIMIT . " OFFSET $offset";
-
-        $criteria .= ';';
-
-        $ret = sprintf($select_star, $criteria);
+        $ret['sql_cmd'] = sprintf($select_star, $criteria);
 
         return $ret;
     }
 
-    # Determine table (or views) to SELECT from
-    if (sizeof($query['phases']) > 1)
-        $tables = array('all_view');
+    # Select or create a VIEW to tally the results in
+    $phases = $query['phases'];
+
+    if ($dynamic_view)
+        $view = compose_sql_view($query, $phases);
+    elseif (sizeof($phases) > 1)
+        $view = 'all_view';
     else
-        $tables = suffix_list($query['phases'], '_view');
+        $view = $phases[0] . '_view';
 
     foreach (array_keys($query['aggregates']) as $aggregate) {
         $aggregates[] = $query['aggregates'][$aggregate];
@@ -1992,17 +2069,20 @@ function compose_sql($query) {
         array_unshift($orderbys, $orderby . $direction);
     }
     
-    # Row numbering is always the hidden primary sort key
-    $offset = offset($query);
+    # Piece together all the clauses ...
 
-    # Piece together all the clauses
-    $cmd  = "\n SELECT " .
+    if ($explain)
+        $cmd .= "\n EXPLAIN ";
+
+    if ($analyze)
+        $cmd .= "\n ANALYZE ";
+
+    $cmd .= "\n SELECT " .
                 "$nl" . join(",$nl", $selects);
 
     $cmd .= "\n INTO TABLE $ttable ";
 
-    $cmd .= "\n FROM " .
-                "$nl" . join(",$nl", $tables);
+    $cmd .= "\n FROM $view ";
 
     if ($wheres) {
         $cmd .= "\n WHERE " .
@@ -2017,15 +2097,127 @@ function compose_sql($query) {
                     "$nl" . join(",$nl ", $orderbys) .
                     "$nl $direction";
     }
-    if ($offset)
-        $cmd .= "\n LIMIT " . LIMIT . " OFFSET $offset";
 
     $cmd .= ";";
 
-    debug_sql($cmd, 1);
-    do_pg_query($cmd);
+    # Just execute the query, but ''delay'' bringover over the
+    # results because it could max out PHP's 16MB (give or
+    # take) memory limit.  This way we can *always* apply 
+    # a LIMIT clause to the SELECT
+    if (! $explain) {
+        do_pg_query($cmd);
+
+        $cmd = "\nSELECT COUNT(*) FROM $ttable;";
+        $rows = select_scalar($cmd);
+
+        # Return the number of rows
+        # (Note: if we SELECT from the ttable - like above -
+        # then we do not need to calculate the rows because
+        # that number gets carried over via a hidden
+        # parameter)
+        $ret['row_count'] = $rows;
+
+    # Output query plan to browser and file
+    # (Mostly just for SQL nerds)
+    } else {
+        $resource = do_pg_query($cmd);
+
+        $arr = pg_fetch_all($resource);
+
+        foreach (array_keys($arr) as $i)
+            foreach ($arr[$i] as $line)
+                $plan[] = $line;
+
+        $filename = 'tmp/' . params2filename($_GET) . '.txt';
+        $plan_txt = join("\n", $plan);
+
+        # Write plan to a file (for right-click Save)
+        write_to_file($filename, $plan_txt);
+
+        # Write plan to browser
+        debug_sql($plan_txt);
+
+        $top = DOCROOT;
+
+        print "<br><a href='$top/$filename'>Query plan</a>";
+    }
 
     return $ret;
+}
+
+# Compose an unfiltered VIEW on-the-fly with SELECTs
+#
+# THIS FUNCTION WOULD SEEM - AT FIRST - TO BE AN
+# OPTIMIZATION (CREATE A VIEW WITH FEWER COLUMNS THAN THE
+# STATIC VIEWS IN [SOURCE:/TRUNK/SERVER/SQL/VIEWS.SQL]. BUT
+# IS IT?
+function compose_sql_view($query, $phases) {
+
+    # JOIN clauses for each phase setting
+    $joins = setup_joins();
+
+    # ''temporary'' VIEW
+    $ttable_id = $query['ttable_id'];
+    $view = "mtttemp_${ttable_id}_view";
+
+    $nl = "\n\t";
+
+    # Do not row number for the VIEW
+    unset($query['select']['n']);
+
+    # We always need the start_timestamp in the VIEW
+    $query['select']['start_timestamp'] = 'start_timestamp';
+
+    # Setup phase-results array
+    $arr = phase_results_table();
+    $results = $arr['cases'];
+
+    # Handle special bitmapped fields
+    $bitmapped_fields = setup_bitmapped_fields();
+    foreach (array_keys($bitmapped_fields) as $field) {
+        if (isset($query['select'][$field]))
+            $query['select'][$field] = $bitmapped_fields[$field];
+    }
+
+    # Sanity check. If a column is in a WHERE clause,
+    # it must also be in the first SELECT and the column
+    # must exist (e.g., can not be a result code column, e.g., _rp)
+    foreach (array_keys($query['where']) as $field) {
+
+        if (! isset($query['select'][$field]) and column_exists2($field))
+            $query['select'][$field] = $field;
+    }
+
+    # Iterate over the phase tables
+    foreach ($phases as $phase) {
+
+        # Compile values for SELECT clauses
+        $selects = array_unique(
+            array_merge(
+                $query['select'],
+                $results[$phase],
+                $query['select_more'],
+                $query['performance']
+            )
+        );
+
+        # Piece together all the clauses
+        $cmd  = "\n SELECT " .
+                    "$nl" . join(",$nl", $selects);
+
+        $cmd .= "\n FROM " . 
+                    "$nl". $joins[$phase];
+
+        $cmds[] = $cmd;
+    }
+
+    # Create the VIEW as a UNION of one or more phase SELECTs
+    $cmd = "\nCREATE OR REPLACE VIEW $view AS " .
+                join("\n UNION ALL ", $cmds) . ";";
+
+    $resource = do_pg_query($cmd);
+
+    return $view;
 }
 
 # Return the array values that are a depth of 
@@ -2042,7 +2234,44 @@ function column_exists($column, $table) {
     return select_scalar("SELECT 1 FROM information_schema.columns " .
                             "WHERE column_name = '$column' AND " .
                                 "table_name = '$table'");
+}
 
+# Return 1 if $column exists in $dbname
+function column_exists2($column) {
+
+    static $columns;
+    if (! $columns) {
+
+        $tables = array(
+            'compute_cluster',
+            'submit',
+            'mpi_get',
+            'compiler',
+            'mpi_install',
+            'test_build',
+            'test_run',
+            'results',
+            'latency_bandwidth',
+        );
+
+        foreach ($tables as $table) {
+            $wheres[] = "table_name = '$table'";
+        }
+
+        $cmd = "\n   SELECT column_name " .
+               "\n\t FROM information_schema.columns WHERE \n\t" .
+                join(" OR \n\t", $wheres) . ";";
+
+        $columns = simple_select($cmd);
+    }
+
+    return (array_search($column, $columns) !== false);
+}
+
+# Return 1 if the $table exists in the database
+function table_exists($table) {
+    return select_scalar("SELECT 1 FROM information_schema.tables " .
+                            "WHERE table_name = '$table'");
 }
 
 #########################################
@@ -2050,7 +2279,7 @@ function column_exists($column, $table) {
 #  Input Processing Functions          
 #                                     
 # The following process_*_field(s) functions return arrays
-# ready to be fed to compose_sql. The query array is
+# ready to be fed to compose_sql_select. The query array is
 # structured more or less like an SQL SELECT statement:
 #
 # All SELECT items (including aggregates) are formatted as:
@@ -2228,30 +2457,31 @@ function process_date_field($params) {
     $nl = "\n\t";
 
     # Remove the GMT offset from fetched string
-    $format = "replace(date_trunc('second', %s), '+00', '')";
+    $trunc_format = "date_trunc('second', %s)";
 
     # Grab global TIMEZONE constant
     $timezone = strtoupper(TIMEZONE);
 
-    $now = select_scalar("SELECT " . sprintf($format, "now() AT TIME ZONE '$timezone'"));
+    $now = select_scalar("SELECT " . sprintf($trunc_format, "now() AT TIME ZONE '$timezone'"));
     $date['current'] = $now;
 
-    $timestamp_name      = "start_timestamp";
-    $time_at_timezone    = "CAST($timestamp_name as TIMESTAMP WITH TIME ZONE) AT TIME ZONE '$timezone'";
-    $timestamp_param     = $params["text_$timestamp_name"];
+    $timestamp_name = "start_timestamp";
+    $starttime_at_timezone = "CAST($timestamp_name as TIMESTAMP WITH TIME ZONE) AT TIME ZONE '$timezone'";
+    $time_at_timezone_fmt = "$nl CAST('%s' as TIMESTAMP WITH TIME ZONE) AT TIME ZONE '$timezone'";
+    $timestamp_param  = $params["text_$timestamp_name"];
 
     # This will immediately put reporter.php in ''absolute date range'' mode
     $force_absolute_date = $params["force_absolute_date"];
 
     # Date-string functions
-    $format2 = "\n substring($time_at_timezone from 0 for %d) || ':00 - ' || " .
-               "\n substring($time_at_timezone + interval '1 %s' from 0 for %d)  || ':00' " .
-               "\n   as $timestamp_name";
-    $format3 = "\n substring($time_at_timezone from 0 for %d) || ' - ' || " .
-               "\n substring($time_at_timezone + interval '1 %s' from 0 for %d) " .
-               "\n   as $timestamp_name";
-    $format4 = "\n $time_at_timezone " .
-               "\n   as $timestamp_name";
+    $format2 = "substring($starttime_at_timezone from 0 for %d) || ':00 - ' || " .
+               "$nl substring($starttime_at_timezone + interval '1 %s' from 0 for %d)  || ':00' " .
+               "$nl   as $timestamp_name";
+    $format3 = "substring($starttime_at_timezone from 0 for %d) || ' - ' || " .
+               "$nl substring($starttime_at_timezone + interval '1 %s' from 0 for %d) " .
+               "$nl   as $timestamp_name";
+    $format4 = "$starttime_at_timezone " .
+               "$nl   as $timestamp_name";
 
     if (preg_match($c, $timestamp_param, $m))
         $tokens = tokenize($timestamp_param);
@@ -2266,16 +2496,16 @@ function process_date_field($params) {
             # Yesterday
             if (preg_match("/yesterday/i", $token, $m)) {
                 $operand = "'yesterday' AT TIME ZONE '$timezone'";
-                $where = "$time_at_timezone > $operand";
+                $where = "$starttime_at_timezone > $operand";
                 $absolute =
-                    select_scalar("SELECT " . sprintf($format, $operand)) . " - $now";
+                    select_scalar("SELECT " . sprintf($trunc_format, $operand)) . " - $now";
             }
             # Today
             elseif (preg_match("/today/i", $token, $m)) {
                 $operand = "'today' AT TIME ZONE '$timezone'";
-                $where = "$time_at_timezone > $operand";
+                $where = "$starttime_at_timezone > $operand";
                 $absolute =
-                    select_scalar("SELECT " . sprintf($format, $operand)) . " - $now";
+                    select_scalar("SELECT " . sprintf($trunc_format, $operand)) . " - $now";
             }
             # Past x increments
             elseif (preg_match(
@@ -2283,30 +2513,30 @@ function process_date_field($params) {
                         "(\w+)$sep*" .
                         "(\w+)/i", $token, $m)) {
 
-                $operand = "now()  AT TIME ZONE '$timezone' - interval '" . strtonumeral($m[1]) . " $m[2]'";
-                $where = "$time_at_timezone > $operand";
-                $absolute =
-                    select_scalar("SELECT " . sprintf($format, $operand)) . " - $now";
+                $operand    = "now() AT TIME ZONE '$timezone' - interval '" . strtonumeral($m[1]) . " $m[2]'";
+                $start_time = select_scalar("SELECT " . sprintf($trunc_format, $operand));
+                $where      = "$starttime_at_timezone > " . sprintf($time_at_timezone_fmt, $start_time);
+                $absolute   = "$start_time - $now";
             }
             # Range (e.g., date1 - date2)
             elseif (preg_match("/(?:between)?" .
                                 "(.*)" .
-                                "(?:through|thru|and| - )" .
+                                "(?:through|thru|and| +- +)" .
                                 "(.*)/i", $token, $m)) {
                 $where =
-                    "$time_at_timezone > '$m[1]'" . " AND $nl" .
-                    "$time_at_timezone < '$m[2]'";
+                    "$starttime_at_timezone > '$m[1]'" . " AND " .
+                    "$nl $starttime_at_timezone < '$m[2]'";
                 $absolute = "$m[1] - $m[2]";
             }
             # Exact date
             elseif (preg_match("/-|\//", $token)) {
-                $where = "$time_at_timezone = '$token'";
+                $where = "$starttime_at_timezone = '$token'";
                 $absolute = $token;
             }
             # Nothing (used to prevent an SQL error on a
             # clean bring-up of reporter.php)
             else {
-                $where = "$time_at_timezone = 'now()'";
+                $where = "$starttime_at_timezone = 'now()'";
             }
         }
         # Do date aggregation
@@ -2346,9 +2576,9 @@ function process_date_field($params) {
     # OUGHT TO PRINT A JAVASCRIPT ALERT AS WELL
     if (! $where) {
         $operand = "now() AT TIME ZONE '$timezone' - interval '24 hours'";
-        $where = "$time_at_timezone > $operand";
+        $where = "$starttime_at_timezone > $operand";
         $absolute =
-            select_scalar("SELECT " . sprintf($format, $operand)) . " - $now";
+            select_scalar("SELECT " . sprintf($trunc_format, $operand)) . " - $now";
         $date['select'][$timestamp_name] = $timestamp_name;
     }
 
@@ -2378,12 +2608,14 @@ function process_result_fields($phases, $params) {
 
     $test_result = $params['test_result'];
 
-    $table = phase_results_table();
+    $arr = phase_results_table();
+    $table = $arr['aggregates'];
 
-    $format = "COUNT(CASE WHEN %s THEN '%s' END) as %s";
+    $format_agg = "COUNT(CASE WHEN %s THEN '%s' END) as %s";
 
     foreach (array_keys($table) as $phase) {
         foreach ($table[$phase] as $result) {
+
             if (array_search($phase, $phases) !== false) {
 
                 # The result alias has gone from
@@ -2393,8 +2625,9 @@ function process_result_fields($phases, $params) {
                 else
                     $when[$result] = "$result > 0";
 
+                # These clauses SELECT from the TABLE
                 $results['aggregates'][$result] =
-                    sprintf($format, $when[$result], $result, $result);
+                    sprintf($format_agg, $when[$result], $result, $result);
             }
         }
     }
@@ -2412,7 +2645,7 @@ function process_offset_field($params) {
 }
 
 # This function always returns a 'ttable_id' for
-# compose_sql, whether it is a new or recycled ttable
+# compose_sql_select, whether it is a new or recycled ttable
 function process_ttable_id_field($params) {
 
     global $new_ttable;
@@ -2425,9 +2658,11 @@ function process_ttable_id_field($params) {
 
     $tformat = "mtttemp_%s_table";
     $sformat = "mtttemp_%s_seq";
+    $vformat = "mtttemp_%s_view";
 
     $ttable = sprintf($tformat, $ttable_id);
     $tseq   = sprintf($sformat, $ttable_id);
+    $tview  = sprintf($vformat, $ttable_id);
 
     $use_ttable = use_ttable($params);
 
@@ -2438,11 +2673,12 @@ function process_ttable_id_field($params) {
         do_pg_query("DELETE FROM ttable WHERE tname = '$ttable';", SILENT);
         do_pg_query("DROP TABLE $ttable;", SILENT);
         do_pg_query("DROP SEQUENCE $tseq;", SILENT);
+        do_pg_query("DROP VIEW $tview;", SILENT);
 
         # ... in with the new
         list($ttable_id, $ttable, $tseq) = setup_ttable();
 
-        # Setup ttable stuff for compose_sql
+        # Setup ttable stuff for compose_sql_select
         $query['new_ttable'] = true;
         $new_ttable = true;
         $query['select']['n'] = "nextval('$tseq') as n";
@@ -2482,11 +2718,12 @@ function process_ttable_id_field($params) {
 
     $ttable = sprintf($tformat, $ttable_id);
     $query['ttable'] = $ttable;
+    $query['ttable_id'] = $ttable_id;
 
     # Put ttable_id into the environment
     $_GET['ttable_id'] = $ttable_id;
 
-    # Return ttable for compose_sql
+    # Return ttable for compose_sql_select
     return $query;
 }
 
@@ -2533,6 +2770,27 @@ function process_trial_field($trial) {
     }
 
     return $query;
+}
+
+# Generate WHERE and SELECT clause for ''trial'' boolean
+function process_explain_field($params) {
+
+    # ANALYZE requires EXPLAIN
+    if (isset($_GET['analyze']))
+        $_GET['explain'] = 1;
+
+    return isset($_GET['explain']) ? 1 : 0;
+}
+
+# Set Postgres options for this session
+function process_postgres_options($params) {
+    foreach (array_keys($params) as $k) {
+        if (preg_match("/^pg_(.*)$/i", $k, $m)) {
+            $pg_param = $m[1];
+            $value = $params[$k];
+            do_pg_query("set $pg_param to $value;");
+        }
+    }
 }
 
 # X: COULD USING THIS BE AN OPTIMZATION? OR IS
@@ -2980,9 +3238,6 @@ function esc_percent($str) {
 # Clean up expired session db TABLE/SEQUENCEs listed in $listing
 function housekeeping_db($listing) {
 
-    # Cherry-picking sessions expire
-    # (Is 'accessed' more recent than '60 minutes ago'?)
-
     # no_cache option for developers
     if (isset($_GET['no_cache']))
         $cmd = "SELECT tname FROM $listing;";
@@ -2993,9 +3248,11 @@ function housekeeping_db($listing) {
 
     foreach ($tables as $table) {
         $tseq = preg_replace('/_table$/', '_seq', $table);
+        $tview = preg_replace('/_table$/', '_view', $table);
 
         do_pg_query("DROP TABLE $table;", SILENT);
         do_pg_query("DROP SEQUENCE $tseq;", SILENT);
+        do_pg_query("DROP VIEW $tview;", SILENT);
         do_pg_query("DELETE FROM $listing WHERE tname = '$table';", SILENT);
     }
 }

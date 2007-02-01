@@ -21,7 +21,7 @@ include_once("$topdir/reporter.inc");
 include_once("$topdir/database.inc");
 
 # Print user dash-board 
-function dump_query_screen($nogo) {
+function dump_query_screen($nogo, $sql_cmd) {
 
     $phases   = process_phase_field($_GET);
     $defaults = setup_mainwin_fields($phases);
@@ -34,7 +34,7 @@ function dump_query_screen($nogo) {
     if ($nogo)
         $entries = get_form_universe($defaults);
     else
-        list($entries, $disable) = get_form_universe2($_GET);
+        list($entries, $disable) = get_form_universe2($sql_cmd);
 
     # Generate advanced popup menus
     $links = selection_popups($defaults, $entries);
@@ -135,12 +135,12 @@ function use_ttable($params) {
     if (! is_null($click))
         return false;
     elseif ((preg_match("/cherry/i", $go) or
-        $orderby_up or
-        $orderby_down or
-        ! is_null($offset) or
-        $drilldown or
-        $slice)
-            and
+             $orderby_up or
+             $orderby_down or
+             ! is_null($offset) or
+             $drilldown or
+             $slice)
+             and
         ((base_type($lastgo) == 
           base_type($go)) or 
           ! $lastgo))
@@ -281,17 +281,9 @@ function get_form_universe($columns_arg) {
 
 # Populate menus with entries in ttable,
 # and 'Performance' button ''disable'' value
-function get_form_universe2($params) {
+function get_form_universe2($sql_cmd) {
 
-    $ttable_id = $params['ttable_id'];
-
-    $table = "mtttemp_${ttable_id}_table";
-
-    # Gather all available entries for the already
-    # created report
-    $cmd = "SELECT * FROM $table;";
-
-    $resource = do_pg_query($cmd);
+    $resource = do_pg_query($sql_cmd);
 
     $hash = pg_fetch_all($resource);
 
@@ -666,9 +658,15 @@ function setup_layout_html($layout, $lasttime, $links, $disable) {
 
     # AFTERWARDS ...
 
-    $top = DOCROOT;
+    $top    = DOCROOT;
+    $script = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
 
-    $logo   = "$top/images/reporter_logo.gif";
+    # Display standard or "archive" logo
+    if (isset($_GET['archive']))
+        $logo = "$top/images/archive_reporter_logo.gif";
+    else
+        $logo = "$top/images/reporter_logo.gif";
+
     list($width, $height, $type, $attr) = getimagesize($logo);
 
     # Put phase selection at the top ...
@@ -1230,6 +1228,9 @@ function hidden_carryover($params) {
                     "value='" . $params['text_trial'] . "'>";
 
     $str .= "\n<input type='hidden' name='lastgo' value='$lastgo'>";
+
+    if (isset($_GET['archive']))
+        $str .= "\n<input type='hidden' name='archive' value='1'>";
 
     return $str;
 }
