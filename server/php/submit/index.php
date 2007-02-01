@@ -47,9 +47,9 @@ if (isset($_POST['SERIAL'])) {
 }
 
 # If these are not set, then exit.
-if (! isset($_POST['mtt_version_major']) or
-    ! isset($_POST['mtt_version_minor']) or
-    ! isset($_POST['mtt_client_version'])) {
+if ((! isset($_POST['mtt_version_major']) or
+     ! isset($_POST['mtt_version_minor'])) and
+     ! isset($_POST['mtt_client_version'])) {
     mtt_abort(400, "\nMTT client version not specified.");
     exit(1);
 }
