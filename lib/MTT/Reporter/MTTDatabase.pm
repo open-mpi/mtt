@@ -52,6 +52,9 @@ my $debug_server;
 # Keep track of SQL errors coming from the server
 my $server_errors_total = 0;
 
+# Send SQL errors to this address
+my $email;
+
 #--------------------------------------------------------------------------
 
 sub Init {
@@ -63,6 +66,7 @@ sub Init {
     $password = Value($ini, $section, "mttdatabase_password");
     $url = Value($ini, $section, "mttdatabase_url");
     $realm = Value($ini, $section, "mttdatabase_realm");
+    $email = Value($ini, $section, "mttdatabase_email_errors_to");
     $debug_filename = Value($ini, $section, "mttdatabase_debug_filename");
     $debug_filename = "mttdatabase_debug" if (! $debug_filename);
     $keep_debug_files = Value($ini, $section, "mttdatabase_keep_debug_files");
@@ -236,6 +240,7 @@ sub Submit {
             # How many results are we submitting?
             $form->{number_of_results} = $#{$section_obj} + 1;
             $form->{platform_name} = $platform;
+            $form->{email} = $email;
 
             # First, go through and union all the field names to come
             # up with a comprehensive list of fields that we're
