@@ -614,8 +614,15 @@ function mtt_notice($str) {
     print("MTTDatabase server notice: $str\n");
 }
 
-# Function for emailing SQL errors
 function mtt_send_mail($str) {
+
+    # Send only one email per phase to avoid a hurricane of
+    # SQL error emails (generally in this case, when it
+    # rains it pours here)
+    static $sent_mail = false;
+
+    if ($sent_mail)
+        return;
 
     # Initialize To: addresses
     $user    = $_POST['email'];
@@ -629,6 +636,8 @@ function mtt_send_mail($str) {
     # Email the user of the offending MTT client
     if ($user)
         mail($user, "MTT server error", $str, $headers);
+
+    $sent_mail = true;
 }
 
 ######################################################################
