@@ -280,7 +280,7 @@ function highlight_match($param, $value) {
     $match = preg_replace("/;/", "|", $match);
 
     # "all" is the magic word for *no filter*
-    if ($match == 'all')
+    if (($match == 'all') or ! preg_match("/\w/i", $match))
         return $value;
     else
         return preg_replace(
