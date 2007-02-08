@@ -921,17 +921,25 @@ sub get_pgcc_version {
 # Return the version of the Sun Studio C compiler
 sub get_sun_cc_version {
     Debug("&get_sun_cc_version\n");
+
     my $ret = "unknown";
 
-    if (open SUNCC, "cc -V 2>&1 | head -n 1 | cut -d\  -f4-") {
-        my $str = <SUNCC>;
-        $str = <SUNCC>;
-        close(SUNCC);
-        chomp($str);
+    # Write a dummy C file so Sun Studio will return success
+    my $x = MTT::Files::SafeWrite(1,
+                "foo.c",
+                "int main() { return 0; }"
+    );
 
-        $ret = $str;
+    $x = MTT::DoCommand::Cmd(1, "cc -V foo.c");
+    if ($x->{exit_status} == 0) {
+        my @lines = split /\n/, $x->{result_stdout};
+        my $head = shift @lines;
+        $ret = $+ if ($head =~ /cc:\s+\S+\s+\S+\s+(.*)$/i);
+
+        # Remove the dummy C file
+        MTT::DoCommand::Cmd(1, "rm -f foo.c");
     }
-    
+
     Debug("&get_sun_cc_version returning: $ret\n");
     return $ret;
 }
