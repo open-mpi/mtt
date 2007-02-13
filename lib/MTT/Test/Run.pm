@@ -200,8 +200,8 @@ sub _do_run {
     my $exec = $ini->val($mpi_details_section, "exec");
     while ($exec =~ m/@(.+?)@/) {
         my $val = $ini->val($mpi_details_section, $1);
-        if (!$val) {
-            Warning("Used undefined key @$1@ in exec value; skipping");
+        if (! $val) {
+            Warning("Used undefined key \@$1\@ in exec value; skipping");
             return;
         }
         $exec =~ s/@(.+?)@/$val/;
