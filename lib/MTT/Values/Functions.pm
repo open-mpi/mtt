@@ -1258,4 +1258,68 @@ sub _find_libmpi {
     return $ret;
 }
 
+#--------------------------------------------------------------------------
+
+sub weekday_name {
+    my @days = qw/sun mon tue wed thu fri sat/;
+    Debug("&weekday_name returning: " . $days[weekday_index()] . "\n");
+    return $days[weekday_index()];
+}
+
+# 0 = Sunday;
+sub weekday_index {
+    my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) =
+        localtime(time);
+    Debug("&weekday_index returning: $wday\n");
+    return $wday;
+}
+
+#--------------------------------------------------------------------------
+
+sub getenv {
+    my $name = shift;
+    Debug("&getenv($name) returning: $ENV{$name}\n");
+    return $ENV{$name};
+}
+
+#--------------------------------------------------------------------------
+
+# Return something that will be snipped out of the final evaluation
+sub null {
+    Debug("&null returning: undef\n");
+    return undef;
+}
+
+#--------------------------------------------------------------------------
+
+sub mpi_get_name {
+    Debug("&mpi_get_name returning: $MTT::Globals::Internals->{mpi_get_name}\n");
+    return $MTT::Globals::Internals->{mpi_get_name};
+}
+
+sub mpi_install_name {
+    Debug("&mpi_install_name returning: $MTT::Globals::Internals->{mpi_install_name}\n");
+    return $MTT::Globals::Internals->{mpi_install_name};
+}
+
+sub test_get_name {
+    Debug("&test_get_name returning: $MTT::Globals::Internals->{test_get_name}\n");
+    return $MTT::Globals::Internals->{test_get_name};
+}
+
+sub test_build_name {
+    Debug("&test_build_name returning: $MTT::Globals::Internals->{test_build_name}\n");
+    return $MTT::Globals::Internals->{test_build_name};
+}
+
+sub test_run_name {
+    Debug("&test_run_name returning: $MTT::Globals::Internals->{test_run_name}\n");
+    return $MTT::Globals::Internals->{test_run_name};
+}
+
+sub mpi_details_name {
+    Debug("&mpi_details_name returning: $MTT::Globals::Internals->{mpi_details_name}\n");
+    return $MTT::Globals::Internals->{mpi_details_name};
+}
+
 1;

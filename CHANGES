@@ -3,3 +3,10 @@ To announce to OMPI core testers:
 - added new fields to MTT section to ini file
   - textwrap
   - drain_timeout
+
+- new funclets
+  - mpi_get_name, mpi_install_name, test_get_name, test_build_name,
+    test_run_name, mpi_details_name
+  - weekday_name, weekday_index
+  - getenv
+  - null

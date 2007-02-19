@@ -206,6 +206,9 @@ sub Install {
                             } else {
                                 Verbose("   Installing MPI: [$mpi_get_key] / [$mpi_version_key] / [$simple_section]...\n");
                             
+                                $MTT::Globals::Internals->{mpi_get_name} =
+                                    $mpi_get_key;
+                                $MTT::Globals::Internals->{mpi_install_name} = $simple_section;
                                 MTT::DoCommand::Chdir($install_base);
                                 my $mpi_dir = _make_random_dir(4);
                                 MTT::DoCommand::Chdir($mpi_dir);
@@ -213,6 +216,8 @@ sub Install {
                                 # Install and restore the environment
                                 _do_install($section, $ini,
                                             $mpi_version, $mpi_dir, $force);
+                                delete $MTT::Globals::Internals->{mpi_get_name};
+                                delete $MTT::Globals::Internals->{mpi_install_name};
                                 %ENV = %ENV_SAVE;
                             }
                         }

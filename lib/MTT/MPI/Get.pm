@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -57,8 +57,12 @@ sub Get {
     MTT::DoCommand::Chdir($source_dir);
     foreach my $section ($ini->Sections()) {
         if ($section =~ /^\s*mpi get:/) {
+            my $simple_section = $section;
+            $simple_section =~ s/^\s*mpi get:\s*//;
             Verbose(">> MPI get: [$section]\n");
+            $MTT::Globals::Internals->{mpi_get_name} = $simple_section;
             _do_get($section, $ini, $source_dir, $force);
+            delete $MTT::Globals::Internals->{mpi_get_name};
         }
     }
 

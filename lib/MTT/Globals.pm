@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 #
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -16,9 +16,13 @@ use MTT::Values;
 use MTT::Messages;
 use Data::Dumper;
 
-# Global variable to hold the values
+# Global variable to hold [possibly] user-overridden values
 
 our $Values;
+
+# Global variable to hold internal values
+
+our $Internals;
 
 # Defaults that are reset on a per-ini-file basis
 

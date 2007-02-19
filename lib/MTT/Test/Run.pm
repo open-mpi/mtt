@@ -122,9 +122,24 @@ sub Run {
                                     }
 
                                     # Alles gut.  Go do it.
+                                    $MTT::Globals::Internals->{mpi_get_name} =
+                                        $mpi_get_key;
+                                    $MTT::Globals::Internals->{mpi_install_name} =
+                                        $mpi_install_key;
+                                    $MTT::Globals::Internals->{test_get_name} =
+                                        $test_build->{test_get_simple_section_name};
+                                    $MTT::Globals::Internals->{test_build_name} =
+                                        $test_build_name;
+                                    $MTT::Globals::Internals->{test_run_name} =
+                                        $simple_section;
                                     _do_run($ini, $section, $test_build, 
                                             $mpi_install, $install_dir, 
                                             $runs_data_dir, $force);
+                                    delete $MTT::Globals::Internals->{mpi_get_name};
+                                    delete $MTT::Globals::Internals->{mpi_install_name};
+                                    delete $MTT::Globals::Internals->{test_get_name};
+                                    delete $MTT::Globals::Internals->{test_build_name};
+                                    delete $MTT::Globals::Internals->{test_run_name};
                                     %ENV = %ENV_SAVE;
                                 }
                             }
@@ -147,7 +162,8 @@ sub _do_run {
     # Check both specify_module and module (for backcompatibility)
     my $specify_module;
     $specify_module = MTT::Values::Value($ini, $section, "specify_module");
-    $specify_module = MTT::Values::Value($ini, $section, "module") if (!$specify_module);
+    $specify_module = MTT::Values::Value($ini, $section, "module")
+        if (!$specify_module);
 
     if (!$specify_module) {
         Warning("No module specified in [$section]; skipping\n");
@@ -176,12 +192,15 @@ sub _do_run {
 
                 Debug("Using [$s] with [MPI Install: $mpi_install_section]\n");
                 $match = 1;
+                $MTT::Globals::Internals->{mpi_details_name} = $s;
                 last;
             }
         }
     }
+
     if (!$match and !$mpi_details_section) {
         Warning("Unable to find MPI details section for [MPI Install: $details_install_section]; skipping\n");
+        delete $MTT::Globals::Internals->{mpi_details_name};
         return;
     }
 
