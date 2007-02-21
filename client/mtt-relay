@@ -25,7 +25,7 @@ chomp $HOST;
 my $PORT = "8008";
 my $debug = 0;
 my $quiet = 0;
-my $url = 'http://www.open-mpi.org/mtt/submit/index.php';
+my $url = 'https://www.open-mpi.org/mtt/submit/index.php';
 my $help;
 
 Getopt::Long::Configure("bundling");
