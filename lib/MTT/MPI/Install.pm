@@ -497,7 +497,6 @@ sub _do_install {
             platform_hardware => $config->{platform_hardware},
             os_name => $config->{os_name},
             os_version => $config->{os_version},
-            hostname => $config->{hostname},
 
             environment => "filled in below",
 
@@ -712,14 +711,7 @@ sub _get_cluster_info {
 
     my $info = undef;
 
-    # Try to get a FQDN
-
-    my $hostname = `hostname`;
-    chomp($hostname);
-    Debug("Got hostname: $hostname\n");
-
     # Find whatami
-
     my $dir = MTT::FindProgram::FindZeroDir();
     my $whatami = "$dir/whatami/whatami";
     if (! -x $whatami) {
@@ -735,7 +727,6 @@ sub _get_cluster_info {
     chomp($info->{os_name});
     $info->{os_version} = `$whatami -r`;
     chomp($info->{os_version});
-    $info->{hostname} = $hostname;
 
     return $info;
 }

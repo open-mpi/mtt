@@ -218,6 +218,13 @@ sub Submit {
 
     $default_form->{local_username} = getpwuid($<);
 
+    # Try to get a FQDN
+    my $hostname = `hostname`;
+    chomp($hostname);
+    Debug("Got hostname: $hostname\n");
+
+    $default_form->{hostname} = $hostname;
+
     # Now iterate through all the records that were given to submit
     foreach my $phase (keys(%$entries)) {
         my $phase_obj = $entries->{$phase};
