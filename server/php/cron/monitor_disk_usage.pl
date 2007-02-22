@@ -57,8 +57,6 @@ if ($logfile) {
     open(logfile, ">-");
 }
 
-print "\n" . '@tables = ' . Dumper(@tables);
-
 # Monitor using oid2name
 if ($method =~ /oid2name/i) {
     monitor_using_oid2name();
@@ -66,6 +64,11 @@ if ($method =~ /oid2name/i) {
 # Monitor using SQL
 if ($method =~ /sql/i) {
     monitor_using_sql();
+}
+
+# Monitor using SQL
+if ($method =~ /dbsize/i) {
+    monitor_using_dbsize();
 }
 
 exit;
@@ -147,6 +150,36 @@ EOT
     }
 
     $query .= join(' OR ', @wheres) . ';';
+
+    my $cmd = "\npsql -d $db -U $user -c \"$query\"";
+    debug($cmd);
+    print logfile `$cmd`;
+}
+
+sub monitor_using_dbsize {
+
+    #
+    # To setup dbsize:
+    # 
+    # * Download postgres tarball here:
+    #       http://www.postgresql.org/ftp/source/v7.4.13/
+    # * gzip -dc postgresql-7.4.13.tar.gz | tar xvf -
+    # * cd postgresql-7.4.13
+    # * ./configure
+    # * cd contrib/dbsize; make; make all;
+    # * Manually edit dbsize.sql so that it points to
+    #   dbsize.so (use absolute path)
+    # * psql -d <mtt_db> -U postgres -f dbsize.sql;
+    #
+
+    my $query = "SELECT database_size('$db') as $db ";
+
+    my @selects;
+    foreach my $table (@tables) {
+        push(@selects, "\n" . ("\t" x 3) .  "relation_size('$table') as $table");
+    }
+
+    $query .= ', ' . join(', ', @selects) . ';';
 
     my $cmd = "\npsql -d $db -U $user -c \"$query\"";
     debug($cmd);
