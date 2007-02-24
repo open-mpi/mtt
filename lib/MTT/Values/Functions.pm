@@ -622,6 +622,37 @@ sub env_max_procs {
 
 #--------------------------------------------------------------------------
 
+# Find the hosts that we can run with
+sub env_hosts {
+    Debug("&env_hosts\n");
+
+    # Resource managers
+    return slurm_hosts()
+        if slurm_job();
+    return pbs_hosts()
+        if pbs_job();
+    return n1ge_hosts()
+        if n1ge_job();
+    return loadleveler_hosts()
+        if loadleveler_job();
+
+    # Hostfile
+    return hostfile_hosts()
+        if have_hostfile();
+
+    # Hostlist
+    return hostlist_hosts()
+        if have_hostlist();
+
+    # Not running under anything; just return the localhost name
+    my $ret = `hostname`;
+    chomp($ret);
+    Debug("&env_hosts returning: $ret\n");
+    return "$ret";
+}
+
+#--------------------------------------------------------------------------
+
 # Return "1" if we have a hostfile; "0" otherwise
 sub have_hostfile {
     my $ret = (defined $MTT::Globals::Values->{hostfile}) ? "1" : "0";
@@ -657,6 +688,30 @@ sub hostfile_max_procs {
 
 #--------------------------------------------------------------------------
 
+# If we have a hostfile, return its hosts
+sub hostfile_hosts {
+    Debug("&hostfile_hosts\n");
+
+    return ""
+        if (!have_hostfile());
+
+    # Return the uniq'ed contents of the hostfile
+
+    open (FILE, $MTT::Globals::Values->{hostfile}) || return "";
+    my $lines;
+    while (<FILE>) {
+        chomp;
+        $lines->{$_} = 1;
+    }
+
+    my @hosts = sort(keys(%$lines));
+    my $hosts = join(",", @hosts);
+    Debug("&hostfile_hosts returning $hosts\n");
+    return "$hosts";
+}
+
+#--------------------------------------------------------------------------
+
 # Return "1" if we have a hostfile; "0" otherwise
 sub have_hostlist {
     my $ret = (defined $MTT::Globals::Values->{hostlist}) ? "1" : "0";
@@ -688,6 +743,19 @@ sub hostlist_max_procs {
 
     Debug("&hostlist_max_procs returning $MTT::Globals::Values->{hostlist_max_np}\n");
     return $MTT::Globals::Values->{hostlist_max_np};
+}
+
+#--------------------------------------------------------------------------
+
+# If we have a hostlist, return its hosts
+sub hostlist_hosts {
+    Debug("&hostlist_hosts\n");
+
+    return ""
+        if (!have_hostlist());
+
+    Debug("&hostlist_hosts returning $MTT::Globals::Values->{hostlist}\n");
+    return $MTT::Globals::Values->{hostlist};
 }
 
 #--------------------------------------------------------------------------
@@ -761,6 +829,23 @@ sub slurm_max_procs {
 
 #--------------------------------------------------------------------------
 
+# If in a SLURM job, return the hosts we can run on.  Otherwise,
+# return "".
+sub slurm_hosts {
+    Debug("&slurm_hosts\n");
+
+    return ""
+        if (!slurm_job());
+
+    # The SLURM env variable SLURM_NODELIST is a regexp of the hosts
+    # we can run on.
+
+    Debug("&slurm_max_procs returning: $$ENV{SLURM_NODELIST}\n");
+    return "$ENV{SLURM_NODELIST}";
+}
+
+#--------------------------------------------------------------------------
+
 # Return "1" if we're running in a PBS job; "0" otherwise.
 sub pbs_job {
     Debug("&pbs_job\n");
@@ -789,6 +874,31 @@ sub pbs_max_procs {
 
     Debug("&pbs_max_procs returning: $lines\n");
     return "$lines";
+}
+
+#--------------------------------------------------------------------------
+
+# If in a PBS job, return the hosts we can run on.  Otherwise, return
+# "".
+sub pbs_hosts {
+    Debug("&pbs_hosts\n");
+
+    return ""
+        if (!pbs_job());
+
+    # Return the uniq'ed contents of $PBS_HOSTFILE
+
+    open (FILE, $ENV{PBS_NODEFILE}) || return "";
+    my $lines;
+    while (<FILE>) {
+        chomp;
+        $lines->{$_} = 1;
+    }
+
+    my @hosts = sort(keys(%$lines));
+    my $hosts = join(",", @hosts);
+    Debug("&pbs_hosts returning: $hosts\n");
+    return "$hosts";
 }
 
 #--------------------------------------------------------------------------
@@ -824,6 +934,31 @@ sub n1ge_max_procs {
 
 #--------------------------------------------------------------------------
 
+# If in a N1GE job, return the hosts we can run on.
+# Otherwise, return "".
+sub n1ge_hosts {
+    Debug("&n1ge_hosts\n");
+
+    return ""
+        if (!n1ge_job());
+
+    # Return the uniq'ed contents of $PE_HOSTFILE
+
+    open (FILE, $ENV{PE_HOSTFILE}) || return "";
+    my $lines;
+    while (<FILE>) {
+        chomp;
+        $lines->{$_} = 1;
+    }
+
+    my @hosts = sort(keys(%$lines));
+    my $hosts = join(",", @hosts);
+    Debug("&n1ge_hosts returning: $hosts\n");
+    return "$hosts";
+}
+
+#--------------------------------------------------------------------------
+
 # Return "1" if we're running in a Load Leveler job; "0" otherwise.
 sub loadleveler_job {
     Debug("&loadleveler_job\n");
@@ -852,6 +987,34 @@ sub loadleveler_max_procs {
 
     Debug("&loadleveler_max_procs returning: $ret\n");
     return $ret;
+}
+
+
+#--------------------------------------------------------------------------
+
+# If in a Load Leveler job, return the hosts we can run on.
+# Otherwise, return "".
+sub loadleveler_hosts {
+    Debug("&loadleveler_hosts\n");
+
+    return ""
+        if (!loadleveler_job());
+    return ""
+        if (!exists($ENV{LOADL_PROCESSOR_LIST}) ||
+            "" eq $ENV{LOADL_PROCESSOR_LIST});
+
+    # Just uniq the tokens in $LOADL_PROCESSOR_LIST
+
+    my @tokens = split(/ /, $ENV{LOADL_PROCESSOR_LIST});
+    my $tokens;
+    foreach my $t (@tokens) {
+        $tokens->{$t} = 1;
+    }
+
+    my @hosts = sort(keys(%$tokens));
+    my $hosts = join(",", @hosts);
+    Debug("&loadleveler_hosts returning: $hosts\n");
+    return "$hosts";
 }
 
 

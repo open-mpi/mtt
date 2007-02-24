@@ -55,6 +55,9 @@ my $server_errors_total = 0;
 # Send SQL errors to this address
 my $email;
 
+# Hostname string to report
+my $hostname;
+
 #--------------------------------------------------------------------------
 
 sub Init {
@@ -71,6 +74,7 @@ sub Init {
     $debug_filename = "mttdatabase_debug" if (! $debug_filename);
     $keep_debug_files = Value($ini, $section, "mttdatabase_keep_debug_files");
     $debug_server = 1 if ($url =~ /\bdebug\b|\bverbose\b/);
+    $hostname = Value($ini, $section, "mttdatabase_hostname");
 
     $debug_index = 0;
     if (!$url) {
@@ -219,10 +223,11 @@ sub Submit {
     $default_form->{local_username} = getpwuid($<);
 
     # Try to get a FQDN
-    my $hostname = `hostname`;
-    chomp($hostname);
+    if (!defined($hostname) || "" eq $hostname) {
+        $hostname = `hostname`;
+        chomp($hostname);
+    }
     Debug("Got hostname: $hostname\n");
-
     $default_form->{hostname} = $hostname;
 
     # Now iterate through all the records that were given to submit

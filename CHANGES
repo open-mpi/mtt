@@ -10,3 +10,6 @@ To announce to OMPI core testers:
   - weekday_name, weekday_index
   - getenv
   - null
+  - env_hosts
+
+- new field: mttdatabase_hostname
