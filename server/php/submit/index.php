@@ -28,7 +28,7 @@ else
     error_reporting(E_ERROR | E_WARNING | E_PARSE);
 
 # Notify of fields that do not exist in the database
-report_id_mismatches();
+report_non_existent_fields();
 
 # If the PING field is set, then this was just a
 # test.  Exit successfully.
@@ -60,7 +60,10 @@ $_POST['http_username'] =
         isset($_SERVER['PHP_AUTH_USER']) ?
         $_SERVER['PHP_AUTH_USER'] : "";
 
+# Declare some global MTT database semantics
 $id = "_id";
+$speedy_pfx = "speedy_";
+$archive_pfx = "";
 
 # Process performance data, if there is any
 $table = 'latency_bandwidth';
@@ -137,6 +140,9 @@ function process_phase($phase, $idxs_hash) {
     # so grab the one and only submit_id
     # IF DISCONNECTED SCENARIOS COMES TO PASS, THIS WILL NEED 
     # TO BE CHANGED
+    #
+    # NOTE: BELOW THE TABLE'S ROOT NAME IS USED WHICH DOES
+    # NOT INCLUDE THE SPEEDY_ OR ARCHIVE_ PREFIX!
     $always_new = false;
     $table = "submit";
     $results_idxs_hash[$table . $id] =
@@ -172,65 +178,32 @@ function process_phase($phase, $idxs_hash) {
 # 3. Return index used for insertion
 function set_data($table, $indexes, $always_new, $idx_override) {
 
-    global $_POST;
-    global $id;
+    global $id, $speedy_pfx, $archive_pfx;
 
     # MAKE SURE TABLE'S SERIAL-INTEGER PAIR
     # FOLLOWS THE table_id NAMING SCHEME
     $table_id = $table . $id;
 
+    $n = $_POST['number_of_results'];
+
     # Get existing fields from table
     $params = get_table_fields($table);
     $column_names = array_values($params['column_name']);
 
-    $n = $_POST['number_of_results'];
-
     # Match up fetched column names with data in the HTTP POST
     $wheres      = array();
     $new_indexes = array();
-    $wheres      = get_post_values($column_names, $n);
-    $numbered    = are_numbered($column_names, $n);
+    $wheres      = get_post_values($column_names);
+    $numbered    = are_numbered($column_names);
 
-    $wheres   = array_merge($wheres, $indexes);
+    $wheres = array_merge($wheres, $indexes);
 
-    # Skip the following block if this is a new
+    $found_match = false;
+
+    # Skip the following "if" statement if this is a new
     # row for each submit, e.g., results
     if (! $always_new) {
-
-        $found_match = false;
-
-        $wheres_tmp = $wheres;
-
-        for ($i = 0; $i < $n; $i++) {
-
-            $select_qry = "\n   SELECT $table_id FROM $table " .
-                          "\n\t WHERE \n\t";
-
-            $j = 0;
-            $items = array();
-            # Seems odd that we iterate over both string and numeric keys here
-            foreach (array_keys($wheres_tmp) as $k) {
-                $items[] = sql_compare($k,
-                                        pg_escape_string(get_scalar($wheres_tmp[$k], $i)),
-                                        $params['data_type'][$j],
-                                        $params['column_default'][$j]);
-                $j++;
-            }
-
-            $select_qry .= join("\n\t AND ", $items);
-            $select_qry .= "\n\t ORDER BY $table_id ASC ";
-            $select_qry .= "LIMIT 1 ";
-
-            $set = array();
-            $set = simple_select($select_qry);
-
-            if (! $numbered) {
-                $idx = array_shift($set);
-                break;
-            }
-            else
-                $idx[$i] = array_shift($set);
-        }
+        $idx = check_existence($wheres, $params, $table, $numbered);
     }
 
     $seq_name = $table . "_" . "$table_id" . "_seq";
@@ -245,24 +218,17 @@ function set_data($table, $indexes, $always_new, $idx_override) {
     # auto-increment the serial value using nextval
     elseif (is_null_($idx)) {
 
-        $idx_tmp = $idx;
-        for ($i = 0; $i < $n; $i++) {
-            if (is_null($idx[$i])) {
-                $set = array();
-                $set = simple_select("SELECT nextval('$seq_name') LIMIT 1;");
-                $idx_tmp[$i] = array_shift($set);
-                $new_indexes[$i] = true;
-            } else {
-                $new_indexes[$i] = false;
-            }
-                
-            if (! $numbered)
-                break;
-        }
-        $idx = $idx_tmp;
+        $ret = fetch_nextvals($idx, $seq_name, $numbered);
+
+        $idx = $ret['idx'];
+        $new_indexes = $ret['new_indexes'];
 
     } else {
         $found_match = true;
+
+        # If the row is in the "archive", then mirror it in
+        # the "speedy", otherwise it will get INSERTed below
+        mirror_archived_in_speedy($idx, $table);
     }
     $wheres[$table_id] = $idx;
 
@@ -277,17 +243,20 @@ function set_data($table, $indexes, $always_new, $idx_override) {
             if (! $new_indexes[$i])
                 continue;
 
-            $insert_qry = "\n\t INSERT INTO $table " .
-                          "\n\t (" . join(",\n\t", array_keys($inserts)) . ") " .
-                          "\n\t VALUES ";
+            # Prepare a printf format string for the INSERT
+            $insert_into1 = "\n\t INSERT INTO %s ";
+            $insert_into2 = "\n\t (" . join(",\n\t", array_keys($inserts)) . ") " .
+                            "\n\t VALUES ";
 
             $items = array();
             foreach (array_keys($inserts) as $k) {
                 $items[] = quote_(pg_escape_string(get_scalar($inserts[$k], $i))); 
             }
-            $insert_qry .= "\n\t (" . join(",\n\t", $items) . ") \n\t";
+            $insert_into2 .= "\n\t (" . join(",\n\t", $items) . ") \n\t";
 
-            do_pg_query($insert_qry);
+            # INSERT the row into both the "speedy" and "archive" tables
+            do_pg_query(sprintf($insert_into1, $speedy_pfx . $table) . $insert_into2);
+            do_pg_query(sprintf($insert_into1, $archive_pfx . $table) . $insert_into2);
 
             if (! $numbered)
                 break;
@@ -298,9 +267,199 @@ function set_data($table, $indexes, $always_new, $idx_override) {
     return $idx;
 }
 
+# array_unique that does not error out when given a scalar
+function _array_unique($var) {
+
+    if (is_array($var))
+        return array_unique($var);
+    elseif (is_scalar($var))
+        return array($var);
+}
+
+# array_unique that does not error out when given a scalar
+function _array_values($var) {
+
+    if (is_array($var))
+        return array_values($var);
+    elseif (is_scalar($var))
+        return array($var);
+}
+
+# Return the index(es) of the existing rows that match
+# $wheres, otherwise return null
+function check_existence($wheres, $params, $table, $numbered) {
+
+    global $id;
+
+    $n = $_POST['number_of_results'];
+
+    # MAKE SURE TABLE'S SERIAL-INTEGER PAIR
+    # FOLLOWS THE table_id NAMING SCHEME
+    $table_id = $table . $id;
+
+    for ($i = 0; $i < $n; $i++) {
+
+        $select_qry = "\n   SELECT $table_id FROM $table " .
+                      "\n\t WHERE \n\t";
+
+        $j = 0;
+        $items = array();
+        # Seems odd that we iterate over both string and numeric keys here
+        foreach (array_keys($wheres) as $k) {
+            $items[] = sql_compare($k,
+                                    pg_escape_string(get_scalar($wheres[$k], $i)),
+                                    $params['data_type'][$j],
+                                    $params['column_default'][$j]);
+            $j++;
+        }
+
+        $select_qry .= join("\n\t AND ", $items);
+        $select_qry .= "\n\t ORDER BY $table_id ASC ";
+        $select_qry .= "LIMIT 1 ";
+
+        $idx_value = select_scalar($select_qry);
+
+        if (! $numbered) {
+            $idx = $idx_value;
+            break;
+        }
+        else
+            $idx[$i] = $idx_value;
+    }
+
+    return $idx;
+}
+
+# Copy archive TABLE rows (keyed by $idx) over to 
+# speedy TABLEs
+#
+# Note: it's possible we could get away with being slobs here,
+# and just copy over the small TABLEs wholesale. But we're trying
+# to make these speedy TABLEs as efficient as possible, right?
+function mirror_archived_in_speedy($indexes, $table) {
+
+    $silent = 1;
+
+    ####################################################
+    #
+    # Part 1 - Clean sweep of POST
+    #
+    ####################################################
+
+    # Do a clean sweep of all the POST params and make sure
+    # we copy them over to the speedy TABLEs. (This is a
+    # safeguard, but is needed at least for the initial
+    # INSERTs into the speedy_ TABLEs to avoid FOREIGN KEY
+    # constraint errors, since the speedy tables are
+    # initially empty!)
+    static $prevented_foreign_key_errors = false;
+
+    # Only do the clean sweep *once*
+    if (! $prevented_foreign_key_errors) {
+        $prevented_foreign_key_errors = true;
+
+        $n = $_POST['number_of_results'];
+
+        # Array of serial values that the client
+        # handshakes with
+        $tables = array("mpi_install", "test_build");
+
+        foreach ($tables as $t) {
+            $wheres = array();
+
+            # WE'RE NOT MIRRORING OVER DEPENDENCIES FROM THE PAST (SO
+            # A TEST_BUILD THAT POINTS TO AN OLD OLD MPI INSTALL WILL
+            # FAIL ON A FOREIGN KEY CONSTRAINT ERROR, SINCE THE OLD
+            # OLD MPI INSTALL NEVER GOT COPIED OVER).  SOMEDAY,
+            # PERHAPS, WE SHOULD COVER THIS USE CASE (E.G., FOR
+            # --RESUBMIT AND THE LIKE?)
+            #
+            # $idx_names = get_table_indexes($t);
+
+            # Get column name of the serial  
+            $serial = $t . $id;
+
+            # mpi_install_id and test_build_id are
+            # NEVER numbered, but *just* in case
+            for ($i = 0; $i < $n; $i++) {
+                $sfx = ($i == 0) ? null : '_' . $i;
+
+                $value = $_POST[$serial . $sfx];
+
+                if (! is_null($value))
+                    $wheres[] = "$serial = $value";
+            }
+
+            # Copy over dependent rows that the copied
+            # $hash =
+            #     associative_select("\n\t SELECT " . join(",", $idx_names) .
+            #                   "\n\t   FROM $t " .
+            #                   "\n\t   WHERE " . join(" OR \n\t", $wheres) . ";");
+
+            if (sizeof($wheres) > 0) {
+                $insert_qry = sprintf($format, $t, $t, join(" OR \n\t", $wheres));
+                do_pg_query($insert_qry, $silent);
+            }
+        }
+    }
+
+    ####################################################
+    #
+    # Part 2 - Copy over a single row
+    #
+    ####################################################
+
+    global $id, $speedy_pfx, $archive_pfx;
+
+    $wheres = array();
+
+    # MAKE SURE TABLE'S SERIAL-INTEGER PAIR
+    # FOLLOWS THE table_id NAMING SCHEME
+    $table_id = $table . $id;
+
+    $indexes = _array_unique(_array_values($indexes));
+
+    # Construct an INSERT INTO ... SELECT to copy over
+    # archive rows into the speedy table
+    $format = "\n   INSERT INTO $speedy_pfx%s " .
+              "\n\t   SELECT * FROM $archive_pfx%s WHERE %s;";
+
+    foreach ($indexes as $i) {
+        $wheres[] = "$table_id = $i";
+    }
+    $insert_qry = sprintf($format, $table, $table, join(" OR \n\t", $wheres));
+
+    # We expect many duplicate "errors" to occur here, because
+    # we are using the UNIQUE column constraint to prevent
+    # duplicates entries (instead of checking with SELCECT,
+    # as we do for the archive TABLEs)
+
+    do_pg_query($insert_qry, $silent);
+}
+
+function fetch_nextvals($idx, $seq_name, $numbered) {
+
+    $n = $_POST['number_of_results'];
+
+    for ($i = 0; $i < $n; $i++) {
+        if (is_null($idx[$i])) {
+            $ret['idx'][$i] = select_scalar("SELECT nextval('$seq_name') LIMIT 1;");
+            $ret['new_indexes'][$i] = true;
+        } else {
+            $ret['new_indexes'][$i] = false;
+        }
+            
+        if (! $numbered)
+            break;
+    }
+
+    return $ret;
+}
+
 # Return true if the table contains an integer
 # index into another table
 function contains_table_key($table_name) {
+
     $t = array();
     $t = get_table_indexes($table_name, false);
     return (count($t) > 0);
@@ -364,7 +523,6 @@ function sql_join($table_name) {
 function get_table_indexes($table_name, $qualified) {
 
     global $id;
-    global $is_index_clause;
     global $dbname;
 
     # Crude way to tell whether a field is an index
@@ -437,8 +595,8 @@ function get_table_fields($table_name) {
     return $tmp;
 }
 
-# Check for client-server field name mismatches
-function report_id_mismatches() {
+# Check fields in the POST that are not in the DB
+function report_non_existent_fields() {
 
     global $dbname;
 
@@ -517,6 +675,7 @@ function is_null_($var) {
 ######################################################################
 
 function do_pg_connect() {
+
     global $dbname;
     global $user;
     global $pass;
@@ -524,7 +683,7 @@ function do_pg_connect() {
     static $connected = false;
 
     if (!$connected) {
-        $pgsql_conn = 
+        $pgsql_conn =
             pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass");
 
         # Exit if we cannot connect
@@ -540,7 +699,8 @@ function do_pg_connect() {
     }
 }
 
-function do_pg_query($cmd) {
+function do_pg_query($cmd, $silent) {
+
     do_pg_connect();
 
     debug("\nSQL: $cmd\n");
@@ -548,14 +708,28 @@ function do_pg_query($cmd) {
         $out = "\nSQL QUERY: " . $cmd .
                "\nSQL ERROR: " . pg_last_error() .
                "\nSQL ERROR: " . pg_result_error();
-        mtt_error($out);
-        mtt_send_mail($out);
+
+        # Some errors are unsurprising, allow for silence in
+        # such cases
+        if (! $silent) {
+            mtt_error($out);
+            mtt_send_mail($out);
+        }
     }
     debug("\nDatabase rows affected: " . pg_affected_rows($db_res) . "\n");
 }
 
+# Fetch scalar value
+function select_scalar($cmd) {
+
+    $set = array();
+    $set = simple_select($cmd);
+    return array_shift($set);
+}
+
 # Fetch 1D array
 function simple_select($cmd) {
+
     do_pg_connect();
 
     $rows = null;
@@ -574,6 +748,22 @@ function simple_select($cmd) {
         $rows[] = $row[0];
     }
     return $rows;
+}
+
+# Fetch an associative hash (column name => value)
+function associative_select($cmd) {
+
+    do_pg_connect();
+
+    debug("\nSQL: $cmd\n");
+    if (! ($result = pg_query($cmd))) {
+        $out = "\nSQL QUERY: " . $cmd .
+               "\nSQL ERROR: " . pg_last_error() .
+               "\nSQL ERROR: " . pg_result_error();
+        mtt_error($out);
+        mtt_send_mail($out);
+    }
+    return pg_fetch_array($result);
 }
 
 # Fetch 2D array
@@ -624,6 +814,8 @@ function mtt_send_mail($str) {
     if ($sent_mail)
         return;
 
+    $php_auth_user = $_SERVER['PHP_AUTH_USER'];
+
     # Initialize To: addresses
     $user    = $_POST['email'];
     $admin   = 'ethan.mallove@sun.com';
@@ -631,7 +823,7 @@ function mtt_send_mail($str) {
                "Reply-To: $admin\r\n";
 
     # Email the MTT database administrator
-    mail($admin, "MTT server error", $str, $headers);
+    mail($admin, "MTT server error (user: $php_auth_user)", $str, $headers);
 
     # Email the user of the offending MTT client
     if ($user)
@@ -713,9 +905,9 @@ function get_idx_root($str) {
 # 2. Fill in the name/value pairs, and use DEFAULT if 
 #    it is a some_set
 
-function get_post_values($params, $n) {
+function get_post_values($params) {
 
-    global $_POST;
+    $n = $_POST['number_of_results'];
 
     $hash = array();
     $some_set = array();
@@ -768,9 +960,9 @@ function get_post_values($params, $n) {
 
 # Args: params (which presumably map to a single db table)
 # Return: true if it contains a numbered field in HTTP input
-function are_numbered($params, $n) {
+function are_numbered($params) {
 
-    global $_POST;
+    $n = $_POST['number_of_results'];
 
     foreach ($params as $field) {
         for ($i = 1; $i <= $n; $i++) {
@@ -789,21 +981,18 @@ function are_numbered($params, $n) {
 function get_serial() {
 
     # Works in psql cli, *BROKEN* in php
-    $cmd =  "\n   SELECT relname FROM pg_class WHERE " .
-            "\n\t relkind = 'S' AND " .
-            "\n\t relnamespace IN ( " .
-            "\n\t SELECT oid FROM pg_namespace WHERE " .
-            "\n\t nspname NOT LIKE 'pg_%' AND " .
-            "\n\t nspname != 'information_schema') " .
-            "\n\t AND relname NOT LIKE '%id_seq';";
-
-    $set         = array();
-    $set         = simple_select($cmd);
-    $serial_name = array_shift($set);
+    # $cmd =  "\n   SELECT relname FROM pg_class WHERE " .
+    #         "\n\t relkind = 'S' AND " .
+    #         "\n\t relnamespace IN ( " .
+    #         "\n\t SELECT oid FROM pg_namespace WHERE " .
+    #         "\n\t nspname NOT LIKE 'pg_%' AND " .
+    #         "\n\t nspname != 'information_schema') " .
+    #         "\n\t AND relname NOT LIKE '%id_seq';";
+    #
+    # $serial_name = select_scalar($cmd);
 
     $serial_name = 'client_serial';
-    $set         = simple_select("SELECT nextval('$serial_name');");
-    $serial      = array_shift($set);
+    $serial      = select_scalar("SELECT nextval('$serial_name');");
 
     return $serial;
 }
