@@ -29,24 +29,14 @@ sub Run {
 
     # Load the module
 
-    my $str = "require $module";
-    Debug("Evaluating: $str\n");
-    my $check = eval $str;
-    if ($@) {
-        if (!$check) {
-            Error("Module aborted during require: $module: $@\n");
-        }
-
-        Warning("Could not load module $module: $@\n");
-        return undef;
-    }
+    return undef if (! Exists($module));
 
     # Call the method in that module
 
     my $ret = undef;
-    $str = "\$ret = \&${module}::$method(\@args)";
+    my $str = "\$ret = \&${module}::$method(\@args)";
     Debug("Evaluating: $str\n");
-    $check = eval $str;
+    my $check = eval $str;
     if ($@) {
         if (!$check) {
             Error("Module aborted: $module:$method: $@\n");
@@ -57,6 +47,25 @@ sub Run {
     }
 
     return $ret;
+}
+
+# Load the module (return 1 if everything went a-okay)
+sub Exists {
+    my $module = shift;
+
+    my $str = "require $module";
+    Debug("Evaluating: $str\n");
+    my $check = eval $str;
+    if ($@) {
+        if (!$check) {
+            Warning("Module aborted during require: $module: $@\n");
+        }
+
+        Warning("Could not load module $module: $@\n");
+        return 0;
+    } else {
+        return 1;
+    }
 }
 
 1;

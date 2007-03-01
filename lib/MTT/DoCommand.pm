@@ -276,6 +276,9 @@ sub Cmd {
         return $ret;
     }
 
+    # Return the pid
+    $ret->{pid} = $pid;
+
     # Accept two connections from the child
 
     accept(OUTread, $server_socket);

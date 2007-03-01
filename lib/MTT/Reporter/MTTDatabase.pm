@@ -38,7 +38,9 @@ my $ua;
 
 # Serial per mtt client invocation
 my $invocation_serial_name = "client_serial";
-my $invocation_serial_value;
+
+# Make this global for all-purpose unique values
+our $invocation_serial_value;
 
 # Field for the server; "trial" flag
 my $trial_name = "trial";
@@ -156,6 +158,9 @@ sub Init {
     Debug("MTTDatabase got response: " . $response->content . "\n");
     if ($response->content =~ m/===\s+$invocation_serial_name\s+=\s+([0-9]+)\s+===/) {
         $invocation_serial_value = $1;
+
+        # Globalize this value
+        $MTT::Globals::Values->{$invocation_serial_name} = $1;
         Debug("MTTDatabase parsed invocation serial: $invocation_serial_value\n");
     } else {
         Warning("MTTDatabase did not get a serial\n");

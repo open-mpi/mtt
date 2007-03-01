@@ -18,27 +18,56 @@ use MTT::Messages;
 sub Analyze {
 
     my ($run, $mpi_details, $msg, $results) = @_;
-    my ($correctness, $performance);
+    my ($correctness_results, $perf_results, $rte_results);
     my $report;
 
     # Analyze everything (including performance tests) for correctness
-    $correctness = MTT::Module::Run("MTT::Test::Analyze::Correctness",
+    $correctness_results = MTT::Module::Run("MTT::Test::Analyze::Correctness",
                                     "Analyze", $run, $mpi_details, $msg, 
                                     $results);
 
-    my $m = $run->{analyze_module};
+    # RTE testing needs to perform validation tests on the pid
+    $correctness_results->{pid} = $run->{pid};
 
-    # Avoid double analyzing in the case a good citizen
-    # directs us to analyze for correctness
-    if ($correctness->{test_result} == MTT::Values::PASS) {
-        if ($m and ($m !~ /\bcorrectness\b/i)) {
-            $performance = MTT::Module::Run("MTT::Test::Analyze::Performance::$m", 
-                                    "Analyze", $correctness->{result_stdout});
+    # User specifies a module in the INI file
+    my $m = $run->{analyze_module};
+    my $module;
+
+    if ($m) {
+
+        if ($correctness_results->{test_result} == MTT::Values::PASS) {
+
+            # Avoid double analyzing in the case a good citizen
+            # directs us to analyze for correctness
+            if ($m !~ /\bcorrectness\b/i) {
+
+                $module = "MTT::Test::Analyze::Performance::$m";
+
+                # Performance
+                if (MTT::Module::Exists($module)) {
+                    $perf_results = 
+                        MTT::Module::Run($module, "Analyze", $correctness_results->{result_stdout});
+                }
+
+                $module = "MTT::Test::Analyze::RTE::$m";
+
+                # Run Time Environment
+                if (MTT::Module::Exists($module)) {
+                    $rte_results = 
+                        MTT::Module::Run($module, "Analyze", $correctness_results);
+                }
+            }
         }
     }
 
-    %$report = (%$correctness);
-    %$report = (%$report, %$performance) if ($performance);
+    # Combine the additional analysis data with correctness data
+    %$report = (%$correctness_results);
+
+    if ($perf_results) {
+        %$report = (%$report, %$perf_results);
+    } elsif ($rte_results) {
+        %$report = (%$report, %$rte_results);
+    }
 
     return $report;
 } 

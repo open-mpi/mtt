@@ -65,6 +65,9 @@ sub Build {
         $x = _do_compile("mpicc $cflags", "ring.c", "c_ring");
         return $x
             if (defined($x));
+        $x = _do_compile("mpicc $cflags", "touch.c", "touch");
+        return $x
+            if (defined($x));
     } else {
         Debug("MPI C bindings unavailable; skipping simple compile/link test\n");
     }

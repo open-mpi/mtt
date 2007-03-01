@@ -396,6 +396,51 @@ end\n");
         return $ret;
     }
 
+    # This program just touches a file in /tmp
+    $x = MTT::Files::SafeWrite($force, "touch.c", "/*
+ * This program is automatically generated via the \"Trivial\" Test::Get
+ * module of the MPI Testing Tool (MTT).  Any changes you make here may
+ * get lost!
+ *
+ * Copyrights and licenses of this file are the same as for the MTT.
+ */
+
+#include <stdio.h>
+#include <mpi.h>
+int main(int argc, char* argv[]) {
+    int rank, size;
+    char filename[100];
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    if (argc < 2) {
+        printf(\"Error: This program takes a unique ID as an argument.\\n\");
+        return 1;
+    }
+        
+    sprintf(filename, \"/tmp/mtt-cre-test-%s\", argv[1]);
+
+    FILE *fp = fopen(filename, \"w\");
+
+    if (! fp) {
+        printf(\"Error: Could not open %s for writing. Permissions?\\n\", filename);
+        return 1;
+    }
+    printf(\"Touching file %s.\\n\", filename);
+    fprintf(fp, \"%s\", \"\");
+    fclose(fp);
+
+
+    MPI_Finalize();
+    return 0;
+}\n");
+    if (! $x->{success}) {
+        $ret->{result_message} = $x->{result_message};
+        return $ret;
+    }
+
     # All done
     $ret->{test_result} = MTT::Values::PASS;
     $ret->{have_new} = $x->{success};
