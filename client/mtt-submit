@@ -38,7 +38,12 @@ $0
   -u    HTTP Username
   -p    HTTP Password
   -d    Debug mode
+
+CAUTION: Use this script with care!  For example, you could
+end up with duplicate test results in the database if you
+used mtt-submit twice on the same file.
 EOT
+    exit;
 }
 
 # Generate a list of files to POST
