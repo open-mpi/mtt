@@ -1,0 +1,103 @@
+#!/usr/bin/env perl
+
+#
+# Copyright (c) 2007 Sun Microsystems, Inc.
+#                    All rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
+
+#
+# mtt-submit - takes an mttdatabase_debug file(s) and HTTP
+#              POSTs it to http://open-mpi.org/mtt/submit/
+#
+
+use LWP;
+use HTTP::Request::Common qw(POST);
+use Getopt::Std qw(getopts);
+use Data::Dumper;
+use LWP::Debug qw(level); 
+
+getopts('f:s:dvh:u:p:gl:');
+
+level('+') if ($opt_d);
+
+if ((!$opt_f and !$opt_l) or (!$opt_u) or (!$opt_p)) {
+    print <<EOT;
+$0
+  -f    File to post
+  -g    Glob the -f argument 
+        (quote the -f argument, e.g., -f '/foo/files*')
+  -l    fileList (file containing a newline delimited list
+        of files to POST)
+  -s    Script to use
+  -h    Host name to post to
+  -u    HTTP Username
+  -p    HTTP Password
+  -d    Debug mode
+EOT
+}
+
+# Generate a list of files to POST
+my $username = $opt_u;
+my $password = $opt_p;
+
+my $host   = $opt_h ? $opt_h : 'www.open-mpi.org';
+my $script = $opt_s ? $opt_s : 'mtt/submit/index.php';
+my $url    = "http://$host/$script";
+
+# Generate a list of files to POST
+my @files;
+if ($opt_l) {
+    @files = slurp_file($opt_l);
+} elsif ($opt_g) {
+    @files = glob $opt_f;
+} else {
+    @files = split(/,|\s+/, $opt_f);
+}
+
+print "\nFilelist: "  . Dumper(@files);
+
+foreach my $file (@files) {
+
+    open(FILE, "< $file");
+    undef $/;
+    $buf = <FILE>;
+    eval $buf;
+
+    print "Posting the following:\n $buf \nto $url\n" if ($opt_d);
+
+    my $br = LWP::UserAgent->new();
+    $br->agent("poster.pl");
+    $br->credentials("$host:80", "OMPI", $username, $password);
+    $br->proxy('http', $ENV{'http_proxy'});
+
+    my $req = POST $url, $VAR1;
+    $req->content_type('application/x-www-form-urlencoded');
+    $req->authorization_basic($username, $password);
+    my $resp = $br->request($req);
+
+    #die unless $resp->is_success;
+    print $resp->content;
+}
+
+# Take a file containing a new-line separated list,
+# return an array
+sub slurp_file {
+    $filename = shift;
+
+    die "$filename doesn't exist!" if (! -e $filename);
+
+    open(FILE, "< $filename");
+    while (<FILE>) {
+        push(@arr, $_);
+    }
+    close(FILE);
+
+    return @arr;
+}
+
+exit;
