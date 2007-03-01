@@ -55,11 +55,13 @@ define('PATH',    dirname($_SERVER['SCRIPT_NAME']));
 #########################################
 
 # Return a listing of which results go with which phase
-function phase_results_table() {
+function phase_results_table($start_date) {
 
     # NOTE: WE CAN'T MAKE $ret STATIC, SINCE IT GETS USED
-    # FOR COMPOSING THE QUERY, AND ALSO FOR SUMMARY TABLE
-    # HEADERS 
+    # FOR COMPOSING THE QUERY (CLEVER USE), BUT ALSO FOR
+    # SUMMARY TABLE HEADERS (SILLY USE)
+
+    $type = choose_table_type($start_date);
 
     # Setup results cases for the *temporary* view
     $result_name = 'test_result';
@@ -103,7 +105,7 @@ function phase_results_table() {
                   $result_name = 3
                   THEN '_rt' END) as timed_out",
                 "(CASE WHEN
-                  results.latency_bandwidth_id != -38
+                  ${type}results.latency_bandwidth_id != -38
                   THEN '_rl' END) as latency_bandwidth"
             ),
     );
@@ -122,44 +124,159 @@ function phase_results_table() {
     return $ret;
 }
 
-# Return a listing JOIN clauses for each phase type
-function setup_joins() {
+# Return a listing of JOIN clauses for each phase type
+function setup_joins($selects, $start_date) {
 
     static $ret;
     if ($ret)
         return $ret;
 
-    # Indent these JOIN clauses so they'll line up
-    # in the SQL debug output correctly
+    # THE BELOW IDEA SEEMED WORTHWHILE, BUT JUST ADDS
+    # COMPLEXITY.  TABLES ARE NOT DECOUPLED ENOUGH AT THIS
+    # POINT TO BE ABLE RIP OUT TABLES FROM THE JOIN CLAUSE,
+    # NOR WOULD DOING SO WITH THE CURRENT SCHEMA REALLY HELP
+
+    # $nl = "\n\t";
+
+    # $which_tables = which_tables($selects);
+
+    # $maybe_join = array(
+    #     'mpi_get',
+    #     'compute_cluster',
+    #     'compiler',
+    #     'mpi_install',
+    #     'test_build',
+    #     'test_run',
+    # );
+
+    # $phases = array(
+    #     1 => 'mpi_install',
+    #     2 => 'test_build',
+    #     3 => 'test_run',
+    # );
+
+    # $format = " JOIN $nl results ON (results.phase = %d AND phase_id = %s_id) ";
+
+    # # Iterate over all the phases
+    # foreach (array_keys($phases) as $i) {
+    #     $phase = $phases[$i];
+
+    #     # Initialize array to store list of JOINing tables
+    #     $tables = array();
+
+    #     foreach ($maybe_join as $table) {
+    #         if (array_search($table, $which_tables) !== false) {
+    #             $tables[] = $table;
+    #         }
+    #     }
+    #     $clause = join(" NATURAL JOIN $nl", $tables);
+
+    #     # Only JOIN here if we didn't join above, because the
+    #     # because phase_id is always JOINed on in results
+    #     if (array_search($phase, $which_tables) === false) {
+    #         $clause .= " NATURAL JOIN $nl $phase ";
+    #     }
+
+    #     $clause .= sprintf($format, $i, $phase);
+
+    #     if (array_search('submit', $which_tables) !== false) {
+    #         $clause .= " NATURAL JOIN $nl submit";
+    #     }
+
+    #     # latency_bandwidth is a special test_run table
+    #     if ($phase == 'test_run') {
+    #         $clause .= " LEFT OUTER JOIN $nl latency_bandwidth USING (latency_bandwidth_id)";
+    #     }
+
+    #     $ret[$phase] = $clause;
+    # }
+
+    $type = choose_table_type($start_date);
+
+    $ret['mpi_install'] ="
+        ${type}mpi_get NATURAL JOIN 
+        ${type}mpi_install NATURAL JOIN 
+        ${type}compute_cluster NATURAL JOIN 
+        ${type}compiler JOIN 
+        ${type}results ON (${type}results.phase = 1 AND phase_id = mpi_install_id) NATURAL JOIN 
+        ${type}submit";
+
+    $ret['test_build'] = "
+        ${type}mpi_get NATURAL JOIN 
+        ${type}mpi_install NATURAL JOIN 
+        ${type}compute_cluster NATURAL JOIN 
+        ${type}compiler NATURAL JOIN
+        ${type}test_build JOIN
+        ${type}results ON (${type}results.phase = 2 AND phase_id = test_build_id) NATURAL JOIN 
+        ${type}submit";
+
+    $ret['test_run'] = "
+        ${type}mpi_get NATURAL JOIN
+        ${type}mpi_install NATURAL JOIN
+        ${type}compute_cluster NATURAL JOIN
+        ${type}test_build NATURAL JOIN
+        ${type}compiler NATURAL JOIN
+        ${type}test_run JOIN
+        ${type}results ON (${type}results.phase = 3 AND phase_id = test_run_id) NATURAL JOIN
+        ${type}submit LEFT OUTER JOIN
+        ${type}latency_bandwidth USING (latency_bandwidth_id)";
+
+    return $ret;
+}
+
+# Return 'speedy_' if *speedy* TABLEs should be used, otherwise ''
+function choose_table_type($start_date) {
+
+    # Two table types
+    $speedy = 'speedy_';
+    $archive = '';
+
+    # Some developer switches to force which type of TABLE
+    # to SELECT from
+    if (isset($_GET['use_speedy']))
+        return $speedy;
+    elseif (isset($_GET['use_archive']))
+        return $archive;
+
+    if (! $start_date)
+        return $speedy;
+
+    $cmd = "\nSELECT start_timestamp " . 
+                "\n\t FROM ${speedy}results " . 
+                "\n\t ORDER BY start_timestamp ASC " .
+                "\n\t LIMIT 1;";
+
+    $oldest_timestamp = select_scalar($cmd);
+
+    $cmd = "\nSELECT 1 WHERE '$start_date' < '$oldest_timestamp';";
+
+    if (select_scalar($cmd) == 1)
+        return $archive;
+    else
+        return $speedy;
+}
+
+# Return a list of MTT tables (to be able to
+# decipher between MTT tables, and Postgres meta
+# tables)
+function setup_mtt_db_tables() {
+
+    static $ret;
+    if ($ret)
+        return $ret;
+
+    # Must be from an MTT table (in case a
+    # Postgres meta table has an identical column name)
     $ret = array(
-
-    'mpi_install' => '
-        (results NATURAL JOIN submit) JOIN 
-            (mpi_install NATURAL JOIN
-              compute_cluster NATURAL JOIN
-                compiler NATURAL JOIN
-                    mpi_get)
-        ON (results.phase = 1 AND phase_id = mpi_install_id)',
-
-    'test_build' => '
-        (results NATURAL JOIN submit) JOIN 
-            (test_build NATURAL JOIN
-                (mpi_install NATURAL JOIN
-                  compute_cluster NATURAL JOIN
-                    compiler NATURAL JOIN
-                        mpi_get))
-        ON (results.phase = 2 AND phase_id = test_build_id)',
-    'test_run' => '
-        (results NATURAL JOIN submit) JOIN
-            (test_run NATURAL JOIN
-                test_build NATURAL JOIN
-                    (mpi_install NATURAL JOIN
-                      compute_cluster NATURAL JOIN
-                        compiler NATURAL JOIN
-                            mpi_get))
-        ON (results.phase = 3 AND phase_id = test_run_id)
-        LEFT OUTER JOIN latency_bandwidth 
-            USING (latency_bandwidth_id)',
+        'compute_cluster',
+        'submit',
+        'mpi_get',
+        'compiler',
+        'mpi_install',
+        'test_build',
+        'test_run',
+        'results',
+        'latency_bandwidth',
     );
 
     return $ret;
@@ -572,6 +689,8 @@ function developer_params() {
             'no_cookies'   => null,
             'db'           => null,
             'dynamic_view' => null,
+            'use_speedy'   => null,
+            'use_archive'  => null,
         );
     return $params;
 }

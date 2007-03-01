@@ -21,10 +21,7 @@ include_once("$ompi_home/dbpassword.inc");
 include_once("$topdir/reporter.inc");
 
 # Select a database name
-# (No archive database in place a the moment)
-if (isset($_GET['archive'])) {
-    $dbname = "mtt3";
-} elseif (preg_match("/mtt/i", $_GET['db'])) {
+if (preg_match("/mtt/i", $_GET['db'])) {
     $dbname = $_GET['db'];
 } else {
     $dbname = "mtt3";

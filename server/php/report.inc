@@ -112,14 +112,14 @@ function dump_report() {
         # Compose query
         $ret = compose_sql_select($query);
 
-        $sql_cmd   = $ret['sql_cmd'];
-        $row_count = $ret['row_count'];
+        $sql_cmd = $ret['sql_cmd'];
+        $sql_count_star = $ret['count_star'];
 
         # Execute query
         $resource = do_pg_query($sql_cmd);
 
         # Number of rows in this report
-        $n = row_count($row_count, $_GET);
+        $n = row_count($sql_count_star, $_GET);
         $o = offset($_GET);
 
         # Prepare headers array for *_table functions
@@ -1834,12 +1834,12 @@ function exact_match($param, $str) {
 # resource will contain only LIMIT rows despite the same
 # query minus the LIMIT clause returning more than LIMIT
 # rows)
-function row_count($n, $params) {
-    # LIMIT has not been used
-    if (! isset($params['rows']))
-        return $n;
-    else
+function row_count($sql_count_star, $params) {
+    if (! isset($params['rows'])) {
+        return $sql_count_star;
+    } else {
         return $params['rows'];
+    }
 }
 
 # Return offset integer from where this report is displaying
@@ -1956,6 +1956,7 @@ function compose_sql_select($query) {
 
     # Process SQL params
     $dynamic_view = isset($_GET['dynamic_view']) ? 1 : 0;
+    $static_view  = isset($_GET['static_view'])  ? 1 : 0;
     $explain      = isset($_GET['explain'])      ? 1 : 0;
     $analyze      = isset($_GET['analyze'])      ? 1 : 0;
 
@@ -1978,12 +1979,20 @@ function compose_sql_select($query) {
     $limit  = LIMIT;
 
     # Prepare printf format for default return query
-    $select_star  = "";
-    $select_star .= "\nSELECT * FROM $ttable ";
-    $select_star .= "  %s";
-    $select_star .= "\nLIMIT $limit OFFSET $offset";
-    $select_star .= "\n;";
-    $ret['sql_cmd']   = sprintf($select_star, '');
+    $select_star_limited  = "";
+    $select_star_limited .= "\nSELECT * FROM $ttable ";
+    $select_star_limited .= "  %s";
+    $select_star_limited .= "\nLIMIT $limit OFFSET $offset";
+    $select_star_limited .= "\n;";
+
+    # Use this unLIMITed SELECT INTO for the COUNT(*)
+    $select_star_unlimited  = "";
+    $select_star_unlimited .= "\nSELECT * INTO TEMPORARY count_me ";
+    $select_star_unlimited .= "\nFROM $ttable ";
+    $select_star_unlimited .= "  %s";
+    $select_star_unlimited .= "\n;";
+
+    $ret['sql_cmd'] = sprintf($select_star_limited, '');
 
     # Just select from the last ttable if we do not need to
     # prepare a new one
@@ -2006,7 +2015,18 @@ function compose_sql_select($query) {
         if ($orderby)
             $criteria .= "\nORDER BY " . $orderby;
 
-        $ret['sql_cmd'] = sprintf($select_star, $criteria);
+        $limited_cmd   = sprintf($select_star_limited, $criteria);
+        $unlimited_cmd = sprintf($select_star_unlimited, $criteria);
+
+        do_pg_query($unlimited_cmd);
+
+        # Grab the row count
+        $rows = select_scalar("\nSELECT COUNT(*) FROM count_me;");
+
+        do_pg_query("DROP TABLE count_me;");
+
+        $ret['sql_cmd'] = $limited_cmd;
+        $ret['count_star'] = $rows;
 
         return $ret;
     }
@@ -2014,7 +2034,8 @@ function compose_sql_select($query) {
     # Select or create a VIEW to tally the results in
     $phases = $query['phases'];
 
-    if ($dynamic_view)
+    # Use a dynamic view by default
+    if (! $static_view)
         $view = compose_sql_view($query, $phases);
     elseif (sizeof($phases) > 1)
         $view = 'all_view';
@@ -2055,8 +2076,6 @@ function compose_sql_select($query) {
         )
     );
 
-    $wheres = array_values2($query['where']);
-
     # Splice out orderby's old position, and place
     # it at the front of the ORDER BY clause
     if ($orderby) {
@@ -2068,7 +2087,9 @@ function compose_sql_select($query) {
         }
         array_unshift($orderbys, $orderby . $direction);
     }
-    
+
+    $wheres = array_values2($query['where']);
+
     # Piece together all the clauses ...
 
     if ($explain)
@@ -2086,7 +2107,7 @@ function compose_sql_select($query) {
 
     if ($wheres) {
         $cmd .= "\n WHERE " .
-                    "$nl" . join("$nl AND $nl", $wheres);
+                    $nl . join("$nl AND $nl", $wheres);
     }
 
     if (array_keys($query['select'])) {
@@ -2100,13 +2121,14 @@ function compose_sql_select($query) {
 
     $cmd .= ";";
 
-    # Just execute the query, but ''delay'' bringover over the
-    # results because it could max out PHP's 16MB (give or
-    # take) memory limit.  This way we can *always* apply 
-    # a LIMIT clause to the SELECT
+    # Just execute the query, but ''delay'' the bring over
+    # of the results because it could max out PHP's 16MB
+    # (give or take) memory limit.  This way we can *always*
+    # apply a LIMIT clause to the SELECT.
     if (! $explain) {
         do_pg_query($cmd);
 
+        # Perform an unLIMITed COUNT(*) to get the row count
         $cmd = "\nSELECT COUNT(*) FROM $ttable;";
         $rows = select_scalar($cmd);
 
@@ -2115,7 +2137,7 @@ function compose_sql_select($query) {
         # then we do not need to calculate the rows because
         # that number gets carried over via a hidden
         # parameter)
-        $ret['row_count'] = $rows;
+        $ret['count_star'] = $rows;
 
     # Output query plan to browser and file
     # (Mostly just for SQL nerds)
@@ -2153,9 +2175,6 @@ function compose_sql_select($query) {
 # IS IT?
 function compose_sql_view($query, $phases) {
 
-    # JOIN clauses for each phase setting
-    $joins = setup_joins();
-
     # ''temporary'' VIEW
     $ttable_id = $query['ttable_id'];
     $view = "mtttemp_${ttable_id}_view";
@@ -2169,7 +2188,7 @@ function compose_sql_view($query, $phases) {
     $query['select']['start_timestamp'] = 'start_timestamp';
 
     # Setup phase-results array
-    $arr = phase_results_table();
+    $arr = phase_results_table($query['absolute_start']);
     $results = $arr['cases'];
 
     # Handle special bitmapped fields
@@ -2201,12 +2220,23 @@ function compose_sql_view($query, $phases) {
             )
         );
 
+        # JOIN clauses for each phase setting
+        $joins =
+            setup_joins(
+                array_merge(
+                    array_values2($query['select']),
+                    array_values2($query['select_more']),
+                    array_values2($query['performance'])
+                ),
+                $query['absolute_start']
+            );
+
         # Piece together all the clauses
         $cmd  = "\n SELECT " .
-                    "$nl" . join(",$nl", $selects);
+                    $nl . join(",$nl", $selects);
 
         $cmd .= "\n FROM " . 
-                    "$nl". $joins[$phase];
+                    $joins[$phase];
 
         $cmds[] = $cmd;
     }
@@ -2242,19 +2272,9 @@ function column_exists2($column) {
     static $columns;
     if (! $columns) {
 
-        $tables = array(
-            'compute_cluster',
-            'submit',
-            'mpi_get',
-            'compiler',
-            'mpi_install',
-            'test_build',
-            'test_run',
-            'results',
-            'latency_bandwidth',
-        );
+        $mtt_tables = setup_mtt_db_tables();
 
-        foreach ($tables as $table) {
+        foreach ($mtt_tables as $table) {
             $wheres[] = "table_name = '$table'";
         }
 
@@ -2266,6 +2286,37 @@ function column_exists2($column) {
     }
 
     return (array_search($column, $columns) !== false);
+}
+
+# Return a list of tables (in $dbname) that need to be
+# accessed to SELECT on $selects
+function which_tables($selects) {
+
+    static $tables;
+    if (! $tables) {
+
+        $mtt_tables = setup_mtt_db_tables();
+
+        foreach ($mtt_tables as $table) {
+            $wheres1[] = "table_name = '$table'";
+        }
+
+        foreach ($selects as $select) {
+            $wheres2[] = "column_name = '$select'";
+        }
+
+        $cmd = "\n   SELECT table_name " .
+               "\n\t FROM information_schema.columns WHERE \n\t" .
+               "\n\t ( " . join(" OR \n\t", $wheres1) . ")" .
+               "\n\t AND \n\t" .
+               "\n\t ( " . join(" OR \n\t", $wheres2) . ")" .
+               "\n\t GROUP BY table_name " .
+               ";";
+
+        $tables = simple_select($cmd);
+
+        return $tables;
+    }
 }
 
 # Return 1 if the $table exists in the database
@@ -2465,10 +2516,10 @@ function process_date_field($params) {
     $now = select_scalar("SELECT " . sprintf($trunc_format, "now() AT TIME ZONE '$timezone'"));
     $date['current'] = $now;
 
-    $timestamp_name = "start_timestamp";
+    $timestamp_name        = "start_timestamp";
     $starttime_at_timezone = "CAST($timestamp_name as TIMESTAMP WITH TIME ZONE) AT TIME ZONE '$timezone'";
-    $time_at_timezone_fmt = "$nl CAST('%s' as TIMESTAMP WITH TIME ZONE) AT TIME ZONE '$timezone'";
-    $timestamp_param  = $params["text_$timestamp_name"];
+    $time_at_timezone_fmt  = "$nl CAST('%s' as TIMESTAMP WITH TIME ZONE) AT TIME ZONE '$timezone'";
+    $timestamp_param       = $params["text_$timestamp_name"];
 
     # This will immediately put reporter.php in ''absolute date range'' mode
     $force_absolute_date = $params["force_absolute_date"];
@@ -2495,17 +2546,17 @@ function process_date_field($params) {
 
             # Yesterday
             if (preg_match("/yesterday/i", $token, $m)) {
-                $operand = "'yesterday' AT TIME ZONE '$timezone'";
-                $where = "$starttime_at_timezone > $operand";
-                $absolute =
-                    select_scalar("SELECT " . sprintf($trunc_format, $operand)) . " - $now";
+                $operand        = "'yesterday' AT TIME ZONE '$timezone'";
+                $where          = "$starttime_at_timezone > $operand";
+                $absolute_start = select_scalar("SELECT " . sprintf($trunc_format, $operand));
+                $absolute_end   = $now;
             }
             # Today
             elseif (preg_match("/today/i", $token, $m)) {
-                $operand = "'today' AT TIME ZONE '$timezone'";
-                $where = "$starttime_at_timezone > $operand";
-                $absolute =
-                    select_scalar("SELECT " . sprintf($trunc_format, $operand)) . " - $now";
+                $operand        = "'today' AT TIME ZONE '$timezone'";
+                $where          = "$starttime_at_timezone > $operand";
+                $absolute_start = select_scalar("SELECT " . sprintf($trunc_format, $operand));
+                $absolute_end   = $now;
             }
             # Past x increments
             elseif (preg_match(
@@ -2513,10 +2564,11 @@ function process_date_field($params) {
                         "(\w+)$sep*" .
                         "(\w+)/i", $token, $m)) {
 
-                $operand    = "now() AT TIME ZONE '$timezone' - interval '" . strtonumeral($m[1]) . " $m[2]'";
-                $start_time = select_scalar("SELECT " . sprintf($trunc_format, $operand));
-                $where      = "$starttime_at_timezone > " . sprintf($time_at_timezone_fmt, $start_time);
-                $absolute   = "$start_time - $now";
+                $operand        = "now() AT TIME ZONE '$timezone' - interval '" . strtonumeral($m[1]) . " $m[2]'";
+                $start_time     = select_scalar("SELECT " . sprintf($trunc_format, $operand));
+                $where          = "$starttime_at_timezone > " . sprintf($time_at_timezone_fmt, $start_time);
+                $absolute_start = $start_time;
+                $absolute_end   = $now;
             }
             # Range (e.g., date1 - date2)
             elseif (preg_match("/(?:between)?" .
@@ -2526,12 +2578,14 @@ function process_date_field($params) {
                 $where =
                     "$starttime_at_timezone > '$m[1]'" . " AND " .
                     "$nl $starttime_at_timezone < '$m[2]'";
-                $absolute = "$m[1] - $m[2]";
+                $absolute_start = $m[1];
+                $absolute_end   = $m[2];
             }
             # Exact date
             elseif (preg_match("/-|\//", $token)) {
                 $where = "$starttime_at_timezone = '$token'";
-                $absolute = $token;
+                $absolute_start = $token;
+                $absolute_end   = $token;
             }
             # Nothing (used to prevent an SQL error on a
             # clean bring-up of reporter.php)
@@ -2575,21 +2629,25 @@ function process_date_field($params) {
     # PROTECT AGAINST AN EMPTY DATE RANGE.
     # OUGHT TO PRINT A JAVASCRIPT ALERT AS WELL
     if (! $where) {
-        $operand = "now() AT TIME ZONE '$timezone' - interval '24 hours'";
-        $where = "$starttime_at_timezone > $operand";
-        $absolute =
-            select_scalar("SELECT " . sprintf($trunc_format, $operand)) . " - $now";
+        $operand        = "now() AT TIME ZONE '$timezone' - interval '24 hours'";
+        $where          = "$starttime_at_timezone > $operand";
+        $absolute_start = select_scalar("SELECT " . sprintf($trunc_format, $operand));
+        $absolute_end   = $now;
+
         $date['select'][$timestamp_name] = $timestamp_name;
     }
 
     $date['select'][$timestamp_name] = $clause;
-    $date['where'][$timestamp_name] = $where;
-    $date['absolute'] = $absolute;
+    $date['where'][$timestamp_name]  = $where;
+
+    $date['absolute']       = $absolute_start . ' - ' . $absolute_end;
+    $date['absolute_start'] = $absolute_start;
+    $date['absolute_end']   = $absolute_end;
 
     # Put reporter.php in absolute date range mode
     # (This is an option for cron/alerts.php)
     if ($force_absolute_date)
-        $_GET["text_$timestamp_name"] = $absolute;
+        $_GET["text_$timestamp_name"] = $date['absolute'];
 
     # Globalize the date range
     $date_fields = $date;
