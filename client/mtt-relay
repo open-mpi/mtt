@@ -50,6 +50,7 @@ EOT
     exit;
 }
 
+# Stupid emacs mode: '
 
 # Tracing subroutine
 sub prefix {
