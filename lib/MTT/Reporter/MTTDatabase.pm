@@ -18,6 +18,7 @@ use Cwd;
 use MTT::Messages;
 use MTT::Values;
 use MTT::Version;
+use MTT::Globals;
 use LWP::UserAgent;
 use HTTP::Request::Common qw(POST);
 use Data::Dumper;
@@ -33,8 +34,8 @@ my $port;
 # platform common name
 my $platform;
 
-# LWP user agent
-my $ua;
+# LWP user agents (one per proxy)
+my @lwps;
 
 # Serial per mtt client invocation
 my $invocation_serial_name = "client_serial";
@@ -117,27 +118,36 @@ sub Init {
     }
     $url = "$host:$port/$dir";
 
-    # Look for the proxy server in the environment,
-    # and take the first one we find
-    my $proxy;
-    foreach my $p (grep(/http_proxy/i, keys %ENV)) {
-        if ($ENV{$p}) {
-            $proxy = $ENV{$p};
-            $proxy = "http://$proxy" if ($proxy !~ /https?:/);
-            last;
-        }
+    # Setup proxies
+    my $scheme = (80 == $port) ? "http" : "https";
+
+    # Create the Perl LWP stuff to setup for HTTP requests later.
+    # Make one for each proxy (we'll always have at least one proxy
+    # entry, even if it's empty).
+    my $proxies = \@{$MTT::Globals::Values->{proxies}->{$scheme}};
+    foreach my $p (@{$proxies}) {
+        my $ua = LWP::UserAgent->new({ env_proxy => 0 });
+        
+        # @#$@!$# LWP proxying for https *does not work*.  So
+        # don't set $ua->proxy() for it.  Instead, we'll set #
+        # $ENV{https_proxy} whenever we process requests that
+        # require # SSL proxying, because that is obeyed deep down
+        # in the # innards underneath LWP.
+        $ua->proxy([$scheme], $p->{proxy})
+            if ($p->{proxy} ne "" && $scheme ne "https");
+        $ua->agent("MPI Test MTTDatabase Reporter");
+        push(@lwps, {
+            scheme => $scheme,
+            agent => $ua,
+            proxy => $p->{proxy},
+            source => $p->{source},
+        });
     }
-
-    # Create the Perl LWP stuff to setup for HTTP PUT's later
-
-    $ua = LWP::UserAgent->new();
-    $ua->proxy(['http', 'ftp'], $proxy);
-    $ua->agent("MPI Test MTTDatabase Reporter");
     if ($realm && $username && $password) {
         Verbose("   Set HTTP credentials for realm \"$realm\"\n");
     }
 
-    # Do a test ping to ensure that we can reach this URL
+    # Do a test ping to ensure that we can reach this URL.
 
     Debug("MTTDatabase getting a client serial number...\n");
     my $form = {
@@ -145,7 +155,7 @@ sub Init {
     };
     my $req = POST ($url, $form);
     $req->authorization_basic($username, $password);
-    my $response = $ua->request($req);
+    my $response = _do_request($req);
     if (! $response->is_success()) {
         Warning(">> Failed test ping to MTTDatabase URL: $url\n");
         Warning(">> Error was: " . $response->status_line . "\n" . 
@@ -185,15 +195,15 @@ sub Finalize {
     undef $realm;
     undef $url;
     undef $platform;
-    undef $ua;
+    undef @lwps;
     undef $debug_filename;
     undef $debug_index;
 
     # Report number of server errors for entire MTT run
     if ($server_errors_total) {
         Warning(">> $server_errors_total total MTTDatabase server error" . 
-            plural($server_errors_total) . "\n" .
-            "See the above output for more info.\n");
+                _plural($server_errors_total) . "\n" .
+                "See the above output for more info.\n");
     }
 }
 
@@ -314,12 +324,12 @@ sub Submit {
             Debug("Submitting to MTTDatabase...\n");
             my $req = POST ($url, $form);
             $req->authorization_basic($username, $password);
-            my $response = $ua->request($req);
+            my $response = _do_request($req);
             my $sql_error = 0;
             if ($response->is_success()) {
                 ++$successes;
                 push(@success_outputs, $response->content);
-                $sql_error = &count_sql_errors($response->content);
+                $sql_error = _count_sql_errors($response->content);
                 $server_errors_count += $sql_error;
                 $server_errors_total += $server_errors_count;
                 Warning($response->content . "\n") if ($sql_error);
@@ -366,15 +376,16 @@ sub Submit {
     }
 
     Verbose(">> Reported to MTTDatabase: $successes successful submit" . 
-            plural($successes) .  ", " .
-            "$fails failed submit" . plural($fails) . 
-            " (total of $num_results result" . plural($num_results) . ")\n");
+            _plural($successes) .  ", " .
+            "$fails failed submit" . _plural($fails) . 
+            " (total of $num_results result" . _plural($num_results) . ")\n");
 
     # Print a hairy warning if there was an SQL error
     if ($server_errors_count) {
         Warning("\n" . "#" x 60 .
                 "\n#" .
-                "\n# $server_errors_count MTTDatabase server error" . plural($server_errors_count) .
+                "\n# $server_errors_count MTTDatabase server error" . 
+                _plural($server_errors_count) .
                 "\n# The data that failed to submit is in $debug_filename.*.txt." .
                 "\n# See the above output for more info." .
                 "\n#" .
@@ -384,13 +395,13 @@ sub Submit {
     return $phase_serials;
 }
 
-sub plural {
+sub _plural {
     my $val = shift;
     ($val == 1) ? "" : "s";
 }
 
 # Count the number of database server errors
-sub count_sql_errors {
+sub _count_sql_errors {
     my($str) = @_;
     my @lines = split(/\n|\r/, $str);
     my $line;
@@ -400,6 +411,48 @@ sub count_sql_errors {
         $count++ if ($line =~ /mttdatabase server error/i);
     }
     return $count;
+}
+
+#--------------------------------------------------------------------------
+
+sub _do_request {
+    my $req = shift;
+
+    # Ensure that the environment is clean so that nothing happens
+    # that we're unaware of.
+    my %ENV_SAVE = %ENV;
+    delete $ENV{http_proxy};
+    delete $ENV{https_proxy};
+    delete $ENV{HTTP_PROXY};
+    delete $ENV{HTTPS_PROXY};
+
+    # Go through each ua and try to get a good connection.  If we get
+    # connection refused from any of them, try another.
+    my $response;
+    foreach my $ua (@lwps) {
+        Debug("MTTDatabase trying proxy: $ua->{proxy} / $ua->{source}\n");
+        $ENV{https_proxy} = $ua->{proxy}
+            if ("https" eq $ua->{scheme});
+
+        # Do the HTTP request
+        $response = $ua->{agent}->request($req);
+
+        # If it succeeded, or if it failed with something other than
+        # code 500, return (code 500 = can't connect)
+        if ($response->is_success() ||
+            $response->code() != 500) {
+            %ENV = %ENV_SAVE;
+            return $response;
+        }
+
+        # Otherwise, loop around and try again
+        Debug("Proxy $ua->{proxy} failed code: " .
+              $response->status_line . "\n");
+    }
+
+    # Sorry -- nothing got through...
+    %ENV = %ENV_SAVE;
+    return $response;
 }
 
 1;

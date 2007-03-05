@@ -96,6 +96,7 @@ require MTT::Globals;
 require MTT::FindProgram;
 require MTT::Trim;
 require MTT::DoCommand;
+require MTT::Lock;
 
 my @file_arg;
 my $stdin_arg;
@@ -495,6 +496,10 @@ foreach my $file (@file_arg) {
     MTT::Globals::load($ini_full);
     MTT::Messages::Messages($debug, $verbose, cwd());
 
+    # Setup locks
+
+    MTT::Lock::Init($ini);
+
     # If "--trial" was specified, then set the "trail" flag to 1
 
     if (defined($trial_arg)) {
@@ -543,6 +548,10 @@ foreach my $file (@file_arg) {
     # Shutdown the reporter
 
     MTT::Reporter::Finalize();
+
+    # Shut down locks
+
+    MTT::Lock::Finalize($ini);
 }
 
 # That's it!

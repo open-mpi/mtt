@@ -223,10 +223,12 @@ sub client_command {
     debug "Client command: $cmd";
     my @tokens = split(/\s+/, $cmd);
     debug "Command: $tokens[0]";
-    if ("obtain" eq lc($tokens[0])) {
-        client_obtain_lock($tokens[1], $entry);
-    } elsif ("release" eq lc($tokens[0])) {
-        client_release_lock($tokens[1], $entry);
+    if ("lock" eq lc($tokens[0])) {
+        client_lock($tokens[1], $entry);
+    } elsif ("trylock" eq lc($tokens[0])) {
+        client_trylock($tokens[1], $entry);
+    } elsif ("unlock" eq lc($tokens[0])) {
+        client_unlock($tokens[1], $entry);
     } elsif ("quit" eq lc($tokens[0])) {
         client_disconnect($entry);
     } else {
@@ -236,15 +238,15 @@ sub client_command {
 
 #----------------------------------------------------------------------
 
-sub client_obtain_lock {
+sub client_lock {
     my ($name, $entry) = @_;
 
     logmsg "Client $entry->{id} requesting lock '$name'";
     # If the lock doesn't exist, grant it immediately
     if (!exists($locks->{$name})) {
         $locks->{$name}->{client} = $entry;
-        syswrite($entry->{handle}, "Obtained $name$EOL");
-        logmsg "Client $entry->{id} obtained lock '$name'";
+        syswrite($entry->{handle}, "Locked $name$EOL");
+        logmsg "Client $entry->{id} locked '$name'";
     } 
     # Check for bozo error (we already own the lock)
     elsif ($locks->{$name}->{client} == $entry) {
@@ -260,10 +262,33 @@ sub client_obtain_lock {
 
 #----------------------------------------------------------------------
 
-sub client_release_lock {
+sub client_trylock {
     my ($name, $entry) = @_;
 
-    logmsg "Client $entry->{id} releasing lock '$name'";
+    logmsg "Client $entry->{id} requesting trylock '$name'";
+    # If the lock doesn't exist, grant it immediately
+    if (!exists($locks->{$name})) {
+        $locks->{$name}->{client} = $entry;
+        syswrite($entry->{handle}, "Locked $name$EOL");
+        logmsg "Client $entry->{id} locked '$name'";
+    } 
+    # Check for bozo error (we already own the lock)
+    elsif ($locks->{$name}->{client} == $entry) {
+        syswrite($entry->{handle}, "Error: you already own the lock$EOL");
+        logmsg "Client $entry->{id} already owns lock '$name'";
+    } 
+    # Otherwise, reply that the client didn't get it (but don't queue it up)
+    else {
+        syswrite($entry->{handle}, "Nolock $name$EOL");
+    }
+}
+
+#----------------------------------------------------------------------
+
+sub client_unlock {
+    my ($name, $entry) = @_;
+
+    logmsg "Client $entry->{id} unlocking '$name'";
     if (!exists($locks->{$name})) {
         # Bozo error
         syswrite($entry->{handle}, "Error: lock does not exist$EOL");
@@ -273,16 +298,16 @@ sub client_release_lock {
         syswrite($entry->{handle}, "Error: lock not held by this client$EOL");
         logmsg "Client $entry->{id} lock '$name' not held by this client";
     } else {
-        syswrite($entry->{handle}, "Released $name$EOL");
-        logmsg "Client $entry->{id} released lock '$name'";
+        syswrite($entry->{handle}, "Unlocked $name$EOL");
+        logmsg "Client $entry->{id} unlocked '$name'";
         # If there's anyone queued up for this lock, give it to them
         if (exists($locks->{$name}->{queue})) {
             my $new_owner = pop(@{$locks->{$name}->{queue}});
             $locks->{$name}->{client} = $new_owner;
             delete $locks->{$name}->{queue}
                 if (-1 == $#{$locks->{$name}->{queue}});
-            syswrite($new_owner->{handle}, "Released $name$EOL");
-            logmsg "Client $new_owner->{id} obtained lock '$name'";
+            syswrite($new_owner->{handle}, "Locked $name$EOL");
+            logmsg "Client $new_owner->{id} locked '$name'";
         }
         # Otherwise, delete the whole entry
         else {
@@ -306,7 +331,7 @@ sub client_disconnect {
 
     # Release all locks held by this client
     foreach my $k (keys(%$locks)) {
-        client_release_lock($k, $entry)
+        client_unlock($k, $entry)
             if ($entry == $locks->{$k}->{client});
     }
 
