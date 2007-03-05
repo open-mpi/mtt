@@ -281,7 +281,7 @@ sub client_release_lock {
             $locks->{$name}->{client} = $new_owner;
             delete $locks->{$name}->{queue}
                 if (-1 == $#{$locks->{$name}->{queue}});
-            syswrite($new_owner->{handle}, "Obtained $name$EOL");
+            syswrite($new_owner->{handle}, "Released $name$EOL");
             logmsg "Client $new_owner->{id} obtained lock '$name'";
         }
         # Otherwise, delete the whole entry
