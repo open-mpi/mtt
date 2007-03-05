@@ -1,0 +1,397 @@
+#!/usr/bin/env perl
+#
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# $COPYRIGHT$
+# 
+# Additional copyrights may follow
+# 
+# $HEADER$
+#
+
+use strict;
+
+use Data::Dumper;
+use Getopt::Long;
+use IO::Socket::INET;
+use Socket;
+use Fcntl qw(F_GETFL F_SETFL O_NONBLOCK);
+
+#----------------------------------------------------------------------
+
+my $locks;
+my $EOL = "\015\012";
+
+#----------------------------------------------------------------------
+
+my $help;
+my $foreground = 0;
+our $syslog = 0;
+our $debug = 0;
+my $port = 8080;
+my @interfaces;
+
+Getopt::Long::Configure("bundling");
+my $ok = Getopt::Long::GetOptions("help|h" => \$help,
+                                  "foreground|f" => \$foreground,
+                                  "syslog|s" => \$syslog,
+                                  "debug|d" => \$debug,
+                                  "port|p=s" => \$port,
+                                  "interface|i=s" => \@interfaces
+                                  );
+
+if ($help || !$ok) {
+    print "$0 usage:
+
+--help | -h                    This help message
+--foreground | -f              Run in the foreground
+--syslog | -s                  Log to the syslog
+--debug | -d                   Print debugging messages
+--port=PORT | -p=PORT          Specify port number to listen on
+--interface=IFACE | -i=IFACE   Specify interface to listen on
+";
+    exit($ok);
+}
+
+#----------------------------------------------------------------------
+
+sub logmsg { 
+    our $syslog;
+
+    if ($syslog) {
+        system("/sbin/initlog -n mtt-lock-server -s \"@_\"");
+    } else {
+        print "$0 $$: @_ at ", scalar localtime, "\n";
+    }
+}
+
+sub debug { 
+    our $debug;
+
+    if ($debug) {
+        if ($syslog) {
+            system("/sbin/initlog -n mtt-lock-server -s \"@_\"");
+        } else {
+            print "$0 $$: @_ at ", scalar localtime, "\n";
+        }
+    }
+}
+
+#----------------------------------------------------------------------
+
+sub register_id {
+    my ($entry, $requested) = @_;
+
+    our $fd_map;
+    my $orig = $requested;
+    my $count = 0;
+    while (1) {
+        my $found = 0;
+        foreach my $k (keys(%$fd_map)) {
+            if ($fd_map->{$k}->{id} eq $requested) {
+                $found = 1;
+                ++$count;
+                $requested = "$orig #" . "$count";
+                last;
+            }
+        }
+
+        # If we didn't find it, claim it and be done
+        if (!$found) {
+            $entry->{id} = $requested;
+            return;
+        }
+    }
+}
+
+#----------------------------------------------------------------------
+
+sub server_accept {
+    my $entry = shift;
+
+    my $client;
+    my $paddr = accept($client, $entry->{handle});
+    my ($post, $iaddr) = sockaddr_in($paddr);
+        
+    # Ensure the socket is set to nonblocking
+    my $flags = fcntl($client, F_GETFL, 0)
+        || die "Can't get flags for the socket: $!\n";
+    fcntl($client, F_SETFL, $flags & O_NONBLOCK)
+        || die "Can't set flags for the socket: $!\n";
+        
+    # Setup vector to select on this socket
+    our $fd_vec;
+    vec($fd_vec, fileno($client), 1) = 1;
+
+    # Setup map for when something happens on this socket
+    our $fd_map;
+    my $fd = fileno($client);
+    $fd_map->{$fd}->{handle} = $client;
+    $fd_map->{$fd}->{read} = \&client_read_id;
+    $fd_map->{$fd}->{error} = \&client_disconnect;
+    register_id($fd_map->{$fd}, inet_ntoa($iaddr));
+    logmsg "Connection from '$fd_map->{$fd}->{id}', fileno $fd";
+}
+
+#----------------------------------------------------------------------
+
+sub should_not_happen {
+    my $entry = shift;
+
+    logmsg "Unexpected event on fd ", fileno($entry->{handle}), "exiting!";
+    exit(1);
+}
+
+#----------------------------------------------------------------------
+
+sub read_until_newline {
+    my $entry = shift;
+    my $str;
+
+    debug "Read from newline";
+    # Check input buffer to see if we previously read something from
+    # the socket that should now be used as input
+    if ($entry->{input_buffer}) {
+        # If we have a full line of text followed by a newline in the
+        # buffer, extract and return it.
+        if (0 != ($entry->{input_buffer} =~ m/^(.*)$EOL/)) {
+            $str = $1;
+            $entry->{input_buffer} =~ s/^.*$EOL//;
+            debug "Got from input buffer: $str";
+            return $str;
+        }
+
+        # Otherwise, we have a partial line.  So extract that and fall
+        # through.
+        $str = $entry->{input_buffer};
+        $entry->{input_buffer} = undef;
+        debug "Got partial from input buffer: $str";
+    }
+
+    # Either there was nothing in the input buffer or we didn't have a
+    # newline in the input buffer, so we need to read more from the
+    # socket.
+    while (1) {
+        my $data;
+        debug "Sysread...";
+        my $len = sysread($entry->{handle}, $data, 99999);
+
+        # If we got a 0 length read, that means the client disconnected
+        if (0 == $len) {
+            debug "Client disconnect!";
+            client_disconnect($entry);
+            return $str;
+        }
+
+        # Did we get a full line of text?  If so, extract the first
+        # line, save the rest in the input buffer, and return the
+        # first line.
+        $data =~ m/^(.*)$EOL(.*)/;
+        $str .= $1;
+        $entry->{input_buffer} = $2;
+        debug "String: '$1'";
+        debug "Buffered: '$2'";
+        return $str;
+    }
+}
+
+#----------------------------------------------------------------------
+
+sub client_read_id {
+    my $entry = shift;
+
+    my $id = read_until_newline($entry);
+    return
+        if (!defined($id));
+
+    # Check to see if this ID is being used by anyone
+    my $old_id = $entry->{id};
+    register_id($entry, $id);
+    logmsg "Client ID: '$old_id' -> '$entry->{id}'";
+    syswrite($entry->{handle}, "Hello $id$EOL");
+    $entry->{read} = \&client_command;
+}
+
+#----------------------------------------------------------------------
+
+sub client_command {
+    my $entry = shift;
+
+    my $cmd = read_until_newline($entry);
+    return 
+        if (!defined($cmd));
+
+    debug "Client command: $cmd";
+    my @tokens = split(/\s+/, $cmd);
+    debug "Command: $tokens[0]";
+    if ("obtain" eq lc($tokens[0])) {
+        client_obtain_lock($tokens[1], $entry);
+    } elsif ("release" eq lc($tokens[0])) {
+        client_release_lock($tokens[1], $entry);
+    } elsif ("quit" eq lc($tokens[0])) {
+        client_disconnect($entry);
+    } else {
+        syswrite($entry->{handle}, "Unrecognized command: $tokens[0]$EOL");
+    }
+}
+
+#----------------------------------------------------------------------
+
+sub client_obtain_lock {
+    my ($name, $entry) = @_;
+
+    logmsg "Client $entry->{id} requesting lock '$name'";
+    # If the lock doesn't exist, grant it immediately
+    if (!exists($locks->{$name})) {
+        $locks->{$name}->{client} = $entry;
+        syswrite($entry->{handle}, "Obtained $name$EOL");
+        logmsg "Client $entry->{id} obtained lock '$name'";
+    } 
+    # Check for bozo error (we already own the lock)
+    elsif ($locks->{$name}->{client} == $entry) {
+        syswrite($entry->{handle}, "Error: you already own the lock$EOL");
+        logmsg "Client $entry->{id} already owns lock '$name'";
+    } 
+    # Otherwise, queue it up for when the owner releases it
+    else {
+        push(@{$locks->{$name}->{queue}}, $entry);
+        logmsg "Client $entry->{id} queued for lock '$name'";
+    }
+}
+
+#----------------------------------------------------------------------
+
+sub client_release_lock {
+    my ($name, $entry) = @_;
+
+    logmsg "Client $entry->{id} releasing lock '$name'";
+    if (!exists($locks->{$name})) {
+        # Bozo error
+        syswrite($entry->{handle}, "Error: lock does not exist$EOL");
+        logmsg "Client $entry->{id} lock '$name' does not exist";
+    } elsif ($locks->{$name}->{client} != $entry) {
+        # Bozo error
+        syswrite($entry->{handle}, "Error: lock not held by this client$EOL");
+        logmsg "Client $entry->{id} lock '$name' not held by this client";
+    } else {
+        syswrite($entry->{handle}, "Released $name$EOL");
+        logmsg "Client $entry->{id} released lock '$name'";
+        # If there's anyone queued up for this lock, give it to them
+        if (exists($locks->{$name}->{queue})) {
+            my $new_owner = pop(@{$locks->{$name}->{queue}});
+            $locks->{$name}->{client} = $new_owner;
+            delete $locks->{$name}->{queue}
+                if (-1 == $#{$locks->{$name}->{queue}});
+            syswrite($new_owner->{handle}, "Obtained $name$EOL");
+            logmsg "Client $new_owner->{id} obtained lock '$name'";
+        }
+        # Otherwise, delete the whole entry
+        else {
+            delete $locks->{$name};
+        }
+    }
+}
+
+#----------------------------------------------------------------------
+
+sub client_disconnect {
+    my $entry = shift;
+
+    # Close the client socket
+    my $fd = fileno($entry->{handle});
+    close($entry->{handle});
+
+    # Log this *before* we release the locks so that it's clear that
+    # the releases were caused by the disconnect
+    logmsg "Client $entry->{id} disconnected";
+
+    # Release all locks held by this client
+    foreach my $k (keys(%$locks)) {
+        client_release_lock($k, $entry)
+            if ($entry == $locks->{$k}->{client});
+    }
+
+    # Remove it from the select() map
+    our $fd_vec;
+    vec($fd_vec, $fd, 1) = 0;
+
+    # Remove it from the hash map
+    our $fd_map;
+    delete $fd_map->{$fd};
+}
+
+#----------------------------------------------------------------------
+
+# Main
+
+# Open listening socket
+my $tcp_proto = getprotobyname('tcp');
+$port =~ m/^\s*(\d+)\s*$/
+    || die("Invalid port");
+$port = $1;
+my $server;
+socket($server, PF_INET, SOCK_STREAM, $tcp_proto) 
+    || die("Unable to open socket: $!");
+setsockopt($server, SOL_SOCKET, SO_REUSEADDR, pack("l", 1))
+    || die("setsockopt: $!");
+bind($server, sockaddr_in($port, INADDR_ANY))
+    || die("bind: $!");
+listen($server, SOMAXCONN)
+    || die("listen: $!");
+
+# Now that everything is working properly, fork off into the
+# background if desired
+if (!$foreground) {
+    my $pid = fork();
+    # Parent exits
+    exit(0)
+        if (0 != $pid);
+
+    # Child closes all in/out to background cleanly
+    close(STDIN);
+    close(STDOUT);
+    close(STDERR);
+}
+
+# Setup select() vectors
+our $fd_vec = '';
+vec($fd_vec, fileno($server), 1) = 1;
+our $fd_map;
+$fd_map->{fileno($server)}->{handle} = $server;
+$fd_map->{fileno($server)}->{read} = \&server_accept;
+$fd_map->{fileno($server)}->{error} = \&should_not_happen;
+
+# Main action loop
+logmsg "Server listening at port $port";
+debug "Looping for clients";
+my $err_count = 0;
+while (1) {
+    my $rvec;
+    my $evec;
+    debug "Waiting on select...";
+
+    # Note that signals cause select() to return -1.  So only die if
+    # we get multiple consecutive errors back from select.
+    my $nfound = select($rvec = $fd_vec, undef, $evec = $fd_vec, undef);
+    if ($nfound < 0) {
+        ++$err_count;
+        next
+            if (1 == $err_count);
+        die "select: $!\n"
+    }
+    $err_count = 0;
+
+    # For every entry in the fd_map (i.e., every file descriptor), if
+    # it's set in the returned vectors, do the associated action.
+    foreach my $k (keys(%$fd_map)) {
+        my $entry = $fd_map->{$k};
+
+        $fd_map->{$k}->{read}($entry)
+            if (1 == vec($rvec, $k, 1));
+        $fd_map->{$k}->{error}($entry)
+            if (1 == vec($evec, $k, 1));
+    }
+}
+
+# Should never get here
+exit(1);
+
