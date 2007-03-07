@@ -68,7 +68,7 @@ dump_report();
 # Report on script's execution time
 $finish = time();
 $elapsed = $finish - $start;
-stats("\nTotal script execution time: " . $elapsed . " seconds");
+print("\nTotal script execution time: " . $elapsed . " second(s)");
 
 # Display input parameters
 debug_cgi($_GET, "GET " . __LINE__);

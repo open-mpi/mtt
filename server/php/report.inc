@@ -2410,7 +2410,7 @@ function process_input_fields($params) {
 
     # These fields will not be string searchable
     $special_fields = array_merge(
-        array("timestamp", "phase"),
+        array("timestamp", "phase", "trial"),
 
         # Handle these with process_large_fields()
         setup_large_fields()
