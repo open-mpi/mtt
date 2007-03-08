@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -125,7 +126,7 @@ sub _do_get {
             Verbose("   No new MPI sources\n");
         }
     } else {
-        Verbose("   Failed to get new test sources: $ret->{result_message}\n");
+        Verbose("   Failed to get new MPI sources: $ret->{result_message}\n");
     }
 }
 

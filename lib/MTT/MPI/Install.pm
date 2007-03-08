@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -167,6 +168,7 @@ sub Install {
             foreach my $mpi_get_name (@mpi_gets) {
                 # Strip whitespace
                 $mpi_get_name =~ s/^\s*(.*?)\s*/\1/;
+                $mpi_get_name = lc($mpi_get_name);
 
                 # This is only warning about the INI file; we'll see
                 # if we find meta data for the MPI get later
@@ -282,6 +284,9 @@ sub _do_install {
 
     $config->{full_section_name} = $section;
     $config->{simple_section_name} = $simple_section;
+
+    # Carry MPI Get module data onwards
+    $config->{module_data} = $mpi_get->{module_data};
 
     # module
     $config->{module} = Value($ini, $section, "module");
@@ -444,6 +449,7 @@ sub _do_install {
     my $start_time = time;
     my $ret = MTT::Module::Run("MTT::MPI::Install::$config->{module}",
                                "Install", $ini, $section, $config);
+
     my $duration = time - $start_time . " seconds";
 
     # Set install_dir for the global environment

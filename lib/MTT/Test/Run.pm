@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -72,6 +73,7 @@ sub Run {
             foreach my $test_build_name (@test_builds) {
                 # Strip whitespace
                 $test_build_name =~ s/^\s*(.*?)\s*/\1/;
+                $test_build_name = lc($test_build_name);
 
                 # This is only warning about the INI file; we'll see
                 # if we find meta data for the test build later

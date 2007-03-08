@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -262,8 +263,12 @@ sub Cmd {
 
             # Run it!
 
-            exec(@$tokens) ||
-                die "Can't execute command: $cmd\n";
+            if (! exec(@$tokens)) {
+                my $die_msg;
+                $die_msg .= "Can't execute command: $cmd\n";
+                $die_msg .= "Error: $!\n";
+                die $die_msg;
+            }
         }
     } else {
         # For no_execute, just print the command
