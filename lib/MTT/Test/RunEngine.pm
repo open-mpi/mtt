@@ -36,7 +36,9 @@ sub RunEngine {
     Verbose("   Total of $total tests to run in this section\n");
     $verbose_out = 0;
     my $count = 0;
+    my $printed = 0;
     foreach my $run (@{$ret->{tests}}) {
+        $printed = 0;
         if (!exists($run->{executable})) {
             Warning("No executable specified for text; skipped\n");
             next;
@@ -75,10 +77,12 @@ sub RunEngine {
         if ($verbose_out > 50) {
             $verbose_out = 0;
             my $per = sprintf("%d%%", $count / $total * 100);
+            $printed = 1;
             Verbose("   ### Test progress: $count of $total section tests complete ($per)\n");
         }
     }
-    Verbose("   ### Test progress: $count of $total section tests complete (100%)\n");
+    Verbose("   ### Test progress: $count of $total section tests complete (100%)\n")
+        if (!$printed);
 
     # If we ran any tests at all, then run the after_all step and
     # submit the results to the Reporter
