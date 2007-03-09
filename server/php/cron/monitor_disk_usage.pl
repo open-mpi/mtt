@@ -31,6 +31,8 @@ if (! @tables) {
     @tables = (
         'results',
         'test_run',
+        'speedy_results',
+        'speedy_test_run',
     );
 }
 $tables_csv = join(',', @tables);
@@ -69,6 +71,11 @@ if ($method =~ /sql/i) {
 # Monitor using SQL
 if ($method =~ /dbsize/i) {
     monitor_using_dbsize();
+}
+
+# Monitor row counts
+if ($method =~ /rows/i) {
+    monitor_rows();
 }
 
 exit;
@@ -155,6 +162,32 @@ EOT
     debug($cmd);
     print logfile `$cmd`;
 }
+
+sub monitor_rows {
+
+    my $selections_str =
+             
+            "\n\tnow() as timestamp," .
+            "\n\t" .
+                join(",\n\t",
+                      (map { "count_$_" . ".* AS count_$_" } @tables)
+                );
+
+    my $query = "\nSELECT $selections_str FROM \n\t";
+
+    my @wheres;
+    my $format = "(SELECT COUNT(*) AS count_%s FROM %s) AS count_%s";
+    foreach my $table (@tables) {
+        push(@selects, sprintf($format, $table, $table, $table));
+    }
+    $query .= "\n\t" . join(",\n\t", @selects) . "\n";
+    $query .= "\n;";
+
+    my $cmd = "\npsql -d $db -U $user -c \"$query\"";
+    debug($cmd);
+    print logfile `$cmd`;
+}
+
 
 sub monitor_using_dbsize {
 
