@@ -498,7 +498,7 @@ foreach my $file (@file_arg) {
     # If "--trial" was specified, then set the "trail" flag to 1
 
     if (defined($trial_arg)) {
-        $MTT::Globals::Values->{trial} = $trial_arg;
+        $MTT::Globals::Values->{trial} = 1;
     }
 
     # Run the phases
