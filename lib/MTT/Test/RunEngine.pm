@@ -96,7 +96,10 @@ sub RunEngine {
 sub _run_one_np {
     my ($install_dir, $run, $mpi_details, $np, $force) = @_;
 
-    my $name = basename($MTT::Test::Run::test_executable);
+    my $name;
+    if (-e $MTT::Test::Run::test_executable) {
+        $name = basename($MTT::Test::Run::test_executable);
+    }
     $run->{name} = $name;
 
     # Load up the final global
@@ -131,7 +134,12 @@ sub _run_one_test {
     # checking will bring all the intermediary hash levels into
     # existence if they didn't already exist.
 
-    my $str = "   Test: " . basename($name) .
+    my $basename;
+    if (-e $MTT::Test::Run::test_executable) {
+        $basename = basename($MTT::Test::Run::test_executable);
+    }
+
+    my $str = "   Test: " . $basename .
         ", np=$MTT::Test::Run::test_np, variant=$variant:";
 
     if (!$force &&

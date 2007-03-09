@@ -22,7 +22,6 @@ use MTT::Files;
 use MTT::Version;
 use Data::Dumper;
 use File::Basename;
-use Hash::Merge qw(merge);
 use Text::TabularDisplay;
 use Text::Wrap;
 
@@ -33,8 +32,8 @@ my $filename;
 # files we've written to already in this run
 my $written_files;
 
-# global hash of all the MTT results
-my %results;
+# global array of all the MTT results
+my @results;
 
 # user specified headers and footers
 my $summary_header;
@@ -91,8 +90,11 @@ sub Init {
 #--------------------------------------------------------------------------
 
 sub Finalize {
+
     # Print a roll-up report
-    _summary_report(\%results);
+    if (@results) {
+        _summary_report(\@results);
+    }
 
     undef $dirname;
     undef $filename;
@@ -106,12 +108,14 @@ sub Submit {
 
     Debug("File reporter\n");
 
+    # Push entries into the global results array
+    push(@results, $entries);
+
+    # TextFile output has its own columns-width
     my $save_columns = $Text::Wrap::columns;
     $Text::Wrap::columns = $textwrap;
 
-    # Merge entries into the global results array
-    %results = %{merge(\%results, $entries)};
-
+    # Do a detail report
     _detail_report($info, $entries);
 
     $Text::Wrap::columns = $save_columns;
@@ -119,7 +123,7 @@ sub Submit {
 
 # Show counts of section results
 sub _summary_report {
-    my $results = shift;
+    my $results_arr = shift;
 
     print("\nMTT Results Summary\n");
 
@@ -127,27 +131,30 @@ sub _summary_report {
 
     my $table = Text::TabularDisplay->new(("Phase","Section","Pass","Fail","Time out","Skip"));
 
-    foreach my $phase (keys %$results) {
-        my $phase_obj = $results->{$phase};
+    foreach my $results (@$results_arr) {
 
-        foreach my $section (keys %{$phase_obj}) {
-            my $section_obj = $results->{$phase}{$section};
+        foreach my $phase (keys %$results) {
+            my $phase_obj = $results->{$phase};
 
-            my ($pass, $fail, $timed, $skipped) = (0, 0, 0, 0);
+            foreach my $section (keys %{$phase_obj}) {
+                my $section_obj = $results->{$phase}{$section};
 
-            foreach my $results_hash (@$section_obj) {
+                my ($pass, $fail, $timed, $skipped) = (0, 0, 0, 0);
 
-                if ($results_hash->{test_result} eq MTT::Values::PASS) {
-                    $pass++;
-                } elsif ($results_hash->{test_result} eq MTT::Values::FAIL) {
-                    $fail++;
-                } elsif ($results_hash->{test_result} eq MTT::Values::TIMED_OUT) {
-                    $timed++;
-                } elsif ($results_hash->{test_result} eq MTT::Values::SKIPPED) {
-                    $skipped++;
+                foreach my $results_hash (@$section_obj) {
+
+                    if ($results_hash->{test_result} eq MTT::Values::PASS) {
+                        $pass++;
+                    } elsif ($results_hash->{test_result} eq MTT::Values::FAIL) {
+                        $fail++;
+                    } elsif ($results_hash->{test_result} eq MTT::Values::TIMED_OUT) {
+                        $timed++;
+                    } elsif ($results_hash->{test_result} eq MTT::Values::SKIPPED) {
+                        $skipped++;
+                    }
                 }
+                $table->add($phase, $section, $pass, $fail, $timed, $skipped);
             }
-            $table->add($phase, $section, $pass, $fail, $timed, $skipped);
         }
     }
     print $table->render . "\n";
@@ -179,7 +186,6 @@ sub _detail_report {
 
             # Make timestamps human-readable
             $title = _convert_timestamps($title);
-            $title = _delete_frivolous($title);
 
             $table = _add_to_table($table, $title, undef);
             $table = _add_to_table($table, $separator, undef);
@@ -189,7 +195,6 @@ sub _detail_report {
                 $file   = _get_filename($report, $section);
 
                 $report = _convert_timestamps($report);
-                $report = _delete_frivolous($report);
 
                 $table = _add_to_table($table, $report, $title);
                 $table = _add_to_table($table, $separator, undef);
@@ -245,9 +250,20 @@ sub _get_replicated_fields {
 sub _add_to_table {
     my($table, $include_hash, $exclude_hash) = @_;
 
-    my $multi_line_data;
+    # Skip over database fields that will have
+    # *no* meaning to the MTT operator
+    my @frivolous = (
+        "mpi_install_id",
+        "test_build_id",
+        "test_result",
+    );
+    my $frivolous = join("|", @frivolous);
 
     foreach my $key (sort keys %$include_hash) {
+
+        # Skip over frivolous data
+        next if ($key =~ /$frivolous/);
+
         if (! defined($exclude_hash->{$key})) {
             $table->add($key, wrap('', '', $include_hash->{$key}));
         }
@@ -329,27 +345,6 @@ sub _convert_timestamps {
     foreach my $key (keys(%$report)) {
         if ($key =~ /timestamp/ && $report->{$key} =~ /\d+/) {
             $report->{$key} = gmtime($report->{$key});
-        }
-    }
-
-    return $report;
-}
-
-# Delete database fields that will have no meaning to the MTT operator
-sub _delete_frivolous {
-    my $report = shift;
-
-    my @frivolous = (
-        "mpi_install_id",
-        "test_build_id",
-        "test_result",
-    );
-
-    my $regexp = join("|", @frivolous);
-
-    foreach my $key (keys(%$report)) {
-        if ($key =~ /$regexp/) {
-            delete $report->{$key};
         }
     }
 

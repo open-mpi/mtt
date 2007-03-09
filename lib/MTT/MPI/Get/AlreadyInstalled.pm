@@ -47,9 +47,17 @@ sub Get {
         Warning("A non-existent \"installdir\" parameter was provided,\n" .
                 "I will search your path for an MPI ...\n");
 
-        my $dir = FindProgram(qw(mpicc mpiexec mpirun));
+        my $program = FindProgram(qw(mpicc mpiexec mpirun));
 
-        $installdir = dirname($dir);
+        # Fail if we did not find an MPI
+        if (! -e $program) {
+            my $error = "I did not find an MPI in your PATH.\n";
+            $ret->{result_message} = "Failed; $error";
+            $ret->{test_result} = MTT::Values::FAIL;
+            return $ret;
+        }
+
+        $installdir = dirname($program);
         $installdir =~ s/bin\/?$//;
     }
     Verbose("Using MPI in $installdir\n");
