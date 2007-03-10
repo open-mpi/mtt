@@ -520,7 +520,12 @@ sub find_executables {
     Debug("&find_executables got @_\n");
 
     @find_executables_data = ();
-    find(\&find_executables_sub, @_);
+    my @dirs;
+    foreach my $d (@_) {
+        push(@dirs, $d)
+            if ("" ne $d);
+    }
+    find(\&find_executables_sub, @dirs);
 
     Debug("&find_exectuables returning: @find_executables_data\n");
     return \@find_executables_data;
