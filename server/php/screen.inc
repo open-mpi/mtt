@@ -1297,6 +1297,7 @@ EOT;
     a.lgray_ln:hover   { color: #FFFF40; font-size: 105%; text-decoration:none; }
 
     td { font-size: 75%; } 
+    p  { font-size: 75%; } 
     th { font-size: 80%; } 
     th#result { font-size: 55%; } 
     img#result { width: 55%; height: 55%; } 
