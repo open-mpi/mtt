@@ -243,19 +243,19 @@ sub _run_step {
         if ($x->{timed_out}) {
             Verbose("  Warning: step $step TIMED OUT\n");
             Verbose("  Output: $x->{stdout}\n")
-                if (defined($x->{stdout}) && $x->{stdout});
+                if (defined($x->{stdout}) && $x->{stdout} ne "");
         } elsif (MTT::DoCommand::wifsignaled($x->{exit_status})) {
             my $ret = MTT::DoCommand::wtermsig($x->{exit_status});
             Verbose("  Warning: step $step finished via signal $ret; skipping\n");
             Verbose("  Output: $x->{stdout}\n")
-                if (defined($x->{stdout}) && $x->{stdout});
+                if (defined($x->{stdout}) && $x->{stdout} ne "");
         } elsif (!MTT::DoCommand::wsuccess($x->{exit_status})) {
             my $success = MTT::DoCommand::wsuccess($x->{exit_status});
             my $exited = MTT::DoCommand::wifexited($x->{exit_status});
             my $exit_value = MTT::DoCommand::wexitstatus($x->{exit_status});
             Verbose("  Warning: step $step ($x->{exit_status} : success $success : exited $exited) finished with nonzero exit status ($exit_value)\n");
             Verbose("  Output: $x->{stdout}\n")
-                if (defined($x->{stdout}) && $x->{stdout});
+                if (defined($x->{stdout}) && $x->{stdout} ne "");
         }
     }
 }
