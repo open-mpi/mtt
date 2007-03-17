@@ -209,14 +209,14 @@ sub _do_run {
     # Get some details about running with this MPI
     my $mpi_details;
     $MTT::Test::Run::test_prefix = $mpi_install->{installdir};
-    $mpi_details->{before_any_exec} = 
-        MTT::Values::Value($ini, $mpi_details_section, "before_any_exec");
-    $mpi_details->{before_each_exec} = 
-        MTT::Values::Value($ini, $mpi_details_section, "before_each_exec");
-    $mpi_details->{after_each_exec} = 
-        MTT::Values::Value($ini, $mpi_details_section, "after_each_exec");
-    $mpi_details->{after_all_exec} = 
-        MTT::Values::Value($ini, $mpi_details_section, "after_all_exec");
+    # Need to init $mpi_details to a hash before calling _fill_step
+    $mpi_details->{bogus} = "";
+    _fill_step($ini, $mpi_details_section, "before_any_exec", $mpi_details);
+    _fill_step($ini, $mpi_details_section, "before_each_exec", $mpi_details);
+    _fill_step($ini, $mpi_details_section, "after_each_exec", $mpi_details);
+    _fill_step($ini, $mpi_details_section, "after_all_exec", $mpi_details);
+    # Now delete the bogus value from the hash
+    delete $mpi_details->{bogus};
     # Do not evaluate this one now yet
     my $exec = $ini->val($mpi_details_section, "exec");
     while ($exec =~ m/@(.+?)@/) {
@@ -346,6 +346,28 @@ sub _do_run {
         Debug("Unloading environment modules: @env_modules\n");
         Env::Modulecmd::unload(@env_modules);
     }
+}
+
+#--------------------------------------------------------------------------
+
+sub _fill_step {
+    my ($ini, $mpi_details_section, $name, $mpi_details) = @_;
+    my ($t, $v);
+
+    $mpi_details->{$name} = 
+        MTT::Values::Value($ini, $mpi_details_section, $name);
+
+    $t = $name . "_timeout";
+    $v = MTT::Values::Value($ini, $mpi_details_section, $t);
+    $v = $MTT::Globals::Values->{$t}
+        if (!defined($v));
+    $mpi_details->{$t} = $v;
+
+    $t = $name . "_pass";
+    $v = MTT::Values::Value($ini, $mpi_details_section, $t);
+    $v = $MTT::Globals::Values->{$t}
+        if (!defined($v));
+    $mpi_details->{$t} = $v;
 }
 
 1;

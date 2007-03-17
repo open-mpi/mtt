@@ -21,15 +21,20 @@ use Fcntl qw(F_GETFL F_SETFL O_NONBLOCK);
 use MTT::Messages;
 use Data::Dumper;
 
+#--------------------------------------------------------------------------
+
 # Want to see what MTT *would* do?
 our $no_execute;
 
+# Exit status (i.e., return from waitpid()) from the last
+# DoCommand::Cmd[Script]
+our $last_exit_status;
+
 #--------------------------------------------------------------------------
 
+# Cache so that we don't re-calculate these every time
 my $server_socket;
-
 my $server_addr;
-
 my $tcp_proto;
 
 #--------------------------------------------------------------------------
@@ -400,6 +405,7 @@ sub Cmd {
         $ret->{exit_status} = 0;
         $msg .= "timed out";
     }
+    $MTT::DoCommand::last_exit_status = $ret->{exit_status};
 
     # Was it signaled?
     if (wifsignaled($ret->{exit_status})) {

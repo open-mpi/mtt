@@ -455,7 +455,7 @@ sub test_exit_status {
 
 #--------------------------------------------------------------------------
 
-# Return whether the last text run terminated normally
+# Return whether the last test run terminated normally
 sub test_wifexited {
     my $ret = MTT::DoCommand::wifexited($MTT::Test::Run::test_exit_status);
     Debug("&test_wifexited returning: $ret\n");
@@ -473,7 +473,7 @@ sub test_wexitstatus {
 
 #--------------------------------------------------------------------------
 
-# Return whether the last text run was terminated by a signal
+# Return whether the last test run was terminated by a signal
 sub test_wifsignaled {
     my $ret = MTT::DoCommand::wifsignaled($MTT::Test::Run::test_exit_status);
     Debug("&test_widsignaled returning: $ret\n");
@@ -482,9 +482,45 @@ sub test_wifsignaled {
 
 #--------------------------------------------------------------------------
 
-# Return whether the last text run was terminated by a signal
+# Return whether the last test run was terminated by a signal
 sub test_wtermsig {
     my $ret = MTT::DoCommand::wtermsig($MTT::Test::Run::test_exit_status);
+    Debug("&test_wtermsig returning: $ret\n");
+    return "$ret";
+}
+
+#--------------------------------------------------------------------------
+
+# Return whether the last DoCommand::Cmd[Script] terminated normally
+sub cmd_wifexited {
+    my $ret = MTT::DoCommand::wifexited($MTT::DoCommand::last_exit_status);
+    Debug("&test_wifexited returning: $ret\n");
+    return $ret ? "1" : "0";
+}
+
+#--------------------------------------------------------------------------
+
+# Return the exit status from the last DoCommand::Cmd[Script]
+sub cmd_wexitstatus {
+    my $ret = MTT::DoCommand::wexitstatus($MTT::DoCommand::last_exit_status);
+    Debug("&test_wexitstatus returning $ret\n");
+    return "$ret";
+}
+
+#--------------------------------------------------------------------------
+
+# Return whether the last DoCommand::Cmd[Script] was terminated by a signal
+sub cmd_wifsignaled {
+    my $ret = MTT::DoCommand::wifsignaled($MTT::DoCommand::last_exit_status);
+    Debug("&test_widsignaled returning: $ret\n");
+    return $ret ? "1" : "0";
+}
+
+#--------------------------------------------------------------------------
+
+# Return whether the last DoCommand::Cmd[Script] was terminated by a signal
+sub cmd_wtermsig {
+    my $ret = MTT::DoCommand::wtermsig($MTT::DoCommand::last_exit_status);
     Debug("&test_wtermsig returning: $ret\n");
     return "$ret";
 }

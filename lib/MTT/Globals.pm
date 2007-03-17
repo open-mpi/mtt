@@ -42,6 +42,22 @@ my $_defaults = {
     https_proxy => undef,
     ftp_proxy => undef,
     proxies => undef,
+
+    before_all_exec => undef,
+    before_all_exec_timeout => 10,
+    before_all_exec_pass => "&and(&cmd_wifexited(), &eq(&cmd_wexitstatus(), 0))",
+
+    before_exec_exec => undef,
+    before_exec_exec_timeout => 10,
+    before_exec_exec_pass => "&and(&cmd_wifexited(), &eq(&cmd_wexitstatus(), 0))",
+
+    after_each_exec => undef,
+    after_each_exec_timeout => 10,
+    after_each_exec_pass => "&and(&cmd_wifexited(), &eq(&cmd_wexitstatus(), 0))",
+
+    after_all_exec => undef,
+    after_all_exec_timeout => 10,
+    after_all_exec_pass => "&and(&cmd_wifexited(), &eq(&cmd_wexitstatus(), 0))",
 };
 
 #--------------------------------------------------------------------------
@@ -79,12 +95,20 @@ sub load {
     # Simple parameters
 
     my @names = qw/max_np textwrap drain_timeout trim_save_successful trim_save_failed trial http_proxy https_proxy ftp_proxy/;
-
+    foreach my $t (qw/before after/) {
+        foreach my $a (qw/all each/) {
+            push(@names, $t . "_" . $a . "_exec");
+            push(@names, $t . "_" . $a . "_exec_timeout");
+            push(@names, $t . "_" . $a . "_exec_pass");
+        }
+    }
     foreach my $name (@names) {
         my $val = MTT::Values::Value($ini, "MTT", $name);
         $Values->{$name} = $val
             if ($val);
     }
+
+    # Proxies
 
     _setup_proxy("http");
     _setup_proxy("https");
