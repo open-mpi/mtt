@@ -11,6 +11,7 @@ To announce to OMPI core testers:
   - getenv
   - null
   - env_hosts
+  - get_pathcc_version
 
 - new field: mttdatabase_hostname
 
