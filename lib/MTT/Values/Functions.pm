@@ -1150,6 +1150,23 @@ sub get_sun_cc_version {
 
 #--------------------------------------------------------------------------
 
+# Return the version of the Pathscale C compiler
+sub get_pathcc_version {
+    Debug("&get_pathcc_version\n");
+    my $ret = "unknown";
+
+    if (open PATHCC, "pathcc -dumpversion|") {
+        $ret = <PATHCC>;
+        close(PATHCC);
+        chomp($ret);
+    }
+    
+    Debug("&get_pathcc_version returning: $ret\n");
+    return $ret;
+}
+
+#--------------------------------------------------------------------------
+
 # Detect the bitness of the MPI library in this order:
 #   1) User overridden (CSV of 1 or more valid bitnesses)
 #   2) Small test C program (using void*)
