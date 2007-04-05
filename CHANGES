@@ -3,6 +3,7 @@ To announce to OMPI core testers:
 - added new fields to MTT section to ini file
   - textwrap
   - drain_timeout
+  - scratch (override using --scratch)
 
 - new funclets
   - mpi_get_name, mpi_install_name, test_get_name, test_build_name,
@@ -25,3 +26,19 @@ To announce to OMPI core testers:
    exited via signal. 
  * &cmd_termsig(): Returns the signal number that terminated the 
    last command. Only meaningful if &cmd_wifsignaled() returns 1.
+
+- new module(s)
+
+ * AlreadyInstalled
+
+   [MPI get: foo]
+   ...
+   installdir = /your/installation/dir
+   module = AlreadyInstalled
+
+ * Analyze::OMPI
+
+   [MPI install: foo]
+   ...
+   module = Analyze::OMPI
+

@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Sun Microsystems, Inc. All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -10,93 +11,96 @@
 # $HEADER$
 #
 
-use strict;
+BEGIN {
 
-use Data::Dumper;
-use Getopt::Long;
-use File::Basename;
-use Cwd;
-use POSIX qw(strftime);
+    use strict;
 
-# Try to find the MTT files.  Assume that mtt executable is in the
-# base directory for the MTT files.  Try three methods:
+    use Data::Dumper;
+    use Getopt::Long;
+    use File::Basename;
+    use Cwd;
+    use POSIX qw(strftime);
 
-# 1. With no effort; see if we can just "require" and find MTT files.
-# 2. If $0 is a path, try adding that do @INC and try "require" again.
-# 3. Otherwise, search $ENV[PATH] for mtt, and when you find it, add
-#    that directory to @INC and try again.
+    # Try to find the MTT files.  Assume that mtt executable is in the
+    # base directory for the MTT files.  Try three methods:
 
-use lib cwd() . "/lib";
+    # 1. With no effort; see if we can just "require" and find MTT files.
+    # 2. If $0 is a path, try adding that do @INC and try "require" again.
+    # 3. Otherwise, search $ENV[PATH] for mtt, and when you find it, add
+    #    that directory to @INC and try again.
 
-my $ret;
-eval "\$ret = require MTT::Version";
-if (1 != $ret) {
-    my $dir = dirname($0);
-    my @INC_save = @INC;
+    use lib cwd() . "/lib";
 
-    # Change to the dir of $0 (because it might be a relative
-    # directory) and add the cwd() to @INC
-    my $start_dir = cwd();
-    chdir($dir);
-    chdir("..");
-    push(@INC, cwd() . "/lib");
-    chdir($start_dir);
+    my $ret;
     eval "\$ret = require MTT::Version";
-
-    # If it didn't work, restore @INC and try looking for mtt in the
-    # path
-
     if (1 != $ret) {
-        @INC = @INC_save;
-        my @dirs = split(/:/, $ENV{PATH});
-        my $mtt = basename($0);
-        foreach my $dir (@dirs) {
+        my $dir = dirname($0);
+        my @INC_save = @INC;
 
-            # If we found the mtt executable, add the dir to @INC and
-            # see if we can "require".  If require fails, restore @INC
-            # and keep trying.
-            if (-x "$dir/$mtt") {
-                chdir($dir);
-                chdir("..");
-                push(@INC, cwd() . "/lib");
-                chdir($start_dir);
-                eval "\$ret = require MTT::Version";
-                if (1 == $ret) {
-                    last;
-                } else {
-                    @INC = @INC_save;
+        # Change to the dir of $0 (because it might be a relative
+        # directory) and add the cwd() to @INC
+        my $start_dir = cwd();
+        chdir($dir);
+        chdir("..");
+        push(@INC, cwd() . "/lib");
+        chdir($start_dir);
+        eval "\$ret = require MTT::Version";
+
+        # If it didn't work, restore @INC and try looking for mtt in the
+        # path
+
+        if (1 != $ret) {
+            @INC = @INC_save;
+            my @dirs = split(/:/, $ENV{PATH});
+            my $mtt = basename($0);
+            foreach my $dir (@dirs) {
+
+                # If we found the mtt executable, add the dir to @INC and
+                # see if we can "require".  If require fails, restore @INC
+                # and keep trying.
+                if (-x "$dir/$mtt") {
+                    chdir($dir);
+                    chdir("..");
+                    push(@INC, cwd() . "/lib");
+                    chdir($start_dir);
+                    eval "\$ret = require MTT::Version";
+                    if (1 == $ret) {
+                        last;
+                    } else {
+                        @INC = @INC_save;
+                    }
                 }
             }
         }
-    }
 
-    # If we didn't find them, die.
-    die "Unable to find MTT support libraries"
-        if (0 == $ret);
+        # If we didn't find them, die.
+        die "Unable to find MTT support libraries"
+            if (0 == $ret);
+    }
 }
 
-# Must use "require" (run-time) for all of these, not "use"
-# (compile-time)
+# Now that @INC is setup, bring in the modules
 
-require Config::IniFiles;
-require MTT::Version;
-require MTT::MPI;
-require MTT::MPI::Get;
-require MTT::MPI::Install;
-require MTT::Test;
-require MTT::Test::Get;
-require MTT::Test::Build;
-require MTT::Test::Run;
-require MTT::Files;
-require MTT::Messages;
-require MTT::INI;
-require MTT::Reporter;
-require MTT::Defaults;
-require MTT::Globals;
-require MTT::FindProgram;
-require MTT::Trim;
-require MTT::DoCommand;
-require MTT::Lock;
+use Config::IniFiles;
+use MTT::Version;
+use MTT::MPI;
+use MTT::MPI::Get;
+use MTT::MPI::Install;
+use MTT::Test;
+use MTT::Test::Get;
+use MTT::Test::Build;
+use MTT::Test::Run;
+use MTT::Files;
+use MTT::Messages;
+use MTT::INI;
+use MTT::Reporter;
+use MTT::Defaults;
+use MTT::Globals;
+use MTT::FindProgram;
+use MTT::Trim;
+use MTT::DoCommand;
+use MTT::Lock;
+use MTT::Values;
 
 my @file_arg;
 my $stdin_arg;
@@ -270,20 +274,11 @@ MTT::FindProgram::FindZeroDir();
 # Params
 ########################################################################
 
-# See if we got a scratch root
-if (! $scratch_arg) {
-    $scratch_arg = ".";
-}
-MTT::Messages::Debug("Scratch: $scratch_arg\n");
-if (! -d $scratch_arg) {
-    MTT::Files::mkdir($scratch_arg, 0777);
-}
-if (! -d $scratch_arg) {
-    MTT::Messages::Abort("Could not make scratch dir: $scratch_arg\n");
-}
-chdir($scratch_arg);
-$scratch_arg = cwd();
-MTT::Messages::Debug("Scratch resolved: $scratch_arg\n");
+# Convert INI files (or STDIN) to data structure(s)
+my @ini_list = _process_ini_param(\@file_arg, $stdin_arg, \@section_arg, \@no_section_arg);
+
+# Determine scratch from command-line or INI param
+my $scratch_arg = _process_scratch_param($scratch_arg, $ini_list[0]->{unfiltered});
 
 # If any of the --get-mpi, --install-mpi, --build-tests, or
 # --run-tests are specified, then their defaults all go to 0.
@@ -445,47 +440,15 @@ sub stop_time {
 }
 
 ########################################################################
-# Read the ini file(s)
+# Run the phases
 ########################################################################
 
-foreach my $file (@file_arg) {
+foreach my $hash (@ini_list) {
 
-    my $orig_file = ($stdin_arg ? "stdin" : $file);
-    if (!$stdin_arg && ! -r $file) {
-        MTT::Messages::Abort("Could not read file: $file");
-    }
-    my $temp_file = MTT::Files::copyfile($file);
+    my $ini      = $hash->{filtered};
+    my $ini_full = $hash->{unfiltered};
+    my $file     = $hash->{filename};
 
-    # Load up the ini file
-    MTT::Messages::Debug("Reading ini file: $orig_file\n");
-    my $ini = new Config::IniFiles(-file => $temp_file, 
-                                   -nocase => 1,
-                                   -allowcontinue => 1);
-
-    # Check for syntax errors in the ini file
-    if (! $ini) {
-        MTT::Messages::Abort("Syntax error in $orig_file: " .
-            join("\n", @Config::IniFiles::errors));
-    }
-
-    # Check for duplicate entries in the ini file
-    MTT::INI::ValidateINI($temp_file);
-
-    # Load an unfiltered version of the INI file for error checking
-    my $ini_full = new Config::IniFiles(-file => $temp_file, 
-                                        -nocase => 1,
-                                        -allowcontinue => 1);
-
-    # Whack the tmp file
-    unlink($temp_file);
-
-    # Override ini file params with those supplied at command-line
-    $ini = MTT::INI::OverrideINIParams($ini, $ini_args);
-    $ini_full = MTT::INI::OverrideINIParams($ini_full, $ini_args);
-
-    # Filter ini sections at command line
-    $ini = MTT::INI::FilterINISections($ini, \@section_arg, \@no_section_arg);
-    
     if (! $ini) {
         MTT::Messages::Warning("Could not read INI file: $file; skipping\n");
         next;
@@ -557,3 +520,101 @@ foreach my $file (@file_arg) {
 # That's it!
 
 exit(0);
+
+########################################################################
+# Parameter processing subroutines
+########################################################################
+
+# Return a list of INI objects built off of the given INI
+# files (or STDIN)
+sub _process_ini_param {
+    
+    my $file_arg       = shift;
+    my $stdin_arg      = shift;
+    my $section_arg    = shift;
+    my $no_section_arg = shift;
+
+    my ($hash, @arr);
+
+    foreach my $file (@$file_arg) {
+
+        my $orig_file = ($stdin_arg ? "stdin" : $file);
+        if (!$stdin_arg && ! -r $file) {
+            MTT::Messages::Abort("Could not read file: $file");
+        }
+        my $temp_file = MTT::Files::copyfile($file);
+
+        # Load up the ini file
+        MTT::Messages::Debug("Reading ini file: $orig_file\n");
+        my $filtered = new Config::IniFiles(-file => $temp_file, 
+                                       -nocase => 1,
+                                       -allowcontinue => 1);
+
+        # Check for syntax errors in the ini file
+        if (! $filtered) {
+            MTT::Messages::Abort("Syntax error in $orig_file: " .
+                join("\n", @Config::IniFiles::errors));
+        }
+
+        # Check for duplicate entries in the ini file
+        MTT::INI::ValidateINI($temp_file);
+
+        # Load an unfiltered version of the ini file for error checking
+        my $unfiltered = new Config::IniFiles(-file => $temp_file, 
+                                            -nocase => 1,
+                                            -allowcontinue => 1);
+
+        # Whack the tmp file
+        unlink($temp_file);
+
+        # Override ini file params with those supplied at command-line
+        $filtered = MTT::INI::OverrideINIParams($filtered, $ini_args);
+        $unfiltered = MTT::INI::OverrideINIParams($unfiltered, $ini_args);
+
+        # Filter ini sections at command line
+        $filtered = MTT::INI::FilterINISections($filtered, $section_arg, $no_section_arg);
+
+        undef $hash;
+
+        # Push the ini struct onto the list
+        $hash->{filtered}   = $filtered;
+        $hash->{unfiltered} = $unfiltered;
+        $hash->{filename}   = $file;
+
+        push(@arr, $hash);
+    }
+
+    return @arr;
+}
+
+# Determine scratch directory
+sub _process_scratch_param {
+
+    my ($scratch_option, $ini) = @_;
+    my $scratch_arg;
+
+    # The --scratch option overrides the INI scratch param
+    if ($scratch_option) {
+        $scratch_arg = $scratch_option;
+    } else {
+        $scratch_arg = Value($ini, "MTT", "scratch");
+    }
+
+    # See if we got a scratch root
+    if (! $scratch_arg) {
+        $scratch_arg = ".";
+    }
+    MTT::Messages::Debug("Scratch: $scratch_arg\n");
+    if (! -d $scratch_arg) {
+        MTT::Files::mkdir($scratch_arg, 0777);
+    }
+    if (! -d $scratch_arg) {
+        MTT::Messages::Abort("Could not make scratch dir: $scratch_arg\n");
+    }
+
+    chdir($scratch_arg);
+    $scratch_arg = cwd();
+    MTT::Messages::Debug("Scratch resolved: $scratch_arg\n");
+
+    return $scratch_arg;
+}
