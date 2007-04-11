@@ -20,8 +20,9 @@ use HTTP::Request::Common qw(POST);
 use Getopt::Std qw(getopts);
 use Data::Dumper;
 use LWP::Debug qw(level); 
+use File::Basename;
 
-getopts('f:s:dvh:u:p:gl:');
+getopts('f:s:dvh:u:p:gl:z');
 
 level('+') if ($opt_d);
 
@@ -33,6 +34,7 @@ $0
         (quote the -f argument, e.g., -f '/foo/files*')
   -l    fileList (file containing a newline delimited list
         of files to POST)
+  -z    Zip the submission
   -s    Script to use
   -h    Host name to post to
   -u    HTTP Username
@@ -57,7 +59,7 @@ my $url    = "http://$host/$script";
 # Generate a list of files to POST
 my @files;
 if ($opt_l) {
-    @files = slurp_file($opt_l);
+    @files = &_slurp_file($opt_l);
 } elsif ($opt_g) {
     @files = glob $opt_f;
 } else {
@@ -66,32 +68,41 @@ if ($opt_l) {
 
 print "\nFilelist: "  . Dumper(@files);
 
-foreach my $file (@files) {
+foreach my $f (@files) {
 
-    open(FILE, "< $file");
+    open(FILE1, "< $f");
     undef $/;
-    $buf = <FILE>;
-    eval $buf;
+    $buf = <FILE1>;
 
-    print "Posting the following:\n $buf \nto $url\n" if ($opt_d);
+    # print "Posting the following:\n $buf \nto $url\n" if ($opt_d);
 
     my $br = LWP::UserAgent->new();
-    $br->agent("poster.pl");
+    $br->agent("mtt-submit");
     $br->credentials("$host:80", "OMPI", $username, $password);
     $br->proxy('http', $ENV{'http_proxy'});
 
-    my $req = POST $url, $VAR1;
-    $req->content_type('application/x-www-form-urlencoded');
-    $req->authorization_basic($username, $password);
-    my $resp = $br->request($req);
+    my $req;
+    if ($opt_z) {
+        $req = &_create_upload_request($f);
+    } else {
+        $req = &_create_regular_request(\$buf);
+    }
+
+    $$req->authorization_basic($username, $password);
+
+    my $resp = $br->request($$req);
 
     #die unless $resp->is_success;
     print $resp->content;
 }
 
+exit;
+
+##############################################################
+
 # Take a file containing a new-line separated list,
 # return an array
-sub slurp_file {
+sub _slurp_file {
     $filename = shift;
 
     die "$filename doesn't exist!" if (! -e $filename);
@@ -103,6 +114,65 @@ sub slurp_file {
     close(FILE);
 
     return @arr;
+}
+
+# Convert Perl's Dumper code into PHP eval code
+sub _perl2php {
+    
+    my $str = shift;
+    my @lines = split /\n|\r/, $str;
+
+    foreach my $line (@lines) {
+        $line =~ s/^\$VAR1 = {\s*$/array(/;
+        $line =~ s/^\s*};\s*$/)/;
+
+        push(@ret, $line);
+    }
+
+    return join("\n", @ret);
+}
+
+sub _create_upload_request {
+
+    my $f = shift;
+
+    # Output a PHP include file
+    my($file, $dir, $sfx) = fileparse($f, qr/\.[^.]*/);
+    $filename = "$dir/$file.inc";
+
+    open(FILE2, "> $filename");
+    print FILE2 &_perl2php($buf);
+
+    close(FILE1);
+    close(FILE2);
+
+    # Force overwriting of output file
+    system("gzip --force $filename");
+
+    my $req = POST $url,
+         Content_Type => 'form-data',
+         Content => [ 
+             pageAction     => 'upload',
+             newCode        => '23',
+             MAX_FILE_SIZE  => '10485760',
+             userfile       => ["$filename.gz"],
+             newTitle       => "$filename.gz",
+             newCategory    => 'Open MPI',
+             newDescription => 'MTT Results Submission'
+         ];
+
+    return \$req;
+}
+
+sub _create_regular_request {
+
+    my $str = shift;
+
+    eval $$str;
+
+    my $req = POST $url, $VAR1;
+
+    return \$req;
 }
 
 exit;

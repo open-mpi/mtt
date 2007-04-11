@@ -42,3 +42,8 @@ To announce to OMPI core testers:
    ...
    module = Analyze::OMPI
 
+- MTT now zips its database submissions. E.g., an Intel run with 9
+  variants expands to 4800 test runs, which entailed a 5.3MB upload
+  (it zips to 500KB).
+
+

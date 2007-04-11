@@ -19,10 +19,12 @@ use MTT::Messages;
 use MTT::Values;
 use MTT::Version;
 use MTT::Globals;
+use MTT::DoCommand;
 use LWP::UserAgent;
 use HTTP::Request::Common qw(POST);
 use Data::Dumper;
 use File::Basename;
+use File::Temp qw(tempfile);
 
 # http credentials
 my $username;
@@ -322,9 +324,10 @@ sub Submit {
             }
 
             Debug("Submitting to MTTDatabase...\n");
-            my $req = POST ($url, $form);
-            $req->authorization_basic($username, $password);
-            my $response = _do_request($req);
+            my ($req, $file) = _prepare_request(\$form);
+            my $response = _do_request($$req);
+            unlink($file);
+
             my $sql_error = 0;
             if ($response->is_success()) {
                 ++$successes;
@@ -335,7 +338,7 @@ sub Submit {
                 Warning($response->content . "\n") if ($sql_error);
                 print("\n" . $response->content . "\n") if ($debug_server);
             } else {
-                Verbose(">> Failed to report to MTTDatabase: " .
+                Warning(">> Failed to report to MTTDatabase: " .
                         $response->status_line . "\n" . $response->content);
                 ++$fails;
                 push(@fail_outputs, $response->content);
@@ -453,6 +456,56 @@ sub _do_request {
     # Sorry -- nothing got through...
     %ENV = %ENV_SAVE;
     return $response;
+}
+
+# Zip up the test results, and prepare the HTTP file upload
+# request
+sub _prepare_request {
+    my $form = shift;
+
+    # Write an anonymous PHP array to a file
+    my ($fh, $filename) = tempfile();
+    $filename .= ".inc";
+    open(FILE, "> $filename");
+    print FILE &_perl_arr_2_php_arr(Dumper($$form));
+    close(FILE);
+
+    # Zip it (force overwriting of output file)
+    my $x = MTT::DoCommand::Cmd(1, "gzip --force $filename");
+    $filename .= ".gz";
+
+    # Create the "upload" POST request
+    my $req = POST $url,
+         Content_Type => 'form-data',
+         Content => [ 
+             pageAction     => 'upload',
+             userfile       => [$filename],
+             newTitle       => $filename,
+             newCategory    => 'Open MPI',
+             newDescription => 'MTT Results Submission'
+         ];
+
+    $req->authorization_basic($username, $password);
+
+    return (\$req, $filename);
+}
+
+# For the submission hash of data, convert a Perl eval
+# string into a PHP eval string
+sub _perl_arr_2_php_arr {
+    
+    my $str = shift;
+    my @lines = split /\n|\r/, $str;
+    my @ret;
+
+    foreach my $line (@lines) {
+        $line =~ s/^\$VAR\d+ = {\s*$/array(/;
+        $line =~ s/^\s*};\s*$/)/;
+
+        push(@ret, $line);
+    }
+
+    return join("\n", @ret);
 }
 
 1;

@@ -1,6 +1,6 @@
 <?php
-# Copyright (c) 2006 Cisco Systems, Inc.  All rights reserved.
-# Copyright (c) 2006 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Sun Microsystems, Inc.  All rights reserved.
 
 #
 #
@@ -10,6 +10,10 @@
 # client submits results, one ini section at a time.
 #
 #
+
+# A large test run submission could overload the PHP 16MB limit
+# (The following line increases the limit for this script only)
+ini_set("memory_limit", "32M");
 
 $topdir = '..';
 $ompi_home = '/l/osl/www/doc/www.open-mpi.org';
@@ -27,9 +31,6 @@ if ($GLOBALS['verbose'])
 else
     error_reporting(E_ERROR | E_WARNING | E_PARSE);
 
-# Notify of fields that do not exist in the database
-report_non_existent_fields();
-
 # If the PING field is set, then this was just a
 # test.  Exit successfully.
 if (isset($_POST['PING'])) {
@@ -45,6 +46,18 @@ if (isset($_POST['SERIAL'])) {
     print "\n$marker client_serial = " .  stringify(get_serial()) . " $marker\n";
     exit(0);
 }
+
+# The client will only submit one gzip file at a time for
+# now. Initialize the _POST global with the uploaded gzip
+# file contents. (There is backcompatibility here. E.g., if
+# there is no uploaded file, then we assume its an
+# oldfangled regular _POST submission)
+if (sizeof($_FILES)) {
+    eval("\$_POST = " . gunzip_file($_FILES['userfile']['tmp_name']) . ";");
+}
+
+# Notify of fields that do not exist in the database
+report_non_existent_fields();
 
 # If these are not set, then exit.
 if ((! isset($_POST['mtt_version_major']) or
@@ -1011,4 +1024,15 @@ function var_dump_debug_inserts($function, $line, $var_name, $arr) {
         }
         print($output);
     }
+}
+
+# Return inflated contents of a gzip file
+function gunzip_file($filename) {
+
+    $handle = gzopen($filename, 'r');
+    while (! gzeof($handle)) {
+       $ret .= gzgets($handle, 4096);
+    }
+    gzclose($handle);
+    return $ret;
 }
