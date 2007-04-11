@@ -65,6 +65,7 @@ BEGIN {
                     chdir($start_dir);
                     eval "\$ret = require MTT::Version";
                     if (1 == $ret) {
+                        $ENV{MTT_LIB} = cwd() . "/lib";
                         last;
                     } else {
                         @INC = @INC_save;
