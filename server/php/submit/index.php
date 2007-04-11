@@ -817,7 +817,7 @@ function mtt_notice($str) {
     print("MTTDatabase server notice: $str\n");
 }
 
-function mtt_send_mail($str) {
+function mtt_send_mail($message) {
 
     # Send only one email per phase to avoid a hurricane of
     # SQL error emails (generally in this case, when it
@@ -827,20 +827,63 @@ function mtt_send_mail($str) {
     if ($sent_mail)
         return;
 
+    # Export the PHP POST data to a temp file
+    if (! ($filename = tempnam("/tmp", "submit-")))
+        mtt_notice("Could not create a temporary file.\n");
+
+    $filename .= ".inc";
+
+    $fp = fopen($filename, "wb");
+    fwrite($fp, var_export($_POST, 1));
+    fclose($fp);
+
     $php_auth_user = $_SERVER['PHP_AUTH_USER'];
+    $user          = $_POST['email'];
+    $admin         = 'ethan.mallove@sun.com';
+    $date          = date('r');
+    $phpversion    = phpversion();
+    $boundary      = md5(time());
 
-    # Initialize To: addresses
-    $user    = $_POST['email'];
-    $admin   = 'ethan.mallove@sun.com';
-    $headers = "From: $admin\r\n" .
-               "Reply-To: $admin\r\n";
+    # Read the atachment file contents into a string, encode it with MIME
+    # base64, and split it into smaller chunks
+    $attachment = chunk_split(base64_encode(file_get_contents($filename)));
 
-    # Email the MTT database administrator
-    mail($admin, "MTT server error (user: $php_auth_user)", $str, $headers);
+    $headers = <<<END
+From: $admin
+Reply-To: $admin
+Date: $date
+X-Mailer: PHP v$phpversion
+MIME-Version: 1.0
+Content-Type: multipart/related; boundary="$boundary"
+END;
+
+    $message = <<<END
+--$boundary
+Content-Type: text/plain; charset="iso-9959-1"
+Content-Transfer-Encoding: 7bit
+
+$message
+
+--$boundary
+Content-Type: text/plain; name="$filename"
+Content-Disposition: attachment; filename="$filename"
+Content-Transfer-Encoding: base64
+
+$attachment
+
+--$boundary--
+
+END;
 
     # Email the user of the offending MTT client
     if ($user)
-        mail($user, "MTT server error", $str, $headers);
+        mail($user, "MTT server error", $message, $headers);
+
+    # Email the MTT database administrator
+    mail($admin, "MTT server error (user: $php_auth_user)", $message, $headers);
+
+    # Whack the temp file
+    unlink($filename);
 
     $sent_mail = true;
 }
