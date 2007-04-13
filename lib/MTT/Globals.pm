@@ -43,9 +43,9 @@ my $_defaults = {
     ftp_proxy => undef,
     proxies => undef,
 
-    before_all_exec => undef,
-    before_all_exec_timeout => 10,
-    before_all_exec_pass => "&and(&cmd_wifexited(), &eq(&cmd_wexitstatus(), 0))",
+    before_any_exec => undef,
+    before_any_exec_timeout => 10,
+    before_any_exec_pass => "&and(&cmd_wifexited(), &eq(&cmd_wexitstatus(), 0))",
 
     before_exec_exec => undef,
     before_exec_exec_timeout => 10,
