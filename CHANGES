@@ -29,12 +29,30 @@ To announce to OMPI core testers:
 
 - new module(s)
 
- * AlreadyInstalled
+ * MPI get module: AlreadyInstalled
 
    [MPI get: foo]
    ...
    installdir = /your/installation/dir
    module = AlreadyInstalled
+
+ * MPI get module: LAM_Snapshot
+
+   [MPI get: lam-nightly-trunk]
+   ...
+   module = LAM_Snapshot
+   lam_snapshot_url = http://www.lam-mpi.org/download/files/nightly
+
+ * MPI install module: LAM
+
+   [MPI install: LAM/GNU]
+   ...
+   module = LAM
+   lam_vpath_mode = none
+   lam_make_all_arguments = -j 8
+   lam_compiler_name = gnu
+   lam_compiler_version = &get_gcc_version()
+   lam_configure_arguments = "CFLAGS=-g -pipe" --with-boot-tm=/opt/pbs
 
  * Analyze::OMPI
 

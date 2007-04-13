@@ -381,7 +381,8 @@ sub _do_install {
     # compiler name and version
     $config->{compiler_name} =
         Value($ini, $section, "compiler_name");
-    if ($MTT::Defaults::System_config->{known_compiler_names} !~ /$config->{compiler_name}/) {
+    if ($config->{compiler_name} &&
+        $MTT::Defaults::System_config->{known_compiler_names} !~ /$config->{compiler_name}/) {
         Warning("Unrecognized compiler name in [$section] ($config->{compiler_name}); the only permitted names are: \"$MTT::Defaults::System_config->{known_compiler_names}\"; skipped\n");
         return;
     }
@@ -456,15 +457,18 @@ sub _do_install {
     # (it is needed by post-install funclets such as get_bitness)
     $install_dir = $config->{installdir};
 
-    # bitness (must be processed *after* installation)
-    my $bitness = Value($ini, $section, "bitness");
+    # bitness (must be processed *after* installation, and only if the
+    # underlying module did not fill it in)
+    if (!defined($config->{bitness})) {
+        my $bitness = Value($ini, $section, "bitness");
 
-    # If they did not use a funclet, translate the
-    # bitness(es) for the MTT database
-    if ($bitness !~ /\&/) {
-        $bitness = EvaluateString("&get_mpi_install_bitness(\"$bitness\")");
+        # If they did not use a funclet, translate the
+        # bitness(es) for the MTT database
+        if ($bitness !~ /\&/) {
+            $bitness = EvaluateString("&get_mpi_install_bitness(\"$bitness\")");
+        }
+        $config->{bitness} = $bitness;
     }
-    $config->{bitness} = $bitness;
 
     # endian
     my $endian = Value($ini, $section, "endian");
