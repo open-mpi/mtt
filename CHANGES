@@ -1,9 +1,15 @@
+-*- text -*-
+
 To announce to OMPI core testers:
 
 - added new fields to MTT section to ini file
   - textwrap
   - drain_timeout
   - scratch (override using --scratch)
+
+- Moved many MPI Install INI fields to be ompi_* fields.  Old names
+  still exist and work, but are deprecated and will be removed in a
+  future version.
 
 - new funclets
   - mpi_get_name, mpi_install_name, test_get_name, test_build_name,
