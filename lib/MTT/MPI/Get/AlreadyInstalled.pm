@@ -40,7 +40,7 @@ sub Get {
     # (No need to fetch MPI sources here ...)
 
     # The user specifies the installed location
-    my $installdir = Value($ini, $section, "installdir");
+    my $installdir = Value($ini, $section, "alreadyinstalled_dir");
 
     # If they do not, search the user's PATH for an MPI
     if (! -e $installdir) {
