@@ -348,11 +348,13 @@ sub _do_install {
     my @save_env;
     ProcessEnvKeys($config, \@save_env);
 
+    # JMS TO BE DELETED
     # configure_arguments
     my $tmp = Value($ini, $section, "configure_arguments");
     $config->{configure_arguments} = $tmp
         if (defined($tmp));
 
+    # JMS TO BE DELETED
     # vpath
     $tmp = lc(Value($ini, $section, "vpath_mode"));
     $config->{vpath_mode} = $tmp
@@ -368,16 +370,19 @@ sub _do_install {
         }
     }
 
+    # JMS TO BE DELETED
     # make all arguments
     $tmp = Value($ini, $section, "make_all_arguments");
     $config->{make_all_arguments} = $tmp
         if (defined($tmp));
 
+    # JMS TO BE DELETED
     # make check
     $tmp = Logical($ini, $section, "make_check");
     $config->{make_check} = $tmp
         if (defined($tmp));
 
+    # JMS TO BE DELETED
     # compiler name and version
     $config->{compiler_name} =
         Value($ini, $section, "compiler_name");
@@ -459,8 +464,8 @@ sub _do_install {
 
     # bitness (must be processed *after* installation, and only if the
     # underlying module did not fill it in)
-    if (!defined($config->{bitness})) {
-        my $bitness = Value($ini, $section, "bitness");
+    my $bitness = Value($ini, $section, "bitness");
+    if (defined($bitness) || !defined($config->{bitness})) {
 
         # If they did not use a funclet, translate the
         # bitness(es) for the MTT database

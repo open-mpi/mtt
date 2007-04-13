@@ -179,7 +179,7 @@ sub Install {
 
     # Calculate bitness (must be processed *after* installation)
 
-    $config->{bitness} = _find_bitness("/home/jsquyres/bogus/bin/", ".");
+    $config->{bitness} = _find_bitness($ret->{bindir}, $ret->{libdir});
 
     # Done
 
