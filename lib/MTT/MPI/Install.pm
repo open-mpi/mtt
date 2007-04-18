@@ -272,7 +272,6 @@ sub _do_install {
     $config->{unsetenv} = "to be filled in below";
     $config->{prepend_path} = "to be filled in below";
     $config->{append_path} = "to be filled in below";
-    $config->{bitness} = "to be filled in below";
 
     # Filled in by the module
     $config->{test_result} = MTT::Values::FAIL;
@@ -467,10 +466,15 @@ sub _do_install {
     my $bitness = Value($ini, $section, "bitness");
     if (defined($bitness) || !defined($config->{bitness})) {
 
-        # If they did not use a funclet, translate the
-        # bitness(es) for the MTT database
-        if ($bitness !~ /\&/) {
-            $bitness = EvaluateString("&get_mpi_install_bitness(\"$bitness\")");
+        # If the module didn't pass, fill in a value
+        if ($ret && MTT::Values::PASS != $ret->{test_result}) {
+            $bitness = EvaluateString("&get_mpi_install_bitness(\"32\")");
+        } else {
+            # If they did not use a funclet, translate the
+            # bitness(es) for the MTT database
+            if ($bitness !~ /\&/) {
+                $bitness = EvaluateString("&get_mpi_install_bitness(\"$bitness\")");
+            }
         }
         $config->{bitness} = $bitness;
     }
