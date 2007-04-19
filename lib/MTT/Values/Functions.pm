@@ -859,6 +859,9 @@ sub slurm_max_procs {
         } elsif ($t =~ m/(\d+)/) {
             $tasks = $1;
             $nodes = 1;
+        } else {
+            Warning("Unparsable SLURM_TASKS_PER_NODE: $ENV{SLURM_TASKS_PER_NODE}\n");
+            return "0";
         }
 
         $max_procs += $tasks * $nodes;
@@ -879,10 +882,124 @@ sub slurm_hosts {
         if (!slurm_job());
 
     # The SLURM env variable SLURM_NODELIST is a regexp of the hosts
-    # we can run on.
+    # we can run on.  Need to convert it to a comma-delimited list of
+    # hosts; each host repeated as many times as dictated by the
+    # corresponding entry in SLURM_TASKS_PER_NODE (see description of
+    # SLURM_TASKS_PER_NODE in slurm_max_procs()).
+    #
+    # SLURM_NODELIST is a comma-delimited list of regular expressions.
+    # Each entry will be of the form: base[ranges] (square brackets
+    # are literal), where ranges is, itself, a comma-delimtied list of
+    # ranges.  Each entry in ranges will be of the form: N[-M], where
+    # N and M are integers, and the brackets are not literal (i.e.,
+    # it'll be "N" or "N-M").
 
-    Debug("&slurm_max_procs returning: $$ENV{SLURM_NODELIST}\n");
-    return "$ENV{SLURM_NODELIST}";
+    # First, build a fully expanded list of task counts per node (see
+    # slurm_max_procs() for a description of the format of
+    # ENV{SLURM_TASKS_PER_NDOE}).
+
+    my @tasks_per_node;
+    my @tpn = split(/,/, $ENV{SLURM_TASKS_PER_NODE});
+    foreach my $t (@tpn) {
+        my $tasks;
+        my $nodes;
+        if ($t =~ m/(\d+)\(x(\d+)\)/) {
+            $tasks = $1;
+            $nodes = $2;
+        } elsif ($t =~ m/(\d+)/) {
+            $tasks = $1;
+            $nodes = 1;
+        } else {
+            Warning("Unparsable SLURM_TASKS_PER_NODE: $ENV{SLURM_TASKS_PER_NODE}\n");
+            return "";
+        }
+
+        while ($nodes > 0) {
+            push(@tasks_per_node, $tasks);
+            --$nodes;
+        }
+    }
+
+    # Next, built a list of all nodes
+
+    my @nodes;
+    my $str = $ENV{SLURM_NODELIST};
+    Debug("Parsing SLURM_NODELIST: $ENV{SLURM_NODELIST}\n");
+    while ($str) {
+        my $next_str;
+
+        # See if we've got a "foo[ranges]" at the head of the string.
+        # Be sure to be non-greedy in this regexp to grab only the
+        # *first* part of the strgin!
+        if ($str =~ m/^(.+?)\[([0-9\,\-]+?)\](.*)$/) {
+            $next_str = $3;
+            my $base = $1;
+            Debug("Range: $1 - $2\n");
+            # Parse the ranges
+            my @ranges = split(/,/, $2);
+            foreach my $r (@ranges) {
+                if ($r =~ m/(\d+)-(\d+)/) {
+                    # Got a start-finish range
+                    my $str_len = length($1);
+                    my $i = int($1);
+                    my $end = int($2);
+                    while ($i <= $end) {
+                        my $num = $i;
+                        $num = "0" . $num
+                            while (length($num) < $str_len);
+                        push(@nodes, "$base$num");
+                        ++$i;
+                    }
+                } elsif ($r =~ m/^(\d+)$/) {
+                    # Got a single number
+                    push(@nodes, "$base$1");
+                } else {
+                    # Got an unexpected string
+                    Warning("Unparsable SLURM_NODELIST: $ENV{SLURM_NODELIST}\n");
+                    return "";
+                }
+            }
+        } elsif ($str =~ m/^([^,]+)(.*)$/) {
+            $next_str = $2;
+            # No range; just a naked host -- save it and move on
+            Debug("Naked host: ($str) $1\n");
+            push(@nodes, $1);
+        } else {
+            Warning("Unparsable SLURM_NODELIST: $ENV{SLURM_NODELIST}\n");
+            return "";
+        }
+
+        # Chop off the front of the string that we've already
+        # processed and continue on.  Ensure that it starts with a ,
+        # and then chop that off, too.
+        $str = $next_str;
+        Debug("Almost next: $str\n");
+        if ($str && $str !~ s/^,(.+)/\1/) {
+            Warning("Unparsable SLURM_NODELIST: $ENV{SLURM_NODELIST}\n");
+            return "";
+        }
+
+        Debug("Next item: $str\n");
+    }
+
+    # Now combine the two lists -- they should be exactly the same
+    # length.  Repeat each host as many times at it has tasks.
+
+    my $ret;
+    my $i = 0;
+    while ($i <= $#tasks_per_node) {
+        my $j = $tasks_per_node[$i];
+        while ($j > 0) {
+            $ret .= ","
+                if ($ret);
+            $ret .= $nodes[$i];
+            --$j;
+        }
+        ++$i;
+    }
+
+    Debug("&slurm_max_procs returning: $ret\n");
+    return $ret;
 }
 
 #--------------------------------------------------------------------------
@@ -1364,7 +1481,7 @@ sub get_mpi_install_endian {
     # Try snarfing endian(s) using the /usr/bin/file command
     my $libmpi          = _find_libmpi();
     if (! -f $libmpi) {
-        # No need to Warn() -- the fact that the MPI failed to install
+        # No need to Warning() -- the fact that the MPI failed to install
         # should be good enough...
         Debug("*** Could not find libmpi to calculate endian-ness\n");
         return "0";
