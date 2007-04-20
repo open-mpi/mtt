@@ -402,6 +402,22 @@ function setup_advanced($params) {
     return $menu;
 }
 
+# Return a 1D array of advanced fields, instead of 
+# the multi-tiered hash used to group advanced fields
+# by phase
+function setup_advanced_1d($params) {
+
+    $setup_advanced = setup_advanced($params);
+
+    foreach (array_keys($setup_advanced) as $table) {
+        foreach (array_keys($setup_advanced[$table]) as $field) {
+            $ret[] = $field;
+        }
+    }
+
+    return $ret;
+}
+
 # Display more human-readable labels
 function label($str) {
 
@@ -793,6 +809,28 @@ function form_carryover($defaults, $phase) {
         $params['archive'] = 1;
 
     return $params;
+}
+
+# Just like form_carryover, but for Advanced menu
+function advanced_carryover($params) {
+
+    $advanced_fields = setup_advanced_1d($params);
+
+    foreach ($advanced_fields as $k) {
+
+        $textfield = "text_$k";
+        $showfield = "show_$k";
+
+        # Carryover textfields
+        if (isset($params[$textfield]))
+            $ret[$textfield] = $params[$textfield];
+
+        # Carryover show/hide menus
+        if ($params[$showfield])
+            $ret[$showfield] = $params[$showfield];
+    }
+
+    return $ret;
 }
 
 # Grab phase field

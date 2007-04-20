@@ -143,7 +143,7 @@ function dump_report() {
     
     # Do not print an empty table
     if (pg_num_rows($resource) < 1) {
-        print "<b><i>No data available for the specified query.</i></b>";
+        print "<p><b><i><font color=red>No data available for the specified query.</font></i></b></p>";
         return;
     }
 
@@ -1549,7 +1549,10 @@ function drilldown_links() {
         # Bring over phase-independent selections, and
         # combine them with phase-dependent defaults
         $defaults = setup_mainwin_fields($phase);
-        $qstring_arr = form_carryover($defaults);
+        $qstring_arr = array_merge(
+                            form_carryover($defaults),
+                            advanced_carryover($_GET)
+        );
         $qstring_arr['phase'] = $phase;
 
         # NOTE: WE CANNOT MARK THIS AS A TRUE DRILLDOWN,
