@@ -84,14 +84,19 @@ sub Get {
     $ret->{module_data} = $data;
 
     # Make a best attempt to get a version number
-    # 1. Try looking for name-<number>.tar.(gz|bz)
-    if (basename($data->{tarball}) =~ m/[\w-]+(\d.+).tar.(gz|bz2)/) {
-        $ret->{version} = $1;
-    } 
-    # Give up
-    else {
-        $ret->{version} = basename($data->{tarball}) . "-" .
-            strftime("%m%d%Y-%H%M%S", localtime);
+    # 1. Try looking for a field in the INI file
+    $ret->{version} = Value($ini, $section, "tarball_version");
+    if (!$ret->{version}) {
+
+        # 2. Try looking for name-<number>.tar.(gz|bz)
+        if (basename($data->{tarball}) =~ m/[\w-]+(\d.+).tar.(gz|bz2)/) {
+            $ret->{version} = $1;
+        } 
+        # 3. Give up
+        else {
+            $ret->{version} = basename($data->{tarball}) . "-" .
+                strftime("%m%d%Y-%H%M%S", localtime);
+        }
     }
 
     # All done
