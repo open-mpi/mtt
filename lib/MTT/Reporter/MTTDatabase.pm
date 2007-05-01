@@ -61,6 +61,9 @@ my $email;
 # Hostname string to report
 my $hostname;
 
+# User ID (can be overridden in the INI)
+my $local_username;
+
 #--------------------------------------------------------------------------
 
 sub Init {
@@ -78,6 +81,7 @@ sub Init {
     $keep_debug_files = Value($ini, $section, "mttdatabase_keep_debug_files");
     $debug_server = 1 if ($url =~ /\bdebug\b|\bverbose\b/);
     $hostname = Value($ini, $section, "mttdatabase_hostname");
+    $local_username = Value($ini, "mtt", "local_username");
 
     $debug_index = 0;
     if (!$url) {
@@ -232,7 +236,11 @@ sub Submit {
     my $serial_name = $invocation_serial_name;
     my $serial_value = $invocation_serial_value;
 
-    $default_form->{local_username} = getpwuid($<);
+    if ($local_username) {
+        $default_form->{local_username} = $local_username;
+    } else {
+        $default_form->{local_username} = getpwuid($<);
+    }
 
     # Try to get a FQDN
     if (!defined($hostname) || "" eq $hostname) {
