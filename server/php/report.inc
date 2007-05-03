@@ -2449,9 +2449,23 @@ function process_input_fields($params) {
                 $clauses[] = "$column = '" . trim($str, '^$') . "'";
 
             # Otherwise, regular expression(s)
-            else
-                foreach (tokenize($params[$k]) as $str)
-                    $clauses[] = "$column ~* '$str'";
+            else {
+                $str = $params[$k];
+                $pat = '^\s*\!\s*';
+
+                # !~ (NOT)
+                if (preg_match("/$pat/", $str)) {
+                    $operator = "!~*";
+                    $str = preg_replace("/$pat/", "", $str);
+                # ~
+                } else {
+                    $operator = "~*";
+                }
+
+                foreach (tokenize($str) as $s) {
+                    $clauses[] = "$column $operator '$s'";
+                }
+            }
 
             $query['where'][$column] = "(" . join(" OR ", $clauses) . ")";
         }
@@ -2966,6 +2980,22 @@ function process_large_fields($params) {
         $value = $params["text_$field"];
 
         if ($value and $value != 'all') {
+            $pat = '^\s*\!\s*';
+
+            # !~ (NOT)
+            if (preg_match("/$pat/", $value)) {
+                $operator = "!~*";
+                $value = preg_replace("/$pat/", "", $value);
+
+                # Show the leading/trailing 10 chars of the field.
+                # This is an arbitrary "digest" of the large field.
+                $string_func = "substring($field from '^..........') || ' ... ' || " .
+                               "substring($field from '..........$') as $field";
+            # ~
+            } else {
+                $operator = "~*";
+                $string_func = "substring($field from '$value') as $field";
+            }
 
             $value = preg_replace("/;/", "|", $value);
 
@@ -2973,8 +3003,7 @@ function process_large_fields($params) {
             # for display in the table
             if ($type == 'summary' or 
                 $type == 'performance') {
-                $query['select'][$field] =
-                    "substring($field from '$value') as $field";
+                $query['select'][$field] = $string_func;
 
             # In Detail view, display the entire field (with the matches highlighted)
             #
@@ -2984,7 +3013,7 @@ function process_large_fields($params) {
                 $query['select_more'][$field] = $field;
             }
 
-            $query['where'][$field] = "(" . "$field ~* '$value')";
+            $query['where'][$field] = "($field $operator '$value')";
         }
     }
 

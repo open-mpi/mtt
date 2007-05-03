@@ -303,6 +303,21 @@ function setup_prefs() {
                 #'legend_placement' => array(array('*Bottom', 'In plotting area')),
                 #'graph_type'       => array(array('*Line', 'Bar', 'Points')),
             ),
+            #
+            # X: SHOULDN'T HAVE TO DIG THROUGH THE QUERY STRING TO TURN OFF
+            # DEBUGGING FLAGS. PERHAPS WE NEED TO TREAT THESE USING DEFINE(),
+            # LIKE THE OTHER PREFERENCES FOR SOME REASON ...
+            #
+            # 'debugging' => array(
+            #     'sql'            => array(array(0, 1, 2)),
+            #     'cgi'            => array(false),
+            #     "stats"          => array(false),
+            #     'debug'          => array(false),
+            #     'explain'        => array(false),
+            #     'analyze'        => array(false),
+            #     'no_cache'       => array(false),
+            #     'no_cookies'     => array(false),
+            # ),
         );
 
     return $prefs;
@@ -550,6 +565,22 @@ function label($str) {
 
             # Row number
             "n" => "#",
+
+            # Debugging options
+            "debugging"      => "Debugging",
+
+            "sql"            => "SQL",
+            "cgi"            => "Display input selections",
+            "stats"          => "Display query statistics",
+            'debug'          => "Debug",
+            'explain'        => 'Use EXPLAIN',
+            'analyze'        => 'Use ANALYZE',
+            'no_cache'       => 'Turn off SQL caching',
+            'no_cookies'     => 'Turn off cookies',
+            'dynamic_view'   => 'Create the SQL VIEW dynamically',
+            'use_speedy'     => 'SELECT only FROM "speedy" TABLES',
+            'use_archive'    => 'SELECT only FROM "archive" TABLES',
+
         );
     }
 
