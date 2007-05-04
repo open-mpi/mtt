@@ -876,7 +876,7 @@ $attachment
 END;
 
     # Email the user of the offending MTT client
-    if ($user)
+    if (preg_match("/\w+@\w+/", $user, $m))
         mail($user, "MTT server error", $message, $headers);
 
     # Email the MTT database administrator
