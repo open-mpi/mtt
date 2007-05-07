@@ -1881,23 +1881,21 @@ function permalinks($date_fields) {
     # Tell reporter to create a permalink
     $params["make_redir"] = 1;
 
-    # Do relative link
-    $qstring1 = arr2qstring($params);
-
-    # Do absolute link
+    # Absolute date range
     $params["text_start_timestamp"] = $absolute_date;
-    $qstring2 = arr2qstring($params);
 
     # Create links to report using relative and absolute date ranges
-    $links["Absolute date range"] = "http://$domain$script?$qstring2";
+    $links["Absolute date range"] = $absolute_date;
 
     # Do not display two permalinks with identical URLs
-    if ($absolute_date != $start_timestamp)
-        $links["Relative date range"] = 
-            "http://$domain$script?$qstring1";
+    $pat = '\s*;.*$';
+    if (preg_replace("/$pat/", "", $absolute_date) != 
+        preg_replace("/$pat/", "", $start_timestamp)) {
+        $links["Relative date range"] = $start_timestamp;
+    }
 
     # Formatting for Javascript to open a small window
-    $anchor = "<a href='javascript:littleWindow(\"%s\");' " .
+    $anchor = "<a href='javascript:OpenPermalinkConfirmation(\"%s\");' " .
                  "class='black_ln'>Create permalink</a>";
 
     # Formatting for a link which generates a permalink when clicked
@@ -1912,6 +1910,8 @@ function permalinks($date_fields) {
 
     return $ret;
 }
+
+
 
 function handle_absolute_date($date_fields) {
     $absolute_date   = $date_fields["absolute"];
@@ -2463,7 +2463,7 @@ function process_input_fields($params) {
                 }
 
                 foreach (tokenize($str) as $s) {
-                    $clauses[] = "$column $operator '$s'";
+                    $clauses[] = "$column $operator '" . pg_escape_string($s) . "'";
                 }
             }
 
@@ -2708,7 +2708,7 @@ function process_result_fields($phases, $params) {
     }
 
     if ($test_result)
-        $results['where'][$test_result] = $when[$test_result];
+        $results['where'][$test_result] = pg_escape_string($when[$test_result]);
 
     return $results;
 }
@@ -2994,7 +2994,7 @@ function process_large_fields($params) {
             # ~
             } else {
                 $operator = "~*";
-                $string_func = "substring($field from '$value') as $field";
+                $string_func = "substring($field from '" . pg_escape_string($value) . "') as $field";
             }
 
             $value = preg_replace("/;/", "|", $value);
@@ -3013,7 +3013,7 @@ function process_large_fields($params) {
                 $query['select_more'][$field] = $field;
             }
 
-            $query['where'][$field] = "($field $operator '$value')";
+            $query['where'][$field] = "($field $operator '" . pg_escape_string($value) . "')";
         }
     }
 

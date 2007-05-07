@@ -425,7 +425,7 @@ EOT;
 
     # CAREFUL - IS ''x'' GUARANTEED TO BE DEFINED?  BEWARE
     # OF undefined (OR null?) VARS WHICH CAUSE "NO
-    # PROPERTIES" JAVASSCRIPT ERRORS. (WE NEED TO HAVE
+    # PROPERTIES" JAVASCRIPT ERRORS. (WE NEED TO HAVE
     # 'HIDDEN' FORM PARAMETERS TO PREVENT SUCH ERRORS)
     $text = <<<EOT
 
@@ -437,7 +437,7 @@ EOT;
 
     # CAREFUL - IS ''x'' GUARANTEED TO BE DEFINED?  BEWARE
     # OF undefined (OR null?) VARS WHICH CAUSE "NO
-    # PROPERTIES" JAVASSCRIPT ERRORS. (WE NEED TO HAVE
+    # PROPERTIES" JAVASCRIPT ERRORS. (WE NEED TO HAVE
     # 'HIDDEN' FORM PARAMETERS TO PREVENT SUCH ERRORS)
     $checkbox = <<<EOT
             var x = document.adv.%s;
@@ -465,7 +465,7 @@ EOT;
 
 EOT;
 
-    # X: THERE SHOULD BE NO NEED TO CREATE MORE THAN ONE FOR
+    # X: THERE SHOULD BE NO NEED TO CREATE MORE THAN ONE "FOR"
     # LOOP HERE. IN OTHER WORDS, DO THE LOOPING IN
     # JAVASCRIPT INSTEAD OF PRINTING OUT ''N'' JAVASCRIPT
     # STATEMENTS
@@ -1063,7 +1063,7 @@ function form_popup($elements, $params, $specs) {
                     $menu .= "\n<input type='checkbox' name='$field' value='on' $value>";
 
                 elseif (is_scalar($entries))
-                    $menu .= "\n<input type='text' name='$text_$field' value='" . $value . "'>";
+                    $menu .= "\n<input type='text' name='$text_$field' value='$value'>";
 
                 elseif (is_array($entries)) {
 
@@ -1095,7 +1095,11 @@ function form_popup($elements, $params, $specs) {
                   "onclick='javascript:window.close();' " .
                    "value='Cancel'>" .
         "\n</table>" .
-        "\n<br><i>Make one or more selections from the [$title] menu.</i>" .
+        "\n<i><font size='-1'>" .
+        "\n<br>Make one or more selections from the [$title] menu." .
+        "\n<br>(Search strings that contain whitespace need not be wrapped in " .
+        "\nquotes. Delimit multiple search strings with a ';'.)" .
+        "\n</font></i>" .
         "\n</div>";
 
     $link =
@@ -1257,7 +1261,12 @@ function html_head($title) {
         tmp.close();
     }
 
-    function littleWindow(link) {
+    function OpenPermalinkConfirmation(date) {
+        var link = location.href;
+
+        link += '&text_start_timestamp=' + date;
+        link += '&make_redir=1';
+
         open(link, 'Tiny link', 'resizable=yes, toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, width=180, height=70');
     }
 
@@ -1276,7 +1285,7 @@ EOT;
         $value = $main_window[$field];
 
         $javascript .= <<<EOT
-        document.report.text_$field.value = '$value';
+        document.report.text_$field.value = '$value';\n
 EOT;
     }
 

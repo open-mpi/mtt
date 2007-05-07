@@ -902,7 +902,7 @@ function tokenize($string) {
 # Convert an associative array to an HTTP-ready query string
 function arr2qstring($arr) {
     foreach (array_keys($arr) as $key)
-        $str .= "&$key=$arr[$key]";
+        $str .= "&$key=" . urlencode($arr[$key]);
     return $str;
 }
 
