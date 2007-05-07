@@ -2696,7 +2696,7 @@ function process_result_fields($phases, $params) {
                 # The result alias has gone from
                 # pass|fail|... to _xx in the ttable
                 if ($new_ttable)
-                    $when[$result] = label($result) . " = '$result'";
+                    $when[$result] = label($result) . " = '" . pg_escape_string($result) . "'";
                 else
                     $when[$result] = "$result > 0";
 
@@ -2708,7 +2708,7 @@ function process_result_fields($phases, $params) {
     }
 
     if ($test_result)
-        $results['where'][$test_result] = pg_escape_string($when[$test_result]);
+        $results['where'][$test_result] = $when[$test_result];
 
     return $results;
 }
