@@ -1063,7 +1063,7 @@ function form_popup($elements, $params, $specs) {
                     $menu .= "\n<input type='checkbox' name='$field' value='on' $value>";
 
                 elseif (is_scalar($entries))
-                    $menu .= "\n<input type='text' name='$text_$field' value='$value'>";
+                    $menu .= "\n<input type='text' name='$text_$field' value='" . addslashes($value) . "'>";
 
                 elseif (is_array($entries)) {
 
