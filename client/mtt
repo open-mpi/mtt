@@ -281,6 +281,9 @@ my @ini_list = _process_ini_param(\@file_arg, $stdin_arg, \@section_arg, \@no_se
 # Determine scratch from command-line or INI param
 my $scratch_arg = _process_scratch_param($scratch_arg, $ini_list[0]->{unfiltered});
 
+# Determine --force from command-line or INI param
+my $force_arg = _process_force_param($force_arg, $ini_list[0]->{unfiltered});
+
 # If any of the --get-mpi, --install-mpi, --build-tests, or
 # --run-tests are specified, then their defaults all go to 0.
 # Otherwise, if none are specified, they all default to 1.
@@ -618,4 +621,20 @@ sub _process_scratch_param {
     MTT::Messages::Debug("Scratch resolved: $scratch_arg\n");
 
     return $scratch_arg;
+}
+
+# Determine "force" setting
+sub _process_force_param {
+
+    my ($force_option, $ini) = @_;
+    my $force_arg;
+
+    # The --force option overrides the INI force param
+    if ($force_option) {
+        $force_arg = $force_option;
+    } else {
+        $force_arg = Value($ini, "MTT", "force");
+    }
+
+    return $force_arg;
 }
