@@ -21,7 +21,7 @@ include_once("$topdir/reporter.inc");
 include_once("$topdir/database.inc");
 
 # Print user dash-board 
-function dump_query_screen($nogo) {
+function dump_query_screen($nogo, $sql_cmd) {
 
     $phases   = process_phase_field($_GET);
     $defaults = setup_mainwin_fields($phases);
@@ -34,7 +34,7 @@ function dump_query_screen($nogo) {
     if ($nogo)
         $entries = get_form_universe($defaults);
     else
-        list($entries, $disable) = get_form_universe2($_GET);
+        list($entries, $disable) = get_form_universe2($sql_cmd);
 
     # Generate advanced popup menus
     $links = selection_popups($defaults, $entries);
@@ -135,12 +135,12 @@ function use_ttable($params) {
     if (! is_null($click))
         return false;
     elseif ((preg_match("/cherry/i", $go) or
-        $orderby_up or
-        $orderby_down or
-        ! is_null($offset) or
-        $drilldown or
-        $slice)
-            and
+             $orderby_up or
+             $orderby_down or
+             ! is_null($offset) or
+             $drilldown or
+             $slice)
+             and
         ((base_type($lastgo) == 
           base_type($go)) or 
           ! $lastgo))
@@ -281,17 +281,9 @@ function get_form_universe($columns_arg) {
 
 # Populate menus with entries in ttable,
 # and 'Performance' button ''disable'' value
-function get_form_universe2($params) {
+function get_form_universe2($sql_cmd) {
 
-    $ttable_id = $params['ttable_id'];
-
-    $table = "mtttemp_${ttable_id}_table";
-
-    # Gather all available entries for the already
-    # created report
-    $cmd = "SELECT * FROM $table;";
-
-    $resource = do_pg_query($cmd);
+    $resource = do_pg_query($sql_cmd);
 
     $hash = pg_fetch_all($resource);
 
@@ -433,7 +425,7 @@ EOT;
 
     # CAREFUL - IS ''x'' GUARANTEED TO BE DEFINED?  BEWARE
     # OF undefined (OR null?) VARS WHICH CAUSE "NO
-    # PROPERTIES" JAVASSCRIPT ERRORS. (WE NEED TO HAVE
+    # PROPERTIES" JAVASCRIPT ERRORS. (WE NEED TO HAVE
     # 'HIDDEN' FORM PARAMETERS TO PREVENT SUCH ERRORS)
     $text = <<<EOT
 
@@ -445,7 +437,7 @@ EOT;
 
     # CAREFUL - IS ''x'' GUARANTEED TO BE DEFINED?  BEWARE
     # OF undefined (OR null?) VARS WHICH CAUSE "NO
-    # PROPERTIES" JAVASSCRIPT ERRORS. (WE NEED TO HAVE
+    # PROPERTIES" JAVASCRIPT ERRORS. (WE NEED TO HAVE
     # 'HIDDEN' FORM PARAMETERS TO PREVENT SUCH ERRORS)
     $checkbox = <<<EOT
             var x = document.adv.%s;
@@ -473,7 +465,7 @@ EOT;
 
 EOT;
 
-    # X: THERE SHOULD BE NO NEED TO CREATE MORE THAN ONE FOR
+    # X: THERE SHOULD BE NO NEED TO CREATE MORE THAN ONE "FOR"
     # LOOP HERE. IN OTHER WORDS, DO THE LOOPING IN
     # JAVASCRIPT INSTEAD OF PRINTING OUT ''N'' JAVASCRIPT
     # STATEMENTS
@@ -666,9 +658,15 @@ function setup_layout_html($layout, $lasttime, $links, $disable) {
 
     # AFTERWARDS ...
 
-    $top = DOCROOT;
+    $top    = DOCROOT;
+    $script = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
 
-    $logo   = "$top/images/reporter_logo.gif";
+    # Display standard or "archive" logo
+    if (isset($_GET['archive']))
+        $logo = "$top/images/archive_reporter_logo.gif";
+    else
+        $logo = "$top/images/reporter_logo.gif";
+
     list($width, $height, $type, $attr) = getimagesize($logo);
 
     # Put phase selection at the top ...
@@ -1065,7 +1063,7 @@ function form_popup($elements, $params, $specs) {
                     $menu .= "\n<input type='checkbox' name='$field' value='on' $value>";
 
                 elseif (is_scalar($entries))
-                    $menu .= "\n<input type='text' name='$text_$field' value='" . $value . "'>";
+                    $menu .= "\n<input type='text' name='$text_$field' value='" . addslashes($value) . "'>";
 
                 elseif (is_array($entries)) {
 
@@ -1097,7 +1095,11 @@ function form_popup($elements, $params, $specs) {
                   "onclick='javascript:window.close();' " .
                    "value='Cancel'>" .
         "\n</table>" .
-        "\n<br><i>Make one or more selections from the [$title] menu.</i>" .
+        "\n<i><font size='-1'>" .
+        "\n<br>Make one or more selections from the [$title] menu." .
+        "\n<br>(Search strings that contain whitespace need not be wrapped in " .
+        "\nquotes. Delimit multiple search strings with a ';'.)" .
+        "\n</font></i>" .
         "\n</div>";
 
     $link =
@@ -1231,6 +1233,9 @@ function hidden_carryover($params) {
 
     $str .= "\n<input type='hidden' name='lastgo' value='$lastgo'>";
 
+    if (isset($_GET['archive']))
+        $str .= "\n<input type='hidden' name='archive' value='1'>";
+
     return $str;
 }
 
@@ -1256,7 +1261,12 @@ function html_head($title) {
         tmp.close();
     }
 
-    function littleWindow(link) {
+    function OpenPermalinkConfirmation(date) {
+        var link = location.href;
+
+        link += '&text_start_timestamp=' + date;
+        link += '&make_redir=1';
+
         open(link, 'Tiny link', 'resizable=yes, toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, width=180, height=70');
     }
 
@@ -1275,7 +1285,7 @@ EOT;
         $value = $main_window[$field];
 
         $javascript .= <<<EOT
-        document.report.text_$field.value = '$value';
+        document.report.text_$field.value = '$value';\n
 EOT;
     }
 
@@ -1296,6 +1306,7 @@ EOT;
     a.lgray_ln:hover   { color: #FFFF40; font-size: 105%; text-decoration:none; }
 
     td { font-size: 75%; } 
+    p  { font-size: 75%; } 
     th { font-size: 80%; } 
     th#result { font-size: 55%; } 
     img#result { width: 55%; height: 55%; } 

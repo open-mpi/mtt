@@ -21,6 +21,7 @@ use MTT::DoCommand;
 use MTT::FindProgram;
 use MTT::Defaults;
 use MTT::Values;
+use MTT::Lock;
 use Data::Dumper;
 
 # How many old builds to keep
@@ -196,36 +197,90 @@ sub svn_checkout {
     MTT::DoCommand::Cmd(1, "rm -rf $b")
         if ($delete_first);
 
-    my $str = "svn ";
-    if ($export) {
-        $str .= "export "
-    } else {
-        $str .= "co "
-    }
-    if ($rnum) {
-        $str .= "-r $rnum ";
-    }
-    if ($username) {
-        $str .= "--username $username ";
-    }
-    if ($pw) {
-        $str .= "--password $pw ";
-    }
-    if ("0" eq $pw_cache) {
-        $str .= "--no-auth-cache ";
-    }
+    my $str = "svn " . ($export ? "export" : "co") . " ";
+    $str .= "-r $rnum "
+        if ($rnum);
+    $str .= "--username $username "
+        if ($username);
+    $str .= "--password $pw "
+        if ($pw);
+    $str .= "--no-auth-cache "
+        if ("0" eq $pw_cache);
     $str .= $url;
-    my $ret = MTT::DoCommand::Cmd(1, $str);
-    if (!MTT::DoCommand::wsuccess($ret->{exit_status})) {
-        Warning("Could not SVN checkout $url: $@\n");
-        return undef;
-    }
-    my $r = undef;
-    if ($ret->{result_stdout} =~ m/Exported revision (\d+)\.\n$/) {
-        $r = $1;
+
+    my $scheme;
+    if ($url =~ /^http:\/\//) {
+        $scheme = "http";
+    } elsif ($url =~ /^https:\/\//) {
+        $scheme = "https";
     }
 
-    return ($b, $r);
+    # The rest of this section must be serialized because only one
+    # process can modify the $HOME/.subversion/servers file at a time.
+    # Blah!
+    MTT::Lock::Lock($ENV{HOME} . "/.subversion/servers");
+
+    # Read in the original $HOME/.subversion/servers file
+    my $svnfile = "$ENV{HOME}/.subversion/servers";
+    my $have_servers_file = -r $svnfile;
+    my $servers_file;
+    mkdir("$ENV{HOME}/.subversion")
+        if (! -d "$ENV{HOME}/.subversion");
+    if (-r $svnfile) {
+        open(FILE, $svnfile);
+        while (<FILE>) {
+            $servers_file .= $_;
+        }
+        close FILE;
+    } else {
+        $servers_file = "[global]
+http-proxy-host = bogus
+http-proxy-port = bogus\n";
+    }
+
+    # Loop over proxies
+    my $proxies = \@{$MTT::Globals::Values->{proxies}->{$scheme}};
+    my %ENV_SAVE = %ENV;
+
+    foreach my $p (@{$proxies}) {
+        Debug("SVN checkout attempting proxy: $p->{proxy}\n");
+
+        # Write out a new $HOME/.subversion/servers file with the
+        # right proxy info
+        my $out = $servers_file;
+        if ($p->{proxy}) {
+            $p->{proxy} =~ m@^.+://(.+):([0-9]+)/@;
+            $out =~ s/^\s*http-proxy-host\s*=.*$/http-proxy-host = $p->{host}/m;
+            $out =~ s/^\s*http-proxy-port\s*=.*$/http-proxy-port = $p->{port}/m;
+        } else {
+            $out =~ s/^\s*http-proxy-host\s*=.*$//m;
+            $out =~ s/^\s*http-proxy-port\s*=.*$//m;
+        }
+        open(FILE, ">$svnfile");
+        print FILE $out;
+        close(FILE);
+
+        my $ret = MTT::DoCommand::Cmd(1, $str);
+
+        # If it failed, try again
+        next
+            if (!MTT::DoCommand::wsuccess($ret->{exit_status}));
+
+        # Success!
+        my $r = undef;
+        if ($ret->{result_stdout} =~ m/Exported revision (\d+)\.\n$/) {
+            $r = $1;
+        }
+
+        MTT::Lock::Unlock($ENV{HOME} . "/.subversion/servers");
+        return ($b, $r);
+    }
+
+    # Fall though means we didn't succeed.  Doh.
+
+    # Reset the servers file to whatever it used to be (if it used to be!)
+    MTT::Lock::Unlock($ENV{HOME} . "/.subversion/servers");
+    return undef;
 }
 
 #--------------------------------------------------------------------------
@@ -356,6 +411,15 @@ sub mtime_tree {
 sub http_get {
     my ($url) = @_;
 
+    my $scheme;
+    if ($url =~ /^http:\/\//) {
+        $scheme = "http";
+    } elsif ($url =~ /^https:\/\//) {
+        $scheme = "https";
+    } elsif ($url =~ /^ftp:\/\//) {
+        $scheme = "ftp";
+    }
+
     # figure out what download command to use
     if (!$http_agent) {
         foreach my $agent (@{$MTT::Defaults::System_config->{http_agents}}) {
@@ -369,16 +433,34 @@ sub http_get {
     }
     Abort("Cannot find downloading program -- aborting in despair\n")
         if (!defined($http_agent));
-
     my $outfile = basename($url);
-    my $cmd;
-    my $str = "\$cmd = \"$http_agent\"";
-    eval $str;
-    my $x = MTT::DoCommand::Cmd(1, $cmd);
-    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
-        return undef;
+
+    # Loop over proxies
+    my $proxies = \@{$MTT::Globals::Values->{proxies}->{$scheme}};
+    my %ENV_SAVE = %ENV;
+    foreach my $p (@{$proxies}) {
+        my $cmd;
+
+        # Setup the proxy in the environment
+        if ("" ne $p->{proxy}) {
+            Debug("Using $scheme proxy: $p->{proxy}\n");
+            $ENV{$scheme . "_proxy"} = $p->{proxy};
+        }
+
+        my $str = "\$cmd = \"$http_agent\"";
+        eval $str;
+        my $x = MTT::DoCommand::Cmd(1, $cmd);
+
+        # Restore the environment
+        %ENV = %ENV_SAVE;
+
+        # If it succeeded, return happiness
+        return 1
+            if (MTT::DoCommand::wsuccess($x->{exit_status}));
     }
-    return 1;
+
+    # Failure
+    return undef;
 }
 
 #--------------------------------------------------------------------------

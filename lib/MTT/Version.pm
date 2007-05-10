@@ -17,9 +17,9 @@ use strict;
 # Major and minor version number of the MTT
 
 our $Major = "2";
-our $Minor = "0";
-our $Release = "2";
-our $Greek;
+our $Minor = "1";
+our $Release = "0";
+our $Greek = "devel";
 
 our $Combined = "$Major.$Minor";
 $Combined .= ".$Release" if ("0" ne $Release);

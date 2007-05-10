@@ -120,17 +120,21 @@ sub Get {
     $data->{post_copy} = Value($ini, $section, "svn_post_export");
 
     # Make a best attempt to get a version number
-    # 1. Try looking for name-<number> in the directory basename
-    if ($dir =~ m/[\w-]+(\d.+)/) {
-        $ret->{version} = $1;
-    } 
-    # 2. Use the SVN r number
-    elsif ($data->{r}) {
-        $ret->{version} = "r$data->{r}";
-    }
-    # Give up
-    else {
-        $ret->{version} = "$dir-" . strftime("%m%d%Y-%H%M%S", localtime);
+    # 1. Try looking for a field in the INI file
+    $ret->{version} = Value($ini, $section, "svn_version");
+    if (!defined($ret->{version})) {
+        # 2. Try looking for name-<number> in the directory basename
+        if ($dir =~ m/[\w-]+(\d.+)/) {
+            $ret->{version} = $1;
+        } 
+        # 3. Use the SVN r number
+        elsif ($data->{r}) {
+            $ret->{version} = "r$data->{r}";
+        }
+        # Give up
+        else {
+            $ret->{version} = "$dir-" . strftime("%m%d%Y-%H%M%S", localtime);
+        }
     }
     $ret->{module_data} = $data;
 

@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -98,6 +99,7 @@ sub Build {
             foreach my $test_get_name (@test_gets) {
                 # Strip whitespace
                 $test_get_name =~ s/^\s*(.*?)\s*/\1/;
+                $test_get_name = lc($test_get_name);
 
                 # This is only warning about the INI file; we'll see
                 # if we find meta data for the test get later
@@ -177,12 +179,24 @@ sub Build {
                                     # MPI install.
 
                                     Verbose("   Building for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section]\n");
+                                    $MTT::Globals::Internals->{mpi_get_name} =
+                                        $mpi_get_key;
+                                    $MTT::Globals::Internals->{mpi_install_name} =
+                                        $mpi_install_key;
+                                    $MTT::Globals::Internals->{test_get_name} =
+                                        $test_get_name;
+                                    $MTT::Globals::Internals->{test_build_name} =
+                                        $simple_section;
                                     
                                     MTT::DoCommand::Chdir($build_base);
                                     MTT::DoCommand::Chdir($mpi_install->{version_dir});
                                     
                                     # Do the build and restore the environment
                                     _do_build($ini, $section, $build_base, $test_get, $mpi_install);
+                                    delete $MTT::Globals::Internals->{mpi_get_name};
+                                    delete $MTT::Globals::Internals->{mpi_install_name};
+                                    delete $MTT::Globals::Internals->{test_get_name};
+                                    delete $MTT::Globals::Internals->{test_build_name};
                                     %ENV = %ENV_SAVE;
                                 }
                             }
@@ -222,7 +236,7 @@ sub _do_build {
     %$config = %$MTT::Defaults::Test_build;
     $config->{full_section_name} = $section;
     $config->{simple_section_name} = $simple_section;
-    $config->{test_nme} = $test_get->{test_name};
+    $config->{test_name} = $test_get->{test_name};
     $config->{srcdir} = "to be filled in below";
     $config->{setenv} = "to be filled in below";
     $config->{unsetenv} = "to be filled in below";

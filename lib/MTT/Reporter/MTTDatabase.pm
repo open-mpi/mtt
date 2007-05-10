@@ -18,10 +18,13 @@ use Cwd;
 use MTT::Messages;
 use MTT::Values;
 use MTT::Version;
+use MTT::Globals;
+use MTT::DoCommand;
 use LWP::UserAgent;
 use HTTP::Request::Common qw(POST);
 use Data::Dumper;
 use File::Basename;
+use File::Temp qw(tempfile);
 
 # http credentials
 my $username;
@@ -33,8 +36,8 @@ my $port;
 # platform common name
 my $platform;
 
-# LWP user agent
-my $ua;
+# LWP user agents (one per proxy)
+my @lwps;
 
 # Serial per mtt client invocation
 my $invocation_serial_name = "client_serial";
@@ -52,6 +55,15 @@ my $debug_server;
 # Keep track of SQL errors coming from the server
 my $server_errors_total = 0;
 
+# Send SQL errors to this address
+my $email;
+
+# Hostname string to report
+my $hostname;
+
+# User ID (can be overridden in the INI)
+my $local_username;
+
 #--------------------------------------------------------------------------
 
 sub Init {
@@ -63,10 +75,13 @@ sub Init {
     $password = Value($ini, $section, "mttdatabase_password");
     $url = Value($ini, $section, "mttdatabase_url");
     $realm = Value($ini, $section, "mttdatabase_realm");
+    $email = Value($ini, $section, "mttdatabase_email_errors_to");
     $debug_filename = Value($ini, $section, "mttdatabase_debug_filename");
     $debug_filename = "mttdatabase_debug" if (! $debug_filename);
     $keep_debug_files = Value($ini, $section, "mttdatabase_keep_debug_files");
     $debug_server = 1 if ($url =~ /\bdebug\b|\bverbose\b/);
+    $hostname = Value($ini, $section, "mttdatabase_hostname");
+    $local_username = Value($ini, "mtt", "local_username");
 
     $debug_index = 0;
     if (!$url) {
@@ -109,27 +124,36 @@ sub Init {
     }
     $url = "$host:$port/$dir";
 
-    # Look for the proxy server in the environment,
-    # and take the first one we find
-    my $proxy;
-    foreach my $p (grep(/http_proxy/i, keys %ENV)) {
-        if ($ENV{$p}) {
-            $proxy = $ENV{$p};
-            $proxy = "http://$proxy" if ($proxy !~ /https?:/);
-            last;
-        }
+    # Setup proxies
+    my $scheme = (80 == $port) ? "http" : "https";
+
+    # Create the Perl LWP stuff to setup for HTTP requests later.
+    # Make one for each proxy (we'll always have at least one proxy
+    # entry, even if it's empty).
+    my $proxies = \@{$MTT::Globals::Values->{proxies}->{$scheme}};
+    foreach my $p (@{$proxies}) {
+        my $ua = LWP::UserAgent->new({ env_proxy => 0 });
+        
+        # @#$@!$# LWP proxying for https *does not work*.  So
+        # don't set $ua->proxy() for it.  Instead, we'll set #
+        # $ENV{https_proxy} whenever we process requests that
+        # require # SSL proxying, because that is obeyed deep down
+        # in the # innards underneath LWP.
+        $ua->proxy([$scheme], $p->{proxy})
+            if ($p->{proxy} ne "" && $scheme ne "https");
+        $ua->agent("MPI Test MTTDatabase Reporter");
+        push(@lwps, {
+            scheme => $scheme,
+            agent => $ua,
+            proxy => $p->{proxy},
+            source => $p->{source},
+        });
     }
-
-    # Create the Perl LWP stuff to setup for HTTP PUT's later
-
-    $ua = LWP::UserAgent->new();
-    $ua->proxy(['http', 'ftp'], $proxy);
-    $ua->agent("MPI Test MTTDatabase Reporter");
     if ($realm && $username && $password) {
         Verbose("   Set HTTP credentials for realm \"$realm\"\n");
     }
 
-    # Do a test ping to ensure that we can reach this URL
+    # Do a test ping to ensure that we can reach this URL.
 
     Debug("MTTDatabase getting a client serial number...\n");
     my $form = {
@@ -137,7 +161,7 @@ sub Init {
     };
     my $req = POST ($url, $form);
     $req->authorization_basic($username, $password);
-    my $response = $ua->request($req);
+    my $response = _do_request($req);
     if (! $response->is_success()) {
         Warning(">> Failed test ping to MTTDatabase URL: $url\n");
         Warning(">> Error was: " . $response->status_line . "\n" . 
@@ -177,15 +201,15 @@ sub Finalize {
     undef $realm;
     undef $url;
     undef $platform;
-    undef $ua;
+    undef @lwps;
     undef $debug_filename;
     undef $debug_index;
 
     # Report number of server errors for entire MTT run
     if ($server_errors_total) {
         Warning(">> $server_errors_total total MTTDatabase server error" . 
-            plural($server_errors_total) . "\n" .
-            "See the above output for more info.\n");
+                _plural($server_errors_total) . "\n" .
+                "See the above output for more info.\n");
     }
 }
 
@@ -203,9 +227,6 @@ sub Submit {
     my $num_results = 0;
     my $server_errors_count = 0;
 
-    # Get a bunch of information about this host
-    my $id = MTT::Reporter::GetID();
-
     # Make a default form that will be used to seed all the forms that
     # will be sent
     my $default_form = {
@@ -215,9 +236,19 @@ sub Submit {
     my $serial_name = $invocation_serial_name;
     my $serial_value = $invocation_serial_value;
 
-    foreach my $k (keys %{$id}) {
-        $default_form->{$k} = $id->{$k};
+    if ($local_username) {
+        $default_form->{local_username} = $local_username;
+    } else {
+        $default_form->{local_username} = getpwuid($<);
     }
+
+    # Try to get a FQDN
+    if (!defined($hostname) || "" eq $hostname) {
+        $hostname = `hostname`;
+        chomp($hostname);
+    }
+    Debug("Got hostname: $hostname\n");
+    $default_form->{hostname} = $hostname;
 
     # Now iterate through all the records that were given to submit
     foreach my $phase (keys(%$entries)) {
@@ -241,6 +272,7 @@ sub Submit {
             # How many results are we submitting?
             $form->{number_of_results} = $#{$section_obj} + 1;
             $form->{platform_name} = $platform;
+            $form->{email} = $email;
 
             # First, go through and union all the field names to come
             # up with a comprehensive list of fields that we're
@@ -300,20 +332,21 @@ sub Submit {
             }
 
             Debug("Submitting to MTTDatabase...\n");
-            my $req = POST ($url, $form);
-            $req->authorization_basic($username, $password);
-            my $response = $ua->request($req);
+            my ($req, $file) = _prepare_request(\$form);
+            my $response = _do_request($$req);
+            unlink($file);
+
             my $sql_error = 0;
             if ($response->is_success()) {
                 ++$successes;
                 push(@success_outputs, $response->content);
-                $sql_error = &count_sql_errors($response->content);
+                $sql_error = _count_sql_errors($response->content);
                 $server_errors_count += $sql_error;
                 $server_errors_total += $server_errors_count;
                 Warning($response->content . "\n") if ($sql_error);
                 print("\n" . $response->content . "\n") if ($debug_server);
             } else {
-                Verbose(">> Failed to report to MTTDatabase: " .
+                Warning(">> Failed to report to MTTDatabase: " .
                         $response->status_line . "\n" . $response->content);
                 ++$fails;
                 push(@fail_outputs, $response->content);
@@ -354,15 +387,16 @@ sub Submit {
     }
 
     Verbose(">> Reported to MTTDatabase: $successes successful submit" . 
-            plural($successes) .  ", " .
-            "$fails failed submit" . plural($fails) . 
-            " (total of $num_results result" . plural($num_results) . ")\n");
+            _plural($successes) .  ", " .
+            "$fails failed submit" . _plural($fails) . 
+            " (total of $num_results result" . _plural($num_results) . ")\n");
 
     # Print a hairy warning if there was an SQL error
     if ($server_errors_count) {
         Warning("\n" . "#" x 60 .
                 "\n#" .
-                "\n# $server_errors_count MTTDatabase server error" . plural($server_errors_count) .
+                "\n# $server_errors_count MTTDatabase server error" . 
+                _plural($server_errors_count) .
                 "\n# The data that failed to submit is in $debug_filename.*.txt." .
                 "\n# See the above output for more info." .
                 "\n#" .
@@ -372,13 +406,13 @@ sub Submit {
     return $phase_serials;
 }
 
-sub plural {
+sub _plural {
     my $val = shift;
     ($val == 1) ? "" : "s";
 }
 
 # Count the number of database server errors
-sub count_sql_errors {
+sub _count_sql_errors {
     my($str) = @_;
     my @lines = split(/\n|\r/, $str);
     my $line;
@@ -388,6 +422,98 @@ sub count_sql_errors {
         $count++ if ($line =~ /mttdatabase server error/i);
     }
     return $count;
+}
+
+#--------------------------------------------------------------------------
+
+sub _do_request {
+    my $req = shift;
+
+    # Ensure that the environment is clean so that nothing happens
+    # that we're unaware of.
+    my %ENV_SAVE = %ENV;
+    delete $ENV{http_proxy};
+    delete $ENV{https_proxy};
+    delete $ENV{HTTP_PROXY};
+    delete $ENV{HTTPS_PROXY};
+
+    # Go through each ua and try to get a good connection.  If we get
+    # connection refused from any of them, try another.
+    my $response;
+    foreach my $ua (@lwps) {
+        Debug("MTTDatabase trying proxy: $ua->{proxy} / $ua->{source}\n");
+        $ENV{https_proxy} = $ua->{proxy}
+            if ("https" eq $ua->{scheme});
+
+        # Do the HTTP request
+        $response = $ua->{agent}->request($req);
+
+        # If it succeeded, or if it failed with something other than
+        # code 500, return (code 500 = can't connect)
+        if ($response->is_success() ||
+            $response->code() != 500) {
+            %ENV = %ENV_SAVE;
+            return $response;
+        }
+
+        # Otherwise, loop around and try again
+        Debug("Proxy $ua->{proxy} failed code: " .
+              $response->status_line . "\n");
+    }
+
+    # Sorry -- nothing got through...
+    %ENV = %ENV_SAVE;
+    return $response;
+}
+
+# Zip up the test results, and prepare the HTTP file upload
+# request
+sub _prepare_request {
+    my $form = shift;
+
+    # Write an anonymous PHP array to a file
+    my ($fh, $filename) = tempfile();
+    $filename .= ".inc";
+    open(FILE, "> $filename");
+    print FILE &_perl_arr_2_php_arr(Dumper($$form));
+    close(FILE);
+
+    # Zip it (force overwriting of output file)
+    my $x = MTT::DoCommand::Cmd(1, "gzip --force $filename");
+    $filename .= ".gz";
+
+    # Create the "upload" POST request
+    my $req = POST $url,
+         Content_Type => 'form-data',
+         Content => [ 
+             pageAction     => 'upload',
+             userfile       => [$filename],
+             newTitle       => $filename,
+             newCategory    => 'Open MPI',
+             newDescription => 'MTT Results Submission'
+         ];
+
+    $req->authorization_basic($username, $password);
+
+    return (\$req, $filename);
+}
+
+# For the submission hash of data, convert a Perl eval
+# string into a PHP eval string
+sub _perl_arr_2_php_arr {
+    
+    my $str = shift;
+    my @lines = split /\n|\r/, $str;
+    my @ret;
+
+    foreach my $line (@lines) {
+        $line =~ s/^\$VAR\d+ = {\s*$/array(/;
+        $line =~ s/^\s*};\s*$/)/;
+
+        push(@ret, $line);
+    }
+
+    return join("\n", @ret);
 }
 
 1;

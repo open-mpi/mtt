@@ -44,7 +44,6 @@ sub Analyze {
         phase => "Test run",
 
         start_timestamp => $run->{start},
-        stop_timestamp => $run->{stop},
         duration => $run->{duration},
 
         mpi_name => $mpi_details->{name},
@@ -54,8 +53,6 @@ sub Analyze {
 
         test_name => $run->{name},
         command => $run->{cmd},
-        test_build_section_name => $run->{test_build_simple_section_name},
-        test_run_section_name => $run->{simple_section_name},
         np => $run->{np},
         exit_value => MTT::DoCommand::exit_value($results->{exit_status}),
         exit_signal => MTT::DoCommand::exit_signal($results->{exit_status}),

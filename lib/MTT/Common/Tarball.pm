@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -79,18 +80,23 @@ sub Get {
     $data->{post_extract} = Value($ini, $section, "tarball_post_extract");
 
     # Set the final top-level return data
-    $ret->{prepare_for_install} = "MTT::Common::Tarball::PrepareForInstall";
+    $ret->{prepare_for_install} = __PACKAGE__ . "::PrepareForInstall";
     $ret->{module_data} = $data;
 
     # Make a best attempt to get a version number
-    # 1. Try looking for name-<number>.tar.(gz|bz)
-    if (basename($data->{tarball}) =~ m/[\w-]+(\d.+).tar.(gz|bz2)/) {
-        $ret->{version} = $1;
-    } 
-    # Give up
-    else {
-        $ret->{version} = basename($data->{tarball}) . "-" .
-            strftime("%m%d%Y-%H%M%S", localtime);
+    # 1. Try looking for a field in the INI file
+    $ret->{version} = Value($ini, $section, "tarball_version");
+    if (!defined($ret->{version})) {
+
+        # 2. Try looking for name-<number>.tar.(gz|bz)
+        if (basename($data->{tarball}) =~ m/[\w-]+(\d.+).tar.(gz|bz2)/) {
+            $ret->{version} = $1;
+        } 
+        # 3. Give up
+        else {
+            $ret->{version} = basename($data->{tarball}) . "-" .
+                strftime("%m%d%Y-%H%M%S", localtime);
+        }
     }
 
     # All done

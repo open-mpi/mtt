@@ -112,8 +112,11 @@ sub FilterINISections {
     # Iterate through the ini file, section by section
     foreach $section ($ini->Sections) {
 
-        # Always process the "mtt" and "mpi details" sections
-        next if ($section =~ /\bmtt\b|mpi\s+details/i);
+        # Always process the "mtt", "mpi details", and "lock" sections
+        next
+            if ($section =~ /^\s*mtt\s*$/ ||
+                $section =~ /^\s*mpi\s+details\s*:/ ||
+                $section =~ /^\s*lock\s*$/);
 
         # Iterate through every ---[no]-section argument,
         # and OR them together

@@ -55,18 +55,231 @@ define('PATH',    dirname($_SERVER['SCRIPT_NAME']));
 #########################################
 
 # Return a listing of which results go with which phase
-function phase_results_table() {
+function phase_results_table($start_date) {
 
-    # THESE RESULT STRINGS MUST MATCH THE IDENTIFIERS USED
-    # IN [source:/trunk/server/sql/views.sql]
-    return array(
-        'mpi_install' => 
+    # NOTE: WE CAN'T MAKE $ret STATIC, SINCE IT GETS USED
+    # FOR COMPOSING THE QUERY (CLEVER USE), BUT ALSO FOR
+    # SUMMARY TABLE HEADERS (SILLY USE)
+
+    $type = choose_table_type($start_date);
+
+    # Setup results cases for the *temporary* view
+    $result_name = 'test_result';
+    $ret['cases'] = array(
+        'mpi_install' =>
+            array(
+                "(CASE WHEN
+                  $result_name = 1
+                  THEN '_ip' END) as pass",
+                "(CASE WHEN
+                  $result_name = 0
+                  THEN '_if' END) as fail",
+                "'' as skipped",
+                "'' as timed_out",
+                "'' as latency_bandwidth"
+            ),
+        "test_build"  =>
+            array(
+                "(CASE WHEN
+                  $result_name = 1
+                  THEN '_bp' END) as pass",
+                "(CASE WHEN
+                  $result_name = 0
+                  THEN '_bf' END) as fail",
+                "'' as skipped",
+                "'' as timed_out",
+                "'' as latency_bandwidth"
+            ),
+        "test_run"    =>
+            array(
+                "(CASE WHEN
+                  $result_name = 1
+                  THEN '_rp' END) as pass",
+                "(CASE WHEN
+                  $result_name = 0
+                  THEN '_rf' END) as fail",
+                "(CASE WHEN
+                  $result_name = 2
+                  THEN '_rs' END) as skipped",
+                "(CASE WHEN
+                  $result_name = 3
+                  THEN '_rt' END) as timed_out",
+                "(CASE WHEN
+                  ${type}results.latency_bandwidth_id != -38
+                  THEN '_rl' END) as latency_bandwidth"
+            ),
+    );
+
+    # Setup aggregate clauses for to get from the
+    # *temporary* table
+    $ret['aggregates'] = array(
+        'mpi_install' =>
             array('_ip', '_if'),
-        'test_build'  => 
+        'test_build'  =>
             array('_bp', '_bf'),
-        'test_run'    => 
+        'test_run'    =>
             array('_rp', '_rf', '_rs', '_rt', '_rl'),
     );
+
+    return $ret;
+}
+
+# Return a listing of JOIN clauses for each phase type
+function setup_joins($selects, $start_date) {
+
+    static $ret;
+    if ($ret)
+        return $ret;
+
+    # THE BELOW IDEA SEEMED WORTHWHILE, BUT JUST ADDS
+    # COMPLEXITY.  TABLES ARE NOT DECOUPLED ENOUGH AT THIS
+    # POINT TO BE ABLE RIP OUT TABLES FROM THE JOIN CLAUSE,
+    # NOR WOULD DOING SO WITH THE CURRENT SCHEMA REALLY HELP
+
+    # $nl = "\n\t";
+
+    # $which_tables = which_tables($selects);
+
+    # $maybe_join = array(
+    #     'mpi_get',
+    #     'compute_cluster',
+    #     'compiler',
+    #     'mpi_install',
+    #     'test_build',
+    #     'test_run',
+    # );
+
+    # $phases = array(
+    #     1 => 'mpi_install',
+    #     2 => 'test_build',
+    #     3 => 'test_run',
+    # );
+
+    # $format = " JOIN $nl results ON (results.phase = %d AND phase_id = %s_id) ";
+
+    # # Iterate over all the phases
+    # foreach (array_keys($phases) as $i) {
+    #     $phase = $phases[$i];
+
+    #     # Initialize array to store list of JOINing tables
+    #     $tables = array();
+
+    #     foreach ($maybe_join as $table) {
+    #         if (array_search($table, $which_tables) !== false) {
+    #             $tables[] = $table;
+    #         }
+    #     }
+    #     $clause = join(" NATURAL JOIN $nl", $tables);
+
+    #     # Only JOIN here if we didn't join above, because the
+    #     # because phase_id is always JOINed on in results
+    #     if (array_search($phase, $which_tables) === false) {
+    #         $clause .= " NATURAL JOIN $nl $phase ";
+    #     }
+
+    #     $clause .= sprintf($format, $i, $phase);
+
+    #     if (array_search('submit', $which_tables) !== false) {
+    #         $clause .= " NATURAL JOIN $nl submit";
+    #     }
+
+    #     # latency_bandwidth is a special test_run table
+    #     if ($phase == 'test_run') {
+    #         $clause .= " LEFT OUTER JOIN $nl latency_bandwidth USING (latency_bandwidth_id)";
+    #     }
+
+    #     $ret[$phase] = $clause;
+    # }
+
+    $type = choose_table_type($start_date);
+
+    $ret['mpi_install'] ="
+        ${type}mpi_get NATURAL JOIN 
+        ${type}mpi_install NATURAL JOIN 
+        ${type}compute_cluster NATURAL JOIN 
+        ${type}compiler JOIN 
+        ${type}results ON (${type}results.phase = 1 AND phase_id = mpi_install_id) NATURAL JOIN 
+        ${type}submit";
+
+    $ret['test_build'] = "
+        ${type}mpi_get NATURAL JOIN 
+        ${type}mpi_install NATURAL JOIN 
+        ${type}compute_cluster NATURAL JOIN 
+        ${type}compiler NATURAL JOIN
+        ${type}test_build JOIN
+        ${type}results ON (${type}results.phase = 2 AND phase_id = test_build_id) NATURAL JOIN 
+        ${type}submit";
+
+    $ret['test_run'] = "
+        ${type}mpi_get NATURAL JOIN
+        ${type}mpi_install NATURAL JOIN
+        ${type}compute_cluster NATURAL JOIN
+        ${type}test_build NATURAL JOIN
+        ${type}compiler NATURAL JOIN
+        ${type}test_run JOIN
+        ${type}results ON (${type}results.phase = 3 AND phase_id = test_run_id) NATURAL JOIN
+        ${type}submit LEFT OUTER JOIN
+        ${type}latency_bandwidth USING (latency_bandwidth_id)";
+
+    return $ret;
+}
+
+# Return 'speedy_' if *speedy* TABLEs should be used, otherwise ''
+function choose_table_type($start_date) {
+
+    # Two table types
+    $speedy = 'speedy_';
+    $archive = '';
+
+    # Some developer switches to force which type of TABLE
+    # to SELECT from
+    if (isset($_GET['use_speedy']))
+        return $speedy;
+    elseif (isset($_GET['use_archive']))
+        return $archive;
+
+    if (! $start_date)
+        return $speedy;
+
+    $cmd = "\nSELECT start_timestamp " . 
+                "\n\t FROM ${speedy}results " . 
+                "\n\t ORDER BY start_timestamp ASC " .
+                "\n\t LIMIT 1;";
+
+    $oldest_timestamp = select_scalar($cmd);
+
+    $cmd = "\nSELECT 1 WHERE '$start_date' < '$oldest_timestamp';";
+
+    if (select_scalar($cmd) == 1)
+        return $archive;
+    else
+        return $speedy;
+}
+
+# Return a list of MTT tables (to be able to
+# decipher between MTT tables, and Postgres meta
+# tables)
+function setup_mtt_db_tables() {
+
+    static $ret;
+    if ($ret)
+        return $ret;
+
+    # Must be from an MTT table (in case a
+    # Postgres meta table has an identical column name)
+    $ret = array(
+        'compute_cluster',
+        'submit',
+        'mpi_get',
+        'compiler',
+        'mpi_install',
+        'test_build',
+        'test_run',
+        'results',
+        'latency_bandwidth',
+    );
+
+    return $ret;
 }
 
 # Return a list of preferences to hand off to prefs_popup
@@ -90,6 +303,21 @@ function setup_prefs() {
                 #'legend_placement' => array(array('*Bottom', 'In plotting area')),
                 #'graph_type'       => array(array('*Line', 'Bar', 'Points')),
             ),
+            #
+            # X: SHOULDN'T HAVE TO DIG THROUGH THE QUERY STRING TO TURN OFF
+            # DEBUGGING FLAGS. PERHAPS WE NEED TO TREAT THESE USING DEFINE(),
+            # LIKE THE OTHER PREFERENCES FOR SOME REASON ...
+            #
+            # 'debugging' => array(
+            #     'sql'            => array(array(0, 1, 2)),
+            #     'cgi'            => array(false),
+            #     "stats"          => array(false),
+            #     'debug'          => array(false),
+            #     'explain'        => array(false),
+            #     'analyze'        => array(false),
+            #     'no_cache'       => array(false),
+            #     'no_cookies'     => array(false),
+            # ),
         );
 
     return $prefs;
@@ -161,7 +389,7 @@ function setup_advanced($params) {
             $menu =
                 array_merge(
                     $menu,
-                    array('test_run' => 
+                    array('test_run' =>
                         array(
                             'variant'   => array('', $control),
                             'test_name' => array('', $control),
@@ -189,9 +417,25 @@ function setup_advanced($params) {
     return $menu;
 }
 
+# Return a 1D array of advanced fields, instead of 
+# the multi-tiered hash used to group advanced fields
+# by phase
+function setup_advanced_1d($params) {
+
+    $setup_advanced = setup_advanced($params);
+
+    foreach (array_keys($setup_advanced) as $table) {
+        foreach (array_keys($setup_advanced[$table]) as $field) {
+            $ret[] = $field;
+        }
+    }
+
+    return $ret;
+}
+
 # Display more human-readable labels
 function label($str) {
-    
+
     static $labels;
 
     if (! $labels) {
@@ -285,7 +529,7 @@ function label($str) {
             "skipped"           => "Skip",
             "timed_out"         => "Timed",
             "latency_bandwidth" => "Perf",
-            
+
             # Latency/bandwidth
             "latency_avg"       => "Latency (avg)",
             "latency_min"       => "Latency (min)",
@@ -321,6 +565,22 @@ function label($str) {
 
             # Row number
             "n" => "#",
+
+            # Debugging options
+            "debugging"      => "Debugging",
+
+            "sql"            => "SQL",
+            "cgi"            => "Display input selections",
+            "stats"          => "Display query statistics",
+            'debug'          => "Debug",
+            'explain'        => 'Use EXPLAIN',
+            'analyze'        => 'Use ANALYZE',
+            'no_cache'       => 'Turn off SQL caching',
+            'no_cookies'     => 'Turn off cookies',
+            'dynamic_view'   => 'Create the SQL VIEW dynamically',
+            'use_speedy'     => 'SELECT only FROM "speedy" TABLES',
+            'use_archive'    => 'SELECT only FROM "archive" TABLES',
+
         );
     }
 
@@ -328,7 +588,7 @@ function label($str) {
         return $labels[$str];
     elseif (isset($labels[strip_prefix($str)]))
         return $labels[strip_prefix($str)];
-    else 
+    else
         return $str;
 }
 
@@ -426,6 +686,35 @@ function setup_mainwin_fields($phases) {
     return $ret;
 }
 
+function setup_bitmapped_fields() {
+
+    static $ret;
+    if ($ret)
+        return $ret;
+    
+    $ret = array(
+        "bitness" => "(CASE
+             WHEN (bitness)                               = 0 THEN 'unknown'
+             WHEN (bitness # (0 | (1 << 2) | (1 << 3)))   = 0 THEN '32/64'
+             WHEN (bitness & (0 | (1 << 2)))             != 0 THEN '32'
+             WHEN (bitness & (0 | (1 << 3)))             != 0 THEN '64'
+             WHEN (bitness & (0 | (1 << 0)))             != 0 THEN '8'
+             WHEN (bitness & (0 | (1 << 1)))             != 0 THEN '16'
+             WHEN (bitness & (0 | (1 << 4)))             != 0 THEN '128'
+             ELSE 'unknown' END) as bitness",
+        "endian" => "(CASE
+             WHEN (endian & (0 | (1 << 0)))              != 0 THEN 'little'
+             WHEN (endian & (0 | (1 << 1)))              != 0 THEN 'big'
+             ELSE 'unknown' END) as endian",
+        "vpath_mode" => "(CASE
+             WHEN (vpath_mode & (0 | (1 << 0)))          != 0 THEN 'relative'
+             WHEN (vpath_mode & (0 | (1 << 1)))          != 0 THEN 'absolute'
+             ELSE 'unknown' END) as vpath_mode",
+    );
+    return $ret;
+}
+
+
 # Grab the report type from either a button click or a drilldown's "go"
 function get_go_or_click($params) {
     return isset($params['click']) ? $params['click'] : $params['go'];
@@ -436,14 +725,19 @@ function developer_params() {
     static $params;
     if (! $params)
         $params = array(
-            'dev'        => null,
-            'sql'        => null,
-            'cgi'        => null,
-            'debug'      => null,
-            'stats'      => null,
-            'no_cache'   => null,
-            'no_cookies' => null,
-            'db'         => null,
+            'dev'          => null,
+            'sql'          => null,
+            'cgi'          => null,
+            'debug'        => null,
+            'stats'        => null,
+            'explain'      => null,
+            'analyze'      => null,
+            'no_cache'     => null,
+            'no_cookies'   => null,
+            'db'           => null,
+            'dynamic_view' => null,
+            'use_speedy'   => null,
+            'use_archive'  => null,
         );
     return $params;
 }
@@ -466,10 +760,11 @@ function form_carryover($defaults, $phase) {
     foreach (array_keys($defaults) as $k) {
 
         # Only deal with text fields
-        if ($k == 'show' or 
+        if ($k == 'show' or
             $k == 'phase' or
             $k == 'go' or
-            $k == 'dev')
+            $k == 'dev' or
+            $k == 'archive')
             continue;
 
         $textfield = "text_$k";
@@ -540,7 +835,33 @@ function form_carryover($defaults, $phase) {
     unset($params['rows']);
     unset($params['slice']);
 
+    # 'archive' boolean setting
+    if (isset($_GET['archive']))
+        $params['archive'] = 1;
+
     return $params;
+}
+
+# Just like form_carryover, but for Advanced menu
+function advanced_carryover($params) {
+
+    $advanced_fields = setup_advanced_1d($params);
+
+    foreach ($advanced_fields as $k) {
+
+        $textfield = "text_$k";
+        $showfield = "show_$k";
+
+        # Carryover textfields
+        if (isset($params[$textfield]))
+            $ret[$textfield] = $params[$textfield];
+
+        # Carryover show/hide menus
+        if ($params[$showfield])
+            $ret[$showfield] = $params[$showfield];
+    }
+
+    return $ret;
 }
 
 # Grab phase field
@@ -581,7 +902,7 @@ function tokenize($string) {
 # Convert an associative array to an HTTP-ready query string
 function arr2qstring($arr) {
     foreach (array_keys($arr) as $key)
-        $str .= "&$key=$arr[$key]";
+        $str .= "&$key=" . urlencode($arr[$key]);
     return $str;
 }
 
@@ -619,7 +940,7 @@ function debug($str) {
 }
 
 function stats($str) {
-    if ($_GET['stats'] == 'on')
+    if (isset($_GET['stats']) == 'on')
         print("\n<pre>$str</pre>");
 }
 
@@ -627,7 +948,7 @@ function stats($str) {
 function var_dump_html($desc, $var) {
     if ($_GET['debug'] == 'on' or
         $_GET['dev'] == 'on')
-        var_dump("\n<br>" . 
+        var_dump("\n<br>" .
                     "<div align='left'>" .
                     "<pre>$desc",$var,"</div>");
 }
@@ -635,7 +956,7 @@ function var_dump_html($desc, $var) {
 # Print SQL if they want it
 function debug_sql($cmd, $level) {
     $trace = $_GET['sql'];
-    if ($trace == $level)
+    if ($trace >= $level)
         print("\n<pre>SQL: $cmd</pre>");
 }
 

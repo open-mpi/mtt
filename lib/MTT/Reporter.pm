@@ -35,44 +35,6 @@ my @modules;
 
 #--------------------------------------------------------------------------
 
-sub _fill_cache {
-    $cache = undef;
-
-    # Try to get a FQDN
-
-    my $hostname = `hostname`;
-    chomp($hostname);
-    Debug("Got hostname: $hostname\n");
-
-    # Find whatami
-
-    my $dir = FindZeroDir();
-    my $whatami = "$dir/whatami/whatami";
-    if (! -x $whatami) {
-        Error("Cannot find 'whatami' program -- cannot continue\n");
-    }
-    Debug("Found whatami: $whatami\n");
-
-    # Fill in the cache
-
-    $cache->{platform_type} = `$whatami -t`;
-    chomp($cache->{platform_type});
-    $cache->{platform_hardware} = `$whatami -m`;
-    chomp($cache->{platform_hardware});
-    $cache->{os_name} = `$whatami -n`;
-    chomp($cache->{os_name});
-    $cache->{os_version} = `$whatami -r`;
-    chomp($cache->{os_version});
-    $cache->{hostname} = $hostname;
-    $cache->{local_username} = getpwuid($<);
-}
-
-#--------------------------------------------------------------------------
-
-sub GetID {
-    return $cache;
-}
-
 #--------------------------------------------------------------------------
 
 sub MakeReportString {
@@ -142,8 +104,6 @@ sub Init {
 
     Verbose("*** Reporter initializing\n");
 
-    _fill_cache();
-
     # Record start time for the overall MTT run
     $cache->{start_timestamp} = gmtime;
 
@@ -187,16 +147,12 @@ sub Submit {
     my ($phase, $section, $report) = @_;
     my ($serials, $x);
 
-    _fill_cache()
-        if (!$cache);
-
     # Make the common report entry
 
     my $entries;
     push(@{$entries->{$phase}->{$section}}, $report);
 
-    # Call all the reporters.  Use the GMT ctime() as the timestamp.
-    $cache->{submit_timestamp} = gmtime;
+    # Call all the reporters
     foreach my $m (@modules) {
         $x = MTT::Module::Run("MTT::Reporter::$m", "Submit", $cache, $entries);
         # Some reporters are not yet returning serials (e.g., text file)
@@ -221,11 +177,8 @@ sub QueueAdd {
 #--------------------------------------------------------------------------
 
 sub QueueSubmit {
-    _fill_cache()
-        if (!$cache);
 
-    # Call all the reporters.  Use the GMT ctime() as the timestamp.
-    $cache->{submit_timestamp} = gmtime;
+    # Call all the reporters
     foreach my $m (@modules) {
         MTT::Module::Run("MTT::Reporter::$m", "Submit", $cache, $queue);
     }

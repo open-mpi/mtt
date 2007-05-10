@@ -36,7 +36,9 @@ sub RunEngine {
     Verbose("   Total of $total tests to run in this section\n");
     $verbose_out = 0;
     my $count = 0;
+    my $printed = 0;
     foreach my $run (@{$ret->{tests}}) {
+        $printed = 0;
         if (!exists($run->{executable})) {
             Warning("No executable specified for text; skipped\n");
             next;
@@ -75,10 +77,12 @@ sub RunEngine {
         if ($verbose_out > 50) {
             $verbose_out = 0;
             my $per = sprintf("%d%%", $count / $total * 100);
+            $printed = 1;
             Verbose("   ### Test progress: $count of $total section tests complete ($per)\n");
         }
     }
-    Verbose("   ### Test progress: $count of $total section tests complete (100%)\n");
+    Verbose("   ### Test progress: $count of $total section tests complete (100%)\n")
+        if (!$printed);
 
     # If we ran any tests at all, then run the after_all step and
     # submit the results to the Reporter
@@ -92,7 +96,10 @@ sub RunEngine {
 sub _run_one_np {
     my ($install_dir, $run, $mpi_details, $np, $force) = @_;
 
-    my $name = basename($MTT::Test::Run::test_executable);
+    my $name;
+    if (-e $MTT::Test::Run::test_executable) {
+        $name = basename($MTT::Test::Run::test_executable);
+    }
     $run->{name} = $name;
 
     # Load up the final global
@@ -127,7 +134,12 @@ sub _run_one_test {
     # checking will bring all the intermediary hash levels into
     # existence if they didn't already exist.
 
-    my $str = "   Test: " . basename($name) .
+    my $basename;
+    if (-e $MTT::Test::Run::test_executable) {
+        $basename = basename($MTT::Test::Run::test_executable);
+    }
+
+    my $str = "   Test: " . $basename .
         ", np=$MTT::Test::Run::test_np, variant=$variant:";
 
     if (!$force &&
@@ -226,18 +238,37 @@ sub _run_step {
 
     $step .= "_exec";
     if (exists($mpi_details->{$step}) && $mpi_details->{$step}) {
-        Debug("Running step: $step\n");
-        my $x = MTT::DoCommand::CmdScript(1, $mpi_details->{$step}, 10);
+        my $cmd = $mpi_details->{$step};
+
+        # Get the timeout value
+        my $name = $step . "_timeout";
+        my $timeout = $mpi_details->{$name};
+        $timeout = undef 
+            if ($timeout <= 0);
+
+        # Get the pass criteria
+        $name = $step . "_pass";
+        my $pass = $mpi_details->{$name};
+
+        Debug("Running step: $step: $cmd / timeout $timeout\n");
+        my $x = ($cmd =~ /\n/) ?
+            MTT::DoCommand::CmdScript(1, $mpi_details->{$step}, $timeout) : 
+            MTT::DoCommand::Cmd(1, $mpi_details->{$step}, $timeout);
+
         if ($x->{timed_out}) {
             Verbose("  Warning: step $step TIMED OUT\n");
-        } elsif (MTT::DoCommand::wifsignaled($x->{exit_status})) {
-            my $ret = MTT::DoCommand::wtermsig($x->{exit_status});
-            Verbose("  Warning: step $step finished via signal $ret; skipping\n");
-        } elsif (!MTT::DoCommand::wsuccess($x->{exit_status})) {
-            my $success = MTT::DoCommand::wsuccess($x->{exit_status});
-            my $exited = MTT::DoCommand::wifexited($x->{exit_status});
-            my $exit_value = MTT::DoCommand::wexitstatus($x->{exit_status});
-            Verbose("  Warning: step $step ($x->{exit_status} : success $success : exited $exited) finished with nonzero exit status ($exit_value)\n");
+            Verbose("  Output: $x->{result_stdout}\n")
+                if (defined($x->{result_stdout}) && $x->{result_stdout} ne "");
+        } else {
+            my $pass_result = MTT::Values::EvaluateString($pass);
+            if ($pass_result != 1) {
+                Verbose("  Warning: step $step FAILED\n");
+                Verbose("  Output: $x->{result_stdout}\n")
+                    if (defined($x->{result_stdout}) &&
+                        $x->{result_stdout} ne "");
+            } else {
+                Debug("Step $step PASSED\n");
+            }
         }
     }
 }

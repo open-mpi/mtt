@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -20,15 +21,20 @@ use Fcntl qw(F_GETFL F_SETFL O_NONBLOCK);
 use MTT::Messages;
 use Data::Dumper;
 
+#--------------------------------------------------------------------------
+
 # Want to see what MTT *would* do?
 our $no_execute;
 
+# Exit status (i.e., return from waitpid()) from the last
+# DoCommand::Cmd[Script]
+our $last_exit_status;
+
 #--------------------------------------------------------------------------
 
+# Cache so that we don't re-calculate these every time
 my $server_socket;
-
 my $server_addr;
-
 my $tcp_proto;
 
 #--------------------------------------------------------------------------
@@ -262,12 +268,22 @@ sub Cmd {
 
             # Run it!
 
-            exec(@$tokens) ||
-                die "Can't execute command: $cmd\n";
+            if (! exec(@$tokens)) {
+                my $die_msg;
+                $die_msg .= "Can't execute command: $cmd\n";
+                $die_msg .= "Error: $!\n";
+                die $die_msg;
+            }
         }
     } else {
         # For no_execute, just print the command
-        print join(" ", @$tokens);
+        print join(" ", @$tokens) . "\n";
+
+        $ret->{timed_out} = 0;
+        $ret->{exit_status} = 0;
+        $ret->{result_stdout} = "";
+        $ret->{result_stderr} = "";
+        return $ret;
     }
 
     # Accept two connections from the child
@@ -288,15 +304,6 @@ sub Cmd {
             or die "Can't get flags for the socket: $!\n";
         fcntl(ERRread, F_SETFL, $flags | O_NONBLOCK)
             or die "Can't set flags for the socket: $!\n";
-    }
-
-    # Return if --no-execute, no output to see
-    if ($no_execute) {
-        $ret->{timed_out} = 0;
-        $ret->{exit_status} = 0;
-        $ret->{result_stdout} = "";
-        $ret->{result_stderr} = "";
-        return $ret;
     }
 
     # Parent
@@ -398,6 +405,7 @@ sub Cmd {
         $ret->{exit_status} = 0;
         $msg .= "timed out";
     }
+    $MTT::DoCommand::last_exit_status = $ret->{exit_status};
 
     # Was it signaled?
     if (wifsignaled($ret->{exit_status})) {

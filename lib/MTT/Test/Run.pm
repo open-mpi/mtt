@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -72,6 +73,7 @@ sub Run {
             foreach my $test_build_name (@test_builds) {
                 # Strip whitespace
                 $test_build_name =~ s/^\s*(.*?)\s*/\1/;
+                $test_build_name = lc($test_build_name);
 
                 # This is only warning about the INI file; we'll see
                 # if we find meta data for the test build later
@@ -122,9 +124,24 @@ sub Run {
                                     }
 
                                     # Alles gut.  Go do it.
+                                    $MTT::Globals::Internals->{mpi_get_name} =
+                                        $mpi_get_key;
+                                    $MTT::Globals::Internals->{mpi_install_name} =
+                                        $mpi_install_key;
+                                    $MTT::Globals::Internals->{test_get_name} =
+                                        $test_build->{test_get_simple_section_name};
+                                    $MTT::Globals::Internals->{test_build_name} =
+                                        $test_build_name;
+                                    $MTT::Globals::Internals->{test_run_name} =
+                                        $simple_section;
                                     _do_run($ini, $section, $test_build, 
                                             $mpi_install, $install_dir, 
                                             $runs_data_dir, $force);
+                                    delete $MTT::Globals::Internals->{mpi_get_name};
+                                    delete $MTT::Globals::Internals->{mpi_install_name};
+                                    delete $MTT::Globals::Internals->{test_get_name};
+                                    delete $MTT::Globals::Internals->{test_build_name};
+                                    delete $MTT::Globals::Internals->{test_run_name};
                                     %ENV = %ENV_SAVE;
                                 }
                             }
@@ -147,7 +164,8 @@ sub _do_run {
     # Check both specify_module and module (for backcompatibility)
     my $specify_module;
     $specify_module = MTT::Values::Value($ini, $section, "specify_module");
-    $specify_module = MTT::Values::Value($ini, $section, "module") if (!$specify_module);
+    $specify_module = MTT::Values::Value($ini, $section, "module")
+        if (!$specify_module);
 
     if (!$specify_module) {
         Warning("No module specified in [$section]; skipping\n");
@@ -176,26 +194,29 @@ sub _do_run {
 
                 Debug("Using [$s] with [MPI Install: $mpi_install_section]\n");
                 $match = 1;
+                $MTT::Globals::Internals->{mpi_details_name} = $s;
                 last;
             }
         }
     }
+
     if (!$match and !$mpi_details_section) {
         Warning("Unable to find MPI details section for [MPI Install: $details_install_section]; skipping\n");
+        delete $MTT::Globals::Internals->{mpi_details_name};
         return;
     }
 
     # Get some details about running with this MPI
     my $mpi_details;
     $MTT::Test::Run::test_prefix = $mpi_install->{installdir};
-    $mpi_details->{before_any_exec} = 
-        MTT::Values::Value($ini, $mpi_details_section, "before_any_exec");
-    $mpi_details->{before_each_exec} = 
-        MTT::Values::Value($ini, $mpi_details_section, "before_each_exec");
-    $mpi_details->{after_each_exec} = 
-        MTT::Values::Value($ini, $mpi_details_section, "after_each_exec");
-    $mpi_details->{after_all_exec} = 
-        MTT::Values::Value($ini, $mpi_details_section, "after_all_exec");
+    # Need to init $mpi_details to a hash before calling _fill_step
+    $mpi_details->{bogus} = "";
+    _fill_step($ini, $mpi_details_section, "before_any_exec", $mpi_details);
+    _fill_step($ini, $mpi_details_section, "before_each_exec", $mpi_details);
+    _fill_step($ini, $mpi_details_section, "after_each_exec", $mpi_details);
+    _fill_step($ini, $mpi_details_section, "after_all_exec", $mpi_details);
+    # Now delete the bogus value from the hash
+    delete $mpi_details->{bogus};
     # Do not evaluate this one now yet
     my $exec = $ini->val($mpi_details_section, "exec");
     while ($exec =~ m/@(.+?)@/) {
@@ -325,6 +346,28 @@ sub _do_run {
         Debug("Unloading environment modules: @env_modules\n");
         Env::Modulecmd::unload(@env_modules);
     }
+}
+
+#--------------------------------------------------------------------------
+
+sub _fill_step {
+    my ($ini, $mpi_details_section, $name, $mpi_details) = @_;
+    my ($t, $v);
+
+    $mpi_details->{$name} = 
+        MTT::Values::Value($ini, $mpi_details_section, $name);
+
+    $t = $name . "_timeout";
+    $v = MTT::Values::Value($ini, $mpi_details_section, $t);
+    $v = $MTT::Globals::Values->{$t}
+        if (!defined($v));
+    $mpi_details->{$t} = $v;
+
+    $t = $name . "_pass";
+    $v = MTT::Values::Value($ini, $mpi_details_section, $t);
+    $v = $MTT::Globals::Values->{$t}
+        if (!defined($v));
+    $mpi_details->{$t} = $v;
 }
 
 1;

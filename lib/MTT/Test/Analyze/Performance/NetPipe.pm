@@ -61,8 +61,6 @@ sub Analyze {
     $report->{latency_avg}   = "{" . join(",", @usec) . "}";
     $report->{bandwidth_avg} = "{" . join(",", @mbps) . "}";
     $report->{message_size}  = "{" . join(",", @bytes) . "}";
-    $report->{x_axis_label}  = $latency_unit;
-    $report->{y_axis_label}  = $bandwidth_unit;
 
     return $report;
 }

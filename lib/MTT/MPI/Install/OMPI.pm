@@ -23,8 +23,8 @@ use MTT::Files;
 
 #--------------------------------------------------------------------------
 
-sub _find_bindings {
-    my ($bindir, $libdir, $lang) = @_;
+sub _run_ompi_info {
+    my ($bindir, $libdir, $grep_string) = @_;
 
     my %ENV_SAVE = %ENV;
     if (exists($ENV{LD_LIBRARY_PATH})) {
@@ -33,14 +33,34 @@ sub _find_bindings {
         $ENV{LD_LIBRARY_PATH} = "$libdir";
     }
 
-    open INFO, "$bindir/ompi_info --parsable|";
-    my @have = grep { /^bindings:$lang:/ } <INFO>;
-    chomp @have;
+    open INFO, "$bindir/ompi_info --all --parsable|";
+    my @file = grep { /$grep_string/ } <INFO>;
+    chomp @file;
     close INFO;
 
     %ENV = %ENV_SAVE;
 
-    return ($have[0] =~ /^bindings:${lang}:yes/) ? "1" : "0";
+    return \@file;
+}
+
+#--------------------------------------------------------------------------
+
+sub _find_bindings {
+    my ($bindir, $libdir, $lang) = @_;
+
+    my $file = _run_ompi_info($bindir, $libdir, "^bindings:$lang:");
+    return ($file->[0] =~ /^bindings:${lang}:yes/) ? "1" : "0";
+}
+
+#--------------------------------------------------------------------------
+
+sub _find_bitness {
+    my ($bindir, $libdir) = @_;
+
+    my $str = "^compiler:c:sizeof:pointer:";
+    my $file = _run_ompi_info($bindir, $libdir, $str);
+    $file->[0] =~ m/${str}([0-9]+)/;
+    return $1;
 }
 
 #--------------------------------------------------------------------------
@@ -56,6 +76,30 @@ sub Install {
     my $ret;
     $ret->{test_result} = MTT::Values::FAIL;
     $ret->{exit_status} = 0;
+
+    # Get some LAM-module-specific config arguments
+
+    my $tmp;
+    $tmp = Value($ini, $section, "ompi_make_all_arguments");
+    $config->{make_all_arguments} = $tmp
+        if (defined($tmp));
+
+    $config->{compiler_name} =
+        Value($ini, $section, "ompi_compiler_name");
+    if ($MTT::Defaults::System_config->{known_compiler_names} !~ /$config->{compiler_name}/) {
+        Warning("Unrecognized compiler name in [$section] ($config->{compiler_name}); the only permitted names are: \"$MTT::Defaults::System_config->{known_compiler_names}\"; skipped\n");
+        return;
+    }
+    $config->{compiler_version} =
+        Value($ini, $section, "ompi_compiler_version");
+
+    my $tmp = Value($ini, $section, "ompi_configure_arguments");
+    $config->{configure_arguments} = $tmp
+        if (defined($tmp));
+
+    $tmp = Logical($ini, $section, "ompi_make_check");
+    $config->{make_check} = $tmp
+        if (defined($tmp));
 
     # Run configure
 
@@ -176,6 +220,10 @@ sub Install {
     $ret->{f90_bindings} = _find_bindings($ret->{bindir},
                                           $ret->{libdir}, "f90");
     Debug("Have F90 bindings: $ret->{f90_bindings}\n"); 
+
+    # Calculate bitness (must be processed *after* installation)
+
+    $config->{bitness} = _find_bitness($ret->{bindir}, $ret->{libdir});
 
     # Write out the OMPI cleanup script and be done.
 

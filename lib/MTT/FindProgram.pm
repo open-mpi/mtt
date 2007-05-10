@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -14,6 +15,8 @@ package MTT::FindProgram;
 use strict;
 use File::Basename;
 use Cwd;
+use MTT::Messages;
+use Data::Dumper;
 use vars qw(@EXPORT);
 use base qw(Exporter);
 @EXPORT = qw(FindProgram FindZeroDir);
@@ -34,6 +37,7 @@ sub FindProgram {
     while ($i <= $#names) {
         foreach my $dir (split(/:/, $ENV{PATH})) {
             if (-x "$dir/$names[$i]") {
+                Debug(">> " . (caller(0))[3] . " returning $dir/$names[$i]\n");
                 return "$dir/$names[$i]";
             }
         }

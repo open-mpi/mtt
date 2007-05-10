@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -61,7 +62,9 @@ sub Get {
     Abort("Could not download latest snapshot number -- aborting\n")
         if (! -f $latest_filename and ! $MTT::DoCommand::no_execute);
     $ret->{version} = `cat $latest_filename`;
-    $ret->{version} = 'no_version' if ($MTT::DoCommand::no_execute);
+
+    # This is useful for scale testing the database
+    $ret->{version} = MTT::Values::RandomString(10) if ($MTT::DoCommand::no_execute);
 
     chomp($ret->{version});
 
@@ -164,7 +167,7 @@ sub Get {
 
     # now adjust the tarball name to be absolute
     $ret->{module_data}->{tarball} = "$tarball_dir/$tarball_name";
-    $ret->{prepare_for_install} = "MTT::MPI::Get::OMPI_Snapshot::PrepareForInstall";
+    $ret->{prepare_for_install} = __PACKAGE__ . "::PrepareForInstall";
 
     # All done
     Debug(">> OMPI_Snapshot complete\n");

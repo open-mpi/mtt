@@ -455,7 +455,7 @@ sub test_exit_status {
 
 #--------------------------------------------------------------------------
 
-# Return whether the last text run terminated normally
+# Return whether the last test run terminated normally
 sub test_wifexited {
     my $ret = MTT::DoCommand::wifexited($MTT::Test::Run::test_exit_status);
     Debug("&test_wifexited returning: $ret\n");
@@ -473,7 +473,7 @@ sub test_wexitstatus {
 
 #--------------------------------------------------------------------------
 
-# Return whether the last text run was terminated by a signal
+# Return whether the last test run was terminated by a signal
 sub test_wifsignaled {
     my $ret = MTT::DoCommand::wifsignaled($MTT::Test::Run::test_exit_status);
     Debug("&test_widsignaled returning: $ret\n");
@@ -482,9 +482,45 @@ sub test_wifsignaled {
 
 #--------------------------------------------------------------------------
 
-# Return whether the last text run was terminated by a signal
+# Return whether the last test run was terminated by a signal
 sub test_wtermsig {
     my $ret = MTT::DoCommand::wtermsig($MTT::Test::Run::test_exit_status);
+    Debug("&test_wtermsig returning: $ret\n");
+    return "$ret";
+}
+
+#--------------------------------------------------------------------------
+
+# Return whether the last DoCommand::Cmd[Script] terminated normally
+sub cmd_wifexited {
+    my $ret = MTT::DoCommand::wifexited($MTT::DoCommand::last_exit_status);
+    Debug("&test_wifexited returning: $ret\n");
+    return $ret ? "1" : "0";
+}
+
+#--------------------------------------------------------------------------
+
+# Return the exit status from the last DoCommand::Cmd[Script]
+sub cmd_wexitstatus {
+    my $ret = MTT::DoCommand::wexitstatus($MTT::DoCommand::last_exit_status);
+    Debug("&test_wexitstatus returning $ret\n");
+    return "$ret";
+}
+
+#--------------------------------------------------------------------------
+
+# Return whether the last DoCommand::Cmd[Script] was terminated by a signal
+sub cmd_wifsignaled {
+    my $ret = MTT::DoCommand::wifsignaled($MTT::DoCommand::last_exit_status);
+    Debug("&test_widsignaled returning: $ret\n");
+    return $ret ? "1" : "0";
+}
+
+#--------------------------------------------------------------------------
+
+# Return whether the last DoCommand::Cmd[Script] was terminated by a signal
+sub cmd_wtermsig {
+    my $ret = MTT::DoCommand::wtermsig($MTT::DoCommand::last_exit_status);
     Debug("&test_wtermsig returning: $ret\n");
     return "$ret";
 }
@@ -520,7 +556,12 @@ sub find_executables {
     Debug("&find_executables got @_\n");
 
     @find_executables_data = ();
-    find(\&find_executables_sub, @_);
+    my @dirs;
+    foreach my $d (@_) {
+        push(@dirs, $d)
+            if ("" ne $d);
+    }
+    find(\&find_executables_sub, @dirs);
 
     Debug("&find_exectuables returning: @find_executables_data\n");
     return \@find_executables_data;
@@ -622,6 +663,37 @@ sub env_max_procs {
 
 #--------------------------------------------------------------------------
 
+# Find the hosts that we can run with
+sub env_hosts {
+    Debug("&env_hosts\n");
+
+    # Resource managers
+    return slurm_hosts()
+        if slurm_job();
+    return pbs_hosts()
+        if pbs_job();
+    return n1ge_hosts()
+        if n1ge_job();
+    return loadleveler_hosts()
+        if loadleveler_job();
+
+    # Hostfile
+    return hostfile_hosts()
+        if have_hostfile();
+
+    # Hostlist
+    return hostlist_hosts()
+        if have_hostlist();
+
+    # Not running under anything; just return the localhost name
+    my $ret = `hostname`;
+    chomp($ret);
+    Debug("&env_hosts returning: $ret\n");
+    return "$ret";
+}
+
+#--------------------------------------------------------------------------
+
 # Return "1" if we have a hostfile; "0" otherwise
 sub have_hostfile {
     my $ret = (defined $MTT::Globals::Values->{hostfile}) ? "1" : "0";
@@ -657,6 +729,30 @@ sub hostfile_max_procs {
 
 #--------------------------------------------------------------------------
 
+# If we have a hostfile, return its hosts
+sub hostfile_hosts {
+    Debug("&hostfile_hosts\n");
+
+    return ""
+        if (!have_hostfile());
+
+    # Return the uniq'ed contents of the hostfile
+
+    open (FILE, $MTT::Globals::Values->{hostfile}) || return "";
+    my $lines;
+    while (<FILE>) {
+        chomp;
+        $lines->{$_} = 1;
+    }
+
+    my @hosts = sort(keys(%$lines));
+    my $hosts = join(",", @hosts);
+    Debug("&hostfile_hosts returning $hosts\n");
+    return "$hosts";
+}
+
+#--------------------------------------------------------------------------
+
 # Return "1" if we have a hostfile; "0" otherwise
 sub have_hostlist {
     my $ret = (defined $MTT::Globals::Values->{hostlist}) ? "1" : "0";
@@ -688,6 +784,19 @@ sub hostlist_max_procs {
 
     Debug("&hostlist_max_procs returning $MTT::Globals::Values->{hostlist_max_np}\n");
     return $MTT::Globals::Values->{hostlist_max_np};
+}
+
+#--------------------------------------------------------------------------
+
+# If we have a hostlist, return its hosts
+sub hostlist_hosts {
+    Debug("&hostlist_hosts\n");
+
+    return ""
+        if (!have_hostlist());
+
+    Debug("&hostlist_hosts returning $MTT::Globals::Values->{hostlist}\n");
+    return $MTT::Globals::Values->{hostlist};
 }
 
 #--------------------------------------------------------------------------
@@ -750,6 +859,9 @@ sub slurm_max_procs {
         } elsif ($t =~ m/(\d+)/) {
             $tasks = $1;
             $nodes = 1;
+        } else {
+            Warning("Unparsable SLURM_TASKS_PER_NODE: $ENV{SLURM_TASKS_PER_NODE}\n");
+            return "0";
         }
 
         $max_procs += $tasks * $nodes;
@@ -757,6 +869,137 @@ sub slurm_max_procs {
 
     Debug("&slurm_max_procs returning: $max_procs\n");
     return "$max_procs";
+}
+
+#--------------------------------------------------------------------------
+
+# If in a SLURM job, return the hosts we can run on.  Otherwise,
+# return "".
+sub slurm_hosts {
+    Debug("&slurm_hosts\n");
+
+    return ""
+        if (!slurm_job());
+
+    # The SLURM env variable SLURM_NODELIST is a regexp of the hosts
+    # we can run on.  Need to convert it to a comma-delimited list of
+    # hosts; each host repeated as many times as dictated by the
+    # corresponding entry in SLURM_TASKS_PER_NODE (see description of
+    # SLURM_TASKS_PER_NODE in slurm_max_procs()).
+    #
+    # SLURM_NODELIST is a comma-delimited list of regular expressions.
+    # Each entry will be of the form: base[ranges] (square brackets
+    # are literal), where ranges is, itself, a comma-delimtied list of
+    # ranges.  Each entry in ranges will be of the form: N[-M], where
+    # N and M are integers, and the brackets are not literal (i.e.,
+    # it'll be "N" or "N-M").
+
+    # First, build a fully expanded list of task counts per node (see
+    # slurm_max_procs() for a description of the format of
+    # ENV{SLURM_TASKS_PER_NDOE}).
+
+    my @tasks_per_node;
+    my @tpn = split(/,/, $ENV{SLURM_TASKS_PER_NODE});
+    foreach my $t (@tpn) {
+        my $tasks;
+        my $nodes;
+        if ($t =~ m/(\d+)\(x(\d+)\)/) {
+            $tasks = $1;
+            $nodes = $2;
+        } elsif ($t =~ m/(\d+)/) {
+            $tasks = $1;
+            $nodes = 1;
+        } else {
+            Warning("Unparsable SLURM_TASKS_PER_NODE: $ENV{SLURM_TASKS_PER_NODE}\n");
+            return "";
+        }
+
+        while ($nodes > 0) {
+            push(@tasks_per_node, $tasks);
+            --$nodes;
+        }
+    }
+
+    # Next, built a list of all nodes
+
+    my @nodes;
+    my $str = $ENV{SLURM_NODELIST};
+    Debug("Parsing SLURM_NODELIST: $ENV{SLURM_NODELIST}\n");
+    while ($str) {
+        my $next_str;
+
+        # See if we've got a "foo[ranges]" at the head of the string.
+        # Be sure to be non-greedy in this regexp to grab only the
+        # *first* part of the strgin!
+        if ($str =~ m/^(.+?)\[([0-9\,\-]+?)\](.*)$/) {
+            $next_str = $3;
+            my $base = $1;
+            Debug("Range: $1 - $2\n");
+            # Parse the ranges
+            my @ranges = split(/,/, $2);
+            foreach my $r (@ranges) {
+                if ($r =~ m/(\d+)-(\d+)/) {
+                    # Got a start-finish range
+                    my $str_len = length($1);
+                    my $i = int($1);
+                    my $end = int($2);
+                    while ($i <= $end) {
+                        my $num = $i;
+                        $num = "0" . $num
+                            while (length($num) < $str_len);
+                        push(@nodes, "$base$num");
+                        ++$i;
+                    }
+                } elsif ($r =~ m/^(\d+)$/) {
+                    # Got a single number
+                    push(@nodes, "$base$1");
+                } else {
+                    # Got an unexpected string
+                    Warning("Unparsable SLURM_NODELIST: $ENV{SLURM_NODELIST}\n");
+                    return "";
+                }
+            }
+        } elsif ($str =~ m/^([^,]+)(.*)$/) {
+            $next_str = $2;
+            # No range; just a naked host -- save it and move on
+            Debug("Naked host: ($str) $1\n");
+            push(@nodes, $1);
+        } else {
+            Warning("Unparsable SLURM_NODELIST: $ENV{SLURM_NODELIST}\n");
+            return "";
+        }
+
+        # Chop off the front of the string that we've already
+        # processed and continue on.  Ensure that it starts with a ,
+        # and then chop that off, too.
+        $str = $next_str;
+        Debug("Almost next: $str\n");
+        if ($str && $str !~ s/^,(.+)/\1/) {
+            Warning("Unparsable SLURM_NODELIST: $ENV{SLURM_NODELIST}\n");
+            return "";
+        }
+
+        Debug("Next item: $str\n");
+    }
+
+    # Now combine the two lists -- they should be exactly the same
+    # length.  Repeat each host as many times at it has tasks.
+
+    my $ret;
+    my $i = 0;
+    while ($i <= $#tasks_per_node) {
+        my $j = $tasks_per_node[$i];
+        while ($j > 0) {
+            $ret .= ","
+                if ($ret);
+            $ret .= $nodes[$i];
+            --$j;
+        }
+        ++$i;
+    }
+
+    Debug("&slurm_max_procs returning: $ret\n");
+    return $ret;
 }
 
 #--------------------------------------------------------------------------
@@ -793,6 +1036,31 @@ sub pbs_max_procs {
 
 #--------------------------------------------------------------------------
 
+# If in a PBS job, return the hosts we can run on.  Otherwise, return
+# "".
+sub pbs_hosts {
+    Debug("&pbs_hosts\n");
+
+    return ""
+        if (!pbs_job());
+
+    # Return the uniq'ed contents of $PBS_HOSTFILE
+
+    open (FILE, $ENV{PBS_NODEFILE}) || return "";
+    my $lines;
+    while (<FILE>) {
+        chomp;
+        $lines->{$_} = 1;
+    }
+
+    my @hosts = sort(keys(%$lines));
+    my $hosts = join(",", @hosts);
+    Debug("&pbs_hosts returning: $hosts\n");
+    return "$hosts";
+}
+
+#--------------------------------------------------------------------------
+
 # Return "1" if we're running in a N1GE job; "0" otherwise.
 sub n1ge_job {
     Debug("&n1ge_job\n");
@@ -820,6 +1088,31 @@ sub n1ge_max_procs {
 
     Debug("&n1ge_max_procs returning: $lines\n");
     return "$lines";
+}
+
+#--------------------------------------------------------------------------
+
+# If in a N1GE job, return the hosts we can run on.
+# Otherwise, return "".
+sub n1ge_hosts {
+    Debug("&n1ge_hosts\n");
+
+    return ""
+        if (!n1ge_job());
+
+    # Return the uniq'ed contents of $PE_HOSTFILE
+
+    open (FILE, $ENV{PE_HOSTFILE}) || return "";
+    my $lines;
+    while (<FILE>) {
+        chomp;
+        $lines->{$_} = 1;
+    }
+
+    my @hosts = sort(keys(%$lines));
+    my $hosts = join(",", @hosts);
+    Debug("&n1ge_hosts returning: $hosts\n");
+    return "$hosts";
 }
 
 #--------------------------------------------------------------------------
@@ -852,6 +1145,34 @@ sub loadleveler_max_procs {
 
     Debug("&loadleveler_max_procs returning: $ret\n");
     return $ret;
+}
+
+
+#--------------------------------------------------------------------------
+
+# If in a Load Leveler job, return the hosts we can run on.
+# Otherwise, return "".
+sub loadleveler_hosts {
+    Debug("&loadleveler_hosts\n");
+
+    return ""
+        if (!loadleveler_job());
+    return ""
+        if (!exists($ENV{LOADL_PROCESSOR_LIST}) ||
+            "" eq $ENV{LOADL_PROCESSOR_LIST});
+
+    # Just uniq the tokens in $LOADL_PROCESSOR_LIST
+
+    my @tokens = split(/ /, $ENV{LOADL_PROCESSOR_LIST});
+    my $tokens;
+    foreach my $t (@tokens) {
+        $tokens->{$t} = 1;
+    }
+
+    my @hosts = sort(keys(%$tokens));
+    my $hosts = join(",", @hosts);
+    Debug("&loadleveler_hosts returning: $hosts\n");
+    return "$hosts";
 }
 
 
@@ -941,6 +1262,23 @@ sub get_sun_cc_version {
     }
 
     Debug("&get_sun_cc_version returning: $ret\n");
+    return $ret;
+}
+
+#--------------------------------------------------------------------------
+
+# Return the version of the Pathscale C compiler
+sub get_pathcc_version {
+    Debug("&get_pathcc_version\n");
+    my $ret = "unknown";
+
+    if (open PATHCC, "pathcc -dumpversion|") {
+        $ret = <PATHCC>;
+        close(PATHCC);
+        chomp($ret);
+    }
+    
+    Debug("&get_pathcc_version returning: $ret\n");
     return $ret;
 }
 
@@ -1143,7 +1481,7 @@ sub get_mpi_install_endian {
     # Try snarfing endian(s) using the /usr/bin/file command
     my $libmpi          = _find_libmpi();
     if (! -f $libmpi) {
-        # No need to Warn() -- the fact that the MPI failed to install
+        # No need to Warning() -- the fact that the MPI failed to install
         # should be good enough...
         Debug("*** Could not find libmpi to calculate endian-ness\n");
         return "0";
@@ -1256,6 +1594,70 @@ sub _find_libmpi {
 
     Debug("&_find_libmpi returning: $ret\n");
     return $ret;
+}
+
+#--------------------------------------------------------------------------
+
+sub weekday_name {
+    my @days = qw/sun mon tue wed thu fri sat/;
+    Debug("&weekday_name returning: " . $days[weekday_index()] . "\n");
+    return $days[weekday_index()];
+}
+
+# 0 = Sunday;
+sub weekday_index {
+    my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) =
+        localtime(time);
+    Debug("&weekday_index returning: $wday\n");
+    return $wday;
+}
+
+#--------------------------------------------------------------------------
+
+sub getenv {
+    my $name = shift;
+    Debug("&getenv($name) returning: $ENV{$name}\n");
+    return $ENV{$name};
+}
+
+#--------------------------------------------------------------------------
+
+# Return something that will be snipped out of the final evaluation
+sub null {
+    Debug("&null returning: undef\n");
+    return undef;
+}
+
+#--------------------------------------------------------------------------
+
+sub mpi_get_name {
+    Debug("&mpi_get_name returning: $MTT::Globals::Internals->{mpi_get_name}\n");
+    return $MTT::Globals::Internals->{mpi_get_name};
+}
+
+sub mpi_install_name {
+    Debug("&mpi_install_name returning: $MTT::Globals::Internals->{mpi_install_name}\n");
+    return $MTT::Globals::Internals->{mpi_install_name};
+}
+
+sub test_get_name {
+    Debug("&test_get_name returning: $MTT::Globals::Internals->{test_get_name}\n");
+    return $MTT::Globals::Internals->{test_get_name};
+}
+
+sub test_build_name {
+    Debug("&test_build_name returning: $MTT::Globals::Internals->{test_build_name}\n");
+    return $MTT::Globals::Internals->{test_build_name};
+}
+
+sub test_run_name {
+    Debug("&test_run_name returning: $MTT::Globals::Internals->{test_run_name}\n");
+    return $MTT::Globals::Internals->{test_run_name};
+}
+
+sub mpi_details_name {
+    Debug("&mpi_details_name returning: $MTT::Globals::Internals->{mpi_details_name}\n");
+    return $MTT::Globals::Internals->{mpi_details_name};
 }
 
 1;

@@ -95,7 +95,7 @@ sub Specify {
         foreach my $t (@{$params->{$group}->{tests}}) {
             # If it's good, add a hash with all the values into the
             # list of tests
-            if (-x $t) {
+            if (-x $t or $MTT::DoCommand::no_execute) {
                 my $one;
                 # Do a deep copy of the defaults
                 %{$one} = %{$config};

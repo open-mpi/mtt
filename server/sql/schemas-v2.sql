@@ -28,14 +28,12 @@ CREATE SEQUENCE client_serial;
 DROP TABLE submit CASCADE;
 CREATE TABLE submit (
     submit_id serial PRIMARY KEY,
-    mtt_version_major smallint NOT NULL DEFAULT '-38',
-    mtt_version_minor smallint NOT NULL DEFAULT '-38',
+    mtt_client_version character(16) NOT NULL DEFAULT '',
     hostname character varying(128) NOT NULL DEFAULT 'bogus',
     local_username character varying(16) NOT NULL DEFAULT 'bogus',
     http_username character varying(16) NOT NULL DEFAULT 'bogus',
     UNIQUE (
-            mtt_version_major,
-            mtt_version_minor,
+            mtt_client_version,
             hostname,
             local_username,
             http_username

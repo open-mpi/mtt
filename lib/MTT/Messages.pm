@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2007      Cisco, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -19,21 +20,26 @@ use base qw(Exporter);
 @EXPORT = qw(Messages Error Warning Abort Debug Verbose Trace DebugDump);
 
 # Is debugging enabled?
-my $debug;
+my $_debug;
 
 # Is verbose enabled?
-my $verbose;
+my $_verbose;
 
 # Path where mtt was invoked
-my $cwd;
+my $_cwd;
+
+# Max length of string to pass to wrap() (it seems that at least some
+# versions of wrap() handles Very Large strings and/or strings with
+# Very Long lines extremely poorly -- it thrashes endlessly).
+my $_max_wrap_len = 65536;
 
 #--------------------------------------------------------------------------
 
 
 sub Messages {
-    $debug = shift;
-    $verbose = shift;
-    $cwd = shift;
+    $_debug = shift;
+    $_verbose = shift;
+    $_cwd = shift;
 
     my $textwrap = $MTT::Globals::Values->{textwrap};
     $Text::Wrap::columns = ($textwrap ? $textwrap : 76);
@@ -48,17 +54,32 @@ sub Error {
 }
 
 sub Warning {
-    print wrap("", "    ", "*** WARNING: @_");
+    my $str = "@_";
+    if (length($str) < $_max_wrap_len) {
+        print wrap("", "    ", "*** WARNING: $str");
+    } else {
+        print "*** WARNING: $str";
+    }
 }
 
 sub Abort {
-    my ($msg) = @_;
-
-    die wrap("", "    ", "*** ERROR: $msg");
+    my $str = "@_";
+    if (length($str) < $_max_wrap_len) {
+        die wrap("", "    ", "*** ERROR: $str");
+    } else {
+        die "*** ERROR: $str";
+    }
 }
 
 sub Debug {
-    print wrap("", "   ", @_) if $debug;
+    if ($_debug) {
+        my $str = "@_";
+        if (length($str) < $_max_wrap_len) {
+            print wrap("", "   ", $str);
+        } else {
+            print $str;
+        }
+    }
 }
 
 sub DebugDump {
@@ -68,7 +89,14 @@ sub DebugDump {
 }
 
 sub Verbose {
-    print wrap("", "   ", @_) if $verbose;
+    if ($_verbose) {
+        my $str = "@_";
+        if (length($str) < $_max_wrap_len) {
+            print wrap("", "   ", $str);
+        } else {
+            print $str;
+        }
+    }
 }
 
 sub Trace {
@@ -77,13 +105,13 @@ sub Trace {
     $lev = 0 if (! defined($lev));
     my @called = caller($lev);
 
-    print wrap("", "   ", (join(":", map { &relative_path($_) } @called[1..2]), @_)) if $verbose;
+    print wrap("", "   ", (join(":", map { &_relative_path($_) } @called[1..2]), @_)) if $_verbose;
 }
 
 # Trace helper for showing paths relative to the path mtt was invoked from
-sub relative_path {
+sub _relative_path {
     my ($path) = shift;
-    $path =~ s/$cwd/./;
+    $path =~ s/$_cwd/./;
     return $path;
 }
 

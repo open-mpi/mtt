@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -167,6 +168,7 @@ sub Install {
             foreach my $mpi_get_name (@mpi_gets) {
                 # Strip whitespace
                 $mpi_get_name =~ s/^\s*(.*?)\s*/\1/;
+                $mpi_get_name = lc($mpi_get_name);
 
                 # This is only warning about the INI file; we'll see
                 # if we find meta data for the MPI get later
@@ -206,6 +208,9 @@ sub Install {
                             } else {
                                 Verbose("   Installing MPI: [$mpi_get_key] / [$mpi_version_key] / [$simple_section]...\n");
                             
+                                $MTT::Globals::Internals->{mpi_get_name} =
+                                    $mpi_get_key;
+                                $MTT::Globals::Internals->{mpi_install_name} = $simple_section;
                                 MTT::DoCommand::Chdir($install_base);
                                 my $mpi_dir = _make_random_dir(4);
                                 MTT::DoCommand::Chdir($mpi_dir);
@@ -213,6 +218,8 @@ sub Install {
                                 # Install and restore the environment
                                 _do_install($section, $ini,
                                             $mpi_version, $mpi_dir, $force);
+                                delete $MTT::Globals::Internals->{mpi_get_name};
+                                delete $MTT::Globals::Internals->{mpi_install_name};
                                 %ENV = %ENV_SAVE;
                             }
                         }
@@ -265,7 +272,6 @@ sub _do_install {
     $config->{unsetenv} = "to be filled in below";
     $config->{prepend_path} = "to be filled in below";
     $config->{append_path} = "to be filled in below";
-    $config->{bitness} = "to be filled in below";
 
     # Filled in by the module
     $config->{test_result} = MTT::Values::FAIL;
@@ -277,6 +283,9 @@ sub _do_install {
 
     $config->{full_section_name} = $section;
     $config->{simple_section_name} = $simple_section;
+
+    # Carry MPI Get module data onwards
+    $config->{module_data} = $mpi_get->{module_data};
 
     # module
     $config->{module} = Value($ini, $section, "module");
@@ -338,11 +347,13 @@ sub _do_install {
     my @save_env;
     ProcessEnvKeys($config, \@save_env);
 
+    # JMS TO BE DELETED
     # configure_arguments
     my $tmp = Value($ini, $section, "configure_arguments");
     $config->{configure_arguments} = $tmp
         if (defined($tmp));
 
+    # JMS TO BE DELETED
     # vpath
     $tmp = lc(Value($ini, $section, "vpath_mode"));
     $config->{vpath_mode} = $tmp
@@ -358,20 +369,24 @@ sub _do_install {
         }
     }
 
+    # JMS TO BE DELETED
     # make all arguments
     $tmp = Value($ini, $section, "make_all_arguments");
     $config->{make_all_arguments} = $tmp
         if (defined($tmp));
 
+    # JMS TO BE DELETED
     # make check
     $tmp = Logical($ini, $section, "make_check");
     $config->{make_check} = $tmp
         if (defined($tmp));
 
+    # JMS TO BE DELETED
     # compiler name and version
     $config->{compiler_name} =
         Value($ini, $section, "compiler_name");
-    if ($MTT::Defaults::System_config->{known_compiler_names} !~ /$config->{compiler_name}/) {
+    if ($config->{compiler_name} &&
+        $MTT::Defaults::System_config->{known_compiler_names} !~ /$config->{compiler_name}/) {
         Warning("Unrecognized compiler name in [$section] ($config->{compiler_name}); the only permitted names are: \"$MTT::Defaults::System_config->{known_compiler_names}\"; skipped\n");
         return;
     }
@@ -439,21 +454,30 @@ sub _do_install {
     my $start_time = time;
     my $ret = MTT::Module::Run("MTT::MPI::Install::$config->{module}",
                                "Install", $ini, $section, $config);
+
     my $duration = time - $start_time . " seconds";
 
     # Set install_dir for the global environment
     # (it is needed by post-install funclets such as get_bitness)
     $install_dir = $config->{installdir};
 
-    # bitness (must be processed *after* installation)
+    # bitness (must be processed *after* installation, and only if the
+    # underlying module did not fill it in)
     my $bitness = Value($ini, $section, "bitness");
+    if (defined($bitness) || !defined($config->{bitness})) {
 
-    # If they did not use a funclet, translate the
-    # bitness(es) for the MTT database
-    if ($bitness !~ /\&/) {
-        $bitness = EvaluateString("&get_mpi_install_bitness(\"$bitness\")");
+        # If the module didn't pass, fill in a value
+        if ($ret && MTT::Values::PASS != $ret->{test_result}) {
+            $bitness = EvaluateString("&get_mpi_install_bitness(\"32\")");
+        } else {
+            # If they did not use a funclet, translate the
+            # bitness(es) for the MTT database
+            if ($bitness !~ /\&/) {
+                $bitness = EvaluateString("&get_mpi_install_bitness(\"$bitness\")");
+            }
+        }
+        $config->{bitness} = $bitness;
     }
-    $config->{bitness} = $bitness;
 
     # endian
     my $endian = Value($ini, $section, "endian");
@@ -464,6 +488,10 @@ sub _do_install {
         $endian = EvaluateString("&get_mpi_install_endian(\"$endian\")");
     }
     $config->{endian} = $endian;
+
+    # Fetch cluster info (platform and hardware)
+    my $cluster_info = _get_cluster_info();
+    %$config = (%$config, %$cluster_info);
 
     # Unload any loaded environment modules
     if ($#env_modules >= 0) {
@@ -477,19 +505,23 @@ sub _do_install {
         my $report = {
             phase => "MPI Install",
 
-            mpi_install_section_name => $config->{simple_section_name},
             bitness => $config->{bitness},
             endian => $config->{endian},
             compiler_name => $config->{compiler_name},
             compiler_version => $config->{compiler_version},
             configure_arguments => $config->{configure_arguments},
             vpath_mode => $config->{vpath_mode},
-            merge_stdout_stderr => "$config->{merge_stdout_stderr}",
+            merge_stdout_stderr => $config->{merge_stdout_stderr},
+            platform_type => $config->{platform_type},
+            platform_hardware => $config->{platform_hardware},
+            os_name => $config->{os_name},
+            os_version => $config->{os_version},
+
             environment => "filled in below",
 
             start_timestamp => $start,
+
             duration => $duration,
-            mpi_details => $mpi_get->{mpi_details},
             mpi_name => $mpi_get->{simple_section_name},
             mpi_version => $mpi_get->{version},
 
@@ -691,6 +723,31 @@ prepend-path LD_LIBRARY_PATH $ret->{libdir}\n";
     } else {
         Verbose("   Skipped MPI install\n");
     }
+}
+
+# Return a hash of hardware and platform information
+sub _get_cluster_info {
+
+    my $info = undef;
+
+    # Find whatami
+    my $dir = MTT::FindProgram::FindZeroDir();
+    my $whatami = "$dir/whatami/whatami";
+    if (! -x $whatami) {
+        Error("Cannot find 'whatami' program -- cannot continue\n");
+    }
+    Debug("Found whatami: $whatami\n");
+
+    $info->{platform_type} = `$whatami -t`;
+    chomp($info->{platform_type});
+    $info->{platform_hardware} = `$whatami -m`;
+    chomp($info->{platform_hardware});
+    $info->{os_name} = `$whatami -n`;
+    chomp($info->{os_name});
+    $info->{os_version} = `$whatami -r`;
+    chomp($info->{os_version});
+
+    return $info;
 }
 
 1;
