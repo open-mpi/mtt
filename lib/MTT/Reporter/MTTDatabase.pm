@@ -272,7 +272,7 @@ sub Submit {
             # How many results are we submitting?
             $form->{number_of_results} = $#{$section_obj} + 1;
             $form->{platform_name} = $platform;
-            $form->{email} = $email;
+            $form->{email} = $email if ($email);
 
             # First, go through and union all the field names to come
             # up with a comprehensive list of fields that we're
