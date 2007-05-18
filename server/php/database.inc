@@ -18,7 +18,6 @@
 
 $ompi_home = '/l/osl/www/doc/www.open-mpi.org';
 include_once("$ompi_home/dbpassword.inc");
-include_once("$topdir/reporter.inc");
 
 # Select a database name
 if (preg_match("/mtt/i", $_GET['db'])) {

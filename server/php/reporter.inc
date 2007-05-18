@@ -45,8 +45,9 @@ define('TRIAL_TRUE',  't');
 define('TRIAL_FALSE', 'f');
 
 # Define paths
-define('DOCROOT', dirname('http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME']));
-define('PATH',    dirname($_SERVER['SCRIPT_NAME']));
+define('DOCROOT',  dirname('http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME']));
+define('PATH',     dirname($_SERVER['SCRIPT_NAME']));
+define('FULLSELF', dirname('http://'.$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI']));
 
 #########################################
 #                                       #
@@ -581,6 +582,12 @@ function label($str) {
             'use_speedy'     => 'SELECT only FROM "speedy" TABLES',
             'use_archive'    => 'SELECT only FROM "archive" TABLES',
 
+            # Failure columns
+            'failure_id'      => 'ID',
+            '_params'         => 'Params',
+            '_values'         => 'Values',
+            'first_occurence' => 'First occurence',
+            'last_occurence'  => 'Last occurence',
         );
     }
 
@@ -681,7 +688,7 @@ function setup_mainwin_fields($phases) {
     $ret['phase'] = 'all_phases';
 
     # Developer params
-    $ret['dev'] = developer_params();
+    $ret['dev'] = setup_developer_params();
 
     return $ret;
 }
@@ -721,7 +728,7 @@ function get_go_or_click($params) {
 }
 
 # Some helpful params for validating reporter.php
-function developer_params() {
+function setup_developer_params() {
     static $params;
     if (! $params)
         $params = array(
@@ -993,6 +1000,28 @@ function getoptions($argv) {
        $_GET[$it[0]] = $it[1];
     }
     return $_GET;
+}
+
+# Deny mirrors access to MTT results
+function deny_mirror() {
+
+    $mother_site = "www.open-mpi.org";
+    $server_dir = "/";
+
+    # Are we the "mother site" or a mirror?
+    if ($_SERVER["SERVER_NAME"] == $mother_site)
+        $is_mirror = false;
+    else
+        $is_mirror = true;
+
+    if ($is_mirror) {
+        $equiv_dir = ereg_replace("^$server_dir", '', $_SERVER["REQUEST_URI"]);
+        print "Sorry, this page is not mirrored.  " .
+               "Please see the <a href=\"http://$mother_site/$equiv_dir\">" .
+               "original version of this page</a> " .
+               "on the main Open MPI web site.\n";
+        exit();
+    }
 }
 
 ?>

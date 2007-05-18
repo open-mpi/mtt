@@ -16,10 +16,6 @@
 #
 #
 
-$topdir = ".";
-include_once("$topdir/reporter.inc");
-include_once("$topdir/database.inc");
-
 # Global variables
 $new_ttable;
 $date_fields;

@@ -16,10 +16,6 @@
 #
 #
 
-$topdir = ".";
-include_once("$topdir/reporter.inc");
-include_once("$topdir/database.inc");
-
 # Print user dash-board 
 function dump_query_screen($nogo, $sql_cmd) {
 
@@ -1185,7 +1181,7 @@ function hidden_carryover($params) {
 
     # Non-form fields that need to persist
     $fields = array_merge(
-                array_keys(developer_params()),
+                array_keys(setup_developer_params()),
                 array(
                     'ttable_id',
                     'test_result',
@@ -1270,6 +1266,12 @@ function html_head($title) {
         open(link, 'Tiny link', 'resizable=yes, toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, width=180, height=70');
     }
 
+    function OpenWindowForMTTFailureDB() {
+        var link = location.href;
+        link += '&show_failure_db=1';
+        open(link, 'MTT Failures Database', 'resizable=yes, toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, width=500, height=500');
+    }
+
 EOT;
 
     # Create a JavaScript function to set all the
@@ -1313,7 +1315,7 @@ EOT;
 
 EOT;
 
-    # Print html head
+    # Return html head
     return "\n<head>" .
            "\n<title>$title</title>" .
            "\n<script language='javascript' type='text/javascript'>" .

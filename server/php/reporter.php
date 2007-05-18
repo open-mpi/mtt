@@ -16,6 +16,13 @@
 #
 #
 
+# Includes
+$topdir = ".";
+include_once("$topdir/reporter.inc");
+include_once("$topdir/screen.inc");
+include_once("$topdir/report.inc");
+include_once("$topdir/database.inc");
+
 # Deny mirrors access to MTT results
 deny_mirror();
 
@@ -38,14 +45,6 @@ if (isset($_GET['verbose']))
     error_reporting(E_ALL);
 else
     error_reporting(E_ERROR | E_PARSE);
-
-# Includes
-$topdir = ".";
-include_once("/l/osl/www/doc/www.open-mpi.org/dbpassword.inc");
-include_once("$topdir/reporter.inc");
-include_once("$topdir/screen.inc");
-include_once("$topdir/report.inc");
-include_once("$topdir/database.inc");
 
 # In case we're using this script from the command-line
 if ($argv)
@@ -129,28 +128,6 @@ function do_redir($id) {
     $url = select_scalar($query);
     header("Location: $url");
     exit;
-}
-
-# Deny mirrors access to MTT results
-function deny_mirror() {
-
-    $mother_site = "www.open-mpi.org";
-    $server_dir = "/";
-
-    # Are we the "mother site" or a mirror?
-    if ($_SERVER["SERVER_NAME"] == $mother_site)
-        $is_mirror = false;
-    else
-        $is_mirror = true;
-
-    if ($is_mirror) {
-        $equiv_dir = ereg_replace("^$server_dir", '', $_SERVER["REQUEST_URI"]);
-        print "Sorry, this page is not mirrored.  " .
-               "Please see the <a href=\"http://$mother_site/$equiv_dir\">" .
-               "original version of this page</a> " .
-               "on the main Open MPI web site.\n";
-        exit();
-    }
 }
 
 ?>
