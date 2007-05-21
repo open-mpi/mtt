@@ -291,10 +291,11 @@ function setup_prefs() {
     if (! $prefs)
         $prefs = array(
             'general'  => array(
-                'limit'    => array(array('10', '50', '*100', '200')),
-                'wrap'     => array(100),
-                'timezone' => array(array('*GMT', 'EST', 'CST', 'MST', 'PST')),
-                'trial'    => array(false),
+                'limit'          => array(array('10', '50', '*100', '200')),
+                'wrap'           => array(100),
+                'timezone'       => array(array('*GMT', 'EST', 'CST', 'MST', 'PST')),
+                'trial'          => array(false),
+                'filter_tracked' => array(false),
             ),
             'graphing' => array(
                 'yaxis_scale'      => array(array('Logarithmic', '*Linear')),
@@ -475,6 +476,7 @@ function label($str) {
             "mpi_version"         => "MPI version",
             "mtt_version_major"   => "MTT version major",
             "mtt_version_minor"   => "MTT version minor",
+            "mtt_client_version"  => "MTT version",
             "np"                  => "np",
             "os_name"             => "OS",
             "os_version"          => "OS version",
@@ -500,12 +502,14 @@ function label($str) {
 
             # MTT phase names
             "all_phases"        => "All phases",
+            "mpi_get"           => "MPI get",
             "mpi_install"       => "MPI install",
             "test_build"        => "Test build",
             "test_run"          => "Test run",
 
             # Other schema tables
             'compute_cluster'   => 'Cluster',
+            "compiler"          => "Compiler",
             'submit'            => 'Submit',
             'results'           => 'Results',
 
@@ -553,6 +557,7 @@ function label($str) {
             # Two labels: one for the UI, one for the column header
             'trial'                => 'Trial',
             'Trial'                => 'Show trial runs',
+            'filter_tracked'       => "Filter <a href='http://www.open-mpi.org/mtt/track-failures/' target=_blank>tracked</a> failures",
 
             # Graphing preferences
             'graphing'             => 'Graphing',

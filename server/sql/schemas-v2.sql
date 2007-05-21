@@ -192,22 +192,6 @@ CREATE TABLE users (
     gecos character(32) NOT NULL DEFAULT 'bogus'
 );
 
--- For "new" failure reporting
-DROP TABLE failure CASCADE;
-CREATE TABLE failure (
-    failure_id serial NOT NULL DEFAULT '-38',
-
-    -- refer to the index of one of the three phases 
-    phase_id integer NOT NULL DEFAULT '-38' REFERENCES phase,
-    -- 1=mpi_install, 2=test_build, 3=test_run
-    phase smallint NOT NULL DEFAULT '-38',
-
-    first_occurrence timestamp without time zone, --> first occurrence
-    last_occurrence timestamp without time zone,  --> most recent occurrence
-    field character varying(16) NOT NULL DEFAULT 'bogus', --> maps to any non *_id field name in mtt database
-    value character varying(16) NOT NULL DEFAULT 'bogus'  --> value of field
-);
-
 DROP TABLE cluster_owner CASCADE;
 CREATE TABLE cluster_owner (
     cluster_owner_id serial PRIMARY KEY,

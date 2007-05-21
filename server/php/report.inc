@@ -73,6 +73,9 @@ function dump_report() {
         # Display what the query planner is thinking
         $explain = process_explain_field($_GET);
 
+        # Display what the query planner is thinking
+        $filter_tracked_fields = process_filter_tracked_field();
+
         # Print either a summary or detail report,
         # depending on whether a 'select_more' parameter is set
         if ($report_type == 'detail') {
@@ -95,7 +98,8 @@ function dump_report() {
             $performance_fields,
             $sort_field,
             $offset_field,
-            $trial_field
+            $trial_field,
+            $filter_tracked_fields
         );
 
         # Order columns left-to-right
@@ -1907,8 +1911,6 @@ function permalinks($date_fields) {
     return $ret;
 }
 
-
-
 function handle_absolute_date($date_fields) {
     $absolute_date   = $date_fields["absolute"];
     $rollup          = $date_fields["rollup"];
@@ -2000,16 +2002,16 @@ function compose_sql_select($query) {
         # We have already filtered by date range
         unset($query['where']['start_timestamp']);
 
-        # Whack WHERE clause if the column is not
-        # in the ttable
-        foreach (array_keys($query['where']) as $column)
-            if (! column_exists($column, $ttable))
-                unset($query['where'][$column]);
+        remove_problematic_wheres_using_table($query, $ttable);
 
-        $where = array_values2($query['where']);
+        $wheres = array_values2($query['where']);
+        $where_not = array_values2($query['where_not']);
 
-        if ($where)
-            $criteria .= "\nWHERE " . join(" AND $nl", $where);
+        if ($wheres)
+            $criteria .= "\nWHERE " . join(" AND $nl", $wheres);
+
+        if ($where_not)
+            $criteria .= "$nl AND NOT " . join(" AND NOT $nl", $where_not);
 
         if ($orderby)
             $criteria .= "\nORDER BY " . $orderby;
@@ -2087,7 +2089,10 @@ function compose_sql_select($query) {
         array_unshift($orderbys, $orderby . $direction);
     }
 
+    remove_problematic_wheres_using_view($query, $view);
+
     $wheres = array_values2($query['where']);
+    $where_not = array_values2($query['where_not']);
 
     # Piece together all the clauses ...
 
@@ -2107,6 +2112,11 @@ function compose_sql_select($query) {
     if ($wheres) {
         $cmd .= "\n WHERE " .
                     $nl . join("$nl AND $nl", $wheres);
+    }
+
+    if ($where_not) {
+        $cmd .= "$nl AND NOT " .
+                    $nl . join("$nl AND NOT $nl", $where_not);
     }
 
     if (array_keys($query['select'])) {
@@ -2164,6 +2174,52 @@ function compose_sql_select($query) {
     }
 
     return $ret;
+}
+
+# Whack WHERE clause(s) if the column is not in $table
+function remove_problematic_wheres_using_table(&$query, $table) {
+
+    foreach (array('where', 'where_not') as $where_type) {
+        foreach (array_keys($query[$where_type]) as $column) {
+            if (! column_exists($column, $table)) {
+                unset($query[$where_type][$column]);
+            }
+        }
+    }
+}
+
+# Whack WHERE clause(s) if the column is not in $table
+# (Do not filter out result columns)
+function remove_problematic_wheres_using_view(&$query, $table) {
+
+    foreach (array('where', 'where_not') as $where_type) {
+        foreach (array_keys($query[$where_type]) as $column) {
+            if (! column_exists($column, $table) and
+                ! is_result_column($column)) {
+                unset($query[$where_type][$column]);
+            }
+        }
+    }
+}
+
+# Return true if the column is a result
+function is_result_column($str) {
+    static $columns;
+    if (! $columns)
+        $columns = array('_ip' => 1,
+                         '_if' => 1,
+                         '_bp' => 1,
+                         '_bf' => 1,
+                         '_rp' => 1,
+                         '_rf' => 1,
+                         '_rs' => 1,
+                         '_rt' => 1,
+                         '_rl' => 1);
+
+    if ($columns[$str])
+        return true;
+    else
+        return false;
 }
 
 # Compose an unfiltered VIEW on-the-fly with SELECTs
@@ -2258,11 +2314,20 @@ function array_values2($arr) {
     return $ret;
 }
 
-# Return 1 if $column exists in $table
+# Return true if $column exists in $table.
+# $column is a CSV of one or more column_name's
 function column_exists($column, $table) {
-    return select_scalar("SELECT 1 FROM information_schema.columns " .
-                            "WHERE column_name = '$column' AND " .
-                                "table_name = '$table'");
+    $columns = split(',', $column);
+
+    foreach ($columns as $c) {
+        $one = select_scalar("SELECT 1 FROM information_schema.columns " .
+                             " WHERE column_name = '$c' " .
+                             " AND table_name = '$table'");
+        if (! $one)
+            return false;
+    }
+
+    return true;
 }
 
 # Return 1 if $column exists in $dbname
@@ -3014,6 +3079,43 @@ function process_large_fields($params) {
     }
 
     return $query;
+}
+
+# Generate WHERE ... AND NOT clause pieces from "failures" TABLE
+function process_filter_tracked_field() {
+
+    $nl = "\n\t";
+
+    if (! FILTER_TRACKED)
+        return null;
+
+    $query = "SELECT * FROM failure;";
+    $failures = select($query);
+
+    foreach (array_keys($failures) as $k) {
+
+        $p = $failures[$k]['_params'];
+        $v = $failures[$k]['_values'];
+
+        $p = ltrim(rtrim($p, '}'), '{');
+        $v = ltrim(rtrim($v, '}'), '{');
+
+        $params = split(',', $p);
+        $values = split(',', $v);
+
+        # Gather all the WHERE ... AND NOT clauses
+        $where_not = null;
+        for ($i = 0; $i < sizeof($params); $i++) {
+            $value = $values[$i];
+            $value = preg_replace("/\"|'/", '', $value);
+
+            $where_not[] = "$params[$i] ~* '$value'";
+        }
+
+        $ret['where_not'][$p] = "(" . join(" AND $nl\t", $where_not) . ")";
+    }
+
+    return $ret;
 }
 
 # Convert a _GET param to a define() constant

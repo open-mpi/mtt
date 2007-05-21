@@ -16,9 +16,6 @@
 #
 #
 
-# CHANGE THIS LINE TO THE LIVE DB BEFORE COMMITING!
-$_GET['db'] = 'mtt3_1';
-
 # Includes
 include_once("../reporter.inc");
 include_once("../screen.inc");
@@ -202,10 +199,10 @@ function insert_screen() {
     $select .= "\n\t<option selected label='None' name='none' value=''>None</option>";
 
     foreach (array_keys($arr) as $table) {
-        $select .= "\n\t<optgroup label='$table'>";
+        $select .= "\n\t<optgroup label='" . label($table) . "'>";
 
         foreach ($arr[$table] as $v) {
-            $select .= "\n\t\t<option label='$v' name='opt_$v' value='$v'>$v</option>";
+            $select .= "\n\t\t<option label='$v' name='opt_$v' value='$v'>" . label($v) . "</option>";
         }
         $select .= "\n\t</optgroup>";
     }
@@ -257,7 +254,11 @@ function insert_failure() {
                 $value = $_GET["text_$i"];
 
                 array_push($params, $param);
-                array_push($values, $value);
+
+                # This is not very nice, but we have to
+                # replace ',' with '.', because ',' is the
+                # Postgres array element delimiter.
+                array_push($values, preg_replace("/,/", ".", $value));
             }
         }
     }
@@ -277,7 +278,8 @@ function insert_failure() {
              "\n\t   (" . join(",", $inserts) . ")" .
              "\n\t   ;";
 
-    do_pg_query($query);
+    # INSERT, and silence "duplicate row" errors
+    do_pg_query($query, SILENT);
 }
 
 function get_row_count() {
@@ -295,8 +297,6 @@ function delete_screen() {
 
     $query = "SELECT * FROM failure;";
     $failures = select($query);
-
-    var_dump_html(__FUNCTION__ . ":" . __LINE__ . " " . '$failures = ',$failures);
 
     $bg1 = GRAY;
     $bg2 = LGRAY;
@@ -322,12 +322,14 @@ function delete_screen() {
 
         foreach ($columns as $col) {
             $value = $failures[$i][$col];
+            $value = preg_replace("/\||;/", " \1 ", $value);
 
             $tables .= "\n\t<tr>" .
                        "\n\t<td bgcolor='$bg2' width='33%'>" .
                        "\n\t${sp}<b>" . label($col) . "</b>" .
                        "\n\t<td bgcolor='$bg2' width='67%'>" .
                        "\n\t${sp}$value";
+
         }
     }
 
