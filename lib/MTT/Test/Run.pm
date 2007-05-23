@@ -41,6 +41,9 @@ our $test_argv;
 # Exported exit_status of the last test run
 our $test_exit_status;
 
+# Exported pid of the last test run
+our $test_pid;
+
 #--------------------------------------------------------------------------
 
 sub Run {
@@ -217,8 +220,19 @@ sub _do_run {
     _fill_step($ini, $mpi_details_section, "after_all_exec", $mpi_details);
     # Now delete the bogus value from the hash
     delete $mpi_details->{bogus};
+
+    # Determine which exec param we want to use
+    my $mpi_details_exec = MTT::Values::Value($ini, $section, "mpi_details_exec");
+
+    # Default to generic "exec"
+    if ($mpi_details_exec) {
+        $mpi_details_exec = "exec:$mpi_details_exec";
+    } else {
+        $mpi_details_exec = "exec";
+    }
+
     # Do not evaluate this one now yet
-    my $exec = $ini->val($mpi_details_section, "exec");
+    my $exec = $ini->val($mpi_details_section, $mpi_details_exec);
     while ($exec =~ m/@(.+?)@/) {
         my $val = $ini->val($mpi_details_section, $1);
         if (! $val) {

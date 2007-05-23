@@ -275,6 +275,10 @@ sub Cmd {
                 die $die_msg;
             }
         }
+
+        # Return the pid
+        $ret->{pid} = $pid;
+
     } else {
         # For no_execute, just print the command
         print join(" ", @$tokens) . "\n";

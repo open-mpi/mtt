@@ -196,6 +196,7 @@ sub _run_one_test {
     $run->{cmd} = $cmd;
 
     $MTT::Test::Run::test_exit_status = $x->{exit_status};
+    $MTT::Test::Run::test_pid = $x->{pid};
 
     # Analyze the test parameters and results
     my $report;

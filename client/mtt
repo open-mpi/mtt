@@ -29,6 +29,7 @@ BEGIN {
     # 3. Otherwise, search $ENV[PATH] for mtt, and when you find it, add
     #    that directory to @INC and try again.
 
+    my $mtt_lib = cwd() . "/lib";
     use lib cwd() . "/lib";
 
     my $ret;
@@ -42,7 +43,8 @@ BEGIN {
         my $start_dir = cwd();
         chdir($dir);
         chdir("..");
-        push(@INC, cwd() . "/lib");
+        $mtt_lib = cwd() . "/lib";
+        push(@INC, $mtt_lib);
         chdir($start_dir);
         eval "\$ret = require MTT::Version";
 
@@ -61,11 +63,11 @@ BEGIN {
                 if (-x "$dir/$mtt") {
                     chdir($dir);
                     chdir("..");
-                    push(@INC, cwd() . "/lib");
+                    $mtt_lib = cwd() . "/lib";
+                    push(@INC, $mtt_lib);
                     chdir($start_dir);
                     eval "\$ret = require MTT::Version";
                     if (1 == $ret) {
-                        $ENV{MTT_LIB} = cwd() . "/lib";
                         last;
                     } else {
                         @INC = @INC_save;
@@ -78,6 +80,9 @@ BEGIN {
         die "Unable to find MTT support libraries"
             if (0 == $ret);
     }
+
+    # Point to MTT support libraries in case a test needs them
+    $ENV{MTT_LIB} = $mtt_lib;
 }
 
 # Now that @INC is setup, bring in the modules
