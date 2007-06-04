@@ -3048,10 +3048,14 @@ function process_large_fields($params) {
                 $operator = "!~*";
                 $value = preg_replace("/$pat/", "", $value);
 
-                # Show the leading/trailing 10 chars of the field.
-                # This is an arbitrary "digest" of the large field.
-                $string_func = "substring($field from '^..........') || ' ... ' || " .
-                               "substring($field from '..........$') as $field";
+                # Originally, we pulled out the leading/trailing chars
+                # of the large field. But now ...
+                # when we do a negated search, we do not SELECT on it
+                # because the "^... ...$" string ends up in the VIEW
+                # so the !~* WHERE clause gets applied to that elipses string
+                # and we don't want that. This could be
+                # fixed, but eh.
+
             # ~
             } else {
                 $operator = "~*";
