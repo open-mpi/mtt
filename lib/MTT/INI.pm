@@ -109,6 +109,9 @@ sub FilterINISections {
         $del_on_mismatch = 0;
     }
 
+    my $or_delimiter = '\s+';
+    my $and_delimiter = '\;';
+
     # Iterate through the ini file, section by section
     foreach $section ($ini->Sections) {
 
@@ -120,26 +123,33 @@ sub FilterINISections {
 
         # Iterate through every ---[no]-section argument,
         # and OR them together
-        foreach my $pattern (@$patterns) {
+        foreach my $pattern_arg (@$patterns) {
 
-            # Generate on-the-fly, perl code that will
-            # perform the regular expressions, and AND
-            # them together.
-            # (Conform to agrep ';' syntax for AND operations)
-            my $tmp = $pattern;
-            $tmp =~ s/\//\\\//g;
-            @patterns_and = split /\;/, $tmp;
-            $re = join(" and ", map { "\$section =~ /$_/i" } @patterns_and);
+            # Allow for a CSV of section filters, so
+            #   --section foo --section --bar
+            # compacts to:
+            #   --section "foo bar"
+            foreach my $pattern (split(/$or_delimiter/, $pattern_arg)) {
 
-            my $eval = "
-            if (($re)) {
-                \$delete = $del_on_match;
-                last;
+                # Generate on-the-fly, perl code that will
+                # perform the regular expressions, and AND
+                # them together.
+                # (Conform to agrep ';' syntax for AND operations)
+                my $tmp = $pattern;
+                $tmp =~ s/\//\\\//g;
+                @patterns_and = split /$and_delimiter/, $tmp;
+                $re = join(" and ", map { "\$section =~ /$_/i" } @patterns_and);
+
+                my $eval = "
+                if (($re)) {
+                    \$delete = $del_on_match;
+                    last;
+                }
+                else {
+                    \$delete = $del_on_mismatch;
+                }";
+                eval $eval;
             }
-            else {
-                \$delete = $del_on_mismatch;
-            }";
-            eval $eval;
         }
         # Flag sections for deletion (to be safe, we do not
         # delete sections while iterating over them)

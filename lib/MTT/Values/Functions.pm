@@ -26,6 +26,23 @@ use Data::Dumper;
 
 #--------------------------------------------------------------------------
 
+# Returns the result value (array or scalar) of a perl eval
+sub perl {
+    my $funclet = '&' . FuncName((caller(0))[3]);
+    Debug("$funclet: got @_\n");
+
+    my $cmd = join(/ /, @_);
+    my $ret = eval $cmd;
+
+    if (ref($ret) =~ /array/i) {
+        Debug("$funclet: returning @$ret\n");
+    } else {
+        Debug("$funclet: returning $ret\n");
+    }
+
+    return $ret;
+}
+
 # Returns the result_stdout of running a shell command
 sub shell {
     Debug("&shell: got @_\n");
@@ -284,6 +301,25 @@ sub eq {
         }
     } while (@_);
     Debug("&eq: returning 1\n");
+    return "1";
+}
+
+# Return "1" if the first arg matches the second arg (the regexp)
+sub regexp {
+    my $funclet = "regexp";
+    Debug("&$funclet got: @_\n");
+
+    return "1"
+        if (!@_);
+
+    my $string = shift;
+    my $pattern = shift;
+
+    if ($string =~ /$pattern/) {
+        Debug("$funclet: returning 1\n");
+        return "1";
+    }
+    Debug("$funclet: returning 1\n");
     return "1";
 }
 

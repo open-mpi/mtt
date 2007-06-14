@@ -94,6 +94,7 @@ sub Install {
         Value($ini, $section, "ompi_compiler_version");
 
     my $tmp = Value($ini, $section, "ompi_configure_arguments");
+    $tmp =~ s/\n|\r/ /g;
     $config->{configure_arguments} = $tmp
         if (defined($tmp));
 

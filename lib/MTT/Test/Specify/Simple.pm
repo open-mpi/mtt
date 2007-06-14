@@ -49,11 +49,11 @@ sub Specify {
         }
 
         # Evaluate it to get the full list of tests
-        $tests = MTT::Values::EvaluateString($tests);
+        $tests = MTT::Values::EvaluateString($tests, $ini, $section);
 
         # Split it up if it's a string
         if (ref($tests) eq "") {
-            my @tests = split(/\s/, $tests);
+            my @tests = split(/\s+/, $tests);
             $tests = \@tests;
         }
         $params->{$group}->{tests} = $tests;

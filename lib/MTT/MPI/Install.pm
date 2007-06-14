@@ -350,6 +350,7 @@ sub _do_install {
     # JMS TO BE DELETED
     # configure_arguments
     my $tmp = Value($ini, $section, "configure_arguments");
+    $tmp =~ s/\n|\r/ /g;
     $config->{configure_arguments} = $tmp
         if (defined($tmp));
 

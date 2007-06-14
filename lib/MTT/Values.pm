@@ -15,6 +15,7 @@ package MTT::Values;
 use strict;
 use MTT::Messages;
 use MTT::Values::Functions;
+use Data::Dumper;
 use Config::IniFiles;
 use vars qw(@EXPORT);
 use base qw(Exporter);
@@ -34,15 +35,44 @@ use constant {
 #--------------------------------------------------------------------------
 
 sub EvaluateString {
-    my ($str) = @_;
+    my ($str, $ini, $section) = @_;
     Debug("Evaluating: $str\n");
 
+    # Loop until there are no more $vars
+    while ($str =~ /\$(\w+)\b/) {
+        my $var_name = $1;
+
+        Debug("Got var_name: $var_name\n");
+
+        # $var gets evaluated
+        my $ret;
+        my $eval_str = "\$ret = MTT::Values::Value(\$ini, \$section, \$var_name)";
+        Debug("_do: $eval_str\n");
+        eval $eval_str;
+        if ($@) {
+            Error("Could not evaluate: $eval_str: $@\n");
+        }
+
+        # $var (which is *not* an array) gets substituted
+        # back into $str
+        # 
+        # (EAM: maybe someday we'd want to allow INI params
+        # to multiply amongst each other. Today is not that
+        # day.)
+
+        $str =~ s/\$\w+\b/$ret/;
+    }
+
+    # Pattern for the next funclet
+    my $regexp = '(\&\w+\((?:\"[^\"]*?\"|[^&\(]*?)\))';
+
     # Loop until there are no more &functions(...)
-    while ($str =~ /\&(\w+)\(([^&\(]*?)\)/) {
+    while ($str =~ /\&(\w+)\((\"[^\"]*?\"|[^&\(]*?)\)/) {
         my $func_name = $1;
         my $func_args = $2;
-        Debug("Got name: $func_name\n");
-        Debug("Got args: $func_args\n");
+
+        Debug("Got func_name: $func_name\n");
+        Debug("Got func_args: $func_args\n");
 
         # Since we used a non-greedy regexp above, there cannot be any
         # &functions(...) in the $func_args, so just evaluate it.
@@ -58,7 +88,8 @@ sub EvaluateString {
         # If we get a string back, just handle it.
         if (ref($ret) eq "") {
             # Substitute in the $ret in place of the &function(...)
-            $str =~ s/(\&\w+\([^&\(]*?\))/$ret/;
+            $str =~ s/$regexp/$ret/;
+
             Debug("String now: $str\n");
 
             # Now loop around and see if there are any more
@@ -75,7 +106,7 @@ sub EvaluateString {
         if ($#{@$ret} < 0) {
             # Put an empty string in the return value's place in the
             # original string
-            $str =~ s/(\&\w+\([^&\(]*?\))/""/;
+            $str =~ s/$regexp/""/;
             Debug("String now: $str\n");
 
             # Now loop around and see if there are any more
@@ -87,24 +118,27 @@ sub EvaluateString {
 
         # --- If you're trying to figure out the logic here, note that
         # --- beyond this point, we're not looping any more -- we'll
-        # --- simply return.
+        # --- simply return the list of strings.
 
         my @ret;
         foreach my $s (@$ret) {
             my $tmp = $str;
+
             # Substitute in the $s in place of the &function(...)
-            $tmp =~ s/(\&\w+\([^&\(]*?\))/$s/;
-            $ret = EvaluateString($tmp);
+            $tmp =~ s/$regexp/$s/;
+            $ret = EvaluateString($tmp, $ini, $section);
+
             if (ref($ret) eq "") {
                 push(@ret, $ret);
             } else {
                 push(@ret, @$ret);
             }
         }
+        
         return \@ret;
     }
 
-#    Debug("No more functions left; final: $str\n");
+    #Debug("No more functions left; final: $str\n");
     return $str;
 }
 
@@ -114,11 +148,12 @@ sub EvaluateString {
 # have invoked
 sub Value {
     my ($ini, $section, $name) = @_;
+    Debug("Value: $name\n");
 
     my $val = $ini->val($section, $name);
     return undef
         if (!defined($val));
-    return EvaluateString($val);
+    return EvaluateString($val, $ini, $section);
 }
 
 #--------------------------------------------------------------------------

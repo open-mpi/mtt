@@ -17,7 +17,7 @@ use Data::Dumper;
 use Text::Wrap;
 use vars qw(@EXPORT);
 use base qw(Exporter);
-@EXPORT = qw(Messages Error Warning Abort Debug Verbose Trace DebugDump);
+@EXPORT = qw(Messages Error Warning Abort Debug Verbose Trace DebugDump FuncName);
 
 # Is debugging enabled?
 my $_debug;
@@ -106,6 +106,17 @@ sub Trace {
     my @called = caller($lev);
 
     print wrap("", "   ", (join(":", map { &_relative_path($_) } @called[1..2]), @_)) if $_verbose;
+}
+
+# Return just the root function name
+# (without the '::' prefixes)
+sub FuncName {
+    my ($func_name) = @_;
+    if ($func_name =~ /(\w+)$/) {
+        return $1;
+    } else {
+        return $func_name;
+    }
 }
 
 # Trace helper for showing paths relative to the path mtt was invoked from
