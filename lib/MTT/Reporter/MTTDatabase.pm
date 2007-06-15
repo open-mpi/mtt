@@ -284,9 +284,6 @@ sub Submit {
                 }
             }
             $form->{fields} = join(',', sort(keys(%$fields)));
-            # JMS: Current brokenness on the server's db scehema:
-            # these fields are recorded per result rather than in the
-            # "once" table.
             $form->{phase} = $phase;
 
             # Now go through and actually attach all the result to
@@ -313,10 +310,6 @@ sub Submit {
                         next;
                     }
 
-                    # mpi_name and mpi_version are currently submitted
-                    # in the common block at the top of the form
-                    # because they're currently in the "once" table on
-                    # the server.  This will eventually be fixed.
                     elsif($key eq "mpi_name" || $key eq "mpi_version") {
                         $form->{$key} = $result->{$key};
                     }
