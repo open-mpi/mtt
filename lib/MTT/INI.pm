@@ -102,8 +102,7 @@ sub FilterINISections {
         $patterns = $section_arg;
         $del_on_match = 0;
         $del_on_mismatch = 1;
-    }
-    else {
+    } else {
         $patterns = $no_section_arg;
         $del_on_match = 1;
         $del_on_mismatch = 0;
@@ -129,6 +128,7 @@ sub FilterINISections {
             #   --section foo --section --bar
             # compacts to:
             #   --section "foo bar"
+            $delete = 0;
             foreach my $pattern (split(/$or_delimiter/, $pattern_arg)) {
 
                 # Generate on-the-fly, perl code that will
@@ -139,17 +139,28 @@ sub FilterINISections {
                 $tmp =~ s/\//\\\//g;
                 @patterns_and = split /$and_delimiter/, $tmp;
                 $re = join(" and ", map { "\$section =~ /$_/i" } @patterns_and);
-
+                Debug("FilterINI: regexp (section=$section): $re\n");
                 my $eval = "
-                if (($re)) {
+                if ($re) {
                     \$delete = $del_on_match;
                     last;
-                }
-                else {
+                } else {
                     \$delete = $del_on_mismatch;
                 }";
                 eval $eval;
+                Debug("FilterINI: Delete: $delete (del on match: $del_on_match, del on mismatch: $del_on_mismatch)\n");
             }
+
+            # If we're deleting on no match (i.e., --section), if any
+            # of the $delete results are false, then we're done (i.e.,
+            # we matched and therefore we're keeping the section).
+
+            # If we're deleting on match (i.e., --no-section), if any
+            # of the $delete results are true, then we're done (i.e.,
+            # we matched and therefore we're deleting the section).
+
+            last if (($del_on_mismatch && !$delete) ||
+                     ($del_on_match && $delete));
         }
         # Flag sections for deletion (to be safe, we do not
         # delete sections while iterating over them)
