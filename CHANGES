@@ -2,72 +2,14 @@
 
 To announce to OMPI core testers:
 
-- added new fields to MTT section to ini file
-  - textwrap
-  - drain_timeout
-  - scratch (override using --scratch)
+- New funclets:
+    - &perl(): MANY more things are possible now!
+    - &regexp();
+    - &check_ipoib_connectivity()
+    - ?&check_ib_connectivty()?
 
-- Moved many MPI Install INI fields to be ompi_* fields.  Old names
-  still exist and work, but are deprecated and will be removed in a
-  future version.
+- --section: beware of section names with spaces!  s/ /./g in --section
+    arguments if you have spaces in your section names.
 
-- new funclets
-  - mpi_get_name, mpi_install_name, test_get_name, test_build_name,
-    test_run_name, mpi_details_name
-  - weekday_name, weekday_index
-  - getenv
-  - null
-  - env_hosts
-  - get_pathcc_version
-
-- new field: mttdatabase_hostname
-
-- See https://svn.open-mpi.org/trac/mtt/changeset/657 -- new funclets:
- * &cmd_wifexited(): Returns 1 if the last command executed exited 
-   normally, 0 otherwise. 
- * &cmd_wexitstatus(): Returns the argument to exit() (or return 
-   value from main()) from the last command executed. Only 
-   meaningful if &cmd_wifexited() returns 1. 
- * &cmd_wifsignaled(): Returns 1 if the last command executed 
-   exited via signal. 
- * &cmd_termsig(): Returns the signal number that terminated the 
-   last command. Only meaningful if &cmd_wifsignaled() returns 1.
-
-- new module(s)
-
- * MPI get module: AlreadyInstalled
-
-   [MPI get: foo]
-   ...
-   installdir = /your/installation/dir
-   module = AlreadyInstalled
-
- * MPI get module: LAM_Snapshot
-
-   [MPI get: lam-nightly-trunk]
-   ...
-   module = LAM_Snapshot
-   lam_snapshot_url = http://www.lam-mpi.org/download/files/nightly
-
- * MPI install module: LAM
-
-   [MPI install: LAM/GNU]
-   ...
-   module = LAM
-   lam_vpath_mode = none
-   lam_make_all_arguments = -j 8
-   lam_compiler_name = gnu
-   lam_compiler_version = &get_gcc_version()
-   lam_configure_arguments = "CFLAGS=-g -pipe" --with-boot-tm=/opt/pbs
-
- * Analyze::OMPI
-
-   [MPI install: foo]
-   ...
-   module = Analyze::OMPI
-
-- MTT now zips its database submissions. E.g., an Intel run with 9
-  variants expands to 4800 test runs, which entailed a 5.3MB upload
-  (it zips to 500KB).
-
-
+- $variable expansion in ini files (especially when used with
+  &perl()), but it is always SCALAR
