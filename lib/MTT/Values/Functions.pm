@@ -1714,7 +1714,11 @@ sub check_ipoib_connectivity {
     }
 }
 
-# Returns true if IPoIB connectivity is available
+# Returns true if IPoIB connectivity is available.
+# Performs the following tests:
+#  1. ping localhost on all nodes
+#  2. ping all nodes remotely from head node
+#  3. Check that there is a "datadm" entry for each node
 sub check_solaris_ipoib_connectivity {
 
     my $funclet = '&' . FuncName((caller(0))[3]);
@@ -1723,21 +1727,20 @@ sub check_solaris_ipoib_connectivity {
 
     # Skip out if we have checked the IB interface already
     if (defined($ret)) {
-        Debug("\n$funclet: We checked for IB connectivity once already." .
-              "\n\tReturning $ret.");
+        Debug("$funclet: We checked for IB connectivity once already. Returning $ret.");
         return "$ret";
     }
 
     # Gather some system utilities
     my %utils;
-    my @utils = ("ifconfig", "ping", "orterun");
+    my @utils = ("ifconfig", "ping", "orterun", "datadm");
 
     foreach my $util (@utils) {
         my $prog = FindProgram($util);
         $utils{$util} = $prog;
 
         if (! $prog) {
-            Warning("\n$funclet: You do not have '$util' in your PATH. " .
+            Warning("$funclet: You do not have '$util' in your PATH. " .
                   "\n\tAssuming your IB connections are not UP.\n");
             return "0";
         }
@@ -1746,8 +1749,10 @@ sub check_solaris_ipoib_connectivity {
     my $ifconfig = $utils{"ifconfig"};
     my $ping     = $utils{"ping"};
     my $orterun  = $utils{"orterun"};
+    my $datadm   = $utils{"datadm"};
 
-    my $x = MTT::DoCommand::Cmd(1, "$ifconfig -a");
+    my $cmd = "$ifconfig -a";
+    my $x = MTT::DoCommand::Cmd(1, $cmd);
 
     # Grab the name of the IB interface
 
@@ -1769,33 +1774,37 @@ sub check_solaris_ipoib_connectivity {
         }
     }
 
+    if (! $ib_interface) {
+        Debug("$funclet: $cmd did not print an IB interface.\n");
+        return "0";
+    }
+
     # Create a simple script to ping an IB interface
     # (Assume we are currently in an NFS mounted directory)
     my ($fh, $filename) = tempfile(DIR => cwd());
-    my $scriptlet = '#!/bin/sh
-/usr/sbin/ping -i ibd1 $*  > /dev/null
+    my $scriptlet1 = "#!/bin/sh
+$ping -i $ib_interface \$*  > /dev/null
 
-if test "$?" = "0"; then
-    if test "$*" = "localhost"; then
+if test \"\$?\" = \"0\"; then
+    if test \"\$*\" = \"localhost\"; then
         echo `hostname`
     else
-        echo $*
+        echo \$*
     fi
-fi';
-    print $fh $scriptlet;
+fi";
+    print $fh $scriptlet1;
     close($fh);
     chmod(0700, $filename);
 
-    Debug("$funclet: Running the following script ('$filename') " .
-            "to check on IPoIB availability:\n$scriptlet");
+    Debug("$funclet: Running the following script ('$filename') to check on IPoIB availability:\n$scriptlet1");
 
     # Do a localhost ping for each host
     my $hosts = &hostlist_hosts();
-    my $cmd = "$orterun --bynode --host $hosts $filename localhost";
-    my $x = MTT::DoCommand::Cmd(1, $cmd);
+    $cmd = "$orterun --bynode --host $hosts $filename localhost";
+    $x = MTT::DoCommand::Cmd(1, $cmd);
 
     if ($x->{exit_status} ne 0) {
-        Debug("\n$funclet: $cmd failed.");
+        Debug("$funclet: $cmd failed.\n");
         return "0";
     }
 
@@ -1841,13 +1850,57 @@ fi';
     # Return true, or report which nodes' IB interfaces are down
     if ((scalar @down_nodes) < 1) {
         $ret = 1;
-        Debug("$funclet: IB interfaces are UP on all nodes." .
-              "\n\tReturning $ret.\n");
+        Debug("$funclet: IB interfaces are UP on all nodes.\n");
     } else {
         $ret = 0;
         Warning("$funclet: head-node to remote-node ping failed on the following nodes: " .
                 "\n\t\t" . join("\n\t\t", @down_nodes) .
                 "\n\tReturning $ret.\n");
+    }
+
+    # Create a simple script to check DAT registry
+    # (Assume we are currently in an NFS mounted directory)
+    ($fh, $filename) = tempfile(DIR => cwd());
+    my $scriptlet2 = "#!/bin/sh
+datadm=`$datadm -v | grep $ib_interface | cut -f1 -d' '`
+if test \"\$datadm\" != \"\"; then
+    echo `hostname`
+fi";
+    print $fh $scriptlet2;
+    close($fh);
+    chmod(0700, $filename);
+
+    Debug("$funclet: Running the following script ('$filename') to check on DAT registry for IB interface:\n$scriptlet2");
+
+    # Do a localhost ping for each host
+    $cmd = "$orterun --bynode --host $hosts $filename";
+    $x = MTT::DoCommand::Cmd(1, $cmd);
+
+    if ($x->{exit_status} ne 0) {
+        Debug("$funclet: $cmd failed.\n");
+        return "0";
+    }
+
+    # Unlink the little datadm script
+    unlink($filename);
+
+    @down_nodes = ();
+    foreach my $host (@hosts) {
+        if ($x->{result_stdout} !~ /\b$host\b/i) {
+            push(@down_nodes, $host);
+        }
+    }
+
+    # Return true, or report which nodes' IB interfaces are down
+    if ((scalar @down_nodes) < 1) {
+        $ret = 1;
+        Debug("$funclet: Found a 'datadm' entry on all nodes.\n");
+    } else {
+        $ret = 0;
+        Warning("$funclet: No 'datadm' found on the following nodes: " .
+                "\n\t\t" . join("\n\t\t", @down_nodes) .
+                "\n\tReturning $ret.\n");
+        return "$ret";
     }
 
     return "$ret";
