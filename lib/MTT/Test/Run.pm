@@ -137,6 +137,8 @@ sub Run {
                                         $test_build_name;
                                     $MTT::Globals::Internals->{test_run_name} =
                                         $simple_section;
+                                    $MTT::Globals::Internals->{test_run_full_name} =
+                                        $section;
                                     _do_run($ini, $section, $test_build, 
                                             $mpi_install, $install_dir, 
                                             $runs_data_dir, $force);
@@ -350,7 +352,7 @@ sub _do_run {
     # If we got a list of tests to run, invoke the run engine to
     # actually run them.
     if ($ret && $ret->{test_result}) {
-        MTT::Test::RunEngine::RunEngine($section, $install_dir, 
+        MTT::Test::RunEngine::RunEngine($ini, $section, $install_dir, 
                                         $runs_data_dir, $mpi_details,
                                         $test_build, $force, $ret);
     }

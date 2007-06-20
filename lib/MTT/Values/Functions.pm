@@ -14,10 +14,13 @@ package MTT::Values::Functions;
 
 use strict;
 use File::Find;
+use File::Temp qw(tempfile);
 use MTT::Messages;
 use MTT::Globals;
 use MTT::Files;
+use MTT::FindProgram;
 use Data::Dumper;
+use Cwd;
 
 # Do NOT use MTT::Test::Run here, even though we use some
 # MTT::Test::Run values below.  This will create a "use loop".  Be
@@ -1694,6 +1697,166 @@ sub test_run_name {
 sub mpi_details_name {
     Debug("&mpi_details_name returning: $MTT::Globals::Internals->{mpi_details_name}\n");
     return $MTT::Globals::Internals->{mpi_details_name};
+}
+
+# Global IB connectivity boolean
+my $is_ib_connection_up;
+
+# Dispatch the appropriate check_*_ipoib_connectivity()
+sub check_ipoib_connectivity {
+
+    my $x = MTT::DoCommand::Cmd(1, "uname -s");
+
+    if ($x->{result_stdout} =~ /sunos/i) {
+        return check_solaris_ipoib_connectivity();
+    } elsif ($x->{result_stdout} =~ /linux/i) {
+        return check_linux_ipoib_connectivity();
+    }
+}
+
+# Returns true if IPoIB connectivity is available
+sub check_solaris_ipoib_connectivity {
+
+    my $funclet = '&' . FuncName((caller(0))[3]);
+
+    my $ret = $is_ib_connection_up;
+
+    # Skip out if we have checked the IB interface already
+    if (defined($ret)) {
+        Debug("\n$funclet: We checked for IB connectivity once already." .
+              "\n\tReturning $ret.");
+        return "$ret";
+    }
+
+    # Gather some system utilities
+    my %utils;
+    my @utils = ("ifconfig", "ping", "orterun");
+
+    foreach my $util (@utils) {
+        my $prog = FindProgram($util);
+        $utils{$util} = $prog;
+
+        if (! $prog) {
+            Warning("\n$funclet: You do not have '$util' in your PATH. " .
+                  "\n\tAssuming your IB connections are not UP.\n");
+            return "0";
+        }
+    }
+
+    my $ifconfig = $utils{"ifconfig"};
+    my $ping     = $utils{"ping"};
+    my $orterun  = $utils{"orterun"};
+
+    my $x = MTT::DoCommand::Cmd(1, "$ifconfig -a");
+
+    # Grab the name of the IB interface
+
+    # WARNING: "ib" MAY BE A *MAGIC* PREFIX. SUN'S CLUSTERS
+    # HAPPEN TO NAME THEIR IB CARDS WITH THE PREFIX "ib",
+    # BUT THIS MAY NOT BE TRUE EVERYWHERE.  TO MAKE THIS
+    # PORTABLE, WE MIGHT CONSIDER DOING SOMETHING LIKE: 
+    #
+    #   $ sudo ifconfig <interface_name> modlist 
+    # 
+    # TO SEE IF THE IB MODULE IS PRESENT IN THE OUTPUT LIST.
+    # WE ALSO ASSUME THE IB CARD IS NAMED IDENTICALLY ACROSS
+    # THE WHOLE CLUSTER.
+    my $ib_interface;
+    foreach my $line (split(/\n|\r/, $x->{result_stdout})) {
+        if ($line =~ /^(ib\w+):/) {
+            $ib_interface = $1;
+            last;
+        }
+    }
+
+    # Create a simple script to ping an IB interface
+    # (Assume we are currently in an NFS mounted directory)
+    my ($fh, $filename) = tempfile(DIR => cwd());
+    my $scriptlet = '#!/bin/sh
+/usr/sbin/ping -i ibd1 $*  > /dev/null
+
+if test "$?" = "0"; then
+    if test "$*" = "localhost"; then
+        echo `hostname`
+    else
+        echo $*
+    fi
+fi';
+    print $fh $scriptlet;
+    close($fh);
+    chmod(0700, $filename);
+
+    Debug("$funclet: Running the following script ('$filename') " .
+            "to check on IPoIB availability:\n$scriptlet");
+
+    # Do a localhost ping for each host
+    my $hosts = &hostlist_hosts();
+    my $cmd = "$orterun --bynode --host $hosts $filename localhost";
+    my $x = MTT::DoCommand::Cmd(1, $cmd);
+
+    if ($x->{exit_status} ne 0) {
+        Debug("\n$funclet: $cmd failed.");
+        return "0";
+    }
+
+    my @down_nodes;
+    my @hosts = split(/\s+|,/, $hosts);
+    foreach my $host (@hosts) {
+        if ($x->{result_stdout} !~ /\b$host\b/i) {
+            push(@down_nodes, $host);
+        }
+    }
+
+    # Return true, or report which nodes' IB interfaces are down
+    if ((scalar @down_nodes) < 1) {
+        $ret = 1;
+        Debug("$funclet: 'ping localhost' succeeded on all nodes.\n");
+    } else {
+        $ret = 0;
+        Warning("$funclet: 'ping localhost' failed on the following nodes: " .
+                "\n\t\t" . join("\n\t\t", @down_nodes) .
+                "\n\tReturning $ret.\n");
+        return "$ret";
+    }
+
+    # Do a head-node to remote-node ping for each host
+    @down_nodes = ();
+    foreach my $host (@hosts) {
+        my $cmd = "$filename $host";
+        $x = MTT::DoCommand::Cmd(1, $cmd);
+
+        if ($x->{exit_status} ne 0) {
+            Debug("$funclet: $cmd failed.\n");
+            return "0";
+        }
+
+        if ($x->{result_stdout} !~ /\b$host\b/i) {
+            push(@down_nodes, $host);
+        }
+    }
+
+    # Unlink the little ping script
+    unlink($filename);
+
+    # Return true, or report which nodes' IB interfaces are down
+    if ((scalar @down_nodes) < 1) {
+        $ret = 1;
+        Debug("$funclet: IB interfaces are UP on all nodes." .
+              "\n\tReturning $ret.\n");
+    } else {
+        $ret = 0;
+        Warning("$funclet: head-node to remote-node ping failed on the following nodes: " .
+                "\n\t\t" . join("\n\t\t", @down_nodes) .
+                "\n\tReturning $ret.\n");
+    }
+
+    return "$ret";
+}
+
+# Returns true if IPoIB connectivity is available
+sub check_linux_ipoib_connectivity {
+    # Jeff, fill this in
+    return "0";
 }
 
 1;

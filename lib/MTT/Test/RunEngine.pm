@@ -25,10 +25,21 @@ use Data::Dumper;
 
 my $verbose_out;
 
+# Pointer to INI structure and full Test Run
+# section name (needed for $var substitution in
+# below EvaluateString() calls)
+my $ini;
+my $test_run_full_name = $MTT::Globals::Internals->{test_run_full_name};
+
 #--------------------------------------------------------------------------
 
 sub RunEngine {
-    my ($section, $install_dir, $runs_data_dir, $mpi_details, $test_build, $force, $ret) = @_;
+    # These arguments are local to this function
+    my ($section, $install_dir, $runs_data_dir, $mpi_details, $test_build, $force, $ret);
+
+    # Make sure though, that the $ini remains a global
+    ($ini, $section, $install_dir, $runs_data_dir, $mpi_details, $test_build, $force, $ret) = @_;
+
     my $test_results;
     my $total = $#{$ret->{tests}} + 1;
 
@@ -55,7 +66,7 @@ sub RunEngine {
         # Setup some globals
         $MTT::Test::Run::test_executable = $run->{executable};
         $MTT::Test::Run::test_argv = $run->{argv};
-        my $all_np = MTT::Values::EvaluateString($run->{np});
+        my $all_np = MTT::Values::EvaluateString($run->{np}, $ini, $test_run_full_name);
         
         # Just one np, or an array of np values?
         if (ref($all_np) eq "") {
@@ -96,6 +107,8 @@ sub RunEngine {
 sub _run_one_np {
     my ($install_dir, $run, $mpi_details, $np, $force) = @_;
 
+    my $mpi_details_name = $MTT::Globals::Internals->{mpi_details_name};
+
     my $name;
     if (-e $MTT::Test::Run::test_executable) {
         $name = basename($MTT::Test::Run::test_executable);
@@ -106,11 +119,11 @@ sub _run_one_np {
     $MTT::Test::Run::test_np = $np;
 
     # Is this np ok for this test?
-    my $ok = MTT::Values::EvaluateString($run->{np_ok});
+    my $ok = MTT::Values::EvaluateString($run->{np_ok}, $ini, $test_run_full_name);
     if ($ok) {
 
         # Get all the exec's for this one np
-        my $execs = MTT::Values::EvaluateString($mpi_details->{exec});
+        my $execs = MTT::Values::EvaluateString($mpi_details->{exec}, $ini, $mpi_details_name);
 
         # If we just got one, run it.  Otherwise, loop over running them.
         if (ref($execs) eq "") {
@@ -180,10 +193,10 @@ sub _run_one_test {
     $ENV{MTT_TEST_NP} = $MTT::Test::Run::test_np;
     _run_step($mpi_details, "before_each");
 
-    my $timeout = MTT::Values::EvaluateString($run->{timeout});
-    my $out_lines = MTT::Values::EvaluateString($run->{stdout_save_lines});
-    my $err_lines = MTT::Values::EvaluateString($run->{stderr_save_lines});
-    my $merge = MTT::Values::EvaluateString($run->{merge_stdout_stderr});
+    my $timeout = MTT::Values::EvaluateString($run->{timeout}, $ini, $test_run_full_name);
+    my $out_lines = MTT::Values::EvaluateString($run->{stdout_save_lines}, $ini, $test_run_full_name);
+    my $err_lines = MTT::Values::EvaluateString($run->{stderr_save_lines}, $ini, $test_run_full_name);
+    my $merge = MTT::Values::EvaluateString($run->{merge_stdout_stderr}, $ini, $test_run_full_name);
     my $start_time = time;
     $run->{start} = timegm(gmtime());
 
@@ -261,7 +274,7 @@ sub _run_step {
             Verbose("  Output: $x->{result_stdout}\n")
                 if (defined($x->{result_stdout}) && $x->{result_stdout} ne "");
         } else {
-            my $pass_result = MTT::Values::EvaluateString($pass);
+            my $pass_result = MTT::Values::EvaluateString($pass, $ini, $test_run_full_name);
             if ($pass_result != 1) {
                 Verbose("  Warning: step $step FAILED\n");
                 Verbose("  Output: $x->{result_stdout}\n")
