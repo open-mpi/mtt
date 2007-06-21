@@ -16,6 +16,13 @@
 #
 #
 
+# Set PHP trace levels
+if (isset($_GET['verbose']) or 
+    isset($_GET['debug']))
+    error_reporting(E_ALL);
+else
+    error_reporting(E_ERROR | E_PARSE);
+
 # Includes
 $topdir = ".";
 include_once("$topdir/reporter.inc");
@@ -39,12 +46,6 @@ if (isset($_GET['stats']) or
     isset($_GET['analyze'])) {
     $_GET['sql'] = '2';
 }
-
-# Set PHP trace levels
-if (isset($_GET['verbose']))
-    error_reporting(E_ALL);
-else
-    error_reporting(E_ERROR | E_PARSE);
 
 # In case we're using this script from the command-line
 if ($argv)

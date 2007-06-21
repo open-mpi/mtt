@@ -947,8 +947,10 @@ function capitalize($str) {
 #########################################
 
 function debug($str) {
-    if ($_GET['debug'] == 'on' or $_GET['verbose'] == 'on')
+    if ((isset($_GET['debug']) and $_GET['debug'] == 'on') or 
+        (isset($_GET['verbose']) and $_GET['verbose'] == 'on')) {
         print("\n<pre>$str</pre>");
+    }
 }
 
 function stats($str) {
