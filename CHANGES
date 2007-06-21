@@ -15,3 +15,7 @@ To announce to OMPI core testers:
 
 - $variable expansion in ini files (especially when used with
   &perl()), but it is always SCALAR
+
+- MTT lock server.
+
+- Added support for MPICH2 (and therefore MVAPICH2) and LAM/MPI
