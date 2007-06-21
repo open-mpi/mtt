@@ -4,9 +4,11 @@ To announce to OMPI core testers:
 
 - New funclets:
     - &perl(): MANY more things are possible now!
-    - &regexp();
+    - &regexp()
     - &check_ipoib_connectivity()
     - ?&check_ib_connectivty()?
+    - &verbose(), &debug(), &print()
+    - &env_hosts() can be uniq-ified
 
 - --section: beware of section names with spaces!  s/ /./g in --section
     arguments if you have spaces in your section names.
