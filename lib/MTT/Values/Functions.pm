@@ -35,12 +35,17 @@ sub perl {
     Debug("$funclet: got @_\n");
 
     my $cmd = join(/ /, @_);
+
+    # Loosen stricture here to allow &perl() to 
+    # have its own variables
+    no strict;
     my $ret = eval $cmd;
+    use strict;
 
     if (ref($ret) =~ /array/i) {
-        Debug("$funclet: returning @$ret\n");
+        Debug("$funclet: returning array [@$ret]\n");
     } else {
-        Debug("$funclet: returning $ret\n");
+        Debug("$funclet: returning scalar $ret\n");
     }
 
     return $ret;
@@ -1745,9 +1750,21 @@ sub mpi_details_name {
 
 #--------------------------------------------------------------------------
 
+# Global IB connectivity boolean
+my $is_ib_connection_up;
+
 # Dispatch the appropriate check_*_ipoib_connectivity()
 sub check_ipoib_connectivity {
-    return MTT::Values::Functions::InfiniBand::check_ipoib_connectivity(@_);
+    my $funclet = '&' . FuncName((caller(0))[3]);
+
+    # Skip out if we have checked the IB interface already
+    if (defined($is_ib_connection_up)) {
+        Debug("$funclet: We checked for IB connectivity once already. Returning $is_ib_connection_up.\n");
+        return "$is_ib_connection_up";
+    } else {
+        $is_ib_connection_up = MTT::Values::Functions::InfiniBand::check_ipoib_connectivity(@_);
+        return $is_ib_connection_up;
+    }
 }
 
 1;

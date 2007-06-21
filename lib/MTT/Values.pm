@@ -80,7 +80,13 @@ sub EvaluateString {
         my $ret;
         my $eval_str = "\$ret = MTT::Values::Functions::$func_name($func_args)";
         Debug("_do: $eval_str\n");
+
+        # Loosen stricture on this eval to allow funclets
+        # (e.g., &perl()) to have their own variables
+        no strict;
         eval $eval_str;
+        use strict;
+
         if ($@) {
             Error("Could not evaluate: $eval_str: $@\n");
         }

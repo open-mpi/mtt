@@ -22,9 +22,6 @@ use Cwd;
 
 #--------------------------------------------------------------------------
 
-# Global IB connectivity boolean
-my $is_ib_connection_up;
-
 sub check_ipoib_connectivity {
     my $x = MTT::DoCommand::Cmd(1, "uname -s");
 
@@ -43,16 +40,9 @@ sub check_ipoib_connectivity {
 sub _check_solaris_ipoib_connectivity {
     my $funclet = '&' . FuncName((caller(0))[3]);
 
-    my $ret = $is_ib_connection_up;
-
-    # Skip out if we have checked the IB interface already
-    if (defined($ret)) {
-        Debug("$funclet: We checked for IB connectivity once already. Returning $ret.");
-        return "$ret";
-    }
-
     # Gather some system utilities
     my %utils;
+    my $ret;
     my @utils = ("ifconfig", "ping", "orterun", "datadm");
 
     foreach my $util (@utils) {
@@ -101,7 +91,7 @@ sub _check_solaris_ipoib_connectivity {
 
     # Create a simple script to ping an IB interface
     # (Assume we are currently in an NFS mounted directory)
-    my ($fh, $filename) = tempfile(DIR => cwd());
+    my ($fh, $filename) = tempfile(DIR => cwd(), SUFFIX => "-ping");
     my $scriptlet1 = "#!/bin/sh
 $ping -i $ib_interface \$*  > /dev/null
 
@@ -116,7 +106,7 @@ fi";
     close($fh);
     chmod(0700, $filename);
 
-    Debug("$funclet: Running the following script ('$filename') to check on IPoIB availability:\n$scriptlet1");
+    Debug("$funclet: Running the following script ('$filename') to check on IPoIB availability:\n$scriptlet1\n");
 
     # Do a localhost ping for each host
     my $hosts = &MTT::Values::Functions::env_hosts(1);
@@ -180,7 +170,7 @@ fi";
 
     # Create a simple script to check DAT registry
     # (Assume we are currently in an NFS mounted directory)
-    ($fh, $filename) = tempfile(DIR => cwd());
+    ($fh, $filename) = tempfile(DIR => cwd(), SUFFIX => "-datadm");
     my $scriptlet2 = "#!/bin/sh
 datadm=`$datadm -v | grep $ib_interface | cut -f1 -d' '`
 if test \"\$datadm\" != \"\"; then
@@ -190,7 +180,7 @@ fi";
     close($fh);
     chmod(0700, $filename);
 
-    Debug("$funclet: Running the following script ('$filename') to check on DAT registry for IB interface:\n$scriptlet2");
+    Debug("$funclet: Running the following script ('$filename') to check on DAT registry for IB interface:\n$scriptlet2\n");
 
     # Do a localhost ping for each host
     $cmd = "$orterun --bynode --host $hosts $filename";
@@ -235,19 +225,12 @@ fi";
 sub _check_linux_ipoib_connectivity {
     my $funclet = '&' . FuncName((caller(0))[3]);
 
-    my $ret = $is_ib_connection_up;
-
-    # Skip out if we have checked the IB interface already
-    if (defined($ret)) {
-        Debug("$funclet: We checked for IB connectivity once already. Returning $ret.");
-        return "$ret";
-    }
-
     # Gather some system utilities.  Save PATH and add /sbin and
     # /usr/sbin.
     my $save_path = $ENV{PATH};
     $ENV{PATH} .= ":/sbin:/usr/sbin";
     my %utils;
+    my $ret;
     my @utils = ("ifconfig", "ping", "orterun");
 
     foreach my $util (@utils) {
@@ -299,7 +282,7 @@ sub _check_linux_ipoib_connectivity {
 
     # Create a simple script to ping an IB interface
     # (Assume we are currently in an NFS mounted directory)
-    my ($fh, $filename) = tempfile(DIR => cwd());
+    my ($fh, $filename) = tempfile(DIR => cwd(), SUFFIX => "-ping");
     my $scriptlet1 = "#!/bin/sh
 $ping -c 3 -I $ib_interface \$*  > /dev/null
 
@@ -315,7 +298,7 @@ exit 0";
     close($fh);
     chmod(0700, $filename);
 
-    Debug("$funclet: Running the following script ('$filename') to check on IPoIB availability:\n$scriptlet1");
+    Debug("$funclet: Running the following script ('$filename') to check on IPoIB availability:\n$scriptlet1\n");
 
     # Do a localhost ping for each host
     my $hosts = &MTT::Values::Functions::env_hosts(1);
