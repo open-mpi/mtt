@@ -63,11 +63,15 @@ sub EvaluateString {
         $str =~ s/\$\w+\b/$ret/;
     }
 
-    # Pattern for the next funclet
-    my $regexp = '(\&\w+\((?:\"[^\"]*?\"|[^&\(]*?)\))';
+    # Funclet regexps. There are three cases:
+    #   1. &foo('...')
+    #   2. &foo("...")
+    #   3. &foo(...) (not 1. or 2.)
+    my $regexp1 = '\'[^\']*?\'|\"[^\"]*?\"|[^&\(]*?';
+    my $regexp2 = '(\&\w+\((?:' . $regexp1 . ')\))';
 
     # Loop until there are no more &functions(...)
-    while ($str =~ /\&(\w+)\((\"[^\"]*?\"|[^&\(]*?)\)/) {
+    while ($str =~ /\&(\w+)\(($regexp1)\)/) {
         my $func_name = $1;
         my $func_args = $2;
 
@@ -94,7 +98,7 @@ sub EvaluateString {
         # If we get a string back, just handle it.
         if (ref($ret) eq "") {
             # Substitute in the $ret in place of the &function(...)
-            $str =~ s/$regexp/$ret/;
+            $str =~ s/$regexp2/$ret/;
 
             Debug("String now: $str\n");
 
@@ -112,7 +116,7 @@ sub EvaluateString {
         if ($#{@$ret} < 0) {
             # Put an empty string in the return value's place in the
             # original string
-            $str =~ s/$regexp/""/;
+            $str =~ s/$regexp2/""/;
             Debug("String now: $str\n");
 
             # Now loop around and see if there are any more
@@ -131,7 +135,7 @@ sub EvaluateString {
             my $tmp = $str;
 
             # Substitute in the $s in place of the &function(...)
-            $tmp =~ s/$regexp/$s/;
+            $tmp =~ s/$regexp2/$s/;
             $ret = EvaluateString($tmp, $ini, $section);
 
             if (ref($ret) eq "") {
