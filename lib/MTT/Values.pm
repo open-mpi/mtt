@@ -196,13 +196,10 @@ sub ProcessEnvKeys {
     if ($val) {
         my @vals = split(/\n/, $val);
         foreach my $v (@vals) {
-            my $name = $v;
-            $name =~ s/(\w+)\W.+/\1/;
-            my $str = $v;
-            $str =~ s/\w+\W+(.+)\W*/\1/;
-            $ENV{$name} = $str;
+            $v =~ m/^(\w+)\s+(.+)$/;
+            $ENV{$1} = $2;
 
-            $str = "setenv $name $str";
+            my $str = "setenv $1 $2";
             push(@$save, $str);
             Debug("$str\n");
         }
@@ -226,20 +223,16 @@ sub ProcessEnvKeys {
     if ($val) {
         my @vals = split(/\n/, $val);
         foreach my $v (@vals) {
-            my $name = $v;
-            $name =~ s/(\w+)\W.+/\1/;
-            my $str = $v;
-            $str =~ s/\w+\W+(.+)\W*/\1/;
-            
-            if (exists($ENV{$name})) {
-                $ENV{$name} = "${str}:" . $ENV{$name};
+            $v =~ m/^(\w+)\s+(.+)$/;
+            if (exists($ENV{$1})) {
+                $ENV{$1} = "${2}:" . $ENV{$1};
             } else {
-                $ENV{$name} = $str;
+                $ENV{$1} = $2;
             }
 
-            $str = "prepend_path $name $str";
+            my $str = "prepend_path $1 $2";
             push(@$save, $str);
-            Debug("$str\n");
+            Debug("$str (now: $ENV{$1})\n");
         }
     }
     
@@ -248,20 +241,16 @@ sub ProcessEnvKeys {
     if ($val) {
         my @vals = split(/\n/, $val);
         foreach my $v (@vals) {
-            my $name = $v;
-            $name =~ s/(\w+)\W.+/\1/;
-            my $str = $v;
-            $str =~ s/\w+\W+(.+)\W*/\1/;
-            
-            if (exists($ENV{$name})) {
-                $ENV{$name} = $ENV{$name} . ":$str";
+            $v =~ m/^(\w+)\s+(.+)$/;
+            if (exists($ENV{$1})) {
+                $ENV{$1} = $ENV{$1} . ":$2";
             } else {
-                $ENV{$name} = $str;
+                $ENV{$1} = $2;
             }
 
-            $str = "append_path $name $str";
+            my $str = "append_path $1 $2";
             push(@$save, $str);
-            Debug("$str\n");
+            Debug("$str (now: $ENV{$1})\n");
         }
     }
 }
