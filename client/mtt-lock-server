@@ -32,9 +32,9 @@ my @interfaces;
 
 Getopt::Long::Configure("bundling");
 my $ok = Getopt::Long::GetOptions("help|h" => \$help,
-                                  "foreground|f" => \$foreground,
-                                  "syslog|s" => \$syslog,
-                                  "debug|d" => \$debug,
+                                  "foreground|f!" => \$foreground,
+                                  "syslog|s!" => \$syslog,
+                                  "debug|d!" => \$debug,
                                   "port|p=s" => \$port,
                                   "interface|i=s" => \@interfaces
                                   );
