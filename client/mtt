@@ -256,9 +256,15 @@ run: intel] section):
 
     \$ client/mtt [...] --section 'run;intel'
 
-To perform sections NOT matching \"intel\" OR \"ibm\":
+Whitespace separated pattern lists translate to logical OR. E.g., to
+filter on sections NOT matching \"intel\" OR \"ibm\":
 
-    \$ client/mtt [...] --no-section intel --no-section ibm
+    \$ client/mtt [...] --no-section \"intel ibm\"
+
+--[no]-section filters using regular expressions so you can embed
+special regexp characters in the pattern such as '.' or '.*'.  E.g.,
+
+    \$ client/mtt [...] --section \"test.run.*trivial\"
 
 \n";
 
