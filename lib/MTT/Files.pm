@@ -302,7 +302,7 @@ sub copy_tree {
 
     my $ret = MTT::DoCommand::Cmd(1, "cp -r $srcdir .");
     if (!MTT::DoCommand::wsuccess($ret->{exit_status})) {
-        Warning("Could not copy file tree $srcdir: $@\n");
+        Warning("Could not copy file tree $srcdir: $!\n");
         return undef;
     }
 
@@ -569,7 +569,7 @@ sub SafeWrite {
 
     # Write out the file
     if (!open FILE, ">$filename") {
-        $ret->{result_message} = "Failed to write to file: $@";
+        $ret->{result_message} = "Failed to write to file: $!";
         return $ret;
     }
     print FILE $body;
