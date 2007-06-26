@@ -18,4 +18,9 @@ To announce to OMPI core testers:
 
 - MTT lock server.
 
+- SVN module - choose between "export" and "checkout"
+  (defaults to "export"):
+  - svn_export = 1 (specify the use of "svn export")
+  - svn_checkout = 1 (specify the use of "svn checkout")
+
 - Added support for MPICH2 (and therefore MVAPICH2) and LAM/MPI

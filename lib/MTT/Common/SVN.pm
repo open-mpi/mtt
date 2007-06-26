@@ -101,8 +101,21 @@ sub Get {
     my $svn_username = Value($ini, $section, "svn_username");
     my $svn_password = Value($ini, $section, "svn_password");
     my $svn_password_cache = Value($ini, $section, "svn_password_cache");
+    my $svn_export = Value($ini, $section, "svn_export");
+    my $svn_checkout = Value($ini, $section, "svn_checkout");
+
+    my $export;
+    if ($svn_export and $svn_checkout) {
+        Warning(">> svn: 'svn export' and 'svn checkout' were both specified. Defaulting to 'svn export'.\n");
+        $export = 1;
+    } elsif ($svn_checkout) {
+        $export = 0;
+    } else {
+        $export = 1;
+    }
+
     MTT::DoCommand::Chdir($dir);
-    ($dir, $data->{r}) = MTT::Files::svn_checkout($data->{url}, $svn_r, $svn_username, $svn_password, $svn_password_cache, 1, 1);
+    ($dir, $data->{r}) = MTT::Files::svn_checkout($data->{url}, $svn_r, $svn_username, $svn_password, $svn_password_cache, 1, $export);
     if (!$dir) {
         $ret->{test_result} = MTT::Values::FAIL;
         $ret->{result_message} = "Failed to SVN export";

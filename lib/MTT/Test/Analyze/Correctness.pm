@@ -59,6 +59,8 @@ sub Analyze {
         test_result => $result,
     };
 
+    $report->{environment} = &_prepare_environment_string($run);
+
     $report->{signal} = $results->{signal} if (defined($results->{signal}));
 
     my $want_output;
@@ -102,6 +104,23 @@ sub Analyze {
     $report->{test_build_id} = $test_build_id;
 
     return $report;
+}
+
+# Prepare the environment field for the report
+sub _prepare_environment_string {
+    my ($run) = @_;
+
+    my $setenv = $run->{setenv};
+    my $unsetenv = $run->{unsetenv};
+    my @environment;
+
+    if ($setenv) {
+        push(@environment, $setenv);
+    }
+    if ($unsetenv) {
+        push(@environment, "unsetenv $unsetenv");
+    }
+    return join("\n", @environment)
 }
 
 1;
