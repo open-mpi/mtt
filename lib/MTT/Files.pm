@@ -74,7 +74,7 @@ sub mkdir {
             Debug("$str does not exist -- creating\n");
             mkdir($str, 0777);
             if (! -d $str) {
-                Error("Could not make directory $p\n");
+                Abort("Could not make directory $p\n");
             }
         }
         $str .= "/";

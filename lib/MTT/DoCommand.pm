@@ -464,7 +464,7 @@ sub CmdScript {
 sub Chdir {
     my($dir) = @_;
     Debug("chdir $dir\n");
-    chdir $dir;
+    chdir $dir or die "Can't chdir to $dir\n";
 }
 
 #--------------------------------------------------------------------------
