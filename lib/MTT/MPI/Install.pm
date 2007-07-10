@@ -505,6 +505,8 @@ sub _do_install {
         my $report = {
             phase => "MPI Install",
 
+            mpi_install_section_name => $config->{simple_section_name},
+
             bitness => $config->{bitness},
             endian => $config->{endian},
             compiler_name => $config->{compiler_name},
