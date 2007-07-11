@@ -24,3 +24,7 @@ To announce to OMPI core testers:
   - svn_checkout = 1 (specify the use of "svn checkout")
 
 - Added support for MPICH2 (and therefore MVAPICH2) and LAM/MPI
+
+- Renamed the MPI install phase field names:
+  compiler_name -> ompi_compiler_name (etc.)
+  Need to check for backward compatibility
