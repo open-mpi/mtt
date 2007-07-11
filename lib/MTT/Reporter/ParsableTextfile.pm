@@ -10,7 +10,7 @@
 # $HEADER$
 #
 
-package MTT::Reporter::ParsableTextFile;
+package MTT::Reporter::ParsableTextfile;
 
 use strict;
 use Cwd;
