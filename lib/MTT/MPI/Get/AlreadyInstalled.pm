@@ -89,7 +89,7 @@ sub Get {
 
 # NoOp
 sub PrepareForInstall {
-    1;
+    return cwd();
 }
 
 # Get the OMPI version string from ompi_info
