@@ -49,10 +49,6 @@ my $textwrap;
 sub Init {
     my ($ini, $section) = @_;
 
-    # Extract data from the ini fields
-
-    $filename = Value($ini, $section, "textfile_filename");
-
     # Grab TextFile INI params
 
     $summary_header = Value($ini, $section, "textfile_summary_header") . "\n"; 
@@ -60,11 +56,6 @@ sub Init {
     $detail_header  = Value($ini, $section, "textfile_detail_header ") . "\n"; 
     $detail_footer  = Value($ini, $section, "textfile_detail_footer ") . "\n"; 
     $textwrap       = Value($ini, $section, "textfile_textwrap"); 
-
-    if (!$filename) {
-        Warning("Not enough information in File Reporter section [$section]; must have filename; skipping this section");
-        return undef;
-    }
 
     # Make it an absolute filename, because there's oodles of
     # chdir()'s within the testing.  Whack the file if it's already
@@ -323,6 +314,9 @@ sub _get_filename {
     my $mpi_version = $report->{mpi_version};
     my $phase = $report->{phase};
     my $file;
+
+    # User specifies a filename
+    my $filename = "$phase-$section-$mpi_name-$mpi_version.txt";
 
     # Do not be strict on this eval.  The user may supply
     # some undeclared vars in the filename format template,
