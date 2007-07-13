@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -243,22 +244,27 @@ http-proxy-port = bogus\n";
     my %ENV_SAVE = %ENV;
 
     foreach my $p (@{$proxies}) {
-        Debug("SVN checkout attempting proxy: $p->{proxy}\n");
 
-        # Write out a new $HOME/.subversion/servers file with the
-        # right proxy info
-        my $out = $servers_file;
-        if ($p->{proxy}) {
-            $p->{proxy} =~ m@^.+://(.+):([0-9]+)/@;
-            $out =~ s/^\s*http-proxy-host\s*=.*$/http-proxy-host = $p->{host}/m;
-            $out =~ s/^\s*http-proxy-port\s*=.*$/http-proxy-port = $p->{port}/m;
-        } else {
-            $out =~ s/^\s*http-proxy-host\s*=.*$//m;
-            $out =~ s/^\s*http-proxy-port\s*=.*$//m;
+        # Skip "blank" proxies
+        if ($p->{proxy} !~ /^\s*$/) {
+
+            Debug("SVN checkout attempting proxy: $p->{proxy}\n");
+
+            # Write out a new $HOME/.subversion/servers file with the
+            # right proxy info
+            my $out = $servers_file;
+            if ($p->{proxy}) {
+                $p->{proxy} =~ m@^.+://(.+):([0-9]+)/@;
+                $out =~ s/^\s*http-proxy-host\s*=.*$/http-proxy-host = $p->{host}/m;
+                $out =~ s/^\s*http-proxy-port\s*=.*$/http-proxy-port = $p->{port}/m;
+            } else {
+                $out =~ s/^\s*http-proxy-host\s*=.*$//m;
+                $out =~ s/^\s*http-proxy-port\s*=.*$//m;
+            }
+            open(FILE, ">$svnfile");
+            print FILE $out;
+            close(FILE);
         }
-        open(FILE, ">$svnfile");
-        print FILE $out;
-        close(FILE);
 
         my $ret = MTT::DoCommand::Cmd(1, $str);
 
