@@ -195,8 +195,7 @@ sub _do_run {
                 Debug("Found MPI details: [$mpi_details_simple]\n");
                 if ($search eq $mpi_details_simple) {
                     $match = 1;
-                    $MTT::Globals::Internals->{mpi_details_name} = 
-                        $mpi_details_simple;
+                    $MTT::Globals::Internals->{mpi_details_name} = $s;
                     last;
                 }
             }
@@ -221,8 +220,7 @@ sub _do_run {
                 Debug("Found MPI details: [$mpi_details_simple]\n");
                 if ($search eq $mpi_details_simple) {
                     $match = 1;
-                    $MTT::Globals::Internals->{mpi_details_name} = 
-                        $mpi_details_simple;
+                    $MTT::Globals::Internals->{mpi_details_name} = $s;
                     last;
                 }
             }
@@ -242,8 +240,7 @@ sub _do_run {
                     lc(MTT::Values::Value($ini, $s, "mpi_install"));
                 if ($mpi_install_simple eq $details_mpi_install_simple) {
                     $match = 1;
-                    $MTT::Globals::Internals->{mpi_details_name} = 
-                        $mpi_details_simple;
+                    $MTT::Globals::Internals->{mpi_details_name} = $s;
                     last;
                 }
             }
@@ -263,8 +260,7 @@ sub _do_run {
                     lc(MTT::Values::Value($ini, $s, "mpi_get"));
                 if ($mpi_get_simple eq $details_mpi_get_simple) {
                     $match = 1;
-                    $MTT::Globals::Internals->{mpi_details_name} = 
-                        $mpi_details_simple;
+                    $MTT::Globals::Internals->{mpi_details_name} = $s;
                     last;
                 }
             }
@@ -277,8 +273,7 @@ sub _do_run {
         foreach my $s ($ini->Sections()) {
             $s =~ m/\s*mpi details:\s*(.+)\s*$/;
             my $mpi_details_simple = $1;
-            $MTT::Globals::Internals->{mpi_details_name} = 
-                $mpi_details_simple;
+            $MTT::Globals::Internals->{mpi_details_name} = $s;
             last;
         }
     }
@@ -289,6 +284,9 @@ sub _do_run {
         return;
     }
     my $mpi_details_section = $MTT::Globals::Internals->{mpi_details_name};
+    $mpi_details_section =~ m/\s*mpi details:\s*(.+)\s*$/;
+    my $mpi_details_simple_section = $1;
+    Verbose("   Using MPI Details [$mpi_details_simple_section] with MPI Install [$mpi_install->{simple_section_name}]\n");
 
     # Get some details about running with this MPI
     my $mpi_details;
