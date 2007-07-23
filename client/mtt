@@ -19,6 +19,7 @@ BEGIN {
     use Getopt::Long;
     use File::Basename;
     use Cwd;
+    use Storable qw(dclone);
     use POSIX qw(strftime);
 
     # Try to find the MTT files.  Assume that mtt executable is in the
@@ -575,13 +576,11 @@ sub _process_ini_param {
         # Check for duplicate entries in the ini file
         MTT::INI::ValidateINI($temp_file);
 
-        # Load an unfiltered version of the ini file for error checking
-        my $unfiltered = new Config::IniFiles(-file => $temp_file, 
-                                            -nocase => 1,
-                                            -allowcontinue => 1);
-
         # Whack the tmp file
         unlink($temp_file);
+
+        # Create an unfiltered version of the ini file for error checking
+        my $unfiltered = dclone($filtered);
 
         # Override ini file params with those supplied at command-line
         $filtered = MTT::INI::OverrideINIParams($filtered, $ini_args);

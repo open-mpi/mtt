@@ -16,6 +16,8 @@ use Config::IniFiles;
 use MTT::Messages;
 use MTT::Values;
 use Data::Dumper;
+use MTT::Util;
+use Storable qw(dclone);
 use vars qw(@EXPORT);
 use base qw(Exporter);
 @EXPORT = qw(WriteINI ReadINI);
@@ -87,6 +89,8 @@ sub FilterINISections {
 
     my($ini, $section_arg, $no_section_arg) = @_;
        
+    my $ini_save = dclone($ini);
+
     return $ini if (! $section_arg and ! $no_section_arg);
 
     my ($delete,
@@ -96,7 +100,8 @@ sub FilterINISections {
         $re,
         $del_on_match,
         $del_on_mismatch,
-        @sections_to_delete);
+        @sections_to_delete
+    );
 
     if (defined(@$section_arg[0])) {
         $patterns = $section_arg;
@@ -114,10 +119,9 @@ sub FilterINISections {
     # Iterate through the ini file, section by section
     foreach $section ($ini->Sections) {
 
-        # Always process the "mtt", "mpi details", and "lock" sections
+        # Always process the "mtt" and "lock" sections
         next
             if ($section =~ /^\s*mtt\s*$/ ||
-                $section =~ /^\s*mpi\s+details\s*:/ ||
                 $section =~ /^\s*lock\s*$/);
 
         # Iterate through every ---[no]-section argument,
@@ -170,6 +174,21 @@ sub FilterINISections {
     # Delete the flagged sections
     foreach my $section (@sections_to_delete) {
         $ini->DeleteSection($section);
+    }
+
+    my @ini_sections = $ini->Sections;
+
+    # Make sure there is at least one MPI Details section
+    if (! grep(/mpi details/i, @ini_sections)) {
+
+        # Delete the flagged sections,
+        # but this time leave in "mpi details" sections
+        foreach my $section (@sections_to_delete) {
+            next if ($section =~ /mpi.details/);
+
+            $ini_save->DeleteSection($section);
+        }
+        return $ini_save;
     }
 
     return $ini;
