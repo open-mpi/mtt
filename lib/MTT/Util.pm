@@ -23,7 +23,7 @@ sub is_hash_defined {
     my $key = shift;
     while (defined($key) ) {
         return undef
-            if (!defined($hash->{$key}));
+            if (!exists($hash->{$key}));
         $hash = $hash->{$key};
         $key = shift;
     }
