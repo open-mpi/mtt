@@ -353,7 +353,7 @@ my $runs_data_dir =
 
 # Load up all the MPI sources that this system has previously obtained
 MTT::MPI::LoadSources($source_dir)
-    if ($mpi_get || $mpi_install || $trim);
+    if ($mpi_get || $mpi_install || $test_build || $test_run || $trim);
 
 # Load up all the installs of the MPI sources
 MTT::MPI::LoadInstalls($install_dir)

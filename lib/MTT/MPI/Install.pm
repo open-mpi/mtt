@@ -590,7 +590,6 @@ sub _do_install {
         }
 
         # Fill in which MPI we used
-        $ret->{mpi_details} = $mpi_get->{mpi_details};
         $ret->{mpi_get_full_section_name} = $mpi_get->{full_section_name};
         $ret->{mpi_get_simple_section_name} = $mpi_get->{simple_section_name};
         $ret->{mpi_version} = $mpi_get->{version};

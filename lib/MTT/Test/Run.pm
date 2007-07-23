@@ -22,6 +22,7 @@ use MTT::Reporter;
 use MTT::Defaults;
 use MTT::Test::Specify;
 use MTT::Test::RunEngine;
+use MTT::Util;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -179,37 +180,115 @@ sub _do_run {
 
     Verbose(">> Running with [$mpi_install->{mpi_get_simple_section_name}] / [$mpi_install->{mpi_version}] / [$mpi_install->{simple_section_name}]\n");
     # Find an MPI details section for this MPI
+
+    # First: see if there is an mpi_details field in our MPI install
+    # section with a corresponding MPI Details section
     my $match = 0;
-    my ($mpi_details_section,
-        $details_install_section,
-        $mpi_install_section);
-
-    foreach my $s ($ini->Sections()) {
-        if ($s =~ /^\s*mpi details:/) {
-            Debug("Found MPI details: [$s]\n");
-
-            # MPI Details can be specified per MPI Install,
-            # or globally for every MPI Install
-            $details_install_section = MTT::Values::Value($ini, $s, "mpi_name");
-            $mpi_install_section = $mpi_install->{simple_section_name};
-            $mpi_details_section = $s;
-
-            if (($details_install_section eq $mpi_install_section) or
-                ! $details_install_section) {
-
-                Debug("Using [$s] with [MPI Install: $mpi_install_section]\n");
-                $match = 1;
-                $MTT::Globals::Internals->{mpi_details_name} = $s;
-                last;
+    my $mpi_install_simple = $mpi_install->{simple_section_name};
+    if (defined($mpi_install->{mpi_details})) {
+        my $search = lc($mpi_install->{simple_section_name});
+        Debug("Found mpi_details [$search] in MPI install [$mpi_install_simple]\n");
+        foreach my $s ($ini->Sections()) {
+            if ($s =~ /^\s*mpi details:/) {
+                $s =~ m/\s*mpi details:\s*(.+)\s*$/;
+                my $mpi_details_simple = $1;
+                Debug("Found MPI details: [$mpi_details_simple]\n");
+                if ($search eq $mpi_details_simple) {
+                    $match = 1;
+                    $MTT::Globals::Internals->{mpi_details_name} = 
+                        $mpi_details_simple;
+                    last;
+                }
             }
         }
     }
 
-    if (!$match and !$mpi_details_section) {
-        Warning("Unable to find MPI details section for [MPI Install: $details_install_section]; skipping\n");
+    # Next: see if there is an mpi_details field in our MPI get
+    # section with a corresponding MPI Details section
+    my $mpi_get_simple = $mpi_install->{mpi_get_simple_section_name};
+    my @keys;
+    push(@keys, $mpi_get_simple);
+    push(@keys, $mpi_install->{mpi_version});
+    push(@keys, "mpi_details");
+    my $val = is_hash_defined($MTT::MPI::sources, @keys);
+    if (!$match && defined($val)) {
+        my $search = lc($val);
+        Debug("Found mpi_details [$search] in MPI get [$mpi_install->{mpi_get_simple_section_name}]\n");
+        foreach my $s ($ini->Sections()) {
+            if ($s =~ /^\s*mpi details:/) {
+                $s =~ m/\s*mpi details:\s*(.+)\s*$/;
+                my $mpi_details_simple = $1;
+                Debug("Found MPI details: [$mpi_details_simple]\n");
+                if ($search eq $mpi_details_simple) {
+                    $match = 1;
+                    $MTT::Globals::Internals->{mpi_details_name} = 
+                        $mpi_details_simple;
+                    last;
+                }
+            }
+        }
+    }
+
+    # Next: see if there is an mpi_install field in an MPI Details
+    # section that matches this MPI Install section
+    if (!$match) {
+        foreach my $s ($ini->Sections()) {
+            if ($s =~ /^\s*mpi details:/) {
+                $s =~ m/\s*mpi details:\s*(.+)\s*$/;
+                my $mpi_details_simple = $1;
+                Debug("Found MPI details: [$mpi_details_simple]\n");
+
+                my $details_mpi_install_simple = 
+                    lc(MTT::Values::Value($ini, $s, "mpi_install"));
+                if ($mpi_install_simple eq $details_mpi_install_simple) {
+                    $match = 1;
+                    $MTT::Globals::Internals->{mpi_details_name} = 
+                        $mpi_details_simple;
+                    last;
+                }
+            }
+        }
+    }
+
+    # Next: see if there is an mpi_get field in an MPI Details
+    # section that matches this MPI get section
+    if (!$match) {
+        foreach my $s ($ini->Sections()) {
+            if ($s =~ /^\s*mpi details:/) {
+                $s =~ m/\s*mpi details:\s*(.+)\s*$/;
+                my $mpi_details_simple = $1;
+                Debug("Found MPI details: [$mpi_details_simple]\n");
+
+                my $details_mpi_get_simple = 
+                    lc(MTT::Values::Value($ini, $s, "mpi_get"));
+                if ($mpi_get_simple eq $details_mpi_get_simple) {
+                    $match = 1;
+                    $MTT::Globals::Internals->{mpi_details_name} = 
+                        $mpi_details_simple;
+                    last;
+                }
+            }
+        }
+    }
+
+    # Finally: if we found nothing else, just use the first MPI
+    # Details section that we find.
+    if (!$match) {
+        foreach my $s ($ini->Sections()) {
+            $s =~ m/\s*mpi details:\s*(.+)\s*$/;
+            my $mpi_details_simple = $1;
+            $MTT::Globals::Internals->{mpi_details_name} = 
+                $mpi_details_simple;
+            last;
+        }
+    }
+
+    if (!$match) {
+        Warning("Unable to find MPI details section for [MPI Install: $mpi_install->{simple_section_name}; skipping\n");
         delete $MTT::Globals::Internals->{mpi_details_name};
         return;
     }
+    my $mpi_details_section = $MTT::Globals::Internals->{mpi_details_name};
 
     # Get some details about running with this MPI
     my $mpi_details;

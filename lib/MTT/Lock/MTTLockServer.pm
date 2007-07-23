@@ -85,6 +85,8 @@ sub Lock {
         return 1;
     }
     Debug("Locking '$name' on MTT lock server\n");
+    my $t = localtime(time());
+    Verbose("LOCK: Starting lock acquire at: $t\n");
     
     # Request the lock from the server
     print $server "lock $name$EOL";
@@ -98,6 +100,8 @@ sub Lock {
     }
 
     # All happy
+    $t = localtime(time());
+    Verbose("LOCK: Lock acquired at:         $t\n");
     Debug("Got lock '$name'!\n");
     return 0;
 }
@@ -112,6 +116,8 @@ sub Unlock {
         return 1;
     }
     
+    my $t = localtime(time());
+    Verbose("LOCK: Starting lock release at: $t\n");
     # Request the lock from the server
     Debug("Unlocking '$name' on MTT lock server\n");
     print $server "unlock $name$EOL";
@@ -125,6 +131,8 @@ sub Unlock {
     }
 
     # All happy
+    $t = localtime(time());
+    Verbose("LOCK: Lock released at:         $t\n");
     Debug("Unlocked '$name'!\n");
     return 0;
 }
