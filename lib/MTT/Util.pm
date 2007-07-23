@@ -14,11 +14,11 @@ use strict;
 
 use vars qw(@EXPORT);
 use base qw(Exporter);
-@EXPORT = qw(is_hash_defined);
+@EXPORT = qw(does_hash_key_exist);
 
 #--------------------------------------------------------------------------
 
-sub is_hash_defined {
+sub does_hash_key_exist {
     my $hash = shift;
     my $key = shift;
     while (defined($key) ) {

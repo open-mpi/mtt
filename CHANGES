@@ -28,3 +28,17 @@ To announce to OMPI core testers:
 - Renamed the MPI install phase field names:
   compiler_name -> ompi_compiler_name (etc.)
   Need to check for backward compatibility
+
+- Fix the mpi_details logic. We now follow 5 specific steps to look for 
+  the Right MPI Details section to use: 
+
+  1. Look for an mpi_details field in the current MPI Install phase
+     that matches a valid MPI Details section
+  2. Look for an mpi_details field in the current MPI Get phase that
+     matches a valid MPI Details section
+  3. Look for an mpi_install field is any MPI Details section that
+     matches the current MPI Install phase
+  4. Look for an mpi_get field is any MPI Details section that matches
+     the current MPI Get phase
+  5. If we didn't find anything above, take the first MPI Details
+     section we find

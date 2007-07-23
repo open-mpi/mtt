@@ -19,6 +19,7 @@ use MTT::Messages;
 use MTT::Values;
 use MTT::Reporter;
 use MTT::Defaults;
+use MTT::Util;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -155,15 +156,17 @@ sub _run_one_test {
     my $str = "   Test: " . $basename .
         ", np=$MTT::Test::Run::test_np, variant=$variant:";
 
-    if (!$force &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$MTT::Test::Run::test_np}) &&
-        exists($MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$MTT::Test::Run::test_np}->{$cmd})) {
+    my @keys;
+    push(@keys, $mpi_details->{mpi_get_simple_section_name});
+    push(@keys, $mpi_details->{version});
+    push(@keys, $mpi_details->{mpi_install_simple_section_name});
+    push(@keys, $run->{test_build_simple_section_name});
+    push(@keys, $run->{simple_section_name});
+    push(@keys, $name);
+    push(@keys, $MTT::Test::Run::test_np);
+    push(@keys, $cmd);
+
+    if (!$force && defined(does_hash_key_exist($MTT::Test::runs, @keys))) {
         Verbose("$str Skipped (already ran)\n");
         ++$verbose_out;
         return;

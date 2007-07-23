@@ -210,7 +210,7 @@ sub _do_run {
     push(@keys, $mpi_get_simple);
     push(@keys, $mpi_install->{mpi_version});
     push(@keys, "mpi_details");
-    my $val = is_hash_defined($MTT::MPI::sources, @keys);
+    my $val = does_hash_key_exist($MTT::MPI::sources, @keys);
     if (!$match && defined($val)) {
         my $search = lc($val);
         Debug("Found mpi_details [$search] in MPI get [$mpi_install->{mpi_get_simple_section_name}]\n");
