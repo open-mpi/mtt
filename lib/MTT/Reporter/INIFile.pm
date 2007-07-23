@@ -113,7 +113,7 @@ sub Submit {
                 my $ini = new Config::IniFiles();
                 my $section = "Section $written_files->{$file}";
                 $ini->AddSection($section);
-                $ini->SetSectionComment($section, "This file automatically created by engine.pl.  Any changes made manually are likely to be lost!");
+                $ini->SetSectionComment($section, "This file automatically created by INIFile.pm.  Any changes made manually are likely to be lost!");
                 foreach my $k (keys(%$report)) {
                     $ini->newval($section, lc($k), $report->{$k});
                 }
