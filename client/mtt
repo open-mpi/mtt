@@ -579,12 +579,11 @@ sub _process_ini_param {
         # Whack the tmp file
         unlink($temp_file);
 
-        # Create an unfiltered version of the ini file for error checking
-        my $unfiltered = dclone($filtered);
-
         # Override ini file params with those supplied at command-line
         $filtered = MTT::INI::OverrideINIParams($filtered, $ini_args);
-        $unfiltered = MTT::INI::OverrideINIParams($unfiltered, $ini_args);
+
+        # Create an unfiltered version of the ini file for error checking
+        my $unfiltered = dclone($filtered);
 
         # Filter ini sections at command line
         $filtered = MTT::INI::FilterINISections($filtered, $section_arg, $no_section_arg);
