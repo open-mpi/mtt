@@ -491,7 +491,7 @@ sub _do_install {
     $config->{endian} = $endian;
 
     # Fetch cluster info (platform and hardware)
-    my $cluster_info = _get_cluster_info();
+    my $cluster_info = _get_cluster_info($section, $ini);
     %$config = (%$config, %$cluster_info);
 
     # Unload any loaded environment modules
@@ -730,6 +730,8 @@ prepend-path LD_LIBRARY_PATH $ret->{libdir}\n";
 # Return a hash of hardware and platform information
 sub _get_cluster_info {
 
+    my ($section, $ini) = @_;
+
     my $info = undef;
 
     # Find whatami
@@ -748,6 +750,30 @@ sub _get_cluster_info {
     chomp($info->{os_name});
     $info->{os_version} = `$whatami -r`;
     chomp($info->{os_version});
+
+    # INI sections to check for overrides
+    my @sections = ($section, "MTT");
+
+    my @cluster_info_fields = (
+        "platform_type",
+        "platform_hardware",
+        "os_name",
+        "os_version",
+    );
+
+    # Allow cluster info overrides for the INI file in the
+    # current section or [MTT] section
+    # (e.g., set OS version using a funclet)
+    my $value;
+    foreach my $field (@cluster_info_fields) {
+        foreach my $ini_section (@sections) {
+            $value = Value($ini, $ini_section, $field);
+            if ($value) {
+                $info->{$field} = $value;
+                last;
+            }
+        }
+    }
 
     return $info;
 }
