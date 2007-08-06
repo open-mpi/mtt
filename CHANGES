@@ -42,3 +42,10 @@ To announce to OMPI core testers:
      the current MPI Get phase
   5. If we didn't find anything above, take the first MPI Details
      section we find
+
+- Cluster description strings for the below fields can be overridden
+  in the [MPI Install] and [MTT] INI sections
+  - platform_type
+  - platform_hardware
+  - os_name
+  - os_version
