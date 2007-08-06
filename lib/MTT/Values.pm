@@ -234,6 +234,11 @@ sub ProcessEnvKeys {
         my @vals = split(/\n/, $val);
         foreach my $v (@vals) {
             $v =~ m/^(\w+)\s+(.+)$/;
+
+            if ((!defined($1)) or (!defined($2))) {
+                Error("prepend_path usage: prepend_path = <path_variable> <directory>");
+            }
+
             if (exists($ENV{$1})) {
                 $ENV{$1} = "${2}:" . $ENV{$1};
             } else {
@@ -252,6 +257,11 @@ sub ProcessEnvKeys {
         my @vals = split(/\n/, $val);
         foreach my $v (@vals) {
             $v =~ m/^(\w+)\s+(.+)$/;
+
+            if ((!defined($1)) or (!defined($2))) {
+                Error("append_path usage: append_path = <path_variable> <directory>");
+            }
+
             if (exists($ENV{$1})) {
                 $ENV{$1} = $ENV{$1} . ":$2";
             } else {
