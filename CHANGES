@@ -9,7 +9,6 @@ To announce to OMPI core testers:
     - ?&check_ib_connectivty()?
     - &verbose(), &debug(), &print()
     - &env_hosts() can be uniq-ified
-    - &env_hosts() can be uniq-ified
     - &refresh_ssh_known_hosts_file() - updates a stale
       ~/.ssh/known_hosts file. CAUTION: use of this funclet
       is only advisable in unstable (yet secure)
