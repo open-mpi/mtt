@@ -17,7 +17,7 @@ use Data::Dumper;
 use Text::Wrap;
 use vars qw(@EXPORT);
 use base qw(Exporter);
-@EXPORT = qw(Messages Error Warning Abort Debug Verbose Trace DebugDump FuncName);
+@EXPORT = qw(Messages Error Warning BigWarning Abort Debug Verbose Trace DebugDump FuncName);
 
 # Is debugging enabled?
 my $_debug;
@@ -60,6 +60,15 @@ sub Warning {
     } else {
         print "*** WARNING: $str";
     }
+}
+
+# More visible "boxed" Warning
+sub BigWarning {
+    my @lines = @_;
+    print("\n" . "#" x 76 .
+          "\n# *** WARNING: " .
+              join("", map { "\n# $_" } @lines) .
+          "\n" . "#" x 76 . "\n");
 }
 
 sub Abort {

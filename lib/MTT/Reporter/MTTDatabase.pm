@@ -386,14 +386,9 @@ sub Submit {
 
     # Print a hairy warning if there was an SQL error
     if ($server_errors_count) {
-        Warning("\n" . "#" x 60 .
-                "\n#" .
-                "\n# $server_errors_count MTTDatabase server error" . 
-                _plural($server_errors_count) .
-                "\n# The data that failed to submit is in $debug_filename.*.txt." .
-                "\n# See the above output for more info." .
-                "\n#" .
-                "\n" . "#" x 60 . "\n");
+        BigWarning("$server_errors_count MTTDatabase server error" .  _plural($server_errors_count),
+                   "The data that failed to submit is in $debug_filename.*.txt.",
+                   "See the above output for more info.");
     }
 
     return $phase_serials;

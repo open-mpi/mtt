@@ -267,24 +267,34 @@ sub _run_step {
         $name = $step . "_pass";
         my $pass = $mpi_details->{$name};
 
-        Debug("Running step: $step: $cmd / timeout $timeout\n");
-        my $x = ($cmd =~ /\n/) ?
-            MTT::DoCommand::CmdScript(1, $mpi_details->{$step}, $timeout) : 
-            MTT::DoCommand::Cmd(1, $mpi_details->{$step}, $timeout);
+        if ($cmd =~ /^\s*&/) {
 
-        if ($x->{timed_out}) {
-            Verbose("  Warning: step $step TIMED OUT\n");
-            Verbose("  Output: $x->{result_stdout}\n")
-                if (defined($x->{result_stdout}) && $x->{result_stdout} ne "");
+            # Steps can be funclets
+            my $ok = MTT::Values::EvaluateString($cmd);
+            Verbose("  Warning: step $step FAILED\n") if (!$ok);
+
         } else {
-            my $pass_result = MTT::Values::EvaluateString($pass, $ini, $test_run_full_name);
-            if ($pass_result != 1) {
-                Verbose("  Warning: step $step FAILED\n");
+
+            # Steps can be shell commands
+            Debug("Running step: $step: $cmd / timeout $timeout\n");
+            my $x = ($cmd =~ /\n/) ?
+                MTT::DoCommand::CmdScript(1, $mpi_details->{$step}, $timeout) : 
+                MTT::DoCommand::Cmd(1, $mpi_details->{$step}, $timeout);
+
+            if ($x->{timed_out}) {
+                Verbose("  Warning: step $step TIMED OUT\n");
                 Verbose("  Output: $x->{result_stdout}\n")
-                    if (defined($x->{result_stdout}) &&
-                        $x->{result_stdout} ne "");
+                    if (defined($x->{result_stdout}) && $x->{result_stdout} ne "");
             } else {
-                Debug("Step $step PASSED\n");
+                my $pass_result = MTT::Values::EvaluateString($pass, $ini, $test_run_full_name);
+                if ($pass_result != 1) {
+                    Verbose("  Warning: step $step FAILED\n");
+                    Verbose("  Output: $x->{result_stdout}\n")
+                        if (defined($x->{result_stdout}) &&
+                            $x->{result_stdout} ne "");
+                } else {
+                    Debug("Step $step PASSED\n");
+                }
             }
         }
     }
