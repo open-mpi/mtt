@@ -616,7 +616,11 @@ sub cat {
     }
 
     Debug("&cat returning: @ret\n");
-    return \@ret;
+    if ($#ret == 0) {
+	return $ret[0];
+    } else {
+	return \@ret;
+    }
 }
 
 #--------------------------------------------------------------------------
