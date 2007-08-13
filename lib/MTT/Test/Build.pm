@@ -159,7 +159,7 @@ sub Build {
                                         MTT::Values::Value($ini, $section, 
                                                            "skip_mpi_get");
                                     if ($skip_mpi_get &&
-                                        $skip_mpi_get eq $mpi_get_key) {
+                                        lc($skip_mpi_get) eq lc($mpi_get_key)) {
                                         Verbose("   Skipping build for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] per INI configuration\n");
                                         next;
                                     }
@@ -167,7 +167,7 @@ sub Build {
                                         MTT::Values::Value($ini, $section, 
                                                            "skip_mpi_install");
                                     if ($skip_mpi_install &&
-                                        $skip_mpi_install eq $mpi_install_key) {
+                                        lc($skip_mpi_install) eq lc($mpi_install_key)) {
                                         Verbose("   Skipping build for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] per INI configuration\n");
                                         next;
                                     }
