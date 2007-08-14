@@ -41,6 +41,10 @@ sub Get {
     # names that begin with "Test Get:"
     MTT::DoCommand::Chdir($source_dir);
     foreach my $section ($ini->Sections()) {
+        # See if we're supposed to terminate
+        last
+            if (MTT::Util::find_terminate_file());
+
         if ($section =~ /^\s*test get:/) {
             my $simple_section = $section;
             $simple_section =~ s/^\s*test get:\s*//;

@@ -38,6 +38,9 @@ my $_defaults = {
 
     trial => 0,
 
+    terminate_files => "&getenv(\"HOME\")/mtt-stop, &scratch_root()/mtt-stop",
+    time_to_terminate => 0,
+
     http_proxy => undef,
     https_proxy => undef,
     ftp_proxy => undef,
@@ -65,9 +68,10 @@ my $_defaults = {
 # Reset $Globals per a specific ini file
 
 sub load {
-    my ($ini) = @_;
+    my ($scratch_root, $ini) = @_;
 
     %$Values = %$_defaults;
+    $Values->{scratch_root} = $scratch_root;
 
     # Max_np (do before hostfile / hostlist) 
 
@@ -94,7 +98,7 @@ sub load {
 
     # Simple parameters
 
-    my @names = qw/max_np textwrap drain_timeout trim_save_successful trim_save_failed trial http_proxy https_proxy ftp_proxy/;
+    my @names = qw/max_np textwrap drain_timeout trim_save_successful trim_save_failed trial http_proxy https_proxy ftp_proxy terminate_files/;
     foreach my $t (qw/before after/) {
         foreach my $a (qw/all each/) {
             push(@names, $t . "_" . $a . "_exec");
@@ -106,6 +110,18 @@ sub load {
         my $val = MTT::Values::Value($ini, "MTT", $name);
         $Values->{$name} = $val
             if ($val);
+    }
+
+    # Parse the list of terminate_files into an array
+
+    if (defined($Values->{terminate_files})) {
+        my @names = split(/[,\s]+/, $Values->{terminate_files});
+        my @save;
+        foreach my $n (@names) {
+            push(@save, $n)
+                if ($n);
+        }
+        $Values->{terminate_files} = \@save;
     }
 
     # Proxies

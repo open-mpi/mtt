@@ -44,6 +44,7 @@ use MTT::Files;
 use MTT::INI;
 use MTT::MPI;
 use MTT::Values;
+use MTT::Util;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -57,6 +58,10 @@ sub Get {
     # names that begin with "MPI Get:"
     MTT::DoCommand::Chdir($source_dir);
     foreach my $section ($ini->Sections()) {
+        # See if we're supposed to terminate
+        last
+            if (MTT::Util::find_terminate_file());
+
         if ($section =~ /^\s*mpi get:/) {
             my $simple_section = $section;
             $simple_section =~ s/^\s*mpi get:\s*//;

@@ -1716,6 +1716,13 @@ sub getenv {
 
 #--------------------------------------------------------------------------
 
+sub scratch_root {
+    Debug("&scratch_root() returning: $MTT::Globals::Values->{scratch_root}\n");
+    return $MTT::Globals::Values->{scratch_root};
+}
+
+#--------------------------------------------------------------------------
+
 # Return something that will be snipped out of the final evaluation
 sub null {
     Debug("&null returning: undef\n");

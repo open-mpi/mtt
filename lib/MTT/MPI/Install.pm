@@ -150,6 +150,13 @@ sub Install {
     $install_base = $install_dir;
     MTT::DoCommand::Chdir($install_base);
     foreach my $section ($ini->Sections()) {
+
+        # See if we're supposed to terminate.  Only check in the
+        # outtermost and innermost loops (even though we *could* check
+        # at every loop level); that's good enough.
+        last
+            if (MTT::Util::find_terminate_file());
+
         if ($section =~ /^\s*mpi install:/) {
             Verbose(">> MPI install [$section]\n");
 
@@ -164,7 +171,7 @@ sub Install {
             }
 
             # Iterate through all the mpi_get values
-            my @mpi_gets = split(/,/, $mpi_get_value);
+            my @mpi_gets = split(/[,\s]+/, $mpi_get_value);
             foreach my $mpi_get_name (@mpi_gets) {
                 # Strip whitespace
                 $mpi_get_name =~ s/^\s*(.*?)\s*/\1/;
@@ -192,6 +199,15 @@ sub Install {
                         # For each version of that source
                         my $mpi_get = $MTT::MPI::sources->{$mpi_get_key};
                         foreach my $mpi_version_key (keys(%{$mpi_get})) {
+
+                            # See if we're supposed to terminate.
+                            # Only check in the outtermost and
+                            # innermost loops (even though we *could*
+                            # check at every loop level); that's good
+                            # enough.
+                            last
+                                if (MTT::Util::find_terminate_file());
+
                             my $mpi_version = $mpi_get->{$mpi_version_key};
 
                             # We found a corresponding MPI source.
@@ -201,9 +217,7 @@ sub Install {
 
                             Debug("Checking for [$mpi_get_key] / [$mpi_version_key] / [$simple_section]\n");
                             if (!$force &&
-                                exists($MTT::MPI::installs->{$mpi_get_key}) &&
-                                exists($MTT::MPI::installs->{$mpi_get_key}->{$mpi_version_key}) &&
-                                exists($MTT::MPI::installs->{$mpi_get_key}->{$mpi_version_key}->{$simple_section})) {
+                                defined(MTT::Util::does_hash_key_exist($MTT::MPI::installs, qw/mpi_get_key $mpi_version_key $simple_section/))) {
                                 Verbose("   Already have an install for [$mpi_get_key] / [$mpi_version_key] / [$simple_section]\n");
                             } else {
                                 Verbose("   Installing MPI: [$mpi_get_key] / [$mpi_version_key] / [$simple_section]...\n");
@@ -333,7 +347,7 @@ sub _do_install {
     my @env_modules;
     $config->{env_modules} = Value($ini, $section, "env_module");
     if ($config->{env_modules}) {
-        @env_modules = split(",", $config->{env_modules});
+        @env_modules = split(/[,\s]+/, $config->{env_modules});
         Env::Modulecmd::load(@env_modules);
         Debug("Loading environment modules: @env_modules\n");
     }

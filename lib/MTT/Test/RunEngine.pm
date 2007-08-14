@@ -50,6 +50,10 @@ sub RunEngine {
     my $count = 0;
     my $printed = 0;
     foreach my $run (@{$ret->{tests}}) {
+        # See if we're supposed to terminate.
+        last
+            if (MTT::Util::find_terminate_file());
+
         $printed = 0;
         if (!exists($run->{executable})) {
             Warning("No executable specified for text; skipped\n");
@@ -75,6 +79,10 @@ sub RunEngine {
                 _run_one_np($install_dir, $run, $mpi_details, $all_np, $force);
         } else {
             foreach my $this_np (@$all_np) {
+                # See if we're supposed to terminate.
+                last
+                    if (MTT::Util::find_terminate_file());
+
                 $test_results->{$this_np} =
                     _run_one_np($install_dir, $run, $mpi_details, $this_np,
                                 $force);
@@ -133,6 +141,10 @@ sub _run_one_np {
         } else {
             my $variant = 1;
             foreach my $e (@$execs) {
+                # See if we're supposed to terminate.
+                last
+                    if (MTT::Util::find_terminate_file());
+
                 _run_one_test($install_dir, $run, $mpi_details, $e, $name,
                               $variant++, $force);
             }

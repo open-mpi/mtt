@@ -80,6 +80,13 @@ sub Build {
     # names that begin with "Test build:"
     MTT::DoCommand::Chdir($build_base);
     foreach my $section ($ini->Sections()) {
+
+        # See if we're supposed to terminate.  Only check in the
+        # outtermost and innermost loops (even though we *could* check
+        # at every loop level); that's good enough.
+        last
+            if (MTT::Util::find_terminate_file());
+
         if ($section =~ /^\s*test build:/) {
             Verbose(">> Test build [$section]\n");
 
@@ -95,8 +102,9 @@ sub Build {
             }
 
             # Iterate through all the test_get values
-            my @test_gets = split(/,/, $test_get_value);
+            my @test_gets = split(/[,\s]+/, $test_get_value);
             foreach my $test_get_name (@test_gets) {
+
                 # Strip whitespace
                 $test_get_name =~ s/^\s*(.*?)\s*/\1/;
                 $test_get_name = lc($test_get_name);
@@ -131,6 +139,16 @@ sub Build {
 
                                 # For each installation of that version
                                 foreach my $mpi_install_key (keys(%{$mpi_version})) {
+
+                                    # See if we're supposed to
+                                    # terminate.  Only check in the
+                                    # outtermost and innermost loops
+                                    # (even though we *could* check at
+                                    # every loop level); that's good
+                                    # enough.
+                                    last
+                                        if (MTT::Util::find_terminate_file());
+
                                     my $mpi_install = $mpi_version->{$mpi_install_key};
                                     # Only take sucessful MPI installs
                                     if (!$mpi_install->{test_result}) {
@@ -316,7 +334,7 @@ sub _do_build {
         $config->{env_modules} = $mpi_install->{env_modules};
     }
     if ($config->{env_modules}) {
-        @env_modules = split(",", $config->{env_modules});
+        @env_modules = split(/[,\s]+/, $config->{env_modules});
         Env::Modulecmd::load(@env_modules);
         Debug("Loading environment modules: @env_modules\n");
     }

@@ -58,6 +58,12 @@ sub Run {
     # Go through all the sections in the ini file looking for section
     # names that begin with "Test run:"
     foreach my $section ($ini->Sections()) {
+        # See if we're supposed to terminate.  Only check in the
+        # outtermost and innermost loops (even though we *could* check
+        # at every loop level); that's good enough.
+        last
+            if (MTT::Util::find_terminate_file());
+
         if ($section =~ /^\s*test run:/) {
 
             # Simple section name
@@ -73,7 +79,7 @@ sub Run {
             }
 
             # Iterate through all the test_build values
-            my @test_builds = split(/,/, $test_build_value);
+            my @test_builds = split(/[,\s]+/, $test_build_value);
             foreach my $test_build_name (@test_builds) {
                 # Strip whitespace
                 $test_build_name =~ s/^\s*(.*?)\s*/\1/;
@@ -97,7 +103,15 @@ sub Run {
                     foreach my $mpi_version_key (keys(%{$MTT::Test::builds->{$mpi_get_key}})) {
                         foreach my $mpi_install_key (keys(%{$MTT::Test::builds->{$mpi_get_key}->{$mpi_version_key}})) {
                             foreach my $test_build_key (keys(%{$MTT::Test::builds->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key}})) {
-                                
+
+                                # See if we're supposed to terminate.
+                                # Only check in the outtermost and
+                                # innermost loops (even though we
+                                # *could* check at every loop level);
+                                # that's good enough.
+                                last
+                                    if (MTT::Util::find_terminate_file());
+
                                 if ($test_build_key eq $test_build_name) {
                                     my $test_build = $MTT::Test::builds->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key}->{$test_build_key};
                                     Debug("Found a match! $test_build_key [$simple_section\n");
@@ -362,7 +376,7 @@ sub _do_run {
         $config->{env_modules} = $test_build->{env_modules};
     }
     if ($config->{env_modules}) {
-        @env_modules = split(",", $config->{env_modules});
+        @env_modules = split(/[,\s]+/, $config->{env_modules});
         Env::Modulecmd::load(@env_modules);
         Debug("Loading environment modules: @env_modules\n");
     }

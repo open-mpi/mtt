@@ -293,6 +293,7 @@ my @ini_list = _process_ini_param(\@file_arg, $stdin_arg, \@section_arg, \@no_se
 
 # Determine scratch from command-line or INI param
 my $scratch_arg = _process_scratch_param($scratch_arg, $ini_list[0]->{unfiltered});
+$MTT::Globals::Values->{scratch_root} = $scratch_arg;
 
 # Determine --force from command-line or INI param
 my $force_arg = _process_force_param($force_arg, $ini_list[0]->{unfiltered});
@@ -471,9 +472,11 @@ foreach my $hash (@ini_list) {
         next;
     }
 
-    # Examine the [MTT] global defaults section
+    # Examine the [MTT] global defaults section.  We've already
+    # determined the scratch_root, so pass it in so that it gets set
+    # in the Globals hash.
 
-    MTT::Globals::load($ini_full);
+    MTT::Globals::load($scratch_arg, $ini_full);
     MTT::Messages::Messages($debug, $verbose, cwd());
 
     # Setup locks
@@ -490,27 +493,27 @@ foreach my $hash (@ini_list) {
 
     MTT::Reporter::Init($ini);
 
-    if ($mpi_get) {
+    if ($mpi_get && !MTT::Util::find_terminate_file()) {
         start_time();
         MTT::MPI::Get::Get($ini, $source_dir, $force_arg);
         stop_time("MPI Get");
     }
-    if ($mpi_install) {
+    if ($mpi_install && !MTT::Util::find_terminate_file()) {
         start_time();
         MTT::MPI::Install::Install($ini, $ini_full, $install_dir, $force_arg);
         stop_time("MPI Install");
     }
-    if ($test_get) {
+    if ($test_get && !MTT::Util::find_terminate_file()) {
         start_time();
         MTT::Test::Get::Get($ini, $source_dir, $force_arg);
         stop_time("Test Get");
     }
-    if ($test_build) {
+    if ($test_build && !MTT::Util::find_terminate_file()) {
         start_time();
         MTT::Test::Build::Build($ini, $ini_full, $install_dir, $force_arg);
         stop_time("Test Build");
     }
-    if ($test_run) {
+    if ($test_run && !MTT::Util::find_terminate_file()) {
         start_time();
         MTT::Test::Run::Run($ini, $ini_full, $install_dir, $runs_data_dir,
                             $force_arg);

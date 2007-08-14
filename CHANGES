@@ -13,6 +13,7 @@ To announce to OMPI core testers:
       ~/.ssh/known_hosts file. CAUTION: use of this funclet
       is only advisable in unstable (yet secure)
       environments (e.g., lab networks).
+    - &scratch_root() returns the directory name of the scratch tree
 
 - --section: beware of section names with spaces!  s/ /./g in --section
     arguments if you have spaces in your section names.
@@ -26,6 +27,9 @@ To announce to OMPI core testers:
   (defaults to "export"):
   - svn_export = 1 (specify the use of "svn export")
   - svn_checkout = 1 (specify the use of "svn checkout")
+
+- terminate_files field in MTT section.  Defaults to $HOME/mtt-stop
+  and &scratch_root()/mtt-stop.
 
 - Added support for MPICH2 (and therefore MVAPICH2) and LAM/MPI
 
