@@ -57,3 +57,7 @@ To announce to OMPI core testers:
   - platform_hardware
   - os_name
   - os_version
+
+- "description" field in MTT, MPI install, Test build, and Test run
+  sections.  If not set in MPI Install/Test build/Test run sections,
+  will use the value from the MTT section.

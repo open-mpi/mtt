@@ -395,6 +395,11 @@ sub _do_run {
     $config->{append_path} = MTT::Values::Value($ini, $section, "append_path");
     MTT::Values::ProcessEnvKeys($config, \@save_env);
 
+    # description
+    $config->{description} = Value($ini, $section, "description");
+    $config->{description} = Value($ini, "MTT", "description")
+        if (!$config->{description});
+
     # Get global values that apply to each test executable, unless
     # they supplied their own.  Don't use Value for all of them; some
     # we need to delay the evaluation.
@@ -437,8 +442,11 @@ sub _do_run {
     my $ret = MTT::Test::Specify::Specify($specify_module, $ini, $section, 
                                           $test_build, $mpi_install, $config);
 
-    # Grab the output-parser plugin, if there is one
-    $ret->{analyze_module} = MTT::Values::Value($ini, $section, "analyze_module");
+    # Grab the output-parser plugin, if there is one, and save the
+    # description.
+    $ret->{analyze_module} = MTT::Values::Value($ini, $section, 
+                                                "analyze_module");
+    $ret->{description} = $config->{description};
 
     # If we got a list of tests to run, invoke the run engine to
     # actually run them.

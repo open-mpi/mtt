@@ -61,6 +61,7 @@ sub RunEngine {
         }
 
         # Get the values for this test
+        $run->{description} = $ret->{description};
         $run->{full_section_name} = $section;
         $run->{simple_section_name} = $section;
         $run->{simple_section_name} =~ s/^\s*test run:\s*//;
@@ -230,6 +231,7 @@ sub _run_one_test {
     my $report;
     $report = MTT::Module::Run("MTT::Test::Analyze", "Analyze", $run, $mpi_details, $str, $x);
     $report->{variant} = $variant;
+    $report->{description} = $run->{description};
     # Assume that the Analyze module will output one line
     ++$verbose_out;
 

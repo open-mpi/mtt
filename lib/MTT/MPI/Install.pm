@@ -273,9 +273,9 @@ sub _do_install {
     %$config = %$MTT::Defaults::MPI_install;
     # Possibly filled in by ini files
     $config->{module} = "";
+    $config->{description} = "";
 
     # Filled in automatically below
-    $config->{ident} = "to be filled in below";
     $config->{version_dir} = "to be filled in below";
     $config->{srcdir} = "to be filled in below";
     $config->{abs_srcdir} = "to be filled in below";
@@ -307,6 +307,11 @@ sub _do_install {
         Warning("module not specified in [$section]; skipped\n");
         return undef;
     }
+
+    # description
+    $config->{description} = Value($ini, $section, "description");
+    $config->{description} = Value($ini, "MTT", "description")
+        if (!$config->{description});
 
     # Make a directory just for this section.  It's gotta be darn
     # short because some compilers will run out of room and complain
@@ -522,6 +527,7 @@ sub _do_install {
 
             mpi_install_section_name => $config->{simple_section_name},
 
+            description => $config->{description},
             bitness => $config->{bitness},
             endian => $config->{endian},
             compiler_name => $config->{compiler_name},
@@ -609,6 +615,7 @@ sub _do_install {
         $ret->{mpi_version} = $mpi_get->{version};
 
         # Some additional values
+        $ret->{description} = $config->{description};
         $ret->{full_section_name} = $config->{full_section_name};
         $ret->{simple_section_name} = $config->{simple_section_name};
         $ret->{compiler_name} = $config->{compiler_name};

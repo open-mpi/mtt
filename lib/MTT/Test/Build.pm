@@ -279,8 +279,12 @@ sub _do_build {
     my $build_section_dir = _make_safe_dir($simple_section);
     MTT::DoCommand::Chdir($build_section_dir);
 
-    # Unpack the source and find out the subdirectory name it created
+    # description
+    $config->{description} = Value($ini, $section, "description");
+    $config->{description} = Value($ini, "MTT", "description")
+        if (!$config->{description});
 
+    # Unpack the source and find out the subdirectory name it created
     $config->{srcdir} = _prepare_source($test_get);
     # We'll check for failure of this step later
     MTT::DoCommand::Chdir($config->{srcdir});
@@ -376,6 +380,7 @@ sub _do_build {
 
     # Analyze the return
     if ($ret) {
+        $ret->{description} = $config->{description};
         $ret->{full_section_name} = $config->{full_section_name};
         $ret->{simple_section_name} = $config->{simple_section_name};
         $ret->{setenv} = $config->{setenv};
@@ -404,6 +409,7 @@ sub _do_build {
         # Send the results back to the reporter
         my $report = {
             phase => "Test Build",
+            description => $config->{description},
             start_timestamp => $start,
             duration => $duration,
             test_result => $ret->{test_result},
