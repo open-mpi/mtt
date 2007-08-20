@@ -415,7 +415,7 @@ sub mtime_tree {
 #--------------------------------------------------------------------------
 
 sub http_get {
-    my ($url) = @_;
+    my ($url, $username, $password) = @_;
 
     my $scheme;
     if ($url =~ /^http:\/\//) {
@@ -428,11 +428,10 @@ sub http_get {
 
     # figure out what download command to use
     if (!$http_agent) {
-        foreach my $agent (@{$MTT::Defaults::System_config->{http_agents}}) {
-            my @tokens = split(" ", $agent);
-            my $found = FindProgram($tokens[0]);
+        foreach my $agent (keys(%{$MTT::Defaults::System_config->{http_agents}})) {
+            my $found = FindProgram($agent);
             if ($found) {
-                $http_agent = $agent;
+                $http_agent = $MTT::Defaults::System_config->{http_agents}->{$agent};
                 last;
             }
         }
@@ -453,7 +452,11 @@ sub http_get {
             $ENV{$scheme . "_proxy"} = $p->{proxy};
         }
 
-        my $str = "\$cmd = \"$http_agent\"";
+        my $str = "\$cmd = \"" . $http_agent->{command};
+        if (defined($username) && defined($password)) {
+            $str .= " " . $http_agent->{auth};
+        }
+        $str .= "\"";
         eval $str;
         my $x = MTT::DoCommand::Cmd(1, $cmd);
 

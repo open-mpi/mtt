@@ -24,7 +24,16 @@ our $System_config = {
     install_subdir => "installs",
     runs_data_subdir => "test_runs",
     
-    http_agents => [ "wget -nv \$url", "curl -# -# \$url -o \$outfile" ],
+    http_agents => { 
+        wget => { 
+            command => "wget -nv \$url", 
+            auth => "--user=\$username --password=\$password",
+        },
+        curl => {
+            command => "curl -# -# \$url -o \$outfile",
+            auth => "--user \$username:\$password",
+        }
+    },
 
     known_compiler_names => "gnu pgi ibm intel kai absoft pathscale sun none",
 };
