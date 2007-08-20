@@ -642,12 +642,10 @@ sub _do_install {
             }
         }
 
-        # Save the results in an ini file so that we save all the
-        # result_stdout, etc.
-        WriteINI("$config->{version_dir}/$installed_file",
-                 $installed_section, $ret);
+        # Add the data in the global $MTT::MPI::installs table
+        $MTT::MPI::installs->{$mpi_get->{simple_section_name}}->{$mpi_get->{version}}->{$simple_section} = $ret;
 
-        # All of the data has been saved to an INI file, so reclaim
+        # All of the data will be saved to a .dump file, so reclaim
         # potentially a big chunk of memory...
         delete $ret->{result_stdout};
         delete $ret->{result_stderr};
@@ -666,8 +664,6 @@ sub _do_install {
             $ret->{$k} = $serials->{$module}->{$k};
         }
 
-        # Add the data in the global $MTT::MPI::installs table
-        $MTT::MPI::installs->{$mpi_get->{simple_section_name}}->{$mpi_get->{version}}->{$simple_section} = $ret;
         MTT::MPI::SaveInstalls($install_base);
 
         # Successful build?

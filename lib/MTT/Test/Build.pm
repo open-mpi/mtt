@@ -401,11 +401,6 @@ sub _do_build {
             $ret->{test_result} = MTT::Values::FAIL;
         }
         
-        # Save the results in an ini file
-        Debug("Writing built file: $config->{srcdir}/$built_file\n");
-        WriteINI("$build_section_dir/$built_file",
-                 $built_section, $ret);
-                
         # Send the results back to the reporter
         my $report = {
             phase => "Test Build",
