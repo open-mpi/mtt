@@ -49,6 +49,11 @@ define('DOCROOT',  dirname('http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NA
 define('PATH',     dirname($_SERVER['SCRIPT_NAME']));
 define('FULLSELF', dirname('http://'.$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI']));
 
+# Use GMT as the global timezone constant
+# Note: we have temporarily removed the timezone preference
+# for the sake of query speed. 
+define('TIMEZONE', 'GMT');
+
 #########################################
 #                                       #
 #  Global arrays                        #
@@ -178,7 +183,6 @@ function setup_prefs() {
             'general'  => array(
                 'limit'          => array(array('10', '50', '*100', '200')),
                 'wrap'           => array(100),
-                'timezone'       => array(array('*GMT', 'EST', 'CST', 'MST', 'PST')),
                 'trial'          => array(false),
                 'filter_tracked' => array(false),
             ),

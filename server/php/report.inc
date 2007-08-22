@@ -2752,7 +2752,7 @@ function process_date_field($params) {
             }
             # Past x increments
             elseif (preg_match(
-                        "/past$sep*" .
+                        "/(?:past|last)$sep*" .
                         "(\w+)$sep*" .
                         "(\w+)/i", $token, $m)) {
 
