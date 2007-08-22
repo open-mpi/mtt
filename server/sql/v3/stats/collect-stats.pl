@@ -811,11 +811,16 @@ sub display_timer() {
 
 sub connect_db() {
   my $stmt;
-  my $mtt_user     = "XXX";
-  my $mtt_password = "XXX";
+  my $mtt_user     = "mtt";
+  my $mtt_password;
 
   # Connect to the DB
-  $dbh_mtt = DBI->connect("dbi:Pg:dbname=mtt",  $mtt_user, $mtt_password);
+  if( defined($mtt_password) ) {
+    $dbh_mtt = DBI->connect("dbi:Pg:dbname=mtt",  $mtt_user, $mtt_password);
+  }
+  else {
+    $dbh_mtt = DBI->connect("dbi:Pg:dbname=mtt",  $mtt_user);
+  }
 
   # Set an optimizer flag
   $stmt = $dbh_mtt->prepare("set constraint_exclusion = on");

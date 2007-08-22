@@ -44,10 +44,19 @@ collect_result_range();
 # Connect to mtt3 for reading
 #            mtt  for writing
 ##################################
-my $mtt_user     = "XXX";
-my $mtt_password = "XXX";
-my $dbh_mtt3     = DBI->connect("dbi:Pg:dbname=mtt3", $mtt_user, $mtt_password);
-my $dbh_mtt3_new = DBI->connect("dbi:Pg:dbname=mtt",  $mtt_user, $mtt_password);
+my $mtt_user     = "mtt";
+my $mtt_password;
+my $dbh_mtt3;
+my $dbh_mtt3_new;
+if( defined($mtt_password) ) {
+  $dbh_mtt3     = DBI->connect("dbi:Pg:dbname=mtt3", $mtt_user);
+  $dbh_mtt3_new = DBI->connect("dbi:Pg:dbname=mtt",  $mtt_user);
+}
+else {
+  $dbh_mtt3     = DBI->connect("dbi:Pg:dbname=mtt3", $mtt_user, $mtt_password);
+  $dbh_mtt3_new = DBI->connect("dbi:Pg:dbname=mtt",  $mtt_user, $mtt_password);
+}
+
 #$dbh_mtt3->{RaiseError} = 1;
 #$dbh_mtt3_new->{RaiseError} = 1;
 #$dbh_mtt3_new->{TraceLevel} = "1|SQL";
