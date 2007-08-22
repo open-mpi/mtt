@@ -2756,7 +2756,35 @@ function process_date_field($params) {
                         "(\w+)$sep*" .
                         "(\w+)/i", $token, $m)) {
 
-                $operand        = "now() AT TIME ZONE '$timezone' - interval '" . strtonumeral($m[1]) . " $m[2]'";
+                $quantity = $m[1];
+                $unit = $m[2];
+
+                $valid_date_units = array(
+                    "microseconds",
+                    "milliseconds",
+                    "second",
+                    "minute",
+                    "hour",
+                    "day",
+                    "week",
+                    "month",
+                    "quarter",
+                    "year",
+                    "decade",
+                    "century",
+                    "millennium",
+                );
+
+                # Sanity check on a "past foo bars" date range
+                $tab = str_repeat("&nbsp;", 5);
+                if (! preg_match("/" . join("|", $valid_date_units) . "/i", $unit, $m)) {
+                    abort("Invalid unit ('<i>$unit</i>') used in Date range ('<i>$token</i>').</font>" .
+                           "Use one of the following:<br>" .
+                           "<pre>\t" . join("<br>\t", $valid_date_units) . "</pre>"
+                    );
+                }
+
+                $operand        = "now() AT TIME ZONE '$timezone' - interval '" . strtonumeral($quantity) . " $unit'";
                 $start_time     = select_scalar("SELECT " . sprintf($trunc_format, $operand));
                 $where          = "$starttime_at_timezone > " . sprintf($time_at_timezone_fmt, $start_time);
                 $absolute_start = $start_time;

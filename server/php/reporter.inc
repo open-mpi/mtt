@@ -830,6 +830,11 @@ function capitalize($str) {
 #                                       #
 #########################################
 
+function abort($str) {
+    print("ERROR: " . $str);
+    exit;
+}
+
 function debug($str) {
     if ((isset($_GET['debug']) and $_GET['debug'] == 'on') or 
         (isset($_GET['verbose']) and $_GET['verbose'] == 'on')) {
