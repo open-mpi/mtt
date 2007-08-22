@@ -557,7 +557,7 @@ function setup_mainwin_fields($phases) {
                 'suite_name' => 'all',
                 'test_name'  => 'all',
                 'np'         => 'all',
-                'command'    => '',
+                'full_command' => '',
             );
     }
 

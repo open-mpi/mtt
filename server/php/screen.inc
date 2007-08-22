@@ -530,7 +530,7 @@ function setup_layout($phases) {
                 'suite_name',
                 'test_name',
                 'np',
-                'command',
+                'full_command',
             );
     }
 
