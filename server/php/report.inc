@@ -17,7 +17,6 @@
 #
 
 # Global variables
-$new_ttable;
 $date_fields;
 
 # Top-level report printing function
@@ -41,9 +40,6 @@ function dump_report() {
 
     if (! $nogo) {
 
-        # Process session/cache/temp-table thingy
-        $ttable_id_field = process_ttable_id_field($_GET);
-
         # cherry_fields are the only fields that
         # are filtered by PHP instead of SQL
         $cherry_fields = process_cherry_fields($_GET);
@@ -66,6 +62,7 @@ function dump_report() {
         $result_fields   = process_result_fields($phases, $_GET);
         $sort_field      = process_sort_field($_GET);
         $offset_field    = process_offset_field($_GET);
+        $rows_field      = process_rows_field($_GET);
 
         # Display results run with --trial option
         $trial_field = process_trial_field(TRIAL);
@@ -90,7 +87,6 @@ function dump_report() {
         # Prepare query components
         $query = array_merge_recursive(
             $date_fields,
-            $ttable_id_field,
             $input_fields,
             $large_fields,
             $result_fields,
@@ -112,14 +108,16 @@ function dump_report() {
         # Compose query
         $ret = compose_sql_select($query);
 
-        $sql_cmd = $ret['sql_cmd'];
-        $sql_count_star = $ret['count_star'];
+#print "<b>JJH</b> <pre>Final SQL SELECT COMMAND\n".$ret['sql_cmd']."\n</pre><br>\n";
 
+        $sql_cmd = $ret['sql_cmd'];
+        $sql_count_star = $ret['count_star']; # JJH XXXX
+        
         # Execute query
         $resource = do_pg_query($sql_cmd);
 
         # Number of rows in this report
-        $n = row_count($sql_count_star, $_GET);
+        $n = row_count(pg_num_rows($resource), $_GET);
         $o = offset($_GET);
 
         # Prepare headers array for *_table functions
@@ -162,9 +160,8 @@ function dump_report() {
 
     print $slices_links;
 
-    # Clean up old graphs, csv dumps, and ttables
+    # Clean up old graphs, csv dumps
     housekeeping('./tmp');
-    housekeeping_db('ttable');
 
     pg_close();
 }
@@ -216,9 +213,6 @@ function detail_table($headers, $resource) {
         # Results are always in the far right cols
         $results = array_splice($row, $num_cols['params']);
 
-        # Splice in the php_row_n in place of db_row_n
-        $db_row_n = array_shift(array_splice($row, 0, 1, ($php_row_n + 1)));
-
         # Stylize rows of "--trial" results
         $trial = process_trial_value($row, 1);
 
@@ -256,10 +250,14 @@ function detail_table($headers, $resource) {
 
         $i = 0;
         print "<table border='1' width='100%'>";
+        print (($i % 1 == 0) ? "\n<tr>" : "") .
+              "\n$td <b>" . stylize_trial_font(label('n'), $trial) . "</b> $tdl " .
+              "\n<pre>" . stylize_trial_font(highlight_match('n', wordwrap($php_row_n + 1, WRAP)), $trial) . "</pre>";
+        $i++;
         foreach ($headers as $header) {
             print (($i % 1 == 0) ? "\n<tr>" : "") .
                   "\n$td <b>" . stylize_trial_font(label($header), $trial) . "</b> $tdl " .
-                  "\n<pre>" . stylize_trial_font(highlight_match($header, wordwrap($values[$i], WRAP)), $trial) . "</pre>";
+                  "\n<pre>" . stylize_trial_font(highlight_match($header, wordwrap($values[$i-1], WRAP)), $trial) . "</pre>";
             $i++;
         }
         print "</table>";
@@ -342,7 +340,7 @@ function summary_table($headers, $resource, $filter) {
                 #                 "checked>") .
                 "";
 
-    $pound_sign = array_shift($headers['params']);
+    $pound_sign = 'n';#JJH ZZnZZ array_shift($headers['params']);
     printf($format, label($pound_sign));
     foreach (sorting_links($headers['params']) as $header)
         printf($format, $header);
@@ -398,15 +396,14 @@ function summary_table($headers, $resource, $filter) {
 
     # Print data rows
     while ($row = pg_fetch_row($resource)) {
-
         if ($php_row_n >= $lastrow)
             break;
 
         # Results are always in the far right cols
-        $results = array_splice($row, $num_cols['params'] + 1); # (+1 for row #)
+        $results = array_splice($row, $num_cols['params']);
 
         # Grab the db_row_n
-        $db_row_n = array_shift($row);
+        $db_row_n = 'n';
 
         # Grab the trial boolean
         $trial = process_trial_value($row, 0);
@@ -1421,7 +1418,13 @@ function slices_links($n, $limit, $params) {
     $next = sprintf($img, 'no');
 
     $qstring_arr = $params;
-    $qstring_arr['rows'] = $n;
+    #$qstring_arr['rows'] = $n;
+    if( $params['rows'] != "" ) {
+        $qstring_arr['rows'] = $params['rows'];
+    }
+    else {
+        $qstring_arr['rows'] = $n;
+    }
 
     $phase  = process_phase_field($params['phase']);
     $offset = offset($params);
@@ -1951,7 +1954,6 @@ function basic_info($date_fields, $phases, $num_rows) {
 
 # Compose an SQL SELECT statement
 function compose_sql_select($query) {
-
     $selects = array();
     $nl = "\n\t";
 
@@ -1960,14 +1962,6 @@ function compose_sql_select($query) {
     $static_view  = isset($_GET['static_view'])  ? 1 : 0;
     $explain      = isset($_GET['explain'])      ? 1 : 0;
     $analyze      = isset($_GET['analyze'])      ? 1 : 0;
-
-    # Setup a temporary TABLE/SEQUENCE 
-    # NOTE: the above so-called temporary SQL relations are
-    # NOT truly temporary, it is just that we do intend to
-    # delete them after the user's session expires
-    $new_ttable = $query['new_ttable'];
-    $ttable     = $query['ttable'];
-    $tseq       = $query['tseq'];
 
     # Handle ORDER BY
     if (isset($query['orderby_up']))
@@ -1979,69 +1973,8 @@ function compose_sql_select($query) {
     $offset = offset($query);
     $limit  = LIMIT;
 
-    # Prepare printf format for default return query
-    $select_star_limited  = "";
-    $select_star_limited .= "\nSELECT * FROM $ttable ";
-    $select_star_limited .= "  %s";
-    $select_star_limited .= "\nLIMIT $limit OFFSET $offset";
-    $select_star_limited .= "\n;";
-
-    # Use this unLIMITed SELECT INTO for the COUNT(*)
-    $select_star_unlimited  = "";
-    $select_star_unlimited .= "\nSELECT * INTO TEMPORARY count_me ";
-    $select_star_unlimited .= "\nFROM $ttable ";
-    $select_star_unlimited .= "  %s";
-    $select_star_unlimited .= "\n;";
-
-    $ret['sql_cmd'] = sprintf($select_star_limited, '');
-
-    # Just select from the last ttable if we do not need to
-    # prepare a new one
-    if (! $new_ttable) {
-
-        # We have already filtered by date range
-        unset($query['where']['start_timestamp']);
-
-        remove_problematic_wheres_using_table($query, $ttable);
-
-        $wheres = array_values2($query['where']);
-        $where_not = array_values2($query['where_not']);
-
-        if ($wheres)
-            $criteria .= "\nWHERE " . join(" AND $nl", $wheres);
-
-        if ($where_not)
-            $criteria .= "$nl AND NOT " . join(" AND NOT $nl", $where_not);
-
-        if ($orderby)
-            $criteria .= "\nORDER BY " . $orderby;
-
-        $limited_cmd   = sprintf($select_star_limited, $criteria);
-        $unlimited_cmd = sprintf($select_star_unlimited, $criteria);
-
-        do_pg_query($unlimited_cmd);
-
-        # Grab the row count
-        $rows = select_scalar("\nSELECT COUNT(*) FROM count_me;");
-
-        do_pg_query("DROP TABLE count_me;");
-
-        $ret['sql_cmd'] = $limited_cmd;
-        $ret['count_star'] = $rows;
-
-        return $ret;
-    }
-
     # Select or create a VIEW to tally the results in
     $phases = $query['phases'];
-
-    # Use a dynamic view by default
-    if (! $static_view)
-        $view = compose_sql_view($query, $phases);
-    elseif (sizeof($phases) > 1)
-        $view = 'all_view';
-    else
-        $view = $phases[0] . '_view';
 
     foreach (array_keys($query['aggregates']) as $aggregate) {
         $aggregates[] = $query['aggregates'][$aggregate];
@@ -2089,12 +2022,8 @@ function compose_sql_select($query) {
         array_unshift($orderbys, $orderby . $direction);
     }
 
-    remove_problematic_wheres_using_view($query, $view);
-
     $wheres = array_values2($query['where']);
     $where_not = array_values2($query['where_not']);
-
-    # Piece together all the clauses ...
 
     if ($explain)
         $cmd .= "\n EXPLAIN ";
@@ -2105,9 +2034,10 @@ function compose_sql_select($query) {
     $cmd .= "\n SELECT " .
                 "$nl" . join(",$nl", $selects);
 
-    $cmd .= "\n INTO TABLE $ttable ";
-
-    $cmd .= "\n FROM $view ";
+    $cmd .= "\n";
+    $cmd .= " FROM (\n";
+    $cmd .= compose_sql_select_from($query);
+    $cmd .= " ) as summary\n";
 
     if ($wheres) {
         $cmd .= "\n WHERE " .
@@ -2126,38 +2056,24 @@ function compose_sql_select($query) {
         $cmd .= "\n ORDER BY " .
                     "$nl" . join(",$nl ", $orderbys) .
                     "$nl $direction";
+
+        if( isset($_GET['rows'] ) ) {
+            $cmd .= "\nLIMIT $limit";
+        }
+        $cmd .= "\nOFFSET $offset";
     }
 
     $cmd .= ";";
 
-    # Just execute the query, but ''delay'' the bring over
-    # of the results because it could max out PHP's 16MB
-    # (give or take) memory limit.  This way we can *always*
-    # apply a LIMIT clause to the SELECT.
-    if (! $explain) {
-        do_pg_query($cmd);
-
-        # Perform an unLIMITed COUNT(*) to get the row count
-        $cmd = "\nSELECT COUNT(*) FROM $ttable;";
-        $rows = select_scalar($cmd);
-
-        # Return the number of rows
-        # (Note: if we SELECT from the ttable - like above -
-        # then we do not need to calculate the rows because
-        # that number gets carried over via a hidden
-        # parameter)
-        $ret['count_star'] = $rows;
-
-    # Output query plan to browser and file
-    # (Mostly just for SQL nerds)
-    } else {
+    if($explain) {
         $resource = do_pg_query($cmd);
-
         $arr = pg_fetch_all($resource);
 
-        foreach (array_keys($arr) as $i)
-            foreach ($arr[$i] as $line)
+        foreach (array_keys($arr) as $i) {
+            foreach ($arr[$i] as $line) {
                 $plan[] = $line;
+            }
+        }
 
         $filename = 'tmp/' . params2filename($_GET) . '.txt';
         $plan_txt = join("\n", $plan);
@@ -2172,33 +2088,257 @@ function compose_sql_select($query) {
 
         print "<br><a href='$top/$filename'>Query plan</a>";
     }
+    else {
+        $ret['sql_cmd'] = $cmd;
+    }
 
     return $ret;
 }
 
-# Whack WHERE clause(s) if the column is not in $table
-function remove_problematic_wheres_using_table(&$query, $table) {
+function compose_sql_select_from_select($query) {
+    $where_items = array_unique( array_merge (
+            $query['where'],
+            $query['where_not']
+            ) );
 
-    foreach (array('where', 'where_not') as $where_type) {
-        foreach (array_keys($query[$where_type]) as $column) {
-            if (! column_exists($column, $table)) {
-                unset($query[$where_type][$column]);
+    $accum = array();
+
+    # Add 'where' items to the select, so we can 'where' on them
+    foreach($where_items as $w ) {    
+        $w = preg_replace("/\(/", "", $w);
+        $w = preg_replace("/\)/", "", $w);
+        $keys = preg_split("/\s+/", $w);
+
+        if( column_exists_any($keys[0]) ) {
+            $accum[] = $keys[0];
+        }
+    }
+
+    $propose =  array_unique( array_merge(
+            $query['select'],
+            $query['select_more'],
+            $query['performance']
+            ) );
+
+    $add_rtn = array();
+
+    # Strip out duplicates since these should conflict:
+    # start_timestamp as start_timestamp
+    #    and
+    # start_timestamp
+    foreach($propose as $p) {
+        foreach($accum as $a) {
+            if( 0 != strncmp($p, $a, strlen($a)) ) {
+                $add_rtn[$a] = $a;
             }
         }
     }
+    
+    return array_unique( array_merge(
+            $propose,
+            $add_rtn
+            ) );
 }
 
-# Whack WHERE clause(s) if the column is not in $table
-# (Do not filter out result columns)
-function remove_problematic_wheres_using_view(&$query, $table) {
+function compose_sql_select_from($query) {
 
-    foreach (array('where', 'where_not') as $where_type) {
-        foreach (array_keys($query[$where_type]) as $column) {
-            if (! column_exists($column, $table) and
-                ! is_result_column($column)) {
-                unset($query[$where_type][$column]);
-            }
+    $nl = "\n\t";
+    $nlt = "\n\t\t";
+
+    $preface_fields = array("start_timestamp","trial");
+
+    $phases = $query['phases'];
+
+    #print "<b>JJH DEBUG</b><pre>\n";
+
+    $select_items = compose_sql_select_from_select($query);
+
+    # Array of tables that we need to pull in for the
+    # query to work properly
+    $needed_tables = array();
+
+    #
+    # Determine tables needed for this phase
+    foreach($select_items as $s ) {
+       $tbl = is_needed($s, $needed_tables);
+       if( null != $tbl) {
+          $needed_tables[] = $tbl;
+          #print "JJH\t\tNeed table ".$tbl."\n";
+       }
+    }
+    #print "JJH NEEDED " . join(", ",$needed_tables) . "\n";
+
+   # Handle special bitmapped fields
+   $bitmapped_fields = setup_bitmapped_fields();
+   foreach (array_keys($bitmapped_fields) as $field) {
+       if (isset($query['select'][$field]) || isset($query['select_more'][$field])) {
+           $query['select_bm'][$field] = $bitmapped_fields[$field];
+       }
+   }
+   #print "</pre>\n";
+
+   foreach($phases as $phase) {
+      $aggregates = $query['cases'][$phase];
+
+      $selects = array_unique(
+          array_merge(
+              $select_items,
+              $query['select_bm'],
+              $aggregates
+          )
+      );
+
+      foreach ($preface_fields as $preface ) {
+        $found = false;
+        foreach($selects as $field) {
+          if( 0 == strncmp($field, $preface, strlen($preface) ) ) {
+            $found = true;
+            break;
+          }
         }
+        if(!$found) {
+          $selects[] = $preface;
+        }
+     }
+
+      $p_from[$phase] = " (\n";
+
+      $p_from[$phase] .= "$nl SELECT $nlt" . join(",$nlt", $selects);
+
+      $p_from[$phase] .= "$nl FROM $nlt " . $phase . "$nlt ";
+
+      # Special Case for test_run.performance join
+      if(0 == strncmp($phase, "test_run", strlen("test_run")) ) {
+        $p_from[$phase] .= get_join_arg($phase, "performance");
+      }
+
+      foreach($needed_tables as $tbl) {
+        $p_from[$phase] .= get_join_arg($phase, $tbl);
+      }
+
+      $p_from[$phase] .= "$nl";
+      $p_from[$phase] .= " )\n";
+   }
+
+   $from_clause = join(" UNION ALL $nl", $p_from);
+
+   return $from_clause;
+}
+
+function get_join_arg($phase, $tbl) {
+   $nl = "\n\t";
+   $nlt = "\n\t\t";
+
+   $rtn = "$nlt NATURAL JOIN $tbl";
+
+   #
+   # Special Cases for Test Run
+   #
+   if( 0 == strncmp($phase, "test_run", strlen("test_run")) ) {
+     #####
+     # Test Suites
+     if( 0 == strncmp($tbl, "test_suites", strlen("test_suites") ) ) {
+       $rtn = "$nlt JOIN $tbl on test_suites.test_suite_id = ".$phase.".test_suite_id ";
+     }
+     #####
+     # Test Names
+     else if( 0 == strncmp($tbl, "test_names", strlen("test_names") ) ) {
+       $rtn = "$nlt JOIN $tbl on test_names.test_name_id = ".$phase.".test_name_id ";
+     }
+     #####
+     # Compiler
+     else if( 0 == strncmp($tbl, "compiler", strlen("compiler") ) ) {
+       $rtn = "$nlt JOIN $tbl on compiler.compiler_id = ".$phase.".test_build_compiler_id ";
+     }
+     #####
+     # Test Run Command (need to join with network/interconnect tables)
+     #
+     # JJH Be careful here:
+     # If we NATURAL JOIN against the test_run_networks table then a single tuple
+     # will be duplicated N times where N is the number of interconnects used
+     # for that run. This will distort the test_run numbers [multiplying them
+     # each by N] :(
+     # The test_run_networks association table should only be used for coverage
+     # stats and controlled queries.
+     else if( 0 == strncmp($tbl, "test_run_command", strlen("test_run_command") ) ) {
+       $rtn = ("$nlt NATURAL JOIN test_run_command ");
+       #$rtn = ("$nlt NATURAL JOIN test_run_command ".
+       #        "$nlt NATURAL JOIN test_run_networks ".
+       #        "$nlt NATURAL JOIN interconnects");
+     }
+   }
+   #
+   # Special Cases for Test Build
+   #
+   else if( 0 == strncmp($phase, "test_build", strlen("test_build")) ) {
+     #####
+     # Test Suites
+     if( 0 == strncmp($tbl, "test_suites", strlen("test_suites") ) ) {
+       $rtn = "$nlt JOIN $tbl on test_suites.test_suite_id = ".$phase.".test_suite_id ";
+     }
+     #####
+     # Test Names
+     else if( 0 == strncmp($tbl, "test_names", strlen("test_names") ) ) {
+       $rtn = "$nlt JOIN $tbl on test_names.test_name_id = ".$phase.".test_name_id ";
+     }
+     #####
+     # Compiler
+     else if( 0 == strncmp($tbl, "compiler", strlen("compiler") ) ) {
+       $rtn = "$nlt JOIN $tbl on compiler.compiler_id = ".$phase.".test_build_compiler_id ";
+     }
+   }
+   #
+   # Special Cases for MPI Install
+   #
+   else if( 0 == strncmp($phase, "mpi_install", strlen("mpi_install")) ) {
+     #####
+     # Compiler
+     if( 0 == strncmp($tbl, "compiler", strlen("compiler") ) ) {
+       $rtn = "$nlt JOIN $tbl on compiler.compiler_id = ".$phase.".mpi_install_compiler_id ";
+     }
+   }
+
+   return $rtn;
+}
+
+function is_needed($column, $cur_needed) {
+    $chk_table = null;
+
+    $list_all_tables = array('compute_cluster',
+                             'submit',
+                             'compiler',
+                             'mpi_get',
+                             'description',
+                             'result_message',
+                             'environment',
+                             'mpi_install_configure_args',
+                             'test_suites',
+                             'test_names',
+                             'latency_bandwidth',
+                             'performance',
+                             'test_run_command'
+                            );
+    $needed = false;
+
+    #
+    # First see if it is a unique item
+    #
+    if(null == ($chk_table = column_exists_which_table($column, $list_all_tables)) ) {
+        return null;
+    }
+
+    $needed = true;
+    foreach($cur_needed as $nt) {
+      if(0 == strncmp($nt, $chk_table, strlen($chk_table))) {
+        $needed = false;
+      }
+    }
+
+    if( $needed ) {
+      return $chk_table;
+    }
+    else {
+      return null;
     }
 }
 
@@ -2222,89 +2362,6 @@ function is_result_column($str) {
         return false;
 }
 
-# Compose an unfiltered VIEW on-the-fly with SELECTs
-#
-# THIS FUNCTION WOULD SEEM - AT FIRST - TO BE AN
-# OPTIMIZATION (CREATE A VIEW WITH FEWER COLUMNS THAN THE
-# STATIC VIEWS IN [SOURCE:/TRUNK/SERVER/SQL/VIEWS.SQL]. BUT
-# IS IT?
-function compose_sql_view($query, $phases) {
-
-    # ''temporary'' VIEW
-    $ttable_id = $query['ttable_id'];
-    $view = "mtttemp_${ttable_id}_view";
-
-    $nl = "\n\t";
-
-    # Do not row number for the VIEW
-    unset($query['select']['n']);
-
-    # We always need the start_timestamp in the VIEW
-    $query['select']['start_timestamp'] = 'start_timestamp';
-
-    # Setup phase-results array
-    $arr = phase_results_table($query['absolute_start']);
-    $results = $arr['cases'];
-
-    # Handle special bitmapped fields
-    $bitmapped_fields = setup_bitmapped_fields();
-    foreach (array_keys($bitmapped_fields) as $field) {
-        if (isset($query['select'][$field]))
-            $query['select'][$field] = $bitmapped_fields[$field];
-    }
-
-    # Sanity check. If a column is in a WHERE clause,
-    # it must also be in the first SELECT and the column
-    # must exist (e.g., can not be a result code column, e.g., _rp)
-    foreach (array_keys($query['where']) as $field) {
-
-        if (! isset($query['select'][$field]) and column_exists2($field))
-            $query['select'][$field] = $field;
-    }
-
-    # Iterate over the phase tables
-    foreach ($phases as $phase) {
-
-        # Compile values for SELECT clauses
-        $selects = array_unique(
-            array_merge(
-                $query['select'],
-                $results[$phase],
-                $query['select_more'],
-                $query['performance']
-            )
-        );
-
-        # JOIN clauses for each phase setting
-        $joins =
-            setup_joins(
-                array_merge(
-                    array_values2($query['select']),
-                    array_values2($query['select_more']),
-                    array_values2($query['performance'])
-                ),
-                $query['absolute_start']
-            );
-
-        # Piece together all the clauses
-        $cmd  = "\n SELECT " .
-                    $nl . join(",$nl", $selects);
-
-        $cmd .= "\n FROM " . 
-                    $joins[$phase];
-
-        $cmds[] = $cmd;
-    }
-
-    # Create the VIEW as a UNION of one or more phase SELECTs
-    $cmd = "\nCREATE OR REPLACE VIEW $view AS " .
-                join("\n UNION ALL ", $cmds) . ";";
-
-    $resource = do_pg_query($cmd);
-
-    return $view;
-}
-
 # Return the array values that are a depth of 
 # 2 away from the argument passed
 function array_values2($arr) {
@@ -2312,6 +2369,22 @@ function array_values2($arr) {
         $ret[] = $arr[$k];
 
     return $ret;
+}
+
+# Return true if $column exists in any table
+# $column is a CSV of one or more column_name's
+function column_exists_any($column) {
+    $columns = split(',', $column);
+
+    foreach ($columns as $c) {
+        $one = select_scalar("SELECT 1 FROM information_schema.columns " .
+                             " WHERE column_name = '$c' " .
+                             " AND table_name !~* 'view'");
+        if (! $one)
+            return false;
+    }
+
+    return true;
 }
 
 # Return true if $column exists in $table.
@@ -2328,6 +2401,29 @@ function column_exists($column, $table) {
     }
 
     return true;
+}
+
+# Return NULL if more than one table.
+# Return a single tablename
+function column_exists_which_table($column, $tbls) {
+    $select_list = null;
+    foreach($tbls as $t) {
+        if( $select_list != null ) {
+          $select_list .= " OR ";
+        }
+        else {
+          $select_list = " AND ( ";
+        }
+
+        $select_list .= " table_name = '$t' ";
+    }
+    $select_list .= ")";
+
+    $one = select_scalar("SELECT table_name FROM information_schema.columns " .
+                         " WHERE column_name = '$column' " .
+                         $select_list);
+
+    return $one;
 }
 
 # Return 1 if $column exists in $dbname
@@ -2401,7 +2497,6 @@ function table_exists($table) {
 # [column alias] => {string functions|column alias}
 #
 # (type)
-# (all)    $query['ttable']      => session DB table to select from
 # (all)    $query['select']      => list of general SELECTs
 # (all)    $query['aggregates']  => list of COUNT clauses for result counts
 # (detail) $query['select_more'] => list of detail SELECT columns
@@ -2573,6 +2668,22 @@ function process_oddball_fields($params) {
 # Returns: 
 #   - SQL date filter with string function
 #   - Absolute time stamp
+#
+# NOTE:
+#   Casting an index column kills performance.
+#   For example:
+#     'start_timestamp' is much faster than
+#     CAST(start_timestamp as TIMESTAMP WITH TIME ZONE) AT TIME ZONE 'GMT'
+#   As the later forces the optimizer to visit *all* tables and tuples,
+#   do the conversion, then the comparison.
+#   Whereas the former just does the comparison, and the optimizer can then
+#   eliminate tables depending on check contraints.
+#   performance difference of 
+#Sort  (cost=11581.18..11581.68 rows=200 width=510) [with ce]
+#Sort  (cost=131232.57..131233.58 rows=403 width=510) [without ce]
+# versus
+#Sort  (cost=595516.49..595517.49 rows=403 width=510)
+# about 51% improvement :D
 function process_date_field($params) {
 
     # Globalize the date range
@@ -2597,6 +2708,9 @@ function process_date_field($params) {
     $timestamp_name        = "start_timestamp";
     $starttime_at_timezone = "CAST($timestamp_name as TIMESTAMP WITH TIME ZONE) AT TIME ZONE '$timezone'";
     $time_at_timezone_fmt  = "$nl CAST('%s' as TIMESTAMP WITH TIME ZONE) AT TIME ZONE '$timezone'";
+    # JJH XXX FIGURE OUT HOW TO DEAD WITH TIMEZONE
+    $starttime_at_timezone = "$timestamp_name";
+    $time_at_timezone_fmt  = "'%s'";
     $timestamp_param       = $params["text_$timestamp_name"];
 
     # This will immediately put reporter.php in ''absolute date range'' mode
@@ -2740,30 +2854,33 @@ function process_date_field($params) {
 # (Reference: postgresql.org/docs/7.3/static/functions-conditional.html)
 function process_result_fields($phases, $params) {
 
-    global $new_ttable;
-
     $test_result = $params['test_result'];
 
     $arr = phase_results_table();
     $table = $arr['aggregates'];
+    $cases = $arr['cases'];
 
     $format_agg = "COUNT(CASE WHEN %s THEN '%s' END) as %s";
 
     foreach (array_keys($table) as $phase) {
         foreach ($table[$phase] as $result) {
-
             if (array_search($phase, $phases) !== false) {
 
                 # The result alias has gone from
-                # pass|fail|... to _xx in the ttable
-                if ($new_ttable)
-                    $when[$result] = label($result) . " = '" . pg_escape_string($result) . "'";
-                else
-                    $when[$result] = "$result > 0";
+                # pass|fail|... to _xx in the summary views
+                $when[$result] = label($result) . " = '" . pg_escape_string($result) . "'";
 
                 # These clauses SELECT from the TABLE
                 $results['aggregates'][$result] =
                     sprintf($format_agg, $when[$result], $result, $result);
+            }
+        }
+    }
+
+    foreach (array_keys($cases) as $phase) {
+        foreach ($cases[$phase] as $result) {
+            if (array_search($phase, $phases) !== false) {
+                $results['cases'][$phase] = array_merge($cases[$phase]);
             }
         }
     }
@@ -2780,87 +2897,10 @@ function process_offset_field($params) {
     return array('offset' => $offset);
 }
 
-# This function always returns a 'ttable_id' for
-# compose_sql_select, whether it is a new or recycled ttable
-function process_ttable_id_field($params) {
-
-    global $new_ttable;
-
-    # Setup a temporary TABLE/SEQUENCE 
-    # NOTE: the above so-called temporary SQL relations are
-    # NOT truly temporary, it is just that we intend to DROP
-    # them after the user's session expires
-    $ttable_id = $params['ttable_id'];
-
-    $tformat = "mtttemp_%s_table";
-    $sformat = "mtttemp_%s_seq";
-    $vformat = "mtttemp_%s_view";
-
-    $ttable = sprintf($tformat, $ttable_id);
-    $tseq   = sprintf($sformat, $ttable_id);
-    $tview  = sprintf($vformat, $ttable_id);
-
-    $use_ttable = use_ttable($params);
-
-    # Do not use last session's ttable
-    if (! $use_ttable) {
-
-        # Out with the old ...
-        do_pg_query("DELETE FROM ttable WHERE tname = '$ttable';", SILENT);
-        do_pg_query("DROP TABLE $ttable;", SILENT);
-        do_pg_query("DROP SEQUENCE $tseq;", SILENT);
-        do_pg_query("DROP VIEW $tview;", SILENT);
-
-        # ... in with the new
-        list($ttable_id, $ttable, $tseq) = setup_ttable();
-
-        # Setup ttable stuff for compose_sql_select
-        $query['new_ttable'] = true;
-        $new_ttable = true;
-        $query['select']['n'] = "nextval('$tseq') as n";
-    }
-    # Use last session's ttable (update access time)
-    else {
-
-        $cmd = "SELECT 't' " .
-               "FROM information_schema.tables " .
-               "WHERE table_name = '$ttable';";
-
-        $bool = select_scalar($cmd);
-
-        # If the table is there, use it
-        if ($bool) {
-
-            do_pg_query("UPDATE ttable SET accessed = now() " . 
-                        "WHERE tname = '$ttable';", SILENT);
-
-            # This will result in a simple SELECT * FROM 
-            # ttable [ limit | slice | drill | cherry ....]
-            $query['new_ttable'] = false;
-            $new_ttable = false;
-            $query['select']['n'] = "n";
-
-        # Otherwise, we need to rebuild the ttable
-        } else {
-
-            list($ttable_id, $ttable, $tseq) = setup_ttable($ttable_id);
-
-            $query['new_ttable'] = true;
-            $new_ttable = true;
-            $query['select']['n'] = "nextval('$tseq') as n";
-        }
-
-    }
-
-    $ttable = sprintf($tformat, $ttable_id);
-    $query['ttable'] = $ttable;
-    $query['ttable_id'] = $ttable_id;
-
-    # Put ttable_id into the environment
-    $_GET['ttable_id'] = $ttable_id;
-
-    # Return ttable for compose_sql_select
-    return $query;
+# Process Rows value
+function process_rows_field($params) {
+    $rows = $_GET['rows'];
+    return array('rows' => $rows);
 }
 
 # Process OFFSET value for LIMIT clause
@@ -2920,6 +2960,38 @@ function process_explain_field($params) {
 
 # Set Postgres options for this session
 function process_postgres_options($params) {
+    # Always set constraint_exclusion = on; JJH XXX VERIFY THIS
+    do_pg_query("set constraint_exclusion = on;");
+
+    # Also called 'work_mem' this values determines the amount
+    # of memory available to the query executor when doing sorting.
+    # Since sorting/grouping is the primary task of the reporter
+    # Increasing this value has large benifits for large time ranges.
+    # By default this is set to 1 MB, after some testing the following were
+    # found to be reasonable values:
+    # For 2 weeks of data (approx 1.5 Million tuples) 128 MB
+    # For 1 month of date (approx 3.1 Million tuples) 256 MB
+    #
+    # Past 2 weeks (All orgs) [1.5 Million tuples]
+    # Total runtime: 314433.770 ms (  32 MB)
+    # Total runtime: 367773.125 ms (  64 MB)
+    # Total runtime:  43869.336 ms ( 128 MB)
+    # Total runtime:  43284.725 ms ( 256 MB)
+    # Total runtime:  43658.443 ms ( 512 MB)
+    #
+    # Past 1 month (All orgs) [3.1 million tuples]
+    # Total runtime: 1124091.272 ms (128 MB)
+    # Total runtime:  121745.668 ms (256 MB)
+    # Total runtime:  128246.327 ms (512 MB)
+    #
+    do_pg_query("set sort_mem = '256MB';");
+
+    # The following options may also help speed up queries, but must be set
+    # at server start time.
+    # http://www.postgresql.org/docs/8.1/interactive/runtime-config-resource.html
+    #do_pg_query("set max_stack_depth = '16MB';");
+    #do_pg_query("set shared_buffers  = '128MB';");
+
     foreach (array_keys($params) as $k) {
         if (preg_match("/^pg_(.*)$/i", $k, $m)) {
             $pg_param = $m[1];
@@ -3016,11 +3088,12 @@ function setup_large_fields() {
 
     $ret = array(
         'configure_arguments',
-        'command',
+        'full_command',
         'result_message',
         'result_stdout',
         'result_stderr',
         'environment',
+        'description',
     );
 
     return $ret;
@@ -3225,10 +3298,14 @@ function order_columns($columns) {
         # test_run
         'test_name'           => 1,
         'np'                  => 1,
-        'variant'             => 1,
-        'command'             => 1,
+        'full_command'        => 1,
+        'launcher'            => 1,
+        'resource_mgr'        => 1,
+        'parameters'          => 1,
+        'network'             => 1,
 
         # results (right)
+        'description'         => 1,
         'exit_value'          => 1,
         'exit_signal'         => 1,
         'duration'            => 1,
@@ -3277,8 +3354,11 @@ function setup_detail_fields($phase) {
     # Test Run
     if ($phase == 'test_run')
         $phase_columns = array(
-            'command' => 'command',
-            'variant' => 'variant',
+            'full_command' => 'full_command',
+            'parameters'   => 'parameters',
+            'launcher'     => 'launcher',
+            'network'      => 'network',
+            'resource_mgr' => 'resource_mgr',
         );
 
     $results_columns = array(
@@ -3289,6 +3369,7 @@ function setup_detail_fields($phase) {
         'result_stdout'   => 'result_stdout',
         'result_stderr'   => 'result_stderr',
         'environment'     => 'environment',
+        'description'     => 'description',
         'client_serial'   => 'client_serial',
     );
     
@@ -3426,28 +3507,6 @@ function esc_percent($str) {
 #  Housekeeping
 #                                     
 #########################################
-
-# Clean up expired session db TABLE/SEQUENCEs listed in $listing
-function housekeeping_db($listing) {
-
-    # no_cache option for developers
-    if (isset($_GET['no_cache']))
-        $cmd = "SELECT tname FROM $listing;";
-    else
-        $cmd = "SELECT tname FROM $listing WHERE accessed < now() - interval '60 minutes';";
-
-    $tables = simple_select($cmd);
-
-    foreach ($tables as $table) {
-        $tseq = preg_replace('/_table$/', '_seq', $table);
-        $tview = preg_replace('/_table$/', '_view', $table);
-
-        do_pg_query("DROP TABLE $table;", SILENT);
-        do_pg_query("DROP SEQUENCE $tseq;", SILENT);
-        do_pg_query("DROP VIEW $tview;", SILENT);
-        do_pg_query("DELETE FROM $listing WHERE tname = '$table';", SILENT);
-    }
-}
 
 # Clean up old image and csv files
 function housekeeping($dir) {

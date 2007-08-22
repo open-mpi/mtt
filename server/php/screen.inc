@@ -147,31 +147,6 @@ function use_ttable($params) {
     return $ret;
 }
 
-# Create an ID for the ''temporary'' TABLE and SEQUENCE
-function setup_ttable($ttable_id_arg) {
-
-    if ($ttable_id_arg)
-        $ttable_id = $ttable_id_arg;
-    else
-        $ttable_id = get_ttable_id();
-
-    $tformat = "mtttemp_%s_table";
-    $sformat = "mtttemp_%s_seq";
-
-    $ttable = sprintf($tformat, $ttable_id);
-    $tseq   = sprintf($sformat, $ttable_id);
-
-    do_pg_query("INSERT INTO ttable (tname) VALUES ('$ttable');");
-    do_pg_query("CREATE SEQUENCE $tseq;");
-
-    return array($ttable_id, $ttable, $tseq);
-}
-
-# Get a UNIQUE ttable id
-function get_ttable_id() {
-    return select_scalar("SELECT nextval('ttable_id');");
-}
-
 # Remove report type suffix
 function base_type($str) {
     return strtolower(preg_replace('/_cherry|_slice/i', '', $str));
@@ -657,11 +632,8 @@ function setup_layout_html($layout, $lasttime, $links, $disable) {
     $top    = DOCROOT;
     $script = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
 
-    # Display standard or "archive" logo
-    if (isset($_GET['archive']))
-        $logo = "$top/images/archive_reporter_logo.gif";
-    else
-        $logo = "$top/images/reporter_logo.gif";
+    # Display standard logo
+    $logo = "$top/images/reporter_logo.gif";
 
     list($width, $height, $type, $attr) = getimagesize($logo);
 
@@ -1183,7 +1155,6 @@ function hidden_carryover($params) {
     $fields = array_merge(
                 array_keys(setup_developer_params()),
                 array(
-                    'ttable_id',
                     'test_result',
                     'phase',
                 )
@@ -1228,9 +1199,6 @@ function hidden_carryover($params) {
                     "value='" . $params['text_trial'] . "'>";
 
     $str .= "\n<input type='hidden' name='lastgo' value='$lastgo'>";
-
-    if (isset($_GET['archive']))
-        $str .= "\n<input type='hidden' name='archive' value='1'>";
 
     return $str;
 }

@@ -20,9 +20,10 @@ $ompi_home = '/l/osl/www/doc/www.open-mpi.org';
 include_once("$ompi_home/dbpassword.inc");
 include_once("$topdir/reporter.inc");
 
+
 $GLOBALS['debug']   = isset($_POST['debug'])   ? $_POST['debug']   : 1;
 $GLOBALS['verbose'] = isset($_POST['verbose']) ? $_POST['verbose'] : 1;
-$dbname             = isset($_GET['db'])       ? $_GET['db']       : "mtt3";
+$dbname             = "mtt_testing";#isset($_GET['db'])       ? $_GET['db']       : "mtt";
 $pgsql_conn;
 
 # Set php trace levels
@@ -31,6 +32,9 @@ if ($GLOBALS['verbose'])
 else
     error_reporting(E_ERROR | E_WARNING | E_PARSE);
 
+#######################################
+# Post: Ping
+#######################################
 # If the PING field is set, then this was just a
 # test.  Exit successfully.
 if (isset($_POST['PING'])) {
@@ -40,6 +44,9 @@ if (isset($_POST['PING'])) {
 
 $marker = "===";
 
+#######################################
+# Post: Serial
+#######################################
 # If the SERIAL field is set, then the client just
 # needs a serial.  Exit successfully.
 if (isset($_POST['SERIAL'])) {
@@ -47,6 +54,9 @@ if (isset($_POST['SERIAL'])) {
     exit(0);
 }
 
+#######################################
+# Post: Data
+#######################################
 # The client will only submit one gzip file at a time for
 # now. Initialize the _POST global with the uploaded gzip
 # file contents. (There is backcompatibility here. E.g., if
@@ -55,6 +65,10 @@ if (isset($_POST['SERIAL'])) {
 if (sizeof($_FILES)) {
     eval("\$_POST = " . gunzip_file($_FILES['userfile']['tmp_name']) . ";");
 }
+
+#
+# Uncomment to get a large dump of debug data
+#debug_dump_data();
 
 # Notify of fields that do not exist in the database
 report_non_existent_fields();
@@ -72,29 +86,18 @@ if ((! isset($_POST['mtt_version_major']) or
 $_POST['http_username'] =
         isset($_SERVER['PHP_AUTH_USER']) ?
         $_SERVER['PHP_AUTH_USER'] : "";
-
+    
 # Declare some global MTT database semantics
 $id = "_id";
-$speedy_pfx = "speedy_";
-$archive_pfx = "";
 
-# Process performance data, if there is any
-$table = 'latency_bandwidth';
-if (($_POST['test_type'] == $table) or 
-    ($_POST['test_type_1'] == $table)) {
-    $idxs_hash["$table$id"] = set_data($table, NULL, true, NULL);
-}
-
+#
+# Process Phase Data
+#############################
 # What phase are we doing?
 $phase      = strtolower($_POST['phase']);
 $phase_name = preg_replace('/^\s+|\s+$/', '', $phase);
 $phase_name = preg_replace('/\s+/', '_', $phase);
-
-$phase_smallints = array(
-    "mpi_install" => 1,
-    "test_build" => 2,
-    "test_run" => 3,
-);
+$interconnect_id_hash;
 
 print "\nMTT submission for $phase\n";
 
@@ -111,13 +114,15 @@ if (0 == strcasecmp($phase, "test run")) {
     $idx = process_phase($phase_name, NULL);
 
 } else {
-    print "ERROR: Unknown phase! ($phase)<br>\n";
+    print("ERROR: Unknown phase! ($phase)<br>\n");
     mtt_abort(400, "\nNo phase given, so I don't know which table to direct this data to.");
     exit(1);
 }
 
-# Return index(es) to MTT client
-print "\n$marker $phase_name$id" . " = " . stringify($idx) . " $marker\n";
+#
+# Return necessary indexes to the MTT client
+#############################################
+print("\n$marker $phase_name$id" . " = " . stringify($idx) . " $marker\n");
 
 # All done
 pg_close();
@@ -128,156 +133,1018 @@ exit(0);
 function process_phase($phase, $idxs_hash) {
 
     global $id;
-    global $phase_smallints;
 
-    $idx_override      = NULL;
-    $phase_indexes     = array();
     $results_idxs_hash = array();
-    $fully_qualified   = false;
 
-    # Grab the indexes that don't link to children tables
+    ########
+    # Select/Insert: submit_id
     #
-    # X: it would be nice to have the following block be a recursive
-    # routine that recursively traverses the tree of tables and fills
-    # in the fields (using $_POST).
-    # Since the tree of tables is relatively simple at the moment
-    # we should be able to get away without the above routine.
-    $phase_indexes =
-        array_filter(
-            array_map('get_idx_root',
-                       get_table_indexes($phase, $fully_qualified)
-            ),
-            'contains_no_table_key');
-
-    # It's impossible to submit with two different submit identities
+    # It is impossible to submit with two different submit identities
     # so grab the one and only submit_id
     # IF DISCONNECTED SCENARIOS COMES TO PASS, THIS WILL NEED 
     # TO BE CHANGED
-    #
-    # NOTE: BELOW THE TABLE'S ROOT NAME IS USED WHICH DOES
-    # NOT INCLUDE THE SPEEDY_ OR ARCHIVE_ PREFIX!
-    $always_new = false;
-    $table = "submit";
-    $results_idxs_hash[$table . $id] =
-        get_scalar(set_data($table, NULL, $always_new, $idx_override), 0);
+    $stmt_fields = array("hostname",
+                         "local_username",
+                         "http_username",
+                         "mtt_client_version");
+    $stmt_values = array($_POST['hostname'],
+                         $_POST['local_username'],
+                         $_POST['http_username'],
+                         $_POST['mtt_client_version'] );
 
-    # Plug in the _id integer fields in the
-    # table (e.g., mpi_get, compiler, and cluster for MPI Install)
-    foreach ($phase_indexes as $table) {
-        $phase_idxs_hash[$table . $id] =
-            set_data($table, NULL, $always_new, $idx_override);
+    $results_idxs_hash['submit_id'] =
+        select_insert("submit", "submit_id",
+                      $stmt_fields, $stmt_values,
+                      false);
+
+    if (0 == strcasecmp($phase, "test_run")) {
+        $idx = process_phase_test_run($results_idxs_hash, $idxs_hash);
+    } else if (0 == strcasecmp($phase, "test_build")) {
+        $idx = process_phase_test_build($results_idxs_hash, NULL);
+    } else if (0 == strcasecmp($phase, "mpi_install")) {
+        $idx = process_phase_mpi_install($results_idxs_hash, NULL);
     }
-
-    # Insert the MPI Install, Test Build, or Test Run
-    $idx = set_data($phase, $phase_idxs_hash, $always_new, $idx_override);
-    $results_idxs_hash["phase$id"] = $idx;
-    $results_idxs_hash["phase"] = $phase_smallints[$phase];
-
-    # Plug in more data to the results if there is any (right now that will be
-    # only latency_bandwidth data)
-    $results_idxs_hash = array_merge($results_idxs_hash, $idxs_hash);
-
-    # Finally, INSERT the results
-    $always_new = true;
-    $table = "results";
-    $phase_idxs_hash[$table . $id] =
-        set_data($table, $results_idxs_hash, $always_new, $idx_override);
+    else {
+        mtt_error("Unknown Phase [$phase]\n");
+    }
 
     return $idx;
 }
 
-# 1. Fetch new, existing, or overriding index
-# 2. Insert row (merged with $indexes hash) into $table using that index
-# 3. Return index used for insertion
-function set_data($table, $indexes, $always_new, $idx_override) {
-
-    global $id, $speedy_pfx, $archive_pfx;
-
-    # MAKE SURE TABLE'S SERIAL-INTEGER PAIR
-    # FOLLOWS THE table_id NAMING SCHEME
-    $table_id = $table . $id;
-
+function process_phase_test_run($results_idxs_hash, $idxs_hash) {
     $n = $_POST['number_of_results'];
+    $print_once = false;
 
-    # Get existing fields from table
-    $params = get_table_fields($table);
-    $column_names = array_values($params['column_name']);
+    #
+    # Do this instead of getting all of the columns passed
+    # so we do not overload the memory space.
+    $columns = array("environment",
+                     "command",
+                     "test_name",
+                     "test_build_id",
+                     "result_message",
+                     "description",
+                     "latency_bandwidth",
+                     "message_size",
+                     "latency_min",
+                     "latency_avg",
+                     "latency_max",
+                     "bandwidth_min",
+                     "bandwidth_avg",
+                     "bandwidth_max",
+                     "np",
+                     "launcher",
+                     "resource_manager",
+                     "parameters",
+                     "network",
+                     "start_timestamp",
+                     "test_result",
+                     "trial",
+                     "duration",
+                     "result_stdout",
+                     "result_stderr",
+                     "merge_stdout_stderr",
+                     "exit_value",
+                     "exit_signal",
+                     "client_serial");
+    $param_set = get_post_values($columns);
 
-    # Match up fetched column names with data in the HTTP POST
-    $wheres      = array();
-    $new_indexes = array();
-    $wheres      = get_post_values($column_names);
-    $numbered    = are_numbered($column_names);
+    #######
+    # Get the Test Build IDs
+    $test_build_ids = get_test_build_ids($param_set['test_build_id']);
 
-    $wheres = array_merge($wheres, $indexes);
-
-    $found_match = false;
-
-    # Skip the following "if" statement if this is a new
-    # row for each submit, e.g., results
-    if (! $always_new) {
-        $idx = check_existence($wheres, $params, $table, $numbered);
-    }
-
-    $seq_name = $table . "_" . "$table_id" . "_seq";
-    $col_name = $table . "." . "$table_id";
-
-    # If we need to manually override the default
-    # index, override with idx_override
-    if (! is_null($idx_override)) {
-        $idx = $idx_override;
-    }
-    # If there is no matching row in the db,
-    # auto-increment the serial value using nextval
-    elseif (is_null_($idx)) {
-
-        $ret = fetch_nextvals($idx, $seq_name, $numbered);
-
-        $idx = $ret['idx'];
-        $new_indexes = $ret['new_indexes'];
-
-    } else {
-        $found_match = true;
-
-        # If the row is in the "archive", then mirror it in
-        # the "speedy", otherwise it will get INSERTed below
-        mirror_archived_in_speedy($idx, $table);
-    }
-    $wheres[$table_id] = $idx;
-
-    $inserts = $wheres;
-
-    # If it was not already in the table, insert it
-    if (! $found_match or $always_new) {
-        for ($i = 0; $i < $n; $i++) {
-
-            # If the row is already in the table, do not 
-            # attempt the INSERT
-            if (! $new_indexes[$i])
-                continue;
-
-            # Prepare a printf format string for the INSERT
-            $insert_into1 = "\n\t INSERT INTO %s ";
-            $insert_into2 = "\n\t (" . join(",\n\t", array_keys($inserts)) . ") " .
-                            "\n\t VALUES ";
-
-            $items = array();
-            foreach (array_keys($inserts) as $k) {
-                $items[] = quote_(pg_escape_string(get_scalar($inserts[$k], $i))); 
-            }
-            $insert_into2 .= "\n\t (" . join(",\n\t", $items) . ") \n\t";
-
-            # INSERT the row into both the "speedy" and "archive" tables
-            do_pg_query(sprintf($insert_into1, $speedy_pfx . $table) . $insert_into2);
-            do_pg_query(sprintf($insert_into1, $archive_pfx . $table) . $insert_into2);
-
-            if (! $numbered)
-                break;
+    foreach (array_keys($test_build_ids) as $k ) {
+        if(!preg_match("/\d+$/", $k, $m) ) {
+            $results_idxs_hash[$k] = $test_build_ids[$k];
         }
     }
 
-    # Return the new or existing index
-    return $idx;
+    for($i = 0; $i < $n; $i++) {
+
+        ########
+        # Select/Insert: performance
+        # Currently only support latency/bandwidth
+        # Assume that performance data is unique, so we do not have to search
+        # for an existing tuple
+        $results_idxs_hash['performance_id'] = 0;
+        if( ($_POST['test_type']   == 'latency_bandwidth') or
+            ($_POST['test_type_1'] == 'latency_bandwidth') ) {
+            #####
+            # Insert Into Latency/Bandwidth
+            $stmt_fields = array("message_size",
+                                 "latency_min",
+                                 "latency_avg",
+                                 "latency_max",
+                                 "bandwidth_min",
+                                 "bandwidth_avg",
+                                 "bandwidth_max");
+            
+            $stmt_values = array();
+            for($f = 0; $f < count($stmt_fields); $f++) {
+                $stmt_values[] = get_scalar($param_set[$stmt_fields[$f]], $i);
+            }
+
+            $results_idxs_hash['latency_bandwidth_id'] =
+                select_insert("latency_bandwidth", "latency_bandwidth_id",
+                              $stmt_fields, $stmt_values,
+                              true);
+
+            ####
+            # Insert Into Performance
+            $stmt_fields = array("latency_bandwidth_id");
+
+            $stmt_values = array($results_idxs_hash['latency_bandwidth_id']);
+
+            $results_idxs_hash['performance_id'] =
+                select_insert("performance", "performance_id",
+                              $stmt_fields, $stmt_values,
+                              true);
+        }
+
+        ########
+        # Select/Insert: test_command
+        #
+        # Examples:
+        # launcher         = 'mpirun'
+        # resource_manager = 'slurm'
+        # parameters       = '-mca foo bar -mca zip zaz'
+        # network          = 'loopback,shmem,tcp'
+        # Only process these parameters if they are all provided by the client.
+        $results_idxs_hash['test_run_command_id'] = 0;
+        if(!is_sql_key_word(get_scalar($param_set['launcher'], $i)) &&
+           !is_sql_key_word(get_scalar($param_set['resource_manager'], $i)) &&
+           !is_sql_key_word(get_scalar($param_set['parameters'], $i)) &&
+           !is_sql_key_word(get_scalar($param_set['network'], $i)) ) {
+            #
+            # Process the networks parameter
+            #
+            $results_idxs_hash['test_run_network_id'] =
+                process_networks(get_scalar($param_set['network'], $i));
+
+            # 
+            # Now select/insert a test_run_command
+            #
+            $stmt_fields = array("launcher",
+                                 "resource_mgr",
+                                 "parameters",
+                                 "network",
+                                 "test_run_network_id");
+
+            $stmt_values = array(get_scalar($param_set['launcher'], $i),
+                                 get_scalar($param_set['resource_manager'], $i),
+                                 get_scalar($param_set['parameters'], $i),
+                                 get_scalar($param_set['network'], $i),
+                                 $results_idxs_hash['test_run_network_id']);
+
+            $results_idxs_hash['test_run_command_id'] = 
+                select_insert("test_run_command", "test_run_command_id",
+                              $stmt_fields, $stmt_values,
+                              false);
+        }
+        else if(!$print_once) {
+            mtt_notice("The submitting client did not submit valid IDs for one or more of the following\n".
+                       "'launcher', 'resource_manager', 'paramters' or 'network'");
+            $print_once = true;
+        }
+
+        ########
+        # Select/Insert: test_names
+        $stmt_fields = array("test_suite_id",
+                             "test_name",
+                             "test_name_description");
+        $stmt_values = array($results_idxs_hash['test_suite_id'],
+                             get_scalar($param_set['test_name'], $i),
+                             "DEFAULT");
+
+        $results_idxs_hash['test_name_id'] = 
+            select_insert("test_names", "test_name_id",
+                          $stmt_fields, $stmt_values,
+                          false);
+
+        #########
+        # Select/Insert: Description (Test Run)
+        $results_idxs_hash['description_id'] = 0;
+        if( !is_sql_key_word(get_scalar($param_set['description'], $i)) ) {
+            $stmt_fields = array("description");
+            $stmt_values = array(get_scalar($param_set['description'], $i));
+
+            $results_idxs_hash['description_id'] = 
+                select_insert("description", "description_id",
+                              $stmt_fields, $stmt_values,
+                              false);
+        }
+
+        #########
+        # Select/Insert: Result Message
+        $stmt_fields = array("result_message");
+
+        $stmt_values = array(get_scalar($param_set['result_message'], $i) );
+
+        $results_idxs_hash['result_message_id'] =
+            select_insert("result_message", "result_message_id",
+                          $stmt_fields, $stmt_values,
+                          false);
+
+        #########
+        # Select/Insert: Environment
+        $results_idxs_hash['environment_id'] = 0;
+        if( isset($_POST['environment']) ) {
+            $stmt_fields = array("environment");
+
+            $stmt_values = array(get_scalar($param_set['environment'], $i) );
+
+            $results_idxs_hash['environment_id'] =
+                select_insert("environment", "environment_id",
+                              $stmt_fields, $stmt_values,
+                              false);
+        }
+
+        #########
+        # Insert: Result for Test Run
+        $stmt_fields = array("submit_id",
+                             "compute_cluster_id",
+                             "mpi_install_compiler_id",
+                             "mpi_get_id",
+                             "mpi_install_configure_id",
+                             "mpi_install_id",
+                             "test_suite_id",
+                             "test_build_compiler_id",
+                             "test_build_id",
+                             "test_name_id",
+                             "performance_id",
+                             "test_run_command_id",
+                             "np",
+                             "full_command",
+                             "description_id",
+                             "start_timestamp",
+                             "test_result",
+                             "trial",
+                             "submit_timestamp",
+                             "duration",
+                             "environment_id",
+                             "result_stdout",
+                             "result_stderr",
+                             "result_message_id",
+                             "merge_stdout_stderr",
+                             "exit_value",
+                             "exit_signal",
+                             "client_serial");
+        
+        $stmt_values = array($results_idxs_hash['submit_id'],
+                             $results_idxs_hash['compute_cluster_id'],
+                             $results_idxs_hash['mpi_install_compiler_id'],
+                             $results_idxs_hash['mpi_get_id'],
+                             $results_idxs_hash['mpi_install_configure_id'],
+                             $results_idxs_hash['mpi_install_id'],
+                             $results_idxs_hash['test_suite_id'],
+                             $results_idxs_hash['test_build_compiler_id'],
+                             $results_idxs_hash['test_build_id'],
+                             $results_idxs_hash['test_name_id'],
+                             $results_idxs_hash['performance_id'],
+                             $results_idxs_hash['test_run_command_id'],
+                             get_scalar($param_set['np'], $i),
+                             get_scalar($param_set['command'], $i),
+                             $results_idxs_hash['description_id'],
+                             get_scalar($param_set['start_timestamp'], $i),
+                             get_scalar($param_set['test_result'], $i),
+                             get_scalar($param_set['trial'], $i),
+                             "DEFAULT",
+                             get_scalar($param_set['duration'], $i),
+                             $results_idxs_hash['environment_id'],
+                             get_scalar($param_set['result_stdout'], $i),
+                             get_scalar($param_set['result_stderr'], $i),
+                             $results_idxs_hash['result_message_id'],
+                             convert_bool(get_scalar($param_set['merge_stdout_stderr'], $i)),
+                             get_scalar($param_set['exit_value'], $i),
+                             get_scalar($param_set['exit_signal'], $i),
+                             get_scalar($param_set['client_serial'], $i)
+                             );
+        
+        $test_run_id =
+            select_insert("test_run", "test_run_id",
+                          $stmt_fields, $stmt_values,
+                          true);
+        
+        debug("*** Test Run Id [$test_run_id]\n");
+    }
+
+
+    return $test_run_id;
+}
+
+function process_networks($network_full_param) {
+    global $interconnect_id_hash;
+
+    $nl  = "\n";
+    $nlt = "\n\t";
+
+    $test_run_network_id = 0;
+    $loc_id_hash;
+
+    #
+    # Split the network CSV, and generate interconnect_ids for each value
+    #
+    $networks = preg_split('/,/', $network_full_param);
+    if( 0 >= count($networks) ) {
+        return $$test_run_network_id;
+    }
+
+    foreach( array_keys($networks) as $n) {
+        $stmt_fields = array();
+        $stmt_values = array();
+
+        $key = $networks[$n];
+
+        #
+        # Select/Insert network if we haven't already cached the ID
+        #
+        if(!isset($interconnect_id_hash[$key]) ) {
+            $stmt_fields = array("interconnect_name");
+            $stmt_values = array($key);
+            $interconnect_id_hash[$key] =
+                select_insert("interconnects", "interconnect_id",
+                              $stmt_fields, $stmt_values,
+                              false);
+        }
+
+        $loc_id_hash[$key] = $interconnect_id_hash[$key];
+    }
+
+    #
+    # Determine if we have established this network combination yet
+    #
+    $sql_cmd = ("SELECT test_run_network_id $nl".
+                "FROM test_run_networks $nl".
+                "GROUP BY test_run_network_id $nl".
+                "HAVING count(interconnect_id) = ".count($loc_id_hash)." ");
+    foreach( array_keys($loc_id_hash) as $n ) {
+        $sql_cmd .= ($nlt."INTERSECT $nlt".
+                     "(SELECT test_run_network_id $nlt".
+                     " FROM test_run_networks $nlt".
+                     " WHERE interconnect_id = ".$loc_id_hash[$n].")");
+    }
+    $sql_cmd .= $nl . "LIMIT 1";
+
+    #print("SQL:\n$sql_cmd\n");
+
+    #
+    # if not then obtain a new test_run_network_id and insert it
+    #
+    $test_run_network_id = select_scalar($sql_cmd);
+    if(!isset($test_run_network_id) ) {
+        $test_run_network_id = fetch_single_nextval("test_run_network_id");
+
+        foreach( array_keys($loc_id_hash) as $n ) {
+            $insert_stmt = ("INSERT INTO test_run_networks VALUES $nl".
+                            "(DEFAULT, ".$test_run_network_id.", ".$loc_id_hash[$n].")");
+            #print("SQL INSERT:$nl $insert_stmt\n");
+            do_pg_query($insert_stmt);
+        }
+    }
+
+    #
+    # Return the test_run_network_id generated
+    #
+    return $test_run_network_id;
+}
+
+function process_phase_test_build($results_idxs_hash, $idxs_hash) {
+    $n = $_POST['number_of_results'];
+
+    #
+    # Do this instead of getting all of the columns passed
+    # so we don't overload the memory space.
+    $columns = array("mpi_install_id",
+                     "compiler_name",
+                     "compiler_version",
+                     "suite_name",
+                     "result_message",
+                     "description",
+                     "environment",
+                     "start_timestamp",
+                     "test_result",
+                     "trial",
+                     "duration",
+                     "result_stdout",
+                     "result_stderr",
+                     "merge_stdout_stderr",
+                     "exit_value",
+                     "exit_signal",
+                     "client_serial");
+    $param_set = get_post_values($columns);
+
+    #######
+    # Get the MPI Install IDs
+    $mpi_install_ids = get_mpi_install_ids($param_set['mpi_install_id']);
+    foreach (array_keys($mpi_install_ids) as $k ) {
+        if(!preg_match("/\d+$/", $k, $m) ) {
+            $results_idxs_hash[$k] = $mpi_install_ids[$k];
+        }
+    }
+
+    for($i = 0; $i < $n; $i++) {
+
+        ########
+        # Select/Insert: test_build_compiler -> compiler
+        # Error out if the client did not supply a compiler,
+        # as DEFAULT is meaningless here
+        $stmt_fields = array("compiler_name",
+                             "compiler_version");
+        $stmt_values = array();
+        for($f = 0; $f < count($stmt_fields); $f++) {
+            if(0 == strcasecmp(get_scalar($param_set[$stmt_fields[$f]], $i), "DEFAULT") ) {
+               mtt_error("ERROR: No compiler reported which is required for test_build submits ".
+                         "[field '".$stmt_fields[$f]."' empty]\n");
+               mtt_abort(400, "\nNo compiler supplied for test_build submit. ".
+                              "[field '".$stmt_fields[$f]."' empty]");
+               exit(1);
+            }
+            $stmt_values[] = get_scalar($param_set[$stmt_fields[$f]], $i);
+        }
+
+        $results_idxs_hash['test_build_compiler_id'] = 
+            select_insert("compiler", "compiler_id",
+                          $stmt_fields, $stmt_values,
+                          false);
+        ########
+        # Select/Insert: test_suites
+        $stmt_fields = array("suite_name",
+                             "test_suite_description");
+        $stmt_values = array(get_scalar($param_set['suite_name'], $i),
+                             "DEFAULT");
+
+        $results_idxs_hash['test_suite_id'] = 
+            select_insert("test_suites", "test_suite_id",
+                          $stmt_fields, $stmt_values,
+                          false);
+
+        #########
+        # Select/Insert: Description (Test Build)
+        $results_idxs_hash['description_id'] = 0;
+        if( !is_sql_key_word(get_scalar($param_set['description'], $i)) ) {
+            $stmt_fields = array("description");
+            $stmt_values = array(get_scalar($param_set['description'], $i));
+
+            $results_idxs_hash['description_id'] = 
+                select_insert("description", "description_id",
+                              $stmt_fields, $stmt_values,
+                              false);
+        }
+
+        #########
+        # Select/Insert: Result Message
+        $stmt_fields = array("result_message");
+
+        $stmt_values = array(get_scalar($param_set['result_message'], $i) );
+
+        $results_idxs_hash['result_message_id'] =
+            select_insert("result_message", "result_message_id",
+                          $stmt_fields, $stmt_values,
+                          false);
+
+        #########
+        # Select/Insert: Environment
+        $results_idxs_hash['environment_id'] = 0;
+        if( isset($_POST['environment']) ) {
+            $stmt_fields = array("environment");
+
+            $stmt_values = array(get_scalar($param_set['environment'], $i) );
+
+            $results_idxs_hash['environment_id'] =
+                select_insert("environment", "environment_id",
+                              $stmt_fields, $stmt_values,
+                              false);
+        }
+
+
+        #########
+        # Insert: Result for MPI Install
+        $stmt_fields = array("submit_id",
+                             "compute_cluster_id",
+                             "mpi_install_compiler_id",
+                             "mpi_get_id",
+                             "mpi_install_configure_id",
+                             "mpi_install_id",
+                             "test_suite_id",
+                             "test_build_compiler_id",
+                             "description_id",
+                             "start_timestamp",
+                             "test_result",
+                             "trial",
+                             "submit_timestamp",
+                             "duration",
+                             "environment_id",
+                             "result_stdout",
+                             "result_stderr",
+                             "result_message_id",
+                             "merge_stdout_stderr",
+                             "exit_value",
+                             "exit_signal",
+                             "client_serial");
+
+        $stmt_values = array($results_idxs_hash['submit_id'],
+                             $results_idxs_hash['compute_cluster_id'],
+                             $results_idxs_hash['mpi_install_compiler_id'],
+                             $results_idxs_hash['mpi_get_id'],
+                             $results_idxs_hash['mpi_install_configure_id'],
+                             $results_idxs_hash['mpi_install_id'],
+                             $results_idxs_hash['test_suite_id'],
+                             $results_idxs_hash['test_build_compiler_id'],
+                             $results_idxs_hash['description_id'],
+                             get_scalar($param_set['start_timestamp'], $i),
+                             get_scalar($param_set['test_result'], $i),
+                             get_scalar($param_set['trial'], $i),
+                             "DEFAULT",
+                             get_scalar($param_set['duration'], $i),
+                             $results_idxs_hash['environment_id'],
+                             get_scalar($param_set['result_stdout'], $i),
+                             get_scalar($param_set['result_stderr'], $i),
+                             $results_idxs_hash['result_message_id'],
+                             convert_bool(get_scalar($param_set['merge_stdout_stderr'], $i)),
+                             get_scalar($param_set['exit_value'], $i),
+                             get_scalar($param_set['exit_signal'], $i),
+                             get_scalar($param_set['client_serial'], $i)
+                             );
+        
+        $test_build_id =
+            select_insert("test_build", "test_build_id",
+                          $stmt_fields, $stmt_values,
+                          true);
+
+        debug("*** Test Build Id [$test_build_id]\n");
+    }
+
+    return $test_build_id;
+}
+
+function get_test_build_ids($test_build_id) {
+    $nl  = "\n";
+    $nlt = "\n\t";
+
+    $orig_test_build_id = $test_build_id;
+
+    ###############
+    # First check if this is a valid mpi_install_id
+    if(!isset($test_build_id) ||
+       0 == strlen($test_build_id) ||
+       !preg_match("/^\d+$/", $test_build_id, $m) ) {
+        $test_build_id = find_test_build_id();
+        mtt_notice("Invalid test_build_id ($orig_test_build_id) given. " .
+                   "Guessing that it should be $test_build_id");
+    }
+    else {
+        $select_stmt = ("SELECT test_build_id $nl" .
+                        "FROM test_build $nl".
+                        "WHERE $nlt" .
+                        "test_build_id = '".$test_build_id."'");
+        $valid_id = select_scalar($select_stmt);
+        if( !isset($valid_id) ) {
+            $test_build_id = find_test_build_id();
+            mtt_notice("Invalid test_build_id ($orig_test_build_id) given. " .
+                       "Guessing that it should be $test_build_id");
+        }
+    }
+
+    if( $test_build_id < 0 ) {
+        mtt_error("ERROR: Unable to find a test_build to associate with this test_run.\n");
+        mtt_abort(400, "\nNo test_build associated with this test_run\n");
+        exit(1);
+    }
+
+    $select_stmt = ("SELECT test_build_id, $nl" .
+                    "       compute_cluster_id, $nl" .
+                    "       mpi_install_compiler_id, $nl" .
+                    "       mpi_get_id, $nl" .
+                    "       mpi_install_configure_id, $nl" .
+                    "       mpi_install_id, $nl" .
+                    "       test_suite_id, $nl" .
+                    "       test_build_compiler_id $nl" .
+                    "FROM test_build $nl" .
+                    "WHERE $nlt" .
+                    "test_build_id = '".$test_build_id."'");
+
+    debug("Test Build IDs Select: \n");
+    debug("$select_stmt\n");
+
+    return associative_select($select_stmt);
+}
+
+#
+# This is really taking a best guess at what the test_build_id might
+# be given the limited amount of data the client provides us.
+#
+function find_test_build_id() {
+    $nl  = "\n";
+    $nlt = "\n\t";
+
+    $n = $_POST['number_of_results'];
+    $i = 0;
+    $test_build_id = 0;
+
+    #
+    # Do this instead of getting all of the columns passed
+    # so we don't overload the memory space.
+    $columns = array("mpi_version",
+                     "mpi_name",
+                     "hostname",
+                     "mtt_client_version",
+                     "local_username",
+                     "platform_name");
+    $param_set = get_post_values($columns);
+
+    $select_stmt = ("SELECT test_build_id $nl" .
+                    "FROM test_build  NATURAL JOIN $nl" .
+                    "     mpi_get     NATURAL JOIN $nl" .
+                    "     compute_cluster NATURAL JOIN $nl" .
+                    "     submit $nl" .
+                    "WHERE $nlt" .
+                    "mpi_version = ".quote_(pg_escape_string(get_scalar($param_set['mpi_version'], $i)))   ." AND $nlt" .
+                    "mpi_name    = ".quote_(pg_escape_string(get_scalar($param_set['mpi_name'], $i)))      ." AND $nlt" .
+                    "hostname         = ".  quote_(pg_escape_string(get_scalar($param_set['hostname'], $i)))         ." AND $nlt" .
+                    "mtt_client_version = ".quote_(pg_escape_string(get_scalar($param_set['mtt_client_version'], $i))) ." AND $nlt" .
+                    "local_username   = ".  quote_(pg_escape_string(get_scalar($param_set['local_username'], $i)))   ." AND $nlt" .
+                    "platform_name    = ".  quote_(pg_escape_string(get_scalar($param_set['platform_name'], $i)))    ." $nlt" .
+                    "ORDER BY test_build_id DESC limit 1");
+
+    $test_build_id = select_scalar($select_stmt);
+
+    if(isset($test_build_id) && 0 < strlen($test_build_id) ) {
+        return $test_build_id;
+    }
+    else {
+        return -1;
+    }
+}
+
+function get_mpi_install_ids($mpi_install_id) {
+    $nl  = "\n";
+    $nlt = "\n\t";
+
+    $orig_mpi_install_id = $mpi_install_id;
+
+    ###############
+    # First check if this is a valid mpi_install_id
+    if(!isset($mpi_install_id) ||
+       0 == strlen($mpi_install_id) ||
+       !preg_match("/^\d+$/", $orig_mpi_install_id, $m) ) {
+        $mpi_install_id = find_mpi_install_id();
+        mtt_notice("Invalid mpi_install_id ($orig_mpi_install_id) given. " .
+                   "Guessing that it should be $mpi_install_id");
+    }
+    else {
+        $select_stmt = ("SELECT mpi_install_id $nl" .
+                        "FROM mpi_install $nl".
+                        "WHERE $nlt" .
+                        "mpi_install_id = '".$mpi_install_id."'");
+
+        $valid_id = select_scalar($select_stmt);
+
+        if( !isset($valid_id) ) {
+            $mpi_install_id = find_mpi_install_id();
+            mtt_notice("Invalid mpi_install_id ($orig_mpi_install_id) given. " .
+                       "Guessing that it should be $mpi_install_id");
+        }
+    }
+    
+    if( $mpi_install_id < 0 ) {
+        mtt_error("ERROR: Unable to find a mpi_install to associate with this test_build.\n");
+        mtt_abort(400, "\nNo mpi_install associated with this test_build\n");
+        exit(1);
+    }
+
+    $select_stmt = ("SELECT mpi_install_id, $nl" .
+                    "       compute_cluster_id, $nl" .
+                    "       mpi_install_compiler_id, $nl" .
+                    "       mpi_get_id, $nl" .
+                    "       mpi_install_configure_id $nl" .
+                    "FROM mpi_install $nl" .
+                    "WHERE $nlt" .
+                    "mpi_install_id = '".$mpi_install_id."'");
+
+    debug("MPI Install IDs Select: \n");
+    debug("$select_stmt\n");
+
+    return associative_select($select_stmt);
+}
+
+#
+# This is really taking a best guess at what the mpi_install_id might
+# be given the limited amount of data the client provides us.
+#
+function find_mpi_install_id() {
+    $nl  = "\n";
+    $nlt = "\n\t";
+
+    $n = $_POST['number_of_results'];
+    $i = 0;
+    $mpi_install_id = 0;
+
+    #
+    # Do this instead of getting all of the columns passed
+    # so we don't overload the memory space.
+    $columns = array("mpi_version", 
+                     "mpi_name",
+                     "compiler_version",
+                     "compiler_name",
+                     "hostname",
+                     "mtt_client_version",
+                     "local_username",
+                     "platform_name");
+    $param_set = get_post_values($columns);
+
+    $select_stmt = ("SELECT mpi_install_id $nl" .
+                    "FROM mpi_install NATURAL JOIN $nl" .
+                    "     mpi_get     NATURAL JOIN $nl" .
+                    "     compiler    NATURAL JOIN $nl" .
+                    "     compute_cluster NATURAL JOIN $nl" .
+                    "     submit $nl" .
+                    "WHERE $nlt" .
+                    "mpi_version = ".quote_(pg_escape_string(get_scalar($param_set['mpi_version'], $i)))   ." AND $nlt" .
+                    "mpi_name    = ".quote_(pg_escape_string(get_scalar($param_set['mpi_name'], $i)))      ." AND $nlt" .
+                    "compiler_version = ".  quote_(pg_escape_string(get_scalar($param_set['compiler_version'], $i))) ." AND $nlt" .
+                    "compiler_name    = ".  quote_(pg_escape_string(get_scalar($param_set['compiler_name'], $i)))    ." AND $nlt" .
+                    "hostname         = ".  quote_(pg_escape_string(get_scalar($param_set['hostname'], $i)))         ." AND $nlt" .
+                    "mtt_client_version = ".quote_(pg_escape_string(get_scalar($param_set['mtt_client_version'], $i))) ." AND $nlt" .
+                    "local_username   = ".  quote_(pg_escape_string(get_scalar($param_set['local_username'], $i)))   ." AND $nlt" .
+                    "platform_name    = ".  quote_(pg_escape_string(get_scalar($param_set['platform_name'], $i)))    ." $nlt" .
+                    "ORDER BY mpi_install_id DESC limit 1");
+
+    $mpi_install_id = select_scalar($select_stmt);
+
+    if(isset($mpi_install_id) && 0 < strlen($mpi_install_id) ) {
+        return $mpi_install_id;
+    }
+    else {
+        return -1;
+    }
+}
+
+function process_phase_mpi_install($results_idxs_hash, $idxs_hash) {
+
+    $n = $_POST['number_of_results'];
+
+    #
+    # Do this instead of getting all of the columns passed
+    # so we don't overload the memory space.
+    $columns = array("compiler_name",
+                     "compiler_version",
+                     "platform_name",
+                     "platform_hardware",
+                     "platform_type",
+                     "os_name",
+                     "os_version",
+                     "mpi_name",
+                     "mpi_version",
+                     "vpath_mode",
+                     "bitness",
+                     "endian",
+                     "configure_arguments",
+                     "result_message",
+                     "description",
+                     "environment",
+                     "start_timestamp",
+                     "test_result",
+                     "trial",
+                     "duration",
+                     "result_stdout",
+                     "result_stderr",
+                     "merge_stdout_stderr",
+                     "exit_value",
+                     "exit_signal",
+                     "client_serial");
+    $param_set = get_post_values($columns);
+
+    for($i = 0; $i < $n; $i++) {
+
+        ########
+        # Select/Insert: compute_cluster
+        $stmt_fields = array("platform_name",
+                             "platform_hardware",
+                             "platform_type",
+                             "os_name",
+                             "os_version");
+
+        $stmt_values = array();
+        for($f = 0; $f < count($stmt_fields); $f++) {
+            $stmt_values[] = get_scalar($param_set[$stmt_fields[$f]], $i);
+        }
+
+        $results_idxs_hash['compute_cluster_id'] =
+            select_insert("compute_cluster", "compute_cluster_id",
+                          $stmt_fields, $stmt_values,
+                          false);
+
+        ########
+        # Select/Insert: mpi_install_compiler -> compiler
+        # Error out if the client did not supply a compiler,
+        # as DEFAULT is meaningless here
+        $stmt_fields = array("compiler_name",
+                             "compiler_version");
+        $stmt_values = array();
+        for($f = 0; $f < count($stmt_fields); $f++) {
+            if(0 == strcasecmp(get_scalar($param_set[$stmt_fields[$f]], $i), "DEFAULT") ) {
+               mtt_error("ERROR: No compiler reported which is required for mpi_install submits ".
+                         "[field '".$stmt_fields[$f]."' empty]\n");
+               mtt_abort(400, "\nNo compiler supplied for mpi_install submit. ".
+                              "[field '".$stmt_fields[$f]."' empty]");
+               exit(1);
+            }
+
+            $stmt_values[] = get_scalar($param_set[$stmt_fields[$f]], $i);
+        }
+
+        $results_idxs_hash['mpi_install_compiler_id'] = 
+            select_insert("compiler", "compiler_id",
+                          $stmt_fields, $stmt_values,
+                          false);
+
+        ########
+        # Select/Insert: mpi_get
+        $stmt_fields = array("mpi_name",
+                             "mpi_version");
+
+        $stmt_values = array();
+        for($f = 0; $f < count($stmt_fields); $f++) {
+            $stmt_values[] = get_scalar($param_set[$stmt_fields[$f]], $i);
+        }
+
+        $results_idxs_hash['mpi_get_id'] =
+            select_insert("mpi_get", "mpi_get_id",
+                          $stmt_fields, $stmt_values,
+                          false);
+
+        ########
+        # Select/Insert: mpi_install_configure -> mpi_install_configure table
+        $stmt_fields = array("vpath_mode",
+                             "bitness",
+                             "endian",
+                             "configure_arguments");
+
+        $stmt_values = array(convert_vpath_mode(get_scalar($param_set['vpath_mode'], $i) ),
+                             convert_bitness(   get_scalar($param_set['bitness'],    $i) ),
+                             convert_endian(    get_scalar($param_set['endian'],     $i) ),
+                             get_scalar($param_set['configure_arguments'],           $i) );
+
+        $results_idxs_hash['mpi_configure_id'] =
+            select_insert("mpi_install_configure_args", "mpi_install_configure_id",
+                          $stmt_fields, $stmt_values,
+                          false);
+
+        #########
+        # Select/Insert: Description
+        $results_idxs_hash['description_id'] = 0;
+        if( !is_sql_key_word(get_scalar($param_set['description'], $i)) ) {
+            $stmt_fields = array("description");
+            $stmt_values = array(get_scalar($param_set['description'], $i));
+
+            $results_idxs_hash['description_id'] = 
+                select_insert("description", "description_id",
+                              $stmt_fields, $stmt_values,
+                              false);
+        }
+
+        #########
+        # Select/Insert: Result Message
+        $stmt_fields = array("result_message");
+
+        $stmt_values = array(get_scalar($param_set['result_message'], $i) );
+
+        $results_idxs_hash['result_message_id'] =
+            select_insert("result_message", "result_message_id",
+                          $stmt_fields, $stmt_values,
+                          false);
+
+        #########
+        # Select/Insert: Environment
+        $results_idxs_hash['environment_id'] = 0;
+        if( isset($_POST['environment']) ) {
+            $stmt_fields = array("environment");
+
+            $stmt_values = array(get_scalar($param_set['environment'], $i) );
+
+            $results_idxs_hash['environment_id'] =
+                select_insert("environment", "environment_id",
+                              $stmt_fields, $stmt_values,
+                              false);
+        }
+
+        #########
+        # Insert: Result for MPI Install
+        $stmt_fields = array("submit_id",
+                             "compute_cluster_id",
+                             "mpi_install_compiler_id",
+                             "mpi_get_id",
+                             "mpi_install_configure_id",
+                             "description_id",
+                             "start_timestamp",
+                             "test_result",
+                             "trial",
+                             "submit_timestamp",
+                             "duration",
+                             "environment_id",
+                             "result_stdout",
+                             "result_stderr",
+                             "result_message_id",
+                             "merge_stdout_stderr",
+                             "exit_value",
+                             "exit_signal",
+                             "client_serial");
+
+        $stmt_values = array($results_idxs_hash['submit_id'],
+                             $results_idxs_hash['compute_cluster_id'],
+                             $results_idxs_hash['mpi_install_compiler_id'],
+                             $results_idxs_hash['mpi_get_id'],
+                             $results_idxs_hash['mpi_configure_id'],
+                             $results_idxs_hash['description_id'],
+                             get_scalar($param_set['start_timestamp'], $i),
+                             get_scalar($param_set['test_result'], $i),
+                             get_scalar($param_set['trial'], $i),
+                             "DEFAULT",
+                             get_scalar($param_set['duration'], $i),
+                             $results_idxs_hash['environment_id'],
+                             get_scalar($param_set['result_stdout'], $i),
+                             get_scalar($param_set['result_stderr'], $i),
+                             $results_idxs_hash['result_message_id'],
+                             get_scalar($param_set['merge_stdout_stderr'], $i),
+                             get_scalar($param_set['exit_value'], $i),
+                             get_scalar($param_set['exit_signal'], $i),
+                             get_scalar($param_set['client_serial'], $i)
+                             );
+        
+        $mpi_install_id =
+            select_insert("mpi_install", "mpi_install_id",
+                          $stmt_fields, $stmt_values,
+                          true);
+
+        debug("*** MPI Install Id [$mpi_install_id]\n");
+    }
+
+    return $mpi_install_id;
+}
+
+function select_insert($table, $table_id, $stmt_fields, $stmt_values, $always_new) {
+    $num_good_fields = 0;
+    $nl  = "\n";
+    $nlt = "\n\t";
+
+    $select_stmt = ("SELECT $table_id $nl" .
+                    "FROM $table $nl");
+    $insert_stmt = ("INSERT INTO $table $nlt" .
+                    "($table_id");
+
+    for($i = 0; $i < count($stmt_fields); ++$i) {
+        $insert_stmt .= ", " . $stmt_fields[$i];
+
+        # Select Skips 'DEFAULT' values
+        if( 0 == strncmp($stmt_values[$i], "DEFAULT", strlen("DEFAULT")) ) {
+            continue;
+        }
+
+        if( $i != 0 ) {  $select_stmt .= " AND $nlt";  }
+        else {           $select_stmt .= "WHERE $nlt"; }
+
+        $select_stmt .= $stmt_fields[$i] . " = ";
+        $select_stmt .= quote_(pg_escape_string($stmt_values[$i])) ;
+        $num_good_fields++;
+    }
+    $select_stmt .= $nl . "ORDER BY $table_id ASC LIMIT 1 ";
+    $insert_stmt .= ") VALUES " . $nlt . "(";
+
+    ###############
+    # Try out the select to see if we have to insert
+    if(! $always_new && 0 < $num_good_fields) {
+        debug("\n--- SELECT STMT ---\n");
+        debug("$select_stmt\n");
+
+        $idx_value = select_scalar($select_stmt);
+        if( ! is_null_($idx_value) ) {
+            return $idx_value;
+        }
+    }
+
+    ###############
+    # Since it does not exist, insert a new tuple
+    $seq_name = $table . "_" . $table_id . "_seq";
+    $idx_value = fetch_single_nextval($seq_name);
+
+    $insert_stmt .=  quote_(pg_escape_string($idx_value));
+    for($i = 0; $i < count($stmt_fields); ++$i) {
+        $insert_stmt .= ", ";
+        if( 0 == strncmp($stmt_values[$i], "DEFAULT", strlen("DEFAULT")) ) {
+            $insert_stmt .= "DEFAULT";
+        }
+        else {
+            $insert_stmt .= quote_(pg_escape_string($stmt_values[$i])) ;
+        }
+    }
+    $insert_stmt .= ")";
+
+    debug("\n--- INSERT STMT ---\n");
+    debug("$insert_stmt\n");
+
+    do_pg_query($insert_stmt);
+
+    return $idx_value;
 }
 
 # array_unique that does not error out when given a scalar
@@ -298,165 +1165,13 @@ function _array_values($var) {
         return array($var);
 }
 
-# Return the index(es) of the existing rows that match
-# $wheres, otherwise return null
-function check_existence($wheres, $params, $table, $numbered) {
-
-    global $id;
-
-    $n = $_POST['number_of_results'];
-
-    # MAKE SURE TABLE'S SERIAL-INTEGER PAIR
-    # FOLLOWS THE table_id NAMING SCHEME
-    $table_id = $table . $id;
-
-    for ($i = 0; $i < $n; $i++) {
-
-        $select_qry = "\n   SELECT $table_id FROM $table " .
-                      "\n\t WHERE \n\t";
-
-        $j = 0;
-        $items = array();
-        # Seems odd that we iterate over both string and numeric keys here
-        foreach (array_keys($wheres) as $k) {
-            $items[] = sql_compare($k,
-                                    pg_escape_string(get_scalar($wheres[$k], $i)),
-                                    $params['data_type'][$j],
-                                    $params['column_default'][$j]);
-            $j++;
-        }
-
-        $select_qry .= join("\n\t AND ", $items);
-        $select_qry .= "\n\t ORDER BY $table_id ASC ";
-        $select_qry .= "LIMIT 1 ";
-
-        $idx_value = select_scalar($select_qry);
-
-        if (! $numbered) {
-            $idx = $idx_value;
-            break;
-        }
-        else
-            $idx[$i] = $idx_value;
-    }
-
-    return $idx;
-}
-
-# Copy archive TABLE rows (keyed by $idx) over to 
-# speedy TABLEs
-#
-# Note: it's possible we could get away with being slobs here,
-# and just copy over the small TABLEs wholesale. But we're trying
-# to make these speedy TABLEs as efficient as possible, right?
-function mirror_archived_in_speedy($indexes, $table) {
-
-    $silent = 1;
-
-    ####################################################
-    #
-    # Part 1 - Clean sweep of POST
-    #
-    ####################################################
-
-    # Do a clean sweep of all the POST params and make sure
-    # we copy them over to the speedy TABLEs. (This is a
-    # safeguard, but is needed at least for the initial
-    # INSERTs into the speedy_ TABLEs to avoid FOREIGN KEY
-    # constraint errors, since the speedy tables are
-    # initially empty!)
-    static $prevented_foreign_key_errors = false;
-
-    # Only do the clean sweep *once*
-    if (! $prevented_foreign_key_errors) {
-        $prevented_foreign_key_errors = true;
-
-        $n = $_POST['number_of_results'];
-
-        # Array of serial values that the client
-        # handshakes with
-        $tables = array("mpi_install", "test_build");
-
-        foreach ($tables as $t) {
-            $wheres = array();
-
-            # WE'RE NOT MIRRORING OVER DEPENDENCIES FROM THE PAST (SO
-            # A TEST_BUILD THAT POINTS TO AN OLD OLD MPI INSTALL WILL
-            # FAIL ON A FOREIGN KEY CONSTRAINT ERROR, SINCE THE OLD
-            # OLD MPI INSTALL NEVER GOT COPIED OVER).  SOMEDAY,
-            # PERHAPS, WE SHOULD COVER THIS USE CASE (E.G., FOR
-            # --RESUBMIT AND THE LIKE?)
-            #
-            # $idx_names = get_table_indexes($t);
-
-            # Get column name of the serial  
-            $serial = $t . $id;
-
-            # mpi_install_id and test_build_id are
-            # NEVER numbered, but *just* in case
-            for ($i = 0; $i < $n; $i++) {
-                $sfx = ($i == 0) ? null : '_' . $i;
-
-                $value = $_POST[$serial . $sfx];
-
-                if (! is_null($value))
-                    $wheres[] = "$serial = $value";
-            }
-
-            # Copy over dependent rows that the copied
-            # $hash =
-            #     associative_select("\n\t SELECT " . join(",", $idx_names) .
-            #                   "\n\t   FROM $t " .
-            #                   "\n\t   WHERE " . join(" OR \n\t", $wheres) . ";");
-
-            if (sizeof($wheres) > 0) {
-                $insert_qry = sprintf($format, $t, $t, join(" OR \n\t", $wheres));
-                do_pg_query($insert_qry, $silent);
-            }
-        }
-    }
-
-    ####################################################
-    #
-    # Part 2 - Copy over a single row
-    #
-    ####################################################
-
-    global $id, $speedy_pfx, $archive_pfx;
-
-    $wheres = array();
-
-    # MAKE SURE TABLE'S SERIAL-INTEGER PAIR
-    # FOLLOWS THE table_id NAMING SCHEME
-    $table_id = $table . $id;
-
-    $indexes = _array_unique(_array_values($indexes));
-
-    # Construct an INSERT INTO ... SELECT to copy over
-    # archive rows into the speedy table
-    $format = "\n   INSERT INTO $speedy_pfx%s " .
-              "\n\t   SELECT * FROM $archive_pfx%s WHERE %s;";
-
-    foreach ($indexes as $i) {
-        $wheres[] = "$table_id = $i";
-    }
-    $insert_qry = sprintf($format, $table, $table, join(" OR \n\t", $wheres));
-
-    # We expect many duplicate "errors" to occur here, because
-    # we are using the UNIQUE column constraint to prevent
-    # duplicates entries (instead of checking with SELCECT,
-    # as we do for the archive TABLEs)
-
-    do_pg_query($insert_qry, $silent);
-}
-
 function fetch_nextvals($idx, $seq_name, $numbered) {
 
     $n = $_POST['number_of_results'];
 
     for ($i = 0; $i < $n; $i++) {
         if (is_null($idx[$i])) {
-            $ret['idx'][$i] = select_scalar("SELECT nextval('$seq_name') LIMIT 1;");
+            $ret['idx'][$i] = fetch_single_nextval($seq_name);
             $ret['new_indexes'][$i] = true;
         } else {
             $ret['new_indexes'][$i] = false;
@@ -467,6 +1182,10 @@ function fetch_nextvals($idx, $seq_name, $numbered) {
     }
 
     return $ret;
+}
+
+function fetch_single_nextval($seq_name) {
+    return select_scalar("SELECT nextval('$seq_name') LIMIT 1;");
 }
 
 # Return true if the table contains an integer
@@ -606,6 +1325,26 @@ function get_table_fields($table_name) {
         }
     }
     return $tmp;
+}
+
+#
+# Useful display of all the parameters posted.
+# Warning: this function could explode the memory footprint causing the 
+# script to fail for large submits.
+function debug_dump_data() {
+  $n = $_POST['number_of_results'];
+
+  # Iterate through POST, and report names that are not 
+  # columns in the database
+  print("=======================================\n");
+
+  $uber_param = get_all_post_values();
+  for($i = 0; $i < $n; $i++) {
+    foreach(array_keys($uber_param) as $f) {
+      print("Posted Parameters $i: [".$f."] = [".get_scalar($uber_param[$f], $i)."]\n");
+    }
+  }
+  print("=======================================\n\n");
 }
 
 # Check fields in the POST that are not in the DB
@@ -839,7 +1578,8 @@ function mtt_send_mail($message) {
 
     $php_auth_user = $_SERVER['PHP_AUTH_USER'];
     $user          = $_POST['email'];
-    $admin         = 'ethan.mallove@sun.com';
+#JJH    $admin         = 'ethan.mallove@sun.com';
+    $admin         = 'jjhursey@open-mpi.org';
     $date          = date('r');
     $phpversion    = phpversion();
     $boundary      = md5(time());
@@ -1014,6 +1754,63 @@ function get_post_values($params) {
     return $hash;
 }
 
+function get_all_post_values() {
+
+    $n = $_POST['number_of_results'];
+
+    $params = array();
+    foreach(array_keys($_POST) as $k) {
+       $params[] = preg_replace('/_\d+$/', '', $k);
+    }
+    $hash = array();
+    $some_set = array();
+
+    # Determine some_sets
+    foreach ($params as $field) {
+        for ($i = 1; $i <= $n; $i++) {
+            $name = $field . (($i == 0) ? "" : "_" . $i);
+            if (isset($_POST[$name])) {
+                $some_set[$field] = true;
+            }
+        }
+    }
+
+    foreach ($params as $field) {
+
+        $found_value = false;
+        $numbered = false;
+
+        for ($i = 0; $i <= $n; $i++) {
+
+            $name = $field . (($i == 0) ? "" : "_" . $i);
+            $numbered = (($i == 0) ? false : true);
+
+            if (isset($_POST[$name])) {
+
+                $value       = $_POST[$name];
+                $found_value = true;
+
+                if ($numbered) {
+                    $hash[$field][] = $value;
+                }
+                else {
+                    $hash[$field] = $value;
+                    break;
+                } 
+            }
+            elseif (isset($some_set[$field]) and $numbered) {
+                $hash[$field][] = "DEFAULT";
+            }
+        }
+        # We could leave this out and the field would insert to DEFAULT,
+        # let's explicitly INSERT DEFAULT for now
+        if (! $found_value) {
+            $hash[$field] = "DEFAULT";
+        }
+    }
+    return $hash;
+}
+
 # Args: params (which presumably map to a single db table)
 # Return: true if it contains a numbered field in HTTP input
 function are_numbered($params) {
@@ -1048,7 +1845,7 @@ function get_serial() {
     # $serial_name = select_scalar($cmd);
 
     $serial_name = 'client_serial';
-    $serial      = select_scalar("SELECT nextval('$serial_name');");
+    $serial      = fetch_single_nextval($serial_name);
 
     return $serial;
 }
@@ -1078,4 +1875,95 @@ function gunzip_file($filename) {
     }
     gzclose($handle);
     return $ret;
+}
+
+function convert_bool($val) {
+  if(!isset($val)) { return '1'; }
+  else { return $val; }
+}
+function convert_vpath_mode($vm) {
+  if($vm == 1) {      return "01"; }
+  else if($vm == 2) { return "10"; }
+  else {              return "00"; }
+}
+
+function convert_bitness($bit) {
+  if(     $bit == 1 ) { return "000001"; }
+  else if($bit == 2 ) { return "000010"; }
+  else if($bit == 4 ) { return "000100"; }
+  else if($bit == 6 ) { return "000110"; }
+  else if($bit == 8 ) { return "001000"; }
+  else if($bit == 16) { return "010000"; }
+  else {                return "000000"; }
+}
+
+function convert_endian($bit) {
+  if($bit == 1) {      return "01"; }
+  else if($bit == 2) { return "10"; }
+  else {               return "00"; }
+}
+
+function convert_launcher($cmd) {
+    # Strip Off leading whitespace
+    $loc_cmd = preg_replace('/^\s*/', '', $cmd);
+
+    # Break up the arguments by spacing
+    $args = preg_split('/\s+/', $loc_cmd);
+
+    # The launcher is always the first item
+    return $args[0];
+}
+
+function convert_parameters($cmd) {
+    $params = "";
+    $param_list = array();
+
+    # Known parameters = # of arguments
+    $known_params = array();
+    $known_params['mca']  = 2;
+    $known_params['gmca'] = 2;
+    $known_params['am']   = 1;
+    $known_params['ssi']  = 2;
+    
+    # Strip Off leading whitespace
+    $loc_cmd = preg_replace('/^\s*/', '', $cmd);
+
+    # Strip Off --prefix
+    $loc_cmd = preg_replace('/(--prefix)\s+\S+\s+/', '', $loc_cmd);
+
+    # Strip Off --host list argument
+    $loc_cmd = preg_replace('/(--host)\s+\S+\s+/', '', $loc_cmd);
+
+    # Break up the arguments by spacing
+    $args = preg_split('/\s+/', $loc_cmd);
+
+    #print_r($args);
+
+    # For each argument
+    for($i = 0; $i < count($args); $i++) {
+        #
+        # Check to see if it matches a known parameter
+        foreach( array_keys($known_params) as $k ) {
+            $params = "";
+            if(preg_match("/$k$/", $args[$i], $matches) ) {
+                #
+                # if it does then pull off the arguments and add them to a list
+                for($j = 0; $j <= $known_params[$k]; $j++, $i++) {
+                    if($j != 0) {
+                        $params .= " ";
+                    }
+                    if($i < count($args) && isset($args[$i])) {
+                        $params .= $args[$i];
+                    }
+                }
+                --$i;
+                $param_list[] = $params;
+                break;
+            }
+        }
+    }
+
+    $params = join(" ", $param_list);
+    #print "Param List <$params>\n";
+    return $params;
 }

@@ -62,51 +62,61 @@ function phase_results_table($start_date) {
     # FOR COMPOSING THE QUERY (CLEVER USE), BUT ALSO FOR
     # SUMMARY TABLE HEADERS (SILLY USE)
 
-    $type = choose_table_type($start_date);
-
     # Setup results cases for the *temporary* view
     $result_name = 'test_result';
     $ret['cases'] = array(
         'mpi_install' =>
             array(
                 "(CASE WHEN
-                  $result_name = 1
+                  mpi_install.$result_name = 1
                   THEN '_ip' END) as pass",
                 "(CASE WHEN
-                  $result_name = 0
+                  mpi_install.$result_name = 0
                   THEN '_if' END) as fail",
-                "'' as skipped",
-                "'' as timed_out",
-                "'' as latency_bandwidth"
+                "(CASE WHEN
+                  0 = 2
+                  THEN '_is' END) as skipped",
+                "(CASE WHEN
+                  0 = 3
+                  THEN '_is' END) as timed_out",
+                "(CASE WHEN
+                  0 = -38
+                  THEN '_is' END) as latency_bandwidth"
             ),
         "test_build"  =>
             array(
                 "(CASE WHEN
-                  $result_name = 1
+                  test_build.$result_name = 1
                   THEN '_bp' END) as pass",
                 "(CASE WHEN
-                  $result_name = 0
+                  test_build.$result_name = 0
                   THEN '_bf' END) as fail",
-                "'' as skipped",
-                "'' as timed_out",
-                "'' as latency_bandwidth"
+                "(CASE WHEN
+                  0 = 2
+                  THEN '_bs' END) as skipped",
+                "(CASE WHEN
+                  0 = 3
+                  THEN '_bs' END) as timed_out",
+                "(CASE WHEN
+                  0 = -38
+                  THEN '_bs' END) as latency_bandwidth"
             ),
         "test_run"    =>
             array(
                 "(CASE WHEN
-                  $result_name = 1
+                  test_run.$result_name = 1
                   THEN '_rp' END) as pass",
                 "(CASE WHEN
-                  $result_name = 0
+                  test_run.$result_name = 0
                   THEN '_rf' END) as fail",
                 "(CASE WHEN
-                  $result_name = 2
+                  test_run.$result_name = 2
                   THEN '_rs' END) as skipped",
                 "(CASE WHEN
-                  $result_name = 3
+                  test_run.$result_name = 3
                   THEN '_rt' END) as timed_out",
                 "(CASE WHEN
-                  ${type}results.latency_bandwidth_id != -38
+                  latency_bandwidth_id > 0
                   THEN '_rl' END) as latency_bandwidth"
             ),
     );
@@ -125,138 +135,6 @@ function phase_results_table($start_date) {
     return $ret;
 }
 
-# Return a listing of JOIN clauses for each phase type
-function setup_joins($selects, $start_date) {
-
-    static $ret;
-    if ($ret)
-        return $ret;
-
-    # THE BELOW IDEA SEEMED WORTHWHILE, BUT JUST ADDS
-    # COMPLEXITY.  TABLES ARE NOT DECOUPLED ENOUGH AT THIS
-    # POINT TO BE ABLE RIP OUT TABLES FROM THE JOIN CLAUSE,
-    # NOR WOULD DOING SO WITH THE CURRENT SCHEMA REALLY HELP
-
-    # $nl = "\n\t";
-
-    # $which_tables = which_tables($selects);
-
-    # $maybe_join = array(
-    #     'mpi_get',
-    #     'compute_cluster',
-    #     'compiler',
-    #     'mpi_install',
-    #     'test_build',
-    #     'test_run',
-    # );
-
-    # $phases = array(
-    #     1 => 'mpi_install',
-    #     2 => 'test_build',
-    #     3 => 'test_run',
-    # );
-
-    # $format = " JOIN $nl results ON (results.phase = %d AND phase_id = %s_id) ";
-
-    # # Iterate over all the phases
-    # foreach (array_keys($phases) as $i) {
-    #     $phase = $phases[$i];
-
-    #     # Initialize array to store list of JOINing tables
-    #     $tables = array();
-
-    #     foreach ($maybe_join as $table) {
-    #         if (array_search($table, $which_tables) !== false) {
-    #             $tables[] = $table;
-    #         }
-    #     }
-    #     $clause = join(" NATURAL JOIN $nl", $tables);
-
-    #     # Only JOIN here if we didn't join above, because the
-    #     # because phase_id is always JOINed on in results
-    #     if (array_search($phase, $which_tables) === false) {
-    #         $clause .= " NATURAL JOIN $nl $phase ";
-    #     }
-
-    #     $clause .= sprintf($format, $i, $phase);
-
-    #     if (array_search('submit', $which_tables) !== false) {
-    #         $clause .= " NATURAL JOIN $nl submit";
-    #     }
-
-    #     # latency_bandwidth is a special test_run table
-    #     if ($phase == 'test_run') {
-    #         $clause .= " LEFT OUTER JOIN $nl latency_bandwidth USING (latency_bandwidth_id)";
-    #     }
-
-    #     $ret[$phase] = $clause;
-    # }
-
-    $type = choose_table_type($start_date);
-
-    $ret['mpi_install'] ="
-        ${type}mpi_get NATURAL JOIN 
-        ${type}mpi_install NATURAL JOIN 
-        ${type}compute_cluster NATURAL JOIN 
-        ${type}compiler JOIN 
-        ${type}results ON (${type}results.phase = 1 AND phase_id = mpi_install_id) NATURAL JOIN 
-        ${type}submit";
-
-    $ret['test_build'] = "
-        ${type}mpi_get NATURAL JOIN 
-        ${type}mpi_install NATURAL JOIN 
-        ${type}compute_cluster NATURAL JOIN 
-        ${type}compiler NATURAL JOIN
-        ${type}test_build JOIN
-        ${type}results ON (${type}results.phase = 2 AND phase_id = test_build_id) NATURAL JOIN 
-        ${type}submit";
-
-    $ret['test_run'] = "
-        ${type}mpi_get NATURAL JOIN
-        ${type}mpi_install NATURAL JOIN
-        ${type}compute_cluster NATURAL JOIN
-        ${type}test_build NATURAL JOIN
-        ${type}compiler NATURAL JOIN
-        ${type}test_run JOIN
-        ${type}results ON (${type}results.phase = 3 AND phase_id = test_run_id) NATURAL JOIN
-        ${type}submit LEFT OUTER JOIN
-        ${type}latency_bandwidth USING (latency_bandwidth_id)";
-
-    return $ret;
-}
-
-# Return 'speedy_' if *speedy* TABLEs should be used, otherwise ''
-function choose_table_type($start_date) {
-
-    # Two table types
-    $speedy = 'speedy_';
-    $archive = '';
-
-    # Some developer switches to force which type of TABLE
-    # to SELECT from
-    if (isset($_GET['use_speedy']))
-        return $speedy;
-    elseif (isset($_GET['use_archive']))
-        return $archive;
-
-    if (! $start_date)
-        return $speedy;
-
-    $cmd = "\nSELECT start_timestamp " . 
-                "\n\t FROM ${speedy}results " . 
-                "\n\t ORDER BY start_timestamp ASC " .
-                "\n\t LIMIT 1;";
-
-    $oldest_timestamp = select_scalar($cmd);
-
-    $cmd = "\nSELECT 1 WHERE '$start_date' < '$oldest_timestamp';";
-
-    if (select_scalar($cmd) == 1)
-        return $archive;
-    else
-        return $speedy;
-}
-
 # Return a list of MTT tables (to be able to
 # decipher between MTT tables, and Postgres meta
 # tables)
@@ -271,13 +149,20 @@ function setup_mtt_db_tables() {
     $ret = array(
         'compute_cluster',
         'submit',
-        'mpi_get',
         'compiler',
+        'mpi_get',
+        'description',
+        'result_message',
+        'environment',
+        'mpi_install_configure_args',
+        'test_suites',
+        'test_names',
+        'latency_bandwidth',
+        'performance',
+        'test_run_command',
         'mpi_install',
         'test_build',
         'test_run',
-        'results',
-        'latency_bandwidth',
     );
 
     return $ret;
@@ -371,13 +256,14 @@ function setup_advanced($params) {
             'result_stdout'       => array(''),
             'result_stderr'       => array(''),
             'environment'         => array(''),
+            'description'         => array(''),
         ),
     );
 
     if (sizeof($phases) == 1) {
 
         if (array_search('test_build', $phases) !== false or
-            array_search('test_run', $phases) !== false) {
+            array_search('test_run', $phases)   !== false) {
             $menu =
                 array_merge(
                     $menu,
@@ -393,10 +279,13 @@ function setup_advanced($params) {
                     $menu,
                     array('test_run' =>
                         array(
-                            'variant'   => array('', $control),
-                            'test_name' => array('', $control),
-                            'np'        => array('', $control),
-                            'command'   => array('', $control),
+                            'launcher'   => array('', $control),
+                            'resource_mgr' => array('', $control),
+                            'network'    => array('', $control),
+                            'parameters' => array('', $control),
+                            'test_name'  => array('', $control),
+                            'np'         => array('', $control),
+                            'full_command'   => array('', $control),
                         ))
                 );
         }
@@ -449,7 +338,7 @@ function label($str) {
             "bandwidth_min"       => "Bandwidth min.",
             "bitness"             => "Bitness",
             "client_serial"       => "Client serial",
-            "command"             => "Command",
+            "full_command"        => "Command",
             "compiler_name"       => "Compiler",
             "compiler_version"    => "Compiler version",
             "configure_arguments" => "Configure arguments",
@@ -497,7 +386,10 @@ function label($str) {
             "url"                 => "Url",
             "username"            => "Username",
             "value"               => "Value",
-            "variant"             => "Variant",
+            "parameters"          => "Runtime Parameters",
+            "launcher"            => "Launcher",
+            "network"             => "Network",
+            "resource_mgr"        => "Resource Manager",
             "vpath_mode"          => "Vpath mode",
 
             # MTT phase names
@@ -511,7 +403,6 @@ function label($str) {
             'compute_cluster'   => 'Cluster',
             "compiler"          => "Compiler",
             'submit'            => 'Submit',
-            'results'           => 'Results',
 
             # Result types
 
@@ -584,8 +475,6 @@ function label($str) {
             'no_cache'       => 'Turn off SQL caching',
             'no_cookies'     => 'Turn off cookies',
             'dynamic_view'   => 'Create the SQL VIEW dynamically',
-            'use_speedy'     => 'SELECT only FROM "speedy" TABLES',
-            'use_archive'    => 'SELECT only FROM "archive" TABLES',
 
             # Failure columns
             'failure_id'      => 'ID',
@@ -706,21 +595,21 @@ function setup_bitmapped_fields() {
     
     $ret = array(
         "bitness" => "(CASE
-             WHEN (bitness)                               = 0 THEN 'unknown'
-             WHEN (bitness # (0 | (1 << 2) | (1 << 3)))   = 0 THEN '32/64'
-             WHEN (bitness & (0 | (1 << 2)))             != 0 THEN '32'
-             WHEN (bitness & (0 | (1 << 3)))             != 0 THEN '64'
-             WHEN (bitness & (0 | (1 << 0)))             != 0 THEN '8'
-             WHEN (bitness & (0 | (1 << 1)))             != 0 THEN '16'
-             WHEN (bitness & (0 | (1 << 4)))             != 0 THEN '128'
+             WHEN (bitness = B'000000')  THEN 'unknown'
+             WHEN (bitness = B'000001')  THEN '8'
+             WHEN (bitness = B'000010')  THEN '16'
+             WHEN (bitness = B'000100')  THEN '32'
+             WHEN (bitness = B'001000')  THEN '64'
+             WHEN (bitness = B'001100')  THEN '32/64'
+             WHEN (bitness = B'010000')  THEN '128'
              ELSE 'unknown' END) as bitness",
         "endian" => "(CASE
-             WHEN (endian & (0 | (1 << 0)))              != 0 THEN 'little'
-             WHEN (endian & (0 | (1 << 1)))              != 0 THEN 'big'
+             WHEN (endian = B'01')       THEN 'little'
+             WHEN (endian = B'10')       THEN 'big'
              ELSE 'unknown' END) as endian",
         "vpath_mode" => "(CASE
-             WHEN (vpath_mode & (0 | (1 << 0)))          != 0 THEN 'relative'
-             WHEN (vpath_mode & (0 | (1 << 1)))          != 0 THEN 'absolute'
+             WHEN (vpath_mode = B'01')   THEN 'relative'
+             WHEN (vpath_mode = B'10')   THEN 'absolute'
              ELSE 'unknown' END) as vpath_mode",
     );
     return $ret;
@@ -748,8 +637,6 @@ function setup_developer_params() {
             'no_cookies'   => null,
             'db'           => null,
             'dynamic_view' => null,
-            'use_speedy'   => null,
-            'use_archive'  => null,
         );
     return $params;
 }
@@ -775,8 +662,7 @@ function form_carryover($defaults, $phase) {
         if ($k == 'show' or
             $k == 'phase' or
             $k == 'go' or
-            $k == 'dev' or
-            $k == 'archive')
+            $k == 'dev')
             continue;
 
         $textfield = "text_$k";
@@ -807,9 +693,6 @@ function form_carryover($defaults, $phase) {
                 $params[$click] = $_GET[$click];
         }
     }
-
-    # Carryover last ttable_id, so we know what to DELETE
-    $params['ttable_id'] = $_GET['ttable_id'];
 
     # Carryover phase
     $phase = $_GET['phase'];
@@ -847,10 +730,6 @@ function form_carryover($defaults, $phase) {
     unset($params['rows']);
     unset($params['slice']);
 
-    # 'archive' boolean setting
-    if (isset($_GET['archive']))
-        $params['archive'] = 1;
-
     return $params;
 }
 
@@ -878,6 +757,7 @@ function advanced_carryover($params) {
 
 # Grab phase field
 function process_phase_field($params) {
+
     if (isset($params['phase'])) {
         if (preg_match('/^all/', $params['phase']))
             return array("mpi_install", "test_build", "test_run");
