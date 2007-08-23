@@ -1175,7 +1175,7 @@ sub copy_submit() {
   }
 
   # Make sure to update the sequence number
-  system("psql -U iu -d mtt -c \"select setval('submit_submit_id_seq',(select max(submit_id) from submit))\"");
+  system("psql -U mtt -d mtt -c \"select setval('submit_submit_id_seq',(select max(submit_id) from submit))\"");
 
   printf("Inserted: %4d tuples (total %4d or count %4d [%5d])\n", $i, get_count($dbh_mtt3_new, "submit"), $count, $ad);
 
@@ -1189,9 +1189,9 @@ sub collect_result_range() {
   my $row_ref;
   my $new_stmt;
 
-  system("psql -U iu -d mtt3 -c 'drop table ".$interval_results_table."'");
-  system("psql -U iu -d mtt3 -c \"SELECT * INTO ".$interval_results_table." FROM results WHERE " . $start_interval . "\"");
-  system("psql -U iu -d mtt3 -c \"select count(*),min(start_timestamp),max(start_timestamp) from ".$interval_results_table."\"");
+  system("psql -U mtt -d mtt3 -c 'drop table ".$interval_results_table."'");
+  system("psql -U mtt -d mtt3 -c \"SELECT * INTO ".$interval_results_table." FROM results WHERE " . $start_interval . "\"");
+  system("psql -U mtt -d mtt3 -c \"select count(*),min(start_timestamp),max(start_timestamp) from ".$interval_results_table."\"");
 }
 
 ########################
@@ -1203,24 +1203,24 @@ sub copy_lat_bw() {
   $last_id = get_last_id($dbh_mtt3_new, "latency_bandwidth", "latency_bandwidth_id");
 
   # Below query only valid in 8.0 series of Postgresql, so we have to do it the long way
-  #system("psql -U iu -d mtt3   -c 'COPY (select * from latency_bandwidth where latency_bandwidth_id > '".$last_id."'   TO STDOUT' | ".
-  #       "psql -U iu -d mtt -c 'COPY latency_bandwidth   FROM STDIN'");
+  #system("psql -U mtt -d mtt3   -c 'COPY (select * from latency_bandwidth where latency_bandwidth_id > '".$last_id."'   TO STDOUT' | ".
+  #       "psql -U mtt -d mtt -c 'COPY latency_bandwidth   FROM STDIN'");
 
   # Get the range in a tmp table
-  system("psql -U iu -d mtt3   -c \"select * into jjh_lb from latency_bandwidth where ".
+  system("psql -U mtt -d mtt3   -c \"select * into jjh_lb from latency_bandwidth where ".
          "latency_bandwidth_id != 73851 and latency_bandwidth_id > $last_id\"");
 
   # Transfer over the tmp table
-  system("psql -U iu -d mtt3   -c 'COPY jjh_lb   TO STDOUT' | ".
-         "psql -U iu -d mtt -c 'COPY latency_bandwidth   FROM STDIN'");
+  system("psql -U mtt -d mtt3   -c 'COPY jjh_lb   TO STDOUT' | ".
+         "psql -U mtt -d mtt -c 'COPY latency_bandwidth   FROM STDIN'");
 
   # Make sure to update the sequence number
-  system("psql -U iu -d mtt -c \"select setval('latency_bandwidth_latency_bandwidth_id_seq',(select max(latency_bandwidth_id) from latency_bandwidth))\"");
+  system("psql -U mtt -d mtt -c \"select setval('latency_bandwidth_latency_bandwidth_id_seq',(select max(latency_bandwidth_id) from latency_bandwidth))\"");
 
   printf("Inserted: %4d tuples (total = %4d)\n", get_count($dbh_mtt3, "jjh_lb"), get_count($dbh_mtt3_new, "latency_bandwidth"));
 
   # Drop the table
-  system("psql -U iu -d mtt3   -c 'drop table jjh_lb'");
+  system("psql -U mtt -d mtt3   -c 'drop table jjh_lb'");
 }
 
 ########################
@@ -1266,7 +1266,7 @@ sub copy_mpi_get() {
   }
 
   # Make sure to update the sequence number
-  system("psql -U iu -d mtt -c \"select setval('mpi_get_mpi_get_id_seq',(select max(mpi_get_id) from mpi_get))\"");
+  system("psql -U mtt -d mtt -c \"select setval('mpi_get_mpi_get_id_seq',(select max(mpi_get_id) from mpi_get))\"");
 
   printf("Inserted: %4d tuples (total = %4d [%5d])\n", $i, get_count($dbh_mtt3_new, "mpi_get"), $ad);
 
@@ -1319,7 +1319,7 @@ sub copy_permalinks() {
   }
 
   # Make sure to update the sequence number
-  system("psql -U iu -d mtt -c \"select setval('permalinks_permalink_id_seq',(select max(permalink_id) from permalinks))\"");
+  system("psql -U mtt -d mtt -c \"select setval('permalinks_permalink_id_seq',(select max(permalink_id) from permalinks))\"");
 
   printf("Inserted: %4d tuples (total = %4d [%5d])\n", $i, get_count($dbh_mtt3_new, "permalinks"), $ad);
 
@@ -1369,7 +1369,7 @@ sub copy_compiler() {
   }
 
   # Make sure to update the sequence number
-  system("psql -U iu -d mtt -c \"select setval('compiler_compiler_id_seq',(select max(compiler_id) from compiler))\"");
+  system("psql -U mtt -d mtt -c \"select setval('compiler_compiler_id_seq',(select max(compiler_id) from compiler))\"");
 
   printf("Inserted: %4d tuples (total = %4d [%5d])\n", $i, get_count($dbh_mtt3_new, "compiler"), $ad);
 
@@ -1421,7 +1421,7 @@ sub copy_compute_cluster() {
   }
 
   # Make sure to update the sequence number
-  system("psql -U iu -d mtt -c \"select setval('compute_cluster_compute_cluster_id_seq',(select max(compute_cluster_id) from compute_cluster))\"");
+  system("psql -U mtt -d mtt -c \"select setval('compute_cluster_compute_cluster_id_seq',(select max(compute_cluster_id) from compute_cluster))\"");
 
   printf("Inserted: %4d tuples (total = %4d [%5d])\n", $i, get_count($dbh_mtt3_new, "compute_cluster"), $ad);
 
