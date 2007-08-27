@@ -23,7 +23,7 @@ include_once("$ompi_home/dbpassword.inc");
 if (preg_match("/mtt/i", $_GET['db'])) {
     $dbname = $_GET['db'];
 } else {
-    $dbname = "mtt_testing";
+    $dbname = "mtt";
 }
 
 # Function used to determine which _POST fields
