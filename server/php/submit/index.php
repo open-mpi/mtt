@@ -23,7 +23,7 @@ include_once("$topdir/reporter.inc");
 
 $GLOBALS['debug']   = isset($_POST['debug'])   ? $_POST['debug']   : 1;
 $GLOBALS['verbose'] = isset($_POST['verbose']) ? $_POST['verbose'] : 1;
-$dbname             = "mtt_testing";#isset($_GET['db'])       ? $_GET['db']       : "mtt";
+$dbname             = isset($_GET['db'])       ? $_GET['db']       : "mtt";
 $pgsql_conn;
 
 # Set php trace levels

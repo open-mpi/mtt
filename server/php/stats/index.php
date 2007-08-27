@@ -15,7 +15,7 @@ $ompi_home = '/l/osl/www/doc/www.open-mpi.org';
 include_once("$ompi_home/dbpassword.inc");
 include_once("$topdir/reporter.inc");
 
-$dbname  = "mtt";#isset($_GET['db'])       ? $_GET['db']       : "mtt";
+$dbname  = isset($_GET['db'])       ? $_GET['db']       : "mtt";
 $pgsql_conn;
 
 $start_collection_date = "DATE '2007-05-01'";
