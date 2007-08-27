@@ -31,7 +31,7 @@ include_once("$topdir/report.inc");
 include_once("$topdir/database.inc");
 
 # Deny mirrors access to MTT results
-#deny_mirror();
+deny_mirror();
 
 # 'debug' is an aggregate trace
 if (isset($_GET['debug'])) {
