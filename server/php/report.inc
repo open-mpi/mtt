@@ -1010,7 +1010,7 @@ function prepare_raw_data_links($arr) {
 
         if ($ctype == 'html') {
             $raw_links .=
-                "\n<a class='black_ln' href='javascript:popup_${ctype}(" .
+                "\n<a class='black_ln' href='javascript:popup_nameless_${ctype}_window(" .
                     "\n\"" . $rwidth . "\", " .
                     "\n\"" . $rheight . "\"," .
                     "\n\"Raw performance numbers\"," .

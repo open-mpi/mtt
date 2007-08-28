@@ -857,7 +857,7 @@ function selection_popups($defaults, $entries) {
         # Yippee, selection popup
         if ($linkto) {
             $link =
-                "\n<a class='black_ln' href='javascript:popup_html(" .
+                "\n<a class='black_ln' href='javascript:popup_named_window(" .
                     # Width
                     "\n\"" . (400 * $num_menus) . "\"," .
                     # Height
@@ -1071,7 +1071,7 @@ function form_popup($elements, $params, $specs) {
         "\n</div>";
 
     $link =
-        "\n<a class='lgray_ln' href='javascript:popup_html(" .
+        "\n<a class='lgray_ln' href='javascript:popup_named_window(" .
             # Width
             "\n\"$width\"," .
             # Height
@@ -1206,9 +1206,11 @@ function hidden_carryover($params) {
 # Load up some CSS and Javascript
 function html_head($title) {
 
+    # "Nameless" windows means *more* windows (a new window opens with each click)
+    # "Named" windows means *fewer* windows (the same "named" window gets reused again and again)
     $javascript = <<<EOT
 
-    function popup_html(width,height,title,script,content,style) {
+    function popup_named_window(width,height,title,script,content,style) {
 
         newwindow2=window.open('','name','height=' + height + ',width=' + width + ',scrollbars=yes');
         var tmp = newwindow2.document;
@@ -1217,9 +1219,18 @@ function html_head($title) {
         tmp.close();
     }
 
-    function popup_text(width,height,content) {
+    function popup_nameless_html_window(width,height,title,script,content,style) {
 
-        newwindow2=window.open('','name','height=' + height + ',width=' + width + ',scrollbars=yes');
+        newwindow2=window.open('','','height=' + height + ',width=' + width + ',scrollbars=yes');
+        var tmp = newwindow2.document;
+        tmp.write('<html><head>' + script + '<title>' + title + '</title></head>');
+        tmp.write('<body ' + style + '><form id=adv name=adv method=get>' + content + '</form></body></html>');
+        tmp.close();
+    }
+
+    function popup_nameless_text_window(width,height,content) {
+
+        newwindow2=window.open('','','height=' + height + ',width=' + width + ',scrollbars=yes');
         var tmp = newwindow2.document;
         tmp.write(content);
         tmp.close();
