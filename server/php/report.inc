@@ -1631,7 +1631,7 @@ function drilldown_links() {
     # * Test Build
     #   Pass, Fail
     # * Test Run
-    #   Pass, Fail, Skipped, Timed out
+    #   Pass, Fail, Skipped, Timed out, Perf
     #
     # DO NOT USE TTABLE FOR THIS CASE
     elseif ($argc == 1) {
@@ -1654,7 +1654,12 @@ function drilldown_links() {
             # Bring over phase-independent selections, and
             # combine them with phase-dependent defaults
             $defaults = setup_mainwin_fields($phase);
-            $qstring_arr = form_carryover($defaults);
+            $qstring_arr = array_merge(
+                                form_carryover($defaults),
+                                advanced_carryover($_GET)
+            );
+
+
             $qstring_arr['phase'] = $phase;
 
             # NOTE: WE CANNOT MARK THIS AS A TRUE DRILLDOWN,
