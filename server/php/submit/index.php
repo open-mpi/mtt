@@ -693,7 +693,7 @@ function get_test_build_ids($test_build_id) {
         $test_build_id = find_test_build_id();
         $error_output .= ("-------------------------------\n".
                           "Invalid test_build_id ($orig_test_build_id) given. ".
-                          "Guessing that it should be $test_build_id".
+                          "Guessing that it should be $test_build_id \n".
                           "-------------------------------\n");
         mtt_notice("Invalid test_build_id ($orig_test_build_id) given. " .
                    "Guessing that it should be $test_build_id");
@@ -708,7 +708,7 @@ function get_test_build_ids($test_build_id) {
             $test_build_id = find_test_build_id();
             $error_output .= ("-------------------------------\n".
                               "Invalid test_build_id ($orig_test_build_id) given. " .
-                              "Guessing that it should be $test_build_id".
+                              "Guessing that it should be $test_build_id \n".
                               "-------------------------------\n");
             mtt_notice("Invalid test_build_id ($orig_test_build_id) given. " .
                        "Guessing that it should be $test_build_id");
@@ -821,7 +821,7 @@ function get_mpi_install_ids($mpi_install_id) {
         $mpi_install_id = find_mpi_install_id();
         $error_output .= ("-------------------------------\n".
                           "Invalid mpi_install_id ($orig_mpi_install_id) given. ".
-                          "Guessing that it should be $mpi_install_id".
+                          "Guessing that it should be $mpi_install_id .\n".
                           "-------------------------------\n");
         mtt_notice("Invalid mpi_install_id ($orig_mpi_install_id) given. " .
                    "Guessing that it should be $mpi_install_id");
@@ -838,7 +838,7 @@ function get_mpi_install_ids($mpi_install_id) {
             $mpi_install_id = find_mpi_install_id();
             $error_output .= ("-------------------------------\n".
                               "Invalid mpi_install_id ($orig_mpi_install_id) given. ".
-                              "Guessing that it should be $mpi_install_id".
+                              "Guessing that it should be $mpi_install_id \n".
                               "-------------------------------\n");
             mtt_notice("Invalid mpi_install_id ($orig_mpi_install_id) given. " .
                        "Guessing that it should be $mpi_install_id");
