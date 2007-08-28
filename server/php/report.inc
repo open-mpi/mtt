@@ -73,9 +73,6 @@ function dump_report() {
         # Display what the query planner is thinking
         $explain = process_explain_field($_GET);
 
-        # Display what the query planner is thinking
-        $filter_tracked_fields = process_filter_tracked_field();
-
         # Print either a summary or detail report,
         # depending on whether a 'select_more' parameter is set
         if ($report_type == 'detail') {
@@ -98,8 +95,7 @@ function dump_report() {
             $performance_fields,
             $sort_field,
             $offset_field,
-            $trial_field,
-            $filter_tracked_fields
+            $trial_field
         );
 
         # Order columns left-to-right
@@ -710,7 +706,6 @@ function do_graph($data, $type) {
 
     # Do not let the plots go off the bottom of the graph!
     $ymin = min(array_map('min', $datapoints));
-    $ymin2 = array_map('min', $datapoints);
 
     # For logarithmic axis scaling, JpGraph incorrectly
     # defaults to 10^0 when the min approaches zero, set the
@@ -732,7 +727,7 @@ function do_graph($data, $type) {
     $graph->legend->SetLineWeight(10);
 
     # Setup titles
-    $graph->title->Set($title);
+    $graph->title->Set($title . " - " . label($type));
 
     if (! HIDE_SUBTITLE)
         $graph->subtitle->Set($subtitle);
@@ -743,7 +738,7 @@ function do_graph($data, $type) {
 
     # Setup axes
     $titles['xaxis'] = "Message size - bytes";
-    $titles['yaxis'] = label($type) . " - $unit";
+    $titles['yaxis'] = "Time - $unit";
 
     $graph->xaxis->SetTickLabels($message_sizes);
     $graph->xaxis->SetLabelAngle(90);
@@ -3202,43 +3197,6 @@ function process_large_fields($params) {
     }
 
     return $query;
-}
-
-# Generate WHERE ... AND NOT clause pieces from "failures" TABLE
-function process_filter_tracked_field() {
-
-    $nl = "\n\t";
-
-    if (! FILTER_TRACKED)
-        return null;
-
-    $query = "SELECT * FROM failure;";
-    $failures = select($query);
-
-    foreach (array_keys($failures) as $k) {
-
-        $p = $failures[$k]['_params'];
-        $v = $failures[$k]['_values'];
-
-        $p = ltrim(rtrim($p, '}'), '{');
-        $v = ltrim(rtrim($v, '}'), '{');
-
-        $params = split(',', $p);
-        $values = split(',', $v);
-
-        # Gather all the WHERE ... AND NOT clauses
-        $where_not = null;
-        for ($i = 0; $i < sizeof($params); $i++) {
-            $value = $values[$i];
-            $value = preg_replace("/\"|'/", '', $value);
-
-            $where_not[] = "$params[$i] ~* '$value'";
-        }
-
-        $ret['where_not'][$p] = "(" . join(" AND $nl\t", $where_not) . ")";
-    }
-
-    return $ret;
 }
 
 # Convert a _GET param to a define() constant

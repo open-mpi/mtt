@@ -184,7 +184,6 @@ function setup_prefs() {
                 'limit'          => array(array('10', '50', '*100', '200')),
                 'wrap'           => array(100),
                 'trial'          => array(false),
-                'filter_tracked' => array(false),
             ),
             'graphing' => array(
                 'yaxis_scale'      => array(array('Logarithmic', '*Linear')),
@@ -452,7 +451,6 @@ function label($str) {
             # Two labels: one for the UI, one for the column header
             'trial'                => 'Trial',
             'Trial'                => 'Show trial runs',
-            'filter_tracked'       => "Filter <a href='http://www.open-mpi.org/mtt/track-failures/' target=_blank>tracked</a> failures",
 
             # Graphing preferences
             'graphing'             => 'Graphing',
