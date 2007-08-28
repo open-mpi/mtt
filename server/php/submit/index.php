@@ -680,6 +680,8 @@ function process_phase_test_build($results_idxs_hash, $idxs_hash) {
 function get_test_build_ids($test_build_id) {
     $nl  = "\n";
     $nlt = "\n\t";
+    $error_output = "";
+    $test_build_ids;
 
     $orig_test_build_id = $test_build_id;
 
@@ -689,6 +691,10 @@ function get_test_build_ids($test_build_id) {
        0 == strlen($test_build_id) ||
        !preg_match("/^\d+$/", $test_build_id, $m) ) {
         $test_build_id = find_test_build_id();
+        $error_output .= ("-------------------------------\n".
+                          "Invalid test_build_id ($orig_test_build_id) given. ".
+                          "Guessing that it should be $test_build_id".
+                          "-------------------------------\n");
         mtt_notice("Invalid test_build_id ($orig_test_build_id) given. " .
                    "Guessing that it should be $test_build_id");
     }
@@ -700,12 +706,20 @@ function get_test_build_ids($test_build_id) {
         $valid_id = select_scalar($select_stmt);
         if( !isset($valid_id) ) {
             $test_build_id = find_test_build_id();
+            $error_output .= ("-------------------------------\n".
+                              "Invalid test_build_id ($orig_test_build_id) given. " .
+                              "Guessing that it should be $test_build_id".
+                              "-------------------------------\n");
             mtt_notice("Invalid test_build_id ($orig_test_build_id) given. " .
                        "Guessing that it should be $test_build_id");
         }
     }
 
     if( $test_build_id < 0 ) {
+        $error_output .= ("-------------------------------\n".
+                          "ERROR: Unable to find a test_build to associate with this test_run.".
+                          "-------------------------------\n");
+        mtt_send_mail("get_test_build_ids(".$test_build_id."):\n".$error_output);
         mtt_error("ERROR: Unable to find a test_build to associate with this test_run.\n");
         mtt_abort(400, "\nNo test_build associated with this test_run\n");
         exit(1);
@@ -726,7 +740,17 @@ function get_test_build_ids($test_build_id) {
     debug("Test Build IDs Select: \n");
     debug("$select_stmt\n");
 
-    return associative_select($select_stmt);
+    $test_build_ids = associative_select($select_stmt);
+
+    if( 0 < strlen($error_output) ) {
+        mtt_send_mail("get_test_build_ids(".$test_build_id."):\n".
+                      "-------------------------------\n".
+                      $select_stmt."\n".
+                      "-------------------------------\n".
+                      $error_output);
+    }
+
+    return $test_build_ids;
 }
 
 #
@@ -772,6 +796,11 @@ function find_test_build_id() {
         return $test_build_id;
     }
     else {
+        mtt_send_mail("find_test_build_id():\n".
+                      "The following SELECT returned -1:\n".
+                      "-------------------------------\n"
+                      $select_stmt."\n".
+                      "-------------------------------\n");
         return -1;
     }
 }
@@ -779,6 +808,8 @@ function find_test_build_id() {
 function get_mpi_install_ids($mpi_install_id) {
     $nl  = "\n";
     $nlt = "\n\t";
+    $error_output = "";
+    $mpi_install_ids;
 
     $orig_mpi_install_id = $mpi_install_id;
 
@@ -788,6 +819,10 @@ function get_mpi_install_ids($mpi_install_id) {
        0 == strlen($mpi_install_id) ||
        !preg_match("/^\d+$/", $orig_mpi_install_id, $m) ) {
         $mpi_install_id = find_mpi_install_id();
+        $error_output .= ("-------------------------------\n".
+                          "Invalid mpi_install_id ($orig_mpi_install_id) given. ".
+                          "Guessing that it should be $mpi_install_id".
+                          "-------------------------------\n");
         mtt_notice("Invalid mpi_install_id ($orig_mpi_install_id) given. " .
                    "Guessing that it should be $mpi_install_id");
     }
@@ -801,12 +836,20 @@ function get_mpi_install_ids($mpi_install_id) {
 
         if( !isset($valid_id) ) {
             $mpi_install_id = find_mpi_install_id();
+            $error_output .= ("-------------------------------\n".
+                              "Invalid mpi_install_id ($orig_mpi_install_id) given. ".
+                              "Guessing that it should be $mpi_install_id".
+                              "-------------------------------\n");
             mtt_notice("Invalid mpi_install_id ($orig_mpi_install_id) given. " .
                        "Guessing that it should be $mpi_install_id");
         }
     }
     
     if( $mpi_install_id < 0 ) {
+        $error_output .= ("-------------------------------\n".
+                          "ERROR: Unable to find a mpi_install to associate with this test_build.".
+                          "-------------------------------\n");
+        mtt_send_mail("get_mpi_install_ids(".$mpi_install_id."):\n".$error_output);
         mtt_error("ERROR: Unable to find a mpi_install to associate with this test_build.\n");
         mtt_abort(400, "\nNo mpi_install associated with this test_build\n");
         exit(1);
@@ -824,7 +867,17 @@ function get_mpi_install_ids($mpi_install_id) {
     debug("MPI Install IDs Select: \n");
     debug("$select_stmt\n");
 
-    return associative_select($select_stmt);
+    $mpi_install_ids = associative_select($select_stmt);
+
+    if( 0 < strlen($error_output) ) {
+        mtt_send_mail("get_mpi_install_ids(".$mpi_install_id."):\n".
+                      "-------------------------------\n".
+                      $select_stmt."\n".
+                      "-------------------------------\n".
+                      $error_output);
+    }
+
+    return $mpi_install_ids;
 }
 
 #
@@ -834,6 +887,7 @@ function get_mpi_install_ids($mpi_install_id) {
 function find_mpi_install_id() {
     $nl  = "\n";
     $nlt = "\n\t";
+    $error_output = "";
 
     $n = $_POST['number_of_results'];
     $i = 0;
@@ -875,6 +929,11 @@ function find_mpi_install_id() {
         return $mpi_install_id;
     }
     else {
+        mtt_send_mail("find_mpi_install_id():\n".
+                      "The following SELECT returned -1:\n".
+                      "-------------------------------\n"
+                      $select_stmt."\n".
+                      "-------------------------------\n");
         return -1;
     }
 }
