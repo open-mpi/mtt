@@ -798,7 +798,7 @@ function find_test_build_id() {
     else {
         mtt_send_mail("find_test_build_id():\n".
                       "The following SELECT returned -1:\n".
-                      "-------------------------------\n"
+                      "-------------------------------\n".
                       $select_stmt."\n".
                       "-------------------------------\n");
         return -1;
@@ -931,7 +931,7 @@ function find_mpi_install_id() {
     else {
         mtt_send_mail("find_mpi_install_id():\n".
                       "The following SELECT returned -1:\n".
-                      "-------------------------------\n"
+                      "-------------------------------\n".
                       $select_stmt."\n".
                       "-------------------------------\n");
         return -1;
