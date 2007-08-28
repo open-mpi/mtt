@@ -40,6 +40,9 @@ function dump_report() {
 
     if (! $nogo) {
 
+        # Get row numbers from postgres
+        $row_number_fields = process_row_number_fields();
+
         # cherry_fields are the only fields that
         # are filtered by PHP instead of SQL
         $cherry_fields = process_cherry_fields($_GET);
@@ -86,6 +89,7 @@ function dump_report() {
 
         # Prepare query components
         $query = array_merge_recursive(
+            $row_number_fields,
             $date_fields,
             $input_fields,
             $large_fields,
@@ -212,6 +216,9 @@ function detail_table($headers, $resource) {
 
         # Results are always in the far right cols
         $results = array_splice($row, $num_cols['params']);
+
+        # Splice in the php_row_n in place of db_row_n
+        $db_row_n = array_shift(array_splice($row, 0, 1, ($php_row_n + 1)));
 
         # Stylize rows of "--trial" results
         $trial = process_trial_value($row, 1);
@@ -340,7 +347,7 @@ function summary_table($headers, $resource, $filter) {
                 #                 "checked>") .
                 "";
 
-    $pound_sign = 'n';#JJH ZZnZZ array_shift($headers['params']);
+    $pound_sign = array_shift($headers['params']);
     printf($format, label($pound_sign));
     foreach (sorting_links($headers['params']) as $header)
         printf($format, $header);
@@ -400,10 +407,10 @@ function summary_table($headers, $resource, $filter) {
             break;
 
         # Results are always in the far right cols
-        $results = array_splice($row, $num_cols['params']);
+        $results = array_splice($row, $num_cols['params'] + 1); # (+1 for row #)
 
         # Grab the db_row_n
-        $db_row_n = 'n';
+        $db_row_n = array_shift($row);
 
         # Grab the trial boolean
         $trial = process_trial_value($row, 0);
@@ -2947,6 +2954,12 @@ function process_sort_field($params) {
         if (! is_null($field))
             return array($orderby => $field);
     }
+}
+
+function process_row_number_fields() {
+    do_pg_query("CREATE TEMPORARY SEQUENCE row_number;");
+    $query['select']['n'] = "nextval('row_number')";
+    return $query;
 }
 
 # Generate WHERE clause for row numbers
