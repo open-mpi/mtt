@@ -24,7 +24,7 @@ include_once("$topdir/reporter.inc");
 $GLOBALS['debug']   = isset($_POST['debug'])   ? $_POST['debug']   : 1;
 $GLOBALS['verbose'] = isset($_POST['verbose']) ? $_POST['verbose'] : 1;
 $dbname             = isset($_GET['db'])       ? $_GET['db']       : "mtt";
-$pgsql_conn;
+$pgsql_conn = null;
 
 # Set php trace levels
 if ($GLOBALS['verbose'])
@@ -97,7 +97,7 @@ $id = "_id";
 $phase      = strtolower($_POST['phase']);
 $phase_name = preg_replace('/^\s+|\s+$/', '', $phase);
 $phase_name = preg_replace('/\s+/', '_', $phase);
-$interconnect_id_hash;
+$interconnect_id_hash = null;
 
 print "\nMTT submission for $phase\n";
 
@@ -498,7 +498,7 @@ function process_networks($network_full_param) {
             $insert_stmt = ("INSERT INTO test_run_networks VALUES $nl".
                             "(DEFAULT, ".$test_run_network_id.", ".$loc_id_hash[$n].")");
             #print("SQL INSERT:$nl $insert_stmt\n");
-            do_pg_query($insert_stmt);
+            do_pg_query($insert_stmt, false);
         }
     }
 
@@ -681,7 +681,7 @@ function get_test_build_ids($test_build_id) {
     $nl  = "\n";
     $nlt = "\n\t";
     $error_output = "";
-    $test_build_ids;
+    $test_build_ids = null;
 
     $orig_test_build_id = $test_build_id;
 
@@ -809,7 +809,7 @@ function get_mpi_install_ids($mpi_install_id) {
     $nl  = "\n";
     $nlt = "\n\t";
     $error_output = "";
-    $mpi_install_ids;
+    $mpi_install_ids = null;
 
     $orig_mpi_install_id = $mpi_install_id;
 
@@ -1201,7 +1201,7 @@ function select_insert($table, $table_id, $stmt_fields, $stmt_values, $always_ne
     debug("\n--- INSERT STMT ---\n");
     debug("$insert_stmt\n");
 
-    do_pg_query($insert_stmt);
+    do_pg_query($insert_stmt, false);
 
     return $idx_value;
 }
@@ -1468,6 +1468,7 @@ function is_numeric_($ar) {
 
 # Return true if it's a NULL or an array containing a single NULL
 function is_null_($var) {
+    $ret = false;
 
     if (is_null($var))
         $ret = true;
@@ -1927,6 +1928,7 @@ function var_dump_debug_inserts($function, $line, $var_name, $arr) {
 
 # Return inflated contents of a gzip file
 function gunzip_file($filename) {
+    $ret = "";
 
     $handle = gzopen($filename, 'r');
     while (! gzeof($handle)) {
