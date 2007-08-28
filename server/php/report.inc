@@ -777,7 +777,7 @@ function do_graph($data, $type) {
     $table_data['plots']         = $plots;
 
     $arr = prepare_raw_data_arr($meta_data, $table_data);
-    $raw = prepare_raw_data_links($arr);
+    $raw = prepare_raw_data_links($arr, label($type));
     $top = DOCROOT;
 
     $image = "<img src='$top/$filename' " .
@@ -987,7 +987,7 @@ function prepare_raw_data_arr($meta, $data) {
 }
 
 # Return links to raw data in HTML and CSV format
-function prepare_raw_data_links($arr) {
+function prepare_raw_data_links($arr, $title) {
 
     # Adjust size of raw data links
     $cols = max(array_map('sizeof', array_values($arr)));
@@ -1013,7 +1013,7 @@ function prepare_raw_data_links($arr) {
                 "\n<a class='black_ln' href='javascript:popup_nameless_${ctype}_window(" .
                     "\n\"" . $rwidth . "\", " .
                     "\n\"" . $rheight . "\"," .
-                    "\n\"Raw performance numbers\"," .
+                    "\n\"MTT Raw Performance Numbers - $title\"," .
                     "\n\"\"," .
                     "\n\"" . htmlentities(raw_data_content($arr, $style), ENT_QUOTES) . "\"," .
                     "\n\"font-family:Courier,monospace\"" .
