@@ -904,6 +904,20 @@ function collect_graph_data($data, $type) {
 
     $j = 0;
 
+    # Axis scaling is a cookie-ized preference
+    $xaxis_scale = XAXIS_SCALE;
+    $yaxis_scale = YAXIS_SCALE;
+
+    # For logarithmic scaling on the xaxis, explicitly set the
+    # x-axis values
+    if (preg_match('/log/', $xaxis_scale)) {
+        $xdata = array_pad($plots[$i]["message_size"], $pad, null);
+    # For text scaling on the xaxis, we have to leave this NULL
+    # to avoid having the graph look like y=0
+    } else {
+        $xdata = null;
+    }
+
     # Collect the line plots
     foreach (array_keys($plots) as $i) {
         
@@ -921,7 +935,7 @@ function collect_graph_data($data, $type) {
             if (! $color)
                 $color = 'black';
 
-            $lineplots[$i] = new LinePlot($ydata);
+            $lineplots[$i] = new LinePlot($ydata, $xdata);
             $datapoints[$i] = $ydata;
 
             # Human row numbers are +1
@@ -3208,12 +3222,10 @@ function param2constant($str) {
             'on'  => true,
             'off' => false,
 
-            # On the x-axis, linear scaling is actually
-            # ''text'' scaling because we are setting the
-            # tick labels manually (on the y-axis, linear
-            # is linear)
-            'linear'      => 'text',
+            # Graph axis scaling
             'logarithmic' => 'log',
+            'linear'      => 'lin',
+            'text'        => 'text',
         );
 
     if (isset($map[$str]))

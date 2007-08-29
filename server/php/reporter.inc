@@ -187,7 +187,7 @@ function setup_prefs() {
             ),
             'graphing' => array(
                 'yaxis_scale'      => array(array('Logarithmic', '*Linear')),
-                'xaxis_scale'      => array(array('Logarithmic', '*Linear')),
+                'xaxis_scale'      => array(array('Logarithmic', '*Text')),
                 'hide_subtitle'    => array(false),
                 #'graph_size'       => array(array('Small', '*Medium', 'Large')),
                 #'legend_placement' => array(array('*Bottom', 'In plotting area')),
