@@ -11,6 +11,14 @@
 #
 #
 
+$topdir = "..";
+if (file_exists("$topdir/config.inc")) {
+    include_once("$topdir/config.inc");
+}
+
+# Note that Google Analytics is not performed here because the MTT
+# client doesn't understand javascript to report back to GA.
+
 # A large test run submission could overload the PHP 16MB limit
 # (The following line increases the limit for this script only)
 ini_set("memory_limit", "32M");

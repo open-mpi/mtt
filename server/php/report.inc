@@ -73,7 +73,7 @@ function dump_report() {
         # Display what the query planner is thinking
         $explain = process_explain_field($_GET);
 
-        # Print either a summary or detail report,
+        # int "Print either a summary or detail report,
         # depending on whether a 'select_more' parameter is set
         if ($report_type == 'detail') {
             $do_detailed = true;
@@ -653,10 +653,15 @@ function performance_graphs($data) {
     print "</table>";
 }
 
+function to_int($a) {
+  return (integer) $a;
+}
+
 # Print out the actual binary image data
 # Uses jpgraph (http://www.aditus.nu/jpgraph)
 # type = latency*|bandwidth* 
 function do_graph($data, $type) {
+    global $mtt_graph_tmp_dir;
 
     $type = strtolower($type);
 
@@ -757,7 +762,7 @@ function do_graph($data, $type) {
     # Write the graph to a file
     # (Timestamp it so the browser doesn't reload a cached
     # image when/if the user changes a graphing preference)
-    $filename = "tmp/".time().'_'.title2filename($title.' '.$type.' '.$subtitle).'.png';
+    $filename = $mtt_graph_tmp_dir . "/" . time().'_'.title2filename($title.' '.$type.' '.$subtitle).'.png';
     unlink($filename);
     $graph->Stroke($filename);
 
@@ -905,14 +910,24 @@ function collect_graph_data($data, $type) {
 
     # Collect the line plots
     foreach (array_keys($plots) as $i) {
+#print "Key: $i (type: $type)<br>\n";
         
         $line = $plots[$i][$type];
+#print "Start--------------------------------------------------------<p><pre>";
+#var_dump($plots[$i]);
+#print "</pre>End<p>\n";
 
         # Create the linear plot
         if ($line) {
             $empty = false;
 
+            $xdata = array_pad($plots[$i]["message_size"], $pad, null);
             $ydata = array_pad($line, $pad, null);
+#print "X data: <p><pre>";
+#var_dump($xdata);
+#print "Y data:<p>";
+#var_dump($ydata);
+#print "</pre>";
 
             $color = $colors[$j++];
 
@@ -920,7 +935,7 @@ function collect_graph_data($data, $type) {
             if (! $color)
                 $color = 'black';
 
-            $lineplots[$i] = new LinePlot($ydata);
+            $lineplots[$i] = new LinePlot($ydata, $xdata);
             $datapoints[$i] = $ydata;
 
             # Human row numbers are +1

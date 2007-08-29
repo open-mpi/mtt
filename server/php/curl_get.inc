@@ -1,10 +1,10 @@
 <?php
 
-include_once("/l/osl/www/doc/www.open-mpi.org/http_password.inc");
+include_once("$topdir/config.inc");
 
 function do_curl_get($url) {
 
-    global $user, $pass;
+    global $mtt_http_username, $mtt_http_password;
 
     $method = "GET";
 
@@ -13,7 +13,7 @@ function do_curl_get($url) {
     $ch = curl_init();
 
     # Set the URL to GET from
-    curl_setopt($ch, CURLOPT_USERPWD, "$user:$pass");
+    curl_setopt($ch, CURLOPT_USERPWD, "$mtt_http_username:$mtt_http_password");
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_HTTPGET, 1);
 

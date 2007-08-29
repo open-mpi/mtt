@@ -10,6 +10,11 @@
 # $HEADER$
 #
 
+$topdir = ".";
+if (file_exists("$topdir/config.inc")) {
+    include_once("$topdir/config.inc");
+}
+
 #
 #
 # Web-based Open MPI Tests Querying Tool
@@ -29,9 +34,6 @@ include_once("$topdir/reporter.inc");
 include_once("$topdir/screen.inc");
 include_once("$topdir/report.inc");
 include_once("$topdir/database.inc");
-
-# Deny mirrors access to MTT results
-deny_mirror();
 
 # 'debug' is an aggregate trace
 if (isset($_GET['debug'])) {
@@ -77,7 +79,7 @@ debug_cgi($_GET, "GET " . __LINE__);
 debug_cgi($_COOKIE, "COOKIE " . __LINE__);
 
 print hidden_carryover($_GET) .
-      "\n<hr></form></body></html>";
+      "\n<hr></form></body>$mtt_body_html_suffix</html>";
 
 exit;
 

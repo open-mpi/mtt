@@ -896,26 +896,4 @@ function getoptions($argv) {
     return $_GET;
 }
 
-# Deny mirrors access to MTT results
-function deny_mirror() {
-
-    $mother_site = "www.open-mpi.org";
-    $server_dir = "/";
-
-    # Are we the "mother site" or a mirror?
-    if ($_SERVER["SERVER_NAME"] == $mother_site)
-        $is_mirror = false;
-    else
-        $is_mirror = true;
-
-    if ($is_mirror) {
-        $equiv_dir = ereg_replace("^$server_dir", '', $_SERVER["REQUEST_URI"]);
-        print "Sorry, this page is not mirrored.  " .
-               "Please see the <a href=\"http://$mother_site/$equiv_dir\">" .
-               "original version of this page</a> " .
-               "on the main Open MPI web site.\n";
-        exit();
-    }
-}
-
 ?>

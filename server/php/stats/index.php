@@ -11,11 +11,16 @@
 #
 
 $topdir = '..';
-$ompi_home = '/l/osl/www/doc/www.open-mpi.org';
-include_once("$ompi_home/dbpassword.inc");
+if (file_exists("$topdir/config.inc")) {
+    include_once("$topdir/config.inc");
+}
+include_once("$topdir/google-analytics.inc");
 include_once("$topdir/reporter.inc");
 
-$dbname  = isset($_GET['db'])       ? $_GET['db']       : "mtt";
+if (array_key_exists("db", $_GET) &&
+    preg_match("/mtt/i", $_GET['db'])) {
+    $mtt_database_name = $_GET['db'];
+}
 $pgsql_conn;
 
 $start_collection_date = "DATE '2007-05-01'";
@@ -35,9 +40,9 @@ $basic_from  = ("FROM mtt_stats_contrib ");
 
 print("<html>" .
       "\n<head>" .
-      "\n<title>Open MPI Test Statistics</title>" .
+      "\n<title>Open MPI Test Statistics</title>" . $head_html .
       "\n</head>".
-      "\n<body>".
+      "\n<body>". $body_html_prefix . print_ga() .
       "\n");
 
 process_stat_dates();
@@ -52,7 +57,7 @@ display_stats();
 
 # All done
 pg_close();
-print("\n<hr>".
+print("\n<hr>". $body_html_suffix .
       "\n</body>".
       "\n</html>");
 
@@ -704,15 +709,15 @@ function is_null_($var) {
 
 function do_pg_connect() {
 
-    global $dbname;
-    global $user;
-    global $pass;
+    global $mtt_database_name;
+    global $mtt_database_username;
+    global $mtt_database_password;
     global $pgsql_conn;
     static $connected = false;
 
     if (!$connected) {
         $pgsql_conn =
-            pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass");
+            pg_connect("host=localhost port=5432 dbname=$mtt_database_name user=$mtt_database_username password=$mtt_database_password");
 
         # Exit if we cannot connect
         if (!$pgsql_conn)

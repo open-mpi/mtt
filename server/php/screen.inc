@@ -16,8 +16,11 @@
 #
 #
 
+include_once("$topdir/google-analytics.inc");
+
 # Print user dash-board 
 function dump_query_screen($nogo, $sql_cmd) {
+    global $mtt_body_html_prefix;
 
     $phases   = process_phase_field($_GET);
     $defaults = setup_mainwin_fields($phases);
@@ -70,7 +73,7 @@ function dump_query_screen($nogo, $sql_cmd) {
     print "<html>" . 
           html_head("Open MPI Test Reporter") .
           "\n" .
-          "\n<body>" .
+          "\n<body>" . $mtt_body_html_prefix . print_ga() .
           "\n<form method='get' id='report' name='report' action='$self'>" .
           "\n$prefs" .
           "\n <div align='left'>" .
@@ -1205,6 +1208,8 @@ function hidden_carryover($params) {
 
 # Load up some CSS and Javascript
 function html_head($title) {
+    global $mtt_head_html;
+    global $mtt_body_html_suffix;
 
     # "Nameless" windows means *more* windows (a new window opens with each click)
     # "Named" windows means *fewer* windows (the same "named" window gets reused again and again)
@@ -1215,7 +1220,7 @@ function html_head($title) {
         newwindow2=window.open('','name','height=' + height + ',width=' + width + ',scrollbars=yes');
         var tmp = newwindow2.document;
         tmp.write('<html><head>' + script + '<title>' + title + '</title></head>');
-        tmp.write('<body ' + style + '><form id=adv name=adv method=get>' + content + '</form></body></html>');
+        tmp.write('<body ' + style + '><form id=adv name=adv method=get>' + content + '</form>$mtt_body_html_suffix</body></html>');
         tmp.close();
     }
 
@@ -1295,15 +1300,13 @@ EOT;
 EOT;
 
     # Return html head
-    return "\n<head>" .
+    return "\n<head>" . 
            "\n<title>$title</title>" .
            "\n<script language='javascript' type='text/javascript'>" .
            "\n$javascript" .
            "\n</script>" .
            "\n<style type='text/css'>" .
            "\n$style" .
-           "\n</style>" .
+           "\n</style>" . $mtt_head_html .
            "\n</head>";
 }
-
-?>

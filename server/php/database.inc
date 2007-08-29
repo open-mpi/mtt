@@ -16,14 +16,12 @@
 #
 #
 
-$ompi_home = '/l/osl/www/doc/www.open-mpi.org';
-include_once("$ompi_home/dbpassword.inc");
+include_once("$topdir/config.inc");
 
 # Select a database name
-if (preg_match("/mtt/i", $_GET['db'])) {
-    $dbname = $_GET['db'];
-} else {
-    $dbname = "mtt";
+if (array_key_exists("db", $_GET) &&
+    preg_match("/mtt/i", $_GET['db'])) {
+    $mtt_database_name = $_GET['db'];
 }
 
 # Function used to determine which _POST fields
@@ -89,9 +87,9 @@ function get_table_fields($table_name) {
 
 # Connect to the Postgres database
 function do_pg_connect() {
-    global $dbname;
-    global $user;
-    global $pass;
+    global $mtt_database_name;
+    global $mtt_database_username;
+    global $mtt_database_password;
     global $pgsql_conn;
     static $connected = false;
 
@@ -100,7 +98,7 @@ function do_pg_connect() {
 
     if (!$connected) {
         $pgsql_conn = 
-            pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass");
+            pg_connect("host=localhost port=5432 dbname=$mtt_database_name user=$mtt_database_username password=$mtt_database_password");
         if (!$pgsql_conn) {
             print("\nCould not connect to '$dbname' database.");
             exit;
