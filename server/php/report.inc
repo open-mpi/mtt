@@ -653,10 +653,6 @@ function performance_graphs($data) {
     print "</table>";
 }
 
-function to_int($a) {
-  return (integer) $a;
-}
-
 # Print out the actual binary image data
 # Uses jpgraph (http://www.aditus.nu/jpgraph)
 # type = latency*|bandwidth* 
@@ -910,24 +906,14 @@ function collect_graph_data($data, $type) {
 
     # Collect the line plots
     foreach (array_keys($plots) as $i) {
-#print "Key: $i (type: $type)<br>\n";
         
         $line = $plots[$i][$type];
-#print "Start--------------------------------------------------------<p><pre>";
-#var_dump($plots[$i]);
-#print "</pre>End<p>\n";
 
         # Create the linear plot
         if ($line) {
             $empty = false;
 
-            $xdata = array_pad($plots[$i]["message_size"], $pad, null);
             $ydata = array_pad($line, $pad, null);
-#print "X data: <p><pre>";
-#var_dump($xdata);
-#print "Y data:<p>";
-#var_dump($ydata);
-#print "</pre>";
 
             $color = $colors[$j++];
 
@@ -935,7 +921,7 @@ function collect_graph_data($data, $type) {
             if (! $color)
                 $color = 'black';
 
-            $lineplots[$i] = new LinePlot($ydata, $xdata);
+            $lineplots[$i] = new LinePlot($ydata);
             $datapoints[$i] = $ydata;
 
             # Human row numbers are +1
