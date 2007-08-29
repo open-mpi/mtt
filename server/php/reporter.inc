@@ -430,12 +430,12 @@ function label($str) {
             "latency_bandwidth" => "Perf",
 
             # Latency/bandwidth
-            "latency_avg"       => "Latency (avg)",
-            "latency_min"       => "Latency (min)",
-            "latency_max"       => "Latency (max)",
-            "bandwidth_avg"     => "Bandwidth (avg)",
-            "bandwidth_min"     => "Bandwidth (min)",
-            "bandwidth_max"     => "Bandwidth (max)",
+            "latency_avg"       => "Average Latency",
+            "latency_min"       => "Minimum Latency",
+            "latency_max"       => "Maximum Latency",
+            "bandwidth_avg"     => "Average Bandwidth",
+            "bandwidth_min"     => "Minimum Bandwidth",
+            "bandwidth_max"     => "Maximum Bandwidth",
 
             # Selection/unselection
             "show"                  => "Show",

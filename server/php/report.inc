@@ -665,9 +665,6 @@ function do_graph($data, $type) {
     include_once("$jpgraph_dir/jpgraph_line.php");
     include_once("$jpgraph_dir/jpgraph_log.php");
 
-    # Set axis label unit
-    $unit = get_axis_unit($type);
-
     # Collect graph data
     list($datapoints,
          $lineplots,
@@ -727,7 +724,7 @@ function do_graph($data, $type) {
     $graph->legend->SetLineWeight(10);
 
     # Setup titles
-    $graph->title->Set($title . " - " . label($type));
+    $graph->title->Set($title);
 
     if (! HIDE_SUBTITLE)
         $graph->subtitle->Set($subtitle);
@@ -737,8 +734,8 @@ function do_graph($data, $type) {
     $graph->subtitle->SetFont(FF_FONT1, FS_NORMAL);
 
     # Setup axes
-    $titles['xaxis'] = "Message size - bytes";
-    $titles['yaxis'] = "Time - $unit";
+    list($titles['xaxis'],
+         $titles['yaxis']) = get_axis_labels($type);
 
     $graph->xaxis->SetTickLabels($message_sizes);
     $graph->xaxis->SetLabelAngle(90);
@@ -862,13 +859,13 @@ function get_graph_dimensions($legend_items, $message_sizes) {
     return $ret;
 }
 
-function get_axis_unit($type) {
+function get_axis_labels($type) {
     if (preg_match("/latency/i", $type))
-        $unit = 'usec';
+        $ret = array('Message Size (bytes)', 'Time (usec)');
     elseif (preg_match("/bandwidth/i", $type))
-        $unit = 'Mbps';
+        $ret = array('Message Size (bytes)', 'Bandwidth (Mbps)');
 
-    return $unit;
+    return $ret;
 }
 
 # Collect and massage graph data
@@ -890,7 +887,7 @@ function collect_graph_data($data, $type) {
         $colors = graph_colors();
 
     # Set up titles
-    $title = "MTT Performance Results";
+    $title = label($type);
     $subtitle = create_subtitle($legend);
 
     # Tests may have differing lists of message sizes,
@@ -960,7 +957,7 @@ function prepare_raw_data_arr($meta, $data) {
     $plots         = $data['plots'];
 
     $i = 0;
-    $arr[$i++] = $title . "<br>" . label($type);
+    $arr[$i++] = $title;
     $arr[$i++] = $subtitle;
     $arr[$i++] = 'bytes';
     $arr[$i++] = $unit;
@@ -1013,7 +1010,7 @@ function prepare_raw_data_links($arr, $title) {
                 "\n<a class='black_ln' href='javascript:popup_nameless_${ctype}_window(" .
                     "\n\"" . $rwidth . "\", " .
                     "\n\"" . $rheight . "\"," .
-                    "\n\"MTT Raw Performance Numbers - $title\"," .
+                    "\n\"MTT Raw Performance Data - $title\"," .
                     "\n\"\"," .
                     "\n\"" . htmlentities(raw_data_content($arr, $style), ENT_QUOTES) . "\"," .
                     "\n\"font-family:Courier,monospace\"" .
