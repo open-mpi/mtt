@@ -73,7 +73,7 @@ function dump_report() {
         # Display what the query planner is thinking
         $explain = process_explain_field($_GET);
 
-        # int "Print either a summary or detail report,
+        # Print either a summary or detail report,
         # depending on whether a 'select_more' parameter is set
         if ($report_type == 'detail') {
             $do_detailed = true;
