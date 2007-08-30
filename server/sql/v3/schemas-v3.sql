@@ -107,7 +107,7 @@ CREATE TABLE mpi_get (
     -- Current Max: 21 chars
     mpi_name    varchar(64) NOT NULL DEFAULT 'bogus',
     -- Current Max: 24 chars
-    mpi_version varchar(32) NOT NULL DEFAULT 'bogus',
+    mpi_version varchar(128) NOT NULL DEFAULT 'bogus',
 
     UNIQUE (
             mpi_name,
