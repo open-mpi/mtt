@@ -785,6 +785,8 @@ function find_test_build_id() {
     $nl  = "\n";
     $nlt = "\n\t";
 
+    $multi_value = false;
+
     $n = $_POST['number_of_results'];
     $i = 0;
     $test_build_id = 0;
@@ -805,14 +807,46 @@ function find_test_build_id() {
                     "     mpi_get     NATURAL JOIN $nl" .
                     "     compute_cluster NATURAL JOIN $nl" .
                     "     submit $nl" .
-                    "WHERE $nlt" .
-                    "mpi_version = ".quote_(pg_escape_string(get_scalar($param_set['mpi_version'], $i)))   ." AND $nlt" .
-                    "mpi_name    = ".quote_(pg_escape_string(get_scalar($param_set['mpi_name'], $i)))      ." AND $nlt" .
-                    "hostname         = ".  quote_(pg_escape_string(get_scalar($param_set['hostname'], $i)))         ." AND $nlt" .
-                    "mtt_client_version = ".quote_(pg_escape_string(get_scalar($param_set['mtt_client_version'], $i))) ." AND $nlt" .
-                    "local_username   = ".  quote_(pg_escape_string(get_scalar($param_set['local_username'], $i)))   ." AND $nlt" .
-                    "platform_name    = ".  quote_(pg_escape_string(get_scalar($param_set['platform_name'], $i)))    ." $nlt" .
-                    "ORDER BY test_build_id DESC limit 1");
+                    "WHERE $nlt");
+
+    if(!is_sql_key_word(get_scalar($param_set['mpi_version'], $i))) {
+        if( $multi_value ) { $select_stmt .= (" AND $nlt"); }
+        $select_stmt .= ("mpi_version = ".quote_(pg_escape_string(get_scalar($param_set['mpi_version'], $i))) );
+        $select_stmt .= " ";
+        $multi_value = true;
+    }
+    if(!is_sql_key_word(get_scalar($param_set['mpi_name'], $i)) ) {
+        if( $multi_value ) { $select_stmt .= (" AND $nlt"); }
+        $select_stmt .= ("mpi_name    = ".quote_(pg_escape_string(get_scalar($param_set['mpi_name'], $i)) ) );
+        $select_stmt .= " ";
+        $multi_value = true;
+    }
+    if(!is_sql_key_word(get_scalar($param_set['hostname'], $i)) ) {
+        if( $multi_value ) { $select_stmt .= (" AND $nlt"); }
+        $select_stmt .= ("hostname    = ".quote_(pg_escape_string(get_scalar($param_set['hostname'], $i)) ) );
+        $select_stmt .= " ";
+        $multi_value = true;
+    }
+    if(!is_sql_key_word(get_scalar($param_set['mtt_client_version'], $i)) ) {
+        if( $multi_value ) { $select_stmt .= (" AND $nlt"); }
+        $select_stmt .= ("mtt_client_version    = ".quote_(pg_escape_string(get_scalar($param_set['mtt_client_version'], $i)) ) );
+        $select_stmt .= " ";
+        $multi_value = true;
+    }
+    if(!is_sql_key_word(get_scalar($param_set['local_username'], $i)) ) {
+        if( $multi_value ) { $select_stmt .= (" AND $nlt"); }
+        $select_stmt .= ("local_username    = ".quote_(pg_escape_string(get_scalar($param_set['local_username'], $i)) ) );
+        $select_stmt .= " ";
+        $multi_value = true;
+    }
+    if(!is_sql_key_word(get_scalar($param_set['platform_name'], $i)) ) {
+        if( $multi_value ) { $select_stmt .= (" AND $nlt"); }
+        $select_stmt .= ("platform_name    = ".quote_(pg_escape_string(get_scalar($param_set['platform_name'], $i)) ) );
+        $select_stmt .= " ";
+        $multi_value = true;
+    }
+    $select_stmt .= " $nlt";
+    $select_stmt .= ("ORDER BY test_build_id DESC limit 1");
 
     $test_build_id = select_scalar($select_stmt);
 
@@ -912,6 +946,7 @@ function find_mpi_install_id() {
     $nl  = "\n";
     $nlt = "\n\t";
     $error_output = "";
+    $multi_value = false;
 
     $n = $_POST['number_of_results'];
     $i = 0;
@@ -936,16 +971,58 @@ function find_mpi_install_id() {
                     "     compiler    NATURAL JOIN $nl" .
                     "     compute_cluster NATURAL JOIN $nl" .
                     "     submit $nl" .
-                    "WHERE $nlt" .
-                    "mpi_version = ".quote_(pg_escape_string(get_scalar($param_set['mpi_version'], $i)))   ." AND $nlt" .
-                    "mpi_name    = ".quote_(pg_escape_string(get_scalar($param_set['mpi_name'], $i)))      ." AND $nlt" .
-                    "compiler_version = ".  quote_(pg_escape_string(get_scalar($param_set['compiler_version'], $i))) ." AND $nlt" .
-                    "compiler_name    = ".  quote_(pg_escape_string(get_scalar($param_set['compiler_name'], $i)))    ." AND $nlt" .
-                    "hostname         = ".  quote_(pg_escape_string(get_scalar($param_set['hostname'], $i)))         ." AND $nlt" .
-                    "mtt_client_version = ".quote_(pg_escape_string(get_scalar($param_set['mtt_client_version'], $i))) ." AND $nlt" .
-                    "local_username   = ".  quote_(pg_escape_string(get_scalar($param_set['local_username'], $i)))   ." AND $nlt" .
-                    "platform_name    = ".  quote_(pg_escape_string(get_scalar($param_set['platform_name'], $i)))    ." $nlt" .
-                    "ORDER BY mpi_install_id DESC limit 1");
+                    "WHERE $nlt");
+
+    if(!is_sql_key_word(get_scalar($param_set['mpi_version'], $i)) ) {
+        if( $multi_value ) { $select_stmt .= (" AND $nlt"); }
+        $select_stmt .= ("mpi_version = ".quote_(pg_escape_string(get_scalar($param_set['mpi_version'], $i))) );
+        $select_stmt .= " ";
+        $multi_value = true;
+    }
+    if(!is_sql_key_word(get_scalar($param_set['mpi_name'], $i)) ) {
+        if( $multi_value ) { $select_stmt .= (" AND $nlt"); }
+        $select_stmt .= ("mpi_name    = ".quote_(pg_escape_string(get_scalar($param_set['mpi_name'], $i)) ) );
+        $select_stmt .= " ";
+        $multi_value = true;
+    }
+    if(!is_sql_key_word(get_scalar($param_set['compiler_version'], $i)) ) {
+        if( $multi_value ) { $select_stmt .= (" AND $nlt"); }
+        $select_stmt .= ("compiler_version    = ".quote_(pg_escape_string(get_scalar($param_set['compiler_version'], $i)) ) );
+        $select_stmt .= " ";
+        $multi_value = true;
+    }
+    if(!is_sql_key_word(get_scalar($param_set['compiler_name'], $i)) ) {
+        if( $multi_value ) { $select_stmt .= (" AND $nlt"); }
+        $select_stmt .= ("compiler_name    = ".quote_(pg_escape_string(get_scalar($param_set['compiler_name'], $i)) ) );
+        $select_stmt .= " ";
+        $multi_value = true;
+    }
+    if(!is_sql_key_word(get_scalar($param_set['hostname'], $i)) ) {
+        if( $multi_value ) { $select_stmt .= (" AND $nlt"); }
+        $select_stmt .= ("hostname    = ".quote_(pg_escape_string(get_scalar($param_set['hostname'], $i)) ) );
+        $select_stmt .= " ";
+        $multi_value = true;
+    }
+    if(!is_sql_key_word(get_scalar($param_set['mtt_client_version'], $i)) ) {
+        if( $multi_value ) { $select_stmt .= (" AND $nlt"); }
+        $select_stmt .= ("mtt_client_version    = ".quote_(pg_escape_string(get_scalar($param_set['mtt_client_version'], $i)) ) );
+        $select_stmt .= " ";
+        $multi_value = true;
+    }
+    if(!is_sql_key_word(get_scalar($param_set['local_username'], $i)) ) {
+        if( $multi_value ) { $select_stmt .= (" AND $nlt"); }
+        $select_stmt .= ("local_username    = ".quote_(pg_escape_string(get_scalar($param_set['local_username'], $i)) ) );
+        $select_stmt .= " ";
+        $multi_value = true;
+    }
+    if(!is_sql_key_word(get_scalar($param_set['platform_name'], $i)) ) {
+        if( $multi_value ) { $select_stmt .= (" AND $nlt"); }
+        $select_stmt .= ("platform_name    = ".quote_(pg_escape_string(get_scalar($param_set['platform_name'], $i)) ) );
+        $select_stmt .= " ";
+        $multi_value = true;
+    }
+    $select_stmt .= " $nlt";
+    $select_stmt .= ("ORDER BY mpi_install_id DESC limit 1");
 
     $mpi_install_id = select_scalar($select_stmt);
 
