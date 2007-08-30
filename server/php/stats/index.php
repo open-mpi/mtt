@@ -10,6 +10,11 @@
 #
 #
 
+$head_html = null;
+$body_html_prefix = null;
+$body_html_suffix = null;
+
+
 $topdir = '..';
 if (file_exists("$topdir/config.inc")) {
     include_once("$topdir/config.inc");
@@ -21,12 +26,14 @@ if (array_key_exists("db", $_GET) &&
     preg_match("/mtt/i", $_GET['db'])) {
     $mtt_database_name = $_GET['db'];
 }
-$pgsql_conn;
+$pgsql_conn = null;
 
-$start_collection_date = "DATE '2007-05-01'";
-$end_collection_date   = "DATE '2007-05-01' + interval '1 month'";
-$total_hash;
-$focus_where;
+$start_collection_date = "DATE '".date("Y-m-01")."'";
+$end_collection_date   = "DATE '".date("Y-m-01")."' + interval '1 month'";
+$given_dates = array_key_exists("dates", $_GET) ? $_GET['dates'] : date("Y-m-01 - Y-m-d");
+
+$total_hash = null;
+$focus_where = null;
 $basic_select = ("sum(num_mpi_install_pass + num_mpi_install_fail) as mpi_install, ".
                  "sum(num_test_build_pass + num_test_build_fail) as test_build, ".
                  "sum(num_test_run_pass + num_test_run_fail + num_test_run_timed) as test_run, ".
@@ -324,28 +331,28 @@ function print_query_table($field_title, $db_field, $contrib_hash) {
         print(pretty_print_big_num($contrib_hash[$i]["mpi_install"]) . "\n");
         print("</td>\n");
         print("<td align=right bgcolor='".LYELLOW."'>\n");
-        printf("%4.1f %s\n", (($contrib_hash[$i]["mpi_install"]/$total_hash[0]["mpi_install"])*100), "%");
+        printf("%4.1f %s\n", get_percent($contrib_hash[$i]["mpi_install"], $total_hash[0]["mpi_install"]), "%");
         print("</td>\n");
 
         print("<td align=right bgcolor='".LGREEN."'>\n");
         print(pretty_print_big_num($contrib_hash[$i]["test_build"]) . "\n");
         print("</td>\n");
         print("<td align=right bgcolor='".LGREEN."'>\n");
-        printf("%4.1f %s\n", (($contrib_hash[$i]["test_build"]/$total_hash[0]["test_build"])*100), "%");
+        printf("%4.1f %s\n", get_percent($contrib_hash[$i]["test_build"], $total_hash[0]["test_build"]), "%");
         print("</td>\n");
 
         print("<td align=right bgcolor='".LRED."'>\n");
         print(pretty_print_big_num($contrib_hash[$i]["test_run"]) . "\n");
         print("</td>\n");
         print("<td align=right bgcolor='".LRED."'>\n");
-        printf("%4.1f %s\n", (($contrib_hash[$i]["test_run"]/$total_hash[0]["test_run"])*100), "%");
+        printf("%4.1f %s\n", get_percent($contrib_hash[$i]["test_run"], $total_hash[0]["test_run"]), "%");
         print("</td>\n");
 
         print("<td align=right bgcolor='".LBLUE."'>\n");
         print(pretty_print_big_num($contrib_hash[$i]["perf"]) . "\n");
         print("</td>\n");
         print("<td align=right bgcolor='".LBLUE."'>\n");
-        printf("%4.1f %s\n", (($contrib_hash[$i]["perf"]/$total_hash[0]["perf"])*100), "%");
+        printf("%4.1f %s\n", get_percent($contrib_hash[$i]["perf"], $total_hash[0]["perf"]), "%");
         print("</td>\n");
 
         print("</tr>\n");
@@ -549,7 +556,8 @@ function html_add_table_select($title, $form_name, $values) {
         $table_entry .= "<option value=\"all\" selected>All</option>\n";
     }
     foreach($values as $v) {
-        if( 0 == strncmp($_GET[$form_name], $v, strlen($v)) ) {
+        if( array_key_exists($form_name, $_GET) &&
+            0 == strncmp($_GET[$form_name], $v, strlen($v)) ) {
             $table_entry .= "<option value=\"".$v."\" selected>".$v."</option>\n";
         }
         else {
@@ -569,9 +577,9 @@ function html_add_table_select($title, $form_name, $values) {
 function process_stat_dates() {
     global $start_collection_date;
     global $end_collection_date;
+    global $given_dates;
     global $basic_where;
 
-    $given_dates = $_GET['dates'];
     $tmp_begin = 0;
     $tmp_end   = 0;
 
@@ -601,43 +609,50 @@ function process_stat_input() {
     global $basic_where;
 
     # Org Name
-    if( 0 <  strlen( $_GET['org_name']) &&
+    if( array_key_exists("org_name", $_GET) &&
+        0 <  strlen( $_GET['org_name']) &&
         0 != strncmp($_GET['org_name'], "all", strlen("all"))) {
         $basic_where = ($basic_where . " AND org_name = '".$_GET['org_name']."'");
     }
 
     # Platform Name
-    if( 0 <  strlen( $_GET['platform_name']) &&
+    if( array_key_exists("platform_name", $_GET) && 
+        0 <  strlen( $_GET['platform_name']) &&
         0 != strncmp($_GET['platform_name'], "all", strlen("all"))) {
         $basic_where = ($basic_where . " AND platform_name = '".$_GET['platform_name']."'");
     }
 
     # OS Name
-    if( 0 <  strlen( $_GET['os_name']) &&
+    if( array_key_exists("os_name", $_GET) &&
+        0 <  strlen( $_GET['os_name']) &&
         0 != strncmp($_GET['os_name'], "all", strlen("all"))) {
         $basic_where = ($basic_where . " AND os_name = '".$_GET['os_name']."'");
     }
 
     # MI Compiler Name
-    if( 0 <  strlen( $_GET['mpi_install_compiler_name']) &&
+    if( array_key_exists("mpi_install_compiler_name", $_GET) &&
+        0 <  strlen( $_GET['mpi_install_compiler_name']) &&
         0 != strncmp($_GET['mpi_install_compiler_name'], "all", strlen("all"))) {
         $basic_where = ($basic_where . " AND mpi_install_compiler_name = '".$_GET['mpi_install_compiler_name']."'");
     }
 
     # TB Compiler Name
-    if( 0 <  strlen( $_GET['test_build_compiler_name']) &&
+    if( array_key_exists("test_build_compiler_name", $_GET) &&
+        0 <  strlen( $_GET['test_build_compiler_name']) &&
         0 != strncmp($_GET['test_build_compiler_name'], "all", strlen("all"))) {
         $basic_where = ($basic_where . " AND test_build_compiler_name = '".$_GET['test_build_compiler_name']."'");
     }
 
     # MPI Get Name
-    if( 0 <  strlen( $_GET['mpi_get_name']) &&
+    if( array_key_exists("mpi_get_name", $_GET) &&
+        0 <  strlen( $_GET['mpi_get_name']) &&
         0 != strncmp($_GET['mpi_get_name'], "all", strlen("all"))) {
         $basic_where = ($basic_where . " AND mpi_get_name = '".$_GET['mpi_get_name']."'");
     }
 
     # Test Suite Name
-    if( 0 <  strlen( $_GET['test_suite']) &&
+    if( array_key_exists("test_suite", $_GET) &&
+        0 <  strlen( $_GET['test_suite']) &&
         0 != strncmp($_GET['test_suite'], "all", strlen("all"))) {
         $basic_where = ($basic_where . " AND test_suite = '".$_GET['test_suite']."'");
     }
@@ -650,6 +665,15 @@ function process_stat_input() {
 ######################################################################
 function pretty_print_big_num($val) {
     return number_format($val, 0, '.', ',');
+}
+
+function get_percent($amt, $total) {
+    if( $total == 0 ) {
+        return 0;
+    }
+    else {
+        return (($amt/$total) * 100);
+    }
 }
 
 # array_unique that does not error out when given a scalar
