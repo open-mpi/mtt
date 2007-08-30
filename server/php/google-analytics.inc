@@ -3,7 +3,7 @@
 # If global $mtt_google_anatics_account is defined, return some GA goodness.
 # If a key is passed in, use that as the URL.  Otherwise, urchinTracker 
 # will simply use the current URL. 
-function print_ga($key) {
+function print_ga($key = "") {
     global $mtt_google_analytics_account;
 
     if (empty($mtt_google_analytics_account)) {
