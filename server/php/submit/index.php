@@ -35,10 +35,11 @@ $dbname             = isset($_GET['db'])       ? $_GET['db']       : "mtt";
 $pgsql_conn = null;
 
 # Set php trace levels
+# In the non verbose case do not display PHP Notices (E_NOTICE)
 if ($GLOBALS['verbose'])
     error_reporting(E_ALL);
 else
-    error_reporting(E_ERROR | E_WARNING | E_PARSE);
+    error_reporting((E_ERROR | E_WARNING | E_PARSE) & ~E_NOTICE);
 
 #######################################
 # Post: Ping
@@ -111,15 +112,15 @@ print "\nMTT submission for $phase\n";
 
 if (0 == strcasecmp($phase, "test run")) {
 
-    $idx = process_phase($phase_name, $idxs_hash);
+    $idx = process_phase($phase_name);
 
 } else if (0 == strcasecmp($phase, "test build")) {
 
-    $idx = process_phase($phase_name, NULL);
+    $idx = process_phase($phase_name);
 
 } else if (0 == strcasecmp($phase, "mpi install")) {
 
-    $idx = process_phase($phase_name, NULL);
+    $idx = process_phase($phase_name);
 
 } else {
     print("ERROR: Unknown phase! ($phase)<br>\n");
@@ -138,7 +139,7 @@ exit(0);
 
 ######################################################################
 
-function process_phase($phase, $idxs_hash) {
+function process_phase($phase) {
 
     global $id;
 
@@ -166,11 +167,11 @@ function process_phase($phase, $idxs_hash) {
                       false);
 
     if (0 == strcasecmp($phase, "test_run")) {
-        $idx = process_phase_test_run($results_idxs_hash, $idxs_hash);
+        $idx = process_phase_test_run($results_idxs_hash);
     } else if (0 == strcasecmp($phase, "test_build")) {
-        $idx = process_phase_test_build($results_idxs_hash, NULL);
+        $idx = process_phase_test_build($results_idxs_hash);
     } else if (0 == strcasecmp($phase, "mpi_install")) {
-        $idx = process_phase_mpi_install($results_idxs_hash, NULL);
+        $idx = process_phase_mpi_install($results_idxs_hash);
     }
     else {
         mtt_error("Unknown Phase [$phase]\n");
@@ -179,7 +180,7 @@ function process_phase($phase, $idxs_hash) {
     return $idx;
 }
 
-function process_phase_test_run($results_idxs_hash, $idxs_hash) {
+function process_phase_test_run($results_idxs_hash) {
     $n = $_POST['number_of_results'];
     $print_once = false;
 
@@ -447,7 +448,7 @@ function process_networks($network_full_param) {
     $nlt = "\n\t";
 
     $test_run_network_id = 0;
-    $loc_id_hash;
+    $loc_id_hash = null;
 
     #
     # Split the network CSV, and generate interconnect_ids for each value
@@ -516,7 +517,7 @@ function process_networks($network_full_param) {
     return $test_run_network_id;
 }
 
-function process_phase_test_build($results_idxs_hash, $idxs_hash) {
+function process_phase_test_build($results_idxs_hash) {
     $n = $_POST['number_of_results'];
 
     #
@@ -946,7 +947,7 @@ function find_mpi_install_id() {
     }
 }
 
-function process_phase_mpi_install($results_idxs_hash, $idxs_hash) {
+function process_phase_mpi_install($results_idxs_hash) {
 
     $n = $_POST['number_of_results'];
 
