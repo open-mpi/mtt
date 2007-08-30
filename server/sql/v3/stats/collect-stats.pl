@@ -193,6 +193,20 @@ my $total_inserts = 0;
 my $total_updates = 0;
 
 #
+# Predefined SQL placeholders for DB stats
+#
+my $db_select_num_tuples;
+my $db_select_num_tuples_mi;
+my $db_select_num_tuples_tb;
+my $db_select_num_tuples_tr;
+my $db_select_size;
+
+my $db_submit_select;
+my $db_submit_insert;
+my $db_submit_update;
+
+
+#
 # Verbosity Level
 #  0 = quiet
 #  1 = Basic Timing Information
@@ -226,383 +240,492 @@ if( 0 != parse_cmd_line() ) {
   exit -1;
 }
 
-#
-# Connect to the database
-#
+#######
+# Some programmatic defines
 my $dbh_mtt;
-if( 0 != connect_db() ) {
-  exit -1;
-}
-
-#
-# Render time segments
-#
-my %timer_start_val = ();
-my %timer_end_val   = ();
-my $time_24_cycle = " 21:00:00"; # 9 pm
-my $epoch = "2006-11-24 " . $time_24_cycle;
-my $month_start;
-my $month_end;
-my ($today, $yesterday)         = get_times_today();
-my ($days_epoch, $months_epoch) = get_times_epoch($epoch, $today);
-$today     = $today     . $time_24_cycle;
-$yesterday = $yesterday . $time_24_cycle;
 
 my $progress_cur   = 0;
 my $progress_upper = 0;
 
-if(0 > $past_n_time_segs) {
-  if(    $is_day   eq "t" ) { $past_n_time_segs = $days_epoch;   }
-  elsif( $is_month eq "t" ) { $past_n_time_segs = $months_epoch; }
-  else {
-    print "ERROR: Unsupported. Must provide exact number of months/years in past\n";
-    exit -1;
-  }
-}
+my %timer_start_val = ();
+my %timer_end_val   = ();
+my $month_start;
+my $month_end;
+my ($today, $yesterday);
+my ($days_epoch, $months_epoch);
 
-#
-# Create query statements
-#
-sql_create_queries();
-
-start_timer('total');
-
-#
-# Create a Stat_Datum to accumulate where clauses
-#
 my $ACCUM_ALL = "all";
 my $ACCUM_MI  = "mi";
 my $ACCUM_TB  = "tb";
 my $ACCUM_TR  = "tr";
 
-my $accum_where_datum = Stat_Datum->new();
 
-$accum_where_datum->name("Bogus");
-$accum_where_datum->select_stmt("");
-$accum_where_datum->select_stmt_mi("");
-$accum_where_datum->select_stmt_tb("");
-$accum_where_datum->select_stmt_tr("");
-$accum_where_datum->select_stmt_stat("");
-$accum_where_datum->update_stmt("");
-$accum_where_datum->insert_keys("");
-$accum_where_datum->insert_vals("");
+if( $collect_database eq "t" ) {
+  collect_database_stats();
+}
 
-my $last_datum = dup_datum($accum_where_datum);
-
-#######################
-# For each time segment
-#######################
-for($nth_time_seg = $past_n_time_segs; $nth_time_seg >= 0; --$nth_time_seg) {
-  my ($start_seg, $end_seg, $where_sub) = get_segment($nth_time_seg);
-  my ($start_stat_seg, $end_stat_seg, $where_stat_sub) = get_segment_stat($nth_time_seg);
-
-  # Clear out the datum before starting again.
-  $accum_where_datum = dup_datum($last_datum);
-  $accum_where_datum->select_stmt(   $where_sub);
-  $accum_where_datum->select_stmt_mi($where_sub);
-  $accum_where_datum->select_stmt_tb($where_sub);
-  $accum_where_datum->select_stmt_tr($where_sub);
-  $accum_where_datum  = init_datum_stat($start_seg, $end_seg, $accum_where_datum);
-
-  print_verbose(1, "-"x65 . "\n");
-  print_verbose(1, "-"x20 . " " . resolve_date($start_seg)." - ".resolve_date($end_seg)." ". "-"x20 ."\n");
-
-  start_timer('segment');
-  ######################
-  # Gather all Orgs
-  ######################
-  @all_orgs = gather_all_orgs($start_seg, $end_seg, $accum_where_datum);
-  my $last_datum_org = dup_datum($accum_where_datum);
-  for($cur_org = 0; $cur_org < scalar(@all_orgs); ++$cur_org) {
-    # Clear out the datum before starting again.
-    $accum_where_datum = dup_datum($last_datum_org);
-
-    $accum_where_datum = append_datum_where($accum_where_datum,
-                                            $ACCUM_ALL,
-                                            $all_orgs[$cur_org]);
-
-    print_verbose(1,  "Analyzing: ".$all_orgs[$cur_org]->name."\n");
-    start_timer('org');
-    ######################
-    # Gather all Platforms
-    ######################
-    @all_platforms = gather_all_platforms($start_seg, $end_seg, $accum_where_datum);
-    my $last_datum_platform = dup_datum($accum_where_datum);
-    for($cur_platform = 0; $cur_platform < scalar(@all_platforms); ++$cur_platform) {
-      # Clear out the datum before starting again.
-      $accum_where_datum = dup_datum($last_datum_platform);
-      $accum_where_datum = append_datum_where($accum_where_datum,
-                                              $ACCUM_ALL,
-                                              $all_platforms[$cur_platform]);
-
-      print_verbose(2, "\tPlatform: ".$all_platforms[$cur_platform]->name."\n");
-      start_timer('platform');
-      ######################
-      # Gather all OSs
-      ######################
-      @all_os = gather_all_os($start_seg, $end_seg, $accum_where_datum);
-      my $last_datum_os = dup_datum($accum_where_datum);
-      reset_progress_upper(0);
-      for($cur_os = 0; $cur_os < scalar(@all_os); ++$cur_os) {
-        $accum_where_datum = dup_datum($last_datum_os);
-        $accum_where_datum = append_datum_where($accum_where_datum,
-                                                $ACCUM_ALL,
-                                                $all_os[$cur_os]);
-
-        print_verbose(4, "\tOS: ".$all_os[$cur_os]->name."\n");
-        ##################################
-        # Gather all MPI Install Compilers
-        ##################################
-        @all_mi_compilers = gather_all_mi_compilers($start_seg, $end_seg, $accum_where_datum);
-        my $last_datum_mi_compiler = dup_datum($accum_where_datum);
-        for($cur_mi_compiler = 0; $cur_mi_compiler < scalar(@all_mi_compilers); ++$cur_mi_compiler) {
-          $accum_where_datum = dup_datum($last_datum_mi_compiler);
-          $accum_where_datum = append_datum_where($accum_where_datum,
-                                                  $ACCUM_ALL,
-                                                  $all_mi_compilers[$cur_mi_compiler]);
-
-          print_verbose(4, "\tMPI In. Compiler: ".$all_mi_compilers[$cur_mi_compiler]->name."\n");
-          ######################
-          # Gather all MPI Gets
-          ######################
-          @all_mpi_gets = gather_all_mpi_gets($start_seg, $end_seg, $accum_where_datum);
-          my $last_datum_mpi_get = dup_datum($accum_where_datum);
-          for($cur_mpi_get = 0; $cur_mpi_get < scalar(@all_mpi_gets); ++$cur_mpi_get) {
-            $accum_where_datum = dup_datum($last_datum_mpi_get);
-            $accum_where_datum = append_datum_where($accum_where_datum,
-                                                    $ACCUM_ALL,
-                                                    $all_mpi_gets[$cur_mpi_get]);
-
-            print_verbose(4, "\tMPI Get: ".$all_mpi_gets[$cur_mpi_get]->name."\n");
-            #######################################
-            # Gather all MPI Install Configurations
-            #######################################
-            @all_mi_configs = gather_all_mi_configs($start_seg, $end_seg, $accum_where_datum);
-            my $last_datum_mi_config = dup_datum($accum_where_datum);
-            # Setup Progress
-            print_verbose(4, "Progress Update Values: ".
-                          scalar(@all_os)." * ".
-                          scalar(@all_mi_compilers)." * ".
-                          scalar(@all_mpi_gets)." * ".
-                          scalar(@all_mi_configs)."\n");
-            set_progress_upper(scalar(@all_os) *
-                               scalar(@all_mi_compilers) *
-                               scalar(@all_mpi_gets) *
-                               scalar(@all_mi_configs));
-            for($cur_mi_config = 0; $cur_mi_config < scalar(@all_mi_configs); ++$cur_mi_config) {
-              $accum_where_datum = dup_datum($last_datum_mi_config);
-              $accum_where_datum = append_datum_where($accum_where_datum,
-                                                      $ACCUM_ALL,
-                                                      $all_mi_configs[$cur_mi_config]);
-
-              print_verbose(4, "\tMPI Config: ".$all_mi_configs[$cur_mi_config]->name."\n");
-
-              #
-              # Save MPI Install stat information
-              #
-              print_verbose(3,
-                            sprintf("Gathering MI: %6s -- %10s -- %10s -- %5s\n",
-                                    $all_os[$cur_os]->name,
-                                    $all_mi_compilers[$cur_mi_compiler]->name,
-                                    $all_mpi_gets[$cur_mpi_get]->name,
-                                    $all_mi_configs[$cur_mi_config]->name) );
-              my ($agg_mi_pass, $agg_mi_fail) =
-                gather_agg_mi_pf($accum_where_datum);
-              $accum_where_datum = append_datum_where_keys($accum_where_datum,
-                                                           $ACCUM_TR,
-                                                           "num_mpi_install_pass",
-                                                           $agg_mi_pass);
-              $accum_where_datum = append_datum_where_keys($accum_where_datum,
-                                                           $ACCUM_TR,
-                                                           "num_mpi_install_fail",
-                                                           $agg_mi_fail);
-              #################################
-              # Gather all Test Build Compilers
-              #################################
-              @all_tb_compilers = gather_all_tb_compilers($start_seg, $end_seg, $accum_where_datum);
-              # If there are no test_build tuples for this mpi_install, save the mpi_install and move on
-              $cur_stat_id = -1; # Force select
-              if( 0 >= scalar(@all_tb_compilers) ) {
-                submit_stat($ACCUM_MI, $accum_where_datum);
-              }
-              my $last_datum_tb_compiler = dup_datum($accum_where_datum);
-              for($cur_tb_compiler = 0; $cur_tb_compiler < scalar(@all_tb_compilers); ++$cur_tb_compiler) {
-                $accum_where_datum = dup_datum($last_datum_tb_compiler);
-                $accum_where_datum = append_datum_where($accum_where_datum,
-                                                        $ACCUM_TB,
-                                                        $all_tb_compilers[$cur_tb_compiler]);
-
-                print_verbose(4, "\tTest Build Compiler: ".$all_tb_compilers[$cur_tb_compiler]->name."\n");
-                ########################
-                # Gather all Test Suites
-                ########################
-                @all_test_suites = gather_all_test_suites($start_seg, $end_seg, $accum_where_datum);
-                my $last_datum_test_suite = dup_datum($accum_where_datum);
-                for($cur_test_suite = 0; $cur_test_suite < scalar(@all_test_suites); ++$cur_test_suite) {
-                  $accum_where_datum = dup_datum($last_datum_test_suite);
-                  $accum_where_datum = append_datum_where($accum_where_datum,
-                                                          $ACCUM_TB,
-                                                          $all_test_suites[$cur_test_suite]);
-
-                  print_verbose(4, "\tTest Suite: [".$all_test_suites[$cur_test_suite]->name."]\n");
-                  print_verbose(3, sprintf("Gathering TB: %6s -- %10s -- %10s -- %5s -- %10s -- %10s\n",
-                                           $all_os[$cur_os]->name,
-                                           $all_mi_compilers[$cur_mi_compiler]->name,
-                                           $all_mpi_gets[$cur_mpi_get]->name,
-                                           $all_mi_configs[$cur_mi_config]->name,
-                                           $all_tb_compilers[$cur_tb_compiler]->name,
-                                           $all_test_suites[$cur_test_suite]->name) );
-
-                  my ($agg_tb_pass, $agg_tb_fail) =
-                    gather_agg_tb_pf($accum_where_datum);
-                  $accum_where_datum = append_datum_where_keys($accum_where_datum,
-                                                               $ACCUM_TR,
-                                                               "num_test_build_pass",
-                                                               $agg_tb_pass);
-                  $accum_where_datum = append_datum_where_keys($accum_where_datum,
-                                                               $ACCUM_TR,
-                                                               "num_test_build_fail",
-                                                               $agg_tb_fail);
-                  ######################
-                  # Gather all Launchers
-                  ######################
-                  @all_launchers = gather_all_launchers($start_seg, $end_seg, $accum_where_datum);
-                  my $last_datum_launcher = dup_datum($accum_where_datum);
-                  # If there are no test_row tuples for this test_build, save the test_build and move on
-                  $cur_stat_id = -1; # Force select
-                  if( 0 >= scalar(@all_launchers) ) {
-                    submit_stat($ACCUM_TB, $accum_where_datum);
-                  }
-
-                  for($cur_launcher = 0; $cur_launcher < scalar(@all_launchers); ++$cur_launcher) {
-                    $accum_where_datum = dup_datum($last_datum_launcher);
-                    $accum_where_datum = append_datum_where($accum_where_datum,
-                                                            $ACCUM_TR,
-                                                            $all_launchers[$cur_launcher]);
-
-                    print_verbose(4, "\tLauncher: ".$all_launchers[$cur_launcher]->name."\n");
-                    ##########################
-                    # Gather all Resource Mgrs
-                    ##########################
-                    @all_resource_mgrs = gather_all_resource_mgrs($start_seg, $end_seg, $accum_where_datum);
-                    my $last_datum_resource_mgr = dup_datum($accum_where_datum);
-                    for($cur_resource_mgr = 0; $cur_resource_mgr < scalar(@all_resource_mgrs); ++$cur_resource_mgr) {
-                      $accum_where_datum = dup_datum($last_datum_resource_mgr);
-                      $accum_where_datum = append_datum_where($accum_where_datum,
-                                                              $ACCUM_TR,
-                                                              $all_resource_mgrs[$cur_resource_mgr]);
-
-                      print_verbose(4, "\tResource Mgr.: ".$all_resource_mgrs[$cur_resource_mgr]->name."\n");
-                      ######################
-                      # Gather all Networks
-                      ######################
-                      @all_networks = gather_all_networks($start_seg, $end_seg, $accum_where_datum);
-                      my $last_datum_network = dup_datum($accum_where_datum);
-                      for($cur_network = 0; $cur_network < scalar(@all_networks); ++$cur_network) {
-                        $accum_where_datum = dup_datum($last_datum_network);
-                        $accum_where_datum = append_datum_where($accum_where_datum,
-                                                                $ACCUM_TR,
-                                                                $all_networks[$cur_network]);
-
-                        print_verbose(4,  "\tNetwork: ".$all_networks[$cur_network]->name."\n");
-                        print_verbose(3, sprintf("Gathering TR: %6s -- %10s -- %10s -- %5s -- %10s -- %10s -- %10s -- %2s -- %2s\n",
-                                                 $all_os[$cur_os]->name,
-                                                 $all_mi_compilers[$cur_mi_compiler]->name,
-                                                 $all_mpi_gets[$cur_mpi_get]->name,
-                                                 $all_mi_configs[$cur_mi_config]->name,
-                                                 $all_tb_compilers[$cur_tb_compiler]->name,
-                                                 $all_test_suites[$cur_test_suite]->name,
-                                                 $all_launchers[$cur_launcher]->name,
-                                                 $all_resource_mgrs[$cur_resource_mgr]->name,
-                                                 $all_networks[$cur_network]->name) );
-
-                        my $agg_tests   = gather_agg_tests( $accum_where_datum);
-                        my $agg_params  = gather_agg_params($accum_where_datum);
-
-                        my ($agg_tr_pass, $agg_tr_fail, $agg_tr_skip, $agg_tr_time) =
-                          gather_agg_tr_pfst($accum_where_datum);
-
-                        my $agg_tr_perf = gather_agg_tr_perf($accum_where_datum);
-
-                        $accum_where_datum = append_datum_where_keys($accum_where_datum,
-                                                                     $ACCUM_TR,
-                                                                     "num_tests",
-                                                                     $agg_tests);
-                        $accum_where_datum = append_datum_where_keys($accum_where_datum,
-                                                                     $ACCUM_TR,
-                                                                     "num_parameters",
-                                                                     $agg_params);
-                        $accum_where_datum = append_datum_where_keys($accum_where_datum,
-                                                                     $ACCUM_TR,
-                                                                     "num_test_run_pass",
-                                                                     $agg_tr_pass);
-                        $accum_where_datum = append_datum_where_keys($accum_where_datum,
-                                                                     $ACCUM_TR,
-                                                                     "num_test_run_fail",
-                                                                     $agg_tr_fail);
-                        $accum_where_datum = append_datum_where_keys($accum_where_datum,
-                                                                     $ACCUM_TR,
-                                                                     "num_test_run_skip",
-                                                                     $agg_tr_skip);
-                        $accum_where_datum = append_datum_where_keys($accum_where_datum,
-                                                                     $ACCUM_TR,
-                                                                     "num_test_run_timed",
-                                                                     $agg_tr_time);
-                        $accum_where_datum = append_datum_where_keys($accum_where_datum,
-                                                                     $ACCUM_TR,
-                                                                     "num_test_run_perf",
-                                                                     $agg_tr_perf);
-                        $cur_stat_id = -1; # Force select
-                        submit_stat($ACCUM_ALL, $accum_where_datum);
-                      } # End Network
-                    } # End Resource Mgrs
-                  } # End Launchers
-                  print_verbose(2,". ");
-                } # End Test Suites
-                print_verbose(2,"\n");
-              } # End Test Build Compiler
-              inc_progress();
-            } # End MPI Install Configs
-            if( 4 <= $verbose ) {
-              print_progress("**");
-            }
-          } # End MPI Gets
-        } # End MPI Install Compiler
-      } # End OSs
-
-      end_timer('platform');
-      print_verbose(2, sprintf("\t <-> Finished Platform: (%s)\t %s\n",
-                               $all_platforms[$cur_platform]->name,
-                               display_timer('platform')));
-      print_verbose(2, "\t"."-"x60 . "\n");
-    } # End Platforms
-
-    end_timer('org');
-    print_verbose(2, sprintf(" <-> Finished Org.: (%s)\t\t %s\n",
-                             $all_orgs[$cur_org]->name,
-                             display_timer('org')));
-  } # End Org
-
-  end_timer('segment');
-  print_verbose(1, "-"x20 . " " . resolve_date($start_seg)." - ".resolve_date($end_seg)." ". "-"x20 ."\n");
-  print_verbose(1, sprintf("Finished Segment: [%s - %s]\t %s\n",
-                           resolve_date($start_seg),
-                           resolve_date($end_seg),
-                           display_timer('segment')));
-  print_verbose(2, "-"x65 . "\n");
-
-} # End Time segment
-
-end_timer('total');
-print_verbose(1, "*"x65 . "\n");
-print_verbose(2, sprintf("All Finished:\t\t %s\n", display_timer('total')));
-print_verbose(2, sprintf("DB Stats: %6d Inserts, %6d updates\n", $total_inserts, $total_updates));
-#
-# Detach from the database
-#
-disconnect_db();
+if( $collect_contrib eq "t" ) {
+  collect_contribution_stats();
+}
 
 exit 0;
+
+sub collect_database_stats() {
+  my %stat_values = ();
+  my $cur_db_stat_id = 0;
+  my $loc_update_args = "";
+  my $loc_insert_keys_args = "";
+  my $loc_insert_vals_args = "";
+
+  #
+  # Connect to the database
+  #
+  if( 0 != connect_db() ) {
+    return -1;
+  }
+
+  #
+  # Create query statements
+  #
+  sql_create_db_queries();
+
+  start_timer('total');
+
+  print_verbose(1, "-"x65 . "\n");
+  print_verbose(1, "-"x6 . " Database Stats Collection: " . resolve_date("'now'")." "."-"x20 ."\n");
+
+  #
+  # Gather the stat data
+  #
+  $stat_values{'num_tuples'}    = sql_scalar_cmd($db_select_num_tuples, "");
+  $stat_values{'num_tuples_mi'} = sql_scalar_cmd($db_select_num_tuples_mi, "");
+  $stat_values{'num_tuples_tb'} = sql_scalar_cmd($db_select_num_tuples_tb, "");
+  $stat_values{'num_tuples_tr'} = sql_scalar_cmd($db_select_num_tuples_tr, "");
+  $stat_values{'db_size'}       = sql_scalar_cmd($db_select_size, "");
+
+  #
+  # Construct insert/update vals
+  #
+  $loc_insert_vals_args = ("'".$stat_values{'db_size'}."', $v_nlt".
+                           "'".$stat_values{'num_tuples'}."', $v_nlt".
+                           "'".$stat_values{'num_tuples_mi'}."', $v_nlt".
+                           "'".$stat_values{'num_tuples_tb'}."', $v_nlt".
+                           "'".$stat_values{'num_tuples_tr'}."'");
+  $loc_update_args = ("size_db = ".               $stat_values{'db_size'}      .", ".$v_nlt.
+                      "num_tuples = ".            $stat_values{'num_tuples'}   .", ".$v_nlt.
+                      "num_tuples_mpi_install = ".$stat_values{'num_tuples_mi'}.", ".$v_nlt.
+                      "num_tuples_test_build = ". $stat_values{'num_tuples_tb'}.", ".$v_nlt.
+                      "num_tuples_test_run = ".   $stat_values{'num_tuples_tr'}." " .$v_nlt);
+
+  #
+  # Insert the stat.
+  #
+  print_verbose(2, "Inserting Stat:\n");
+  for my $key (keys %stat_values) {
+    print_verbose(2, "\t[$key] = [".$stat_values{$key}."]\n");
+  }
+
+  $cur_db_stat_id = find_stat_tuple($db_submit_select, "");
+  if( 0 <= $cur_db_stat_id ) {
+    update_stat_tuple($db_submit_update,
+                      $loc_update_args,
+                      $cur_db_stat_id);
+    print_verbose(5, "****UPDATED**** Current ID <$cur_db_stat_id>\n");
+    print_verbose(5, "*"x60 . "\n");
+  }
+  else {
+    $cur_db_stat_id = insert_stat_tuple($db_submit_insert,
+                                        "",
+                                        $loc_insert_vals_args);
+    #
+    # If insert didn't give us a valid ID, take a guess at it.
+    #
+    if( 0 > $cur_db_stat_id) {
+      $cur_db_stat_id = find_stat_tuple($db_submit_select, "");
+    }
+    print_verbose(5, "****INSERTED**** Current ID <$cur_db_stat_id>\n");
+    print_verbose(5, "*"x60 . "\n");
+  }
+
+  #
+  # Detach from the database
+  #
+  disconnect_db();
+
+  end_timer('total');
+  print_verbose(1, "*"x65 . "\n");
+  print_verbose(2, sprintf("Database Stats) All Finished:\t\t %s\n", display_timer('total')));
+
+  return 0;
+}
+
+sub collect_contribution_stats() {
+  #
+  # Connect to the database
+  #
+  if( 0 != connect_db() ) {
+    return -1;
+  }
+
+  #
+  # Render time segments
+  #
+  my $time_24_cycle = " 21:00:00"; # 9 pm
+  my $epoch = "2006-11-24 " . $time_24_cycle;
+  ($today, $yesterday)         = get_times_today();
+  ($days_epoch, $months_epoch) = get_times_epoch($epoch, $today);
+  $today     = $today     . $time_24_cycle;
+  $yesterday = $yesterday . $time_24_cycle;
+
+  if(0 > $past_n_time_segs) {
+    if(    $is_day   eq "t" ) { $past_n_time_segs = $days_epoch;   }
+    elsif( $is_month eq "t" ) { $past_n_time_segs = $months_epoch; }
+    else {
+      print "ERROR: Unsupported. Must provide exact number of months/years in past\n";
+      return -1;
+    }
+  }
+
+  #
+  # Create query statements
+  #
+  sql_create_queries();
+
+  start_timer('total');
+
+  #
+  # Create a Stat_Datum to accumulate where clauses
+  #
+  my $accum_where_datum = Stat_Datum->new();
+
+  $accum_where_datum->name("Bogus");
+  $accum_where_datum->select_stmt("");
+  $accum_where_datum->select_stmt_mi("");
+  $accum_where_datum->select_stmt_tb("");
+  $accum_where_datum->select_stmt_tr("");
+  $accum_where_datum->select_stmt_stat("");
+  $accum_where_datum->update_stmt("");
+  $accum_where_datum->insert_keys("");
+  $accum_where_datum->insert_vals("");
+
+  my $last_datum = dup_datum($accum_where_datum);
+
+  #######################
+  # For each time segment
+  #######################
+  for($nth_time_seg = $past_n_time_segs; $nth_time_seg >= 0; --$nth_time_seg) {
+    my ($start_seg, $end_seg, $where_sub) = get_segment($nth_time_seg);
+    my ($start_stat_seg, $end_stat_seg, $where_stat_sub) = get_segment_stat($nth_time_seg);
+
+    # Clear out the datum before starting again.
+    $accum_where_datum = dup_datum($last_datum);
+    $accum_where_datum->select_stmt(   $where_sub);
+    $accum_where_datum->select_stmt_mi($where_sub);
+    $accum_where_datum->select_stmt_tb($where_sub);
+    $accum_where_datum->select_stmt_tr($where_sub);
+    $accum_where_datum  = init_datum_stat($start_seg, $end_seg, $accum_where_datum);
+
+    print_verbose(1, "-"x65 . "\n");
+    print_verbose(1, "-"x20 . " " . resolve_date($start_seg)." - ".resolve_date($end_seg)." ". "-"x20 ."\n");
+
+    start_timer('segment');
+    ######################
+    # Gather all Orgs
+    ######################
+    @all_orgs = gather_all_orgs($start_seg, $end_seg, $accum_where_datum);
+    my $last_datum_org = dup_datum($accum_where_datum);
+    for($cur_org = 0; $cur_org < scalar(@all_orgs); ++$cur_org) {
+      # Clear out the datum before starting again.
+      $accum_where_datum = dup_datum($last_datum_org);
+
+      $accum_where_datum = append_datum_where($accum_where_datum,
+                                              $ACCUM_ALL,
+                                              $all_orgs[$cur_org]);
+
+      print_verbose(1,  "Analyzing: ".$all_orgs[$cur_org]->name."\n");
+      start_timer('org');
+      ######################
+      # Gather all Platforms
+      ######################
+      @all_platforms = gather_all_platforms($start_seg, $end_seg, $accum_where_datum);
+      my $last_datum_platform = dup_datum($accum_where_datum);
+      for($cur_platform = 0; $cur_platform < scalar(@all_platforms); ++$cur_platform) {
+        # Clear out the datum before starting again.
+        $accum_where_datum = dup_datum($last_datum_platform);
+        $accum_where_datum = append_datum_where($accum_where_datum,
+                                                $ACCUM_ALL,
+                                                $all_platforms[$cur_platform]);
+
+        print_verbose(2, "\tPlatform: ".$all_platforms[$cur_platform]->name."\n");
+        start_timer('platform');
+        ######################
+        # Gather all OSs
+        ######################
+        @all_os = gather_all_os($start_seg, $end_seg, $accum_where_datum);
+        my $last_datum_os = dup_datum($accum_where_datum);
+        reset_progress_upper(0);
+        for($cur_os = 0; $cur_os < scalar(@all_os); ++$cur_os) {
+          $accum_where_datum = dup_datum($last_datum_os);
+          $accum_where_datum = append_datum_where($accum_where_datum,
+                                                  $ACCUM_ALL,
+                                                  $all_os[$cur_os]);
+
+          print_verbose(4, "\tOS: ".$all_os[$cur_os]->name."\n");
+          ##################################
+          # Gather all MPI Install Compilers
+          ##################################
+          @all_mi_compilers = gather_all_mi_compilers($start_seg, $end_seg, $accum_where_datum);
+          my $last_datum_mi_compiler = dup_datum($accum_where_datum);
+          for($cur_mi_compiler = 0; $cur_mi_compiler < scalar(@all_mi_compilers); ++$cur_mi_compiler) {
+            $accum_where_datum = dup_datum($last_datum_mi_compiler);
+            $accum_where_datum = append_datum_where($accum_where_datum,
+                                                    $ACCUM_ALL,
+                                                    $all_mi_compilers[$cur_mi_compiler]);
+
+            print_verbose(4, "\tMPI In. Compiler: ".$all_mi_compilers[$cur_mi_compiler]->name."\n");
+            ######################
+            # Gather all MPI Gets
+            ######################
+            @all_mpi_gets = gather_all_mpi_gets($start_seg, $end_seg, $accum_where_datum);
+            my $last_datum_mpi_get = dup_datum($accum_where_datum);
+            for($cur_mpi_get = 0; $cur_mpi_get < scalar(@all_mpi_gets); ++$cur_mpi_get) {
+              $accum_where_datum = dup_datum($last_datum_mpi_get);
+              $accum_where_datum = append_datum_where($accum_where_datum,
+                                                      $ACCUM_ALL,
+                                                      $all_mpi_gets[$cur_mpi_get]);
+
+              print_verbose(4, "\tMPI Get: ".$all_mpi_gets[$cur_mpi_get]->name."\n");
+              #######################################
+              # Gather all MPI Install Configurations
+              #######################################
+              @all_mi_configs = gather_all_mi_configs($start_seg, $end_seg, $accum_where_datum);
+              my $last_datum_mi_config = dup_datum($accum_where_datum);
+              # Setup Progress
+              print_verbose(4, "Progress Update Values: ".
+                            scalar(@all_os)." * ".
+                            scalar(@all_mi_compilers)." * ".
+                            scalar(@all_mpi_gets)." * ".
+                            scalar(@all_mi_configs)."\n");
+              set_progress_upper(scalar(@all_os) *
+                                 scalar(@all_mi_compilers) *
+                                 scalar(@all_mpi_gets) *
+                                 scalar(@all_mi_configs));
+              for($cur_mi_config = 0; $cur_mi_config < scalar(@all_mi_configs); ++$cur_mi_config) {
+                $accum_where_datum = dup_datum($last_datum_mi_config);
+                $accum_where_datum = append_datum_where($accum_where_datum,
+                                                        $ACCUM_ALL,
+                                                        $all_mi_configs[$cur_mi_config]);
+
+                print_verbose(4, "\tMPI Config: ".$all_mi_configs[$cur_mi_config]->name."\n");
+
+                #
+                # Save MPI Install stat information
+                #
+                print_verbose(3,
+                              sprintf("Gathering MI: %6s -- %10s -- %10s -- %5s\n",
+                                      $all_os[$cur_os]->name,
+                                      $all_mi_compilers[$cur_mi_compiler]->name,
+                                      $all_mpi_gets[$cur_mpi_get]->name,
+                                      $all_mi_configs[$cur_mi_config]->name) );
+                my ($agg_mi_pass, $agg_mi_fail) =
+                  gather_agg_mi_pf($accum_where_datum);
+                $accum_where_datum = append_datum_where_keys($accum_where_datum,
+                                                             $ACCUM_TR,
+                                                             "num_mpi_install_pass",
+                                                             $agg_mi_pass);
+                $accum_where_datum = append_datum_where_keys($accum_where_datum,
+                                                             $ACCUM_TR,
+                                                             "num_mpi_install_fail",
+                                                             $agg_mi_fail);
+                #################################
+                # Gather all Test Build Compilers
+                #################################
+                @all_tb_compilers = gather_all_tb_compilers($start_seg, $end_seg, $accum_where_datum);
+                # If there are no test_build tuples for this mpi_install, save the mpi_install and move on
+                $cur_stat_id = -1; # Force select
+                if( 0 >= scalar(@all_tb_compilers) ) {
+                  submit_stat($ACCUM_MI, $accum_where_datum);
+                }
+                my $last_datum_tb_compiler = dup_datum($accum_where_datum);
+                for($cur_tb_compiler = 0; $cur_tb_compiler < scalar(@all_tb_compilers); ++$cur_tb_compiler) {
+                  $accum_where_datum = dup_datum($last_datum_tb_compiler);
+                  $accum_where_datum = append_datum_where($accum_where_datum,
+                                                          $ACCUM_TB,
+                                                          $all_tb_compilers[$cur_tb_compiler]);
+
+                  print_verbose(4, "\tTest Build Compiler: ".$all_tb_compilers[$cur_tb_compiler]->name."\n");
+                  ########################
+                  # Gather all Test Suites
+                  ########################
+                  @all_test_suites = gather_all_test_suites($start_seg, $end_seg, $accum_where_datum);
+                  my $last_datum_test_suite = dup_datum($accum_where_datum);
+                  for($cur_test_suite = 0; $cur_test_suite < scalar(@all_test_suites); ++$cur_test_suite) {
+                    $accum_where_datum = dup_datum($last_datum_test_suite);
+                    $accum_where_datum = append_datum_where($accum_where_datum,
+                                                            $ACCUM_TB,
+                                                            $all_test_suites[$cur_test_suite]);
+
+                    print_verbose(4, "\tTest Suite: [".$all_test_suites[$cur_test_suite]->name."]\n");
+                    print_verbose(3, sprintf("Gathering TB: %6s -- %10s -- %10s -- %5s -- %10s -- %10s\n",
+                                             $all_os[$cur_os]->name,
+                                             $all_mi_compilers[$cur_mi_compiler]->name,
+                                             $all_mpi_gets[$cur_mpi_get]->name,
+                                             $all_mi_configs[$cur_mi_config]->name,
+                                             $all_tb_compilers[$cur_tb_compiler]->name,
+                                             $all_test_suites[$cur_test_suite]->name) );
+
+                    my ($agg_tb_pass, $agg_tb_fail) =
+                      gather_agg_tb_pf($accum_where_datum);
+                    $accum_where_datum = append_datum_where_keys($accum_where_datum,
+                                                                 $ACCUM_TR,
+                                                                 "num_test_build_pass",
+                                                                 $agg_tb_pass);
+                    $accum_where_datum = append_datum_where_keys($accum_where_datum,
+                                                                 $ACCUM_TR,
+                                                                 "num_test_build_fail",
+                                                                 $agg_tb_fail);
+                    ######################
+                    # Gather all Launchers
+                    ######################
+                    @all_launchers = gather_all_launchers($start_seg, $end_seg, $accum_where_datum);
+                    my $last_datum_launcher = dup_datum($accum_where_datum);
+                    # If there are no test_row tuples for this test_build, save the test_build and move on
+                    $cur_stat_id = -1; # Force select
+                    if( 0 >= scalar(@all_launchers) ) {
+                      submit_stat($ACCUM_TB, $accum_where_datum);
+                    }
+
+                    for($cur_launcher = 0; $cur_launcher < scalar(@all_launchers); ++$cur_launcher) {
+                      $accum_where_datum = dup_datum($last_datum_launcher);
+                      $accum_where_datum = append_datum_where($accum_where_datum,
+                                                              $ACCUM_TR,
+                                                              $all_launchers[$cur_launcher]);
+
+                      print_verbose(4, "\tLauncher: ".$all_launchers[$cur_launcher]->name."\n");
+                      ##########################
+                      # Gather all Resource Mgrs
+                      ##########################
+                      @all_resource_mgrs = gather_all_resource_mgrs($start_seg, $end_seg, $accum_where_datum);
+                      my $last_datum_resource_mgr = dup_datum($accum_where_datum);
+                      for($cur_resource_mgr = 0; $cur_resource_mgr < scalar(@all_resource_mgrs); ++$cur_resource_mgr) {
+                        $accum_where_datum = dup_datum($last_datum_resource_mgr);
+                        $accum_where_datum = append_datum_where($accum_where_datum,
+                                                                $ACCUM_TR,
+                                                                $all_resource_mgrs[$cur_resource_mgr]);
+
+                        print_verbose(4, "\tResource Mgr.: ".$all_resource_mgrs[$cur_resource_mgr]->name."\n");
+                        ######################
+                        # Gather all Networks
+                        ######################
+                        @all_networks = gather_all_networks($start_seg, $end_seg, $accum_where_datum);
+                        my $last_datum_network = dup_datum($accum_where_datum);
+                        for($cur_network = 0; $cur_network < scalar(@all_networks); ++$cur_network) {
+                          $accum_where_datum = dup_datum($last_datum_network);
+                          $accum_where_datum = append_datum_where($accum_where_datum,
+                                                                  $ACCUM_TR,
+                                                                  $all_networks[$cur_network]);
+
+                          print_verbose(4,  "\tNetwork: ".$all_networks[$cur_network]->name."\n");
+                          print_verbose(3, sprintf("Gathering TR: %6s -- %10s -- %10s -- %5s -- %10s -- %10s -- %10s -- %2s -- %2s\n",
+                                                   $all_os[$cur_os]->name,
+                                                   $all_mi_compilers[$cur_mi_compiler]->name,
+                                                   $all_mpi_gets[$cur_mpi_get]->name,
+                                                   $all_mi_configs[$cur_mi_config]->name,
+                                                   $all_tb_compilers[$cur_tb_compiler]->name,
+                                                   $all_test_suites[$cur_test_suite]->name,
+                                                   $all_launchers[$cur_launcher]->name,
+                                                   $all_resource_mgrs[$cur_resource_mgr]->name,
+                                                   $all_networks[$cur_network]->name) );
+
+                          my $agg_tests   = gather_agg_tests( $accum_where_datum);
+                          my $agg_params  = gather_agg_params($accum_where_datum);
+
+                          my ($agg_tr_pass, $agg_tr_fail, $agg_tr_skip, $agg_tr_time) =
+                            gather_agg_tr_pfst($accum_where_datum);
+
+                          my $agg_tr_perf = gather_agg_tr_perf($accum_where_datum);
+
+                          $accum_where_datum = append_datum_where_keys($accum_where_datum,
+                                                                       $ACCUM_TR,
+                                                                       "num_tests",
+                                                                       $agg_tests);
+                          $accum_where_datum = append_datum_where_keys($accum_where_datum,
+                                                                       $ACCUM_TR,
+                                                                       "num_parameters",
+                                                                       $agg_params);
+                          $accum_where_datum = append_datum_where_keys($accum_where_datum,
+                                                                       $ACCUM_TR,
+                                                                       "num_test_run_pass",
+                                                                       $agg_tr_pass);
+                          $accum_where_datum = append_datum_where_keys($accum_where_datum,
+                                                                       $ACCUM_TR,
+                                                                       "num_test_run_fail",
+                                                                       $agg_tr_fail);
+                          $accum_where_datum = append_datum_where_keys($accum_where_datum,
+                                                                       $ACCUM_TR,
+                                                                       "num_test_run_skip",
+                                                                       $agg_tr_skip);
+                          $accum_where_datum = append_datum_where_keys($accum_where_datum,
+                                                                       $ACCUM_TR,
+                                                                       "num_test_run_timed",
+                                                                       $agg_tr_time);
+                          $accum_where_datum = append_datum_where_keys($accum_where_datum,
+                                                                       $ACCUM_TR,
+                                                                       "num_test_run_perf",
+                                                                       $agg_tr_perf);
+                          $cur_stat_id = -1; # Force select
+                          submit_stat($ACCUM_ALL, $accum_where_datum);
+                        } # End Network
+                      } # End Resource Mgrs
+                    } # End Launchers
+                    print_verbose(2,". ");
+                  } # End Test Suites
+                  print_verbose(2,"\n");
+                } # End Test Build Compiler
+                inc_progress();
+              } # End MPI Install Configs
+              if( 4 <= $verbose ) {
+                print_progress("**");
+              }
+            } # End MPI Gets
+          } # End MPI Install Compiler
+        } # End OSs
+
+        end_timer('platform');
+        print_verbose(2, sprintf("\t <-> Finished Platform: (%s)\t %s\n",
+                                 $all_platforms[$cur_platform]->name,
+                                 display_timer('platform')));
+        print_verbose(2, "\t"."-"x60 . "\n");
+      } # End Platforms
+
+      end_timer('org');
+      print_verbose(2, sprintf(" <-> Finished Org.: (%s)\t\t %s\n",
+                               $all_orgs[$cur_org]->name,
+                               display_timer('org')));
+    } # End Org
+
+    end_timer('segment');
+    print_verbose(1, "-"x20 . " " . resolve_date($start_seg)." - ".resolve_date($end_seg)." ". "-"x20 ."\n");
+    print_verbose(1, sprintf("Finished Segment: [%s - %s]\t %s\n",
+                             resolve_date($start_seg),
+                             resolve_date($end_seg),
+                             display_timer('segment')));
+    print_verbose(2, "-"x65 . "\n");
+
+  } # End Time segment
+
+  end_timer('total');
+  print_verbose(1, "*"x65 . "\n");
+  print_verbose(2, sprintf("Contrib Stats) All Finished:\t\t %s\n", display_timer('total')));
+  print_verbose(2, sprintf("DB Stats: %6d Inserts, %6d updates\n", $total_inserts, $total_updates));
+
+  #
+  # Detach from the database
+  #
+  disconnect_db();
+
+  return 0;
+}
 
 sub reset_progress_upper() {
   $progress_upper = shift(@_);
@@ -750,7 +873,7 @@ sub parse_cmd_line() {
     # Display usage information and exit
     #
     elsif( $ARGV[$i] eq "-h" ) {
-      $exit_value -1;
+      $exit_value = -1;
     }
     #
     # Verbose level
@@ -836,6 +959,82 @@ sub connect_db() {
 sub disconnect_db() {
   sql_destroy_queries();
   $dbh_mtt->disconnect;
+  return 0;
+}
+
+sub sql_create_db_queries() {
+  #
+  # Number of tuples
+  #
+  $db_select_num_tuples =
+    ("SELECT cast(sum(reltuples) as bigint) ".
+     "FROM pg_class ".
+     "WHERE relname ~* 'pkey' AND ".
+     "(relname ~* 'test_run' or relname ~* 'mpi_install' or relname ~* 'test_build')");
+
+  #
+  # Number of tuples (MPI Install)
+  #
+  $db_select_num_tuples_mi =
+    ("SELECT cast(sum(reltuples) as bigint) ".
+     "FROM pg_class ".
+     "WHERE relname ~* 'pkey' AND ".
+     "relname ~* 'mpi_install'");
+
+  #
+  # Number of tuples (Test Build)
+  #
+  $db_select_num_tuples_tb =
+    ("SELECT cast(sum(reltuples) as bigint) ".
+     "FROM pg_class ".
+     "WHERE relname ~* 'pkey' AND ".
+     "relname ~* 'test_build'");
+
+  #
+  # Number of tuples (Test Run)
+  #
+  $db_select_num_tuples_tr =
+    ("SELECT cast(sum(reltuples) as bigint) ".
+     "FROM pg_class ".
+     "WHERE relname ~* 'pkey' AND ".
+     "relname ~* 'test_run'");
+
+  #
+  # DB size in Bytes
+  #
+  $db_select_size =
+    ("SELECT pg_database_size('mtt')");
+
+  #
+  # Select Existing DB Stat
+  #
+  $db_submit_select =
+    ("SELECT mtt_stats_database_id ".
+     "FROM mtt_stats_database ".
+     "WHERE collection_date = DATE 'now'");
+
+  #
+  # Insert New DB stat
+  #
+  $db_submit_insert =
+    ("INSERT into mtt_stats_database ".
+     "(mtt_stats_database_id, ".
+     " collection_date, ".
+     " size_db, ".
+     " num_tuples, ".
+     " num_tuples_mpi_install, ".
+     " num_tuples_test_build, ".
+     " num_tuples_test_run) ".
+     "VALUES (DEFAULT, DEFAULT,".$replace_insert_vals_field.")");
+
+  #
+  # Update an existing DB stat
+  #
+  $db_submit_update =
+    ("UPDATE mtt_stats_database SET ".
+     " ".$replace_update_field." ".$v_nl.
+     " WHERE mtt_stats_database_id = ".$replace_update_id_field);
+
   return 0;
 }
 
@@ -1088,6 +1287,9 @@ sub sql_create_queries() {
      " VALUES ".$v_nl.
      "(DEFAULT, '$is_day', '$is_month', '$is_year', ".$replace_insert_vals_field.") ");
 
+  #
+  # Update existing stat tuple
+  #
   $update_stat_cmd =
     ("UPDATE mtt_stats_contrib ".$v_nl.
      " SET ".$v_nl.
@@ -1907,14 +2109,15 @@ sub gather_agg_tr_perf() {
   return $loc_accum;
 }
 
-sub find_stat_tuple($) {
+sub find_stat_tuple($$) {
+  my $select_cmd = shift(@_);
   my $where_sub = shift(@_);
   my $loc_id = -1;
 
   my @sql_rtn;
   my $n;
 
-  @sql_rtn = sql_1d_array_cmd($select_stat_cmd, $where_sub);
+  @sql_rtn = sql_1d_array_cmd($select_cmd, $where_sub);
 
   foreach $n (@sql_rtn) {
     $loc_id = $n;
@@ -1927,10 +2130,10 @@ sub find_stat_tuple($) {
   return $loc_id;
 }
 
-sub update_stat_tuple($$) {
+sub update_stat_tuple($$$) {
+  my $sql_update = shift(@_);
   my $update_sub = shift(@_);
   my $loc_id     = shift(@_);
-  my $sql_update = $update_stat_cmd;
   my $stmt;
 
   if( $sql_update =~ /$replace_update_field/ ) {
@@ -1950,11 +2153,11 @@ sub update_stat_tuple($$) {
   return $loc_id;
 }
 
-sub insert_stat_tuple($$) {
+sub insert_stat_tuple($$$) {
+  my $sql_insert      = shift(@_);
   my $insert_keys_sub = shift(@_);
   my $insert_vals_sub = shift(@_);
   my $loc_id = -1;
-  my $sql_insert = $insert_stat_cmd;
   my $stmt;
 
   if( $sql_insert =~ /$replace_insert_keys_field/ ) {
@@ -2110,13 +2313,15 @@ sub submit_stat() {
   # If we have already established a stat_id then we can skip this step
   # and go straight to updating
   if( 0 > $cur_stat_id) {
-    $cur_stat_id = find_stat_tuple($loc_select_args);
+    $cur_stat_id = find_stat_tuple($select_stat_cmd, $loc_select_args);
   }
   #
   # if a stat already exists then update it
   #
   if( 0 <= $cur_stat_id ) {
-    update_stat_tuple($loc_update_args, $cur_stat_id);
+    update_stat_tuple($update_stat_cmd,
+                      $loc_update_args,
+                      $cur_stat_id);
     print_verbose(5, "****UPDATED**** Current ID <$cur_stat_id>\n");
     print_verbose(5, "*"x60 . "\n");
     ++$total_updates;
@@ -2125,12 +2330,14 @@ sub submit_stat() {
   # OW insert a new stat
   #
   else {
-    $cur_stat_id = insert_stat_tuple($loc_insert_keys_args, $loc_insert_vals_args);
+    $cur_stat_id = insert_stat_tuple($insert_stat_cmd,
+                                     $loc_insert_keys_args,
+                                     $loc_insert_vals_args);
     #
     # If insert didn't give us a valid ID, take a guess at it.
     #
     if( 0 > $cur_stat_id) {
-      $cur_stat_id = find_stat_tuple($loc_select_args);
+      $cur_stat_id = find_stat_tuple($select_stat_cmd, $loc_select_args);
     }
     print_verbose(5, "****INSERTED**** Current ID <$cur_stat_id>\n");
     print_verbose(5, "*"x60 . "\n");
@@ -2139,30 +2346,4 @@ sub submit_stat() {
 
   return $cur_stat_id;
 }
-
-
-
-
-
-
-#my $num_mi_pass_fail_month =
-#  ("SELECT sum(num_mpi_install_fail) as fail, sum(num_mpi_install_pass) as pass, ".
-#   "       0 as skip, 0 as timed ".
-#   "FROM mtt_stats_contrib ".
-#   "WHERE $where_field AND is_day = 't'");
-#my $num_tb_pass_fail_month =
-#  ("SELECT sum(num_test_build_fail) as fail, sum(num_test_build_pass) as pass, ".
-#   "       0 as skip, 0 as timed ".
-#   "FROM mtt_stats_contrib ".
-#   "WHERE $where_field AND is_day = 't'");
-#my $num_tr_pass_fail_month =
-#  ("SELECT sum(num_test_run_fail) as fail, sum(num_test_run_pass) as pass, ".
-#   "       sum(num_test_run_skip) as skip, sum(num_test_run_timed) as timed ".
-#   "FROM mtt_stats_contrib ".
-#   "WHERE $where_field AND is_day = 't'");
-#my $num_tr_perf_month =
-#  ("SELECT sum(num_test_run_perf) as perf ".
-#   "FROM mtt_stats_contrib ".
-#   "WHERE $where_field AND is_day = 't'");
-
 
