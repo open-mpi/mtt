@@ -10,6 +10,11 @@
 # $HEADER$
 #
 
-header("Location: .");
+if (array_key_exists("QUERY_STRING", $_SERVER) && 
+    !empty($_SERVER["QUERY_STRING"])) {
+    header("Location: ./?" . $_SERVER["QUERY_STRING"]);
+} else {
+    header("Location: .");
+}
 
 ?>
