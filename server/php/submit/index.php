@@ -35,11 +35,11 @@ $dbname             = isset($_GET['db'])       ? $_GET['db']       : "mtt";
 $pgsql_conn = null;
 
 # Set php trace levels
-# In the non verbose case do not display PHP Notices (E_NOTICE)
 if ($GLOBALS['verbose'])
     error_reporting(E_ALL);
 else
-    error_reporting((E_ERROR | E_WARNING | E_PARSE) & ~E_NOTICE);
+    error_reporting(E_ERROR | E_WARNING | E_PARSE);
+#    error_reporting((E_ERROR | E_WARNING | E_PARSE) & ~E_NOTICE);
 
 #######################################
 # Post: Ping
@@ -182,7 +182,11 @@ function process_phase($phase) {
 
 function process_phase_test_run($results_idxs_hash) {
     $n = $_POST['number_of_results'];
-    $print_once = false;
+    # JJH: Once all clients are really submitting test_run_command normalized
+    # JJH: data then set this back to false so we warn the users. For now it
+    # JJH: is just an annoying warning the user can do nothing about.
+    #$print_once = false;
+    $print_once = true;
 
     #
     # Do this instead of getting all of the columns passed
@@ -236,8 +240,10 @@ function process_phase_test_run($results_idxs_hash) {
         # Assume that performance data is unique, so we do not have to search
         # for an existing tuple
         $results_idxs_hash['performance_id'] = 0;
-        if( ($_POST['test_type']   == 'latency_bandwidth') or
-            ($_POST['test_type_1'] == 'latency_bandwidth') ) {
+        if( (array_key_exists("test_type", $_POST) and
+             $_POST['test_type']   == 'latency_bandwidth') or
+            (array_key_exists("test_type_1", $_POST) and
+             $_POST['test_type_1']   == 'latency_bandwidth') ) {
             #####
             # Insert Into Latency/Bandwidth
             $stmt_fields = array("message_size",
@@ -449,6 +455,7 @@ function process_networks($network_full_param) {
 
     $test_run_network_id = 0;
     $loc_id_hash = null;
+    $rtn_insert = null;
 
     #
     # Split the network CSV, and generate interconnect_ids for each value
@@ -482,32 +489,40 @@ function process_networks($network_full_param) {
     #
     # Determine if we have established this network combination yet
     #
-    $sql_cmd = ("SELECT test_run_network_id $nl".
+    $select_stmt = ("SELECT test_run_network_id $nl".
                 "FROM test_run_networks $nl".
                 "GROUP BY test_run_network_id $nl".
                 "HAVING count(interconnect_id) = ".count($loc_id_hash)." ");
     foreach( array_keys($loc_id_hash) as $n ) {
-        $sql_cmd .= ($nlt."INTERSECT $nlt".
+        $select_stmt .= ($nlt."INTERSECT $nlt".
                      "(SELECT test_run_network_id $nlt".
                      " FROM test_run_networks $nlt".
                      " WHERE interconnect_id = ".$loc_id_hash[$n].")");
     }
-    $sql_cmd .= $nl . "LIMIT 1";
-
-    #print("SQL:\n$sql_cmd\n");
+    $select_stmt .= $nl . "LIMIT 1";
 
     #
     # if not then obtain a new test_run_network_id and insert it
     #
-    $test_run_network_id = select_scalar($sql_cmd);
+    $test_run_network_id = select_scalar($select_stmt);
     if(!isset($test_run_network_id) ) {
         $test_run_network_id = fetch_single_nextval("test_run_network_id");
 
         foreach( array_keys($loc_id_hash) as $n ) {
             $insert_stmt = ("INSERT INTO test_run_networks VALUES $nl".
                             "(DEFAULT, ".$test_run_network_id.", ".$loc_id_hash[$n].")");
-            #print("SQL INSERT:$nl $insert_stmt\n");
-            do_pg_query($insert_stmt, false);
+            $rtn_insert = do_pg_query($insert_stmt, false);
+            # JJH: Do we really need to do error checking here? I don't think this will ever fail.
+            if( !$rtn_insert ) {
+                mtt_send_mail("process_networks(".$network_full_param."):\n".
+                              "---------------------------------\n".
+                              "Failed to insert the following:\n".
+                              $insert_stmt."\n".
+                              "---------------------------------\n".
+                              "Insert resulted from failed SELECT below:\n".
+                              $select_stmt."\n".
+                              "---------------------------------\n");
+            }
         }
     }
 
@@ -1154,6 +1169,7 @@ function select_insert($table, $table_id, $stmt_fields, $stmt_values, $always_ne
     $num_good_fields = 0;
     $nl  = "\n";
     $nlt = "\n\t";
+    $rtn_insert = null;
 
     $select_stmt = ("SELECT $table_id $nl" .
                     "FROM $table $nl");
@@ -1210,7 +1226,15 @@ function select_insert($table, $table_id, $stmt_fields, $stmt_values, $always_ne
     debug("\n--- INSERT STMT ---\n");
     debug("$insert_stmt\n");
 
-    do_pg_query($insert_stmt, false);
+    $rtn_insert = do_pg_query($insert_stmt, false);
+
+    #############
+    # If the insert operation failed, then this usually means that another
+    # thread beat us to the insert, so just select the last id.
+    # if this select fails, then badness happened somewhere :(
+    if( !$rtn_insert ) {
+        $idx_value = select_scalar($select_stmt);
+    }
 
     return $idx_value;
 }
@@ -1441,8 +1465,11 @@ function report_non_existent_fields() {
                 continue;
         }
         $name = preg_replace('/_\d+$/', '', $k);
-        if (! $arr[$name])
+        # Only print this if we are debugging the submit script.
+        # The user cannot do anything about this, so why tell then about it.
+        if (!array_key_exists($name, $arr) && isset($_POST['debug']) ) {
             mtt_notice("$name is not in $dbname database.");
+        }
     }
 }
 
@@ -1508,11 +1535,16 @@ function do_pg_connect() {
             pg_connect("host=localhost port=5432 dbname=$dbname user=$user password=$pass");
 
         # Exit if we cannot connect
-        if (!$pgsql_conn)
+        if (!$pgsql_conn) {
             mtt_abort("\nCould not connect to the $dbname database; " .
                       "submit this run later.");
-        else
+        }
+        else {
             $connected = true;
+
+            # Serialize all transactions by default - Safer that way.
+            do_pg_query("SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL SERIALIZABLE", false);
+        }
 
         # pg_set_error_verbosity($pgsql_conn, PGSQL_ERRORS_VERBOSE); # PHP 5 needed
         # pg_trace($_ENV['HOME'] . "/pgsql.trace", 'w', $pgsql_conn);
@@ -1521,6 +1553,7 @@ function do_pg_connect() {
 }
 
 function do_pg_query($cmd, $silent) {
+    $db_res = null;
 
     do_pg_connect();
 
@@ -1538,6 +1571,8 @@ function do_pg_query($cmd, $silent) {
         }
     }
     debug("\nDatabase rows affected: " . pg_affected_rows($db_res) . "\n");
+
+    return $db_res;
 }
 
 # Fetch scalar value
