@@ -86,8 +86,7 @@ my $select_all_cmd_launcher;
 my $select_all_cmd_resource_mgr;
 my $select_all_cmd_network;
 
-my $select_agg_cmd_tests;
-my $select_agg_cmd_params;
+my $select_agg_cmd_all;
 my $select_agg_cmd_mi_pf;
 my $select_agg_cmd_tb_pf;
 my $select_agg_cmd_tr_pfst;
@@ -297,14 +296,17 @@ sub collect_database_stats() {
   #
   # Gather the stat data
   #
-  $stat_values{'num_tuples'}    = sql_scalar_cmd($db_select_num_tuples, "");
-  print_verbose(2, "Stat) Num Tuples    = ".$stat_values{'num_tuples'}."\n");
   $stat_values{'num_tuples_tr'} = sql_scalar_cmd($db_select_num_tuples_tr, "");
   print_verbose(2, "Stat) Num Tuples TR = ".$stat_values{'num_tuples_tr'}."\n");
   $stat_values{'num_tuples_tb'} = sql_scalar_cmd($db_select_num_tuples_tb, "");
   print_verbose(2, "Stat) Num Tuples TB = ".$stat_values{'num_tuples_tb'}."\n");
   $stat_values{'num_tuples_mi'} = sql_scalar_cmd($db_select_num_tuples_mi, "");
   print_verbose(2, "Stat) Num Tuples MI = ".$stat_values{'num_tuples_mi'}."\n");
+  #$stat_values{'num_tuples'}    = sql_scalar_cmd($db_select_num_tuples, "");
+  $stat_values{'num_tuples'}    = ($stat_values{'num_tuples_tr'} +
+                                   $stat_values{'num_tuples_tb'} +
+                                   $stat_values{'num_tuples_mi'});
+  print_verbose(2, "Stat) Num Tuples    = ".$stat_values{'num_tuples'}."\n");
   $stat_values{'db_size'}       = sql_scalar_cmd($db_select_size, "");
   print_verbose(2, "Stat) Database Size = ".$stat_values{'db_size'}."\n");
   #
@@ -636,8 +638,8 @@ sub collect_contribution_stats() {
                                                    $all_resource_mgrs[$cur_resource_mgr]->name,
                                                    $all_networks[$cur_network]->name) );
 
-                          my $agg_tests   = gather_agg_tests( $accum_where_datum);
-                          my $agg_params  = gather_agg_params($accum_where_datum);
+                          my ($agg_tests, $agg_params) =
+                            gather_agg_all($accum_where_datum);
 
                           my ($agg_tr_pass, $agg_tr_fail, $agg_tr_skip, $agg_tr_time) =
                             gather_agg_tr_pfst($accum_where_datum);
@@ -1139,7 +1141,6 @@ sub sql_create_queries() {
      "WHERE ".$replace_where_field." AND ".$v_nl.
      "       compiler_name != 'bogus'");
 
-
   #
   # Test Suites
   #
@@ -1168,7 +1169,6 @@ sub sql_create_queries() {
      "      test_result >= 0 ".$v_nl.
      "GROUP BY test_result ".$v_nl.
      "ORDER BY test_result");
-
 
   #
   # Launchers
@@ -1214,10 +1214,12 @@ sub sql_create_queries() {
 
 
   #
-  # Aggregate # Distinct Tests
+  # One big aggregation for all the below values
   #
-  $select_agg_cmd_tests =
-    ("SELECT count(distinct(test_name)) ".$v_nl.
+  $select_agg_cmd_all =
+    ("SELECT count(distinct(test_name))  as agg_test_name, ".$v_nl.
+     "       count(distinct(parameters)) as agg_params ".$v_nl.
+     "       ".$v_nl.
      "FROM test_run NATURAL JOIN submit ".$v_nl.
      "     JOIN compiler ON test_run.mpi_install_compiler_id = compiler.compiler_id ".$v_nl.
      "     NATURAL JOIN compute_cluster ".$v_nl.
@@ -1226,20 +1228,6 @@ sub sql_create_queries() {
      "     NATURAL JOIN test_suites ".$v_nl.
      "     NATURAL JOIN test_run_command ".$v_nl.
      "     NATURAL JOIN test_names ".$v_nl.
-     "WHERE ".$replace_where_field." ");
-
-  #
-  # Aggregate # Distinct Parameters
-  #
-  $select_agg_cmd_params =
-    ("SELECT count(distinct(parameters)) ".$v_nl.
-     "FROM test_run NATURAL JOIN submit ".$v_nl.
-     "     JOIN compiler ON test_run.mpi_install_compiler_id = compiler.compiler_id ".$v_nl.
-     "     NATURAL JOIN compute_cluster ".$v_nl.
-     "     NATURAL JOIN mpi_get ".$v_nl.
-     "     NATURAL JOIN mpi_install_configure_args ".$v_nl.
-     "     NATURAL JOIN test_suites ".$v_nl.
-     "     NATURAL JOIN test_run_command ".$v_nl.
      "WHERE ".$replace_where_field." ");
 
   #
@@ -1942,36 +1930,30 @@ sub gather_all_networks() {
   return @loc_networks;
 }
 
-sub gather_agg_tests() {
+sub gather_agg_all() {
   my $where_sub = shift(@_);
-  my $loc_accum = 0;
+  my $loc_accum_tests = 0;
+  my $loc_accum_params = 0;
 
   my @sql_rtn;
   my $n;
+  my $r;
+  my $i;
 
-  @sql_rtn = sql_1d_array_cmd($select_agg_cmd_tests, $where_sub->select_stmt);
+  @sql_rtn = sql_2d_array_cmd($select_agg_cmd_all, $where_sub->select_stmt);
 
-  foreach $n (@sql_rtn) {
-    $loc_accum = $n;
+  foreach $r (@sql_rtn) {
+    ++$i;
+    if( $i % 2 == 1 ) {
+      $loc_accum_tests = $r;
+      next;
+    }
+    else {
+      $loc_accum_params = $r;
+    }
   }
 
-  return $loc_accum;
-}
-
-sub gather_agg_params() {
-  my $where_sub = shift(@_);
-  my $loc_accum = 0;
-
-  my @sql_rtn;
-  my $n;
-
-  @sql_rtn = sql_1d_array_cmd($select_agg_cmd_params, $where_sub->select_stmt);
-
-  foreach $n (@sql_rtn) {
-    $loc_accum = $n;
-  }
-
-  return $loc_accum;
+  return $loc_accum_tests, $loc_accum_params;
 }
 
 sub gather_agg_mi_pf() {
