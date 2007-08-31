@@ -251,12 +251,8 @@ function detail_table($headers, $resource) {
                 $details
             );
 
-        $i = 0;
+        $i = 1;
         print "<table border='1' width='100%'>";
-        print (($i % 1 == 0) ? "\n<tr>" : "") .
-              "\n$td <b>" . stylize_trial_font(label('n'), $trial) . "</b> $tdl " .
-              "\n<pre>" . stylize_trial_font(highlight_match('n', wordwrap($php_row_n + 1, WRAP)), $trial) . "</pre>";
-        $i++;
         foreach ($headers as $header) {
             print (($i % 1 == 0) ? "\n<tr>" : "") .
                   "\n$td <b>" . stylize_trial_font(label($header), $trial) . "</b> $tdl " .
