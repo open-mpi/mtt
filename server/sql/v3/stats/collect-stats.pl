@@ -298,11 +298,15 @@ sub collect_database_stats() {
   # Gather the stat data
   #
   $stat_values{'num_tuples'}    = sql_scalar_cmd($db_select_num_tuples, "");
-  $stat_values{'num_tuples_mi'} = sql_scalar_cmd($db_select_num_tuples_mi, "");
-  $stat_values{'num_tuples_tb'} = sql_scalar_cmd($db_select_num_tuples_tb, "");
+  print_verbose(2, "Stat) Num Tuples    = ".$stat_values{'num_tuples'}."\n");
   $stat_values{'num_tuples_tr'} = sql_scalar_cmd($db_select_num_tuples_tr, "");
+  print_verbose(2, "Stat) Num Tuples TR = ".$stat_values{'num_tuples_tr'}."\n");
+  $stat_values{'num_tuples_tb'} = sql_scalar_cmd($db_select_num_tuples_tb, "");
+  print_verbose(2, "Stat) Num Tuples TB = ".$stat_values{'num_tuples_tb'}."\n");
+  $stat_values{'num_tuples_mi'} = sql_scalar_cmd($db_select_num_tuples_mi, "");
+  print_verbose(2, "Stat) Num Tuples MI = ".$stat_values{'num_tuples_mi'}."\n");
   $stat_values{'db_size'}       = sql_scalar_cmd($db_select_size, "");
-
+  print_verbose(2, "Stat) Database Size = ".$stat_values{'db_size'}."\n");
   #
   # Construct insert/update vals
   #
@@ -320,11 +324,6 @@ sub collect_database_stats() {
   #
   # Insert the stat.
   #
-  print_verbose(2, "Inserting Stat:\n");
-  for my $key (keys %stat_values) {
-    print_verbose(2, "\t[$key] = [".$stat_values{$key}."]\n");
-  }
-
   $cur_db_stat_id = find_stat_tuple($db_submit_select, "");
   if( 0 <= $cur_db_stat_id ) {
     update_stat_tuple($db_submit_update,
@@ -967,37 +966,47 @@ sub sql_create_db_queries() {
   # Number of tuples
   #
   $db_select_num_tuples =
-    ("SELECT cast(sum(reltuples) as bigint) ".
-     "FROM pg_class ".
-     "WHERE relname ~* 'pkey' AND ".
-     "(relname ~* 'test_run' or relname ~* 'mpi_install' or relname ~* 'test_build')");
+    ("SELECT sum(csum) FROM (SELECT sum(count) as csum FROM ".
+     "(SELECT count(*) as count FROM mpi_install) as a UNION ".
+     "(SELECT count(*) as count FROM test_build) UNION ".
+     "(SELECT count(*) as count FROM test_run)) as ab");
+#    ("SELECT cast(sum(reltuples) as bigint) ".
+#     "FROM pg_class ".
+#     "WHERE relname ~* 'pkey' AND ".
+#     "(relname ~* 'test_run' or relname ~* 'mpi_install' or relname ~* 'test_build')");
 
   #
   # Number of tuples (MPI Install)
   #
   $db_select_num_tuples_mi =
-    ("SELECT cast(sum(reltuples) as bigint) ".
-     "FROM pg_class ".
-     "WHERE relname ~* 'pkey' AND ".
-     "relname ~* 'mpi_install'");
+    ("SELECT count(*) as count ".
+     "FROM mpi_install");
+#    ("SELECT cast(sum(reltuples) as bigint) ".
+#     "FROM pg_class ".
+#     "WHERE relname ~* 'pkey' AND ".
+#     "relname ~* 'mpi_install'");
 
   #
   # Number of tuples (Test Build)
   #
   $db_select_num_tuples_tb =
-    ("SELECT cast(sum(reltuples) as bigint) ".
-     "FROM pg_class ".
-     "WHERE relname ~* 'pkey' AND ".
-     "relname ~* 'test_build'");
+    ("SELECT count(*) as count ".
+     "FROM test_build");
+#    ("SELECT cast(sum(reltuples) as bigint) ".
+#     "FROM pg_class ".
+#     "WHERE relname ~* 'pkey' AND ".
+#     "relname ~* 'test_build'");
 
   #
   # Number of tuples (Test Run)
   #
   $db_select_num_tuples_tr =
-    ("SELECT cast(sum(reltuples) as bigint) ".
-     "FROM pg_class ".
-     "WHERE relname ~* 'pkey' AND ".
-     "relname ~* 'test_run'");
+    ("SELECT count(*) as count ".
+     "FROM mpi_install");
+#    ("SELECT cast(sum(reltuples) as bigint) ".
+#     "FROM pg_class ".
+#     "WHERE relname ~* 'pkey' AND ".
+#     "relname ~* 'test_run'");
 
   #
   # DB size in Bytes
