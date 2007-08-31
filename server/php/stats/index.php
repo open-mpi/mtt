@@ -80,6 +80,11 @@ function display_stats() {
     get_total_results();
 
     #
+    # Display database stats
+    #
+    display_stats_database();
+
+    #
     # For each Org., how many results were accumulated?
     #
     display_stats_org();
@@ -108,6 +113,33 @@ function display_stats() {
     # For each Test Suite, how many results were accumulated?
     #
     display_stats_test_suite();
+}
+
+function display_stats_database() {
+    global $start_collection_date;
+    global $end_collection_date;
+    $nl  = "\n";
+    $nlt = "\n\t";
+    $database_hash = array();
+
+    $get_database_all =
+        ("SELECT collection_date, ".$nlt.
+         "(size_db/(1024*1024*1024)) as db_size_gb, ".$nlt.
+         "(size_db/(1024*1024)) as db_size_mb, ".$nlt.
+         "num_tuples, ".$nlt.
+         "num_tuples_mpi_install, ".$nlt.
+         "num_tuples_test_build, ".$nlt.
+         "num_tuples_test_run ".$nl.
+         "FROM mtt_stats_database ".$nl.
+         "WHERE collection_date >= $start_collection_date AND ".$nl.
+         "      collection_date <= $end_collection_date ".$nl.
+         "ORDER BY collection_date DESC");
+
+    $database_hash = select($get_database_all);
+    print_query_stmt("Database Statistics");
+    print_query_db_table($database_hash);
+
+    return 0;
 }
 
 function display_stats_org() {
@@ -273,6 +305,92 @@ function get_total_results() {
     return 0;
 }
 
+function print_query_db_table($database_hash) {
+
+    print("<table border=\"1\" width=100%\n");
+
+    print("<tr>\n");
+    print("<th align=center bgcolor='".THCOLOR."'>\n");
+    print("Collection Date\n");
+    print("</th>\n");
+
+    print("<th align=center colspan=2 bgcolor='".LYELLOW."'>\n");
+    print("Database Size\n");
+    print("</th>\n");
+
+    print("<th align=center colspan=1 bgcolor='".LGREEN."'>\n");
+    print("Total\n");
+    print("</th>\n");
+
+    print("<th align=center colspan=1 bgcolor='".LBLUE."'>\n");
+    print("MPI Install\n");
+    print("</th>\n");
+
+    print("<th align=center colspan=1 bgcolor='".LBLUE."'>\n");
+    print("Test Build\n");
+    print("</th>\n");
+
+    print("<th align=center colspan=1 bgcolor='".LBLUE."'>\n");
+    print("Test Run\n");
+    print("</th>\n");
+    print("</tr>\n");
+
+    # Line 2
+    print("<tr>\n");
+    print("<th align=center bgcolor='".THCOLOR."'>\n");
+    print("&nbsp;\n");
+    print("</th>\n");
+
+    print("<th align=right colspan=1 bgcolor='".LYELLOW."'>\n");
+    print("(GB)\n");
+    print("</th>\n");
+    print("<th align=right colspan=1 bgcolor='".LYELLOW."'>\n");
+    print("(MB)\n");
+    print("</th>\n");
+
+    for($i = 0; $i < 4; ++$i) {
+        print("<th align=center colspan=1 bgcolor='".THCOLOR."'>\n");
+        print("# Tuples\n");
+        print("</th>\n");
+    }
+    print("</tr>\n");
+
+
+    for($i = 0; $i < sizeof($database_hash); ++$i) {
+        print("<tr>\n");
+        print("<td align=right>\n");
+        print($database_hash[$i]["collection_date"]."\n");
+        print("</td>\n");
+
+        print("<td align=right bgcolor='".LYELLOW."'>\n");
+        print(pretty_print_big_num($database_hash[$i]["db_size_gb"]) . "\n");
+        print("</td>\n");
+
+        print("<td align=right bgcolor='".LYELLOW."'>\n");
+        print(pretty_print_big_num($database_hash[$i]["db_size_mb"]) . "\n");
+        print("</td>\n");
+
+        print("<td align=right bgcolor='".LGREEN."'>\n");
+        print(pretty_print_big_num($database_hash[$i]["num_tuples"]) . "\n");
+        print("</td>\n");
+
+        print("<td align=right bgcolor='".LBLUE."'>\n");
+        print(pretty_print_big_num($database_hash[$i]["num_tuples_mpi_install"]) . "\n");
+        print("</td>\n");
+
+        print("<td align=right bgcolor='".LBLUE."'>\n");
+        print(pretty_print_big_num($database_hash[$i]["num_tuples_test_build"]) . "\n");
+        print("</td>\n");
+
+        print("<td align=right bgcolor='".LBLUE."'>\n");
+        print(pretty_print_big_num($database_hash[$i]["num_tuples_test_run"]) . "\n");
+        print("</td>\n");
+
+        print("</tr>\n");
+    }
+
+    print("</table>\n");
+}
 
 function print_query_table($field_title, $db_field, $contrib_hash) {
     global $total_hash;
@@ -658,7 +776,7 @@ function process_stat_input() {
     }
 
     # Collection Date Specifier
-    $basic_where = ("collection_date >= $start_collection_date AND collection_date < $end_collection_date AND ".
+    $basic_where = ("collection_date >= $start_collection_date AND collection_date <= $end_collection_date AND ".
                     $basic_where);
 }
 
@@ -841,6 +959,8 @@ function associative_select($cmd) {
 
 # Fetch 2D array
 function select($cmd) {
+    $rtn = null;
+
     do_pg_connect();
 
     debug("\nSQL: $cmd\n");
@@ -851,7 +971,13 @@ function select($cmd) {
         mtt_error($out);
         mtt_send_mail($out);
     }
-    return pg_fetch_all($result);
+    $rtn = pg_fetch_all($result);
+    if( false == $rtn ) {
+       return array();
+    }
+    else {
+       return $rtn;
+    }
 }
 
 ######################################################################
