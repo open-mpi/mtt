@@ -1002,7 +1002,7 @@ sub sql_create_db_queries() {
   #
   $db_select_num_tuples_tr =
     ("SELECT count(*) as count ".
-     "FROM mpi_install");
+     "FROM test_run");
 #    ("SELECT cast(sum(reltuples) as bigint) ".
 #     "FROM pg_class ".
 #     "WHERE relname ~* 'pkey' AND ".
