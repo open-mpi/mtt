@@ -43,13 +43,7 @@ struct Stat_Datum => {
 #
 # A collection of arrays to store stat_data_items
 #
-my @all_orgs          = ();
-my @all_platforms     = ();
-my @all_os            = ();
-my @all_mi_compilers  = ();
 my @all_tb_compilers  = ();
-my @all_mpi_gets      = ();
-my @all_mi_configs    = ();
 my @all_test_suites   = ();
 my @all_launchers     = ();
 my @all_resource_mgrs = ();
@@ -59,13 +53,8 @@ my @all_networks      = ();
 # A reference to the current index into each of
 # the data store arrays above;
 #
-my $cur_org           = -1;
-my $cur_platform      = -1;
-my $cur_os            = -1;
-my $cur_mi_compiler   = -1;
+my $cur_mpi_install   = -1;
 my $cur_tb_compiler   = -1;
-my $cur_mpi_get       = -1;
-my $cur_mi_config     = -1;
 my $cur_test_suite    = -1;
 my $cur_launcher      = -1;
 my $cur_resource_mgr  = -1;
@@ -74,6 +63,7 @@ my $cur_network       = -1;
 #
 # SQL Predefined Statement Holders
 #
+my $select_all_cmd_mpi_installs;
 my $select_all_cmd_org;
 my $select_all_cmd_platform;
 my $select_all_cmd_os;
@@ -431,279 +421,180 @@ sub collect_contribution_stats() {
 
     start_timer('segment');
     ######################
-    # Gather all Orgs
+    # Gather all Orgs, Platforms, OSs, MPI Install Compilers, MPI Gets
     ######################
-    @all_orgs = gather_all_orgs($start_seg, $end_seg, $accum_where_datum);
-    my $last_datum_org = dup_datum($accum_where_datum);
-    for($cur_org = 0; $cur_org < scalar(@all_orgs); ++$cur_org) {
+    my @all_mpi_installs = gather_all_mpi_installs($start_seg, $end_seg, $accum_where_datum);
+    my $last_datum_mpi_install = dup_datum($accum_where_datum);
+    reset_progress_upper();
+    set_progress_upper(scalar(@all_mpi_installs));
+    for($cur_mpi_install = 0; $cur_mpi_install < scalar(@all_mpi_installs); ++$cur_mpi_install) {
       # Clear out the datum before starting again.
-      $accum_where_datum = dup_datum($last_datum_org);
+      $accum_where_datum = dup_datum($last_datum_mpi_install);
 
       $accum_where_datum = append_datum_where($accum_where_datum,
                                               $ACCUM_ALL,
-                                              $all_orgs[$cur_org]);
+                                              $all_mpi_installs[$cur_mpi_install]);
 
-      print_verbose(1,  "Analyzing: ".$all_orgs[$cur_org]->name."\n");
-      start_timer('org');
-      ######################
-      # Gather all Platforms
-      ######################
-      @all_platforms = gather_all_platforms($start_seg, $end_seg, $accum_where_datum);
-      my $last_datum_platform = dup_datum($accum_where_datum);
-      for($cur_platform = 0; $cur_platform < scalar(@all_platforms); ++$cur_platform) {
-        # Clear out the datum before starting again.
-        $accum_where_datum = dup_datum($last_datum_platform);
+      print_verbose(1,  "Analyzing: ".$all_mpi_installs[$cur_mpi_install]->name."\n");
+      start_timer('mpi_install');
+      #
+      # Save MPI Install stat information
+      #
+      my ($agg_mi_pass, $agg_mi_fail) =
+        gather_agg_mi_pf($accum_where_datum);
+      $accum_where_datum = append_datum_where_keys($accum_where_datum,
+                                                   $ACCUM_TR,
+                                                   "num_mpi_install_pass",
+                                                   $agg_mi_pass);
+      $accum_where_datum = append_datum_where_keys($accum_where_datum,
+                                                   $ACCUM_TR,
+                                                   "num_mpi_install_fail",
+                                                   $agg_mi_fail);
+
+      #################################
+      # Gather all Test Build Compilers
+      #################################
+      @all_tb_compilers = gather_all_tb_compilers($start_seg, $end_seg, $accum_where_datum);
+      # If there are no test_build tuples for this mpi_install, save the mpi_install and move on
+      $cur_stat_id = -1; # Force select
+      if( 0 >= scalar(@all_tb_compilers) ) {
+        submit_stat($ACCUM_MI, $accum_where_datum);
+      }
+      my $last_datum_tb_compiler = dup_datum($accum_where_datum);
+      for($cur_tb_compiler = 0; $cur_tb_compiler < scalar(@all_tb_compilers); ++$cur_tb_compiler) {
+        $accum_where_datum = dup_datum($last_datum_tb_compiler);
         $accum_where_datum = append_datum_where($accum_where_datum,
-                                                $ACCUM_ALL,
-                                                $all_platforms[$cur_platform]);
+                                                $ACCUM_TB,
+                                                $all_tb_compilers[$cur_tb_compiler]);
 
-        print_verbose(2, "\tPlatform: ".$all_platforms[$cur_platform]->name."\n");
-        start_timer('platform');
-        ######################
-        # Gather all OSs
-        ######################
-        @all_os = gather_all_os($start_seg, $end_seg, $accum_where_datum);
-        my $last_datum_os = dup_datum($accum_where_datum);
-        reset_progress_upper(0);
-        for($cur_os = 0; $cur_os < scalar(@all_os); ++$cur_os) {
-          $accum_where_datum = dup_datum($last_datum_os);
+        print_verbose(4, "\tTest Build Compiler: ".$all_tb_compilers[$cur_tb_compiler]->name."\n");
+        ########################
+        # Gather all Test Suites
+        ########################
+        @all_test_suites = gather_all_test_suites($start_seg, $end_seg, $accum_where_datum);
+        my $last_datum_test_suite = dup_datum($accum_where_datum);
+        for($cur_test_suite = 0; $cur_test_suite < scalar(@all_test_suites); ++$cur_test_suite) {
+          $accum_where_datum = dup_datum($last_datum_test_suite);
           $accum_where_datum = append_datum_where($accum_where_datum,
-                                                  $ACCUM_ALL,
-                                                  $all_os[$cur_os]);
+                                                  $ACCUM_TB,
+                                                  $all_test_suites[$cur_test_suite]);
 
-          print_verbose(4, "\tOS: ".$all_os[$cur_os]->name."\n");
-          ##################################
-          # Gather all MPI Install Compilers
-          ##################################
-          @all_mi_compilers = gather_all_mi_compilers($start_seg, $end_seg, $accum_where_datum);
-          my $last_datum_mi_compiler = dup_datum($accum_where_datum);
-          for($cur_mi_compiler = 0; $cur_mi_compiler < scalar(@all_mi_compilers); ++$cur_mi_compiler) {
-            $accum_where_datum = dup_datum($last_datum_mi_compiler);
+          print_verbose(4, "\tTest Suite: [".$all_test_suites[$cur_test_suite]->name."]\n");
+          print_verbose(3, sprintf("Gathering TB: %6s -- %10s -- %10s\n",
+                                   $all_mpi_installs[$cur_mpi_install]->name,
+                                   $all_tb_compilers[$cur_tb_compiler]->name,
+                                   $all_test_suites[$cur_test_suite]->name) );
+
+          my ($agg_tb_pass, $agg_tb_fail) =
+            gather_agg_tb_pf($accum_where_datum);
+          $accum_where_datum = append_datum_where_keys($accum_where_datum,
+                                                       $ACCUM_TR,
+                                                       "num_test_build_pass",
+                                                       $agg_tb_pass);
+          $accum_where_datum = append_datum_where_keys($accum_where_datum,
+                                                       $ACCUM_TR,
+                                                       "num_test_build_fail",
+                                                       $agg_tb_fail);
+          ######################
+          # Gather all Launchers
+          ######################
+          @all_launchers = gather_all_launchers($start_seg, $end_seg, $accum_where_datum);
+          my $last_datum_launcher = dup_datum($accum_where_datum);
+          # If there are no test_row tuples for this test_build, save the test_build and move on
+          $cur_stat_id = -1; # Force select
+          if( 0 >= scalar(@all_launchers) ) {
+            submit_stat($ACCUM_TB, $accum_where_datum);
+          }
+
+          for($cur_launcher = 0; $cur_launcher < scalar(@all_launchers); ++$cur_launcher) {
+            $accum_where_datum = dup_datum($last_datum_launcher);
             $accum_where_datum = append_datum_where($accum_where_datum,
-                                                    $ACCUM_ALL,
-                                                    $all_mi_compilers[$cur_mi_compiler]);
+                                                    $ACCUM_TR,
+                                                    $all_launchers[$cur_launcher]);
 
-            print_verbose(4, "\tMPI In. Compiler: ".$all_mi_compilers[$cur_mi_compiler]->name."\n");
-            ######################
-            # Gather all MPI Gets
-            ######################
-            @all_mpi_gets = gather_all_mpi_gets($start_seg, $end_seg, $accum_where_datum);
-            my $last_datum_mpi_get = dup_datum($accum_where_datum);
-            for($cur_mpi_get = 0; $cur_mpi_get < scalar(@all_mpi_gets); ++$cur_mpi_get) {
-              $accum_where_datum = dup_datum($last_datum_mpi_get);
+            print_verbose(4, "\tLauncher: ".$all_launchers[$cur_launcher]->name."\n");
+            ##########################
+            # Gather all Resource Mgrs
+            ##########################
+            @all_resource_mgrs = gather_all_resource_mgrs($start_seg, $end_seg, $accum_where_datum);
+            my $last_datum_resource_mgr = dup_datum($accum_where_datum);
+            for($cur_resource_mgr = 0; $cur_resource_mgr < scalar(@all_resource_mgrs); ++$cur_resource_mgr) {
+              $accum_where_datum = dup_datum($last_datum_resource_mgr);
               $accum_where_datum = append_datum_where($accum_where_datum,
-                                                      $ACCUM_ALL,
-                                                      $all_mpi_gets[$cur_mpi_get]);
+                                                      $ACCUM_TR,
+                                                      $all_resource_mgrs[$cur_resource_mgr]);
 
-              print_verbose(4, "\tMPI Get: ".$all_mpi_gets[$cur_mpi_get]->name."\n");
-              #######################################
-              # Gather all MPI Install Configurations
-              #######################################
-              @all_mi_configs = gather_all_mi_configs($start_seg, $end_seg, $accum_where_datum);
-              my $last_datum_mi_config = dup_datum($accum_where_datum);
-              # Setup Progress
-              print_verbose(4, "Progress Update Values: ".
-                            scalar(@all_os)." * ".
-                            scalar(@all_mi_compilers)." * ".
-                            scalar(@all_mpi_gets)." * ".
-                            scalar(@all_mi_configs)."\n");
-              set_progress_upper(scalar(@all_os) *
-                                 scalar(@all_mi_compilers) *
-                                 scalar(@all_mpi_gets) *
-                                 scalar(@all_mi_configs));
-              for($cur_mi_config = 0; $cur_mi_config < scalar(@all_mi_configs); ++$cur_mi_config) {
-                $accum_where_datum = dup_datum($last_datum_mi_config);
+              print_verbose(4, "\tResource Mgr.: ".$all_resource_mgrs[$cur_resource_mgr]->name."\n");
+              ######################
+              # Gather all Networks
+              ######################
+              @all_networks = gather_all_networks($start_seg, $end_seg, $accum_where_datum);
+              my $last_datum_network = dup_datum($accum_where_datum);
+              for($cur_network = 0; $cur_network < scalar(@all_networks); ++$cur_network) {
+                $accum_where_datum = dup_datum($last_datum_network);
                 $accum_where_datum = append_datum_where($accum_where_datum,
-                                                        $ACCUM_ALL,
-                                                        $all_mi_configs[$cur_mi_config]);
+                                                        $ACCUM_TR,
+                                                        $all_networks[$cur_network]);
 
-                print_verbose(4, "\tMPI Config: ".$all_mi_configs[$cur_mi_config]->name."\n");
+                print_verbose(4,  "\tNetwork: ".$all_networks[$cur_network]->name."\n");
+                print_verbose(3, sprintf("Gathering TR: %6s -- %10s -- %10s -- %10s -- %2s -- %2s\n",
+                                         $all_mpi_installs[$cur_mpi_install]->name,
+                                         $all_tb_compilers[$cur_tb_compiler]->name,
+                                         $all_test_suites[$cur_test_suite]->name,
+                                         $all_launchers[$cur_launcher]->name,
+                                         $all_resource_mgrs[$cur_resource_mgr]->name,
+                                         $all_networks[$cur_network]->name) );
 
-                #
-                # Save MPI Install stat information
-                #
-                print_verbose(3,
-                              sprintf("Gathering MI: %6s -- %10s -- %10s -- %5s\n",
-                                      $all_os[$cur_os]->name,
-                                      $all_mi_compilers[$cur_mi_compiler]->name,
-                                      $all_mpi_gets[$cur_mpi_get]->name,
-                                      $all_mi_configs[$cur_mi_config]->name) );
-                my ($agg_mi_pass, $agg_mi_fail) =
-                  gather_agg_mi_pf($accum_where_datum);
+                my ($agg_tests, $agg_params) =
+                  gather_agg_all($accum_where_datum);
+
+                my ($agg_tr_pass, $agg_tr_fail, $agg_tr_skip, $agg_tr_time) =
+                  gather_agg_tr_pfst($accum_where_datum);
+
+                my $agg_tr_perf = gather_agg_tr_perf($accum_where_datum);
+
                 $accum_where_datum = append_datum_where_keys($accum_where_datum,
                                                              $ACCUM_TR,
-                                                             "num_mpi_install_pass",
-                                                             $agg_mi_pass);
+                                                             "num_tests",
+                                                             $agg_tests);
                 $accum_where_datum = append_datum_where_keys($accum_where_datum,
                                                              $ACCUM_TR,
-                                                             "num_mpi_install_fail",
-                                                             $agg_mi_fail);
-                #################################
-                # Gather all Test Build Compilers
-                #################################
-                @all_tb_compilers = gather_all_tb_compilers($start_seg, $end_seg, $accum_where_datum);
-                # If there are no test_build tuples for this mpi_install, save the mpi_install and move on
+                                                             "num_parameters",
+                                                             $agg_params);
+                $accum_where_datum = append_datum_where_keys($accum_where_datum,
+                                                             $ACCUM_TR,
+                                                             "num_test_run_pass",
+                                                             $agg_tr_pass);
+                $accum_where_datum = append_datum_where_keys($accum_where_datum,
+                                                             $ACCUM_TR,
+                                                             "num_test_run_fail",
+                                                             $agg_tr_fail);
+                $accum_where_datum = append_datum_where_keys($accum_where_datum,
+                                                             $ACCUM_TR,
+                                                             "num_test_run_skip",
+                                                             $agg_tr_skip);
+                $accum_where_datum = append_datum_where_keys($accum_where_datum,
+                                                             $ACCUM_TR,
+                                                             "num_test_run_timed",
+                                                             $agg_tr_time);
+                $accum_where_datum = append_datum_where_keys($accum_where_datum,
+                                                             $ACCUM_TR,
+                                                             "num_test_run_perf",
+                                                             $agg_tr_perf);
                 $cur_stat_id = -1; # Force select
-                if( 0 >= scalar(@all_tb_compilers) ) {
-                  submit_stat($ACCUM_MI, $accum_where_datum);
-                }
-                my $last_datum_tb_compiler = dup_datum($accum_where_datum);
-                for($cur_tb_compiler = 0; $cur_tb_compiler < scalar(@all_tb_compilers); ++$cur_tb_compiler) {
-                  $accum_where_datum = dup_datum($last_datum_tb_compiler);
-                  $accum_where_datum = append_datum_where($accum_where_datum,
-                                                          $ACCUM_TB,
-                                                          $all_tb_compilers[$cur_tb_compiler]);
-
-                  print_verbose(4, "\tTest Build Compiler: ".$all_tb_compilers[$cur_tb_compiler]->name."\n");
-                  ########################
-                  # Gather all Test Suites
-                  ########################
-                  @all_test_suites = gather_all_test_suites($start_seg, $end_seg, $accum_where_datum);
-                  my $last_datum_test_suite = dup_datum($accum_where_datum);
-                  for($cur_test_suite = 0; $cur_test_suite < scalar(@all_test_suites); ++$cur_test_suite) {
-                    $accum_where_datum = dup_datum($last_datum_test_suite);
-                    $accum_where_datum = append_datum_where($accum_where_datum,
-                                                            $ACCUM_TB,
-                                                            $all_test_suites[$cur_test_suite]);
-
-                    print_verbose(4, "\tTest Suite: [".$all_test_suites[$cur_test_suite]->name."]\n");
-                    print_verbose(3, sprintf("Gathering TB: %6s -- %10s -- %10s -- %5s -- %10s -- %10s\n",
-                                             $all_os[$cur_os]->name,
-                                             $all_mi_compilers[$cur_mi_compiler]->name,
-                                             $all_mpi_gets[$cur_mpi_get]->name,
-                                             $all_mi_configs[$cur_mi_config]->name,
-                                             $all_tb_compilers[$cur_tb_compiler]->name,
-                                             $all_test_suites[$cur_test_suite]->name) );
-
-                    my ($agg_tb_pass, $agg_tb_fail) =
-                      gather_agg_tb_pf($accum_where_datum);
-                    $accum_where_datum = append_datum_where_keys($accum_where_datum,
-                                                                 $ACCUM_TR,
-                                                                 "num_test_build_pass",
-                                                                 $agg_tb_pass);
-                    $accum_where_datum = append_datum_where_keys($accum_where_datum,
-                                                                 $ACCUM_TR,
-                                                                 "num_test_build_fail",
-                                                                 $agg_tb_fail);
-                    ######################
-                    # Gather all Launchers
-                    ######################
-                    @all_launchers = gather_all_launchers($start_seg, $end_seg, $accum_where_datum);
-                    my $last_datum_launcher = dup_datum($accum_where_datum);
-                    # If there are no test_row tuples for this test_build, save the test_build and move on
-                    $cur_stat_id = -1; # Force select
-                    if( 0 >= scalar(@all_launchers) ) {
-                      submit_stat($ACCUM_TB, $accum_where_datum);
-                    }
-
-                    for($cur_launcher = 0; $cur_launcher < scalar(@all_launchers); ++$cur_launcher) {
-                      $accum_where_datum = dup_datum($last_datum_launcher);
-                      $accum_where_datum = append_datum_where($accum_where_datum,
-                                                              $ACCUM_TR,
-                                                              $all_launchers[$cur_launcher]);
-
-                      print_verbose(4, "\tLauncher: ".$all_launchers[$cur_launcher]->name."\n");
-                      ##########################
-                      # Gather all Resource Mgrs
-                      ##########################
-                      @all_resource_mgrs = gather_all_resource_mgrs($start_seg, $end_seg, $accum_where_datum);
-                      my $last_datum_resource_mgr = dup_datum($accum_where_datum);
-                      for($cur_resource_mgr = 0; $cur_resource_mgr < scalar(@all_resource_mgrs); ++$cur_resource_mgr) {
-                        $accum_where_datum = dup_datum($last_datum_resource_mgr);
-                        $accum_where_datum = append_datum_where($accum_where_datum,
-                                                                $ACCUM_TR,
-                                                                $all_resource_mgrs[$cur_resource_mgr]);
-
-                        print_verbose(4, "\tResource Mgr.: ".$all_resource_mgrs[$cur_resource_mgr]->name."\n");
-                        ######################
-                        # Gather all Networks
-                        ######################
-                        @all_networks = gather_all_networks($start_seg, $end_seg, $accum_where_datum);
-                        my $last_datum_network = dup_datum($accum_where_datum);
-                        for($cur_network = 0; $cur_network < scalar(@all_networks); ++$cur_network) {
-                          $accum_where_datum = dup_datum($last_datum_network);
-                          $accum_where_datum = append_datum_where($accum_where_datum,
-                                                                  $ACCUM_TR,
-                                                                  $all_networks[$cur_network]);
-
-                          print_verbose(4,  "\tNetwork: ".$all_networks[$cur_network]->name."\n");
-                          print_verbose(3, sprintf("Gathering TR: %6s -- %10s -- %10s -- %5s -- %10s -- %10s -- %10s -- %2s -- %2s\n",
-                                                   $all_os[$cur_os]->name,
-                                                   $all_mi_compilers[$cur_mi_compiler]->name,
-                                                   $all_mpi_gets[$cur_mpi_get]->name,
-                                                   $all_mi_configs[$cur_mi_config]->name,
-                                                   $all_tb_compilers[$cur_tb_compiler]->name,
-                                                   $all_test_suites[$cur_test_suite]->name,
-                                                   $all_launchers[$cur_launcher]->name,
-                                                   $all_resource_mgrs[$cur_resource_mgr]->name,
-                                                   $all_networks[$cur_network]->name) );
-
-                          my ($agg_tests, $agg_params) =
-                            gather_agg_all($accum_where_datum);
-
-                          my ($agg_tr_pass, $agg_tr_fail, $agg_tr_skip, $agg_tr_time) =
-                            gather_agg_tr_pfst($accum_where_datum);
-
-                          my $agg_tr_perf = gather_agg_tr_perf($accum_where_datum);
-
-                          $accum_where_datum = append_datum_where_keys($accum_where_datum,
-                                                                       $ACCUM_TR,
-                                                                       "num_tests",
-                                                                       $agg_tests);
-                          $accum_where_datum = append_datum_where_keys($accum_where_datum,
-                                                                       $ACCUM_TR,
-                                                                       "num_parameters",
-                                                                       $agg_params);
-                          $accum_where_datum = append_datum_where_keys($accum_where_datum,
-                                                                       $ACCUM_TR,
-                                                                       "num_test_run_pass",
-                                                                       $agg_tr_pass);
-                          $accum_where_datum = append_datum_where_keys($accum_where_datum,
-                                                                       $ACCUM_TR,
-                                                                       "num_test_run_fail",
-                                                                       $agg_tr_fail);
-                          $accum_where_datum = append_datum_where_keys($accum_where_datum,
-                                                                       $ACCUM_TR,
-                                                                       "num_test_run_skip",
-                                                                       $agg_tr_skip);
-                          $accum_where_datum = append_datum_where_keys($accum_where_datum,
-                                                                       $ACCUM_TR,
-                                                                       "num_test_run_timed",
-                                                                       $agg_tr_time);
-                          $accum_where_datum = append_datum_where_keys($accum_where_datum,
-                                                                       $ACCUM_TR,
-                                                                       "num_test_run_perf",
-                                                                       $agg_tr_perf);
-                          $cur_stat_id = -1; # Force select
-                          submit_stat($ACCUM_ALL, $accum_where_datum);
-                        } # End Network
-                      } # End Resource Mgrs
-                    } # End Launchers
-                    print_verbose(2,". ");
-                  } # End Test Suites
-                  print_verbose(2,"\n");
-                } # End Test Build Compiler
-                inc_progress();
-              } # End MPI Install Configs
-              if( 4 <= $verbose ) {
-                print_progress("**");
-              }
-            } # End MPI Gets
-          } # End MPI Install Compiler
-        } # End OSs
-
-        end_timer('platform');
-        print_verbose(2, sprintf("\t <-> Finished Platform: (%s)\t %s\n",
-                                 $all_platforms[$cur_platform]->name,
-                                 display_timer('platform')));
-        print_verbose(2, "\t"."-"x60 . "\n");
-      } # End Platforms
-
-      end_timer('org');
-      print_verbose(2, sprintf(" <-> Finished Org.: (%s)\t\t %s\n",
-                               $all_orgs[$cur_org]->name,
-                               display_timer('org')));
-    } # End Org
+                submit_stat($ACCUM_ALL, $accum_where_datum);
+              } # End Network
+            } # End Resource Mgrs
+          } # End Launchers
+          print_verbose(2,". ");
+        } # End Test Suites
+        print_verbose(2,"\n");
+      } # End Test Build Compiler
+      inc_progress();
+    } # End MPI Installs
+    if( 4 <= $verbose ) {
+      print_progress("**");
+    }
 
     end_timer('segment');
     print_verbose(1, "-"x20 . " " . resolve_date($start_seg)." - ".resolve_date($end_seg)." ". "-"x20 ."\n");
@@ -1111,6 +1002,32 @@ sub sql_create_queries() {
      "     NATURAL JOIN mpi_get ".$v_nl.
      "     NATURAL JOIN mpi_install_configure_args ".$v_nl.
      "WHERE ".$replace_where_field." ");
+
+  #
+  #
+  #
+  $select_all_cmd_mpi_installs =
+    ("SELECT distinct on (http_username,platform_name,os_name,".$v_nl.
+     "                    compiler_name,compiler_version,".$v_nl.
+     "                    mpi_name,mpi_version,".$v_nl.
+     "                    mpi_install_configure_id) ".$v_nl.
+     " http_username,platform_name,os_name,".$v_nl.
+     " compiler_name,compiler_version,".$v_nl.
+     " mpi_name,mpi_version,".$v_nl.
+     " mpi_install_configure_id ".$v_nl.
+     "FROM mpi_install NATURAL JOIN submit ".$v_nl.
+     "     JOIN compiler ON mpi_install.mpi_install_compiler_id = compiler.compiler_id ".$v_nl.
+     "     NATURAL JOIN compute_cluster ".$v_nl.
+     "     NATURAL JOIN mpi_get ".$v_nl.
+     "     NATURAL JOIN mpi_install_configure_args ".$v_nl.
+     "WHERE ".$replace_where_field." AND ".$v_nl.
+     "       compiler_name != 'bogus' AND ".$v_nl.
+     "      http_username != ''      AND ".$v_nl.
+     "      http_username != 'bogus' ".$v_nl.
+     " ORDER BY http_username,platform_name,os_name,".$v_nl.
+     "          compiler_name,compiler_version,".$v_nl.
+     "          mpi_name,mpi_version,".$v_nl.
+     "          mpi_install_configure_id ");
 
   #
   # Aggregate MPI Install pass/fail
@@ -1587,127 +1504,83 @@ sub get_cur_month_boundaries() {
   return ($month_start, $month_end);
 }
 
-sub gather_all_orgs() {
+sub gather_all_mpi_installs() {
   my $start_seg = shift(@_);
   my $end_seg   = shift(@_);
   my $where_sub = shift(@_);
-  my @loc_orgs = ();
+  my @loc_mpi_installs = ();
   my @sql_rtn;
   my $n;
   my $datum;
+  my $select = $select_all_cmd_mpi_installs;
+  my $where = $where_sub->select_stmt;
+  my $stmt;
+  my $hash_ref;
 
-  @sql_rtn = sql_1d_array_cmd($select_all_cmd_org, $where_sub->select_stmt);
-
-  foreach $n (@sql_rtn) {
-    $datum = Stat_Datum->new();
-
-    $datum->name($n);
-    $datum->select_stmt("submit.http_username = '$n'");
-    $datum->select_stmt_stat("org_name = '$n'");
-    $datum->update_stmt("org_name = '$n'");
-    $datum->insert_keys("org_name");
-    $datum->insert_vals("'$n'");
-
-    push(@loc_orgs, $datum);
+  if( $select =~ /$replace_where_field/ ) {
+    $select =~ s/$replace_where_field/$where/;
   }
 
-  return @loc_orgs;
-}
-
-sub gather_all_platforms() {
-  my $start_seg = shift(@_);
-  my $end_seg   = shift(@_);
-  my $where_sub = shift(@_);
-  my @loc_platforms = ();
-
-  my @sql_rtn;
-  my $n;
-  my $datum;
-
-  @sql_rtn = sql_1d_array_cmd($select_all_cmd_platform, $where_sub->select_stmt);
-
-  foreach $n (@sql_rtn) {
+  $stmt = $dbh_mtt->prepare($select);
+  $stmt->execute();
+  while($hash_ref = $stmt->fetchrow_hashref) {
     $datum = Stat_Datum->new();
 
-    $datum->name($n);
-    $datum->select_stmt("compute_cluster.platform_name = '$n'");
-    $datum->select_stmt_stat("platform_name = '$n'");
-    $datum->update_stmt("platform_name = '$n'");
-    $datum->insert_keys("platform_name");
-    $datum->insert_vals("'$n'");
+    $datum->name("[".$$hash_ref{'http_username'}."] ".
+                 "[".$$hash_ref{'platform_name'}."] ".
+                 "[".$$hash_ref{'os_name'}."] ".
+                 "[".$$hash_ref{'compiler_name'}."] ".
+                 "[".$$hash_ref{'compiler_version'}."] ".
+                 "[".$$hash_ref{'mpi_name'}."] ".
+                 "[".$$hash_ref{'mpi_version'}."] ".
+                 "[".$$hash_ref{'mpi_install_configure_id'}."] ");
+    $datum->select_stmt("submit.http_username = '".$$hash_ref{'http_username'}."' AND ".
+                        "compute_cluster.platform_name = '".$$hash_ref{'platform_name'}."' AND ".
+                        "compute_cluster.os_name = '".$$hash_ref{'os_name'}."' AND ".
+                        "compiler_name = '".$$hash_ref{'compiler_name'}."' AND ".
+                        "compiler_version = '".$$hash_ref{'compiler_version'}."' AND ".
+                        "mpi_name = '".$$hash_ref{'mpi_name'}."' AND ".
+                        "mpi_version = '".$$hash_ref{'mpi_version'}."' AND ".
+                        "mpi_install_configure_id = '".$$hash_ref{'mpi_install_configure_id'}."' ");
+    $datum->select_stmt_stat("org_name = '".$$hash_ref{'http_username'}."' AND ".
+                             "platform_name = '".$$hash_ref{'platform_name'}."' AND ".
+                             "os_name = '".$$hash_ref{'os_name'}."' AND ".
+                             "mpi_install_compiler_name = '".$$hash_ref{'compiler_name'}."' AND ".
+                             "mpi_install_compiler_version = '".$$hash_ref{'compiler_version'}."' AND ".
+                             "mpi_get_name = '".$$hash_ref{'mpi_name'}."' AND ".
+                             "mpi_get_version = '".$$hash_ref{'mpi_version'}."' AND ".
+                             "mpi_install_config = '".$$hash_ref{'mpi_install_configure_id'}."' ");
+    $datum->update_stmt("org_name = '".$$hash_ref{'http_username'}."', ".
+                        "platform_name = '".$$hash_ref{'platform_name'}."', ".
+                        "os_name = '".$$hash_ref{'os_name'}."', ".
+                        "mpi_install_compiler_name = '".$$hash_ref{'compiler_name'}."', ".
+                        "mpi_install_compiler_version = '".$$hash_ref{'compiler_version'}."', ".
+                        "mpi_get_name = '".$$hash_ref{'mpi_name'}."', ".
+                        "mpi_get_version = '".$$hash_ref{'mpi_version'}."', ".
+                        "mpi_install_config = '".$$hash_ref{'mpi_install_configure_id'}."' ");
+    $datum->insert_keys("org_name, ".
+                        "platform_name, ".
+                        "os_name, ".
+                        "mpi_install_compiler_name, ".
+                        "mpi_install_compiler_version, ".
+                        "mpi_get_name, ".
+                        "mpi_get_version, ".
+                        "mpi_install_config");
+    $datum->insert_vals("'".$$hash_ref{'http_username'}."', ".
+                        "'".$$hash_ref{'platform_name'}."', ".
+                        "'".$$hash_ref{'os_name'}."', ".
+                        "'".$$hash_ref{'compiler_name'}."', ".
+                        "'".$$hash_ref{'compiler_version'}."', ".
+                        "'".$$hash_ref{'mpi_name'}."', ".
+                        "'".$$hash_ref{'mpi_version'}."', ".
+                        "'".$$hash_ref{'mpi_install_configure_id'}."' ");
 
-    push(@loc_platforms, $datum);
+    push(@loc_mpi_installs, $datum);
   }
 
-  return @loc_platforms;
-}
+  $stmt->finish;
 
-sub gather_all_os() {
-  my $start_seg = shift(@_);
-  my $end_seg   = shift(@_);
-  my $where_sub = shift(@_);
-  my @loc_os = ();
-
-  my @sql_rtn;
-  my $n;
-  my $datum;
-
-  @sql_rtn = sql_1d_array_cmd($select_all_cmd_os, $where_sub->select_stmt);
-
-  foreach $n (@sql_rtn) {
-    $datum = Stat_Datum->new();
-
-    $datum->name($n);
-    $datum->select_stmt("compute_cluster.os_name = '$n'");
-    $datum->select_stmt_stat("os_name = '$n'");
-    $datum->update_stmt("os_name = '$n'");
-    $datum->insert_keys("os_name");
-    $datum->insert_vals("'$n'");
-
-    push(@loc_os, $datum);
-  }
-
-  return @loc_os;
-}
-
-sub gather_all_mi_compilers() {
-  my $start_seg = shift(@_);
-  my $end_seg   = shift(@_);
-  my $where_sub = shift(@_);
-  my @loc_mi_compilers = ();
-
-  my @sql_rtn;
-  my $r;
-  my $datum;
-  my $i = 0;
-  my $name;
-  my $version;
-
-  @sql_rtn = sql_2d_array_cmd($select_all_cmd_mi_compiler, $where_sub->select_stmt);
-
-  foreach $r (@sql_rtn) {
-    ++$i;
-    if( $i % 2 == 1 ) {
-      $name = $r;
-      next;
-    }
-    else {
-      $version = $r;
-    }
-
-    $datum = Stat_Datum->new();
-
-    $datum->name("$name ($version)");
-    $datum->select_stmt("compiler_name = '$name' AND $v_nlt compiler_version = '$version'");
-    $datum->select_stmt_stat("mpi_install_compiler_name = '$name' AND $v_nlt mpi_install_compiler_version = '$version'");
-    $datum->update_stmt("mpi_install_compiler_name = '$name', $v_nlt mpi_install_compiler_version = '$version'");
-    $datum->insert_keys("mpi_install_compiler_name, $v_nlt mpi_install_compiler_version");
-    $datum->insert_vals("'$name', $v_nlt '$version'");
-
-    push(@loc_mi_compilers, $datum);
-  }
-
-  return @loc_mi_compilers;
+  return @loc_mpi_installs;
 }
 
 sub gather_all_tb_compilers() {
@@ -1748,74 +1621,6 @@ sub gather_all_tb_compilers() {
   }
 
   return @loc_tb_compilers;
-}
-
-sub gather_all_mpi_gets() {
-  my $start_seg = shift(@_);
-  my $end_seg   = shift(@_);
-  my $where_sub = shift(@_);
-  my @loc_mpi_gets = ();
-
-  my @sql_rtn;
-  my $r;
-  my $datum;
-  my $i = 0;
-  my $name;
-  my $version;
-
-  @sql_rtn = sql_2d_array_cmd($select_all_cmd_mpi_get, $where_sub->select_stmt);
-
-  foreach $r (@sql_rtn) {
-    ++$i;
-    if( $i % 2 == 1 ) {
-      $name = $r;
-      next;
-    }
-    else {
-      $version = $r;
-    }
-
-    $datum = Stat_Datum->new();
-
-    $datum->name("$name ($version)");
-    $datum->select_stmt("mpi_name = '$name' AND $v_nlt mpi_version = '$version'");
-    $datum->select_stmt_stat("mpi_get_name = '$name' AND $v_nlt mpi_get_version = '$version'");
-    $datum->update_stmt("mpi_get_name = '$name', $v_nlt mpi_get_version = '$version'");
-    $datum->insert_keys("mpi_get_name, $v_nlt mpi_get_version");
-    $datum->insert_vals("'$name', '$version'");
-
-    push(@loc_mpi_gets, $datum);
-  }
-
-  return @loc_mpi_gets;
-}
-
-sub gather_all_mi_configs() {
-  my $start_seg = shift(@_);
-  my $end_seg   = shift(@_);
-  my $where_sub = shift(@_);
-  my @loc_mi_configs = ();
-
-  my @sql_rtn;
-  my $n;
-  my $datum;
-
-  @sql_rtn = sql_1d_array_cmd($select_all_cmd_mi_config, $where_sub->select_stmt);
-
-  foreach $n (@sql_rtn) {
-    $datum = Stat_Datum->new();
-
-    $datum->name($n);
-    $datum->select_stmt("mpi_install_configure_id = '$n'");
-    $datum->select_stmt_stat("mpi_install_config = '$n'");
-    $datum->update_stmt("mpi_install_config = '$n'");
-    $datum->insert_keys("mpi_install_config");
-    $datum->insert_vals("'$n'");
-
-    push(@loc_mi_configs, $datum);
-  }
-
-  return @loc_mi_configs;
 }
 
 sub gather_all_test_suites() {
