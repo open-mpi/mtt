@@ -4,8 +4,12 @@
 $mother_site = "www.open-mpi.org";
 $server_dir = "/";
 
-# Are we the "mother site" or a mirror?
-if ($_SERVER["SERVER_NAME"] != $mother_site) {
+# Are we the "mother site" or a mirror?  Remember that "alerts.php" is
+# run locally as a script via cron, therefore it won't have certain
+# array keys set in $_SERVER (and therefore should not be subject to
+# the mirroring stuff).
+if (array_key_exists("SERVER_NAME", $_SERVER) &&
+    $_SERVER["SERVER_NAME"] != $mother_site) {
     $equiv_dir = ereg_replace("^$server_dir", '', $_SERVER["REQUEST_URI"]);
     print "Sorry, this page is not mirrored.  " .
            "Please see the <a href=\"http://$mother_site/$equiv_dir\">" .
