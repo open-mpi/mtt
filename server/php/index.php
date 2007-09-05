@@ -112,16 +112,31 @@ function make_redir($params) {
     $tinyurl = "http://$domain$script?do_redir=$id";
 
     # Print tiny link in a tiny window
-    print "<html>" . 
-          html_head("Tiny link") .
-          "<body>" .
-          "<table><tr><td>" .
-          "The original permalink was " . strlen($url) . " chars long. " .
-          "Here's a <a class='black_ln' href='$tinyurl'>tiny link</a> " .
-              "that is only " . strlen($tinyurl) . " chars long." .
-          "</table>" .
-          "</body>" .
-          "</html>";
+    $t = 50;
+    print "<html>\n" . html_head("Tiny link") .
+"<body>
+<div align=center>
+<p>The original permalink was " . strlen($url) . " chars long.
+Here's a tiny link that is only $t chars long:</p>
+
+<p><form name=url_form><code>
+<input type=text name=url value='$tinyurl' size=$t
+    onFocus=\"this.value='$tinyurl';\" readonly>
+</code>
+</form></p>
+
+<script language='javascript' type='text/javascript'>
+document.url_form.url.focus();
+document.url_form.url.select();
+</script>
+
+<p><form>
+<input type=button value='Close this window' onClick='javascript:window.close();'>
+</form></p>
+
+</div>
+</body>
+</html>";
     exit;
 }
 

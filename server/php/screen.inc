@@ -1247,7 +1247,7 @@ function html_head($title) {
         link += '&text_start_timestamp=' + date;
         link += '&make_redir=1';
 
-        open(link, 'Tiny link', 'resizable=yes, toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, width=180, height=70');
+        open(link, 'Tiny link', 'resizable=yes, toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, width=500, height=150');
     }
 
     function OpenWindowForMTTFailureDB() {
