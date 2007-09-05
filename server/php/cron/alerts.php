@@ -11,11 +11,6 @@
 #   (Set this script up as a cron job)
 #
 
-$topdir = "..";
-include_once("$topdir/curl_get.inc");
-include_once("$topdir/ini.inc");
-include_once("$topdir/reporter.inc");
-
 $options = getopt("f:dv");
 
 $GLOBALS['verbose'] = isset($options['v']) ? true : false;
@@ -26,6 +21,11 @@ if ($GLOBALS['verbose'])
     error_reporting(E_ALL);
 else
     error_reporting(E_ERROR | E_WARNING | E_PARSE);
+
+$topdir = "..";
+include_once("$topdir/curl_get.inc");
+include_once("$topdir/ini.inc");
+include_once("$topdir/reporter.inc");
 
 # Parse with sections
 $ini_file = ($options['f'] ? $options['f'] : "alerts.ini");
