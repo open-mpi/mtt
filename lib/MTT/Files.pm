@@ -190,15 +190,16 @@ sub unpack_tarball {
 
 # do a svn checkout
 sub svn_checkout {
-    my ($url, $rnum, $username, $pw, $pw_cache, $delete_first, $export) = @_;
+    my ($url, $rnum, $username, $pw, $pw_cache, $delete_first, $export, $svn_command) = @_;
 
     Debug("SVN checkout: $url\n");
 
+    my $cwd = cwd();
     my $b = basename($url);
     MTT::DoCommand::Cmd(1, "rm -rf $b")
         if ($delete_first);
 
-    my $str = "svn " . ($export ? "export" : "co") . " ";
+    my $str = "$svn_command " . ($export ? "export" : "co") . " ";
     $str .= "-r $rnum "
         if ($rnum);
     $str .= "--username $username "
@@ -208,6 +209,7 @@ sub svn_checkout {
     $str .= "--no-auth-cache "
         if ("0" eq $pw_cache);
     $str .= $url;
+    $str .= " $cwd/$b";
 
     my $scheme;
     if ($url =~ /^http:\/\//) {
@@ -243,10 +245,15 @@ http-proxy-port = bogus\n";
     my $proxies = \@{$MTT::Globals::Values->{proxies}->{$scheme}};
     my %ENV_SAVE = %ENV;
 
+    # In case a proxy was not specified, try to svn without one
+    if (! @{$proxies}) {
+        push(@{$proxies}, undef);
+    }
+
     foreach my $p (@{$proxies}) {
 
         # Skip "blank" proxies
-        if ($p->{proxy} !~ /^\s*$/) {
+        if (defined($p->{proxy}) and $p->{proxy} !~ /^\s*$/) {
 
             Debug("SVN checkout attempting proxy: $p->{proxy}\n");
 
@@ -274,7 +281,12 @@ http-proxy-port = bogus\n";
 
         # Success!
         my $r = undef;
+
+        # SVN
         if ($ret->{result_stdout} =~ m/Exported revision (\d+)\.\n$/) {
+            $r = $1;
+        # SVK
+        } elsif ($ret->{result_stdout} =~ m/Syncing\s+\S+\s+in\s+\S+\s+to\s+(\d+)/i) {
             $r = $1;
         }
 
@@ -287,6 +299,22 @@ http-proxy-port = bogus\n";
     # Reset the servers file to whatever it used to be (if it used to be!)
     MTT::Lock::Unlock($ENV{HOME} . "/.subversion/servers");
     return undef;
+}
+
+# Do a (Sun) TeamWare bringover
+sub teamware_bringover {
+    my ($file_list_program, $parent, $child, $path) = @_;
+
+    my $str;
+    $str .= "bringover";
+    $str .= " -f $file_list_program";
+    $str .= " -p $parent";
+    $str .= " -w $child";
+    $str .= " $path\n";
+
+    my $ret = MTT::DoCommand::Cmd(1, $str);
+
+    return $ret;
 }
 
 #--------------------------------------------------------------------------
@@ -590,4 +618,19 @@ sub SafeWrite {
     return $ret;
 }
 
+# Return the contents of a file as a scalar
+sub Slurp {
+    my ($file) = @_;
+
+    my $contents;
+    open (INPUT, $file) || warn "can't open $file: $!";
+    while (<INPUT>) {
+        $contents .= $_;
+    }
+    close(INPUT) || warn "can't close $file: $!";
+    return $contents;
+}
+
 1;
+
+

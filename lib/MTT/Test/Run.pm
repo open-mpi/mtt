@@ -27,6 +27,9 @@ use Data::Dumper;
 
 #--------------------------------------------------------------------------
 
+# Exported current command line in the test
+our $test_command_line;
+
 # Exported current number of processes in the test
 our $test_np;
 
@@ -79,7 +82,7 @@ sub Run {
             }
 
             # Iterate through all the test_build values
-            my @test_builds = split(/[,\s]+/, $test_build_value);
+            my @test_builds = MTT::Util::split_comma_list($test_build_value);
             foreach my $test_build_name (@test_builds) {
                 # Strip whitespace
                 $test_build_name =~ s/^\s*(.*?)\s*/\1/;
@@ -155,8 +158,9 @@ sub Run {
                                     $MTT::Globals::Internals->{test_run_full_name} =
                                         $section;
                                     _do_run($ini, $section, $test_build, 
-                                            $mpi_install, $install_dir, 
-                                            $runs_data_dir, $force);
+                                            $mpi_get, $mpi_install,
+                                            $install_dir, $runs_data_dir, 
+                                            $force);
                                     delete $MTT::Globals::Internals->{mpi_get_name};
                                     delete $MTT::Globals::Internals->{mpi_install_name};
                                     delete $MTT::Globals::Internals->{test_get_name};
@@ -178,7 +182,7 @@ sub Run {
 #--------------------------------------------------------------------------
 
 sub _do_run {
-    my ($ini, $section, $test_build, $mpi_install, $install_dir, 
+    my ($ini, $section, $test_build, $mpi_get, $mpi_install, $install_dir, 
         $runs_data_dir, $force) = @_;
 
     # Check both specify_module and module (for backcompatibility)
@@ -317,15 +321,9 @@ sub _do_run {
     # Determine which exec param we want to use
     my $mpi_details_exec = MTT::Values::Value($ini, $section, "mpi_details_exec");
 
-    # Default to generic "exec"
-    if ($mpi_details_exec) {
-        $mpi_details_exec = "exec:$mpi_details_exec";
-    } else {
-        $mpi_details_exec = "exec";
-    }
-
-    # Do not evaluate this one now yet
-    my $exec = $ini->val($mpi_details_section, $mpi_details_exec);
+    # Do not evaluate this one yet
+    my $suffix = $mpi_details_exec ? ":$mpi_details_exec" : "";
+    my $exec = $ini->val($mpi_details_section, "exec$suffix");
     while ($exec =~ m/@(.+?)@/) {
         my $val = $ini->val($mpi_details_section, $1);
         if (! $val) {
@@ -341,6 +339,21 @@ sub _do_run {
     $mpi_details->{mpi_install_simple_section_name} = 
         $mpi_install->{simple_section_name};
     $mpi_details->{version} = $mpi_install->{mpi_version};
+
+    # Do not evaluate these yet
+    $mpi_details->{launcher} = 
+        $ini->val($mpi_details_section, "launcher$suffix");
+    $mpi_details->{launcher} = $MTT::Defaults::Test_run->{launcher}
+        if (!defined($mpi_details->{launcher}));
+    $mpi_details->{resource_manager} = 
+        $ini->val($mpi_details_section, "resource_manager$suffix");
+    $mpi_details->{resource_manager} =
+        $MTT::Defaults::Test_run->{resource_manager}
+        if (!defined($mpi_details->{resource_manager}));
+    $mpi_details->{parameters} = 
+        $ini->val($mpi_details_section, "parameters$suffix");
+    $mpi_details->{network} = 
+        $ini->val($mpi_details_section, "network$suffix");
 
     # Go to the right dir
     MTT::DoCommand::Chdir($test_build->{srcdir});
@@ -367,16 +380,17 @@ sub _do_run {
     my $config;
     my @env_modules;
     my $val = MTT::Values::Value($ini, $section, "env_module");
-    if ($val && $test_build->{env_modules}) {
+    if (defined($val) && defined($test_build->{env_modules})) {
         $config->{env_modules} = $test_build->{env_modules} . "," .
             $config->{env_modules};
-    } elsif ($val) {
+    } elsif (defined($val)) {
         $config->{env_modules} = $val;
-    } elsif ($test_build->{env_modules}) {
+    } elsif (defined($test_build->{env_modules})) {
         $config->{env_modules} = $test_build->{env_modules};
     }
-    if ($config->{env_modules}) {
-        @env_modules = split(/[,\s]+/, $config->{env_modules});
+    if (defined($config->{env_modules})) {
+        @env_modules = MTT::Util::split_comma_list($config->{env_modules});
+        Env::Modulecmd::unload(@env_modules);
         Env::Modulecmd::load(@env_modules);
         Debug("Loading environment modules: @env_modules\n");
     }
@@ -385,8 +399,9 @@ sub _do_run {
     # both the MPI that we're building with and the section of the ini
     # file that we're building.
     my @save_env;
+    MTT::Values::ProcessEnvKeys($mpi_get, \@save_env);
     MTT::Values::ProcessEnvKeys($mpi_install, \@save_env);
-    # JMS: Do we need to grab from Test::Build as well?
+    MTT::Values::ProcessEnvKeys($test_build, \@save_env);
     %$config = %$MTT::Defaults::Test_specify;
     $config->{setenv} = MTT::Values::Value($ini, $section, "setenv");
     $config->{unsetenv} = MTT::Values::Value($ini, $section, "unsetenv");
@@ -476,7 +491,7 @@ sub _fill_step {
     $v = MTT::Values::Value($ini, $mpi_details_section, $t);
     $v = $MTT::Globals::Values->{$t}
         if (!defined($v));
-    $mpi_details->{$t} = $v;
+    $mpi_details->{$t} = MTT::Util::parse_time_to_seconds($v);
 
     $t = $name . "_pass";
     $v = MTT::Values::Value($ini, $mpi_details_section, $t);

@@ -38,7 +38,7 @@ sub Analyze {
     }
 
     %$report = (%$correctness);
-    %$report = (%$report, %$performance) if ($performance);
+    %$report = (%$report, %$performance) if (defined($performance));
 
     return $report;
 } 

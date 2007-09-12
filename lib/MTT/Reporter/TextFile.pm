@@ -151,6 +151,15 @@ sub _summary_report {
     print $table->render . "\n";
     print $summary_footer;
 
+    # Write the Summary report to a file
+    my $filename = "All_phase-summary.txt";
+    my $file = "$dirname/" . MTT::Files::make_safe_filename("$filename");
+
+    _output_results($file,
+        join("\n", ($summary_header, 
+                    $table->render,
+                    $summary_footer)));
+
     1;
 }
 

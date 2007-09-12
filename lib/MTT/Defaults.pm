@@ -35,7 +35,13 @@ our $System_config = {
         }
     },
 
-    known_compiler_names => "gnu pgi ibm intel kai absoft pathscale sun none",
+    known_compiler_names => [ "gnu", "pgi", "ibm", "intel", "kai", "absoft",
+                              "pathscale", "sun", "none", "unknown" ],
+    known_resource_manager_names => [ "slurm", "tm", "loadleveler", "n1ge",
+                                      "none", "unknown" ],
+    known_network_names => [ "tcp", "udp", "ethernet", "gm", "mx", "verbs",
+                             "udapl", "psm", "elan", "portals", "shmem",
+                             "loopback", "unknown" ],
 };
 
 # User-defined configuration
@@ -79,6 +85,12 @@ our $Test_specify = {
     merge_stdout_stderr => 1,
     stdout_save_lines => 100,
     stderr_save_lines => 100,
+};
+
+# Test run phase
+our $Test_run = {
+    launcher => "&split(&test_command_line(), 0)",
+    resource_manager => "&env_name()",
 };
 
 1;

@@ -45,7 +45,8 @@ sub Get {
     # If they do not, search the user's PATH for an MPI
     if (! -e $installdir) {
         Warning("A non-existent \"installdir\" parameter was provided,\n" .
-                "I will search your path for an MPI ...\n");
+                "I will search your path for an MPI ...\n")
+            if (defined($installdir));
 
         my $program = FindProgram(qw(mpicc mpiexec mpirun));
 
@@ -60,16 +61,17 @@ sub Get {
         $installdir = dirname($program);
         $installdir =~ s/bin\/?$//;
     }
-    Verbose("Using MPI in $installdir\n");
+    Verbose("   Using MPI in: $installdir\n");
 
     $ret->{module_data}->{installdir} = $installdir;
 
     # Get a version string (E.g., Open MPI r#)
-    my $version = _get_ompi_version($installdir);
-
-    if (! $version) {
-        Warning("Could not get an MPI version string, I'll create one based
-                 on your installdir parameter.\n");
+    my $version = Value($ini, $section, "alreadyinstalled_version");
+    if (!defined($version)) {
+        $version = MTT::Values::Functions::MPI::OMPI::get_version("$installdir/bin");
+    }
+    if (!defined($version)) {
+        Warning("Could not get an MPI version string, I'll create one based on your alreadyinstalled_dir parameter.\n");
         $version = $installdir;
         $version =~ s/\//_/g;
     }
@@ -90,22 +92,6 @@ sub Get {
 # NoOp
 sub PrepareForInstall {
     return cwd();
-}
-
-# Get the OMPI version string from ompi_info
-sub _get_ompi_version {
-    my $installdir = shift;
-
-    open INFO, "$installdir/bin/ompi_info --parsable|";
-
-    while (<INFO>) {
-        print;
-        if (/ompi:version:full:(.*)$/) {
-            Debug(">> " . (caller(0))[3] . " returning $1\n");
-            return $1;
-        }
-    }
-    return undef;
 }
 
 1;

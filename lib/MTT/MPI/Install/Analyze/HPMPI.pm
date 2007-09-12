@@ -11,17 +11,12 @@
 # $HEADER$
 #
 
-package MTT::MPI::Install::Analyze::OMPI;
+package MTT::MPI::Install::Analyze::HPMPI;
 
 use strict;
-use Cwd;
 use Data::Dumper;
-use MTT::DoCommand;
 use MTT::Messages;
-use MTT::FindProgram;
 use MTT::Values;
-use MTT::Files;
-use MTT::Values::Functions::MPI::OMPI;
 
 #--------------------------------------------------------------------------
 
@@ -32,28 +27,24 @@ sub Install {
     my $result_stderr;
 
     # Prepare $ret
-
     my $ret;
     $ret->{test_result} = MTT::Values::PASS;
     $ret->{exit_status} = 0;
 
     # Grab installdir parameter
-
     $ret->{installdir} = $config->{module_data}->{installdir};
     $ret->{bindir} = "$ret->{installdir}/bin";
     $ret->{libdir} = "$ret->{installdir}/lib";
 
-    # Set which bindings were compiled
+    # Set the compiler
+    $config->{compiler_name} = "unknown";
+    $config->{compiler_version} = "unknown";
 
+    # HP MPI has all the bindings
     $ret->{c_bindings} = 1;
-    Debug("Have C bindings: 1\n");
-    my $func = \&MTT::Values::Functions::MPI::OMPI::find_bindings;
-    $ret->{cxx_bindings} = &{$func}($ret->{bindir}, $ret->{libdir}, "cxx");
-    Debug("Have C++ bindings: $ret->{cxx_bindings}\n"); 
-    $ret->{f77_bindings} = &{$func}($ret->{bindir}, $ret->{libdir}, "f77");
-    Debug("Have F77 bindings: $ret->{f77_bindings}\n"); 
-    $ret->{f90_bindings} = &{$func}($ret->{bindir}, $ret->{libdir}, "f90");
-    Debug("Have F90 bindings: $ret->{f90_bindings}\n"); 
+    $ret->{cxx_bindings} = 1;
+    $ret->{f77_bindings} = 1;
+    $ret->{f90_bindings} = 1;
 
     return $ret;
 }

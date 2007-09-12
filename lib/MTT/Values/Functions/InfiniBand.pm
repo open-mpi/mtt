@@ -22,13 +22,25 @@ use Cwd;
 
 #--------------------------------------------------------------------------
 
-sub check_ipoib_connectivity {
-    my $x = MTT::DoCommand::Cmd(1, "uname -s");
+# Global IB connectivity boolean
+my $cache;
 
-    if ($x->{result_stdout} =~ /sunos/i) {
-        return _check_solaris_ipoib_connectivity();
-    } elsif ($x->{result_stdout} =~ /linux/i) {
-        return _check_linux_ipoib_connectivity();
+# Dispatch the appropriate check_*_ipoib_connectivity()
+sub check_ipoib_connectivity {
+    my $funclet = '&' . FuncName((caller(0))[3]);
+
+    # Skip out if we have checked the IB interface already
+    if (defined($cache)) {
+        Debug("$funclet: We checked for IB connectivity once already. Returning $cache.\n");
+        return $cache;
+    } else {
+        my $x = MTT::DoCommand::Cmd(1, "uname -s");
+
+        if ($x->{result_stdout} =~ /sunos/i) {
+            return _check_solaris_ipoib_connectivity();
+        } elsif ($x->{result_stdout} =~ /linux/i) {
+            return _check_linux_ipoib_connectivity();
+        }
     }
 }
 
@@ -42,8 +54,10 @@ sub _check_solaris_ipoib_connectivity {
 
     # Gather some system utilities
     my %utils;
-    my $ret;
     my @utils = ("ifconfig", "ping", "orterun", "datadm");
+
+    # Prepare the return value
+    $cache = 0;
 
     foreach my $util (@utils) {
         my $prog = FindProgram($util);
@@ -52,7 +66,7 @@ sub _check_solaris_ipoib_connectivity {
         if (! $prog) {
             Warning("$funclet: You do not have '$util' in your PATH. " .
                   "\n\tAssuming your IB connections are not UP.\n");
-            return "0";
+            return $cache;
         }
     }
 
@@ -86,7 +100,8 @@ sub _check_solaris_ipoib_connectivity {
 
     if (! $ib_interface) {
         Debug("$funclet: $cmd did not print an IB interface.\n");
-        return "0";
+        $cache = 0;
+        return $cache;
     }
 
     # Create a simple script to ping an IB interface
@@ -115,7 +130,8 @@ fi";
 
     if ($x->{exit_status} ne 0) {
         Debug("$funclet: $cmd failed.\n");
-        return "0";
+        $cache = 0;
+        return $cache;
     }
 
     my @down_nodes;
@@ -128,14 +144,14 @@ fi";
 
     # Return true, or report which nodes' IB interfaces are down
     if ((scalar @down_nodes) < 1) {
-        $ret = 1;
+        $cache = 1;
         Debug("$funclet: 'ping localhost' succeeded on all nodes.\n");
     } else {
-        $ret = 0;
+        $cache = 0;
         Warning("$funclet: 'ping localhost' failed on the following nodes: " .
                 "\n\t\t" . join("\n\t\t", @down_nodes) .
-                "\n\tReturning $ret.\n");
-        return "$ret";
+                "\n\tReturning $cache.\n");
+        return $cache;
     }
 
     # Do a head-node to remote-node ping for each host
@@ -146,7 +162,8 @@ fi";
 
         if ($x->{exit_status} ne 0) {
             Debug("$funclet: $cmd failed.\n");
-            return "0";
+            $cache = 0;
+            return $cache;
         }
 
         if ($x->{result_stdout} !~ /\b$host\b/i) {
@@ -159,13 +176,13 @@ fi";
 
     # Return true, or report which nodes' IB interfaces are down
     if ((scalar @down_nodes) < 1) {
-        $ret = 1;
+        $cache = 1;
         Debug("$funclet: IB interfaces are UP on all nodes.\n");
     } else {
-        $ret = 0;
+        $cache = 0;
         Warning("$funclet: head-node to remote-node ping failed on the following nodes: " .
                 "\n\t\t" . join("\n\t\t", @down_nodes) .
-                "\n\tReturning $ret.\n");
+                "\n\tReturning $cache.\n");
     }
 
     # Create a simple script to check DAT registry
@@ -188,7 +205,8 @@ fi";
 
     if ($x->{exit_status} ne 0) {
         Debug("$funclet: $cmd failed.\n");
-        return "0";
+        $cache = 0;
+        return $cache;
     }
 
     # Unlink the little datadm script
@@ -203,17 +221,17 @@ fi";
 
     # Return true, or report which nodes' IB interfaces are down
     if ((scalar @down_nodes) < 1) {
-        $ret = 1;
+        $cache = 1;
         Debug("$funclet: Found a 'datadm' entry on all nodes.\n");
     } else {
-        $ret = 0;
+        $cache = 0;
         Warning("$funclet: No 'datadm' found on the following nodes: " .
                 "\n\t\t" . join("\n\t\t", @down_nodes) .
-                "\n\tReturning $ret.\n");
-        return "$ret";
+                "\n\tReturning $cache.\n");
+        return $cache;
     }
 
-    return "$ret";
+    return $cache;
 }
 
 #--------------------------------------------------------------------------
@@ -230,8 +248,10 @@ sub _check_linux_ipoib_connectivity {
     my $save_path = $ENV{PATH};
     $ENV{PATH} .= ":/sbin:/usr/sbin";
     my %utils;
-    my $ret;
     my @utils = ("ifconfig", "ping", "orterun");
+
+    # Prepare the return value
+    $cache = 0;
 
     foreach my $util (@utils) {
         my $prog = FindProgram($util);
@@ -241,7 +261,7 @@ sub _check_linux_ipoib_connectivity {
             Warning("$funclet: You do not have '$util' in your PATH. " .
                   "\n\tAssuming your IB connections are not UP.\n");
             $ENV{PATH} = $save_path;
-            return "0";
+            return $cache;
         }
     }
 
@@ -276,7 +296,8 @@ sub _check_linux_ipoib_connectivity {
     if (! $ib_interface) {
         Debug("$funclet: $cmd did not print an IB interface.\n");
         $ENV{PATH} = $save_path;
-        return "0";
+        $cache = 0;
+        return $cache;
     }
     print "IB interface: $ib_interface\n";
 
@@ -309,7 +330,8 @@ exit 0";
     if ($x->{exit_status} ne 0) {
         Debug("$funclet: $cmd failed.\n");
         $ENV{PATH} = $save_path;
-        return "0";
+        $cache = 0;
+        return $cache;
     }
     print "Ping out: $x->{result_stdout}\n";
 
@@ -325,12 +347,12 @@ exit 0";
     if ((scalar @down_nodes) < 1) {
         Debug("$funclet: 'ping localhost' succeeded on all nodes.\n");
     } else {
-        $ret = 0;
+        $cache = 0;
         Warning("$funclet: 'ping localhost' failed on the following nodes: " .
                 "\n\t\t" . join("\n\t\t", @down_nodes) .
-                "\n\tReturning $ret.\n");
+                "\n\tReturning $cache.\n");
         $ENV{PATH} = $save_path;
-        return "$ret";
+        return $cache;
     }
 
     # Do a head-node to remote-node ping for each host
@@ -342,7 +364,8 @@ exit 0";
         if ($x->{exit_status} ne 0) {
             Debug("$funclet: $cmd failed.\n");
             $ENV{PATH} = $save_path;
-            return "0";
+            $cache = 0;
+            return $cache;
         }
 
         if ($x->{result_stdout} !~ /\b$host\b/i) {
@@ -355,17 +378,17 @@ exit 0";
 
     # Return true, or report which nodes' IB interfaces are down
     if ((scalar @down_nodes) < 1) {
-        $ret = 1;
+        $cache = 1;
         Debug("$funclet: IB interfaces are UP on all nodes.\n");
     } else {
-        $ret = 0;
+        $cache = 0;
         Warning("$funclet: head-node to remote-node ping failed on the following nodes: " .
                 "\n\t\t" . join("\n\t\t", @down_nodes) .
-                "\n\tReturning $ret.\n");
+                "\n\tReturning $cache.\n");
     }
 
     $ENV{PATH} = $save_path;
-    return "$ret";
+    return $cache;
 }
 
 1;

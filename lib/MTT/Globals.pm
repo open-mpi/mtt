@@ -27,6 +27,8 @@ our $Internals;
 # Defaults that are reset on a per-ini-file basis
 
 my $_defaults = {
+    funclet_files => undef,
+
     hostfile => undef,
     hostlist => undef,
     max_np => undef,
@@ -73,6 +75,16 @@ sub load {
     %$Values = %$_defaults;
     $Values->{scratch_root} = $scratch_root;
 
+    # Are there funclet .pm files to load?  If so, do these first so
+    # that the funclets can be used by the rest of the fields.
+
+    my $val = MTT::Values::Value($ini, "MTT", "funclet_files");
+    if (defined($val)) {
+        foreach my $f (MTT::Util::split_comma_list($val)) {
+            require $f;
+        }
+    }
+
     # Max_np (do before hostfile / hostlist) 
 
     # NOTE: We have to use the full name MTT::Values::Value() here
@@ -82,16 +94,16 @@ sub load {
 
     # Hostfile
 
-    my $val = MTT::Values::Value($ini, "MTT", "hostfile");
-    if ($val) {
+    $val = MTT::Values::Value($ini, "MTT", "hostfile");
+    if (defined($val)) {
         $Values->{hostfile} = $val;
         _parse_hostfile($val);
     }
 
     # Hostlist
 
-    my $val = MTT::Values::Value($ini, "MTT", "hostlist");
-    if ($val) {
+    $val = MTT::Values::Value($ini, "MTT", "hostlist");
+    if (defined($val)) {
         $Values->{hostlist} = $val;
         _parse_hostlist($val);
     }
@@ -107,9 +119,9 @@ sub load {
         }
     }
     foreach my $name (@names) {
-        my $val = MTT::Values::Value($ini, "MTT", $name);
+        $val = MTT::Values::Value($ini, "MTT", $name);
         $Values->{$name} = $val
-            if ($val);
+            if (defined($val));
     }
 
     # Parse the list of terminate_files into an array

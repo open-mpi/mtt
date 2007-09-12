@@ -483,6 +483,14 @@ foreach my $hash (@ini_list) {
 
     MTT::Lock::Init($ini);
 
+    # Set the logfile, if specified
+    my $logfile = MTT::Values::Value($ini, "mtt", "log_file");
+    $logfile = MTT::Values::Value($ini, "mtt", "logfile")
+        if (!defined($logfile));
+    if (defined($logfile)) {
+        MTT::Messages::open_logfile($logfile);
+    }
+    
     # If "--trial" was specified, then set the "trail" flag to 1
 
     if (defined($trial_arg)) {
@@ -535,6 +543,10 @@ foreach my $hash (@ini_list) {
     # Shut down locks
 
     MTT::Lock::Finalize($ini);
+
+    # Close the log
+
+    MTT::Messages::close_logfile();
 }
 
 # That's it!

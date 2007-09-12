@@ -171,7 +171,7 @@ sub Install {
             }
 
             # Iterate through all the mpi_get values
-            my @mpi_gets = split(/[,\s]+/, $mpi_get_value);
+            my @mpi_gets = MTT::Util::split_comma_list($mpi_get_value);
             foreach my $mpi_get_name (@mpi_gets) {
                 # Strip whitespace
                 $mpi_get_name =~ s/^\s*(.*?)\s*/\1/;
@@ -350,30 +350,39 @@ sub _do_install {
     
     # Load any environment modules?
     my @env_modules;
-    $config->{env_modules} = Value($ini, $section, "env_module");
-    if ($config->{env_modules}) {
-        @env_modules = split(/[,\s]+/, $config->{env_modules});
-        Env::Modulecmd::load(@env_modules);
+    my $tmp = Value($ini, $section, "env_module");
+    if (defined($tmp) && defined($mpi_get->{env_modules})) {
+        $config->{env_modules} = $mpi_get->{env_modules} . "," . $tmp;
+    } elsif (defined($tmp)) {
+        $config->{env_modules} = $tmp;
+    } elsif (defined($mpi_get->{env_modules})) {
+        $config->{env_modules} = $mpi_get->{env_modules};
+    }
+    if (defined($config->{env_modules})) {
+        @env_modules = MTT::Util::split_comma_list($config->{env_modules});
         Debug("Loading environment modules: @env_modules\n");
+        Env::Modulecmd::unload(@env_modules);
+        Env::Modulecmd::load(@env_modules);
     }
 
     # Process setenv, unsetenv, prepend_path, and
     # append_path
+    my @save_env;
+    ProcessEnvKeys($mpi_get, \@save_env);
     $config->{setenv} = Value($ini, $section, "setenv");
     $config->{unsetenv} = Value($ini, $section, "unsetenv");
     $config->{prepend_path} = Value($ini, $section, "prepend_path");
     $config->{append_path} = Value($ini, $section, "append_path");
-    my @save_env;
     ProcessEnvKeys($config, \@save_env);
 
-    # JMS TO BE DELETED
+    # JMS TO BE DELETED (now down in Install modules)
     # configure_arguments
-    my $tmp = Value($ini, $section, "configure_arguments");
+    $tmp = Value($ini, $section, "configure_arguments");
     $tmp =~ s/\n|\r/ /g;
     $config->{configure_arguments} = $tmp
         if (defined($tmp));
 
-    # JMS TO BE DELETED
+    # JMS TO BE DELETED (now down in Install modules)
     # vpath
     $tmp = lc(Value($ini, $section, "vpath_mode"));
     $config->{vpath_mode} = $tmp
@@ -389,27 +398,23 @@ sub _do_install {
         }
     }
 
-    # JMS TO BE DELETED
+    # JMS TO BE DELETED (now down in Install modules)
     # make all arguments
     $tmp = Value($ini, $section, "make_all_arguments");
     $config->{make_all_arguments} = $tmp
         if (defined($tmp));
 
-    # JMS TO BE DELETED
+    # JMS TO BE DELETED (now down in Install modules)
     # make check
     $tmp = Logical($ini, $section, "make_check");
     $config->{make_check} = $tmp
         if (defined($tmp));
 
-    # JMS TO BE DELETED
-    # compiler name and version
+    # JMS TO BE DELETED (now down in Install modules)
+    # compiler name and version.  We check for validity in the Install
+    # modules; don't check here.
     $config->{compiler_name} =
         Value($ini, $section, "compiler_name");
-    if ($config->{compiler_name} &&
-        $MTT::Defaults::System_config->{known_compiler_names} !~ /$config->{compiler_name}/) {
-        Warning("Unrecognized compiler name in [$section] ($config->{compiler_name}); the only permitted names are: \"$MTT::Defaults::System_config->{known_compiler_names}\"; skipped\n");
-        return;
-    }
     $config->{compiler_version} =
         Value($ini, $section, "compiler_version");
 
@@ -465,6 +470,9 @@ sub _do_install {
     $config->{installdir} = "$config->{version_dir}/install";
     MTT::Files::mkdir($config->{installdir});
 
+    # Set install_dir for the global environment
+    $install_dir = $config->{installdir};
+
     # Bump the refcount in the MPI get -- even if this install fails,
     # we need the refcount to be accurate.
     ++$mpi_get->{refcount};
@@ -476,10 +484,6 @@ sub _do_install {
                                "Install", $ini, $section, $config);
 
     my $duration = time - $start_time . " seconds";
-
-    # Set install_dir for the global environment
-    # (it is needed by post-install funclets such as get_bitness)
-    $install_dir = $config->{installdir};
 
     # bitness (must be processed *after* installation, and only if the
     # underlying module did not fill it in)

@@ -125,7 +125,7 @@ sub _run_one_np {
     }
     $run->{name} = $name;
 
-    # Load up the final global
+    # Load up the np global
     $MTT::Test::Run::test_np = $np;
 
     # Is this np ok for this test?
@@ -145,7 +145,6 @@ sub _run_one_np {
                 # See if we're supposed to terminate.
                 last
                     if (MTT::Util::find_terminate_file());
-
                 _run_one_test($install_dir, $run, $mpi_details, $e, $name,
                               $variant++, $force);
             }
@@ -185,6 +184,9 @@ sub _run_one_test {
         return;
     }
 
+    # Save the command line global
+    $MTT::Test::Run::test_command_line = $cmd;
+
     # Setup some environment variables for steps
     delete $ENV{MTT_TEST_NP};
     $ENV{MTT_TEST_PREFIX} = $MTT::Test::Run::test_prefix;
@@ -210,6 +212,8 @@ sub _run_one_test {
     _run_step($mpi_details, "before_each");
 
     my $timeout = MTT::Values::EvaluateString($run->{timeout}, $ini, $test_run_full_name);
+    $timeout = MTT::Util::parse_time_to_seconds($timeout)
+        if (defined($timeout));
     my $out_lines = MTT::Values::EvaluateString($run->{stdout_save_lines}, $ini, $test_run_full_name);
     my $err_lines = MTT::Values::EvaluateString($run->{stderr_save_lines}, $ini, $test_run_full_name);
     my $merge = MTT::Values::EvaluateString($run->{merge_stdout_stderr}, $ini, $test_run_full_name);
@@ -230,8 +234,32 @@ sub _run_one_test {
     # Analyze the test parameters and results
     my $report;
     $report = MTT::Module::Run("MTT::Test::Analyze", "Analyze", $run, $mpi_details, $str, $x);
+
+    # Save characteristics of the run
     $report->{variant} = $variant;
     $report->{description} = $run->{description};
+    $report->{launcher} = 
+        MTT::Values::EvaluateString($mpi_details->{launcher});
+    $report->{resource_manager} = 
+        lc(MTT::Values::EvaluateString($mpi_details->{resource_manager}));
+    $report->{resource_manager} = "none"
+        if (!defined($report->{resource_manager}));
+    $report->{resource_manager} = "unknown"
+        if (!MTT::Util::is_valid_resource_manager_name($report->{resource_manager}));
+    $report->{parameters} = 
+        MTT::Values::EvaluateString($mpi_details->{parameters});
+    my $tmp = MTT::Values::EvaluateString($mpi_details->{network});
+    my $networks;
+    my @n = MTT::Util::split_comma_list($tmp);
+    foreach my $n (@n) {
+        if (!MTT::Util::is_valid_network_name($n)) {
+            $networks->{unknown} = 1;
+        } else {
+            $networks->{$n} = 1;
+        }
+    }
+    $report->{network} = join(",", sort(keys(%$networks)));
+
     # Assume that the Analyze module will output one line
     ++$verbose_out;
 
@@ -273,7 +301,7 @@ sub _run_step {
 
         # Get the timeout value
         my $name = $step . "_timeout";
-        my $timeout = $mpi_details->{$name};
+        my $timeout = MTT::Util::parse_time_to_seconds($mpi_details->{$name});
         $timeout = undef 
             if ($timeout <= 0);
 

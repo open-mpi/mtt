@@ -10,7 +10,7 @@
 # $HEADER$
 #
 
-package MTT::MPI::Install::MPICH2;
+package MTT::MPI::Install::MVAPICH2;
 
 use strict;
 use Cwd;
@@ -39,10 +39,10 @@ sub Install {
     $ret->{bindir} = "$ret->{installdir}/bin";
     $ret->{libdir} = "$ret->{installdir}/lib";
 
-    # Get some MPICH2-module-specific config arguments
+    # Get some MVAPICH2-module-specific config arguments
 
     my $tmp;
-    $tmp = Value($ini, $section, "mpich2_make_all_arguments");
+    $tmp = Value($ini, $section, "mvapich2_make_all_arguments");
     $config->{make_all_arguments} = $tmp
         if (defined($tmp));
 
@@ -51,52 +51,51 @@ sub Install {
     # default from "compiler_name".  Note: to be deleted someday
     # (i.e., only rely on this module's compiler_name and not use a
     # higher-level default, per #222).
-    $tmp = Value($ini, $section, "mpich2_compiler_name");
+    $tmp = Value($ini, $section, "mvapich2_compiler_name");
     $config->{compiler_name} = $tmp
         if (defined($tmp));
-    return 
+    return undef
         if (!MTT::Util::is_valid_compiler_name($section, 
                                                $config->{compiler_name}));
     $config->{compiler_version} =
-        Value($ini, $section, "mpich2_compiler_version");
+        Value($ini, $section, "mvapich2_compiler_version");
 
-    $tmp = Value($ini, $section, "mpich2_configure_arguments");
-    $config->{configure_arguments} = $tmp
-        if (defined($tmp));
-
-    # Do we need to apply the slurm patch for mpich1?
-    $tmp = Logical($ini, $section, "mpich2_apply_slurm_patch");
-    _apply_slurm_patch()
-        if ($tmp);
-
-    $config->{make_check} = 0;
-
-    # Run configure / make all / make check / make install
-    my $gnu = {
-        configdir => $config->{configdir},
-        configure_arguments => $config->{configure_arguments},
-        vpath => "no",
-        installdir => $config->{installdir},
-        bindir => $config->{bindir},
-        libdir => $config->{libdir},
-        make_all_arguments => $config->{make_all_arguments},
-        make_check => $config->{make_check},
-        stdout_save_lines => $config->{stdout_save_lines},
-        stderr_save_lines => $config->{stderr_save_lines},
-        merge_stdout_stderr => $config->{merge_stdout_stderr},
-    };
-    # MPICH1 cannot handle the "all" target to "make"
-    my $use_all_target = 
-        Logical($ini, $section, "mpich2_use_all_target");
-    $gnu->{use_all_target} = 0
-        if (!$use_all_target);
-    
-    my $install = MTT::Common::GNU_Install::Install($gnu);
-    foreach my $k (keys(%{$install})) {
-        $ret->{$k} = $install->{$k};
+    # Need to specify an MVAPICH build script
+    my $build_script =
+        Value($ini, $section, "mvapich2_build_script");
+    if (!defined($build_script)) {
+        Warning("Build script not defined for mvapich2 module; skipping");
+        return undef;
     }
-    return $ret
-        if (exists($ret->{fail}));
+
+    # Get any environment variables that were specified
+    my %ENV_SAVE = %ENV;
+    $tmp = Value($ini, $section, "mvapich2_setenv");
+    if (defined($tmp)) {
+        my @vals = split(/\n/, $tmp);
+        foreach my $v (@vals) {
+            $v =~ m/^(\w+)\s+(.+)$/;
+            $ENV{$1} = $2;
+            Debug("Setenv MVAPICH2 env var: $1 = $ENV{$1}\n");
+        }
+    }
+
+    # We know that we need to specify prefix
+    $ENV{'PREFIX'} = $config->{installdir};
+
+    my $x = MTT::DoCommand::Cmd(1, "$config->{configdir}/$build_script", -1, $config->{stdout_save_lines}, $config->{stderr_save_lines});
+    %ENV = %ENV_SAVE;
+    
+    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
+        $ret->{result_message} = "MVAPICH build script failed -- skipping this build";
+        # Put the output of the failure into $ret so that it gets
+        # reported (result_stdout/result_stderr was combined into
+        # just result_stdout)
+        $ret->{result_stdout} = $x->{result_stdout};
+        $ret->{exit_status} = $x->{exit_status};
+        $ret->{fail} = 1;
+        return $ret;
+    }
 
     # Set which bindings were compiled
 
@@ -114,8 +113,8 @@ sub Install {
 
     my $tmp1;
     my $tmp2;
-    $tmp1 = Value($ini, $section, "mpich2_additional_wrapper_ldflags");
-    $tmp2 = Value($ini, $section, "mpich2_additional_wrapper_libs");
+    $tmp1 = Value($ini, $section, "mvapich2_additional_wrapper_ldflags");
+    $tmp2 = Value($ini, $section, "mvapich2_additional_wrapper_libs");
     $tmp = "";
     $tmp = $tmp1
         if (defined($tmp1));
@@ -145,8 +144,5 @@ sub Install {
     return $ret;
 } 
 
-sub _apply_slurm_patch {
-     # JMS continue here
-}
 
 1;

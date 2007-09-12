@@ -9,11 +9,31 @@ To announce to OMPI core testers:
     - ?&check_ib_connectivty()?
     - &verbose(), &debug(), &print()
     - &env_hosts() can be uniq-ified
-    - &refresh_ssh_known_hosts_file() - updates a stale
+    - &SSH::refresh_ssh_known_hosts_file() - updates a stale
       ~/.ssh/known_hosts file. CAUTION: use of this funclet
       is only advisable in unstable (yet secure)
       environments (e.g., lab networks).
     - &scratch_root() returns the directory name of the scratch tree
+    - &strstr(), like strstr(3)
+    - &preq_replace(), like
+      http://www.php.net/manual/en/function.preg-replace.php
+    - &MPI::OMPI::find_mpirun_params() and &MPI::OMPI::find_network()
+    - &get_version() for the below MPIs:
+      - &MPI::OMPI::get_version()
+      - &MPI::HPMPI::get_version()
+      - &MPI::CrayMPI::get_version()
+      - &MPI::IntelMPI::get_version()
+      - &MPI::ScaliMPI::get_version()
+    - &test_command_line()
+    - &split() now takes optional 2nd param to specify token
+    - &find(regexp, directory list)
+
+- See https://svn.open-mpi.org/trac/mtt/changeset/863:
+  - re-wrote funclet parser; MUST edit INI file and remove excess
+    quoting
+  - new MPI details fields: launcher, parameters, network,
+    resource_manager
+  - Can escape &, ', " in INI files
 
 - --section: beware of section names with spaces!  s/ /./g in --section
     arguments if you have spaces in your section names.
@@ -27,11 +47,14 @@ To announce to OMPI core testers:
   (defaults to "export"):
   - svn_export = 1 (specify the use of "svn export")
   - svn_checkout = 1 (specify the use of "svn checkout")
+  - svn_command (e.g., "svk" or "rsh some-node svn")
 
 - terminate_files field in MTT section.  Defaults to $HOME/mtt-stop
   and &scratch_root()/mtt-stop.
 
 - Added support for MPICH2 (and therefore MVAPICH2) and LAM/MPI
+
+- Added support for the ClusterTools package installer
 
 - Renamed the MPI install phase field names:
   compiler_name -> ompi_compiler_name (etc.)
@@ -58,6 +81,16 @@ To announce to OMPI core testers:
   - os_name
   - os_version
 
-- "description" field in MTT, MPI install, Test build, and Test run
-  sections.  If not set in MPI Install/Test build/Test run sections,
-  will use the value from the MTT section.
+- Added "description" field in MTT, MPI install, Test build, and Test
+  run sections.  If not set in MPI Install/Test build/Test run
+  sections, will use the value from the MTT section.
+
+- Added "log_file" field in [MTT] section
+
+- Added "funclet_files" field into [MTT] section, allowing a
+  comma-delimited list of .pm files to add more funclets to MTT.
+
+- Allow timeouts to be specified in [HH:[MM:]]SS format in the ini file.
+
+- before_any, before_each, after_any, and after_each steps can be set to
+  funclets

@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -15,6 +15,15 @@ package MTT::Values;
 use strict;
 use MTT::Messages;
 use MTT::Values::Functions;
+use MTT::Values::Functions::InfiniBand;
+use MTT::Values::Functions::MPI::CrayMPI;
+use MTT::Values::Functions::MPI::HPMPI;
+use MTT::Values::Functions::MPI::IntelMPI;
+use MTT::Values::Functions::MPI::OMPI;
+use MTT::Values::Functions::MPI::MPICH2;
+use MTT::Values::Functions::MPI::ScaliMPI;
+use MTT::Values::Functions::SSH;
+use MTT::Values::Functions::OS::Solaris;
 use Data::Dumper;
 use Config::IniFiles;
 use vars qw(@EXPORT);
@@ -38,117 +47,291 @@ sub EvaluateString {
     my ($str, $ini, $section) = @_;
     Debug("Evaluating: $str\n");
 
-    # Loop until there are no more $vars
-    while ($str =~ /\$(\w+)\b/) {
+    # Loop over the string looking for &functions and @vars@
+    my $last = 0;
+    my $prefix;
+    while (1) {
+        # If we got an $ini and $section, replace all @vars@
+        $str = _replace_vars($str, $ini, $section)
+            if (defined($ini) && defined($section));
+        
+        my $start_pos = index($str, '&', $last);
+        # If we didn't find a &, bail
+        last
+            if ($start_pos < 0);
+        # If the & we found was actually \&, skip it
+        if ($start_pos > 0 && '\\' eq substr($str, $start_pos - 1, 1)) {
+            $last = $start_pos + 1;
+            next;
+        }
+
+        # Keep the prefix; we'll be replacing (part of the) suffix
+        $prefix .= substr($str, 0, $start_pos);
+        my $remaining = substr($str, $start_pos + 1);
+        Debug("--> Prefix now: $prefix\n");
+        Debug("--> Remaining (after &): $remaining\n");
+
+        # Get the function name
+        my $func_name;
+        ($func_name, $remaining) = _find_func_name($remaining);
+
+        # Get the args
+        my $func_args;
+        ($func_args, $remaining) = _find_func_args($remaining);
+
+        # Evaluate the function
+        my $ret = _eval_func($func_name, $func_args);
+
+        # If we got a string back, append the remaining and loop
+        # around looking for more &funclets.
+        if (ref($ret) eq "") {
+            $str = $ret . $remaining;
+            Debug("--> After eval(string), remaining: $str\n");
+        } 
+
+        # We may have gotten an *empty* array back, but in this case
+        # we still want to insert one empty value (and keep looking
+        # for more &funclets).
+        elsif ($#{@$ret} < 0) {
+            $str = $remaining;
+            Debug("--> After eval(empty array), remaining: $str\n");
+        }
+
+        # Otherwise, we need to loop over all the array values and
+        # evaluate all of them.  Note that we are effectively aborting
+        # the loop at this point; we will return straight from here.
+        else {
+            my @ret;
+            foreach my $s (@$ret) {
+                Debug("--> After eval(array string), remaining: $s$remaining\n");
+                my $result = EvaluateString($s . $remaining, $ini, $section);
+                if (ref($result) eq "") {
+                    push(@ret, $prefix . $result);
+                } else {
+                    foreach my $t (@$result) {
+                        push(@ret, $prefix . $t);
+                    }
+                }
+            }
+
+            return \@ret;
+        }
+    }
+
+    # All done -- no more &functions
+    Debug("Got final version before escapes: $str\n");
+    $str = _replace_escapes($prefix . $str);
+    Debug("Returning: $str\n");
+    return $str;
+}
+
+sub _replace_vars {
+    my ($str, $ini, $section) = @_;
+
+    # Loop until there are no more @vars@, but only if $ini and
+    # $section were provided
+    Debug("Replacing vars from section $section: $str\n");
+    while ($str =~ /\@(.+?)\@/) {
         my $var_name = $1;
 
-        Debug("Got var_name: $var_name\n");
-
-        # $var gets evaluated
-        my $ret;
-        my $eval_str = "\$ret = MTT::Values::Value(\$ini, \$section, \$var_name)";
-        Debug("_do: $eval_str\n");
-        eval $eval_str;
-        if ($@) {
-            Error("Could not evaluate: $eval_str: $@\n");
+        # @foo@ gets evaluated before it gets substituted in
+        my $val = EvaluateString($ini->val($section, $var_name), $ini, $section);
+        Verbose("Got var_name: $var_name -> $val\n");
+        if (!defined($val)) {
+            # If we got nothing back, eliminate the token
+            $str =~ s/\@$var_name\@//g;
+        } else {
+            # If we got a string back, substitute it in
+            $str =~ s/\@$var_name\@/$val/g;
         }
-
-        # $var (which is *not* an array) gets substituted
-        # back into $str
-        # 
-        # (EAM: maybe someday we'd want to allow INI params
-        # to multiply amongst each other. Today is not that
-        # day.)
-
-        $str =~ s/\$\w+\b/$ret/;
     }
 
-    # Funclet regexps. There are three cases:
-    #   1. &foo('...')
-    #   2. &foo("...")
-    #   3. &foo(...) (not 1. or 2.)
-    my $regexp1 = '\'[^\']*?\'|\"[^\"]*?\"|[^&\(]*?';
-    my $regexp2 = '(\&\w+\((?:' . $regexp1 . ')\))';
+    return $str;
+}
 
-    # Loop until there are no more &functions(...)
-    while ($str =~ /\&(\w+)\(($regexp1)\)/) {
-        my $func_name = $1;
-        my $func_args = $2;
+sub _find_func_name {
+    my ($str) = @_;
 
-        Debug("Got func_name: $func_name\n");
-        Debug("Got func_args: $func_args\n");
+    $str =~ m/^\s*([a-zA-Z_][a-zA-Z_:0-9]*)\s*\(.*/;
+    my $func_name = $1;
+    Debug("--> Found func name: $func_name\n");
+    if (!defined($func_name) || "" eq $func_name) {
+        Error("Bad parse!  Malformed function name: $str\n");
+    }
 
-        # Since we used a non-greedy regexp above, there cannot be any
-        # &functions(...) in the $func_args, so just evaluate it.
+    # Now look for the beginning of the arguments
+    $str =~ s/^\s*$func_name\s*\(//;
+    Debug("--> Found beginning of arguments: $str\n");
 
-        my $ret;
-        my $eval_str = "\$ret = MTT::Values::Functions::$func_name($func_args)";
-        Debug("_do: $eval_str\n");
+    return ($func_name, $str);
+}
 
-        # Loosen stricture on this eval to allow funclets
-        # (e.g., &perl()) to have their own variables
-        no strict;
-        eval $eval_str;
-        use strict;
+sub _find_func_args {
+    my ($str) = @_;
 
-        if ($@) {
-            Error("Could not evaluate: $eval_str: $@\n");
-        }
+    # Loop getting all the arguments.  Each argument will be
+    # surrounded by arbitrary whitespace (which will be trimmed) and
+ # delimited by either a , (indicating more arguments are coming)
+    # or a ) (indicating that the argument list is done).  Take care
+    # to observe quoted arguments so that we do not prematurely end an
+    # argument (e.g., a comma inside a quoted argument should not end
+    # that argument), and also take into account nested function calls
+    # that have their own matching ( and ).
 
-        # If we get a string back, just handle it.
-        if (ref($ret) eq "") {
-            # Substitute in the $ret in place of the &function(...)
-            $str =~ s/$regexp2/$ret/;
-
-            Debug("String now: $str\n");
-
-            # Now loop around and see if there are any more
-            # &function(...)s
-            next;
-        }
-
-        # Otherwise, we get an array back, recursively call back
-        # through for each item in the array.  Not efficient, but it
-        # gets the job done.  However, we may have gotten an *empty*
-        # array back, in which case we still need to substitute in
-        # nothing into the string and continue looping around.
-
-        if ($#{@$ret} < 0) {
-            # Put an empty string in the return value's place in the
-            # original string
-            $str =~ s/$regexp2/""/;
-            Debug("String now: $str\n");
-
-            # Now loop around and see if there are any more
-            # &function(...)s
-            next;
-        }
-
-        # Now we handle all the array values that came back.
-
-        # --- If you're trying to figure out the logic here, note that
-        # --- beyond this point, we're not looping any more -- we'll
-        # --- simply return the list of strings.
-
-        my @ret;
-        foreach my $s (@$ret) {
-            my $tmp = $str;
-
-            # Substitute in the $s in place of the &function(...)
-            $tmp =~ s/$regexp2/$s/;
-            $ret = EvaluateString($tmp, $ini, $section);
-
-            if (ref($ret) eq "") {
-                push(@ret, $ret);
-            } else {
-                push(@ret, @$ret);
-            }
+    my $orig_str = $str;
+    my @args;
+    my $arg_end_pos;
+    my $done_with_all_args = 0;
+    Debug("--> Initial param search: $str\n");
+    while (!$done_with_all_args) {
+        # We're at the beginning of the arg; trim whitespace and
+        # start moving right looking for double quote, single
+        # quote, comma, and close parens.
+        $str =~ s/^\s*(\S*)\s*$/\1/;
+        Debug("--> Loop: trimmed search: $str\n");
+        if ("" eq $str) {
+            Debug("--> Loop: now empty; done\n");
         }
         
-        return \@ret;
+        my $start = 0;
+        my $pos = 0;
+        my $parens_count = 0;
+        my $c;
+        # Loop over each character (to find arguments)
+        while ($pos <= length($str)) {
+            $c = substr($str, $pos, 1);
+            Debug("--> Examining char: $c (pos $pos)\n");
+
+            # If we find a comma and the parens count is 0, we're done
+            # with this argument
+            if (0 == $parens_count &&
+                (',' eq $c || ')' eq $c)) {
+                Debug("--> Found end of arg (pos $pos)\n");
+                $done_with_all_args = 1 
+                    if (')' eq $c);
+                last;
+            } 
+
+            # If we find a ), increment the parens count and move on
+            if ('(' eq $c) {
+                ++$parens_count;
+                ++$pos;
+                next;
+            }
+
+            # If we find a ( (if we're here, we know the parens count
+            # is > 0), decrement the parens count and move on.
+            elsif (')' eq $c) {
+                --$parens_count;
+                ++$pos;
+                next;
+            }
+
+            # If we find a & (that is not a \&), replace it with
+            # MTT::Values::Functions:: so that it can properly be
+            # called by perl's eval and find nested functions with
+            # MTT::Values::Functions (we know that we can do this
+            # because we're not inside a "" or '').
+            elsif ('&' eq $c && 
+                   (0 == $pos || '\\' ne substr($str, $pos - 1, 1))) {
+                my $p = "MTT::Values::Functions::";
+                if (0 == $pos) {
+                    $str = $p . substr($str, 1);
+                } else {
+                    $str = substr($str, 0, $pos) . $p . 
+                        substr($str, $pos + 1);
+                }
+                $pos += length($p);
+                Debug("--> Added \"$p\"; jumped to position $pos\n");
+                next;
+            }
+
+            # If we find ' or ", look for the matching end quote
+            elsif ('\'' eq $c || '"' eq $c) {
+                Debug("--> Found beginning quote\n");
+                ++$pos;
+                while ($pos <= length($str)) {
+                    # Make sure the quote we find is not escaped
+                    if ($c eq substr($str, $pos, 1) && 
+                        '\\' ne substr($str, $pos - 1, 1)) {
+                        Debug("--> Found last quote\n");
+                        last;
+                    }
+                    ++$pos;
+                }
+                if ($pos > length($str)) {
+                    Error("Bad parse!  Could not find closing quote: $orig_str\n");
+                }
+            }
+            ++$pos;
+        }
+
+        # Sanity check
+        if ($parens_count > 0) {
+            Error("Bad parse!  Did not find trailing ): $orig_str\n");
+        }
+        
+        # We found an argument.  Was it empty?
+        if (0 == $pos) {
+            Debug("Found empty argument\n");
+            # If there are more arguments, save an undef
+            if (!$done_with_all_args) {
+                Debug("...but there are more coming, so I'll save it\n");
+                push(@args, undef);
+            }
+        } else {
+            # It was not empty; trim it and save it
+            my $arg = substr($str, 0, $pos);
+            $arg =~ s/^\s*(\S+)\s*$/\1/;
+            Debug("Found argument: $arg\n");
+            push(@args, $arg);
+        }
+        
+        # Remove what we examined from the search string
+        $str = substr($str, $pos + 1);
+    }
+    
+    Debug("--> Remainder: $str\n");
+    return (\@args, $str);
+}
+
+sub _eval_func {
+    my ($func_name, $func_args) = @_;
+
+    my $ret;
+    my $eval_str = "\$ret = MTT::Values::Functions::$func_name(";
+    my $first = 1;
+    foreach my $f (@$func_args) {
+        $eval_str .= ", "
+            if (!$first);
+        $first = 0;
+        $eval_str .= $f;
+    }
+    $eval_str .= ");";
+    Debug("--> Calling: $eval_str\n");
+    
+    # Loosen stricture on this eval to allow funclets
+    # (e.g., &perl()) to have their own variables
+    no strict;
+    eval $eval_str;
+    use strict;
+    
+    if ($@) {
+        Error("Could not evaluate: $eval_str: $@\n");
     }
 
-    #Debug("No more functions left; final: $str\n");
+    # We'll get back either a string or an array reference, but just
+    # return it; the caller will handle it.
+    return $ret;
+}
+
+sub _replace_escapes {
+    my ($str) = @_;
+
+    $str =~ s/\\\"/\"/g;
+    $str =~ s/\\\'/\'/g;
+    $str =~ s/\\\&/\&/g;
+    $str =~ s/\\\\/\\/g;
     return $str;
 }
 
@@ -203,7 +386,7 @@ sub ProcessEnvKeys {
 
     # setenv
     my $val = $config->{setenv};
-    if ($val) {
+    if (defined($val)) {
         my @vals = split(/\n/, $val);
         foreach my $v (@vals) {
             $v =~ m/^(\w+)\s+(.+)$/;
@@ -217,7 +400,7 @@ sub ProcessEnvKeys {
     
     # unsetenv
     $val = $config->{unsetenv};
-    if ($val) {
+    if (defined($val)) {
         my @vals = split(/\n/, $val);
         foreach my $v (@vals) {
             delete $ENV{$v};
@@ -230,7 +413,7 @@ sub ProcessEnvKeys {
     
     # prepend_path
     $val = $config->{prepend_path};
-    if ($val) {
+    if (defined($val)) {
         my @vals = split(/\n/, $val);
         foreach my $v (@vals) {
             $v =~ m/^(\w+)\s+(.+)$/;
@@ -253,7 +436,7 @@ sub ProcessEnvKeys {
     
     # append_path
     $val = $config->{append_path};
-    if ($val) {
+    if (defined($val)) {
         my @vals = split(/\n/, $val);
         foreach my $v (@vals) {
             $v =~ m/^(\w+)\s+(.+)$/;

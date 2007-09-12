@@ -102,7 +102,7 @@ sub Build {
             }
 
             # Iterate through all the test_get values
-            my @test_gets = split(/[,\s]+/, $test_get_value);
+            my @test_gets = MTT::Util::split_comma_list($test_get_value);
             foreach my $test_get_name (@test_gets) {
 
                 # Strip whitespace
@@ -210,7 +210,7 @@ sub Build {
                                     MTT::DoCommand::Chdir($mpi_install->{version_dir});
                                     
                                     # Do the build and restore the environment
-                                    _do_build($ini, $section, $build_base, $test_get, $mpi_install);
+                                    _do_build($ini, $section, $build_base, $test_get, $mpi_get, $mpi_install);
                                     delete $MTT::Globals::Internals->{mpi_get_name};
                                     delete $MTT::Globals::Internals->{mpi_install_name};
                                     delete $MTT::Globals::Internals->{test_get_name};
@@ -244,7 +244,7 @@ sub _prepare_source {
 #--------------------------------------------------------------------------
 
 sub _do_build {
-    my ($ini, $section, $build_base, $test_get, $mpi_install) = @_;
+    my ($ini, $section, $build_base, $test_get, $mpi_get, $mpi_install) = @_;
 
     # Simple section name
     my $simple_section = $section;
@@ -329,16 +329,17 @@ sub _do_build {
     # test build sections
     my @env_modules;
     my $val = Value($ini, $section, "env_module");
-    if ($val && $mpi_install->{env_modules}) {
+    if (defined($val) && defined($mpi_install->{env_modules})) {
         $config->{env_modules} = $mpi_install->{env_modules} . "," .
             $config->{env_modules};
-    } elsif ($val) {
+    } elsif (defined($val)) {
         $config->{env_modules} = $val;
-    } elsif ($mpi_install->{env_modules}) {
+    } elsif (defined($mpi_install->{env_modules})) {
         $config->{env_modules} = $mpi_install->{env_modules};
     }
     if ($config->{env_modules}) {
-        @env_modules = split(/[,\s]+/, $config->{env_modules});
+        @env_modules = MTT::Util::split_comma_list($config->{env_modules});
+        Env::Modulecmd::unload(@env_modules);
         Env::Modulecmd::load(@env_modules);
         Debug("Loading environment modules: @env_modules\n");
     }
@@ -346,6 +347,7 @@ sub _do_build {
     # Process setenv, unsetenv, prepend-path, and append-path -- for
     # both the MPI install and the test build sections
     my @save_env;
+    ProcessEnvKeys($mpi_get, \@save_env);
     ProcessEnvKeys($mpi_install, \@save_env);
     $config->{setenv} = Value($ini, $section, "setenv");
     $config->{unsetenv} = Value($ini, $section, "unsetenv");
@@ -473,11 +475,14 @@ sub _do_build {
             delete $report->{result_stderr};
         }
 
+
         # Did we have any environment?
+        @save_env = MTT::Util::delete_duplicates_from_array(@save_env);
         $report->{environment} = undef;
         foreach my $e (@save_env) {
             $report->{environment} .= "$e\n";
         }
+
         # Delete keys with empty values
         foreach my $k (keys(%$report)) {
             if ($report->{$k} eq "") {

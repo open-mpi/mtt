@@ -19,7 +19,6 @@ use MTT::Messages;
 use MTT::Globals;
 use MTT::Files;
 use MTT::FindProgram;
-use MTT::Values::Functions::InfiniBand;
 use MTT::Lock;
 use Data::Dumper;
 use Cwd;
@@ -34,15 +33,17 @@ use Cwd;
 # Returns the result value (array or scalar) of a perl eval
 sub perl {
     my $funclet = '&' . FuncName((caller(0))[3]);
-    Debug("$funclet: got @_\n");
+    Debug("&perl $funclet: got @_\n");
 
     my $cmd = join(/ /, @_);
+    Debug( "CMD: $cmd\n");
 
     # Loosen stricture here to allow &perl() to 
     # have its own variables
     no strict;
     my $ret = eval $cmd;
     use strict;
+    Debug("ERROR: $?\n");
 
     if (ref($ret) =~ /array/i) {
         Debug("$funclet: returning array [@$ret]\n");
@@ -97,13 +98,13 @@ sub print {
 
 # Return the sum of all parameters
 sub sum {
-    Debug("&sum got: @_\n");
-
+    my $array = _get_array_ref(\@_);
+    Debug("&sum got: @$array\n");
     return "0"
-        if (!@_);
+        if (!defined($array));
 
     my $sum = 0;
-    foreach my $val (@_) {
+    foreach my $val (@$array) {
         $sum += $val;
     }
 
@@ -115,13 +116,13 @@ sub sum {
 
 # Return the product of all parameters
 sub multiply {
-    Debug("&multiply got: @_\n");
-
+    my $array = _get_array_ref(\@_);
+    Debug("&multiply got: @$array\n");
     return "0"
-        if (!@_);
+        if (!defined($array));
 
     my $prod = 1;
-    foreach my $val (@_) {
+    foreach my $val (@$array) {
         $prod *= $val;
     }
 
@@ -134,7 +135,6 @@ sub multiply {
 # Return all the squares
 sub squares {
     Debug("&squares got: @_\n");
-
     my ($min, $max) = @_;
 
     my @ret;
@@ -161,7 +161,6 @@ sub log {
 # Return all the powers of a given base from [base^min, base^max]
 sub pow {
     Debug("&pow got: @_\n");
-
     my ($base, $min, $max) = @_;
 
     my @ret;
@@ -178,13 +177,13 @@ sub pow {
 
 # Return the minimum value of all parameters
 sub min {
-    Debug("&min got: @_\n");
-
+    my $array = _get_array_ref(\@_);
+    Debug("&min got: @$array\n");
     return "0"
-        if (!@_);
+        if (!defined($array));
 
-    my $min = shift;
-    foreach my $val (@_) {
+    my $min = shift(@$array);
+    foreach my $val (@$array) {
         $min = $val
             if ($val < $min)
     }
@@ -197,13 +196,13 @@ sub min {
 
 # Return the maximum value of all parameters
 sub max {
-    Debug("&max got: @_\n");
-
+    my $array = _get_array_ref(\@_);
+    Debug("&max got: @$array\n");
     return "0"
-        if (!@_);
+        if (!defined($array));
 
-    my $max = shift;
-    foreach my $val (@_) {
+    my $max = shift(@$array);
+    foreach my $val (@$array) {
         $max = $val
             if ($val > $max)
     }
@@ -217,19 +216,19 @@ sub max {
 # Return 1 if all the values are not equal, 0 otherwise.  If there are
 # no arguments, return 1.
 sub ne {
-    Debug("&ne got: @_\n");
+    my $array = _get_array_ref(\@_);
+    Debug("&ne got: @$array\n");
+    return "0"
+        if (!defined($array));
 
-    return "1"
-        if (!@_);
-
-    my $first = shift;
+    my $first = shift(@$array);
     do {
-        my $next = shift;
+        my $next = shift(@$array);
         if ($first eq $next) {
             Debug("&ne: returning 0\n");
             return "0";
         }
-    } while (@_);
+    } while (@$array);
     Debug("&ne: returning 1\n");
     return "1";
 }
@@ -238,13 +237,13 @@ sub ne {
 
 # Return 1 if the first argument is greater than the second
 sub gt {
-    Debug("&gt got: @_\n");
-
+    my $array = _get_array_ref(\@_);
+    Debug("&gt got: @$array\n");
     return "0"
-        if (!@_);
+        if (!defined($array));
 
-    my $a = shift;
-    my $b = shift;
+    my $a = shift(@$array);
+    my $b = shift(@$array);
 
     if ($a > $b) {
         Debug("&gt: returning 1\n");
@@ -259,13 +258,13 @@ sub gt {
 
 # Return 1 if the first argument is greater than or equal to the second
 sub ge {
-    Debug("&ge got: @_\n");
-
+    my $array = _get_array_ref(\@_);
+    Debug("&ge got: @$array\n");
     return "0"
-        if (!@_);
+        if (!defined($array));
 
-    my $a = shift;
-    my $b = shift;
+    my $a = shift(@$array);
+    my $b = shift(@$array);
 
     if ($a >= $b) {
         Debug("&ge: returning 1\n");
@@ -280,13 +279,13 @@ sub ge {
 
 # Return 1 if the first argument is less than the second
 sub lt {
-    Debug("&lt got: @_\n");
-
+    my $array = _get_array_ref(\@_);
+    Debug("&lt got: @$array\n");
     return "0"
-        if (!@_);
+        if (!defined($array));
 
-    my $a = shift;
-    my $b = shift;
+    my $a = shift(@$array);
+    my $b = shift(@$array);
 
     if ($a < $b) {
         Debug("&lt: returning 1\n");
@@ -301,13 +300,13 @@ sub lt {
 
 # Return 1 if the first argument is less than or equal to the second
 sub le {
-    Debug("&le got: @_\n");
-
+    my $array = _get_array_ref(\@_);
+    Debug("&le got: @$array\n");
     return "0"
-        if (!@_);
+        if (!defined($array));
 
-    my $a = shift;
-    my $b = shift;
+    my $a = shift(@$array);
+    my $b = shift(@$array);
 
     if ($a <= $b) {
         Debug("&le: returning 1\n");
@@ -323,28 +322,29 @@ sub le {
 # Return 1 if all the values are equal, 0 otherwise.  If there are no
 # arguments, return 1.
 sub eq {
-    Debug("&eq got: @_\n");
-
+    my $array = _get_array_ref(\@_);
+    Debug("&eq got: @$array\n");
     return "1"
-        if (!@_);
+        if (!defined($array));
 
-    my $first = shift;
+    my $first = shift(@$array);
     do {
-        my $next = shift;
+        my $next = shift(@$array);;
         if ($first ne $next) {
             Debug("&eq: returning 0\n");
             return "0";
         }
-    } while (@_);
+    } while (@$array);
     Debug("&eq: returning 1\n");
     return "1";
 }
+
+#--------------------------------------------------------------------------
 
 # Return "1" if the first arg matches the second arg (the regexp)
 sub regexp {
     my $funclet = "regexp";
     Debug("&$funclet got: @_\n");
-
     return "1"
         if (!@_);
 
@@ -364,18 +364,18 @@ sub regexp {
 # Return 1 if all the values are true, 0 otherwise.  If there are no
 # arguments, return 1.
 sub and {
-    Debug("&and got: @_\n");
-
+    my $array = _get_array_ref(\@_);
+    Debug("&and got: @$array\n");
     return "1"
-        if (!@_);
+        if (!@$array);
 
     do {
-        my $val = shift;
+        my $val = shift(@$array);
         if (!$val) {
             Debug("&and: returning 0\n");
             return "0";
         }
-    } while (@_);
+    } while (@$array);
     Debug("&and: returning 1\n");
     return "1";
 }
@@ -385,18 +385,18 @@ sub and {
 # Return 1 if any of the values are true, 0 otherwise.  If there are no
 # arguments, return 1.
 sub or {
-    Debug("&or got: @_\n");
-
+    my $array = _get_array_ref(\@_);
+    Debug("&or got: @$array\n");
     return "1"
-        if (!@_);
+        if (!@$array);
 
     do {
-        my $val = shift;
+        my $val = shift(@$array);
         if ($val) {
             Debug("&or: returning 1\n");
             return "1";
         }
-    } while (@_);
+    } while (@$array);
     Debug("&or: returning 0\n");
     return "0";
 }
@@ -407,27 +407,22 @@ sub or {
 # Otherwise, return the 3rd argument.
 sub if {
     Debug("&if got: @_\n");
-    my $t = shift;
-    my $a = shift;
-    my $b = shift;
+    my ($t, $a, $b) = @_;
 
-    if ($t) {
-        Debug("&if returning $a\n");
-        return $a;
-    } else {
-        Debug("&if returning $b\n");
-        return $b;
-    }
+    my $ret = $t ? $a : $b;
+    Debug("&if returning $ret\n");
+    return $ret;
 }
 
 #--------------------------------------------------------------------------
 
 # Return a reference to all the strings passed in as @_
 sub enumerate {
-    Debug("&enumerate got: @_\n");
+    my $array = _get_array_ref(\@_);
+    Debug("&enumerate got: @$array\n");
 
     my @ret;
-    foreach my $arg (@_) {
+    foreach my $arg (@$array) {
         push(@ret, $arg);
     }
     return \@ret;
@@ -439,22 +434,82 @@ sub enumerate {
 sub split {
     Debug("&split got: @_\n");
     my $str = shift;
+    my $n = shift;
 
-    my @ret = split(/ /, $str);
-    return \@ret;
+    my @ret = split(/\s+/, $str);
+    if (defined($n)) {
+        return $ret[$n];
+    } else {
+        return \@ret;
+    }
 }
 
 #--------------------------------------------------------------------------
 
+# Prepend a string to a string or an array of stringd
+sub prepend {
+    my $str = shift;
+    my $array = _get_array_ref(\@_);
+    Debug("&prepend got $str @$array\n");
+    return undef
+        if (!defined($array));
+
+    # $array is now guaranteed to be a reference to an array.
+    my @ret;
+    my $val;
+    push(@ret, $str . $val)
+        while ($val = shift @$array);
+
+    return \@ret;
+}
+
+
+#--------------------------------------------------------------------------
+
 # Join all the strings passed into one string and return in
-sub join {
-    Debug("&join got: @_\n");
+sub stringify {
+    my $array = _get_array_ref(\@_);
+    Debug("&stringify got: @$array\n");
+
     my $str;
-    while (@_) {
-        $str .= shift;
+    while (@$array) {
+        my $val = shift(@$array);
+        if (ref($val) =~ /array/i) {
+            $str .= stringify(@$val);
+        } elsif ("" eq ref($val)) {
+            $str .= $val;
+        } else {
+            Warn("Got an argument to &stringify() that was not understood; ignored\n");
+        }
     }
-    Debug("&join returning: $str\n");
+    Debug("&stringify returning: $str\n");
     return $str;
+}
+
+#--------------------------------------------------------------------------
+
+sub preg_replace {
+    Debug("&preg_replace got: @_\n");
+    my ($pattern, $replacement, $subject) = @_;
+
+    my $ret = $subject;
+    $ret =~ s/$pattern/$replacement/;
+    Verbose("&preg_replace returning: $ret\n");
+}
+
+#--------------------------------------------------------------------------
+
+sub strstr {
+    Debug("&strstr got: @_\n");
+    my ($s1, $s2) = @_;
+
+    if ($s2 =~ s/($s1.*)/\1/) {
+        Debug("&strstr returning: $s2\n");
+        return $s2;
+    } else {
+        Debug("&strstr returning: <undef>\n");
+        return undef;
+    }
 }
 
 #--------------------------------------------------------------------------
@@ -478,6 +533,15 @@ sub step {
         $lower += $step;
     }
     return \@ret;
+}
+
+#--------------------------------------------------------------------------
+
+# Return the current np value from a running test.
+sub test_command_line {
+    Debug("&test_command_line returning: $MTT::Test::Run::test_command_line\n");
+
+    return $MTT::Test::Run::test_command_line;
 }
 
 #--------------------------------------------------------------------------
@@ -601,10 +665,11 @@ sub cmd_wtermsig {
 
 # Return a reference to an array of strings of the contents of a file
 sub cat {
-    Debug("&cat: @_\n");
+    my $array = _get_array_ref(\@_);
+    Debug("&cat: @$array\n");
 
     my @ret;
-    foreach my $file (@_) {
+    foreach my $file (@$array) {
         if (-f $file) {
             open(FILE, $file);
             while (<FILE>) {
@@ -616,11 +681,7 @@ sub cat {
     }
 
     Debug("&cat returning: @ret\n");
-    if ($#ret == 0) {
-	return $ret[0];
-    } else {
-	return \@ret;
-    }
+    return \@ret;
 }
 
 #--------------------------------------------------------------------------
@@ -629,15 +690,16 @@ sub cat {
 # found
 my @find_executables_data;
 sub find_executables {
-    Debug("&find_executables got @_\n");
+    my $array = _get_array_ref(\@_);
+    Debug("&find_executables got @$array\n");
 
     @find_executables_data = ();
     my @dirs;
-    foreach my $d (@_) {
+    foreach my $d (@$array) {
         push(@dirs, $d)
             if ("" ne $d);
     }
-    find(\&find_executables_sub, @dirs);
+    File::Find::find(\&find_executables_sub, @dirs);
 
     Debug("&find_exectuables returning: @find_executables_data\n");
     return \@find_executables_data;
@@ -659,6 +721,47 @@ sub find_executables_sub {
     # to the processed directory, so we want to examine $_.
     push(@find_executables_data, $File::Find::name)
         if (-x $_);
+}
+
+#--------------------------------------------------------------------------
+
+# Traverse a tree (or a bunch of trees) and return all the files
+# matching a regexp
+my @find_data;
+my $find_regexp;
+sub find {
+    my $array = _get_array_ref(\@_);
+    Debug("&find got @$array\n");
+
+    $find_regexp = shift(@$array);
+    @find_data = ();
+    my @dirs;
+    foreach my $d (@$array) {
+        push(@dirs, $d)
+            if ("" ne $d);
+    }
+    File::Find::find(\&find_sub, @dirs);
+
+    Debug("&find returning: @find_data\n");
+    return \@find_data;
+}
+
+sub find_sub {
+    # Don't process directories and links, and don't recurse down
+    # "special" directories
+    if ( -l $_ ) { return; }
+    if ( -d $_ ) { 
+        if ((/\.svn/) || (/\.deps/) || (/\.libs/) || (/autom4te\.cache/)) {
+            $File::Find::prune = 1;
+        }
+        return;
+    }
+
+    # $File::Find::name is the path relative to the starting point.
+    # $_ contains the file's basename.  The code automatically changes
+    # to the processed directory, so we want to examine $_.
+    push(@find_data, $File::Find::name)
+        if ($File::Find::name =~ $find_regexp);
 }
 
 #--------------------------------------------------------------------------
@@ -1337,23 +1440,19 @@ sub get_pgcc_version {
 sub get_sun_cc_version {
     Debug("&get_sun_cc_version\n");
 
-    my $ret = "unknown";
+    my $cc_v;
+    my $version;
+    my $date;
 
-    # Write a dummy C file so Sun Studio will return success
-    my $x = MTT::Files::SafeWrite(1,
-                "foo.c",
-                "int main() { return 0; }"
-    );
+    $cc_v = `cc -V 2>\&1 | head -1`;
 
-    $x = MTT::DoCommand::Cmd(1, "cc -V foo.c");
-    if ($x->{exit_status} == 0) {
-        my @lines = split /\n/, $x->{result_stdout};
-        my $head = shift @lines;
-        $ret = $+ if ($head =~ /cc:\s+\S+\s+\S+\s+(.*)$/i);
+    $cc_v =~ m/(\b5.\d+\b)/;
+    $version = $1;
 
-        # Remove the dummy C file
-        MTT::DoCommand::Cmd(1, "rm -f foo.c");
-    }
+    $cc_v =~ m/(\d+\/\d+\/\d+)/;
+    $date = $1;
+
+    my $ret = "$version $date";
 
     Debug("&get_sun_cc_version returning: $ret\n");
     return $ret;
@@ -1437,6 +1536,11 @@ int main(int argc, char* argv[]) {
             # It compiled ok, so now run it.  Use mpirun so that
             # various paths and whatnot are set properly.
             $x = MTT::DoCommand::Cmd(1, "$mpirun -np 1 $executable", 30);
+
+            # Remove the get_bitness program and source
+            unlink($executable);
+            unlink("$executable.c");
+
             if (0 == $x->{exit_value}) {
                 $ret = _extract_valid_bitness($x->{result_stdout});
 
@@ -1709,7 +1813,7 @@ sub weekday_index {
 #--------------------------------------------------------------------------
 
 sub getenv {
-    my $name = shift;
+    my $name = shift(@_);
     Debug("&getenv($name) returning: $ENV{$name}\n");
     return $ENV{$name};
 }
@@ -1736,25 +1840,35 @@ sub mpi_get_name {
     return $MTT::Globals::Internals->{mpi_get_name};
 }
 
+#--------------------------------------------------------------------------
+
 sub mpi_install_name {
     Debug("&mpi_install_name returning: $MTT::Globals::Internals->{mpi_install_name}\n");
     return $MTT::Globals::Internals->{mpi_install_name};
 }
+
+#--------------------------------------------------------------------------
 
 sub test_get_name {
     Debug("&test_get_name returning: $MTT::Globals::Internals->{test_get_name}\n");
     return $MTT::Globals::Internals->{test_get_name};
 }
 
+#--------------------------------------------------------------------------
+
 sub test_build_name {
     Debug("&test_build_name returning: $MTT::Globals::Internals->{test_build_name}\n");
     return $MTT::Globals::Internals->{test_build_name};
 }
 
+#--------------------------------------------------------------------------
+
 sub test_run_name {
     Debug("&test_run_name returning: $MTT::Globals::Internals->{test_run_name}\n");
     return $MTT::Globals::Internals->{test_run_name};
 }
+
+#--------------------------------------------------------------------------
 
 sub mpi_details_name {
     Debug("&mpi_details_name returning: $MTT::Globals::Internals->{mpi_details_name}\n");
@@ -1762,159 +1876,38 @@ sub mpi_details_name {
 }
 
 #--------------------------------------------------------------------------
+#--------------------------------------------------------------------------
+#--------------------------------------------------------------------------
 
-# Global IB connectivity boolean
-my $is_ib_connection_up;
+sub _get_array_ref {
+    # We got a reference as an argument which will be a reference to
+    # one of three things:
+    # - a reference to an array of strings
+    # - an array of strings
+    # - a single string (which is really the same thing as an array of
+    #   strings)
 
-# Dispatch the appropriate check_*_ipoib_connectivity()
-sub check_ipoib_connectivity {
-    my $funclet = '&' . FuncName((caller(0))[3]);
-
-    # Skip out if we have checked the IB interface already
-    if (defined($is_ib_connection_up)) {
-        Debug("$funclet: We checked for IB connectivity once already. Returning $is_ib_connection_up.\n");
-        return "$is_ib_connection_up";
+    # If the first element of the array is a reference to an array,
+    # then return the dereference (so we get just a single reference
+    # to an array [vs. a reference to a reference to an array])
+    my $array = shift;
+    my $elem = @$array[0];
+    my $r = ref($elem);
+    if ("" eq $r) {
+        # The first element wasn't a reference, so just return the
+        # outter reference
+        Debug("Returining outter reference\n");
+        return $array;
+    } elsif ($r =~ /array/i) {
+        # The first element was a reference, so return the
+        # "dereference" of it
+        Debug("Returning de-ref'ed array\n");
+        return $elem;
     } else {
-        $is_ib_connection_up = MTT::Values::Functions::InfiniBand::check_ipoib_connectivity(@_);
-        return $is_ib_connection_up;
-    }
-}
-
-# If ~/.ssh/known_hosts is stale, refresh it. Otherwise do
-# nothing.
-#
-# EAM: This funclet is not scalable. it needs to be coded
-# using threads or fork() so that it can run efficiently
-# over a large number of hosts
-#
-# CAUTION! USE OF THIS FUNCLET IS ONLY ADVISABLE IN UNSTABLE
-# AND SECURE ENVIRONMENTS (E.G., LAB NETWORKS).
-sub refresh_ssh_known_hosts_file {
-
-    my $funclet = '&' . FuncName((caller(0))[3]);
-    Debug("$funclet: got @_\n");
-
-    my $env_hosts = &MTT::Values::Functions::env_hosts(1);
-
-    my @hosts = split(/,/, $env_hosts);
-    my @stale_host_keys;
-
-    foreach my $host (@hosts) {
-        my $x = MTT::DoCommand::Cmd(1, "ssh $host");
-
-        if ($x->{exit_status} != 0) {
-            push(@stale_host_keys, $host);
-        }
-    }
-
-    my $sshfile = "$ENV{HOME}/.ssh/known_hosts";
-
-    if (@stale_host_keys) {
-        Verbose("Host key verification failed for the following hosts:\n\t" .
-                join("\n\t", @stale_host_keys) . "\n");
-
-        foreach my $host (@stale_host_keys) {
-            if (! _strip_line_from_ssh_file($sshfile, $host)) {
-                Warning("Could not edit $sshfile.\n");
-                return undef;
-            }
-        }
-
-    } else {
-        return 1;
-    }
-
-    # Create a simple expect script to update the SSH
-    # known_hosts file
-    my ($fh, $filename) = tempfile(DIR => cwd(), SUFFIX => "-update-ssh-known-hosts-file");
-
-    my $expect_path = FindProgram(qw(expect));
-    if (! $expect_path) {
-        Warning("$funclet() can not continue wihtout 'expect'.\n");
+        # If we got some other type of reference, we don't like it.
+        Warning("Funclet got unknown parameter reference type -- ignored\n");
         return undef;
-    }
-
-    my $scriptlet = "#!/usr/bin/env expect
-#
-# This script was automatically generated by $funclet().
-# Changes you make to it will be lost!
-#
-";
-    $scriptlet .= '
-set host [ lindex $argv 0 ]
-puts "\nAdding ssh $host hostkey"
-spawn ssh $host
-expect "(yes/no)? " { send "yes\n\r" } 
-sleep 2
-puts "\nHost key for $host added."
-';
-
-    print $fh $scriptlet;
-    close($fh);
-    chmod(0700, $filename);
-
-    foreach my $host (@stale_host_keys) {
-        my $x = MTT::DoCommand::Cmd(1, "$filename $host");
-
-        if ($x->{exit_status} != 0) {
-            Warning("$filename failed to execute.");
-            return undef;
-        } else {
-            BigWarning("You have instructed MTT to update ",
-                       "the entry for '$host' in your $sshfile!",
-                       "(You are using $funclet() somewhere " ,
-                       "in your INI file.)",
-                       "This is advisable only in unstable ",
-                       "and secure environments (e.g., lab networks).");
-        }
-    }
-
-    # Remove "expect" script
-    unlink($filename);
-}
-
-# Remove line from ~/.ssh/known_hosts that matches @_
-sub _strip_line_from_ssh_file {
-
-    my ($sshfile, $pattern) = @_;
-
-    # The rest of this section must be serialized because only one
-    # process can modify the $HOME/.ssh/known_hosts file at a time.
-    # Blah!
-    MTT::Lock::Lock($ENV{HOME} . "/.ssh/known_hosts");
-
-    # Read in the original $HOME/.ssh/known_hosts file
-    my $known_hosts_file;
-    mkdir("$ENV{HOME}/.ssh")
-        if (! -d "$ENV{HOME}/.ssh");
-    if (-r $sshfile) {
-        open(FILE, $sshfile);
-        while (<FILE>) {
-            $known_hosts_file .= $_;
-        }
-        close FILE;
-    } else {
-        $known_hosts_file = "";
-    }
-
-    # Write out a new $HOME/.ssh/known_hosts file with the
-    # right proxy info
-    my $out = $known_hosts_file;
-    $out =~ s/^\b$pattern\b.*//m;
-
-    open(FILE, ">$sshfile");
-    my $ok = print FILE $out;
-    close(FILE);
-
-    # Reset the known_hosts file to whatever it used to be (if it used to be!)
-    MTT::Lock::Unlock($ENV{HOME} . "/.ssh/known_hosts");
-
-    if (!$ok) {
-        return undef;
-    } else {
-        return 1;
     }
 }
 
 1;
-

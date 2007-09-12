@@ -87,12 +87,17 @@ sub Install {
     $config->{make_all_arguments} = $tmp
         if (defined($tmp));
 
-    $config->{compiler_name} =
-        Value($ini, $section, "lam_compiler_name");
-    if ($MTT::Defaults::System_config->{known_compiler_names} !~ /$config->{compiler_name}/) {
-        Warning("Unrecognized compiler name in [$section] ($config->{compiler_name}); the only permitted names are: \"$MTT::Defaults::System_config->{known_compiler_names}\"; skipped\n");
-        return;
-    }
+    # JMS: compiler name may have come in from "compiler_name"in
+    # Install.pm.  So if we didn't define one for this module, use the
+    # default from "compiler_name".  Note: to be deleted someday
+    # (i.e., only rely on this module's compiler_name and not use a
+    # higher-level default, per #222).
+    $tmp = Value($ini, $section, "lam_compiler_name");
+    $config->{compiler_name} = $tmp
+        if (defined($tmp));
+    return 
+        if (!MTT::Util::is_valid_compiler_name($section, 
+                                               $config->{compiler_name}));
     $config->{compiler_version} =
         Value($ini, $section, "lam_compiler_version");
 

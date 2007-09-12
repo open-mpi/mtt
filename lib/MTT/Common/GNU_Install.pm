@@ -55,7 +55,10 @@ sub Install {
 
     # Build it
 
-    $x = MTT::DoCommand::Cmd($config->{merge_stdout_stderr}, "make $config->{make_all_arguments} all", -1, $config->{stdout_save_lines});
+    my $all_target = "all";
+    $all_target = ""
+        if (!$config->{use_all_target});
+    $x = MTT::DoCommand::Cmd($config->{merge_stdout_stderr}, "make $config->{make_all_arguments} $all_target", -1, $config->{stdout_save_lines});
     $result_stdout = undef;
     if ($x->{result_stdout}) {
         $result_stdout = "--- \"make all ";

@@ -17,7 +17,7 @@ use Data::Dumper;
 use Text::Wrap;
 use vars qw(@EXPORT);
 use base qw(Exporter);
-@EXPORT = qw(Messages Error Warning BigWarning Abort Debug Verbose Trace DebugDump FuncName);
+@EXPORT = qw(Messages Error Warning BigWarning Abort Debug Verbose Trace DebugDump FuncName ModuleName);
 
 # Is debugging enabled?
 my $_debug;
@@ -33,10 +33,17 @@ my $_cwd;
 # Very Long lines extremely poorly -- it thrashes endlessly).
 my $_max_wrap_len = 65536;
 
+# Logfile handle
+my $LOGFILE = undef;
+
 #--------------------------------------------------------------------------
 
 
 sub Messages {
+    my $debug_save = $_debug;
+    my $verbose_save = $_verbose;
+    my $cwd_save = $_cwd;
+
     $_debug = shift;
     $_verbose = shift;
     $_cwd = shift;
@@ -47,6 +54,22 @@ sub Messages {
     # Set autoflush
     select STDOUT;
     $| = 1;
+
+    return ($debug_save, $verbose_save, $cwd_save);
+}
+
+sub open_logfile {
+    my $filename = shift;
+    open LOG, ">$filename" ||
+        Abort("Cannot open logfile \"$filename\" -- aborting\n");
+    $LOGFILE = \*LOG;
+}
+
+sub close_logfile {
+    if (defined($LOGFILE)) {
+        close(*$LOGFILE);
+        $LOGFILE = undef;
+    }
 }
 
 sub Error {
@@ -56,27 +79,43 @@ sub Error {
 sub Warning {
     my $str = "@_";
     if (length($str) < $_max_wrap_len) {
-        print wrap("", "    ", "*** WARNING: $str");
+        my $s = wrap("", "    ", "*** WARNING: $str");
+        print $s;
+        print $LOGFILE $s
+            if (defined($LOGFILE));
     } else {
-        print "*** WARNING: $str";
+        my $s = "*** WARNING: $str";
+        print $s;
+        print $LOGFILE $s
+            if (defined($LOGFILE));
     }
 }
 
 # More visible "boxed" Warning
 sub BigWarning {
     my @lines = @_;
-    print("\n" . "#" x 76 .
-          "\n# *** WARNING: " .
-              join("", map { "\n# $_" } @lines) .
-          "\n" . "#" x 76 . "\n");
+    my $s = sprintf("%s",
+                   "\n" . "#" x 76 .
+                   "\n# *** WARNING: " .
+                   join("", map { "\n# $_" } @lines) .
+                   "\n" . "#" x 76 . "\n");
+    print $s;
+    print $LOGFILE $s
+        if (defined($LOGFILE));
 }
 
 sub Abort {
     my $str = "@_";
     if (length($str) < $_max_wrap_len) {
-        die wrap("", "    ", "*** ERROR: $str");
+        my $s = wrap("", "    ", "*** ERROR: $str");
+        print $LOGFILE $s
+            if (defined($LOGFILE));
+        die $s;
     } else {
-        die "*** ERROR: $str";
+        my $s = "*** ERROR: $str";
+        print $LOGFILE $s
+            if (defined($LOGFILE));
+        die $s;
     }
 }
 
@@ -84,9 +123,14 @@ sub Debug {
     if ($_debug) {
         my $str = "@_";
         if (length($str) < $_max_wrap_len) {
-            print wrap("", "   ", $str);
+            my $s = wrap("", "   ", $str);
+            print $s;
+            print $LOGFILE $s
+                if (defined($LOGFILE));
         } else {
             print $str;
+            print $LOGFILE $str
+                if (defined($LOGFILE));
         }
     }
 }
@@ -94,16 +138,24 @@ sub Debug {
 sub DebugDump {
     my $d = new Data::Dumper([@_]);
     $d->Purity(1)->Indent(1);
-    print $d->Dump;
+    my $s = $d->Dump;
+    print $s;
+    print $LOGFILE $s
+        if (defined($LOGFILE));
 }
 
 sub Verbose {
     if ($_verbose) {
         my $str = "@_";
         if (length($str) < $_max_wrap_len) {
-            print wrap("", "   ", $str);
-        } else {
+            my $s = wrap("", "  ", $str);
+            print $s;
+            print $LOGFILE $s
+                if (defined($LOGFILE));
+       } else {
             print $str;
+            print $LOGFILE $str
+                if (defined($LOGFILE));
         }
     }
 }
@@ -114,7 +166,10 @@ sub Trace {
     $lev = 0 if (! defined($lev));
     my @called = caller($lev);
 
-    print wrap("", "   ", (join(":", map { &_relative_path($_) } @called[1..2]), @_)) if $_verbose;
+    my $s = wrap("", "   ", (join(":", map { &_relative_path($_) } @called[1..2]), @_));
+    print $s;
+    print $LOGFILE $s
+        if (defined($LOGFILE));
 }
 
 # Return just the root function name
@@ -125,6 +180,17 @@ sub FuncName {
         return $1;
     } else {
         return $func_name;
+    }
+}
+
+# Return just the root package name
+# (without the '::' prefixes)
+sub ModuleName {
+    my ($module_name) = @_;
+    if ($module_name =~ /(\w+)$/) {
+        return $1;
+    } else {
+        return $module_name;
     }
 }
 

@@ -176,6 +176,7 @@ sub FilterINISections {
         $ini->DeleteSection($section);
     }
 
+    my @final_section_list;
     my @ini_sections = $ini->Sections;
 
     # Make sure there is at least one MPI Details section
@@ -188,8 +189,16 @@ sub FilterINISections {
 
             $ini_save->DeleteSection($section);
         }
+        @final_section_list = $ini_save->Sections;
+        Debug("FilterINI: Final list of sections:\n    " . 
+                join("\n    ", map { "[$_]" } @final_section_list) . "\n");  
+
         return $ini_save;
     }
+
+    @final_section_list = $ini->Sections;
+    Debug("FilterINI: Final list of sections:\n    " . 
+            join("\n    ", map { "[$_]" } @final_section_list) . "\n");  
 
     return $ini;
 }

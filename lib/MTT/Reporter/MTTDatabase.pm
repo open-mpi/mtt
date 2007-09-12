@@ -69,6 +69,14 @@ my $local_username;
 sub Init {
     my ($ini, $section) = @_;
 
+    # Have we been initialized already?  If so, error -- per #261,
+    # this module can currently only handle submitting to one database
+    # in a given run.
+
+    if (defined($username)) {
+        Error("The MTTDatabase plugin can only be used once in an INI file.\n");
+    }
+
     # Extract data from the ini fields
 
     $username = Value($ini, $section, "mttdatabase_username");
@@ -345,13 +353,13 @@ sub Submit {
                 push(@fail_outputs, $response->content);
             }
 
-            Debug("MTTDatabase got response: " . $response->content . "\n");
+            Verbose("MTTDatabase got response: " . $response->content . "\n");
 
             # The following parses the returned serial which will index either
             # an "MPI Install" or a "Test Build"
             if ($response->content =~ m/===\s+(\S+)\s+=\s+([0-9\,]+)\s+===/) {
                 eval "\$phase_serials->{$1} = $2;";
-                Debug("MTTDatabase parsed serial: $1 = $2\n");
+                Verbose("MTTDatabase parsed serial: $1 = $2\n");
             } else {
                 Warning("MTTDatabase did not get a serial; " .
                         "phases will be isolated from each other in the reports\n");

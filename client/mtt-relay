@@ -73,7 +73,7 @@ BEGIN {
     @MyAgent::ISA = qw(LWP::UserAgent); 
 
     $AGENT = MyAgent->new;
-    $AGENT->agent("anon/0.07");
+    $AGENT->agent("mtt-relay/3.0");
     $AGENT->env_proxy;
 }
 
@@ -173,7 +173,7 @@ sub fetch_validated_request {
     my $request = shift;  
     my $response;
 
-    $request->remove_header(qw(User-Agent From Referer Cookie));
+    $request->remove_header(qw(User-Agent From Referer Cookie Host));
 
     # Only send to www.open-mpi.org submit script
     $request->uri($url);
