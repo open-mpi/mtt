@@ -3,6 +3,7 @@
 #
 # Copyright (c) 2006-2007 Sun Microsystems, Inc.
 #                         All rights reserved.
+# Copyright (c) 2007      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -887,43 +888,35 @@ function collect_graph_data($data, $type) {
     $title = label($type);
     $subtitle = create_subtitle($legend);
 
-    # Tests may have differing lists of message sizes,
-    # so find the longest series for the x-axis
-    $pad = 0;
-    foreach (array_keys($plots) as $i) {
-        $message_size = $plots[$i]['message_size'];
-        if ($pad < sizeof($message_size)) {
-            $message_sizes = $message_size;
-            $pad = sizeof($message_size);
-        }
-    }
-
     $j = 0;
 
     # Axis scaling is a cookie-ized preference
     $xaxis_scale = XAXIS_SCALE;
     $yaxis_scale = YAXIS_SCALE;
 
-    # For logarithmic scaling on the xaxis, explicitly set the
-    # x-axis values
-    if (preg_match('/log/', $xaxis_scale)) {
-        $xdata = array_pad($plots[$i]["message_size"], $pad, null);
-    # For text scaling on the xaxis, we have to leave this NULL
-    # to avoid having the graph look like y=0
-    } else {
-        $xdata = null;
-    }
-
     # Collect the line plots
+    $unified_xdata;
     foreach (array_keys($plots) as $i) {
         
-        $line = $plots[$i][$type];
-
-        # Create the linear plot
-        if ($line) {
+        # Create the plot if we have Y data of the desired type in
+        # this plot
+        if ($plots[$i][$type]) {
             $empty = false;
 
-            $ydata = array_pad($line, $pad, null);
+            # If we have a log scale, use the actual X values.  If we
+            # have a linear scale, just supply "null" for the X axis
+            # and jpgraph will use an x axis starting with 1 and
+            # growing by 1 for each Y value.
+            if (preg_match('/log/', $xaxis_scale)) {
+                $xdata = $plots[$i]['message_size'];
+            } else {
+                $xdata = null;
+            }
+
+            # Create a unified X axis that represents the union of
+            # all lines' X values.
+            $unified_xdata = 
+                array_merge($unified_xdata, $plots[$i]['message_size']);
 
             $color = $colors[$j++];
 
@@ -931,8 +924,8 @@ function collect_graph_data($data, $type) {
             if (! $color)
                 $color = 'black';
 
-            $lineplots[$i] = new LinePlot($ydata, $xdata);
-            $datapoints[$i] = $ydata;
+            $datapoints[$i] = $plots[$i][$type];
+            $lineplots[$i] = new LinePlot($datapoints[$i], $xdata);
 
             # Human row numbers are +1
             $legend_items[$i] = 
@@ -943,14 +936,19 @@ function collect_graph_data($data, $type) {
         }
     }
 
-    # Do not print a legend for a single line plot
-    if (sizeof($legend_items) > 1)
-        foreach (array_keys($legend_items) as $i)
-            $lineplots[$i]->SetLegend($legend_items[$i]);
+    # Remove all duplicate X values in the unified X axis array
+    $unified_xdata = array_unique($unified_xdata);
+
+    # Print a legend, even if there's only one line in the plot
+    # because you may have multiple graphs and only *one* of them only
+    # has one line, and the source row for that line may not be
+    # obvious from the displayed sumary table.
+    foreach (array_keys($legend_items) as $i)
+        $lineplots[$i]->SetLegend($legend_items[$i]);
 
     return array($datapoints,
                  $lineplots,
-                 $message_sizes,
+                 $unified_xdata,
                  $legend_items,
                  $title,
                  $subtitle);
