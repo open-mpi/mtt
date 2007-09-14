@@ -582,6 +582,15 @@ sub test_argv {
 
 #--------------------------------------------------------------------------
 
+# Return whether the last test run was terminated by a signal
+sub test_alloc {
+    Debug("&test_alloc returning $MTT::Test::Run::test_alloc\n");
+
+    return $MTT::Test::Run::test_alloc;
+}
+
+#--------------------------------------------------------------------------
+
 # Return the exit exit_status from the last test run
 # DEPRECATED
 sub test_exit_status {

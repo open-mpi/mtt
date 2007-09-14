@@ -42,6 +42,9 @@ our $test_executable;
 # Exported current argv under test
 our $test_argv;
 
+# Exported whether we're running by-node or by-slot
+our $test_alloc;
+
 # Exported exit_status of the last test run
 our $test_exit_status;
 
@@ -309,14 +312,6 @@ sub _do_run {
     # Get some details about running with this MPI
     my $mpi_details;
     $MTT::Test::Run::test_prefix = $mpi_install->{installdir};
-    # Need to init $mpi_details to a hash before calling _fill_step
-    $mpi_details->{bogus} = "";
-    _fill_step($ini, $mpi_details_section, "before_any_exec", $mpi_details);
-    _fill_step($ini, $mpi_details_section, "before_each_exec", $mpi_details);
-    _fill_step($ini, $mpi_details_section, "after_each_exec", $mpi_details);
-    _fill_step($ini, $mpi_details_section, "after_all_exec", $mpi_details);
-    # Now delete the bogus value from the hash
-    delete $mpi_details->{bogus};
 
     # Determine which exec param we want to use
     my $mpi_details_exec = MTT::Values::Value($ini, $section, "mpi_details_exec");
@@ -449,6 +444,17 @@ sub _do_run {
     $tmp = $ini->val($section, "timeout");
     $config->{timeout} = $tmp
         if (defined($tmp));
+    $tmp = $ini->val($section, "alloc");
+    $config->{alloc} = 
+        defined($tmp) ? $tmp : $MTT::Defaults::Test_run->{alloc};
+    $MTT::Test::Run::test_alloc = 
+        MTT::Values::EvaluateString($config->{alloc}, $ini, $section);
+
+    # Fill in the steps to run
+    _fill_step($ini, $mpi_details_section, "before_any_exec", $mpi_details);
+    _fill_step($ini, $mpi_details_section, "before_each_exec", $mpi_details);
+    _fill_step($ini, $mpi_details_section, "after_each_exec", $mpi_details);
+    _fill_step($ini, $mpi_details_section, "after_all_exec", $mpi_details);
 
     # Bump the refcount on the test build
     ++$test_build->{refcount};
