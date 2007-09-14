@@ -466,7 +466,7 @@ sub prepend {
 
 #--------------------------------------------------------------------------
 
-# Join all the strings passed into one string and return in
+# Join all the strings passed into one string and return it
 sub stringify {
     my $array = _get_array_ref(\@_);
     Debug("&stringify got: @$array\n");
