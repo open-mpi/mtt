@@ -2986,7 +2986,21 @@ function process_cherry_fields($params) {
 # Generate WHERE and SELECT clause for ''trial'' boolean
 function process_trial_field($trial) {
 
-    if (! $trial) {
+    $text_trial = $_GET['text_trial'];
+
+    # Query string parameter
+    if ($text_trial) {
+        # Trial is a boolean field, but since drilldowns are always handled
+        # like strings - we need to see which boolean value it is: 't' or 'f'
+        if (preg_match("/\b([tf])\b/i", $text_trial, $m)) {
+            $text_trial = $m[1];
+        }
+
+        $query['where']['trial'] = "(trial = '$text_trial')";
+        $query['select']['trial'] = 'trial';
+
+    # Cookie preference
+    } elseif (! $trial) {
         $query['where']['trial'] = "(trial = 'f')";
     } else {
         $query['select']['trial'] = 'trial';
