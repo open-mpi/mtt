@@ -14,10 +14,8 @@ my $mtt_base_dir = "/u/jjhursey/work/mtt-stuff/mtt-trunk/server/sql/v3/";
 # DB Conversion script
 # Past 2 days to today - 12 hours
 my $conv_script = $mtt_base_dir . "support/convert-v2-to-v3.pl";
-#my $conv_args   = ("start_timestamp >= DATE      'now' - interval '2 days' and ".
-#                   "start_timestamp <  TIMESTAMP 'now' - interval '12 hours'");
-my $conv_args   = ("start_timestamp >= DATE      'now' - interval '1 days' and ".
-                   "start_timestamp <  TIMESTAMP 'now' ");
+my $conv_args   = ("start_timestamp >= DATE      'now' - interval '3 days' and ".
+                   "start_timestamp <  TIMESTAMP 'now'");
 
 #
 # Output file to collect debugging output

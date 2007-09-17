@@ -14,7 +14,7 @@ my $mtt_base_dir = "/u/jjhursey/work/mtt-stuff/mtt-trunk/server/sql/v3/";
 # Stats collection script
 #
 my $stats_script = $mtt_base_dir . "stats/collect-stats.pl";
-my $stats_args   = " -past 3 -v 2";
+my $stats_args   = " -past 2 -v 2 -no-db ";
 
 #
 # Output file to collect debugging output
