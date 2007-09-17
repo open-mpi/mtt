@@ -64,13 +64,20 @@ foreach (array_keys($ini) as $section) {
     foreach ($urls as $url)
         $html .= do_curl_get($url);
 
-
     print "\nGenerating report for [$section].";
 
-    if (! contains_null_result_msg($html)) {
+    # If the HTML content returned is "1", then
+    # something bad has happened
+    if (1 == $html) {
+        print "\ncurl error for [$section], possibly due to a PHP memory size overload.";
+    }
+    # Look for the "no data available" message,
+    # if we can not find it - send the email
+    elseif (! contains_null_result_msg($html)) {
         $report = chunk_split(base64_encode($html));
         mail($email, $section, '', $headers . $report);
     }
+    # Do not email a blank report
     else
         print "\nNull report for [$section], not mailing.";
 
