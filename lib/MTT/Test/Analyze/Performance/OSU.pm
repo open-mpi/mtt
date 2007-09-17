@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #
-# Copyright (c) 2006 Sun Microsystems, Inc.  All rights reserved.
-# Copyright (c) 2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -27,11 +27,11 @@ sub Analyze {
        @usec);
 
     my @lines = split(/\n|\r/, $result_stdout);
-    if ($lines[0] =~ /MPI Latency/) {
+    if ($result_stdout =~ /MPI Latency/) {
         $report->{test_name} = "osu_latency";
-    } elsif ($lines[0] =~ /MPI Bandwidth/) {
+    } elsif ($result_stdout =~ /MPI Bandwidth/) {
         $report->{test_name} = "osu_bw";
-    } elsif ($lines[0] =~ /MPI Bidirectional Bandwidth/) {
+    } elsif ($result_stdout =~ /MPI Bidirectional Bandwidth/) {
         $report->{test_name} = "osu_bibw";
     } else {
         Warning("Unknown OSU benchmark!  Skipping\n");
@@ -58,16 +58,22 @@ sub Analyze {
     my $bandwidth = 0;
     my $latency = 0;
     while (defined($line = shift(@lines))) {
-        if ($line =~ /^\#/) {
-            $bandwidth = 1
-                if ($line =~ /\(MB\/s\)/);
-            $latency = 1
-                if ($line =~ /\(us\)/);
-        } elsif (0 == $bandwidth && 0 == $latency) {
-            Warning("Got unexpected input for OSU performance analyzer; unable to parse the output.  Skipping.");
-            return undef;
+        if ($line =~ /^\#.*\(MB\/s\)/) {
+            $bandwidth = 1;
+            last;
         }
+        if ($line =~ /^\#.*\(us\)/) {
+            $latency = 1;
+            last;
+        }
+    }
 
+    if (0 == $bandwidth && 0 == $latency) {
+        Warning("Got unexpected input for OSU performance analyzer; unable to parse the output.  Skipping.");
+        return undef;
+    }
+
+    while (defined($line = shift(@lines))) {
         if ($line =~ m/^(\d+) \s+ ([\d\.]+)/x) {
             push(@bytes, $1);
             push(@usec, $2)
