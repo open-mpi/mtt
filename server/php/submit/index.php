@@ -71,7 +71,7 @@ if (isset($_POST['SERIAL'])) {
 # file contents. (There is backcompatibility here. E.g., if
 # there is no uploaded file, then we assume its an
 # oldfangled regular _POST submission)
-$undef = "";
+define("undef", "");
 if (sizeof($_FILES)) {
     eval("\$_POST = " . gunzip_file($_FILES['userfile']['tmp_name']) . ";");
 }
