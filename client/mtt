@@ -597,6 +597,9 @@ sub _process_ini_param {
         # Override ini file params with those supplied at command-line
         $filtered = MTT::INI::OverrideINIParams($filtered, $ini_args);
 
+        # Insert some predefined INI parameters
+        $filtered = MTT::INI::InsertINIPredefines($filtered, $file);
+
         # Create an unfiltered version of the ini file for error checking
         my $unfiltered = dclone($filtered);
 

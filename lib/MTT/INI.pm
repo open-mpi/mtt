@@ -228,4 +228,19 @@ sub ValidateINI {
     close(*ini);
 }
 
+# Predefine some INI parameters such as the name
+# of the INI file
+sub InsertINIPredefines {
+    my($ini, $file) = @_;
+
+    foreach my $section ($ini->Sections) {
+        if (! defined($ini->val($section, "INI_NAME"))) {
+            $ini->delval($section, "INI_NAME");
+            $ini->newval($section, "INI_NAME", $file);
+        }
+    }
+
+    return $ini;
+}
+
 1;

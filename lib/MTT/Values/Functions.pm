@@ -15,6 +15,7 @@ package MTT::Values::Functions;
 use strict;
 use File::Find;
 use File::Temp qw(tempfile);
+use File::Basename;
 use MTT::Messages;
 use MTT::Globals;
 use MTT::Files;
@@ -771,6 +772,18 @@ sub find_sub {
     # to the processed directory, so we want to examine $_.
     push(@find_data, $File::Find::name)
         if ($File::Find::name =~ $find_regexp);
+}
+
+#--------------------------------------------------------------------------
+
+sub dirname {
+    my($str) = @_;
+    return File::Basename::dirname($str);
+}
+
+sub basename {
+    my($str) = @_;
+    return File::Basename::basename($str);
 }
 
 #--------------------------------------------------------------------------
