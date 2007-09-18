@@ -233,6 +233,13 @@ sub ValidateINI {
 sub InsertINIPredefines {
     my($ini, $file) = @_;
 
+    # Prevent "Can't store GLOB items" error from
+    # Storable::dclone. (It makes no sense to set INI_NAME
+    # if the INI is coming from STDIN)
+    if (ref($file) =~ /GLOB/i) {
+        $file = undef;
+    }
+
     foreach my $section ($ini->Sections) {
         if (! defined($ini->val($section, "INI_NAME"))) {
             $ini->delval($section, "INI_NAME");
