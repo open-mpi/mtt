@@ -71,6 +71,7 @@ if (isset($_POST['SERIAL'])) {
 # file contents. (There is backcompatibility here. E.g., if
 # there is no uploaded file, then we assume its an
 # oldfangled regular _POST submission)
+$undef = "";
 if (sizeof($_FILES)) {
     eval("\$_POST = " . gunzip_file($_FILES['userfile']['tmp_name']) . ";");
 }
@@ -240,10 +241,9 @@ function process_phase_test_run($results_idxs_hash) {
         # Assume that performance data is unique, so we do not have to search
         # for an existing tuple
         $results_idxs_hash['performance_id'] = 0;
-        if( (array_key_exists("test_type", $_POST) and
-             $_POST['test_type']   == 'latency_bandwidth') or
-            (array_key_exists("test_type_1", $_POST) and
-             $_POST['test_type_1']   == 'latency_bandwidth') ) {
+        $index = "test_type_" . ($i + 1);
+        if ((array_key_exists($index, $_POST) and
+             $_POST[$index] == 'latency_bandwidth')) {
             #####
             # Insert Into Latency/Bandwidth
             $stmt_fields = array("message_size",
@@ -1892,7 +1892,7 @@ function get_post_values($params) {
     # Determine some_sets
     foreach ($params as $field) {
         for ($i = 1; $i <= $n; $i++) {
-            $name = $field . (($i == 0) ? "" : "_" . $i);
+            $name = "${field}_$i";
             if (isset($_POST[$name])) {
                 $some_set[$field] = true;
             }
