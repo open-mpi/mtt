@@ -361,7 +361,8 @@ sub collect_contribution_stats() {
   #
   # Render time segments
   #
-  my $time_24_cycle = " 21:00:00"; # 9 pm
+  #my $time_24_cycle = " 21:00:00"; # 9 pm
+  my $time_24_cycle = " 23:59:59"; # Midnight
   my $epoch = "2006-11-24 " . $time_24_cycle;
   ($today, $yesterday)         = get_times_today();
   ($days_epoch, $months_epoch) = get_times_epoch($epoch, $today);

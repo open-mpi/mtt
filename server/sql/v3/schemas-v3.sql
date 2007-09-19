@@ -56,6 +56,8 @@ CREATE TABLE compute_cluster (
 
     PRIMARY KEY (compute_cluster_id)
 );
+-- An invlid row in case we need it
+INSERT INTO compute_cluster VALUES ('0', 'undef', 'undef', 'undef', 'undef', 'undef');
 
 --
 -- Submit Table
@@ -75,6 +77,8 @@ CREATE TABLE submit (
 
     PRIMARY KEY (submit_id)
 );
+-- An invlid row in case we need it
+INSERT INTO submit VALUES ('0', 'undef', 'undef', 'undef', 'undef');
 
 --
 -- Compiler Table
@@ -95,7 +99,8 @@ CREATE TABLE compiler (
 
     PRIMARY KEY (compiler_id)
 );
-
+-- An invlid row in case we need it
+INSERT INTO compiler VALUES ('0', 'undef', 'undef');
 
 --
 -- MPI Get Table
@@ -116,6 +121,8 @@ CREATE TABLE mpi_get (
 
     PRIMARY KEY (mpi_get_id)
 );
+-- An invlid row in case we need it
+INSERT INTO mpi_get VALUES ('0', 'undef', 'undef');
 
 --
 -- Results: Description Normalization table
@@ -140,6 +147,8 @@ CREATE TABLE result_message (
 
     PRIMARY KEY (result_message_id)
 );
+-- Insert an invalid tuple in case we need it.
+INSERT INTO result_message VALUES('0', 'undef');
 
 --
 -- Results: Environment Normalization table
@@ -191,6 +200,8 @@ CREATE TABLE mpi_install_configure_args (
 
     PRIMARY KEY (mpi_install_configure_id)
 );
+-- An invlid row in case we need it
+INSERT INTO mpi_install_configure_args VALUES ('0', DEFAULT, DEFAULT, DEFAULT, 'undef');
 
 --
 -- Collect 'results' data into a table for easy updating
@@ -251,6 +262,50 @@ CREATE TABLE mpi_install (
     FOREIGN KEY (result_message_id) REFERENCES result_message(result_message_id)
 
 ) INHERITS(results_fields);
+-- An invlid row in case we need it
+INSERT INTO mpi_install 
+   (description_id, 
+    start_timestamp, 
+    test_result, 
+    trial, 
+    submit_timestamp, 
+    duration, 
+    environment_id, 
+    result_stdout, 
+    result_stderr, 
+    result_message_id, 
+    merge_stdout_stderr, 
+    exit_value, 
+    exit_signal, 
+    client_serial, 
+    submit_id, 
+    compute_cluster_id, 
+    mpi_install_compiler_id, 
+    mpi_get_id, 
+    mpi_install_configure_id, 
+    mpi_install_id
+   ) VALUES (
+    '1',
+    TIMESTAMP '2006-11-01',
+    '1',
+    DEFAULT,
+    TIMESTAMP '2006-11-01',
+    INTERVAL '1',
+    '0',
+    'undef',
+    'undef',
+    '0',
+    DEFAULT,
+    '0',
+    DEFAULT,
+    DEFAULT,
+    '0',
+    '0',
+    '0',
+    '0',
+    '0',
+    '0'
+   );
 
 --
 -- Test Suite Table
@@ -269,6 +324,9 @@ CREATE TABLE test_suites (
 
     PRIMARY KEY (test_suite_id)
 );
+-- An invalid tuple if we need it
+INSERT INTO test_suites VALUES ('0', 'undef', 'undef');
+
 
 --
 -- Ind. Test Name Table
@@ -293,6 +351,8 @@ CREATE TABLE test_names (
 
     FOREIGN KEY (test_suite_id) REFERENCES test_suites(test_suite_id)
 );
+-- An invalid tuple if we need it
+INSERT INTO test_names VALUES('0', '0', 'undef', 'undef');
 
 --
 -- Test Build Table
@@ -326,6 +386,59 @@ CREATE TABLE test_build (
     FOREIGN KEY (environment_id) REFERENCES environment(environment_id),
     FOREIGN KEY (result_message_id) REFERENCES result_message(result_message_id)
 ) INHERITS(results_fields);
+
+-- An invlid row in case we need it
+INSERT INTO test_build 
+   (description_id, 
+    start_timestamp, 
+    test_result, 
+    trial, 
+    submit_timestamp, 
+    duration, 
+    environment_id, 
+    result_stdout, 
+    result_stderr, 
+    result_message_id, 
+    merge_stdout_stderr, 
+    exit_value, 
+    exit_signal, 
+    client_serial, 
+
+    submit_id, 
+    compute_cluster_id, 
+    mpi_install_compiler_id, 
+    mpi_get_id, 
+    mpi_install_configure_id, 
+    mpi_install_id,
+
+    test_suite_id,
+    test_build_compiler_id,
+    test_build_id
+   ) VALUES (
+    '1',
+    TIMESTAMP '2006-11-01',
+    '1',
+    DEFAULT,
+    TIMESTAMP '2006-11-01',
+    INTERVAL '1',
+    '0',
+    'undef',
+    'undef',
+    '0',
+    DEFAULT,
+    '0',
+    DEFAULT,
+    DEFAULT,
+    '0',
+    '0',
+    '0',
+    '0',
+    '0',
+    '0',
+    '0',
+    '0',
+    '0'
+   );
 
 --
 -- Latency/Bandwidth Table

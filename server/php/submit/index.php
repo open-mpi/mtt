@@ -714,7 +714,9 @@ function get_test_build_ids($test_build_id) {
     if(!isset($test_build_id) ||
        0 == strlen($test_build_id) ||
        !preg_match("/^\d+$/", $test_build_id, $m) ) {
-        $test_build_id = find_test_build_id();
+        # We could guess using: $test_build_id = find_test_build_id();
+        # But we should probably just pint it to an invalid row for safety.
+        $test_build_id = 0;
         $error_output .= ("-------------------------------\n".
                           "Invalid test_build_id ($orig_test_build_id) given. ".
                           "Guessing that it should be $test_build_id \n".
@@ -729,7 +731,9 @@ function get_test_build_ids($test_build_id) {
                         "test_build_id = '".$test_build_id."'");
         $valid_id = select_scalar($select_stmt);
         if( !isset($valid_id) ) {
-            $test_build_id = find_test_build_id();
+            # We could guess using: $test_build_id = find_test_build_id();
+            # But we should probably just pint it to an invalid row for safety.
+            $test_build_id = 0;
             $error_output .= ("-------------------------------\n".
                               "Invalid test_build_id ($orig_test_build_id) given. " .
                               "Guessing that it should be $test_build_id \n".
@@ -876,7 +880,9 @@ function get_mpi_install_ids($mpi_install_id) {
     if(!isset($mpi_install_id) ||
        0 == strlen($mpi_install_id) ||
        !preg_match("/^\d+$/", $orig_mpi_install_id, $m) ) {
-        $mpi_install_id = find_mpi_install_id();
+        # We could guess using: $mpi_install_id = find_mpi_install_id();
+        # But we should probably just pint it to an invalid row for safety.
+        $mpi_install_id = 0;
         $error_output .= ("-------------------------------\n".
                           "Invalid mpi_install_id ($orig_mpi_install_id) given. ".
                           "Guessing that it should be $mpi_install_id .\n".
@@ -893,7 +899,9 @@ function get_mpi_install_ids($mpi_install_id) {
         $valid_id = select_scalar($select_stmt);
 
         if( !isset($valid_id) ) {
-            $mpi_install_id = find_mpi_install_id();
+            # We could guess using: $mpi_install_id = find_mpi_install_id();
+            # But we should probably just pint it to an invalid row for safety.
+            $mpi_install_id = 0;
             $error_output .= ("-------------------------------\n".
                               "Invalid mpi_install_id ($orig_mpi_install_id) given. ".
                               "Guessing that it should be $mpi_install_id \n".
