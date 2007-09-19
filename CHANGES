@@ -27,6 +27,7 @@ To announce to OMPI core testers:
     - &test_command_line()
     - &split() now takes optional 2nd param to specify token
     - &find(regexp, directory list)
+    - &rm_name() -- close to, but slightly different than &env_name()
 
 - See https://svn.open-mpi.org/trac/mtt/changeset/863:
   - re-wrote funclet parser; MUST edit INI file and remove excess
