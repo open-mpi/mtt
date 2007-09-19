@@ -39,8 +39,7 @@ To announce to OMPI core testers:
 - --section: beware of section names with spaces!  s/ /./g in --section
     arguments if you have spaces in your section names.
 
-- $variable expansion in ini files (especially when used with
-  &perl()), but it is always SCALAR
+- @variable@ expansion *everywhere* in ini files (not just in "exec")
 
 - MTT lock server.
 
