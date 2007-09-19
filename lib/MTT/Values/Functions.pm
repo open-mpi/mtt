@@ -796,6 +796,23 @@ sub rm_max_procs {
 
 #--------------------------------------------------------------------------
 
+# Return the name of the run-time enviornment that we're using.  The
+# only difference between rm_name() and env_name() is that env_name()
+# may also return "hostlist" or "hostfile", whereas rm_name() will
+# return "none" for those cases (because there is no resource
+# manager).
+sub rm_name {
+    Debug("&rm_name\n");
+
+    my $ret = env_name();
+    return "none"
+        if ("hostlist" eq $ret || "hostfile" eq $ret);
+
+    return $ret;
+}
+
+#--------------------------------------------------------------------------
+
 # Return the name of the run-time enviornment that we're using
 sub env_name {
     Debug("&env_name\n");

@@ -90,7 +90,7 @@ our $Test_specify = {
 # Test run phase
 our $Test_run = {
     launcher => "&split(&test_command_line(), 0)",
-    resource_manager => "&env_name()",
+    resource_manager => "&rm_name()",
     alloc => "slot",
 };
 
