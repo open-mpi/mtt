@@ -2184,7 +2184,9 @@ function compose_sql_select_from($query) {
    # Handle special bitmapped fields
    $bitmapped_fields = setup_bitmapped_fields();
    foreach (array_keys($bitmapped_fields) as $field) {
-       if (isset($query['select'][$field]) || isset($query['select_more'][$field])) {
+       if (isset($query['select'][$field]) || 
+           isset($query['select_more'][$field]) || 
+           isset($query['where'][$field])) {
            $query['select_bm'][$field] = $bitmapped_fields[$field];
        }
    }
