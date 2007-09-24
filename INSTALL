@@ -1,0 +1,16 @@
+Copyright (c) 2007 Cisco Systems, Inc.  All rights reserved.
+
+The MPI Testing Tool (MTT) requires several other packages:
+
+Always required:
+- Perl Config::IniFiles
+- Whatami
+
+Optional
+- Perl Env::Modulecmd: if using the "env_module" functionality in INI
+  files (to load/unload environment modules)
+- Perl Text::TabularDisplay: if using the text reporter functionality
+- PHP JPGraph: if using the performance graph functionality on the server
+
+
+...more information to go here...
