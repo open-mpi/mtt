@@ -225,20 +225,25 @@ sub svn_checkout {
 
     # Read in the original $HOME/.subversion/servers file
     my $svnfile = "$ENV{HOME}/.subversion/servers";
-    my $have_servers_file = -r $svnfile;
-    my $servers_file;
+    my $file_contents;
     mkdir("$ENV{HOME}/.subversion")
         if (! -d "$ENV{HOME}/.subversion");
     if (-r $svnfile) {
-        open(FILE, $svnfile);
-        while (<FILE>) {
-            $servers_file .= $_;
-        }
-        close FILE;
+        $file_contents = MTT::Files::Slurp($svnfile);
     } else {
-        $servers_file = "[global]
+        $file_contents = "[global]
 http-proxy-host = bogus
 http-proxy-port = bogus\n";
+    }
+
+    # Save the original proxy
+    my $save_host;
+    my $save_port;
+    if ($file_contents =~ /\nhttp-proxy-host\s*\=\s*(.*)/i) {
+        $save_host = $1;
+    }
+    if ($file_contents =~ /\nhttp-proxy-port\s*\=\s*(\d+)/i) {
+        $save_port = $1;
     }
 
     # Loop over proxies
@@ -254,23 +259,8 @@ http-proxy-port = bogus\n";
 
         # Skip "blank" proxies
         if (defined($p->{proxy}) and $p->{proxy} !~ /^\s*$/) {
-
             Debug("SVN checkout attempting proxy: $p->{proxy}\n");
-
-            # Write out a new $HOME/.subversion/servers file with the
-            # right proxy info
-            my $out = $servers_file;
-            if ($p->{proxy}) {
-                $p->{proxy} =~ m@^.+://(.+):([0-9]+)/@;
-                $out =~ s/^\s*http-proxy-host\s*=.*$/http-proxy-host = $p->{host}/m;
-                $out =~ s/^\s*http-proxy-port\s*=.*$/http-proxy-port = $p->{port}/m;
-            } else {
-                $out =~ s/^\s*http-proxy-host\s*=.*$//m;
-                $out =~ s/^\s*http-proxy-port\s*=.*$//m;
-            }
-            open(FILE, ">$svnfile");
-            print FILE $out;
-            close(FILE);
+            _substitute_proxy_in_servers_file($svnfile, $file_contents, $p->{host}, $p->{port});
         }
 
         my $ret = MTT::DoCommand::Cmd(1, $str);
@@ -296,9 +286,32 @@ http-proxy-port = bogus\n";
 
     # Fall though means we didn't succeed.  Doh.
 
+    # Restore the original proxy
+    Debug("Restoring the proxy originally found in $svnfile: \"$save_host:$save_port\"\n");
+    _substitute_proxy_in_servers_file($svnfile, $file_contents, $save_host, $save_port);
+
     # Reset the servers file to whatever it used to be (if it used to be!)
     MTT::Lock::Unlock($ENV{HOME} . "/.subversion/servers");
     return undef;
+}
+
+# Replace the proxy host and port in the ~/.subversion/servers file
+sub _substitute_proxy_in_servers_file {
+    my ($file, $contents, $host, $port) = @_;
+
+    # Write a new $HOME/.subversion/servers file with the
+    # right proxy info
+    if ($host) {
+        $host =~ m@^.+://(.+):([0-9]+)/@;
+        $contents =~ s/^\s*http-proxy-host\s*=.*$/http-proxy-host = $host/m;
+        $contents =~ s/^\s*http-proxy-port\s*=.*$/http-proxy-port = $port/m;
+    } else {
+        $contents =~ s/^\s*http-proxy-host\s*=.*$//m;
+        $contents =~ s/^\s*http-proxy-port\s*=.*$//m;
+    }
+    open(FILE, ">$file");
+    print FILE $contents;
+    close(FILE);
 }
 
 # Do a (Sun) TeamWare bringover
