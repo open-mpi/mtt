@@ -9,6 +9,7 @@
 #
 
 package MTT::MPI::Install::ClusterTools;
+my $package = ModuleName(__PACKAGE__);
 
 use strict;
 use Data::Dumper;
@@ -16,61 +17,129 @@ use MTT::DoCommand;
 use MTT::Messages;
 use MTT::Values;
 use MTT::FindProgram;
+use MTT::Common::GNU_Install;
+use MTT::Files;
+use Cwd;
 
 #--------------------------------------------------------------------------
 
 sub Install {
     my ($ini, $section, $config) = @_;
     my $x;
-    my $package = ModuleName(__PACKAGE__);
-
-    # Process clustertools input parameters
-    my $connection_method = Value($ini, $section, "clustertools_connection_method");
-    my $activate = Value($ini, $section, "clustertools_activate");
-
-    if ($activate) {
-        $activate = "-a";
-    }
 
     # Prepare $ret
     my $ret;
     $ret->{test_result} = MTT::Values::FAIL;
     $ret->{exit_status} = 0;
-
-    my $bindir = "$config->{abs_srcdir}/Product/Install_Utilities/bin";
-    my $installer = "ctinstall";
-    my $ctinstall = "$bindir/$installer";
-
-    # Find sudo
-    my $sudo = FindProgram("sudo");
-    if (!defined($sudo)) {
-        Error("$package: requires 'sudo'.\n");
-        return undef;
-    }
-
-    my $want_unique = 1;
-    my $hosts = &MTT::Values::Functions::env_hosts($want_unique);
-
-    # Set package location of ClusterTools
-    my $basedir = "/opt/SUNWhpc";
-
-    # Deactivate ClusterTools
-    my $ctdeact = "$basedir/bin/Install_Utilities/bin/ctdeact";
-    if (-x $ctdeact) {
-        $x = MTT::DoCommand::Cmd(1, "$sudo $ctdeact -n $hosts -r $connection_method");
-    }
-
-    # Install ClusterTools
-    $x = MTT::DoCommand::Cmd(1, "$sudo $ctinstall $activate -n $hosts -r $connection_method");
-
-    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
-        Verbose("$package: $installer failed: $@\n");
-        return undef;
-    }
-
-    $ret->{installdir} = $basedir;
+    $ret->{installdir} = $config->{installdir};
     $ret->{bindir} = "$ret->{installdir}/bin";
     $ret->{libdir} = "$ret->{installdir}/lib";
+
+    # Process clustertools input parameters
+    my $do_ctinstall = Value($ini, $section, "clustertools_do_ctinstall");
+    my $build_number = Value($ini, $section, "clustertools_build_number");
+    my $release_number = Value($ini, $section, "clustertools_release");
+
+    # Grab the SVK "r" number
+    my $svk_r_number = $config->{module_data}->{r};
+
+    # Update the version file
+    my $greek = "ct${release_number}b${build_number}r${svk_r_number}";
+    &_update_version_file($greek, "VERSION");
+
+    # Update the openmpi-mca-params.conf file
+    &_update_openmpi_mca_params_conf("opal/etc/openmpi-mca-params.conf");
+
+    # Get some OMPI-module-specific config arguments
+
+    my $tmp;
+    $tmp = Value($ini, $section, "clustertools_make_all_arguments");
+    $config->{make_all_arguments} = $tmp
+        if (defined($tmp));
+
+    # JMS: compiler name may have come in from "compiler_name" in
+    # Install.pm.  So if we didn't define one for this module, use the
+    # default from "compiler_name".  Note: to be deleted someday
+    # (i.e., only rely on this module's compiler_name and not use a
+    # higher-level default, per #222).
+    $tmp = Value($ini, $section, "clustertools_compiler_name");
+    $config->{compiler_name} = $tmp
+        if (defined($tmp));
+    return 
+        if (!MTT::Util::is_valid_compiler_name($section, 
+                                               $config->{compiler_name}));
+    # JMS: Same as above
+    $tmp = Value($ini, $section, "clustertools_compiler_version");
+    $config->{compiler_version} = $tmp
+        if (defined($tmp));
+
+    $tmp = Value($ini, $section, "clustertools_configure_arguments");
+    $tmp =~ s/\n|\r/ /g;
+    $config->{configure_arguments} = $tmp
+        if (defined($tmp));
+
+    $tmp = Logical($ini, $section, "clustertools_make_check");
+    $config->{make_check} = $tmp
+        if (defined($tmp));
+
+    # Run autogen.sh
+
+    $x = MTT::DoCommand::Cmd(1, "./autogen.sh");
+
+    # Run configure / make all / make check / make install
+
+    my $configure_arguments = $config->{configure_arguments};
+
+    # Handle a scalar or an array
+    if (ref($configure_arguments) eq "") {
+        my $tmp = $configure_arguments;
+        undef $configure_arguments;
+        push(@$configure_arguments, $tmp);
+    }
+
+    foreach my $_configure_arguments (@$configure_arguments) {
+        my $gnu = {
+            configdir => $config->{configdir},
+            configure_arguments => $_configure_arguments,
+            vpath => "no",
+            installdir => $config->{installdir},
+            bindir => $config->{bindir},
+            libdir => $config->{libdir},
+            make_all_arguments => $config->{make_all_arguments},
+            make_check => $config->{make_check},
+            stdout_save_lines => $config->{stdout_save_lines},
+            stderr_save_lines => $config->{stderr_save_lines},
+            merge_stdout_stderr => $config->{merge_stdout_stderr},
+        };
+        my $install = MTT::Common::GNU_Install::Install($gnu);
+        foreach my $k (keys(%{$install})) {
+            $ret->{$k} = $install->{$k};
+        }
+
+        # If either of the two builds fails, the entire build has failed
+        return $ret
+            if (exists($ret->{fail}));
+    }
+
+    # Create wrapper data files
+    # (For packages, we need to give this subroutine an /opt/SUNWhpc/HPC* path)
+    _create_wrapper_data_files("$config->{installdir}/share/openmpi", $config->{installdir});
+
+    # Fetch Install_Utilities using teamware
+    my $teamware_file_list_program = Value($ini, $section, "clustertools_teamware_file_list_program");
+    my $install_gate_path = Value($ini, $section, "clustertools_install_gate_path");
+
+    if ($install_gate_path) {
+        MTT::Files::teamware_bringover($teamware_file_list_program, $install_gate_path, "install", ".");
+    }
+
+    # TODO:
+    # Create the ClusterTools packages using bld_solaris_pkgs (pkgmk)
+
+    # Install the packages using the installer
+    if ($do_ctinstall) {
+        _do_ctinstall($ini, $section, $config);
+    }
 
     # Set which bindings were compiled
 
@@ -94,5 +163,244 @@ sub Install {
 
     return $ret;
 } 
+
+sub _do_ctinstall {
+    my ($ini, $section, $config) = @_;
+    my ($x, $ret);
+    
+    # Process clustertools input parameters
+    my $connection_method = Value($ini, $section, "clustertools_ctinstall_connection_method");
+    my $activate = Value($ini, $section, "clustertools_ctinstall_activate");
+
+    if ($activate) {
+        $activate = "-a";
+    }
+
+    my $bindir = "$config->{abs_srcdir}/Product/Install_Utilities/bin";
+    my $installer = "ctinstall";
+    my $ctinstall = "$bindir/$installer";
+
+    # Find sudo
+    my $sudo = FindProgram("sudo");
+    if (!defined($sudo)) {
+        Error("$package: requires 'sudo'.\n");
+        return undef;
+    }
+
+    my $want_unique = 1;
+    my $hosts = &MTT::Values::Functions::env_hosts($want_unique);
+
+    # Set package location of ClusterTools
+    my $basedir = "/opt/SUNWhpc";
+
+    # Deactivate ClusterTools
+    my $ctdeact = "$basedir/bin/Install_Utilities/bin/ctdeact";
+    my $x;
+    if (-x $ctdeact) {
+        $x = MTT::DoCommand::Cmd(1, "$sudo $ctdeact -n $hosts -r $connection_method");
+    }
+
+    # Install ClusterTools
+    $x = MTT::DoCommand::Cmd(1, "$sudo $ctinstall $activate -n $hosts -r $connection_method");
+
+    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
+        Verbose("$package: $installer failed: $@\n");
+        return undef;
+    }
+
+    $ret->{installdir} = $basedir;
+    $ret->{bindir} = "$ret->{installdir}/bin";
+    $ret->{libdir} = "$ret->{installdir}/lib";
+
+    return $ret;
+}
+
+
+# Update the VERSION file
+sub _update_version_file {
+    my ($greek) = @_;
+
+    # Read in the default VERSION file
+    my $contents = MTT::Files::Slurp("./VERSION");
+
+    # Splice in the greek value
+    $contents =~ s/greek=.*/greek=$greek/;
+    
+    # Write changed file out
+    MTT::Files::SafeWrite(1, "./VERSION", $contents);
+}
+
+# Append some special ClusterTools settings to mca_params.conf
+sub _update_openmpi_mca_params_conf {
+    my ($file) = @_;
+
+    my $contents = MTT::Files::Slurp($file);
+    my $str = "
+# Do not print message when uDAPL NIS is not found
+btl_base_warn_component_unused = 0
+
+# Enable process address data to be sent by connection private data mechanism
+btl_udapl_conn_priv_data = 1
+
+# Do not print messages mca load errors
+mca_component_show_load_errors = 0
+";
+
+    my $ret = MTT::Files::SafeWrite(1, $file, $contents . $str);
+
+    return $ret;
+}
+
+sub _create_wrapper_data_files {
+    my ($destdir, $installdir) = @_;
+
+    my @compilers = (
+        "CC",
+        "c++",
+        "cc",
+        "cxx",
+        "f77",
+        "f90",
+    );
+
+    my $project = "Open MPI";
+    my $project_short = "OMPI";
+    my $version = $MTT::MPI::Get::version . "-ct7.1-bXXX-svk#";
+    my $preprocessor_flags = "";
+    my $compiler_flags = "";
+    my $required_file = "";
+    
+    # Prepare a structure containing all the wrapper data
+    my $wrapper_data; 
+
+    $wrapper_data->{"cc"}->{language}  = "C"; 
+    $wrapper_data->{"CC"}->{language}  = "C++"; 
+    $wrapper_data->{"c++"}->{language} = "C++"; 
+    $wrapper_data->{"cxx"}->{language} = "C++"; 
+    $wrapper_data->{"f77"}->{language} = "Fortran 77"; 
+    $wrapper_data->{"f90"}->{language} = "Fortran 90"; 
+
+    $wrapper_data->{"cc"}->{underlying_compiler}  = "cc";
+    $wrapper_data->{"CC"}->{underlying_compiler}  = "CC";
+    $wrapper_data->{"c++"}->{underlying_compiler} = "CC";
+    $wrapper_data->{"cxx"}->{underlying_compiler} = "CC";
+    $wrapper_data->{"f77"}->{underlying_compiler} = "f77";
+    $wrapper_data->{"f90"}->{underlying_compiler} = "f95";
+
+    $wrapper_data->{"cc"}->{compiler_env}  = "CC"; 
+    $wrapper_data->{"CC"}->{compiler_env}  = "CXX"; 
+    $wrapper_data->{"c++"}->{compiler_env} = "CXX"; 
+    $wrapper_data->{"cxx"}->{compiler_env} = "CXX"; 
+    $wrapper_data->{"f77"}->{compiler_env} = "F77"; 
+    $wrapper_data->{"f90"}->{compiler_env} = "FC"; 
+
+    $wrapper_data->{"cc"}->{compiler_flags_env}  = "CFLAGS"; 
+    $wrapper_data->{"CC"}->{compiler_flags_env}  = "CXXFLAGS"; 
+    $wrapper_data->{"c++"}->{compiler_flags_env} = "CXXFLAGS"; 
+    $wrapper_data->{"cxx"}->{compiler_flags_env} = "CXXFLAGS"; 
+    $wrapper_data->{"f77"}->{compiler_flags_env} = "FFLAGS"; 
+    $wrapper_data->{"f90"}->{compiler_flags_env} = "FCFLAGS"; 
+
+    $wrapper_data->{"cc"}->{extra_includes}  = "openmpi";
+    $wrapper_data->{"CC"}->{extra_includes}  = "openmpi";
+    $wrapper_data->{"c++"}->{extra_includes} = "openmpi";
+    $wrapper_data->{"cxx"}->{extra_includes} = "openmpi";
+    $wrapper_data->{"f77"}->{extra_includes} = "";
+    $wrapper_data->{"f90"}->{extra_includes} = "";
+
+    my $common_libs = "-lmpi -lopen-rte -lopen-pal -lsocket -lnsl -lrt -lm -ldl";
+    $wrapper_data->{"cc"}->{libs}  = "$common_libs";
+    $wrapper_data->{"CC"}->{libs}  = "$common_libs -lmpi_cxx";
+    $wrapper_data->{"c++"}->{libs} = "$common_libs -lmpi_cxx";
+    $wrapper_data->{"cxx"}->{libs} = "$common_libs -lmpi_cxx";
+    $wrapper_data->{"f77"}->{libs} = "$common_libs -lmpi_f77";
+    $wrapper_data->{"f90"}->{libs} = "$common_libs -lmpi_f77 -lmpi_f90";
+
+    $wrapper_data->{32}->{includedir} = "$installdir/include";
+    $wrapper_data->{64}->{includedir} = "$installdir/include/v9";
+    $wrapper_data->{32}->{libdir} = "$installdir/lib";
+    $wrapper_data->{64}->{libdir} = "$installdir/lib/sparcv9";
+    $wrapper_data->{32}->{compiler_args} = "";
+    $wrapper_data->{64}->{compiler_args} = "-xarch=v9;-xarch=v9a;-xarch=v9b;-xarch=native64;-xarch=generic64;-xtarget=native64;-xtarget=generic64;";
+    $wrapper_data->{32}->{linker_flags} = "-R/opt/mx/lib -R$installdir/lib";
+    $wrapper_data->{64}->{linker_flags} = "-R/opt/mx/lib/sparcv9 -R$installdir/lib/sparcv9";
+
+    # Template for the wrapper data files
+    my $template = "#
+# default / 32 bit compilations block below
+#
+compiler_args=%s
+
+project=$project
+project_short=$project_short
+version=$version
+language=%s
+compiler_env=%s
+compiler_flags_env=%s
+compiler=%s
+extra_includes=%s
+preprocessor_flags=$preprocessor_flags
+compiler_flags=$compiler_flags
+libs=%s
+linker_flags=%s
+required_file=$required_file
+includedir=%s
+libdir=%s
+
+#
+# 64 bit compilations block below
+#
+compiler_args=%s
+
+project=$project
+project_short=$project_short
+version=$version
+language=%s
+compiler_env=%s
+compiler_flags_env=%s
+compiler=%s
+extra_includes=%s
+preprocessor_flags=$preprocessor_flags
+compiler_flags=$compiler_flags
+libs=%s
+linker_flags=%s
+required_file=$required_file
+includedir=%s
+libdir=%s
+";
+
+    foreach my $prefix ("mpi", "opal", "orte") {
+        foreach my $compiler (@compilers) {
+
+            my @top_params = (
+                $wrapper_data->{$compiler}->{language},
+                $wrapper_data->{$compiler}->{compiler_env},
+                $wrapper_data->{$compiler}->{compiler_flags_env},
+                $wrapper_data->{$compiler}->{underlying_compiler},
+                $wrapper_data->{$compiler}->{extra_includes},
+                $wrapper_data->{$compiler}->{libs},
+            );
+
+            my $contents = sprintf($template,
+
+                                    # 32-bit
+                                    $wrapper_data->{32}->{compiler_args},
+                                    @top_params,
+                                    $wrapper_data->{32}->{linker_flags},
+                                    $wrapper_data->{32}->{includedir},
+                                    $wrapper_data->{32}->{libdir},
+
+                                    # 64-bit
+                                    $wrapper_data->{64}->{compiler_args},
+                                    @top_params,
+                                    $wrapper_data->{64}->{linker_flags},
+                                    $wrapper_data->{64}->{includedir},
+                                    $wrapper_data->{64}->{libdir},
+            );
+
+            MTT::Files::SafeWrite(1, "$destdir/$prefix$compiler-wrapper-data.txt", $contents);
+        }
+    }
+}
 
 1;
