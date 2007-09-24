@@ -538,6 +538,43 @@ sub step {
 
 #--------------------------------------------------------------------------
 
+# Run the "whatami" command
+my $_whatami;
+sub whatami {
+    Debug("&whatami got: @_\n");
+
+    # Find whatami
+    if (!defined($_whatami)) {
+        my $dir = MTT::FindProgram::FindZeroDir();
+        $_whatami = "$dir/whatami/whatami"
+            if (-x "$dir/whatami/whatami");
+        $_whatami = "$dir/whatami"
+            if (!defined($_whatami) && -x "$dir/whatami");
+        foreach my $dir (split(/:/, $ENV{PATH})) {
+            if (!defined($_whatami) && -x "$dir/whatami") {
+                $_whatami = "$dir/whatami";
+                last;
+            }
+        }
+        $_whatami = $ENV{MTT_WHATAMI}
+            if (!defined($_whatami) && exists($ENV{MTT_WHATAMI}) &&
+                -x $ENV{MTT_WHATAMI});
+
+        Error("Cannot find 'whatami' program -- cannot continue\n")
+            if (!defined($_whatami));
+        Debug("Found whatami: $_whatami\n");
+    }
+
+    # Run the whatami program
+    my $x = MTT::DoCommand::Cmd(1, "$_whatami @_");
+    return undef
+        if (0 != $x->{exit_status});
+    chomp($x->{result_stdout});
+    return $x->{result_stdout};
+}
+
+#--------------------------------------------------------------------------
+
 # Return the current np value from a running test.
 sub test_command_line {
     Debug("&test_command_line returning: $MTT::Test::Run::test_command_line\n");

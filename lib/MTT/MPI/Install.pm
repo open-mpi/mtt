@@ -514,8 +514,7 @@ sub _do_install {
     $config->{endian} = $endian;
 
     # Fetch cluster info (platform and hardware)
-    my $cluster_info = _get_cluster_info($section, $ini);
-    %$config = (%$config, %$cluster_info);
+    _get_cluster_info($config, $section, $ini);
 
     # Unload any loaded environment modules
     if ($#env_modules >= 0) {
@@ -750,27 +749,7 @@ prepend-path LD_LIBRARY_PATH $ret->{libdir}\n";
 
 # Return a hash of hardware and platform information
 sub _get_cluster_info {
-
-    my ($section, $ini) = @_;
-
-    my $info = undef;
-
-    # Find whatami
-    my $dir = MTT::FindProgram::FindZeroDir();
-    my $whatami = "$dir/whatami/whatami";
-    if (! -x $whatami) {
-        Error("Cannot find 'whatami' program -- cannot continue\n");
-    }
-    Debug("Found whatami: $whatami\n");
-
-    $info->{platform_type} = `$whatami -t`;
-    chomp($info->{platform_type});
-    $info->{platform_hardware} = `$whatami -m`;
-    chomp($info->{platform_hardware});
-    $info->{os_name} = `$whatami -n`;
-    chomp($info->{os_name});
-    $info->{os_version} = `$whatami -r`;
-    chomp($info->{os_version});
+    my ($config, $section, $ini) = @_;
 
     # INI sections to check for overrides
     my @sections = ($section, "MTT");
@@ -788,15 +767,16 @@ sub _get_cluster_info {
     my $value;
     foreach my $field (@cluster_info_fields) {
         foreach my $ini_section (@sections) {
-            $value = Value($ini, $ini_section, $field);
+            $value = $ini->val($ini_section, $field);
             if ($value) {
-                $info->{$field} = $value;
+                $config->{$field} = $value;
                 last;
             }
         }
-    }
 
-    return $info;
+        $config->{$field} = EvaluateString($config->{$field})
+            if (defined($config->{$field}));
+    }
 }
 
 1;

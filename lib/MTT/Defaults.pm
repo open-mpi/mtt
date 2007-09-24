@@ -60,7 +60,10 @@ our $MPI_install = {
     stdout_save_lines => 100,
     stderr_save_lines => 100,
     make_check => 0,
-
+    platform_type => "&whatami('-t')",
+    platform_hardware => "&whatami('-m')",
+    os_name => "&whatami('-n')",
+    os_version => "&whatami('-r')",
 };
 
 # Test build phase
