@@ -8,7 +8,7 @@ $| = 1;
 #
 # MTT Working Dir to find scripts
 #
-my $mtt_base_dir = "/u/jjhursey/work/mtt-stuff/mtt-trunk/server/sql/v3/";
+my $mtt_base_dir = "/u/jjhursey/work/mtt-stuff/mtt-trunk/server/sql/";
 
 #
 # DB Conversion script
