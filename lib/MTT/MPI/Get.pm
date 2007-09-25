@@ -45,6 +45,7 @@ use MTT::INI;
 use MTT::MPI;
 use MTT::Values;
 use MTT::Util;
+use MTT::EnvModule;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -108,8 +109,8 @@ sub _do_get {
     $config->{env_modules} = Value($ini, $section, "env_module");
     if ($config->{env_modules}) {
         @env_modules = MTT::Util::split_comma_list($config->{env_modules});
-        Env::Modulecmd::unload(@env_modules);
-        Env::Modulecmd::load(@env_modules);
+        MTT::EnvModule::unload(@env_modules);
+        MTT::EnvModule::load(@env_modules);
         Debug("Loading environment modules: @env_modules\n");
     }
 
@@ -135,7 +136,7 @@ sub _do_get {
     # Unload any loaded environment modules
     if ($#env_modules >= 0) {
         Debug("Unloading environment modules: @env_modules\n");
-        Env::Modulecmd::unload(@env_modules);
+        MTT::EnvModule::unload(@env_modules);
     }
 
     # Did we get a source tree back?

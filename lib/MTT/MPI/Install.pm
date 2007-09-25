@@ -94,9 +94,9 @@ use MTT::Module;
 use MTT::Reporter;
 use MTT::MPI;
 use MTT::Defaults;
+use MTT::EnvModule;
 use Data::Dumper;
 use File::Basename;
-use Env::Modulecmd;
 
 # File to keep data about builds
 my $installed_file = "mpi_installed.ini";
@@ -361,8 +361,8 @@ sub _do_install {
     if (defined($config->{env_modules})) {
         @env_modules = MTT::Util::split_comma_list($config->{env_modules});
         Debug("Loading environment modules: @env_modules\n");
-        Env::Modulecmd::unload(@env_modules);
-        Env::Modulecmd::load(@env_modules);
+        MTT::EnvModule::unload(@env_modules);
+        MTT::EnvModule::load(@env_modules);
     }
 
     # Process setenv, unsetenv, prepend_path, and
@@ -519,7 +519,7 @@ sub _do_install {
     # Unload any loaded environment modules
     if ($#env_modules >= 0) {
         Debug("Unloading environment modules: @env_modules\n");
-        Env::Modulecmd::unload(@env_modules);
+        MTT::EnvModule::unload(@env_modules);
     }
 
     # Analyze the return

@@ -44,6 +44,7 @@ use MTT::Values;
 use MTT::Files;
 use MTT::Defaults;
 use MTT::Test;
+use MTT::EnvModule;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -339,8 +340,8 @@ sub _do_build {
     }
     if ($config->{env_modules}) {
         @env_modules = MTT::Util::split_comma_list($config->{env_modules});
-        Env::Modulecmd::unload(@env_modules);
-        Env::Modulecmd::load(@env_modules);
+        MTT::EnvModule::unload(@env_modules);
+        MTT::EnvModule::load(@env_modules);
         Debug("Loading environment modules: @env_modules\n");
     }
 
@@ -377,7 +378,7 @@ sub _do_build {
     # Unload any loaded environment modules
     if ($#env_modules >= 0) {
         Debug("Unloading environment modules: @env_modules\n");
-        Env::Modulecmd::unload(@env_modules);
+        MTT::EnvModule::unload(@env_modules);
     }
 
     # Analyze the return
