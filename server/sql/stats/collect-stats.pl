@@ -1240,7 +1240,9 @@ sub sql_scalar_stmt() {
   my $rtn = 0;
   my @row;
 
-  $stmt->execute();
+  if( !$stmt->execute() ) {
+    return undef($rtn);
+  }
   while(@row = $stmt->fetchrow_array ) {
     $rtn = $row[0];
   }
@@ -1254,6 +1256,7 @@ sub sql_1d_array_cmd($$) {
   my $select = shift(@_);
   my $where  = shift(@_);
   my $stmt;
+  my @rtn = ();
 
   if( $select =~ /$replace_where_field/ ) {
     $select =~ s/$replace_where_field/$where/;
@@ -1261,7 +1264,11 @@ sub sql_1d_array_cmd($$) {
 
   $stmt = $dbh_mtt->prepare($select);
 
-  return sql_1d_array_stmt($stmt);
+  @rtn = sql_1d_array_stmt($stmt);
+  if( !defined(@rtn) ) {
+    print("Error: sql_1d_array_cmd(): Unable to execute query:\n".$select."\n");
+  }
+  return @rtn;
 }
 
 sub sql_1d_array_stmt($$) {
@@ -1269,7 +1276,9 @@ sub sql_1d_array_stmt($$) {
   my @rtn = ();
   my @row;
 
-  $stmt->execute();
+  if(!$stmt->execute()) {
+    return @row;
+  }
   while(@row = $stmt->fetchrow_array ) {
     push(@rtn, $row[0]);
   }
@@ -1283,6 +1292,7 @@ sub sql_2d_array_cmd($$) {
   my $select = shift(@_);
   my $where  = shift(@_);
   my $stmt;
+  my @rtn;
 
   if( $select =~ /$replace_where_field/ ) {
     $select =~ s/$replace_where_field/$where/;
@@ -1290,7 +1300,11 @@ sub sql_2d_array_cmd($$) {
 
   $stmt = $dbh_mtt->prepare($select);
 
-  return sql_2d_array_stmt($stmt);
+  @rtn = sql_2d_array_stmt($stmt);
+  if( !defined(@rtn) ) {
+    print("Error: sql_2d_array_cmd(): Unable to execute query:\n".$select."\n");
+  }
+  return @rtn;
 }
 
 sub sql_2d_array_stmt($$) {
@@ -1300,7 +1314,9 @@ sub sql_2d_array_stmt($$) {
   my @row;
   my $r;
 
-  $stmt->execute();
+  if(!$stmt->execute()) {
+    return @row;
+  }
   while(@row = $stmt->fetchrow_array ) {
     foreach $r (@row) {
       push(@rtn, $r);
@@ -1523,7 +1539,10 @@ sub gather_all_mpi_installs() {
   }
 
   $stmt = $dbh_mtt->prepare($select);
-  $stmt->execute();
+  if( !$stmt->execute() ) {
+    print("Error: gather_all_mpi_installs(): Unable to execute query:\n".$select."\n");
+    return @loc_mpi_installs;
+  }
   while($hash_ref = $stmt->fetchrow_hashref) {
     $datum = Stat_Datum->new();
 
@@ -1535,30 +1554,30 @@ sub gather_all_mpi_installs() {
                  "[".$$hash_ref{'mpi_name'}."] ".
                  "[".$$hash_ref{'mpi_version'}."] ".
                  "[".$$hash_ref{'mpi_install_configure_id'}."] ");
-    $datum->select_stmt("submit.http_username = '".$$hash_ref{'http_username'}."' AND ".
-                        "compute_cluster.platform_name = '".$$hash_ref{'platform_name'}."' AND ".
-                        "compute_cluster.os_name = '".$$hash_ref{'os_name'}."' AND ".
-                        "compiler_name = '".$$hash_ref{'compiler_name'}."' AND ".
-                        "compiler_version = '".$$hash_ref{'compiler_version'}."' AND ".
-                        "mpi_name = '".$$hash_ref{'mpi_name'}."' AND ".
-                        "mpi_version = '".$$hash_ref{'mpi_version'}."' AND ".
-                        "mpi_install_configure_id = '".$$hash_ref{'mpi_install_configure_id'}."' ");
-    $datum->select_stmt_stat("org_name = '".$$hash_ref{'http_username'}."' AND ".
-                             "platform_name = '".$$hash_ref{'platform_name'}."' AND ".
-                             "os_name = '".$$hash_ref{'os_name'}."' AND ".
-                             "mpi_install_compiler_name = '".$$hash_ref{'compiler_name'}."' AND ".
-                             "mpi_install_compiler_version = '".$$hash_ref{'compiler_version'}."' AND ".
-                             "mpi_get_name = '".$$hash_ref{'mpi_name'}."' AND ".
-                             "mpi_get_version = '".$$hash_ref{'mpi_version'}."' AND ".
-                             "mpi_install_config = '".$$hash_ref{'mpi_install_configure_id'}."' ");
-    $datum->update_stmt("org_name = '".$$hash_ref{'http_username'}."', ".
-                        "platform_name = '".$$hash_ref{'platform_name'}."', ".
-                        "os_name = '".$$hash_ref{'os_name'}."', ".
-                        "mpi_install_compiler_name = '".$$hash_ref{'compiler_name'}."', ".
-                        "mpi_install_compiler_version = '".$$hash_ref{'compiler_version'}."', ".
-                        "mpi_get_name = '".$$hash_ref{'mpi_name'}."', ".
-                        "mpi_get_version = '".$$hash_ref{'mpi_version'}."', ".
-                        "mpi_install_config = '".$$hash_ref{'mpi_install_configure_id'}."' ");
+    $datum->select_stmt("submit.http_username = ".pg_escape_value($$hash_ref{'http_username'})." AND ".
+                        "compute_cluster.platform_name = ".pg_escape_value($$hash_ref{'platform_name'})." AND ".
+                        "compute_cluster.os_name = ".pg_escape_value($$hash_ref{'os_name'})." AND ".
+                        "compiler_name = ".pg_escape_value($$hash_ref{'compiler_name'})." AND ".
+                        "compiler_version = ".pg_escape_value($$hash_ref{'compiler_version'})." AND ".
+                        "mpi_name = ".pg_escape_value($$hash_ref{'mpi_name'})." AND ".
+                        "mpi_version = ".pg_escape_value($$hash_ref{'mpi_version'})." AND ".
+                        "mpi_install_configure_id = ".pg_escape_value($$hash_ref{'mpi_install_configure_id'})." ");
+    $datum->select_stmt_stat("org_name = ".pg_escape_value($$hash_ref{'http_username'})." AND ".
+                             "platform_name = ".pg_escape_value($$hash_ref{'platform_name'})." AND ".
+                             "os_name = ".pg_escape_value($$hash_ref{'os_name'})." AND ".
+                             "mpi_install_compiler_name = ".pg_escape_value($$hash_ref{'compiler_name'})." AND ".
+                             "mpi_install_compiler_version = ".pg_escape_value($$hash_ref{'compiler_version'})." AND ".
+                             "mpi_get_name = ".pg_escape_value($$hash_ref{'mpi_name'})." AND ".
+                             "mpi_get_version = ".pg_escape_value($$hash_ref{'mpi_version'})." AND ".
+                             "mpi_install_config = ".pg_escape_value($$hash_ref{'mpi_install_configure_id'})." ");
+    $datum->update_stmt("org_name = ".pg_escape_value($$hash_ref{'http_username'}).", ".
+                        "platform_name = ".pg_escape_value($$hash_ref{'platform_name'}).", ".
+                        "os_name = ".pg_escape_value($$hash_ref{'os_name'}).", ".
+                        "mpi_install_compiler_name = ".pg_escape_value($$hash_ref{'compiler_name'}).", ".
+                        "mpi_install_compiler_version = ".pg_escape_value($$hash_ref{'compiler_version'}).", ".
+                        "mpi_get_name = ".pg_escape_value($$hash_ref{'mpi_name'}).", ".
+                        "mpi_get_version = ".pg_escape_value($$hash_ref{'mpi_version'}).", ".
+                        "mpi_install_config = ".pg_escape_value($$hash_ref{'mpi_install_configure_id'})." ");
     $datum->insert_keys("org_name, ".
                         "platform_name, ".
                         "os_name, ".
@@ -1567,14 +1586,14 @@ sub gather_all_mpi_installs() {
                         "mpi_get_name, ".
                         "mpi_get_version, ".
                         "mpi_install_config");
-    $datum->insert_vals("'".$$hash_ref{'http_username'}."', ".
-                        "'".$$hash_ref{'platform_name'}."', ".
-                        "'".$$hash_ref{'os_name'}."', ".
-                        "'".$$hash_ref{'compiler_name'}."', ".
-                        "'".$$hash_ref{'compiler_version'}."', ".
-                        "'".$$hash_ref{'mpi_name'}."', ".
-                        "'".$$hash_ref{'mpi_version'}."', ".
-                        "'".$$hash_ref{'mpi_install_configure_id'}."' ");
+    $datum->insert_vals("".pg_escape_value($$hash_ref{'http_username'}).", ".
+                        "".pg_escape_value($$hash_ref{'platform_name'}).", ".
+                        "".pg_escape_value($$hash_ref{'os_name'}).", ".
+                        "".pg_escape_value($$hash_ref{'compiler_name'}).", ".
+                        "".pg_escape_value($$hash_ref{'compiler_version'}).", ".
+                        "".pg_escape_value($$hash_ref{'mpi_name'}).", ".
+                        "".pg_escape_value($$hash_ref{'mpi_version'}).", ".
+                        "".pg_escape_value($$hash_ref{'mpi_install_configure_id'})." ");
 
     push(@loc_mpi_installs, $datum);
   }
@@ -1612,11 +1631,12 @@ sub gather_all_tb_compilers() {
     $datum = Stat_Datum->new();
 
     $datum->name("$name ($version)");
-    $datum->select_stmt("compiler_name = '$name' AND $v_nlt compiler_version = '$version'");
-    $datum->select_stmt_stat("test_build_compiler_name = '$name' AND $v_nlt test_build_compiler_version = '$version'");
-    $datum->update_stmt("test_build_compiler_name = '$name', $v_nlt test_build_compiler_version = '$version'");
+    $datum->select_stmt("compiler_name = ".pg_escape_value($name)." AND $v_nlt compiler_version = ".pg_escape_value($version)."");
+    $datum->select_stmt_stat("test_build_compiler_name = ".pg_escape_value($name).
+                             " AND $v_nlt test_build_compiler_version = ".pg_escape_value($version)."");
+    $datum->update_stmt("test_build_compiler_name = ".pg_escape_value($name).", $v_nlt test_build_compiler_version = ".pg_escape_value($version)."");
     $datum->insert_keys("test_build_compiler_name, $v_nlt test_build_compiler_version");
-    $datum->insert_vals("'$name', '$version'");
+    $datum->insert_vals(pg_escape_value($name).", ".pg_escape_value($version));
 
     push(@loc_tb_compilers, $datum);
   }
@@ -1640,11 +1660,11 @@ sub gather_all_test_suites() {
     $datum = Stat_Datum->new();
 
     $datum->name($n);
-    $datum->select_stmt("suite_name = '$n'");
-    $datum->select_stmt_stat("test_suite = '$n'");
-    $datum->update_stmt("test_suite = '$n'");
+    $datum->select_stmt("suite_name = ".pg_escape_value($n));
+    $datum->select_stmt_stat("test_suite = ".pg_escape_value($n));
+    $datum->update_stmt("test_suite = ".pg_escape_value($n));
     $datum->insert_keys("test_suite");
-    $datum->insert_vals("'$n'");
+    $datum->insert_vals(pg_escape_value($n));
 
     push(@loc_test_suites, $datum);
   }
@@ -1668,11 +1688,11 @@ sub gather_all_launchers() {
     $datum = Stat_Datum->new();
 
     $datum->name($n);
-    $datum->select_stmt("launcher = '$n'");
-    $datum->select_stmt_stat("launcher = '$n'");
-    $datum->update_stmt("launcher = '$n'");
+    $datum->select_stmt("launcher = ".pg_escape_value($n));
+    $datum->select_stmt_stat("launcher = ".pg_escape_value($n));
+    $datum->update_stmt("launcher = ".pg_escape_value($n));
     $datum->insert_keys("launcher");
-    $datum->insert_vals("'$n'");
+    $datum->insert_vals(pg_escape_value($n));
 
     push(@loc_launchers, $datum);
   }
@@ -1696,11 +1716,11 @@ sub gather_all_resource_mgrs() {
     $datum = Stat_Datum->new();
 
     $datum->name($n);
-    $datum->select_stmt("resource_mgr = '$n'");
-    $datum->select_stmt_stat("resource_mgr = '$n'");
-    $datum->update_stmt("resource_mgr = '$n'");
+    $datum->select_stmt("resource_mgr = ".pg_escape_value($n));
+    $datum->select_stmt_stat("resource_mgr = ".pg_escape_value($n));
+    $datum->update_stmt("resource_mgr = ".pg_escape_value($n));
     $datum->insert_keys("resource_mgr");
-    $datum->insert_vals("'$n'");
+    $datum->insert_vals(pg_escape_value($n));
 
     push(@loc_resource_mgrs, $datum);
   }
@@ -1724,11 +1744,11 @@ sub gather_all_networks() {
     $datum = Stat_Datum->new();
 
     $datum->name($n);
-    $datum->select_stmt("network = '$n'");
-    $datum->select_stmt_stat("network = '$n'");
-    $datum->update_stmt("network = '$n'");
+    $datum->select_stmt("network = ".pg_escape_value($n));
+    $datum->select_stmt_stat("network = ".pg_escape_value($n));
+    $datum->update_stmt("network = ".pg_escape_value($n));
     $datum->insert_keys("network");
-    $datum->insert_vals("'$n'");
+    $datum->insert_vals(pg_escape_value($n));
 
     push(@loc_networks, $datum);
   }
@@ -1941,7 +1961,10 @@ sub update_stat_tuple($$$) {
   }
 
   $stmt = $dbh_mtt->prepare($sql_update);
-  $stmt->execute();
+  if( !$stmt->execute() ) {
+    print("Error: update_stat_tuple(): Unable to execute query:\n".$sql_update."\n");
+    return $loc_id;
+  }
 
   $stmt->finish;
 
@@ -1965,7 +1988,10 @@ sub insert_stat_tuple($$$) {
   }
 
   $stmt = $dbh_mtt->prepare($sql_insert);
-  $stmt->execute();
+  if( !$stmt->execute() ) {
+    print("Error: insert_stat_tuple(): Unable to execute query:\n".$sql_insert."\n");
+    return $loc_id;
+  }
 
   $stmt->finish;
 
@@ -2144,3 +2170,14 @@ sub submit_stat() {
   return $cur_stat_id;
 }
 
+sub pg_escape_value() {
+  my $val = shift(@_);
+
+  # PostgreSQL 8.* series requires ' -> ''
+  # PostgreSQL 7.* series requires ' -> \'
+  $val =~ s/\'/\'\'/g;
+
+  $val = "'" . $val . "'";
+
+  return $val;
+}
