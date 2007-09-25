@@ -23,7 +23,6 @@ use MTT::Messages;
 # See if we've got Env::Modulecmd.
 my $_haveit;
 eval "\$_haveit = require Env::Modulecmd";
-print "HAVEIT: $_haveit\n";
 
 #--------------------------------------------------------------------------
 
