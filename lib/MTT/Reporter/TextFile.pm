@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -22,7 +22,6 @@ use MTT::Files;
 use MTT::Version;
 use Data::Dumper;
 use File::Basename;
-use Text::TabularDisplay;
 use Text::Wrap;
 
 # directory and file to write to
@@ -44,10 +43,19 @@ my $detail_footer;
 # wordwrap pref for reports
 my $textwrap;
 
+# Do we have Text::TabularDisplay?
+my $have_tabulardisplay;
+eval "\$have_tabulardisplay = require Text::TabularDisplay";
+
 #--------------------------------------------------------------------------
 
 sub Init {
     my ($ini, $section) = @_;
+
+    # Sanity check
+    if (!$have_tabulardisplay) {
+        Error("Summary table requested via the TextFile reporter, but the perl module Text::TabularDisplay cannot be found/loaded.  Please install Text::TabularDisplay and try again.\n");
+    }
 
     # Grab TextFile INI params
 
@@ -83,9 +91,8 @@ sub Init {
 sub Finalize {
 
     # Print a roll-up report
-    if (@results) {
-        _summary_report(\@results);
-    }
+    _summary_report(\@results)
+        if (@results);
 
     undef $dirname;
     undef $filename;
@@ -148,8 +155,7 @@ sub _summary_report {
             }
         }
     }
-    print $table->render . "\n";
-    print $summary_footer;
+    print $table->render . "\n" . $summary_footer;
 
     # Write the Summary report to a file
     my $filename = "All_phase-summary.txt";
