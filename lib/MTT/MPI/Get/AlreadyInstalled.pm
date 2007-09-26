@@ -21,7 +21,6 @@ use MTT::Messages;
 use MTT::Files;
 use MTT::FindProgram;
 use MTT::Values;
-use MTT::FindProgram;
 use File::Basename;
 
 #--------------------------------------------------------------------------
