@@ -22,6 +22,7 @@ use MTT::Values::Functions::MPI::IntelMPI;
 use MTT::Values::Functions::MPI::OMPI;
 use MTT::Values::Functions::MPI::MPICH2;
 use MTT::Values::Functions::MPI::ScaliMPI;
+use MTT::Values::Functions::MPI::ClusterTools;
 use MTT::Values::Functions::SSH;
 use MTT::Values::Functions::OS::Solaris;
 use Data::Dumper;
