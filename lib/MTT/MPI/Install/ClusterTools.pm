@@ -20,6 +20,7 @@ use MTT::FindProgram;
 use MTT::Common::GNU_Install;
 use MTT::Files;
 use Cwd;
+use POSIX qw/strftime/;
 
 #--------------------------------------------------------------------------
 
@@ -39,6 +40,7 @@ sub Install {
     my $do_ctinstall = Value($ini, $section, "clustertools_do_ctinstall");
     my $build_number = Value($ini, $section, "clustertools_build_number");
     my $release_number = Value($ini, $section, "clustertools_release");
+    my $create_packages = Value($ini, $section, "clustertools_create_packages");
 
     # Grab the SVK "r" number
     my $svk_r_number = $config->{module_data}->{r};
@@ -131,10 +133,29 @@ sub Install {
 
     if ($install_gate_path) {
         MTT::Files::teamware_bringover($teamware_file_list_program, $install_gate_path, "install", ".");
+        my $save_cwd = cwd();
+        MTT::DoCommand::Chdir("install");
+
+        # Build the Install_Utilities (OMPIompiat package)
+        my $cmd = "make clean release pkg";
+        my $x = MTT::DoCommand::Cmd(1, $cmd);
+        MTT::DoCommand::Chdir($save_cwd);
+
+        if (0 != $x->{exit_status}) {
+            Warning("$package: Error in ClusterTools Installer build command: '$cmd'\n");
+        }
     }
 
-    # TODO:
-    # Create the ClusterTools packages using bld_solaris_pkgs (pkgmk)
+    # Create the ClusterTools packages using pkgproto and pkgmk
+    if ($create_packages) {
+        my $install_dir  = "$config->{installdir}";
+        my $examples_dir = "$config->{abs_srcdir}/examples";
+
+        # Move the examples directory (OMPIomsc package) over to the packaging area
+        MTT::DoCommand::Cmd(1, "cp -r $examples_dir $install_dir");
+
+        create_packages($config->{installdir});
+    }
 
     # Install the packages using the installer
     if ($do_ctinstall) {
@@ -403,4 +424,143 @@ libdir=%s
     }
 }
 
+# Need to prepend copyright and some basic information
+my $year = strftime("%Y", localtime);
+my $machname = `uname -p`;
+chomp $machname;
+
+sub create_packages {
+    my ($proto) = @_;
+
+    # Choose a place for the packages to sit.
+    # For now, "pkgs" is a peer of "install", "src", and "tests"
+    my $destination_dir = "$proto/../pkgs";
+    MTT::Files::mkdir($destination_dir);
+
+    # Prepare an overarching status variable
+    my $success = 1;
+
+    my $save_cwd = cwd();
+    MTT::DoCommand::Chdir($proto);
+
+    my $username  = $ENV{"USER"};
+    my $groupname = $ENV{"GROUP"};
+    my $archname  = $ENV{"MACHTYPE"};
+
+    my $packages;
+    my $brand = "Open MPI";
+    $packages->{"OMPIompi"}->{"directories"} = [qw(bin etc include lib share)];
+    $packages->{"OMPIompi"}->{"name"} = $brand;
+    $packages->{"OMPIompi"}->{"description"} = "$brand Message Passing Interface";
+    $packages->{"OMPIompimn"}->{"directories"} = [qw(man)];
+    $packages->{"OMPIompimn"}->{"name"} = $brand;
+    $packages->{"OMPIomsc"}->{"directories"} = [qw(examples)];
+    $packages->{"OMPIomsc"}->{"name"} = $brand;
+    $packages->{"OMPIomsc"}->{"description"} = "$brand Message Passing Interface Miscellaneous Files";
+
+    foreach my $package_name (keys %$packages) {
+
+        # Write a pkginfo file to pass to the prototype file
+        my $short_name     = $packages->{$package_name}->{"name"};
+        my $description    = $packages->{$package_name}->{"description"};
+        my $pkginfo_file   = _write_pkginfo_file($package_name, $short_name, $description);
+
+        # Write a copyright file to pass to the prototype file
+        my $copyright_file = _write_copyright_file();
+
+        my $contents = "\n# Copyright (c) $year Sun Microsystems, Inc. All rights reserved." .
+                       "\n#" .
+                       "\ni pkginfo=$pkginfo_file" .
+                       "\ni $copyright_file" .
+                       "\nd none \$SUNW_PRODVERS 0755 root bin";
+
+        #my $cmd = "find $directories -print | pkgproto .=\$SUNW_PRODVERS";
+        my $directories = join(" ", @{$packages->{$package_name}->{"directories"}});
+        my $cmd = "pkgproto .=\$SUNW_PRODVERS $directories";
+        my $x = MTT::DoCommand::Cmd(1, $cmd);
+        if (0 != $x->{exit_status}) {
+            Warning("$package: Error in pkgproto: '$cmd'\n");
+            $success = 0;
+            next;
+        }
+
+        # ClusterTools are root packages, so specify this in the 
+        $contents .= $x->{result_stdout};
+        $contents =~ s/\b$username\b/root/g;
+        $contents =~ s/\b$groupname\b/bin/g;
+        $contents =~ s/="ISA"/="$machname"/g;
+
+        # Write out prototype file
+        my $prototype_file = "prototype.$package_name";
+        MTT::Files::SafeWrite(1, $prototype_file, $contents);
+
+        # Write out prototype file
+        $cmd = "pkgmk -b $proto -d $destination_dir -f $prototype_file";
+        $x = MTT::DoCommand::Cmd(1, $cmd);
+        if (0 != $x->{exit_status}) {
+            $success = 0;
+            Warning("$package: Error in pkgmk: '$cmd'\n");
+        }
+    }
+
+    # Print an overall pass/fail message
+    if (! $success) {
+        Verbose("$package: Package creation was unsuccessful.\n");
+    } else {
+        Verbose("$package: Package creation was successful.\n");
+    }
+
+    # Return the directory we were in before entering this subroutine
+    MTT::DoCommand::Chdir($save_cwd);
+}
+
+# Write a pkginfo file for the specified package.
+# To be passed to the prototype file.
+sub _write_pkginfo_file {
+    my ($name, $short_name, $desc) = @_;
+
+    my $contents = "# Copyright (c) $year Sun Microsystems, Inc. All rights reserved.
+#                         Use is subject to license terms.
+# \$COPYRIGHT\$
+# 
+# Additional copyrights may follow
+
+PKG=\"$name\"
+NAME=\"$short_name\"
+VERSION=\"1.0\"
+BASEDIR=\"/opt\"
+ARCH=\"ISA\"
+SUNW_PRODVERS=\"ompi\"
+SUNW_PRODNAME=\"Open MPI\"
+SUNW_PKGVERS=\"1.0\"
+DESC=\"$desc\"
+VENDOR=\"Open MPI\"
+CATEGORY=\"system\"
+CLASSES=\"none\"
+MAXINST=\"1000\"
+HOTLINE=\"Please contact your local service provider.\"
+EMAIL=\"\"";
+
+    my $filename = "pkginfo.$name";
+    MTT::Files::SafeWrite(1, $filename, $contents);
+
+    return $filename;
+}
+
+# Write a copyright file
+sub _write_copyright_file {
+    my $contents = "# Copyright (c) $year Sun Microsystems, Inc. All rights reserved.
+#                         Use is subject to license terms.
+# \$COPYRIGHT\$
+# 
+# Additional copyrights may follow";
+
+    my $filename = "copyright";
+    MTT::Files::SafeWrite(1, $filename, $contents);
+
+    return $filename;
+}
+
+
+# 
 1;
