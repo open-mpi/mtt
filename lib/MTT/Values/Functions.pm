@@ -16,6 +16,7 @@ use strict;
 use File::Find;
 use File::Temp qw(tempfile);
 use File::Basename;
+use Sys::Hostname;
 use MTT::Messages;
 use MTT::Globals;
 use MTT::Files;
@@ -870,14 +871,21 @@ sub find_sub {
 
 #--------------------------------------------------------------------------
 
+# return File::Basename::dirname()
 sub dirname {
     my($str) = @_;
     return File::Basename::dirname($str);
 }
 
+# return File::Basename::basename()
 sub basename {
     my($str) = @_;
     return File::Basename::basename($str);
+}
+
+# return Sys::Hostname::hostname()
+sub hostname {
+    return Sys::Hostname::hostname();
 }
 
 #--------------------------------------------------------------------------

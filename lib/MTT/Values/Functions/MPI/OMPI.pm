@@ -15,6 +15,7 @@ package MTT::Values::Functions::MPI::OMPI;
 
 use strict;
 use MTT::Messages;
+use MTT::Values::Functions;
 use Data::Dumper;
 use Cwd;
 
@@ -210,6 +211,35 @@ sub find_bitness {
     my $file = _run_ompi_info($bindir, $libdir, $str);
     $file->[0] =~ m/${str}([0-9]+)/;
     return $1;
+}
+
+#--------------------------------------------------------------------------
+
+# Return the name of the sessions directory that was removed
+sub remove_sessions_directory {
+    my $funclet = (caller(0))[3];
+    Debug("$funclet: got @_\n");
+
+    my $username     = getpwuid($<);
+    my $hostname     = MTT::Values::Functions::hostname();
+    my $sessions_dir = "/tmp/openmpi-sessions-${username}\@${hostname}_0";
+
+    my $x;
+    if (-d $sessions_dir) {
+        $x = MTT::DoCommand::Cmd(1, "rm -rf $sessions_dir");
+
+        if (0 != $x->{exit_status}) {
+            Debug("$funclet: Unable to remove $sessions_dir.\n");
+            return undef;
+        } else {
+            Debug("$funclet: Removed $sessions_dir.\n");
+        }
+    } else {
+        Debug("$funclet: Did not find an Open MPI sessions directory to remove.\n");
+        return undef;
+    }
+    Debug("$funclet: returning $sessions_dir\n");
+    return $sessions_dir;
 }
 
 1;
