@@ -149,6 +149,20 @@ sub squares {
     return \@ret;
 }
 
+# Similar to the PHP array_fill function
+sub array_fill {
+    Debug("&array_fill got: @_\n");
+    my ($num, $value) = @_;
+
+    my @ret;
+    foreach (1..$num) {
+        push(@ret, $value);
+    }
+
+    Debug("&array_fill returning: @ret\n");
+    return \@ret;
+}
+
 #--------------------------------------------------------------------------
 
 # Returns the log of a number in base N
