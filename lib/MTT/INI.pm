@@ -247,6 +247,13 @@ sub InsertINIPredefines {
         }
     }
 
+    foreach my $section ($ini->Sections) {
+        if (! defined($ini->val($section, "PROGRAM_NAME"))) {
+            $ini->delval($section, "PROGRAM_NAME");
+            $ini->newval($section, "PROGRAM_NAME", $0);
+        }
+    }
+
     return $ini;
 }
 

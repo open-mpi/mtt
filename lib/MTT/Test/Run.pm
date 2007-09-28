@@ -218,6 +218,7 @@ sub _do_run {
                 if ($search eq $mpi_details_simple) {
                     $match = 1;
                     $MTT::Globals::Internals->{mpi_details_name} = $s;
+                    $MTT::Globals::Internals->{mpi_details_simple_name} = $mpi_details_simple;
                     last;
                 }
             }

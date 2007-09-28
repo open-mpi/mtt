@@ -117,6 +117,7 @@ my $debug_arg;
 my $verbose_arg;
 my $no_execute_arg;
 my $force_arg;
+my $clean_start_arg;
 my $mpi_get_arg;
 my $mpi_install_arg;
 my $test_get_arg;
@@ -141,6 +142,7 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
                                   "verbose|v" => \$verbose_arg,
                                   "no-execute|n" => \$no_execute_arg,
                                   "force" => \$force_arg,
+                                  "clean-start" => \$clean_start_arg,
                                   "mpi-get!" => \$mpi_get_arg,
                                   "mpi-install!" => \$mpi_install_arg,
                                   "test-get!" => \$test_get_arg,
@@ -204,6 +206,8 @@ if (!$ok || $help_arg) {
 --print-time|-p               Display the amount of time taken in each phase
 --force                       Do steps even if they would not normally
                               be executed
+--clean-start                 Clean the scratch directory from
+                              past MTT invocations before running
 --[no-]trial                  Use when testing your MTT client setup; 
                               results that are generated and submitted
                               to the database are marked as \"trials\"
@@ -352,6 +356,13 @@ my $install_dir =
     MTT::Files::mkdir("$scratch_arg/$MTT::Defaults::System_config->{install_subdir}");
 my $runs_data_dir = 
     MTT::Files::mkdir("$scratch_arg/$MTT::Defaults::System_config->{runs_data_subdir}");
+
+# If requested, do a clean start
+if ($clean_start_arg) {
+    MTT::DoCommand::Cmd("rm -rf $source_dir");
+    MTT::DoCommand::Cmd("rm -rf $install_dir");
+    MTT::DoCommand::Cmd("rm -rf $runs_data_dir");
+}
 
 # Load up all the MPI sources that this system has previously obtained
 MTT::MPI::LoadSources($source_dir)

@@ -2030,6 +2030,11 @@ sub mpi_details_name {
     return $MTT::Globals::Internals->{mpi_details_name};
 }
 
+sub mpi_details_simple_name {
+    Debug("&mpi_details_simple_name returning: $MTT::Globals::Internals->{mpi_details_simple_name}\n");
+    return $MTT::Globals::Internals->{mpi_details_simple_name};
+}
+
 #--------------------------------------------------------------------------
 #--------------------------------------------------------------------------
 #--------------------------------------------------------------------------
