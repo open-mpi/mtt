@@ -30,7 +30,7 @@ my $verbose_out;
 # section name (needed for $var substitution in
 # below EvaluateString() calls)
 my $ini;
-my $test_run_full_name = $MTT::Globals::Internals->{test_run_full_name};
+my $test_run_full_name;
 
 #--------------------------------------------------------------------------
 
@@ -56,7 +56,7 @@ sub RunEngine {
 
         $printed = 0;
         if (!exists($run->{executable})) {
-            Warning("No executable specified for text; skipped\n");
+            Warning("No executable specified for test; skipped\n");
             next;
         }
 
@@ -68,6 +68,7 @@ sub RunEngine {
         $run->{analyze_module} = $ret->{analyze_module};
         
         $run->{test_build_simple_section_name} = $test_build->{simple_section_name};
+        $test_run_full_name = $MTT::Globals::Internals->{test_run_full_name};
 
         # Setup some globals
         $MTT::Test::Run::test_executable = $run->{executable};
@@ -118,6 +119,7 @@ sub _run_one_np {
     my ($install_dir, $run, $mpi_details, $np, $force) = @_;
 
     my $mpi_details_name = $MTT::Globals::Internals->{mpi_details_name};
+    $test_run_full_name = $MTT::Globals::Internals->{test_run_full_name};
 
     my $name;
     if (-e $MTT::Test::Run::test_executable) {
