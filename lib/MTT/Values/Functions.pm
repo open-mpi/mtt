@@ -302,6 +302,7 @@ sub prime {
    
     my @ret;
     foreach my $prime (@primes) {
+        next if ($prime < $min);
         last if ($prime > $max);
         push(@ret, $prime);
     }
