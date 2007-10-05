@@ -512,8 +512,8 @@ DROP TABLE test_run_command CASCADE;
 CREATE TABLE test_run_command (
     test_run_command_id          serial,
 
-    -- mpirun, mpiexec, yod, ...
-    launcher            varchar(16) DEFAULT '',
+    -- mpirun, mpiexec, yod, ... 128 chars to handle script names
+    launcher            varchar(128) DEFAULT '',
     -- Resource Manager [RSH, SLURM, PBS, ...]
     resource_mgr        varchar(32) DEFAULT '',
     -- Runtime Parameters [MCA, SSI, ...]
