@@ -47,7 +47,7 @@ CREATE TABLE mtt_stats_contrib (
     test_suite                  varchar(32),
 
     -- Launcher
-    launcher                    varchar(16),
+    launcher                    varchar(128),
 
     -- Resource Mgr
     resource_mgr                varchar(32),
