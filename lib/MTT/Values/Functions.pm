@@ -1281,7 +1281,7 @@ sub have_ini_max_procs {
     Debug("&have_ini_max_procs\n");
 
     return (defined($MTT::Globals::Values->{max_np}) &&
-            exists($MTT::Globals::Valeues->{max_np})) ? "1" : "0";
+            exists($MTT::Globals::Values->{max_np})) ? "1" : "0";
 }
 
 #--------------------------------------------------------------------------
