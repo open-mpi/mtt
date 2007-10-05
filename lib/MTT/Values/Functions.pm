@@ -1119,6 +1119,18 @@ sub env_max_procs {
 
 #--------------------------------------------------------------------------
 
+# Find the max number of hosts that we can run with. 
+sub env_max_hosts {
+    Debug("&env_max_hosts\n");
+
+    my $hosts = env_hosts(1);
+    my @hosts = split(/,/, $hosts);
+    Debug("&env_max_hosts: returning " . $#hosts + 1 . "\n");
+    return $#hosts + 1;
+}
+
+#--------------------------------------------------------------------------
+
 # Find the hosts that we can run with
 sub env_hosts {
     my ($want_unique) = @_;
