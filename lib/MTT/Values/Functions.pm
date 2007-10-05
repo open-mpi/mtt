@@ -1091,6 +1091,10 @@ sub env_name {
 sub env_max_procs {
     Debug("&env_max_procs\n");
 
+    # Manual specification of max_np
+    return ini_max_procs()
+        if have_ini_max_procs();
+
     # Resource managers
     return slurm_max_procs()
         if slurm_job();
@@ -1108,10 +1112,6 @@ sub env_max_procs {
     # Hostlist
     return hostlist_max_procs()
         if have_hostlist();
-
-    # Manual specification of max_np
-    return ini_max_procs()
-        if have_ini_max_procs();
 
     # Not running under anything; just return 2.
     return "2";
