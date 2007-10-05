@@ -28,6 +28,7 @@ To announce to OMPI core testers:
     - &split() now takes optional 2nd param to specify token
     - &find(regexp, directory list)
     - &rm_name() -- close to, but slightly different than &env_name()
+    - &prime(min,max) - return prime numbers between min and max
     - &env_max_hosts()
 
 - See https://svn.open-mpi.org/trac/mtt/changeset/863:
@@ -39,6 +40,9 @@ To announce to OMPI core testers:
 
 - --section: beware of section names with spaces!  s/ /./g in --section
     arguments if you have spaces in your section names.
+
+- --clean-start: remove MTT sources, installations, and metadata out of
+    the scratch directory before running
 
 - @variable@ expansion *everywhere* in ini files (not just in "exec")
 
@@ -97,3 +101,4 @@ To announce to OMPI core testers:
   funclets
 
 - Added "INI_NAME" as a predefined INI parameter (a la Perl's $PROGRAM_NAME)
+- Added "PROGRAM_NAME" as a predefined INI parameter (a la Perl's $PROGRAM_NAME)
