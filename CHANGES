@@ -96,3 +96,10 @@ To announce to OMPI core testers:
 
 - before_any, before_each, after_any, and after_each steps can be set to
   funclets
+
+- Added several performance stdout analyzers:
+  - NBC Bench
+  - OSU benchmarks
+  - SKaMPI
+  - IMB
+  - NetPIPE
