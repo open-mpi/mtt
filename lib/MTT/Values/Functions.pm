@@ -1667,9 +1667,12 @@ sub loadleveler_hosts {
 # Return the version of the GNU C compiler
 sub get_gcc_version {
     Debug("&get_gcc_version\n");
+    my $gcc = shift;
     my $ret = "unknown";
 
-    if (open GCC, "gcc --version|") {
+    $gcc = "gcc"
+        if (!defined($gcc));
+    if (open GCC, "$gcc --version|") {
         my $str = <GCC>;
         close(GCC);
         chomp($str);
@@ -1687,9 +1690,12 @@ sub get_gcc_version {
 # Return the version of the Intel C compiler
 sub get_icc_version {
     Debug("&get_icc_version\n");
+    my $icc = shift;
     my $ret = "unknown";
 
-    if (open ICC, "icc --version|") {
+    $icc = "icc"
+        if (!defined($icc));
+    if (open ICC, "$icc --version|") {
         my $str = <ICC>;
         close(ICC);
         chomp($str);
@@ -1707,9 +1713,12 @@ sub get_icc_version {
 # Return the version of the PGI C compiler
 sub get_pgcc_version {
     Debug("&get_pgcc_version\n");
+    my $pgcc = shift;
     my $ret = "unknown";
 
-    if (open PGCC, "pgcc -V|") {
+    $pgcc = "pgcc"
+        if (!defined($pgcc));
+    if (open PGCC, "$pgcc -V|") {
         my $str = <PGCC>;
         $str = <PGCC>;
         close(PGCC);
@@ -1728,12 +1737,15 @@ sub get_pgcc_version {
 # Return the version of the Sun Studio C compiler
 sub get_sun_cc_version {
     Debug("&get_sun_cc_version\n");
+    my $cc = shift;
+    $cc = "cc"
+        if (!defined($cc));
 
     my $cc_v;
     my $version;
     my $date;
 
-    $cc_v = `cc -V 2>\&1 | head -1`;
+    $cc_v = `$cc -V 2>\&1 | head -1`;
 
     $cc_v =~ m/(\b5.\d+\b)/;
     $version = $1;
@@ -1752,9 +1764,12 @@ sub get_sun_cc_version {
 # Return the version of the Pathscale C compiler
 sub get_pathcc_version {
     Debug("&get_pathcc_version\n");
+    my $pathcc = shift;
     my $ret = "unknown";
 
-    if (open PATHCC, "pathcc -dumpversion|") {
+    $pathcc = "pathcc"
+        if (!defined($pathcc));
+    if (open PATHCC, "$pathcc -dumpversion|") {
         $ret = <PATHCC>;
         close(PATHCC);
         chomp($ret);
