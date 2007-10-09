@@ -30,6 +30,8 @@ To announce to OMPI core testers:
     - &rm_name() -- close to, but slightly different than &env_name()
     - &prime(min,max) - return prime numbers between min and max
     - &env_max_hosts()
+    - &get_<compiler>_version() funclets now take optional parameter
+      specifying the argv[0] to use.
 
 - See https://svn.open-mpi.org/trac/mtt/changeset/863:
   - re-wrote funclet parser; MUST edit INI file and remove excess
