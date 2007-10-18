@@ -142,7 +142,7 @@ sub Get {
     MTT::Files::http_get("$url/$sha1_checksums");
 
     # compare the md5sum
-    my $md5_file = `grep $ret->{version}.tar.gz $md5_checksums | cut -d\\  -f1`;
+    my $md5_file = `fgrep $ret->{version}.tar.gz $md5_checksums | cut -d\\  -f1`;
     chomp($md5_file);
     my $md5_actual = MTT::Files::md5sum("$tarball_dir/$tarball_name");
     if ($md5_actual) {
@@ -154,7 +154,7 @@ sub Get {
     }
 
     # compare the sha1sum
-    my $sha1_file = `grep $ret->{version}.tar.gz $sha1_checksums | cut -d\\  -f1`;
+    my $sha1_file = `fgrep $ret->{version}.tar.gz $sha1_checksums | cut -d\\  -f1`;
     chomp($sha1_file);
     my $sha1_actual = MTT::Files::sha1sum("$tarball_dir/$tarball_name");
     if ($sha1_actual) {
