@@ -207,6 +207,8 @@ if (!$ok || $help_arg) {
 --debug|-d                    Output lots of debug messages
 --verbose|-v                  Output some status / verbose messages
                               while processing
+--force                       Do steps even if they would not normally
+                              be executed
 --no-execute|-n               Do not execute any commands (developers only)
 --print-cmd-time              Display the amount of time taken in each command
 --print-phases-time           Display the amount of time taken in each phase
