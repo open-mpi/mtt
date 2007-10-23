@@ -46,6 +46,10 @@ To announce to OMPI core testers:
 - --clean-start: remove MTT sources, installations, and metadata out of
     the scratch directory before running
 
+- --print-cmd-time: Display the amount of time taken in each command
+- --print-phases-time: Display the amount of time taken in each phase
+- --print-time|-p: Alias for --print-phases-time --print-cmd-time
+
 - @variable@ expansion *everywhere* in ini files (not just in "exec")
 
 - MTT lock server.

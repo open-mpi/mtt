@@ -37,7 +37,14 @@ my $server_socket;
 my $server_addr;
 my $tcp_proto;
 
+# Print command timings?
+my $time_arg;
+
 #--------------------------------------------------------------------------
+
+sub DoCommand {
+    ($time_arg, $no_execute) = @_;
+}
 
 sub _kill_proc {
     my ($pid) = @_;
@@ -170,6 +177,10 @@ sub Cmd {
         $max_stdout_lines, $max_stderr_lines) = @_;
 
     Debug("Running command: $cmd\n");
+
+    # Start the timer
+
+    &MTT::Timer::start($time_arg);
 
     # Perl kills me here.  It does its own buffering of pipes which
     # interferes with trying to loop over select() and read() from
@@ -428,6 +439,10 @@ sub Cmd {
     }
     $msg .= "\n";
     Debug($msg);
+
+    # Display timing info
+
+    &MTT::Timer::stop("Command: $cmd", $time_arg);
 
     # Return an anonymous hash containing the relevant data
 

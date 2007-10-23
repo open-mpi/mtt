@@ -108,6 +108,7 @@ use MTT::Trim;
 use MTT::DoCommand;
 use MTT::Lock;
 use MTT::Values;
+use MTT::Timer;
 
 my @file_arg;
 my $stdin_arg;
@@ -129,6 +130,8 @@ my $trim_arg;
 my $version_arg;
 my $ini_args;
 my $time_arg;
+my $time_phases_arg;
+my $time_cmd_arg;
 my $trial_arg;
 
 my @SAVE_ARGV = @ARGV;
@@ -153,6 +156,8 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
                                   "trim!" => \$trim_arg,
                                   "version" => \$version_arg,
                                   "print-time|p" => \$time_arg,
+                                  "print-phases-time" => \$time_phases_arg,
+                                  "print-cmd-time" => \$time_cmd_arg,
                                   "trial!" => \$trial_arg,
                                   );
 # Everything ok?
@@ -203,9 +208,9 @@ if (!$ok || $help_arg) {
 --verbose|-v                  Output some status / verbose messages
                               while processing
 --no-execute|-n               Do not execute any commands (developers only)
---print-time|-p               Display the amount of time taken in each phase
---force                       Do steps even if they would not normally
-                              be executed
+--print-cmd-time              Display the amount of time taken in each command
+--print-phases-time           Display the amount of time taken in each phase
+--print-time|-p               Alias for --print-phases-time --print-cmd-time
 --clean-start                 Clean the scratch directory from
                               past MTT invocations before running
 --[no-]trial                  Use when testing your MTT client setup; 
@@ -276,15 +281,24 @@ special regexp characters in the pattern such as '.' or '.*'.  E.g.,
     exit($ok);
 }
 
+# Process --print-time arguments
+
+if ($time_arg) {
+    $time_phases_arg = 1;
+    $time_cmd_arg = 1;
+}
+
 # Check debug
 
 my $debug = ($debug_arg ? 1 : 0);
 my $verbose = ($verbose_arg ? 1 : $debug);
+my $time_cmd = ($time_cmd_arg ? 1 : 0);
+my $time_phases = ($time_phases_arg ? 1 : 0);
+my $no_execute = ($no_execute_arg ? 1 : 0);
 MTT::Messages::Messages($debug, $verbose, cwd());
 MTT::Messages::Debug("Debug is $debug, Verbose is $verbose\n");
 MTT::Messages::Verbose("*** MTT: $0 @SAVE_ARGV\n");
-
-$MTT::DoCommand::no_execute = $no_execute_arg;
+MTT::DoCommand::DoCommand($time_cmd, $no_execute);
 
 MTT::FindProgram::FindZeroDir();
 
@@ -384,90 +398,6 @@ MTT::Test::LoadBuilds($install_dir)
 MTT::Test::LoadRuns($runs_data_dir)
     if ($test_run || $trim);
 
-
-########################################################################
-# Timekeeping
-########################################################################
-
-my $start_timestamp_string;
-my $start_timestamp_data;
-my $start_timestamp_first_string;
-my $start_timestamp_first_data;
-sub start_time {
-    if (!defined($start_timestamp_string)) {
-        $start_timestamp_first_string = $start_timestamp_string = localtime;
-        $start_timestamp_first_data = $start_timestamp_data = time;
-    } else {
-        $start_timestamp_string = localtime;
-        $start_timestamp_data = time;
-    }
-}
-
-sub timestamp_sub {
-    my ($start, $stop) = @_;
-    my ($days, $hours, $mins, $secs);
-
-    # Constants
-    my $m = 60;
-    my $h = $m * 60;
-    my $d = $h * 24;
-
-    # Baseline difference
-    my $elapsed = $stop - $start;
-
-    # Individual components
-    if ($elapsed > $d) {
-        use integer;
-        $days = $elapsed / $d;
-        $elapsed -= $days * $d;
-    } else {
-        $days = 0;
-    }
-
-    if ($elapsed > $h) {
-        use integer;
-        $hours = $elapsed / $h;
-        $elapsed -= $hours * $h;
-    } else {
-        $hours = 0;
-    }
-
-    if ($elapsed > $m) {
-        use integer;
-        $mins = $elapsed / $m;
-        $elapsed -= $mins * $m;
-    } else {
-        $mins = 0;
-    }
-
-    my $secs = $elapsed;
-
-    my $elapsed_string = sprintf("%02d:%02d:%02d", $hours, $mins, $secs);
-    if ($days > 0) {
-        $elapsed_string = "$days days, $elapsed_string";
-    }
-    return $elapsed_string;
-}
-
-sub stop_time {
-    my $name = shift;
-    if ($time_arg) {
-        my $stop_timestamp_string = localtime;
-        my $stop_timestamp_data = time;
-
-        my $elapsed_string = timestamp_sub($start_timestamp_data, 
-                                           $stop_timestamp_data);
-        my $total_elapsed_string = timestamp_sub($start_timestamp_first_data,
-                                                 $stop_timestamp_data);
-
-        print ">> Phase: $name
-   Started:       $start_timestamp_string
-   Stopped:       $stop_timestamp_string
-   Elapsed:       $elapsed_string
-   Total elapsed: $total_elapsed_string\n";
-    }
-}
-
 ########################################################################
 # Run the phases
 ########################################################################
@@ -513,38 +443,38 @@ foreach my $hash (@ini_list) {
     MTT::Reporter::Init($ini);
 
     if ($mpi_get && !MTT::Util::find_terminate_file()) {
-        start_time();
+        &MTT::Timer::start($time_phases);
         MTT::MPI::Get::Get($ini, $source_dir, $force_arg);
-        stop_time("MPI Get");
+        &MTT::Timer::stop("Phase: MPI Get", $time_phases, 1);
     }
     if ($mpi_install && !MTT::Util::find_terminate_file()) {
-        start_time();
+        &MTT::Timer::start($time_phases);
         MTT::MPI::Install::Install($ini, $ini_full, $install_dir, $force_arg);
-        stop_time("MPI Install");
+        &MTT::Timer::stop("Phase: MPI Install", $time_phases, 1);
     }
     if ($test_get && !MTT::Util::find_terminate_file()) {
-        start_time();
+        &MTT::Timer::start($time_phases);
         MTT::Test::Get::Get($ini, $source_dir, $force_arg);
-        stop_time("Test Get");
+        &MTT::Timer::stop("Phase: Test Get", $time_phases, 1);
     }
     if ($test_build && !MTT::Util::find_terminate_file()) {
-        start_time();
+        &MTT::Timer::start($time_phases);
         MTT::Test::Build::Build($ini, $ini_full, $install_dir, $force_arg);
-        stop_time("Test Build");
+        &MTT::Timer::stop("Phase: Test Build", $time_phases, 1);
     }
     if ($test_run && !MTT::Util::find_terminate_file()) {
-        start_time();
+        &MTT::Timer::start($time_phases);
         MTT::Test::Run::Run($ini, $ini_full, $install_dir, $runs_data_dir,
                             $force_arg);
-        stop_time("Test Run");
+        &MTT::Timer::stop("Phase: Test Run", $time_phases, 1);
     }
 
     # Remove old sources, installs, and builds
 
     if ($trim) {
-        start_time();
+        &MTT::Timer::start($time_phases);
         MTT::Trim::Trim($ini, $source_dir, $install_dir);
-        stop_time("Trim");
+        &MTT::Timer::stop("Phase: Trim", $time_phases, 1);
     }
 
     # Shutdown the reporter
