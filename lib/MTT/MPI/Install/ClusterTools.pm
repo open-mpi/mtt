@@ -45,6 +45,7 @@ sub Install {
     my $create_packages = Value($ini, $section, "clustertools_create_packages");
     my $svn_r_number = Value($ini, $section, "clustertools_svn_r_number");
     my $do_autogen = Value($ini, $section, "clustertools_do_autogen");
+    my $skip_configure = Value($ini, $section, "clustertools_skip_configure");
 
     # Process global clustertools input parameter(s)
     $release_number = Value($ini, $section, "clustertools_release");
@@ -126,7 +127,7 @@ sub Install {
         # After the first pass of a multi-lib build, do "make clean" 
         # and skip the configure step
         $gnu->{make_clean} = 1;
-        $gnu->{skip_configure} = 1 if ($i gt 0);
+        $gnu->{skip_configure} = 1 if ($skip_configure);
 
         my $install = MTT::Common::GNU_Install::Install($gnu);
         foreach my $k (keys(%{$install})) {
