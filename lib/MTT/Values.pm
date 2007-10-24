@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -24,6 +25,7 @@ use MTT::Values::Functions::MPI::MPICH2;
 use MTT::Values::Functions::MPI::ScaliMPI;
 use MTT::Values::Functions::MPI::ClusterTools;
 use MTT::Values::Functions::SSH;
+use MTT::Values::Functions::SVK;
 use MTT::Values::Functions::OS::Solaris;
 use Data::Dumper;
 use Config::IniFiles;
@@ -172,7 +174,7 @@ sub _find_func_args {
 
     # Loop getting all the arguments.  Each argument will be
     # surrounded by arbitrary whitespace (which will be trimmed) and
- # delimited by either a , (indicating more arguments are coming)
+    # delimited by either a , (indicating more arguments are coming)
     # or a ) (indicating that the argument list is done).  Take care
     # to observe quoted arguments so that we do not prematurely end an
     # argument (e.g., a comma inside a quoted argument should not end
@@ -341,13 +343,22 @@ sub _replace_escapes {
 # Get a value from an INI file and call all the functions that it may
 # have invoked
 sub Value {
-    my ($ini, $section, $name) = @_;
-    Debug("Value: $name\n");
+    Debug("Value got: $@_\n");
+    my $ini = shift @_;
+    my $section = shift @_;
+    my @names = @_;
 
-    my $val = $ini->val($section, $name);
-    return undef
-        if (!defined($val));
-    return EvaluateString($val, $ini, $section);
+    my $val;
+    my $ret;
+    foreach my $name (@names) {
+        $val = $ini->val($section, $name);
+        if (defined($val)) {
+            $ret = EvaluateString($val, $ini, $section);
+            last;
+        }
+    }
+    Debug("Value returning: $ret\n");
+    return $ret;
 }
 
 #--------------------------------------------------------------------------

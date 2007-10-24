@@ -24,6 +24,9 @@ use POSIX qw/strftime/;
 
 #--------------------------------------------------------------------------
 
+# Global ClusterTools release number
+my $release_number;
+
 sub Install {
     my ($ini, $section, $config) = @_;
     my $x;
@@ -39,14 +42,18 @@ sub Install {
     # Process clustertools input parameters
     my $do_ctinstall = Value($ini, $section, "clustertools_do_ctinstall");
     my $build_number = Value($ini, $section, "clustertools_build_number");
-    my $release_number = Value($ini, $section, "clustertools_release");
     my $create_packages = Value($ini, $section, "clustertools_create_packages");
+    my $svn_r_number = Value($ini, $section, "clustertools_svn_r_number");
+    my $do_autogen = Value($ini, $section, "clustertools_do_autogen");
+
+    # Process global clustertools input parameter(s)
+    $release_number = Value($ini, $section, "clustertools_release");
 
     # Grab the SVK "r" number
     my $svk_r_number = $config->{module_data}->{r};
 
     # Update the version file
-    my $greek = "ct${release_number}b${build_number}r${svk_r_number}";
+    my $greek = "r${svn_r_number}-ct${release_number}b${build_number}r${svk_r_number}";
     &_update_version_file($greek, "VERSION");
 
     # Update the openmpi-mca-params.conf file
@@ -86,7 +93,7 @@ sub Install {
 
     # Run autogen.sh
 
-    $x = MTT::DoCommand::Cmd(1, "./autogen.sh");
+    $x = MTT::DoCommand::Cmd(1, "./autogen.sh") if ($do_autogen);
 
     # Run configure / make all / make check / make install
 
@@ -99,6 +106,7 @@ sub Install {
         push(@$configure_arguments, $tmp);
     }
 
+    my $i = 0;
     foreach my $_configure_arguments (@$configure_arguments) {
         my $gnu = {
             configdir => $config->{configdir},
@@ -112,7 +120,14 @@ sub Install {
             stdout_save_lines => $config->{stdout_save_lines},
             stderr_save_lines => $config->{stderr_save_lines},
             merge_stdout_stderr => $config->{merge_stdout_stderr},
+            restart_on_pattern => $config->{restart_on_pattern},
         };
+
+        # After the first pass of a multi-lib build, do "make clean" 
+        # and skip the configure step
+        $gnu->{make_clean} = 1;
+        $gnu->{skip_configure} = 1 if ($i gt 0);
+
         my $install = MTT::Common::GNU_Install::Install($gnu);
         foreach my $k (keys(%{$install})) {
             $ret->{$k} = $install->{$k};
@@ -121,6 +136,8 @@ sub Install {
         # If either of the two builds fails, the entire build has failed
         return $ret
             if (exists($ret->{fail}));
+
+        $i++;
     }
 
     # Create wrapper data files
@@ -236,7 +253,6 @@ sub _do_ctinstall {
     return $ret;
 }
 
-
 # Update the VERSION file
 sub _update_version_file {
     my ($greek) = @_;
@@ -244,8 +260,11 @@ sub _update_version_file {
     # Read in the default VERSION file
     my $contents = MTT::Files::Slurp("./VERSION");
 
-    # Splice in the greek value
-    $contents =~ s/greek=.*/greek=$greek/;
+    # Splice in the greek value and direct configure to
+    # not dynamically grab the SVN r #
+    $contents =~ s/(\ngreek)=.*/$1=$greek/;
+    $contents =~ s/(\nwant_svn)=.*/$1=0/;
+    $contents =~ s/(\nsvn_r)=.*/$1=0/;
     
     # Write changed file out
     MTT::Files::SafeWrite(1, "./VERSION", $contents);
@@ -346,6 +365,9 @@ sub _create_wrapper_data_files {
     $wrapper_data->{32}->{linker_flags} = "-R/opt/mx/lib -R$installdir/lib";
     $wrapper_data->{64}->{linker_flags} = "-R/opt/mx/lib/sparcv9 -R$installdir/lib/sparcv9";
 
+    # For mpif90, point to mpi.mod using the -M flag
+    $wrapper_data->{"f90"}->{module_option} = "-M";
+
     # Template for the wrapper data files
     my $template = "#
 # default / 32 bit compilations block below
@@ -359,6 +381,7 @@ language=%s
 compiler_env=%s
 compiler_flags_env=%s
 compiler=%s
+module_option=%s
 extra_includes=%s
 preprocessor_flags=$preprocessor_flags
 compiler_flags=$compiler_flags
@@ -380,6 +403,7 @@ language=%s
 compiler_env=%s
 compiler_flags_env=%s
 compiler=%s
+module_option=%s
 extra_includes=%s
 preprocessor_flags=$preprocessor_flags
 compiler_flags=$compiler_flags
@@ -398,6 +422,7 @@ libdir=%s
                 $wrapper_data->{$compiler}->{compiler_env},
                 $wrapper_data->{$compiler}->{compiler_flags_env},
                 $wrapper_data->{$compiler}->{underlying_compiler},
+                $wrapper_data->{$compiler}->{module_option},
                 $wrapper_data->{$compiler}->{extra_includes},
                 $wrapper_data->{$compiler}->{libs},
             );
@@ -519,6 +544,14 @@ sub create_packages {
 sub _write_pkginfo_file {
     my ($name, $short_name, $desc) = @_;
 
+    my $pkgvers;
+    $pkgvers->{"7.0"} = "1.0";
+    $pkgvers->{"7.1"} = "2.0";
+    $pkgvers->{"8.0"} = "3.0";
+
+    # Set the SUNW_PKGVERS string
+    my $version = $pkgvers->{$release_number};
+
     my $contents = "# Copyright (c) $year Sun Microsystems, Inc. All rights reserved.
 #                         Use is subject to license terms.
 # \$COPYRIGHT\$
@@ -527,12 +560,12 @@ sub _write_pkginfo_file {
 
 PKG=\"$name\"
 NAME=\"$short_name\"
-VERSION=\"1.0\"
+VERSION=\"$release_number\"
 BASEDIR=\"/opt\"
 ARCH=\"ISA\"
 SUNW_PRODVERS=\"ompi\"
 SUNW_PRODNAME=\"Open MPI\"
-SUNW_PKGVERS=\"1.0\"
+SUNW_PKGVERS=\"$version\"
 DESC=\"$desc\"
 VENDOR=\"Open MPI\"
 CATEGORY=\"system\"

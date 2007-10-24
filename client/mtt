@@ -121,9 +121,11 @@ my $force_arg;
 my $clean_start_arg;
 my $mpi_get_arg;
 my $mpi_install_arg;
+my $mpi_phases_arg;
 my $test_get_arg;
 my $test_build_arg;
 my $test_run_arg;
+my $test_phases_arg;
 my @section_arg;
 my @no_section_arg;
 my $trim_arg;
@@ -133,6 +135,7 @@ my $time_arg;
 my $time_phases_arg;
 my $time_cmd_arg;
 my $trial_arg;
+my $get_value_arg;
 
 my @SAVE_ARGV = @ARGV;
 
@@ -148,9 +151,11 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
                                   "clean-start" => \$clean_start_arg,
                                   "mpi-get!" => \$mpi_get_arg,
                                   "mpi-install!" => \$mpi_install_arg,
+                                  "mpi-phases!" => \$mpi_phases_arg,
                                   "test-get!" => \$test_get_arg,
                                   "test-build!" => \$test_build_arg,
                                   "test-run!" => \$test_run_arg,
+                                  "test-phases!" => \$test_phases_arg,
                                   "section=s" => \@section_arg,
                                   "no-section=s" => \@no_section_arg,
                                   "trim!" => \$trim_arg,
@@ -159,8 +164,8 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
                                   "print-phases-time" => \$time_phases_arg,
                                   "print-cmd-time" => \$time_cmd_arg,
                                   "trial!" => \$trial_arg,
+                                  "get-value=s" => \$get_value_arg,
                                   );
-# Everything ok?
 
 if ($version_arg) {
     print "MTT Version $MTT::Version::Major.$MTT::Version::Minor\n";
@@ -197,10 +202,49 @@ if ($file_arg[0] eq "-" or $stdin_arg) {
     open($file_arg[0], "-");
 }
 
+# Everything ok?
+
 if (!$ok || $help_arg) {
-    print("Command line error\n") 
+    print("Command line error\n")
         if (!$ok);
     print "Options:
+--file|-f <config_file>         Specify the configuration file
+--scratch|-s <dir_name>         Scratch directory (where all work is done)
+--help|-h                       This message
+--debug|-d                      Output lots of debug messages
+--verbose|-v                    Output some status / verbose messages
+                                while processing
+--no-execute|-n                 Do not execute any commands (developers only)
+--print-cmd-time                Display the amount of time taken in each command
+--print-phases-time             Display the amount of time taken in each phase
+--print-time|-p                 Alias for --print-phases-time --print-cmd-time
+--force                         Do steps even if they would not normally
+                                be executed
+--clean-start                   Clean the scratch directory from
+                                past MTT invocations before running
+--[no-]trial                    Use when testing your MTT client setup; 
+                                results that are generated and submitted
+                                to the database are marked as \"trials\"
+                                and are not included in normal
+                                reporting.  Alternatively,
+                                \"--no-trial\" can be specified to force
+                                a \"normal\" submission (this is the
+                                default).
+--[no-]mpi-get                  Do the \"MPI get\" phase
+--[no-]mpi-install              Do the \"MPI install\" phase
+--[no-]mpi-phases               Alias for --mpi-get --mpi-install
+--[no-]test-get                 Do the \"Test get\" phase
+--[no-]test-build               Do the \"Test build\" phase
+--[no-]test-run                 Do the \"Test run\" phase
+--[no-]test-phases              Alias for --test-get --test-build --test-run
+--[no-]trim                     Do the \"Trim\" phase
+--[no-]section                  Do a specific section(s)
+--get-value <section>,<param>   Print the value of the specified INI paramter 
+                                and exit
+field=value                     Replace parameter \"foo\" from the INI file
+                                with the value \"bar\" (i.e., override the
+                                INI file value)
+=======
 --file|-f <config_file>       Specify the configuration file
 --scratch|-s <dir_name>       Scratch directory (where all work is done)
 --help|-h                     This message
@@ -329,34 +373,46 @@ my $test_build = 1;
 my $test_run = 1;
 my $trim = 1;
 
-if (defined($mpi_get_arg) || defined($mpi_install_arg) ||
-    defined($test_get_arg) || defined($test_build_arg) || 
+if (defined($mpi_get_arg) || defined($mpi_install_arg) || defined($mpi_phases_arg) ||
+    defined($test_get_arg) || defined($test_build_arg) || defined($test_phases_arg) ||
     defined($test_run_arg) || defined($trim_arg)) {
 
     # If anything is defined as "yes", then only do those
 
-    if ($mpi_get_arg || $mpi_install_arg || 
-        $test_get_arg || $test_build_arg || $test_run_arg ||
+    if ($mpi_get_arg || $mpi_install_arg || $mpi_phases_arg ||
+        $test_get_arg || $test_build_arg || $test_run_arg || $test_phases_arg ||
         $trim_arg) {
 
         $mpi_get = $mpi_install = $test_get = $test_build = $test_run = $trim = 0;
 
-        $mpi_get = 1 if defined($mpi_get_arg) && $mpi_get_arg;
-        $mpi_install = 1 if defined($mpi_install_arg) && $mpi_install_arg;
-        $test_get = 1 if defined($test_get_arg) && $test_get_arg;
-        $test_build = 1 if defined($test_build_arg) && $test_build_arg;
-        $test_run = 1 if defined($test_run_arg) && $test_run_arg;
+        $mpi_get = 1 if (defined($mpi_get_arg) && $mpi_get_arg) or
+                        (defined($mpi_phases_arg) && $mpi_phases_arg); 
+        $mpi_install = 1 if (defined($mpi_install_arg) && $mpi_install_arg) or
+                            (defined($mpi_phases_arg) && $mpi_phases_arg);
+        $test_get = 1 if (defined($test_get_arg) && $test_get_arg) or
+                         (defined($test_phases_arg) && $test_phases_arg);
+        $test_build = 1 if (defined($test_build_arg) && $test_build_arg) or
+                           (defined($test_phases_arg) && $test_phases_arg);
+        $test_run = 1 if (defined($test_run_arg) && $test_run_arg) or
+                         (defined($test_phases_arg) && $test_phases_arg);
+
         $trim = 1 if defined($trim_arg) && $trim_arg;
     } 
 
     # Otherwise, just negate whatever option was negated
 
     else {
-        $mpi_get = 0 if defined($mpi_get_arg) && !$mpi_get_arg;
-        $mpi_install = 0 if defined($mpi_install_arg) && !$mpi_install_arg;
-        $test_get = 0 if defined($test_get_arg) && !$test_get_arg;
-        $test_build = 0 if defined($test_build_arg) && !$test_build_arg;
-        $test_run = 0 if defined($test_run_arg) && !$test_run_arg;
+        $mpi_get = 0 if (defined($mpi_get_arg) && !$mpi_get_arg) or
+                        (defined($mpi_phases_arg) && !$mpi_phases_arg);
+        $mpi_install = 0 if (defined($mpi_install_arg) && !$mpi_install_arg) or
+                            (defined($mpi_phases_arg) && !$mpi_phases_arg);
+        $test_get = 0 if (defined($test_get_arg) && !$test_get_arg) or
+                         (defined($test_phases_arg) && !$test_phases_arg);
+        $test_build = 0 if (defined($test_build_arg) && !$test_build_arg) or
+                           (defined($test_phases_arg) && !$test_phases_arg);
+        $test_run = 0 if (defined($test_run_arg) && !$test_run_arg) or
+                         (defined($test_phases_arg) && !$test_phases_arg);
+
         $trim = 0 if defined($trim_arg) && !$trim_arg;
     }
 }
@@ -422,14 +478,17 @@ foreach my $hash (@ini_list) {
     MTT::Globals::load($scratch_arg, $ini_full);
     MTT::Messages::Messages($debug, $verbose, cwd());
 
+    if ($get_value_arg) {
+        _process_get_value_option($get_value_arg, $ini);
+        next;
+    }
+
     # Setup locks
 
     MTT::Lock::Init($ini);
 
     # Set the logfile, if specified
-    my $logfile = MTT::Values::Value($ini, "mtt", "log_file");
-    $logfile = MTT::Values::Value($ini, "mtt", "logfile")
-        if (!defined($logfile));
+    my $logfile = MTT::Values::Value($ini, "mtt", "log_file", "logfile");
     if (defined($logfile)) {
         MTT::Messages::open_logfile($logfile);
     }
@@ -608,4 +667,22 @@ sub _process_force_param {
     }
 
     return $force_arg;
+}
+
+sub _process_get_value_option {
+    my ($get_value_arg, $ini) = @_;
+    my ($section, $parameter) = split(",", $get_value_arg);
+    my $str = $ini->val($section, $parameter);
+    my $ret = MTT::Values::Value($ini, $section, $parameter);
+    _print_value($ret);
+}
+
+# Print a list or scalar
+sub _print_value {
+    my ($value) = @_;
+    if (ref($value) =~ /ARRAY/) {
+        print join("\n", @$value) . "\n";
+    } else {
+        print "$value\n";
+    }
 }

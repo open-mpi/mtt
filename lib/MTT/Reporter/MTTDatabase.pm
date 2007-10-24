@@ -3,7 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
-# Copyright (c) 2006      Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2006-2007 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -318,8 +318,20 @@ sub Submit {
                         next;
                     }
 
-                    elsif($key eq "mpi_name" || $key eq "mpi_version") {
+                    elsif ($key eq "mpi_name" || $key eq "mpi_version") {
                         $form->{$key} = $result->{$key};
+                    }
+
+                    # Stringify any array references
+                    elsif (ref($result->{$key}) =~ /array/i) {
+                        $form->{$key} = join("\n\n---\n\n", @{$result->{$key}});
+                    }
+
+                    # Stringify any hash references
+                    elsif (ref($result->{$key}) =~ /hash/i) {
+                        my $str = Dumper($result->{$key});
+                        $str =~ s/\$VAR1 = /        /;
+                        $form->{$key} = $str;
                     }
 
                     # Otherwise, just add it unmodified to the form

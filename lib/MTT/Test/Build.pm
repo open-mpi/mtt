@@ -286,6 +286,9 @@ sub _do_build {
     $config->{description} = Value($ini, "MTT", "description")
         if (!$config->{description});
 
+    # test_bitness
+    $config->{bitness} = Value($ini, $section, "test_bitness", "bitness");
+
     # Unpack the source and find out the subdirectory name it created
     $config->{srcdir} = _prepare_source($test_get);
     # We'll check for failure of this step later
@@ -422,11 +425,13 @@ sub _do_build {
             result_stderr => "filled in below",
 
             suite_name => $config->{simple_section_name},
+            bitness => $config->{bitness},
 
             mpi_name => $mpi_install->{mpi_get_simple_section_name},
             mpi_get_section_name => $mpi_install->{mpi_get_simple_section_name},
             mpi_install_section_name => $mpi_install->{simple_section_name},
             mpi_version => $mpi_install->{mpi_version},
+                        
         };
 
         # See if we want to save the result_stdout

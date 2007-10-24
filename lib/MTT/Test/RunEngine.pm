@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -203,7 +204,7 @@ sub _run_one_test {
         $ENV{MTT_TEST_HOSTLIST} = "";
     }
 
-    # See if we need to run the before_all step.
+    # See if we need to run the before_any step.
     if (! exists($mpi_details->{ran_some_tests})) {
         _run_step($mpi_details, "before_any");
     }

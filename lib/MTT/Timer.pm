@@ -89,13 +89,25 @@ sub stop {
     my ($real, $user, $system, $children_user, $children_system, $iters);
     my ($real_total, $user_total, $system_total, $children_user_total, $children_system_total, $iters_total);
 
+    my @tmp;
+
     # Time elapsed since client/mtt invocation
     ($real_total, $user_total, $system_total, $children_user_total, $children_system_total, $iters_total) =
         @{timediff($finish_benchmark, $start_first_benchmark)};
 
+    # Display only two decimal places
+    @tmp = ($real_total, $user_total, $system_total, $children_user_total, $children_system_total, $iters_total);
+    ($real_total, $user_total, $system_total, $children_user_total, $children_system_total, $iters_total) = 
+        map { sprintf("%0.2f", $_) } @tmp;
+
     # Time elapsed since Timer::start() invocation
     ($real, $user, $system, $children_user, $children_system, $iters) =
         @{timediff($finish_benchmark, $start_benchmark)};
+
+    # Display only two decimal places
+    @tmp = ($real, $user, $system, $children_user, $children_system, $iters);
+    ($real, $user, $system, $children_user, $children_system, $iters) = 
+        map { sprintf("%0.2f", $_) } @tmp;
 
     my $real_hhmmss = convert_seconds_to_hhmmss($real);
     my $real_total_hhmmss = convert_seconds_to_hhmmss($real_total);

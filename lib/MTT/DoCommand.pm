@@ -479,7 +479,13 @@ sub CmdScript {
 sub Chdir {
     my($dir) = @_;
     Debug("chdir $dir\n");
-    chdir $dir or die "Can't chdir to $dir\n";
+
+    my $msg = "Can't chdir to $dir\n";
+    if ($no_execute) {
+        chdir $dir or warn $msg;
+    } else {
+        chdir $dir or die $msg;
+    }
 }
 
 #--------------------------------------------------------------------------

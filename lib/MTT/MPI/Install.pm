@@ -417,6 +417,10 @@ sub _do_install {
         Value($ini, $section, "compiler_name");
     $config->{compiler_version} =
         Value($ini, $section, "compiler_version");
+    $config->{compiler_name} =
+        "unknown" if (!defined($config->{compiler_name}));
+    $config->{compiler_version} =
+        "unknown" if (!defined($config->{compiler_version}));
 
     # What to do with result_stdout/result_stderr?
     my $tmp;
@@ -431,6 +435,11 @@ sub _do_install {
         if (defined($tmp));
     $tmp = Value($ini, $section, "stdout_save_lines");
     $config->{stdout_save_lines} = $tmp
+        if (defined($tmp));
+
+    # Option to restart builds on STDOUT pattern
+    $tmp = Value($ini, $section, "restart_on_pattern");
+    $config->{restart_on_pattern} = $tmp
         if (defined($tmp));
 
     # We're in the section directory.  Make a subdir for the source
@@ -487,7 +496,7 @@ sub _do_install {
 
     # bitness (must be processed *after* installation, and only if the
     # underlying module did not fill it in)
-    my $bitness = Value($ini, $section, "bitness");
+    my $bitness = Value($ini, $section, "mpi_bitness", "bitness");
     if (defined($bitness) || !defined($config->{bitness})) {
 
         # If the module didn't pass, fill in a value
@@ -559,6 +568,7 @@ sub _do_install {
             mpi_install_id => $ret->{mpi_install_id},
             result_stdout => "filled in below",
             result_stderr => "filled in below",
+
         };
 
         # See if we want to save the result_stdout

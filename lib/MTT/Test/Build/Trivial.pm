@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -31,7 +32,7 @@ sub _do_compile {
         my $ret;
         $ret->{test_result} = MTT::Values::FAIL;
         $ret->{exit_status} = $x->{exit_status};
-        $ret->{result_message} = "Failed to compile/link $out_name\n";
+        $ret->{result_message} = "Failed to compile/link $out_name using '$wrapper'.\n";
         $ret->{result_stdout} = $x->{result_stdout};
         return $ret;
     }
