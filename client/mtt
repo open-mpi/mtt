@@ -244,39 +244,6 @@ if (!$ok || $help_arg) {
 field=value                     Replace parameter \"foo\" from the INI file
                                 with the value \"bar\" (i.e., override the
                                 INI file value)
-=======
---file|-f <config_file>       Specify the configuration file
---scratch|-s <dir_name>       Scratch directory (where all work is done)
---help|-h                     This message
---debug|-d                    Output lots of debug messages
---verbose|-v                  Output some status / verbose messages
-                              while processing
---force                       Do steps even if they would not normally
-                              be executed
---no-execute|-n               Do not execute any commands (developers only)
---print-cmd-time              Display the amount of time taken in each command
---print-phases-time           Display the amount of time taken in each phase
---print-time|-p               Alias for --print-phases-time --print-cmd-time
---clean-start                 Clean the scratch directory from
-                              past MTT invocations before running
---[no-]trial                  Use when testing your MTT client setup; 
-                              results that are generated and submitted
-                              to the database are marked as \"trials\"
-                              and are not included in normal
-                              reporting.  Alternatively,
-                              \"--no-trial\" can be specified to force
-                              a \"normal\" submission (this is the
-                              default).
---[no-]mpi-get                Do the \"MPI get\" phase
---[no-]mpi-install            Do the \"MPI install\" phase
---[no-]test-get               Do the \"Test get\" phase
---[no-]test-build             Do the \"Test build\" phase
---[no-]test-run               Do the \"Test run\" phase
---[no-]trim                   Do the \"Trim\" phase
---[no-]section                Do a specific section(s)
-field=value                   Replace parameter \"foo\" from the INI file
-                              with the value \"bar\" (i.e., override the
-                              INI file value)
 
 For example, to set 'save_stdout_on_success' in every section:
 
