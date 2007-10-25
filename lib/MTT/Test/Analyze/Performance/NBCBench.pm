@@ -56,7 +56,7 @@ sub Analyze {
             my @vals = split(/\s+/, $line);
 
             push(@bytes, $vals[1]);
-            push(@usec, $vals[8]);
+            push(@usec, $vals[3]);
         }
     }
 
