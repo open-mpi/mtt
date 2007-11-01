@@ -235,6 +235,9 @@ function process_phase_test_run($results_idxs_hash) {
 
     for($i = 0; $i < $n; $i++) {
 
+        # The POST fields are enumerated starting at 1
+        $j = $i + 1;
+
         ########
         # Select/Insert: performance
         # Currently only support latency/bandwidth
@@ -363,7 +366,7 @@ function process_phase_test_run($results_idxs_hash) {
         #########
         # Select/Insert: Environment
         $results_idxs_hash['environment_id'] = 0;
-        if( isset($_POST['environment']) ) {
+        if( isset($_POST["environment_$j"]) ) {
             $stmt_fields = array("environment");
 
             $stmt_values = array(get_scalar($param_set['environment'], $i) );
@@ -567,6 +570,9 @@ function process_phase_test_build($results_idxs_hash) {
     }
 
     for($i = 0; $i < $n; $i++) {
+        
+        # The POST fields are enumerated starting at 1
+        $j = $i + 1;
 
         ########
         # Select/Insert: test_build_compiler -> compiler
@@ -629,7 +635,8 @@ function process_phase_test_build($results_idxs_hash) {
         #########
         # Select/Insert: Environment
         $results_idxs_hash['environment_id'] = 0;
-        if( isset($_POST['environment']) ) {
+
+        if( isset($_POST["environment_$j"]) ) {
             $stmt_fields = array("environment");
 
             $stmt_values = array(get_scalar($param_set['environment'], $i) );
@@ -1084,6 +1091,9 @@ function process_phase_mpi_install($results_idxs_hash) {
 
     for($i = 0; $i < $n; $i++) {
 
+        # The POST fields are enumerated starting at 1
+        $j = $i + 1;
+
         ########
         # Select/Insert: compute_cluster
         $stmt_fields = array("platform_name",
@@ -1185,7 +1195,7 @@ function process_phase_mpi_install($results_idxs_hash) {
         #########
         # Select/Insert: Environment
         $results_idxs_hash['environment_id'] = 0;
-        if( isset($_POST['environment']) ) {
+        if( isset($_POST["environment_$j"]) ) {
             $stmt_fields = array("environment");
 
             $stmt_values = array(get_scalar($param_set['environment'], $i) );
@@ -1767,8 +1777,8 @@ function mtt_send_mail($message) {
 
     $php_auth_user = $_SERVER['PHP_AUTH_USER'];
     $user          = $_POST['email'];
-#JJH    $admin         = 'ethan.mallove@sun.com';
-    $admin         = 'jjhursey@open-mpi.org';
+    $admin1        = 'jjhursey@open-mpi.org';
+    $admin2        = 'ethan.mallove@sun.com';
     $date          = date('r');
     $phpversion    = phpversion();
     $boundary      = md5(time());
@@ -1778,8 +1788,8 @@ function mtt_send_mail($message) {
     $attachment = chunk_split(base64_encode(file_get_contents($filename)));
 
     $headers = <<<END
-From: $admin
-Reply-To: $admin
+From: $admin1
+Reply-To: $admin1
 Date: $date
 X-Mailer: PHP v$phpversion
 MIME-Version: 1.0
@@ -1808,8 +1818,8 @@ END;
     if (preg_match("/\w+@\w+/", $user, $m))
         mail($user, "MTT server error", $message, $headers);
 
-    # Email the MTT database administrator
-    mail($admin, "MTT server error (user: $php_auth_user)", $message, $headers);
+    # Email the MTT database administrator(s)
+    mail("$admin1, $admin2", "MTT server error (user: $php_auth_user)", $message, $headers);
 
     # Whack the temp file
     unlink($filename);
