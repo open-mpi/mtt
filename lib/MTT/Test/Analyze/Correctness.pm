@@ -112,6 +112,8 @@ sub Analyze {
 sub _prepare_environment_string {
     my ($run) = @_;
 
+    my $prepend_path = $run->{prepend_path};
+    my $append_path = $run->{append_path};
     my $setenv = $run->{setenv};
     my $unsetenv = $run->{unsetenv};
     my @environment;
@@ -121,6 +123,12 @@ sub _prepare_environment_string {
     }
     if ($unsetenv) {
         push(@environment, "unsetenv $unsetenv");
+    }
+    if ($prepend_path) {
+        push(@environment, "prepend_path $prepend_path");
+    }
+    if ($append_path) {
+        push(@environment, "append_path $append_path");
     }
     return join("\n", @environment)
 }

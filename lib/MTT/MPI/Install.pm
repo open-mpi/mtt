@@ -95,6 +95,7 @@ use MTT::Reporter;
 use MTT::MPI;
 use MTT::Defaults;
 use MTT::EnvModule;
+use MTT::Util;
 use Data::Dumper;
 use File::Basename;
 
@@ -374,6 +375,7 @@ sub _do_install {
     $config->{prepend_path} = Value($ini, $section, "prepend_path");
     $config->{append_path} = Value($ini, $section, "append_path");
     ProcessEnvKeys($config, \@save_env);
+    @save_env = MTT::Util::delete_duplicates_from_array(@save_env);
 
     # JMS TO BE DELETED (now down in Install modules)
     # configure_arguments

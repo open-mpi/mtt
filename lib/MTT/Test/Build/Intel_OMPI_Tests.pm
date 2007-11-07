@@ -17,6 +17,7 @@ use Cwd;
 use MTT::DoCommand;
 use MTT::Messages;
 use MTT::Values;
+use Data::Dumper;
 
 # default buildfile
 my $default_buildfile = "all_tests_no_perf";

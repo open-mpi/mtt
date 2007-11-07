@@ -45,6 +45,7 @@ use MTT::Files;
 use MTT::Defaults;
 use MTT::Test;
 use MTT::EnvModule;
+use MTT::Util;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -359,6 +360,7 @@ sub _do_build {
     $config->{prepend_path} = Value($ini, $section, "prepend_path");
     $config->{append_path} = Value($ini, $section, "append_path");
     ProcessEnvKeys($config, \@save_env);
+    @save_env = MTT::Util::delete_duplicates_from_array(@save_env);
 
     # Bump the refcount on the MPI install and test get sections.
     # Even if this build fails, we need it.
