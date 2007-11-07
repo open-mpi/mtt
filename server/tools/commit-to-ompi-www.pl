@@ -31,9 +31,9 @@ my $verbose_arg;
 &Getopt::Long::Configure("bundling");
 my $ok = Getopt::Long::GetOptions(
             "ompi-www-dir|o=s" => \$ompi_www_dir_arg,
-            "mtt-dir|s=s"      => \$mtt_dir_arg,
+            "mtt-dir|m=s"      => \$mtt_dir_arg,
             "help|h"           => \$help_arg,
-            "no-execute|d"     => \$no_execute_arg,
+            "no-execute|n"     => \$no_execute_arg,
             "verbose|v"        => \$verbose_arg,
 );
 
