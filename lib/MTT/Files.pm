@@ -614,6 +614,7 @@ sub SafeWrite {
 
     # Does the file already exist?
     if (-r $filename && !$force) {
+        $ret->{result_message} = "File already exists: $filename";
         return $ret;
     }
 
@@ -644,6 +645,18 @@ sub Slurp {
     return $contents;
 }
 
+# Does the equivalent of "find $dir -name $name"
+sub FindName {
+    my ($dir, $name) = @_;
+
+    my @ret;
+    &File::Find::find(
+        sub { 
+            push(@ret, $File::Find::name) if ($_ =~ /\b$name\b.?$/); 
+        }, 
+        $dir);
+
+    return @ret;
+}
+
 1;
-
-

@@ -33,7 +33,7 @@ sub get_mirrored_from_r_number {
     # Mirrored From: http://www.acme.com/svn/foo/branches/v1.2, Rev. 16187
     # (In the above example, "16187" is returned)
     my $ret;
-    if ($out =~ /v[0-9\.]+, \s* Rev. \s* (\d+)/ix) {
+    if ($out =~ /\/\S+, \s* Rev. \s* (\d+)/ix) {
         $ret = $1;
     }
 

@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2007      Cisco, Inc.  All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -95,10 +96,10 @@ sub Warning {
 sub BigWarning {
     my @lines = @_;
     my $s = sprintf("%s",
-                   "\n" . "#" x 76 .
+                   "\n" . "#" x $Text::Wrap::columns .
                    "\n# *** WARNING: " .
                    join("", map { "\n# $_" } @lines) .
-                   "\n" . "#" x 76 . "\n");
+                   "\n" . "#" x $Text::Wrap::columns . "\n");
     print $s;
     print $LOGFILE $s
         if (defined($LOGFILE));

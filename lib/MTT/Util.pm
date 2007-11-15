@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 #
 # Copyright (c) 2007 Cisco, Inc.  All rights reserved.
+# Copyright (c) 2007 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -83,8 +84,21 @@ sub find_terminate_file {
 
 sub is_valid_compiler_name {
     my ($section, $compiler) = @_;
-    return is_valid_in_array($section, $compiler, "compiler",
-                             $MTT::Defaults::System_config->{known_compiler_names});
+
+    my $known_compiler_names = $MTT::Defaults::System_config->{known_compiler_names};
+    my $ret = is_valid_in_array($section, $compiler, "compiler", $known_compiler_names);
+
+    # Warn user if they use a compiler MTT does not recognize. This is an
+    # attempt to standardize the compiler names stored in the database.
+    if (!$ret) {
+        my $known_compilers_pretty;
+        my $str = "\n\t * ";
+        my $known_compilers_pretty = $str . join($str, @$known_compiler_names);
+        Warning("'$compiler' is not a valid compiler name. Please set the compiler_name parameter to one " .
+                    "of the following: $known_compilers_pretty\n");
+    }
+
+    return $ret;
 }
 
 #--------------------------------------------------------------------------1
@@ -136,6 +150,23 @@ sub delete_duplicates_from_array {
         $hash{$elem} = 1;
     }
     @ret = keys %hash;
+
+    return @ret;
+}
+
+# Arguments:
+# 1. Array
+# 2. Pattern to match against
+sub delete_matches_from_array {
+    my (@arr) = @_;
+    my $pattern = pop @arr;
+
+    my @ret;
+    foreach my $elem (@arr) {
+        if ($elem !~ /$pattern/) { 
+            push(@ret, $elem);
+        }
+    }
 
     return @ret;
 }

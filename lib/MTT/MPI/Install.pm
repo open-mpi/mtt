@@ -321,7 +321,7 @@ sub _do_install {
     $config->{version_dir} = $this_install_base;
     my $sym_link_name = 
       MTT::Files::make_safe_filename($mpi_get->{simple_section_name}) .
-      "#" . MTT::Files::make_safe_filename($simple_section) . "#" .
+      "--" . MTT::Files::make_safe_filename($simple_section) . "--" .
       MTT::Files::make_safe_filename($mpi_get->{version});
     $config->{sym_link_name} = $sym_link_name;
 
