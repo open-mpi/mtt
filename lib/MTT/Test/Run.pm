@@ -52,6 +52,9 @@ our $test_exit_status;
 # Exported pid of the last test run
 our $test_pid;
 
+# What we call this phase
+my $phase_name = "Test run";
+
 #--------------------------------------------------------------------------
 
 sub Run {
@@ -60,7 +63,8 @@ sub Run {
     # Save the environment
     my %ENV_SAVE = %ENV;
 
-    Verbose("*** Run test phase starting\n");
+    $MTT::Globals::Values->{active_phase} = $phase_name;
+    Verbose("*** $phase_name phase starting\n");
 
     # Go through all the sections in the ini file looking for section
     # names that begin with "Test run:"
@@ -76,7 +80,7 @@ sub Run {
             # Simple section name
             my $simple_section = $section;
             $simple_section =~ s/^\s*test run:\s*//;
-            Verbose(">> Test run [$simple_section]\n");
+            Verbose(">> $phase_name [$simple_section]\n");
 
             # Ensure that we have a test build name
             my $test_build_value = MTT::Values::Value($ini, $section, "test_build");
@@ -84,6 +88,9 @@ sub Run {
                 Warning("No test_build specified in [$section]; skipping\n");
                 next;
             }
+
+            # Make the active INI section name known
+            $MTT::Globals::Values->{active_section} = $section;
 
             # Iterate through all the test_build values
             my @test_builds = MTT::Util::split_comma_list($test_build_value);

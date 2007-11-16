@@ -59,6 +59,9 @@ my $built_section = "test_built";
 # Where the top-level build tree is
 my $build_base;
 
+# What we call this phase
+my $phase_name = "Test build";
+
 #--------------------------------------------------------------------------
 
 sub _make_safe_dir {
@@ -73,13 +76,14 @@ sub _make_safe_dir {
 sub Build {
     my ($ini, $ini_full, $build_base, $force) = @_;
 
-    Verbose("*** Test build phase starting\n");
+    $MTT::Globals::Values->{active_phase} = $phase_name;
+    Verbose("*** $phase_name phase starting\n");
 
     # Save the environment
     my %ENV_SAVE = %ENV;
 
     # Go through all the sections in the ini file looking for section
-    # names that begin with "Test build:"
+    # names that begin with "$phase_name:"
     MTT::DoCommand::Chdir($build_base);
     foreach my $section ($ini->Sections()) {
 
@@ -90,7 +94,7 @@ sub Build {
             if (MTT::Util::find_terminate_file());
 
         if ($section =~ /^\s*test build:/) {
-            Verbose(">> Test build [$section]\n");
+            Verbose(">> $phase_name [$section]\n");
 
             # Simple section name
             my $simple_section = $section;
@@ -102,6 +106,9 @@ sub Build {
                 Warning("No test_get specified in [$section]; skipping\n");
                 next;
             }
+
+            # Make the active INI section name known
+            $MTT::Globals::Values->{active_section} = $section;
 
             # Iterate through all the test_get values
             my @test_gets = MTT::Util::split_comma_list($test_get_value);
@@ -228,7 +235,7 @@ sub Build {
         }
     }
 
-    Verbose("*** Test build phase complete\n");
+    Verbose("*** $phase_name phase complete\n");
 }
 
 

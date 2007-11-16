@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -493,8 +494,8 @@ sub regexp {
         Debug("$funclet: returning 1\n");
         return "1";
     }
-    Debug("$funclet: returning 1\n");
-    return "1";
+    Debug("$funclet: returning 0\n");
+    return "0";
 }
 
 #--------------------------------------------------------------------------
@@ -2217,6 +2218,14 @@ sub _get_array_ref {
         Warning("Funclet got unknown parameter reference type -- ignored\n");
         return undef;
     }
+}
+
+sub current_phase {
+    return $MTT::Globals::Values->{active_phase};
+}
+
+sub current_section {
+    return $MTT::Globals::Values->{active_section};
 }
 
 1;

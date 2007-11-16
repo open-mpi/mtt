@@ -48,12 +48,15 @@ use MTT::Util;
 use MTT::EnvModule;
 use Data::Dumper;
 
+# What we call this phase
+my $phase_name = "MPI get";
+
 #--------------------------------------------------------------------------
 
 sub Get {
     my ($ini, $source_dir, $force) = @_;
 
-    Verbose("*** MPI get phase starting\n");
+    Verbose("*** $phase_name phase starting\n");
 
     # Save the environment
     my %ENV_SAVE = %ENV;
@@ -67,9 +70,13 @@ sub Get {
             if (MTT::Util::find_terminate_file());
 
         if ($section =~ /^\s*mpi get:/) {
+            # Make the active INI section name known
+            $MTT::Globals::Values->{active_section} = $section;
+
             my $simple_section = $section;
             $simple_section =~ s/^\s*mpi get:\s*//;
-            Verbose(">> MPI get: [$section]\n");
+            Verbose(">> $phase_name: [$section]\n");
+            $MTT::Globals::Values->{active_phase} = $phase_name;
             $MTT::Globals::Internals->{mpi_get_name} = $simple_section;
             _do_get($section, $ini, $source_dir, $force);
             delete $MTT::Globals::Internals->{mpi_get_name};
@@ -77,7 +84,7 @@ sub Get {
         }
     }
 
-    Verbose("*** MPI get phase complete\n");
+    Verbose("*** $phase_name phase complete\n");
 }
 
 #--------------------------------------------------------------------------
@@ -94,12 +101,12 @@ sub _do_get {
 
     my $module = Value($ini, $section, "module");
     if (!$module) {
-        Warning("No module defined for MPI get [$section]; skipping\n");
+        Warning("No module defined for $phase_name [$section]; skipping\n");
         return;
     }
     my $mpi_details = Value($ini, $section, "mpi_details");
     if (!$mpi_details) {
-        Warning("No mpi_details defined for MPI get [$section]; skipping\n");
+        Warning("No mpi_details defined for $phase_name [$section]; skipping\n");
         return;
     }
 

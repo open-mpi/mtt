@@ -548,12 +548,12 @@ sub _process_ini_param {
 
         # Load up the ini file
         MTT::Messages::Debug("Reading ini file: $orig_file\n");
-        my $filtered = new Config::IniFiles(-file => $temp_file, 
+        my $unfiltered = new Config::IniFiles(-file => $temp_file, 
                                        -nocase => 1,
                                        -allowcontinue => 1);
 
         # Check for syntax errors in the ini file
-        if (! $filtered) {
+        if (! $unfiltered) {
             MTT::Messages::Abort("Syntax error in $orig_file: " .
                 join("\n", @Config::IniFiles::errors));
         }
@@ -565,13 +565,16 @@ sub _process_ini_param {
         unlink($temp_file);
 
         # Override ini file params with those supplied at command-line
-        $filtered = MTT::INI::OverrideINIParams($filtered, $ini_args);
+        $unfiltered = MTT::INI::OverrideINIParams($unfiltered, $ini_args);
 
         # Insert some predefined INI parameters
-        $filtered = MTT::INI::InsertINIPredefines($filtered, $file);
+        $unfiltered = MTT::INI::InsertINIPredefines($unfiltered, $file);
 
-        # Create an unfiltered version of the ini file for error checking
-        my $unfiltered = dclone($filtered);
+        # Expand all the "include_section" parameters
+        $unfiltered = MTT::INI::ExpandIncludeSections($unfiltered);
+
+        # Keep an unfiltered version of the ini file for error checking
+        my $filtered = dclone($unfiltered);
 
         # Filter ini sections at command line
         $filtered = MTT::INI::FilterINISections($filtered, $section_arg, $no_section_arg);

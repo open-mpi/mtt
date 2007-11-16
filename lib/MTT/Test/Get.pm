@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -30,12 +31,15 @@ use MTT::Test;
 use MTT::Values;
 use Data::Dumper;
 
+# What we call this phase
+my $phase_name = "Test get";
+
 #--------------------------------------------------------------------------
 
 sub Get {
     my ($ini, $source_dir, $force) = @_;
 
-    Verbose("*** Test get phase starting\n");
+    Verbose("*** $phase_name phase starting\n");
 
     # Go through all the sections in the ini file looking for section
     # names that begin with "Test Get:"
@@ -46,16 +50,21 @@ sub Get {
             if (MTT::Util::find_terminate_file());
 
         if ($section =~ /^\s*test get:/) {
+            # Make the active INI section name known
+            $MTT::Globals::Values->{active_section} = $section;
+
             my $simple_section = $section;
             $simple_section =~ s/^\s*test get:\s*//;
-            Verbose(">> Test get: [$section]\n");
+
+            Verbose(">> $phase_name: [$section]\n");
+            $MTT::Globals::Values->{active_phase} = $phase_name;
             $MTT::Globals::Internals->{test_get_name} = $simple_section;
             _do_get($section, $ini, $source_dir, $force);
             delete $MTT::Globals::Internals->{test_get_name};
         }
     }
 
-    Verbose("*** Test get phase complete\n");
+    Verbose("*** $phase_name phase complete\n");
 }
 
 #--------------------------------------------------------------------------

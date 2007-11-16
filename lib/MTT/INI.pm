@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -255,6 +256,57 @@ sub InsertINIPredefines {
     }
 
     return $ini;
+}
+
+# Expand include_section parameters
+sub ExpandIncludeSections {
+    my($ini) = @_;
+
+    foreach my $section ($ini->Sections) {
+        _expand_includes($ini, $section);
+    }
+    return $ini;
+}
+
+# Worker subroutine for recursive ExpandIncludeSections
+sub _expand_includes {
+    my($ini, $section) = @_;
+
+    foreach my $parameter ($ini->Parameters($section)) {
+        if ($parameter eq "include_section") {
+
+            my $include_section = $ini->val($section, $parameter);
+
+            # Get CSV of include_sections
+            my @include_sections = split(/,/, $include_section);
+
+            # Allow leading and trailing whitespace in include_section lists
+            foreach (@include_sections) {
+                s/^\s*|\s*$//g;
+            }
+
+            foreach $include_section (@include_sections) {
+                if (! $ini->SectionExists($include_section)) {
+                    Error("include_section [$include_section] does not exist!\n");
+                }
+
+                # Traverse to other includes in case the include itself
+                # has included sections
+                _expand_includes($ini, $include_section);
+
+                # Add in all of the include_section params into the section
+                foreach my $p ($ini->Parameters($include_section)) {
+                    my $v = $ini->val($include_section, $p);
+
+                    # Parent INI sections take precendence in a
+                    # name collision
+                    if (! defined($ini->val($section, $p))) {
+                        $ini->newval($section, $p, $v);
+                    }
+                }
+            }
+        }
+    }
 }
 
 1;

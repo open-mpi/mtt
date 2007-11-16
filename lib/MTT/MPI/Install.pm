@@ -111,6 +111,9 @@ my $install_base;
 # Where the MPI library is
 our $install_dir;
 
+# What we call this phase
+my $phase_name = "MPI install";
+
 #--------------------------------------------------------------------------
 
 sub _make_random_dir {
@@ -141,7 +144,8 @@ sub _make_safe_dir {
 sub Install {
     my ($ini, $ini_full, $install_dir, $force) = @_;
 
-    Verbose("*** MPI install phase starting\n");
+    $MTT::Globals::Values->{active_phase} = $phase_name;
+    Verbose("*** $phase_name phase starting\n");
     
     # Save the environment
     my %ENV_SAVE = %ENV;
@@ -159,7 +163,7 @@ sub Install {
             if (MTT::Util::find_terminate_file());
 
         if ($section =~ /^\s*mpi install:/) {
-            Verbose(">> MPI install [$section]\n");
+            Verbose(">> $phase_name [$section]\n");
 
             # Simple section name
             my $simple_section = $section;
@@ -192,6 +196,9 @@ sub Install {
                     Debug("Have no sources for MPI Get \"$mpi_get_name\", skipping\n");
                     next;
                 }
+
+                # Make the active INI section name known
+                $MTT::Globals::Values->{active_section} = $section;
 
                 # For each MPI source
                 foreach my $mpi_get_key (keys(%{$MTT::MPI::sources})) {
@@ -244,7 +251,7 @@ sub Install {
         }
     }
 
-    Verbose("*** MPI install phase complete\n");
+    Verbose("*** $phase_name phase complete\n");
 }
 
 #--------------------------------------------------------------------------
@@ -671,7 +678,7 @@ sub _do_install {
         delete $ret->{make_install_stdout};
 
         # Submit to the reporter, and receive a serial
-        my $serials = MTT::Reporter::Submit("MPI install", $simple_section, $report);
+        my $serials = MTT::Reporter::Submit($phase_name, $simple_section, $report);
 
         # Merge in the serials from the MTTDatabase
         my $module = "MTTDatabase";
@@ -749,13 +756,13 @@ prepend-path PATH $ret->{bindir}
 prepend-path LD_LIBRARY_PATH $ret->{libdir}\n";
             close(FILE);
 
-            Verbose("   Completed MPI install successfully\n");
+            Verbose("   Completed $phase_name successfully\n");
         } else {
             Warning("Failed to install [$section]: $ret->{result_message}\n");
-            Verbose("   Completed MPI install unsuccessfully\n");
+            Verbose("   Completed $phase_name unsuccessfully\n");
         }
     } else {
-        Verbose("   Skipped MPI install\n");
+        Verbose("   Skipped $phase_name\n");
     }
 }
 

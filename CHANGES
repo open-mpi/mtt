@@ -32,6 +32,10 @@ To announce to OMPI core testers:
     - &env_max_hosts()
     - &get_<compiler>_version() funclets now take optional parameter
       specifying the argv[0] to use.
+    - &current_phase() - returns name of currently executing phase (e.g., "MPI
+      install")
+    - &current_section() - returns the name of currently executing INI section
+      (e.g., "Test build: intel")
 
 - See https://svn.open-mpi.org/trac/mtt/changeset/863:
   - re-wrote funclet parser; MUST edit INI file and remove excess
@@ -53,6 +57,8 @@ To announce to OMPI core testers:
 - @variable@ expansion *everywhere* in ini files (not just in "exec")
 
 - MTT lock server.
+
+- MTT IRC reporter.
 
 - SVN module - choose between "export" and "checkout"
   (defaults to "export"):
@@ -117,3 +123,9 @@ To announce to OMPI core testers:
   - SKaMPI
   - IMB
   - NetPIPE
+
+- Added include_section. include_section takes a CSV of INI section names and
+  interpolates those sections into the current INI section, allowing the user
+  to factor down an INI file. Note: --section filtering is performed *after*
+  the interpolation, so there is no need to supply "include" sections to the 
+  --section option. (See samples/ompi-core-template.ini for examples)
