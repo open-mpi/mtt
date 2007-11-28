@@ -1,0 +1,181 @@
+#!/usr/bin/env perl
+
+# Josh Hursey
+#
+# A script to extract some general contribution stats for graphing
+#
+
+use strict;
+use DBI;
+use Class::Struct;
+
+# Flush I/O frequently
+$| = 1;
+
+my $v_nlt = "\n\t";
+my $v_nl  = "\n";
+my $verbose = 0;
+
+my $is_day   = "f";
+my $is_month = "t";
+my $is_year  = "f";
+my $dbh_mtt;
+
+my $sql_select_base =
+  "  sum(num_mpi_install_pass + num_mpi_install_fail + ".$v_nl.
+  "      num_test_build_pass  + num_test_build_fail  + ".$v_nl.
+  "      num_test_run_pass    + num_test_run_fail    + num_test_run_timed + num_test_run_perf) as total, ".$v_nl.
+  "  sum(num_mpi_install_pass + num_mpi_install_fail) as mpi_install, ".$v_nl.
+  "  sum(num_test_build_pass + num_test_build_fail) as test_build, ".$v_nl.
+  "  sum(num_test_run_pass + num_test_run_fail + num_test_run_timed) as test_run, ".$v_nl.
+  "  sum(num_test_run_perf) as perf ".$v_nl.
+  "FROM mtt_stats_contrib ".$v_nl.
+  "WHERE is_day = 't' ".$v_nl.
+  "GROUP BY foo_date ".$v_nl.
+  "ORDER BY foo_date ";
+my $sql_select_all_day   = "SELECT DATE(date_trunc('day',   collection_date)) as foo_date, " .$v_nl. $sql_select_base;
+my $sql_select_all_month = "SELECT DATE(date_trunc('month', collection_date)) as foo_date, " .$v_nl. $sql_select_base;
+my $sql_select_all_year  = "SELECT DATE(date_trunc('year',  collection_date)) as foo_date, " .$v_nl. $sql_select_base;
+
+#
+# Parse any command line arguments
+#
+if( 0 != parse_cmd_line() ) {
+  print_usage();
+  exit -1;
+}
+
+if( $is_day   eq "t" ) {
+  dump_data($sql_select_all_day);
+}
+elsif( $is_month eq "t" ) {
+  dump_data($sql_select_all_month);
+}
+else {
+  dump_data($sql_select_all_year);
+}
+
+exit 0;
+
+sub parse_cmd_line() {
+  my $i = -1;
+  my $argc = scalar(@ARGV);
+  my $exit_value = 0;
+
+  for($i = 0; $i < $argc; ++$i) {
+    #
+    # Gather Results for a single day (Default)
+    #
+    if( $ARGV[$i] eq "-day" ) {
+      $is_day   = "t";
+      $is_month = "f";
+      $is_year  = "f";
+    }
+    #
+    # Gather Results for a month
+    #
+    elsif( $ARGV[$i] eq "-month" ) {
+      $is_day   = "f";
+      $is_month = "t";
+      $is_year  = "f";
+    }
+    #
+    # Gather Results for a year
+    #
+    elsif( $ARGV[$i] eq "-year" ) {
+      $is_day   = "f";
+      $is_month = "f";
+      $is_year  = "t";
+    }
+    elsif( $ARGV[$i] eq "-h" ) {
+      $exit_value = -1;
+    }
+    #
+    # Verbose level
+    #
+    elsif( $ARGV[$i] eq "-v" ) {
+      ++$i;
+      $verbose = $ARGV[$i];
+    }
+    #
+    # Invalid options produce a usage message
+    #
+    else {
+      print "ERROR: Unknown argument [".$ARGV[$i]."]\n";
+      $exit_value = -1;
+    }
+  }
+
+  #
+  # Process the command line arguments
+  #
+  if( 0 == $exit_value ) {
+    ;
+  }
+
+  return $exit_value;
+}
+
+sub print_usage() {
+  print "="x50 . "\n";
+  print "Usage: ./make_raw_data.pl [-day] [-month] [-year] [-v LEVEL]\n";
+  print "  Default: -month -v 0\n";
+  print "="x50 . "\n";
+
+  return 0;
+}
+
+sub connect_db() {
+  my $stmt;
+  my $mtt_user     = "mtt";
+  my $mtt_password;
+
+  # Connect to the DB
+  if( defined($mtt_password) ) {
+    $dbh_mtt = DBI->connect("dbi:Pg:dbname=mtt",  $mtt_user, $mtt_password);
+  }
+  else {
+    $dbh_mtt = DBI->connect("dbi:Pg:dbname=mtt",  $mtt_user);
+  }
+
+  # Set an optimizer flag
+  $stmt = $dbh_mtt->prepare("set constraint_exclusion = on");
+  $stmt->execute();
+
+  # Set Sort Memory
+  $stmt = $dbh_mtt->prepare("set sort_mem = '128MB'");
+  $stmt->execute();
+
+  return 0;
+}
+
+sub disconnect_db() {
+  $dbh_mtt->disconnect;
+  return 0;
+}
+
+sub dump_data($) {
+  my $sql_select = shift(@_);
+  my $stmt;
+  my $row_ref;
+
+  if( $verbose > 0 ) {
+    print($sql_select . "\n");
+  }
+
+  connect_db();
+
+  $stmt = $dbh_mtt->prepare($sql_select);
+  $stmt->execute();
+
+  while($row_ref = $stmt->fetchrow_arrayref ) {
+    print($row_ref->[$stmt->{NAME_lc_hash}{foo_date}] . "\t" .
+          $row_ref->[$stmt->{NAME_lc_hash}{total}] . "\t" .
+          $row_ref->[$stmt->{NAME_lc_hash}{mpi_install}] . "\t" .
+          $row_ref->[$stmt->{NAME_lc_hash}{test_build}] . "\t" .
+          $row_ref->[$stmt->{NAME_lc_hash}{test_run}] . "\t" .
+          $row_ref->[$stmt->{NAME_lc_hash}{perf}] . "\n");
+  }
+
+  disconnect_db();
+}
