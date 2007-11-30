@@ -2,6 +2,8 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.
+#                         All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -34,7 +36,7 @@ sub Init {
 
     # Find a mail agent
 
-    $mail_agent = FindProgram(qw(Mail mailx mail));
+    $mail_agent = FindProgram(qw(Mail mailx mail rmail mutt elm));
     if (!defined($mail_agent)) {
         Warning("Could not find a mail agent for MTT::Mail");
         return undef;
@@ -66,6 +68,7 @@ sub Send {
 
     open MAIL, "|$mail_agent -s \"$subject\" \"$to\"" ||
         die "Could not open pipe to output e-mail\n";
+    print MAIL "Subject: $subject\n";
     print MAIL "$body\n";
     close MAIL;
 

@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -23,8 +24,8 @@ use Data::Dumper;
 # who we're e-mailing to
 my $to;
 
-# what the subject should be
-my $subject;
+# global ini variables
+my ($ini, $section);
 
 # any extra header lines
 my @headers;
@@ -35,7 +36,7 @@ my $sep;
 #--------------------------------------------------------------------------
 
 sub Init {
-    my ($ini, $section) = @_;
+    ($ini, $section) = @_;
 
     # Extract data from the ini fields
 
@@ -44,9 +45,7 @@ sub Init {
         Warning("Not enough information in Email Reporter section [$section]; must have to; skipping this section");
         return undef;
     }
-    $subject = Value($ini, $section, "email_subject");
-    $subject = "MPI test results"
-        if (!$subject);
+
     $sep = Value($ini, $section, "email_separator");
     $sep = "============================================================================"
         if (!$sep);
@@ -57,7 +56,7 @@ sub Init {
         return 0;
     }
 
-    Debug("Email reporter initialized ($to, $subject)\n");
+    Debug("Email reporter initialized ($to)\n");
 
     1;
 }
@@ -66,7 +65,6 @@ sub Init {
 
 sub Finalize {
     undef $to;
-    undef $subject;
     undef @headers;
     undef $sep;
 }
@@ -80,6 +78,9 @@ sub Submit {
 
     # Assume that entries are grouped such that we can just combine
     # the reports into a single body and send it in a single mail
+
+    # Evaluate the email subject header
+    my $subject = Value($ini, $section, "email_subject");
 
     my $s;
     my $body;
@@ -115,7 +116,6 @@ sub Submit {
     }
 
     # Now send it
-    
     MTT::Mail::Send($s, $to, $body);
     Verbose(">> Reported to e-mail: $to\n");
 }
