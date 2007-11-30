@@ -17,6 +17,7 @@ my $v_nl  = "\n";
 my $verbose = 0;
 
 my $is_day   = "f";
+my $is_week  = "f";
 my $is_month = "t";
 my $is_year  = "f";
 my $dbh_mtt;
@@ -33,9 +34,10 @@ my $sql_select_base =
   "WHERE is_day = 't' ".$v_nl.
   "GROUP BY foo_date ".$v_nl.
   "ORDER BY foo_date ";
-my $sql_select_all_day   = "SELECT DATE(date_trunc('day',   collection_date)) as foo_date, " .$v_nl. $sql_select_base;
-my $sql_select_all_month = "SELECT DATE(date_trunc('month', collection_date)) as foo_date, " .$v_nl. $sql_select_base;
-my $sql_select_all_year  = "SELECT DATE(date_trunc('year',  collection_date)) as foo_date, " .$v_nl. $sql_select_base;
+my $sql_select_all_day   = "SELECT to_date( to_char(collection_date, 'YYYY-MM-DD'), 'YYYY-MM-DD') as foo_date, " .$v_nl. $sql_select_base;
+my $sql_select_all_week  = "SELECT to_date( to_char(collection_date, 'YYYY-WW'), 'YYYY-WW') as foo_date, " .$v_nl. $sql_select_base;
+my $sql_select_all_month = "SELECT to_date( to_char(collection_date, 'YYYY-MM'), 'YYYY-MM') as foo_date, " .$v_nl. $sql_select_base;
+my $sql_select_all_year  = "SELECT to_date( to_char(collection_date, 'YYYY'), 'YYYY') as foo_date, " .$v_nl. $sql_select_base;
 
 #
 # Parse any command line arguments
@@ -47,6 +49,9 @@ if( 0 != parse_cmd_line() ) {
 
 if( $is_day   eq "t" ) {
   dump_data($sql_select_all_day);
+}
+elsif( $is_week eq "t" ) {
+  dump_data($sql_select_all_week);
 }
 elsif( $is_month eq "t" ) {
   dump_data($sql_select_all_month);
@@ -64,10 +69,20 @@ sub parse_cmd_line() {
 
   for($i = 0; $i < $argc; ++$i) {
     #
-    # Gather Results for a single day (Default)
+    # Gather Results for a single day
     #
     if( $ARGV[$i] eq "-day" ) {
       $is_day   = "t";
+      $is_week  = "f";
+      $is_month = "f";
+      $is_year  = "f";
+    }
+    #
+    # Gather Results by calendar week
+    #
+    elsif( $ARGV[$i] eq "-week" ) {
+      $is_day   = "f";
+      $is_week  = "t";
       $is_month = "f";
       $is_year  = "f";
     }
@@ -76,6 +91,7 @@ sub parse_cmd_line() {
     #
     elsif( $ARGV[$i] eq "-month" ) {
       $is_day   = "f";
+      $is_week  = "f";
       $is_month = "t";
       $is_year  = "f";
     }
@@ -84,6 +100,7 @@ sub parse_cmd_line() {
     #
     elsif( $ARGV[$i] eq "-year" ) {
       $is_day   = "f";
+      $is_week  = "f";
       $is_month = "f";
       $is_year  = "t";
     }
