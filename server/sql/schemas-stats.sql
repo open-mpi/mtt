@@ -37,7 +37,7 @@ CREATE TABLE mtt_stats_contrib (
 
     -- MPI Get Name/Version
     mpi_get_name                varchar(64),
-    mpi_get_version             varchar(32),
+    mpi_get_version             varchar(128),
 
     -- MPI Install Configuration
     -- (use configure_id, we can join to get the data later)
