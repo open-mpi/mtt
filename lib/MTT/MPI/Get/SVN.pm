@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -11,11 +12,15 @@
 #
 
 package MTT::MPI::Get::SVN;
+my $package = __PACKAGE__;
 
 use strict;
 use MTT::Values;
 use MTT::Messages;
+use MTT::INI;
 use MTT::Common::SVN;
+use MTT::SourceControl;
+use Data::Dumper;
 
 #--------------------------------------------------------------------------
 
@@ -24,15 +29,11 @@ sub Get {
     my $ret;
     my $previous_r;
 
-    my $url = Value($ini, $section, "svn_url");
-    if (!$url) {
-        $ret->{result_message} = "No URL specified in [$section]; skipping";
-        Warning("$ret->{result_message}\n");
-        return $ret;
-    }
+    # Process all the INI parameters
+    my $params = &MTT::SourceControl::ProcessInputParameters($ini, $section);
+    my $url = $params->{url};
 
-    my $simple_section = $section;
-    $simple_section =~ s/^\s*mpi get:\s*//;
+    my $simple_section = GetSimpleSection($section);
 
     # If we're not forcing, do we have a svn with the same URL already?
     if (!$force) {
@@ -44,7 +45,7 @@ sub Get {
                 my $source = $mpi_get->{$version_key};
                 Debug(">> have [$simple_section] version $version_key\n");
 
-                if ($source->{module_name} eq "MTT::MPI::Get::SVN" &&
+                if ($source->{module_name} eq $package &&
                     $source->{module_data}->{url} eq $url) {
                     
                     # We found it
@@ -57,7 +58,9 @@ sub Get {
     }
 
     # Call the back-end function
-    return MTT::Common::SVN::Get($ini, $section, $previous_r);
-} 
+    $ret = MTT::Common::SVN::Get($params, $previous_r, $force);
+
+    return $ret;
+}
 
 1;

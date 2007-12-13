@@ -17,6 +17,7 @@ use strict;
 use Cwd;
 use File::Basename;
 use File::Find;
+use File::Spec;
 use MTT::Messages;
 use MTT::DoCommand;
 use MTT::FindProgram;
@@ -82,12 +83,9 @@ sub mkdir {
     }
 
     # Return an absolute version of the created directory
+    my $ret = File::Spec->rel2abs($str);
 
-    my $orig = cwd();
-    MTT::DoCommand::Chdir($str);
-    my $newdir = cwd();
-    MTT::DoCommand::Chdir($orig);
-    $newdir;
+    return $ret;
 } 
 
 #--------------------------------------------------------------------------
@@ -188,151 +186,6 @@ sub unpack_tarball {
 
 #--------------------------------------------------------------------------
 
-# do a svn checkout
-sub svn_checkout {
-    my ($url, $rnum, $username, $pw, $pw_cache, $delete_first, $export, $svn_command) = @_;
-
-    Debug("SVN checkout: $url\n");
-
-    my $cwd = cwd();
-    my $b = basename($url);
-    MTT::DoCommand::Cmd(1, "rm -rf $b")
-        if ($delete_first);
-
-    my $str = "$svn_command " . ($export ? "export" : "co") . " ";
-    $str .= "-r $rnum "
-        if ($rnum);
-    $str .= "--username $username "
-        if ($username);
-    $str .= "--password $pw "
-        if ($pw);
-    $str .= "--no-auth-cache "
-        if ("0" eq $pw_cache);
-    $str .= $url;
-    $str .= " $cwd/$b";
-
-    my $scheme;
-    if ($url =~ /^http:\/\//) {
-        $scheme = "http";
-    } elsif ($url =~ /^https:\/\//) {
-        $scheme = "https";
-    }
-
-    # The rest of this section must be serialized because only one
-    # process can modify the $HOME/.subversion/servers file at a time.
-    # Blah!
-    MTT::Lock::Lock($ENV{HOME} . "/.subversion/servers");
-
-    # Read in the original $HOME/.subversion/servers file
-    my $svnfile = "$ENV{HOME}/.subversion/servers";
-    my $file_contents;
-    mkdir("$ENV{HOME}/.subversion")
-        if (! -d "$ENV{HOME}/.subversion");
-    if (-r $svnfile) {
-        $file_contents = MTT::Files::Slurp($svnfile);
-    } else {
-        $file_contents = "[global]
-http-proxy-host = bogus
-http-proxy-port = bogus\n";
-    }
-
-    # Save the original proxy
-    my $save_host;
-    my $save_port;
-    if ($file_contents =~ /\nhttp-proxy-host\s*\=\s*(.*)/i) {
-        $save_host = $1;
-    }
-    if ($file_contents =~ /\nhttp-proxy-port\s*\=\s*(\d+)/i) {
-        $save_port = $1;
-    }
-
-    # Loop over proxies
-    my $proxies = \@{$MTT::Globals::Values->{proxies}->{$scheme}};
-    my %ENV_SAVE = %ENV;
-
-    # In case a proxy was not specified, try to svn without one
-    if (! @{$proxies}) {
-        push(@{$proxies}, undef);
-    }
-
-    foreach my $p (@{$proxies}) {
-
-        # Skip "blank" proxies
-        if (defined($p->{proxy}) and $p->{proxy} !~ /^\s*$/) {
-            Debug("SVN checkout attempting proxy: $p->{proxy}\n");
-            _substitute_proxy_in_servers_file($svnfile, $file_contents, $p->{host}, $p->{port});
-        }
-
-        my $ret = MTT::DoCommand::Cmd(1, $str);
-
-        # If it failed, try again
-        next
-            if (!MTT::DoCommand::wsuccess($ret->{exit_status}));
-
-        # Success!
-        my $r = undef;
-
-        # SVN
-        if ($ret->{result_stdout} =~ m/Exported revision (\d+)\.\n$/) {
-            $r = $1;
-        # SVK
-        } elsif ($ret->{result_stdout} =~ m/Syncing\s+\S+\s+in\s+\S+\s+to\s+(\d+)/i) {
-            $r = $1;
-        }
-
-        MTT::Lock::Unlock($ENV{HOME} . "/.subversion/servers");
-        return ($b, $r);
-    }
-
-    # Fall though means we didn't succeed.  Doh.
-
-    # Restore the original proxy
-    Debug("Restoring the proxy originally found in $svnfile: \"$save_host:$save_port\"\n");
-    _substitute_proxy_in_servers_file($svnfile, $file_contents, $save_host, $save_port);
-
-    # Reset the servers file to whatever it used to be (if it used to be!)
-    MTT::Lock::Unlock($ENV{HOME} . "/.subversion/servers");
-    return undef;
-}
-
-# Replace the proxy host and port in the ~/.subversion/servers file
-sub _substitute_proxy_in_servers_file {
-    my ($file, $contents, $host, $port) = @_;
-
-    # Write a new $HOME/.subversion/servers file with the
-    # right proxy info
-    if ($host) {
-        $host =~ m@^.+://(.+):([0-9]+)/@;
-        $contents =~ s/^\s*http-proxy-host\s*=.*$/http-proxy-host = $host/m;
-        $contents =~ s/^\s*http-proxy-port\s*=.*$/http-proxy-port = $port/m;
-    } else {
-        $contents =~ s/^\s*http-proxy-host\s*=.*$//m;
-        $contents =~ s/^\s*http-proxy-port\s*=.*$//m;
-    }
-    open(FILE, ">$file");
-    print FILE $contents;
-    close(FILE);
-}
-
-# Do a (Sun) TeamWare bringover
-sub teamware_bringover {
-    my ($file_list_program, $parent, $child, $path) = @_;
-
-    my $str;
-    $str .= "bringover";
-    $str .= " -f $file_list_program";
-    $str .= " -p $parent";
-    $str .= " -w $child";
-    $str .= " $path\n";
-
-    my $ret = MTT::DoCommand::Cmd(1, $str);
-
-    return $ret;
-}
-
-#--------------------------------------------------------------------------
-
-# Copy and entire file tree
 sub copy_tree {
     my ($srcdir, $delete_first) = @_;
 

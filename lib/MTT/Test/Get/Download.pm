@@ -17,6 +17,7 @@ use strict;
 use Cwd;
 use File::Basename;
 use Data::Dumper;
+use MTT::DoCommand;
 use MTT::Messages;
 use MTT::Files;
 use MTT::FindProgram;
@@ -98,10 +99,10 @@ sub PrepareForInstall {
 
     # Extract the tarball
     Debug(">> Download extracting tarball to $build_dir\n");
-    my $orig = cwd();
-    chdir($build_dir);
+    MTT::DoCommand::Chdir($build_dir);
     my $ret = MTT::Files::unpack_tarball($source->{module_data}->{tarball}, 1);
-    chdir($orig);
+    MTT::DoCommand::Chdir($ret);
+
     Debug(">> Download finished extracting tarball\n");
     return $ret;
 }

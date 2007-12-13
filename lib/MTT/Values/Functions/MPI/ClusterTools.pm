@@ -38,8 +38,7 @@ sub setup_shell_scripts_for_wrappers {
         return undef;
     }
 
-    my $save_cwd = cwd();
-    MTT::DoCommand::Chdir($dirname);
+    MTT::DoCommand::Pushdir($dirname);
 
     # ClusterTools 7 to ClusterTools 6 compiler name mappings
     my $wrappers;
@@ -67,7 +66,7 @@ sub setup_shell_scripts_for_wrappers {
     }
 
     # Return to last cwd()
-    MTT::DoCommand::Chdir($save_cwd);
+    MTT::DoCommand::Popdir();
 
     return 1;
 }

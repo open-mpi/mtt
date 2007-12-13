@@ -15,12 +15,14 @@ package MTT::MPI::Get::OMPI_Snapshot;
 
 use strict;
 use Cwd;
+use MTT::DoCommand;
 use File::Basename;
 use Data::Dumper;
 use MTT::Messages;
 use MTT::Files;
 use MTT::FindProgram;
 use MTT::Values;
+use MTT::INI;
 
 # Checksum filenames
 my $md5_checksums = "md5sums.txt";
@@ -47,15 +49,14 @@ sub Get {
     }
     Debug(">> OMPI_Snapshot got url: $url\n");
 
-    my $simple_section = $section;
-    $simple_section =~ s/^\s*mpi get:\s*//;
+    my $simple_section = GetSimpleSection($section);
 
     # Make some dirs
     my $tarball_dir = MTT::Files::mkdir("tarballs");
     my $data_dir = MTT::Files::mkdir("data");
     Debug("Tarball dir: $tarball_dir\n");
 
-    chdir($data_dir);
+    MTT::DoCommand::Chdir($data_dir);
     unlink($latest_filename);
     MTT::Files::http_get("$url/$latest_filename");
 
@@ -127,12 +128,12 @@ sub Get {
     $ret->{have_new} = 1;
 
     # Download the tarball
-    chdir($tarball_dir);
+    MTT::DoCommand::Chdir($tarball_dir);
     unlink("$tarball_dir/$tarball_name");
     MTT::Files::http_get("$url/$tarball_name");
     Abort ("Could not download tarball -- aborting\n")
         if (! -f $tarball_name and ! $MTT::DoCommand::no_execute);
-    chdir($data_dir);
+    MTT::DoCommand::Chdir($data_dir);
         
     # get the checksums
     unlink($md5_checksums);
@@ -183,10 +184,11 @@ sub PrepareForInstall {
 
     # Extract the tarball
     Debug(">> OMPI_Snapshot extracting tarball to $build_dir\n");
-    my $orig = cwd();
-    chdir($build_dir);
+
+    MTT::DoCommand::Chdir($build_dir);
     my $ret = MTT::Files::unpack_tarball($source->{module_data}->{tarball}, 1);
-    chdir($orig);
+    MTT::DoCommand::Chdir($ret);
+
     Debug(">> OMPI_Snapshot finished extracting tarball\n");
     return $ret;
 }

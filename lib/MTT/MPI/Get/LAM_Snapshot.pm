@@ -18,10 +18,12 @@ use Cwd;
 use File::Basename;
 use Data::Dumper;
 use POSIX;
+use MTT::DoCommand;
 use MTT::Messages;
 use MTT::Files;
 use MTT::FindProgram;
 use MTT::Values;
+use MTT::INI;
 
 #--------------------------------------------------------------------------
 
@@ -41,8 +43,7 @@ sub Get {
     }
     Debug(">> LAM_Snapshot got url: $url\n");
 
-    my $simple_section = $section;
-    $simple_section =~ s/^\s*mpi get:\s*//;
+    my $simple_section = GetSimpleSection($section);
 
     # Make some dirs
     my $tarball_dir = MTT::Files::mkdir("tarballs");
@@ -179,10 +180,10 @@ sub PrepareForInstall {
 
     # Extract the tarball
     Debug(">> LAM_Snapshot extracting tarball to $build_dir\n");
-    my $orig = cwd();
-    chdir($build_dir);
+    MTT::DoCommand::Chdir($build_dir);
     my $ret = MTT::Files::unpack_tarball($source->{module_data}->{tarball}, 1);
-    chdir($orig);
+    MTT::DoCommand::Chdir($ret);
+
     Debug(">> LAM_Snapshot finished extracting tarball\n");
     return $ret;
 }

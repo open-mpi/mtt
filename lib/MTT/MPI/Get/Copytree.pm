@@ -15,6 +15,7 @@ package MTT::MPI::Get::Copytree;
 use strict;
 use MTT::Values;
 use MTT::Messages;
+use MTT::INI;
 use MTT::Common::Copytree;
 
 #--------------------------------------------------------------------------
@@ -23,6 +24,8 @@ sub Get {
     my ($ini, $section, $force) = @_;
     my $ret;
     my $previous_mtime;
+
+    my $simple_section = GetSimpleSection($section);
 
     # See if we got a directory in the ini section
     my $src_directory = Value($ini, $section, "copytree_directory"); 
@@ -36,7 +39,7 @@ sub Get {
     # to see if we do.
     foreach my $mpi_get_key (keys(%{$MTT::MPI::sources})) {
         next
-            if ($section ne $mpi_get_key);
+            if ($simple_section ne $mpi_get_key);
 
         my $mpi_get = $MTT::MPI::sources->{$mpi_get_key};
         foreach my $version_key (keys(%{$mpi_get})) {

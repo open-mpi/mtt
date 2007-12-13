@@ -69,10 +69,9 @@ sub Install {
     }
 
     # Copy the tree
-    my $start_dir = cwd();
-    MTT::DoCommand::Chdir($config->{installdir});
+    MTT::DoCommand::Pushdir($config->{installdir});
     $x = MTT::Files::copy_tree("$config->{abs_srcdir}", 1);
-    MTT::DoCommand::Chdir($start_dir);
+    MTT::DoCommand::Popdir();
     return undef
         if (!$x);
 

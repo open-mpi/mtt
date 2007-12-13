@@ -24,6 +24,7 @@ use MTT::Test::Specify;
 use MTT::Test::RunEngine;
 use MTT::Util;
 use MTT::EnvModule;
+use MTT::INI;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -78,8 +79,7 @@ sub Run {
         if ($section =~ /^\s*test run:/) {
 
             # Simple section name
-            my $simple_section = $section;
-            $simple_section =~ s/^\s*test run:\s*//;
+            my $simple_section = GetSimpleSection($section);
             Verbose(">> $phase_name [$simple_section]\n");
 
             # Ensure that we have a test build name

@@ -1014,6 +1014,23 @@ sub dirname {
     return File::Basename::dirname($str);
 }
 
+# return cwd()
+sub cwd {
+    return cwd();
+}
+
+# return cwd()
+sub pwd {
+    return cwd();
+}
+
+# Just like the "which" shell command
+sub which {
+    my ($str) = @_;
+    my @arr = split(/ /, $str);
+    return FindProgram(@arr);
+}
+
 # return File::Basename::basename()
 sub basename {
     my($str) = @_;
@@ -2143,6 +2160,43 @@ sub null {
 sub mpi_get_name {
     Debug("&mpi_get_name returning: $MTT::Globals::Internals->{mpi_get_name}\n");
     return $MTT::Globals::Internals->{mpi_get_name};
+}
+
+# Useful for passing to an MPI Install section to dynamically find a cached MPI
+# get. Takes an optional pattern to match the section names against. Especially
+# useful in the case where a user is not concerned about multiplying "MPI
+# Installs" times "MPI gets". In other words, it allows one to simplify this
+# command:
+#
+#   $ client/mtt --section "install-foo" mpi_get=install-foo
+# 
+# Instead, leave out the mpi_get command-line override, and set 
+# mpi_get like this in the INI:
+#
+#   mpi_get = &get_any_mpi_get_name()
+#
+sub get_any_mpi_get_name {
+    my ($pattern) = @_;
+
+    my $ret;
+    
+    # Match everything if no pattern is supplied
+    $pattern = "." if (! $pattern);
+
+    foreach my $mpi_get_name (keys %$MTT::MPI::sources) {
+        if ($mpi_get_name =~ /$pattern/i) {
+            $ret = $mpi_get_name;
+        }
+    }
+    Debug("&get_any_mpi_get_name returning: $ret\n");
+    return $ret;
+}
+
+# Similar usefulness as the above get_any_mpi_get_name
+sub get_all_mpi_get_names {
+    my $ret = join(",", keys %$MTT::MPI::sources);
+    Debug("&get_all_mpi_get_names returning: $ret\n");
+    return $ret;
 }
 
 #--------------------------------------------------------------------------

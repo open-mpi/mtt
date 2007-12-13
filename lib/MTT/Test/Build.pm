@@ -97,8 +97,7 @@ sub Build {
             Verbose(">> $phase_name [$section]\n");
 
             # Simple section name
-            my $simple_section = $section;
-            $simple_section =~ s/^\s*test build:\s*//;
+            my $simple_section = GetSimpleSection($section);
 
             # Ensure that we have a test get name
             my $test_get_value = Value($ini, $section, "test_get");
@@ -299,8 +298,8 @@ sub _do_build {
 
     # Unpack the source and find out the subdirectory name it created
     $config->{srcdir} = _prepare_source($test_get);
+
     # We'll check for failure of this step later
-    MTT::DoCommand::Chdir($config->{srcdir});
     $config->{srcdir} = cwd();
 
     # What to do with result_stdout/result_stderr?
@@ -380,11 +379,11 @@ sub _do_build {
     my $start_time = time();
     my $ret;
     if ($config->{srcdir}) {
-	$ret = MTT::Module::Run("MTT::Test::Build::$config->{build_module}",
-				"Build", $ini, $mpi_install, $config);
+        $ret = MTT::Module::Run("MTT::Test::Build::$config->{build_module}",
+                                "Build", $ini, $mpi_install, $config);
     } else {
-	$ret->{test_result} = MTT::Values::FAIL;
-	$ret->{test_result_message} = "Preparing the test source failed -- see MTT client output for details";
+        $ret->{test_result} = MTT::Values::FAIL;
+        $ret->{test_result_message} = "Preparing the test source failed -- see MTT client output for details";
     }
     my $duration = time() - $start_time . " seconds";
             
