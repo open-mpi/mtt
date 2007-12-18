@@ -229,8 +229,21 @@ sub client_command {
         client_trylock($tokens[1], $entry);
     } elsif ("unlock" eq lc($tokens[0])) {
         client_unlock($tokens[1], $entry);
+    } elsif ("breaklock" eq lc($tokens[0])) {
+        client_breaklock($tokens[1], $entry);
     } elsif ("quit" eq lc($tokens[0])) {
         client_disconnect($entry);
+    } elsif ("print" eq lc($tokens[0])) {
+        client_print($entry);
+    } elsif ("help" eq lc($tokens[0]) || "?" eq $tokens[0]) {
+        syswrite($entry->{handle}, "Commands:$EOL" .
+"lock <lockname> - block until lock acquired$EOL" .
+"trylock <lockname> - lock if immediately available, else return without locking$EOL" .
+"unlock <lockname> - unlock a lock you already hold$EOL" .
+"breaklock <lockname> - unlock a lock that you do not hold (WARNING!!)$EOL" .
+"print - show all current locks$EOL" .
+"quit - logout (releasing all locks you hold)$EOL" .
+"help - this message$EOL");
     } else {
         syswrite($entry->{handle}, "Unrecognized command: $tokens[0]$EOL");
     }
@@ -300,20 +313,60 @@ sub client_unlock {
     } else {
         syswrite($entry->{handle}, "Unlocked $name$EOL");
         logmsg "Client $entry->{id} unlocked '$name'";
-        # If there's anyone queued up for this lock, give it to them
-        if (exists($locks->{$name}->{queue})) {
-            my $new_owner = pop(@{$locks->{$name}->{queue}});
-            $locks->{$name}->{client} = $new_owner;
-            delete $locks->{$name}->{queue}
-                if (-1 == $#{$locks->{$name}->{queue}});
-            syswrite($new_owner->{handle}, "Locked $name$EOL");
-            logmsg "Client $new_owner->{id} locked '$name'";
-        }
-        # Otherwise, delete the whole entry
-        else {
-            delete $locks->{$name};
+        _do_unlock($name, $entry);
+    }
+}
+
+sub _do_unlock {
+    my ($name, $entry) = @_;
+
+    # If there's anyone queued up for this lock, give it to them
+    if (exists($locks->{$name}->{queue})) {
+        my $new_owner = pop(@{$locks->{$name}->{queue}});
+        $locks->{$name}->{client} = $new_owner;
+        delete $locks->{$name}->{queue}
+        if (-1 == $#{$locks->{$name}->{queue}});
+        syswrite($new_owner->{handle}, "Locked $name$EOL");
+        logmsg "Client $new_owner->{id} locked '$name'";
+    }
+    # Otherwise, delete the whole entry
+    else {
+        delete $locks->{$name};
+    }
+}
+
+sub client_breaklock {
+    my ($name, $entry) = @_;
+
+    logmsg "Client $entry->{id} breaking lock '$name'";
+    if (!exists($locks->{$name})) {
+        # Bozo error
+        syswrite($entry->{handle}, "Error: lock does not exist$EOL");
+        logmsg "Client $entry->{id} lock '$name' does not exist";
+    } else {
+        syswrite($locks->{$name}->{client}->{handle}, "Lock $name broken by $entry->{id}$EOL");
+        syswrite($entry->{handle}, "Broke lock $name$EOL");
+        logmsg "Client $entry->{id} brock lock '$name'";
+        _do_unlock($name, $entry);
+    }
+}
+
+#----------------------------------------------------------------------
+
+sub client_print {
+    my $entry = shift;
+    my $out;
+    my @k = keys(%$locks);
+
+    if (!defined($locks) || $#k <= 0) {
+        $out = "No locks$EOL";
+    } else {
+        $out = "";
+        foreach my $k (@k) {
+            $out .= "lock \"$k\" held by $locks->{$k}->{client}->{id}$EOL";
         }
     }
+    syswrite($entry->{handle}, $out);
 }
 
 #----------------------------------------------------------------------
