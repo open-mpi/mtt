@@ -322,7 +322,7 @@ sub _do_unlock {
 
     # If there's anyone queued up for this lock, give it to them
     if (exists($locks->{$name}->{queue})) {
-        my $new_owner = pop(@{$locks->{$name}->{queue}});
+        my $new_owner = shift @{$locks->{$name}->{queue}};
         $locks->{$name}->{client} = $new_owner;
         delete $locks->{$name}->{queue}
         if (-1 == $#{$locks->{$name}->{queue}});
