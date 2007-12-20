@@ -125,6 +125,7 @@ sub Get {
     if (!$dir) {
         $ret->{test_result} = MTT::Values::FAIL;
         $ret->{result_message} = "Failed to SVN export";
+        $ret->{have_new} = 0;
         return $ret;
     }
     $data->{directory} = cwd() . "/$dir";
