@@ -218,81 +218,97 @@ sub svn_checkout {
         $scheme = "https";
     }
 
-    # The rest of this section must be serialized because only one
-    # process can modify the $HOME/.subversion/servers file at a time.
-    # Blah!
-    MTT::Lock::Lock($ENV{HOME} . "/.subversion/servers");
+    # If we're not using http or https, there's no need for proxies,
+    # so just do the checkout.
 
-    # Read in the original $HOME/.subversion/servers file
-    my $svnfile = "$ENV{HOME}/.subversion/servers";
-    my $file_contents;
-    mkdir("$ENV{HOME}/.subversion")
-        if (! -d "$ENV{HOME}/.subversion");
-    if (-r $svnfile) {
-        $file_contents = MTT::Files::Slurp($svnfile);
-    } else {
-        $file_contents = "[global]
+    my $ret;
+    if (!defined($scheme)) {
+        $ret = MTT::DoCommand::Cmd(1, $str);
+        return undef
+            if (!MTT::DoCommand::wsuccess($ret->{exit_status}));
+    }
+
+    # If we're using http/https, go through gyrations because we may
+    # be using a proxy.
+
+    else {
+        # The rest of this section must be serialized because only one
+        # process can modify the $HOME/.subversion/servers file at a
+        # time.  Blah!
+        my $svnfile = "$ENV{HOME}/.subversion/servers";
+        MTT::Lock::Lock($svnfile);
+          
+        # Read in the original $HOME/.subversion/servers file
+        my $file_contents;
+        mkdir("$ENV{HOME}/.subversion")
+            if (! -d "$ENV{HOME}/.subversion");
+        if (-r $svnfile) {
+            $file_contents = MTT::Files::Slurp($svnfile);
+        } else {
+            $file_contents = "[global]
 http-proxy-host = bogus
 http-proxy-port = bogus\n";
-    }
-
-    # Save the original proxy
-    my $save_host;
-    my $save_port;
-    if ($file_contents =~ /\nhttp-proxy-host\s*\=\s*(.*)/i) {
-        $save_host = $1;
-    }
-    if ($file_contents =~ /\nhttp-proxy-port\s*\=\s*(\d+)/i) {
-        $save_port = $1;
-    }
-
-    # Loop over proxies
-    my $proxies = \@{$MTT::Globals::Values->{proxies}->{$scheme}};
-    my %ENV_SAVE = %ENV;
-
-    # In case a proxy was not specified, try to svn without one
-    if (! @{$proxies}) {
-        push(@{$proxies}, undef);
-    }
-
-    foreach my $p (@{$proxies}) {
-
-        # Skip "blank" proxies
-        if (defined($p->{proxy}) and $p->{proxy} !~ /^\s*$/) {
-            Debug("SVN checkout attempting proxy: $p->{proxy}\n");
-            _substitute_proxy_in_servers_file($svnfile, $file_contents, $p->{host}, $p->{port});
         }
-
-        my $ret = MTT::DoCommand::Cmd(1, $str);
-
-        # If it failed, try again
-        next
-            if (!MTT::DoCommand::wsuccess($ret->{exit_status}));
-
-        # Success!
-        my $r = undef;
-
-        # SVN
-        if ($ret->{result_stdout} =~ m/Exported revision (\d+)\.\n$/) {
-            $r = $1;
-        # SVK
-        } elsif ($ret->{result_stdout} =~ m/Syncing\s+\S+\s+in\s+\S+\s+to\s+(\d+)/i) {
-            $r = $1;
+          
+        # Save the original proxy
+        my $save_host;
+        my $save_port;
+        if ($file_contents =~ /\nhttp-proxy-host\s*\=\s*(.*)/i) {
+            $save_host = $1;
         }
+        if ($file_contents =~ /\nhttp-proxy-port\s*\=\s*(\d+)/i) {
+            $save_port = $1;
+        }
+          
+        # Loop over proxies
+          my $proxies = \@{$MTT::Globals::Values->{proxies}->{$scheme}};
+          my %ENV_SAVE = %ENV;
 
-        MTT::Lock::Unlock($ENV{HOME} . "/.subversion/servers");
-        return ($b, $r);
+          # In case a proxy was not specified, try to svn without one
+          if (! @{$proxies}) {
+              push(@{$proxies}, undef);
+          }
+
+          foreach my $p (@{$proxies}) {
+
+              # Skip "blank" proxies
+              if (defined($p->{proxy}) and $p->{proxy} !~ /^\s*$/) {
+                  Debug("SVN checkout attempting proxy: $p->{proxy}\n");
+                  _substitute_proxy_in_servers_file($svnfile, $file_contents, $p->{host}, $p->{port});
+              }
+
+              $ret = MTT::DoCommand::Cmd(1, $str);
+
+              # If it failed, try again
+              next
+                  if (!MTT::DoCommand::wsuccess($ret->{exit_status}));
+
+              # Success!
+              last;
+          }
+          # Restore the original proxy
+          Debug("Restoring the proxy originally found in $svnfile: \"$save_host:$save_port\"\n");
+          _substitute_proxy_in_servers_file($svnfile, $file_contents, 
+                                            $save_host, $save_port);
+          MTT::Lock::Unlock($svnfile);
+      }
+
+    # If we failed, return undef
+    return undef
+        if (!MTT::DoCommand::wsuccess($ret->{exit_status}));
+
+    # Otherwise, parse out the r number we got back
+    # SVN
+    my $r = undef;
+    if ($ret->{result_stdout} =~ m/Exported revision (\d+)\.\n$/) {
+        $r = $1;
+    } 
+    # SVK
+    elsif ($ret->{result_stdout} =~ m/Syncing\s+\S+\s+in\s+\S+\s+to\s+(\d+)/i) {
+        $r = $1;
     }
 
-    # Fall though means we didn't succeed.  Doh.
-
-    # Restore the original proxy
-    Debug("Restoring the proxy originally found in $svnfile: \"$save_host:$save_port\"\n");
-    _substitute_proxy_in_servers_file($svnfile, $file_contents, $save_host, $save_port);
-
-    # Reset the servers file to whatever it used to be (if it used to be!)
-    MTT::Lock::Unlock($ENV{HOME} . "/.subversion/servers");
-    return undef;
+    return ($b, $r);
 }
 
 # Replace the proxy host and port in the ~/.subversion/servers file
