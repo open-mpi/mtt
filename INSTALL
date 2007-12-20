@@ -4,9 +4,10 @@ The MPI Testing Tool (MTT) requires several other packages:
 
 Always required:
 - Perl Config::IniFiles
-- Whatami
 
 Optional
+- Whatami: need to override MTT section fields (platform_type,
+  platform_hardware, os_name, os_version) if whatami is not in the PATH.
 - Perl Env::Modulecmd: if using the "env_module" functionality in INI
   files (to load/unload environment modules)
 - Perl Text::TabularDisplay: if using the text reporter functionality
