@@ -14,6 +14,10 @@ $COPYRIGHT$
 
 Additional copyrights may follow
 
+This software includes code derived from software that is copyright
+(c) 1996 Randal L. Schwartz, distributed under the Artistic License.
+See the copyright and license notice in "mtt-relay" for details.
+
 $HEADER$
 
 
