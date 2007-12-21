@@ -88,6 +88,8 @@ sub Init {
     $debug_filename = "mttdatabase_debug" if (! $debug_filename);
     $keep_debug_files = Value($ini, $section, "mttdatabase_keep_debug_files");
     $debug_server = 1 if ($url =~ /\bdebug\b|\bverbose\b/);
+    $debug_server = Logical($ini, $section, "mttdatabase_debug_server")
+        if (1 != $debug_server);
     $hostname = Value($ini, $section, "mttdatabase_hostname");
     $local_username = Value($ini, "mtt", "local_username");
 
@@ -344,41 +346,42 @@ sub Submit {
                 ++$count;
             }
 
-            Debug("Submitting to MTTDatabase...\n");
+            _debug("Submitting to MTTDatabase...\n");
             my ($req, $file) = _prepare_request(\$form);
             my $response = _do_request($$req);
             unlink($file);
 
             my $sql_error = 0;
             if ($response->is_success()) {
+                _debug("MTTDatabase response is a success\n");
                 ++$successes;
                 push(@success_outputs, $response->content);
                 $sql_error = _count_sql_errors($response->content);
                 $server_errors_count += $sql_error;
                 $server_errors_total += $server_errors_count;
                 Warning($response->content . "\n") if ($sql_error);
-                print("\n" . $response->content . "\n") if ($debug_server);
+                _debug("MTTDatabase client got response: " . 
+                       $response->content . "\n");
             } else {
                 Warning(">> Failed to report to MTTDatabase: " .
-                        $response->status_line . "\n" . $response->content);
+                        $response->status_line . "\n" . 
+                        ">> Content: " . $response->content);
                 ++$fails;
                 push(@fail_outputs, $response->content);
             }
-
-            Verbose("MTTDatabase client got response: " . $response->content . "\n");
 
             # The following parses the returned serial which will index either
             # an "MPI Install" or a "Test Build"
             if ($response->content =~ m/===\s+(\S+)\s+=\s+([0-9\,]+)\s+===/) {
                 eval "\$phase_serials->{$1} = $2;";
-                Verbose("MTTDatabase client parsed serial: $1 = $2\n");
+                _debug("MTTDatabase client parsed serial: $1 = $2\n");
             } else {
                 Warning("MTTDatabase client did not get a serial; " .
                         "phases will be isolated from each other in the reports\n");
             }
 
             $num_results += ($count - 1);
-            Debug("MTTDatabase client submit complete\n");
+            _debug("MTTDatabase client submit complete\n");
             
             # Write out what we *would* have sent via HTTP to a
             # file
@@ -449,7 +452,7 @@ sub _do_request {
     # connection refused from any of them, try another.
     my $response;
     foreach my $ua (@lwps) {
-        Debug("MTTDatabase client trying proxy: $ua->{proxy} / $ua->{source}\n");
+        _debug("MTTDatabase client trying proxy: $ua->{proxy} / $ua->{source}\n");
         $ENV{https_proxy} = $ua->{proxy}
             if ("https" eq $ua->{scheme});
 
@@ -460,9 +463,11 @@ sub _do_request {
         # code 500, return (code 500 = can't connect)
         if ($response->is_success() ||
             $response->code() != 500) {
+            _debug("MTTDatabase proxy successful / not 500\n");
             %ENV = %ENV_SAVE;
             return $response;
         }
+        _debug("MTTDatabase proxy unsuccessful -- trying next\n");
 
         # Otherwise, loop around and try again
         Debug("Proxy $ua->{proxy} failed code: " .
@@ -470,9 +475,12 @@ sub _do_request {
     }
 
     # Sorry -- nothing got through...
+    _debug("MTTDatabase proxy totally unsuccessful\n");
     %ENV = %ENV_SAVE;
     return $response;
 }
+
+#--------------------------------------------------------------------------
 
 # Zip up the test results, and prepare the HTTP file upload
 # request
@@ -506,6 +514,8 @@ sub _prepare_request {
     return (\$req, $filename);
 }
 
+#--------------------------------------------------------------------------
+
 # For the submission hash of data, convert a Perl eval
 # string into a PHP eval string
 sub _perl_arr_2_php_arr {
@@ -524,4 +534,9 @@ sub _perl_arr_2_php_arr {
     return join("\n", @ret);
 }
 
+#--------------------------------------------------------------------------
+
+sub _debug {
+    $debug_server ? Verbose(@_) : Debug(@_);
+}
 1;
