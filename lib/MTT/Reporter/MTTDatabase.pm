@@ -163,7 +163,7 @@ sub Init {
 
     # Do a test ping to ensure that we can reach this URL.
 
-    Debug("MTTDatabase getting a client serial number...\n");
+    Debug("MTTDatabase client getting a client serial number...\n");
     my $form = {
         SERIAL => 1,
     };
@@ -177,12 +177,12 @@ sub Init {
         Error(">> Do not want to continue with possible bad submission URL -- aborting\n");
     }
 
-    Debug("MTTDatabase got response: " . $response->content . "\n");
+    Debug("MTTDatabase client got response: " . $response->content . "\n");
     if ($response->content =~ m/===\s+$invocation_serial_name\s+=\s+([0-9]+)\s+===/) {
         $invocation_serial_value = $1;
-        Debug("MTTDatabase parsed invocation serial: $invocation_serial_value\n");
+        Debug("MTTDatabase client parsed invocation serial: $invocation_serial_value\n");
     } else {
-        Warning("MTTDatabase did not get a serial\n");
+        Warning("MTTDatabase client did not get a serial\n");
     }
     
     # If we have a debug filename, make it an absolute filename,
@@ -365,20 +365,20 @@ sub Submit {
                 push(@fail_outputs, $response->content);
             }
 
-            Verbose("MTTDatabase got response: " . $response->content . "\n");
+            Verbose("MTTDatabase client got response: " . $response->content . "\n");
 
             # The following parses the returned serial which will index either
             # an "MPI Install" or a "Test Build"
             if ($response->content =~ m/===\s+(\S+)\s+=\s+([0-9\,]+)\s+===/) {
                 eval "\$phase_serials->{$1} = $2;";
-                Verbose("MTTDatabase parsed serial: $1 = $2\n");
+                Verbose("MTTDatabase client parsed serial: $1 = $2\n");
             } else {
-                Warning("MTTDatabase did not get a serial; " .
+                Warning("MTTDatabase client did not get a serial; " .
                         "phases will be isolated from each other in the reports\n");
             }
 
             $num_results += ($count - 1);
-            Debug("MTTDatabase submit complete\n");
+            Debug("MTTDatabase client submit complete\n");
             
             # Write out what we *would* have sent via HTTP to a
             # file
@@ -388,18 +388,18 @@ sub Submit {
                 $f = "$debug_filename.$debug_index" .
                         ($sql_error ? "." . time . "-error" : "") . ".txt";
                 ++$debug_index;
-                Debug("Writing to MTTDatabase debug file: $f\n");
-                open OUT, ">$f" || die "Could not open MTTDatabase debug output file";
+                Debug("Writing to MTTDatabase client debug file: $f\n");
+                open OUT, ">$f" || die "Could not open MTTDatabase client debug output file";
                 print OUT Dumper($form);
                 close OUT;
-                Debug("Debug MTTDatabase file write complete\n");
+                Debug("Debug MTTDatabase client file write complete\n");
                 
                 push(@success_outputs, "Wrote to file $f\n");
             }
         }
     }
 
-    Verbose(">> Reported to MTTDatabase: $successes successful submit" . 
+    Verbose(">> Reported to MTTDatabase client: $successes successful submit" . 
             _plural($successes) .  ", " .
             "$fails failed submit" . _plural($fails) . 
             " (total of $num_results result" . _plural($num_results) . ")\n");
@@ -449,7 +449,7 @@ sub _do_request {
     # connection refused from any of them, try another.
     my $response;
     foreach my $ua (@lwps) {
-        Debug("MTTDatabase trying proxy: $ua->{proxy} / $ua->{source}\n");
+        Debug("MTTDatabase client trying proxy: $ua->{proxy} / $ua->{source}\n");
         $ENV{https_proxy} = $ua->{proxy}
             if ("https" eq $ua->{scheme});
 
