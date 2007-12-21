@@ -224,8 +224,10 @@ sub svn_checkout {
     my $ret;
     if (!defined($scheme)) {
         $ret = MTT::DoCommand::Cmd(1, $str);
-        return undef
-            if (!MTT::DoCommand::wsuccess($ret->{exit_status}));
+	if (!MTT::DoCommand::wsuccess($ret->{exit_status})) {
+            Warning("SVN failure: " . Dumper($ret) . "\n");
+            return undef;
+	}
     }
 
     # If we're using http/https, go through gyrations because we may
@@ -280,8 +282,9 @@ http-proxy-port = bogus\n";
               $ret = MTT::DoCommand::Cmd(1, $str);
 
               # If it failed, try again
-              next
-                  if (!MTT::DoCommand::wsuccess($ret->{exit_status}));
+              if (!MTT::DoCommand::wsuccess($ret->{exit_status})) {
+                  Warning("SVN failure: $ret->{stdout}");
+              }
 
               # Success!
               last;
