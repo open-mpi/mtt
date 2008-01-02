@@ -22,6 +22,7 @@ use MTT::Messages;
 use MTT::Values;
 use MTT::Files;
 use File::Spec;
+use Data::Dumper;
 
 #--------------------------------------------------------------------------
 
@@ -35,7 +36,7 @@ sub Get {
 
     # See if we got a directory in the ini section
     $data->{src_directory} = Value($ini, $section, "copytree_directory");
-    if (!$data->{src_directory}) {
+    if (! defined($data->{src_directory})) {
         $ret->{result_message} = "No source directory specified in [$section]; skipping";
         Warning("$ret->{result_message}\n");
         return $ret;
@@ -77,8 +78,6 @@ sub Get {
         return $ret;
     }
     
-    # Reset the directory where to copy from to be here
-    $data->{directory} = cwd() . "/$dir";
     $data->{mtime} = defined($src_mtime) ? $src_mtime : MTT::Files::mtime_tree($data->{directory});
 
     # Get other values

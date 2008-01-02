@@ -17,7 +17,6 @@ use Config::IniFiles;
 use MTT::Messages;
 use MTT::Values;
 use Data::Dumper;
-use MTT::Util;
 use File::Spec;
 use Storable qw(dclone);
 use vars qw(@EXPORT);

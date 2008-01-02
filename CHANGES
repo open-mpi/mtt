@@ -39,8 +39,8 @@ To announce to OMPI core testers:
     - &pwd() - like the shell command of the same name
     - &cwd() - alias for &pwd()
     - &which() - like the shell command of the same name
-    - &get_any_mpi_get_name() - return the first cached MPI get name
-    - &get_all_mpi_get_names() - return a csv list of all cached MPI get names
+    - &get_mpi_get_names() - return a csv list of all cached MPI get names
+                             matching a pattern
     - &SVN::get_r_number() - return the revision number of an SVN workspace
 
 - See https://svn.open-mpi.org/trac/mtt/changeset/863:
@@ -66,11 +66,11 @@ To announce to OMPI core testers:
 
 - MTT IRC reporter.
 
-- SVN module - choose between "export" and "checkout"
-  (defaults to "export"):
-  - svn_export = 1 (specify the use of "svn export")
-  - svn_checkout = 1 (specify the use of "svn checkout")
-  - svn_command (e.g., "svk" or "rsh some-node svn")
+- SCM module with the below backend scm_module's:
+  - SVN
+  - SVK
+  - Mercurial
+  - Unknown (basically run a shell command)
 
 - terminate_files field in MTT section.  Defaults to $HOME/mtt-stop
   and &scratch_root()/mtt-stop.

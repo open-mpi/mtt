@@ -18,7 +18,6 @@ use MTT::Messages;
 use MTT::Values;
 use MTT::FindProgram;
 use MTT::Common::GNU_Install;
-use MTT::SourceControl;
 use MTT::Files;
 use MTT::Util;
 use Cwd;
@@ -91,9 +90,6 @@ sub Install {
     # we have in the database
     MTT::Util::is_valid_compiler_name($section, $config->{compiler_name});
 
-    # Convert newlines to spaces, just in case
-    $config->{configure_arguments} =~ s/\n|\r/ /g;
-
     # Hack to set the correct runtime dependency path (-R) for root packages.
     #
     # TODO: There must be a way to change the rpath of the already-built
@@ -141,6 +137,9 @@ sub Install {
         $_configure_arguments .=
             " --with-package-string=\"ClusterTools $release_number\"" .
             " --with-ident-string=\"@(#)RELEASE VERSION $greek\"";
+
+        # Convert newlines to spaces
+        $_configure_arguments =~ s/\n|\r/ /g;
 
         # Note: in the case of creating packages, we explicitly set --prefix
         # ourselves in &Sun::get_configure_arguments()
@@ -191,7 +190,7 @@ sub Install {
     if ($installer_get_cmd) {
 
         MTT::Files::mkdir($installer_dir_src);
-        MTT::SourceControl::Checkout(1, $installer_get_cmd . " -w $installer_dir_src");
+        MTT::Module::Run("MTT::Common::SCM::Unknown", "Checkout", $installer_get_cmd . " -w $installer_dir_src");
 
         MTT::DoCommand::Pushdir($installer_dir_src);
 
@@ -233,9 +232,9 @@ sub Install {
         # Make the installer available to the post-installation steps
         my $installer_path = "$destination_dir/Install_Utilities";
         if (exists($ENV{PATH})) {
-            $ENV{PATH} = "$installer_path:" . $ENV{PATH};
+            $ENV{PATH} = "$installer_path/bin:" . $ENV{PATH};
         } else {
-            $ENV{PATH} = $installer_path;
+            $ENV{PATH} = "$installer_path/bin";
         }
     }
 

@@ -252,7 +252,7 @@ sub Install {
                                 MTT::DoCommand::Chdir($mpi_dir);
                             
                                 # Perform specified steps before the Install
-                                _run_step($step_params, "before");
+                                _run_step($step_params, "before", $ini, $section);
 
                                 # Install and restore the environment
                                 _do_install($section, $ini,
@@ -263,7 +263,7 @@ sub Install {
                                 # Do specified steps after the Install such as
                                 # creating a tarball, installing software on
                                 # whole clusters, etc.
-                                _run_step($step_params, "after");
+                                _run_step($step_params, "after", $ini, $section);
 
                                 %ENV = %ENV_SAVE;
                             }
@@ -822,7 +822,7 @@ sub _get_cluster_info {
 
 # Run a pre or post-installation step
 sub _run_step {
-    my ($params, $step) = @_;
+    my ($params, $step, $ini, $section) = @_;
 
     my $cmd;
 
@@ -840,12 +840,15 @@ sub _run_step {
     # Steps can be funclets
     if ($cmd =~ /^\s*&/) {
 
-        my $ok = MTT::Values::EvaluateString($cmd);
+        my $ok = EvaluateString($cmd, $ini, $section);
         Verbose("  Warning: step $step FAILED\n") if (!$ok);
 
     # Steps can be shell commands
     } else {
     
+        # Do any needed @var@ expansions
+        $cmd = EvaluateString($cmd, $ini, $section);
+
         Debug("Running step: $step: $cmd / timeout $timeout\n");
         my $x = ($cmd =~ /\n/) ?
             MTT::DoCommand::CmdScript(1, $cmd, $timeout) : 

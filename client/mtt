@@ -110,6 +110,7 @@ use MTT::DoCommand;
 use MTT::Lock;
 use MTT::Values;
 use MTT::Timer;
+use MTT::Util;
 
 my @file_arg;
 my $stdin_arg;

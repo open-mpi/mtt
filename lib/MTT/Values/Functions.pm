@@ -23,6 +23,8 @@ use MTT::Globals;
 use MTT::Files;
 use MTT::FindProgram;
 use MTT::Lock;
+use MTT::Util;
+use MTT::INI;
 use Data::Dumper;
 use Cwd;
 
@@ -500,8 +502,29 @@ sub regexp {
 
 #--------------------------------------------------------------------------
 
-# Return 1 if all the values are true, 0 otherwise.  If there are no
-# arguments, return 1.
+# Return the captured group in the regular expression
+# E.g.,:
+#   &regexp_capture("foo bar", "\w+ (\w+)")
+#   returns "bar"
+sub regexp_capture {
+    my $funclet = "regexp_capture";
+    Debug("&$funclet got: @_\n");
+    return ""
+        if (!@_);
+
+    my $string = shift;
+    my $pattern = shift;
+
+    if ($string =~ /$pattern/) {
+        Debug("$funclet: returning $+\n");
+        return $+;
+    }
+    Debug("$funclet: returning \"\"\n");
+    return "";
+}
+
+#--------------------------------------------------------------------------
+
 sub and {
     my $array = _get_array_ref(\@_);
     Debug("&and got: @$array\n");
@@ -2162,11 +2185,30 @@ sub mpi_get_name {
     return $MTT::Globals::Internals->{mpi_get_name};
 }
 
-# Useful for passing to an MPI Install section to dynamically find a cached MPI
-# get. Takes an optional pattern to match the section names against. Especially
-# useful in the case where a user is not concerned about multiplying "MPI
-# Installs" times "MPI gets". In other words, it allows one to simplify this
-# command:
+sub _get_hash_keys {
+    my ($pattern, $hash) = @_;
+
+    my @ret;
+    
+    # Match everything if no pattern is supplied
+    if (! defined($pattern)) {
+        return keys %$hash;
+    }
+
+    my @ret;
+    foreach my $key (keys %$hash) {
+        if ($key =~ /$pattern/i) {
+            push(@ret, $key);
+        }
+    }
+
+    Debug("&_get_hash_keys returning: @ret\n");
+    return \@ret;
+}
+
+# The below get INI section name command are especially useful in the case
+# where a user is not concerned about multiplying "MPI Installs" times "MPI
+# gets". In other words, it allows one to simplify this command:
 #
 #   $ client/mtt --section "install-foo" mpi_get=install-foo
 # 
@@ -2175,27 +2217,87 @@ sub mpi_get_name {
 #
 #   mpi_get = &get_any_mpi_get_name()
 #
-sub get_any_mpi_get_name {
+
+sub get_mpi_get_names {
+    my ($pattern) = @_;
+    my @arr = _get_hash_keys($pattern, $MTT::MPI::sources);
+    @arr = delete_duplicates_from_array(@arr);
+    return join(",", @arr);
+}
+
+sub get_mpi_install_names {
     my ($pattern) = @_;
 
-    my $ret;
-    
-    # Match everything if no pattern is supplied
-    $pattern = "." if (! $pattern);
+    my @arr;
+    foreach my $mpi_get_key (keys %$MTT::MPI::installs) {
 
-    foreach my $mpi_get_name (keys %$MTT::MPI::sources) {
-        if ($mpi_get_name =~ /$pattern/i) {
-            $ret = $mpi_get_name;
+        my $mpi_get = $MTT::MPI::sources->{$mpi_get_key};
+        foreach my $version_key (keys %{$mpi_get}) {
+            push(@arr, _get_hash_keys($pattern, $mpi_get->{$version_key}));
         }
     }
-    Debug("&get_any_mpi_get_name returning: $ret\n");
+
+    @arr = delete_duplicates_from_array(@arr);
+    my $ret = join(",", @arr);
     return $ret;
 }
 
-# Similar usefulness as the above get_any_mpi_get_name
-sub get_all_mpi_get_names {
-    my $ret = join(",", keys %$MTT::MPI::sources);
-    Debug("&get_all_mpi_get_names returning: $ret\n");
+sub get_test_get_names {
+    my ($pattern) = @_;
+    return _get_hash_keys($pattern, $MTT::Test::sources);
+}
+
+sub get_test_build_names {
+    my ($pattern) = @_;
+
+    my @arr;
+    foreach my $mpi_get_key (keys %$MTT::Test::builds) {
+
+        my $mpi_get = $MTT::MPI::sources->{$mpi_get_key};
+        foreach my $mpi_get_key (keys %{$mpi_get}) {
+
+            my $version = %{$mpi_get};
+            foreach my $version_key (keys %{$version}) {
+
+                my $mpi_install = $mpi_get->{$version_key};
+                foreach my $build_key (keys %{$mpi_install}) {
+                    push(@arr, _get_hash_keys($pattern, $mpi_install->{$build_key}));
+                }
+            }
+        }
+    }
+
+    @arr = delete_duplicates_from_array(@arr);
+    my $ret = join(",", @arr);
+    return $ret;
+}
+
+sub get_test_run_names {
+    my ($pattern) = @_;
+
+    my @arr;
+    foreach my $mpi_get_key (keys %$MTT::Test::builds) {
+
+        my $mpi_get = $MTT::MPI::sources->{$mpi_get_key};
+        foreach my $mpi_get_key (keys %{$mpi_get}) {
+
+            my $version = %{$mpi_get};
+            foreach my $version_key (keys %{$version}) {
+
+                my $mpi_install = $mpi_get->{$version_key};
+                foreach my $build_key (keys %{$mpi_install}) {
+
+                    my $test_build = $mpi_get->{$version_key};
+                    foreach my $build_key (keys %{$test_build}) {
+                        push(@arr, _get_hash_keys($pattern, $test_build->{$build_key}));
+                    }
+                }
+            }
+        }
+    }
+
+    @arr = delete_duplicates_from_array(@arr);
+    my $ret = join(",", @arr);
     return $ret;
 }
 
@@ -2280,6 +2382,10 @@ sub current_phase {
 
 sub current_section {
     return $MTT::Globals::Values->{active_section};
+}
+
+sub current_simple_section {
+    return GetSimpleSection($MTT::Globals::Values->{active_section});
 }
 
 1;
