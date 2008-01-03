@@ -169,10 +169,12 @@ sub LoadRuns {
                         my $run = $build->{$run_key};
 
                         # Bump the refcount of the corresponding test build.
-                        if (exists($MTT::Test::builds->{$get_key}) &&
-                            exists($MTT::Test::builds->{$get_key}->{$version_key}) &&
-                            exists($MTT::Test::builds->{$get_key}->{$version_key}->{$install_key}) &&
-                            exists($MTT::Test::builds->{$get_key}->{$version_key}->{$install_key}->{$build_key})) {
+                        if (defined(MTT::Util::does_hash_key_exist($MTT::Test::builds,
+                                                                    qw/$get_key 
+                                                                       $version_key 
+                                                                       $install_key 
+                                                                       $build_key/))) {
+
                             ++$MTT::Test::builds->{$get_key}->{$version_key}->{$install_key}->{$build_key}->{refcount};
                         }
                     }

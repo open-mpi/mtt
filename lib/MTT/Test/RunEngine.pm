@@ -21,6 +21,7 @@ use MTT::Values;
 use MTT::Reporter;
 use MTT::Defaults;
 use MTT::Util;
+use MTT::INI;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -64,8 +65,7 @@ sub RunEngine {
         # Get the values for this test
         $run->{description} = $ret->{description};
         $run->{full_section_name} = $section;
-        $run->{simple_section_name} = $section;
-        $run->{simple_section_name} =~ s/^\s*test run:\s*//;
+        $run->{simple_section_name} =~ GetSimpleSection($section);
         $run->{analyze_module} = $ret->{analyze_module};
         
         $run->{test_build_simple_section_name} = $test_build->{simple_section_name};

@@ -26,6 +26,7 @@ use MTT::Values::Functions::MPI::ScaliMPI;
 use MTT::Values::Functions::MPI::ClusterTools;
 use MTT::Values::Functions::SSH;
 use MTT::Values::Functions::SVK;
+use MTT::Values::Functions::SVN;
 use MTT::Values::Functions::OS::Solaris;
 use Data::Dumper;
 use Config::IniFiles;

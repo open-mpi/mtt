@@ -112,13 +112,13 @@ sub PrepareForInstall {
     my ($source, $build_dir) = @_;
 
     Debug(">> tarball extracting to $build_dir\n");
-
-    my $orig = cwd();
     MTT::DoCommand::Chdir($build_dir);
+
     my $data = $source->{module_data};
 
     # Pre extract
     if ($data->{pre_extract}) {
+
         my $x = MTT::DoCommand::CmdScript(1, $data->{pre_copy});
         if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
             Warning("Pre-extract command failed: $@\n");
@@ -129,27 +129,23 @@ sub PrepareForInstall {
     # Extract the tarball
     my $ret = MTT::Files::unpack_tarball($data->{tarball}, 1);
     if (!$ret) {
-        MTT::DoCommand::Chdir($orig);
         return undef;
     }
 
+    MTT::DoCommand::Chdir($ret);
+
     # Post extract
     if ($data->{post_extract}) {
-        my $old = cwd();
-        MTT::DoCommand::Chdir($ret);
 
         my $x = MTT::DoCommand::Cmds(1, $data->{pre_copy});
         if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
             Warning("Post-extract command failed: $@\n");
             return undef;
         }
-
-        MTT::DoCommand::Chdir($old);
     }
 
     # All done
 
-    MTT::DoCommand::Chdir($orig);
     Debug(">> tarball finished extracting\n");
     return $ret;
 }

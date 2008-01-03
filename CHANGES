@@ -36,6 +36,12 @@ To announce to OMPI core testers:
       install")
     - &current_section() - returns the name of currently executing INI section
       (e.g., "Test build: intel")
+    - &pwd() - like the shell command of the same name
+    - &cwd() - alias for &pwd()
+    - &which() - like the shell command of the same name
+    - &get_mpi_get_names() - return a csv list of all cached MPI get names
+                             matching a pattern
+    - &SVN::get_r_number() - return the revision number of an SVN workspace
 
 - See https://svn.open-mpi.org/trac/mtt/changeset/863:
   - re-wrote funclet parser; MUST edit INI file and remove excess
@@ -60,11 +66,11 @@ To announce to OMPI core testers:
 
 - MTT IRC reporter.
 
-- SVN module - choose between "export" and "checkout"
-  (defaults to "export"):
-  - svn_export = 1 (specify the use of "svn export")
-  - svn_checkout = 1 (specify the use of "svn checkout")
-  - svn_command (e.g., "svk" or "rsh some-node svn")
+- SCM module with the below backend scm_module's:
+  - SVN
+  - SVK
+  - Mercurial
+  - Unknown (basically run a shell command)
 
 - terminate_files field in MTT section.  Defaults to $HOME/mtt-stop
   and &scratch_root()/mtt-stop.
@@ -129,3 +135,14 @@ To announce to OMPI core testers:
   to factor down an INI file. Note: --section filtering is performed *after*
   the interpolation, so there is no need to supply "include" sections to the 
   --section option. (See samples/ompi-core-template.ini for examples)
+
+- New options:
+  - --no-force
+  - --no-reporter
+
+- New MPI install INI params used to do *stuff* before and/or after an MPI
+  Install (e.g., create a tarball, install on cluster):
+  - before_install
+  - before_install_timeout
+  - after_install
+  - after_install_timeout

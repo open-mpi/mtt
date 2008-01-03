@@ -166,13 +166,28 @@ sub Install {
             Verbose(">> $phase_name [$section]\n");
 
             # Simple section name
-            my $simple_section = $section;
-            $simple_section =~ s/^\s*mpi install:\s*//;
+            my $simple_section = GetSimpleSection($section);
 
             my $mpi_get_value = Value($ini, $section, "mpi_get");
             if (!$mpi_get_value) {
                 Warning("No mpi_get specified in [$section]; skipping\n");
                 next;
+            }
+
+            # Process input parameters for before/after steps
+            my @step_params_list = (
+                "before_install",
+                "before_install_timeout",
+                "after_install",
+                "after_install_timeout",
+            );
+
+            my $step_params;
+            foreach my $p (@step_params_list) {
+                # Evaluate these in _run_step because they may contain commands
+                # we want to run at a specific time (e.g., before or after
+                # installation)
+                $step_params->{$p} = $ini->val($section, $p);
             }
 
             # Iterate through all the mpi_get values
@@ -233,15 +248,23 @@ sub Install {
                                 $MTT::Globals::Internals->{mpi_get_name} =
                                     $mpi_get_key;
                                 $MTT::Globals::Internals->{mpi_install_name} = $simple_section;
-                                MTT::DoCommand::Chdir($install_base);
                                 my $mpi_dir = _make_random_dir(4);
                                 MTT::DoCommand::Chdir($mpi_dir);
                             
+                                # Perform specified steps before the Install
+                                _run_step($step_params, "before", $ini, $section);
+
                                 # Install and restore the environment
                                 _do_install($section, $ini,
                                             $mpi_version, $mpi_dir, $force);
                                 delete $MTT::Globals::Internals->{mpi_get_name};
                                 delete $MTT::Globals::Internals->{mpi_install_name};
+
+                                # Do specified steps after the Install such as
+                                # creating a tarball, installing software on
+                                # whole clusters, etc.
+                                _run_step($step_params, "after", $ini, $section);
+
                                 %ENV = %ENV_SAVE;
                             }
                         }
@@ -460,7 +483,6 @@ sub _do_install {
     # Unpack the source and find out the subdirectory
     # name it created
     $config->{srcdir} = _prepare_source($mpi_get);
-    MTT::DoCommand::Chdir($config->{srcdir});
     $config->{abs_srcdir} = cwd();
 
     # vpath mode (error checking was already done above)
@@ -795,6 +817,42 @@ sub _get_cluster_info {
 
         $config->{$field} = EvaluateString($config->{$field})
             if (defined($config->{$field}));
+    }
+}
+
+# Run a pre or post-installation step
+sub _run_step {
+    my ($params, $step, $ini, $section) = @_;
+
+    my $cmd;
+
+    $step .= "_install";
+    if (defined($params->{$step})) {
+        $cmd = $params->{$step};
+    }
+
+    # Get the timeout value
+    my $name = $step . "_timeout";
+    my $timeout = MTT::Util::parse_time_to_seconds($params->{$name});
+    $timeout = undef 
+        if ($timeout <= 0);
+
+    # Steps can be funclets
+    if ($cmd =~ /^\s*&/) {
+
+        my $ok = EvaluateString($cmd, $ini, $section);
+        Verbose("  Warning: step $step FAILED\n") if (!$ok);
+
+    # Steps can be shell commands
+    } else {
+    
+        # Do any needed @var@ expansions
+        $cmd = EvaluateString($cmd, $ini, $section);
+
+        Debug("Running step: $step: $cmd / timeout $timeout\n");
+        my $x = ($cmd =~ /\n/) ?
+            MTT::DoCommand::CmdScript(1, $cmd, $timeout) : 
+            MTT::DoCommand::Cmd(1, $cmd, $timeout);
     }
 }
 

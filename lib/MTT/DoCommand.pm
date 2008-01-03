@@ -20,6 +20,8 @@ use Socket;
 use Fcntl qw(F_GETFL F_SETFL O_NONBLOCK);
 use MTT::Messages;
 use Data::Dumper;
+use File::Spec;
+use Cwd;
 
 #--------------------------------------------------------------------------
 
@@ -477,14 +479,53 @@ sub CmdScript {
 #--------------------------------------------------------------------------
 
 sub Chdir {
-    my($dir) = @_;
-    Debug("chdir $dir\n");
+
+    # Translate ~ or * using the glob subroutine
+    my($dir) = map { glob } @_;
+    Debug("Chdir $dir\n");
 
     my $msg = "Can't chdir to $dir\n";
     if ($no_execute) {
         chdir $dir or warn $msg;
     } else {
         chdir $dir or die $msg;
+    }
+}
+
+# Cached cwd's for Pushdir/Popdir
+my @dir_stack;
+
+# Just like the pushd shell command
+sub Pushdir {
+
+    # Translate ~ or * using the glob subroutine
+    my($dir) = map { glob } @_;
+    Debug("Pushdir $dir\n");
+
+    my $cwd = File::Spec->rel2abs(cwd());
+    push(@dir_stack, $cwd);
+
+    # In --no-execute mode, it is acceptable
+    # if this chdir does not work
+    if ($no_execute) {
+        chdir $dir or warn "$dir: $!";
+    } else {
+        chdir $dir or die "$dir: $!";
+    }
+}
+
+# Just like the popd shell command
+sub Popdir {
+    my $dir = pop(@dir_stack);
+    Debug("Popdir $dir\n");
+
+    # In --no-execute mode, it is acceptable
+    # if this chdir does not work
+    if ($no_execute) {
+        chdir $dir or warn "$dir: $!";
+    } else {
+        Error("Popdir: directory stack empty") if (! $dir);
+        chdir $dir or die "$dir: $!";
     }
 }
 

@@ -21,6 +21,7 @@ BEGIN {
     use Cwd;
     use Storable qw(dclone);
     use POSIX qw(strftime);
+    use File::Spec;
 
     # Try to find the MTT files.  Assume that mtt executable is in the
     # base directory for the MTT files.  Try three methods:
@@ -109,6 +110,7 @@ use MTT::DoCommand;
 use MTT::Lock;
 use MTT::Values;
 use MTT::Timer;
+use MTT::Util;
 
 my @file_arg;
 my $stdin_arg;
@@ -128,6 +130,7 @@ my $test_run_arg;
 my $test_phases_arg;
 my @section_arg;
 my @no_section_arg;
+my $no_reporter_arg;
 my $trim_arg;
 my $version_arg;
 my $ini_args;
@@ -147,7 +150,7 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
                                   "debug|d" => \$debug_arg,
                                   "verbose|v" => \$verbose_arg,
                                   "no-execute|n" => \$no_execute_arg,
-                                  "force" => \$force_arg,
+                                  "force!" => \$force_arg,
                                   "clean-start" => \$clean_start_arg,
                                   "mpi-get!" => \$mpi_get_arg,
                                   "mpi-install!" => \$mpi_install_arg,
@@ -158,6 +161,7 @@ my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
                                   "test-phases!" => \$test_phases_arg,
                                   "section=s" => \@section_arg,
                                   "no-section=s" => \@no_section_arg,
+                                  "no-reporter" => \$no_reporter_arg,
                                   "trim!" => \$trim_arg,
                                   "version" => \$version_arg,
                                   "print-time|p" => \$time_arg,
@@ -218,7 +222,7 @@ if (!$ok || $help_arg) {
 --print-cmd-time                Display the amount of time taken in each command
 --print-phases-time             Display the amount of time taken in each phase
 --print-time|-p                 Alias for --print-phases-time --print-cmd-time
---force                         Do steps even if they would not normally
+--[no-]force                    Do steps even if they would not normally
                                 be executed
 --clean-start                   Clean the scratch directory from
                                 past MTT invocations before running
@@ -241,6 +245,7 @@ if (!$ok || $help_arg) {
 --[no-]section                  Do a specific section(s)
 --get-value <section>,<param>   Print the value of the specified INI paramter 
                                 and exit
+--no-reporter                   Do not invoke any MTT Reporter modules
 field=value                     Replace parameter \"foo\" from the INI file
                                 with the value \"bar\" (i.e., override the
                                 INI file value)
@@ -469,7 +474,9 @@ foreach my $hash (@ini_list) {
 
     # Run the phases
 
-    MTT::Reporter::Init($ini);
+    if (!$no_reporter_arg) {
+        MTT::Reporter::Init($ini);
+    }
 
     if ($mpi_get && !MTT::Util::find_terminate_file()) {
         &MTT::Timer::start($time_phases);
@@ -508,7 +515,9 @@ foreach my $hash (@ini_list) {
 
     # Shutdown the reporter
 
-    MTT::Reporter::Finalize();
+    if (!$no_reporter_arg) {
+        MTT::Reporter::Finalize();
+    }
 
     # Shut down locks
 
@@ -621,6 +630,9 @@ sub _process_scratch_param {
     $scratch_arg = cwd();
     MTT::Messages::Debug("Scratch resolved: $scratch_arg\n");
 
+    # Convert relative path to absolute path and expand "~"
+    $scratch_arg = File::Spec->rel2abs(glob $scratch_arg);
+
     return $scratch_arg;
 }
 
@@ -630,8 +642,8 @@ sub _process_force_param {
     my ($force_option, $ini) = @_;
     my $force_arg;
 
-    # The --force option overrides the INI force param
-    if ($force_option) {
+    # The --[no]-force option overrides the INI force param
+    if (defined($force_option)) {
         $force_arg = $force_option;
     } else {
         $force_arg = Value($ini, "MTT", "force");

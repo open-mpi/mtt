@@ -49,58 +49,46 @@ sub Install {
     my $wrapper_rpath = $config->{installdir};
 
     # Process clustertools input parameters
-    my $do_ctinstall = Value($ini, $section, "clustertools_do_ctinstall");
+    # These variables are primarily only of interest to Release Engineering
     my $build_number = Value($ini, $section, "clustertools_build_number");
-    my $create_packages = Value($ini, $section, "clustertools_create_packages");
+    my $create_packages = Logical($ini, $section, "clustertools_create_packages");
     my $svn_r_number = Value($ini, $section, "clustertools_svn_r_number");
-    my $do_autogen = Value($ini, $section, "clustertools_do_autogen");
-    my $skip_configure = Value($ini, $section, "clustertools_skip_configure");
     my $configure_prefix = Value($ini, $section, "clustertools_configure_prefix");
+
+    my $do_autogen = Logical($ini, $section, "clustertools_do_autogen");
+    my $skip_configure = Logical($ini, $section, "clustertools_skip_configure");
 
     # Process global clustertools input parameter(s)
     $release_number = Value($ini, $section, "clustertools_release");
     $product_version = Value($ini, $section, "clustertools_product_version");
     $package_name_prefix = Value($ini, $section, "clustertools_package_name_prefix");
 
-    # Grab the SVK "r" number
-    my $svk_r_number = $config->{module_data}->{r};
+    # Grab the internal repository revision number
+    my $internal_r_number = $config->{module_data}->{r};
 
     # Update the version file
-    my $greek = "r${svn_r_number}-ct${release_number}b${build_number}r${svk_r_number}";
+    my $greek = "r${svn_r_number}-ct${release_number}b${build_number}r${internal_r_number}";
     &_update_version_file($greek, "VERSION");
 
     # Update the openmpi-mca-params.conf file
     &_update_openmpi_mca_params_conf("opal/etc/openmpi-mca-params.conf");
 
     # Get some OMPI-module-specific config arguments
-    my $tmp;
-    $tmp = Value($ini, $section, "clustertools_make_all_arguments");
-    $config->{make_all_arguments} = $tmp
-        if (defined($tmp));
+    $config->{make_all_arguments} = Value($ini, $section, "clustertools_make_all_arguments");
 
     # JMS: compiler name may have come in from "compiler_name" in
     # Install.pm. So if we didn't define one for this module, use the
     # default from "compiler_name".  Note: to be deleted someday
     # (i.e., only rely on this module's compiler_name and not use a
     # higher-level default, per #222).
-    $tmp = Value($ini, $section, "clustertools_compiler_name");
-    $config->{compiler_name} = $tmp
-        if (defined($tmp));
+    $config->{compiler_name}       = Value($ini, $section, "clustertools_compiler_name");
+    $config->{compiler_version}    = Value($ini, $section, "clustertools_compiler_version");
+    $config->{configure_arguments} = Value($ini, $section, "clustertools_configure_arguments");
+    $config->{make_check}          = Logical($ini, $section, "clustertools_make_check");
+
+    # Throw a warning if their compiler doesn't match up with the ones
+    # we have in the database
     MTT::Util::is_valid_compiler_name($section, $config->{compiler_name});
-
-    # JMS: Same as above
-    $tmp = Value($ini, $section, "clustertools_compiler_version");
-    $config->{compiler_version} = $tmp
-        if (defined($tmp));
-
-    $tmp = Value($ini, $section, "clustertools_configure_arguments");
-    $tmp =~ s/\n|\r/ /g;
-    $config->{configure_arguments} = $tmp
-        if (defined($tmp));
-
-    $tmp = Logical($ini, $section, "clustertools_make_check");
-    $config->{make_check} = $tmp
-        if (defined($tmp));
 
     # Hack to set the correct runtime dependency path (-R) for root packages.
     #
@@ -115,13 +103,22 @@ sub Install {
         $wrapper_rpath = $configure_prefix;
     }
 
+    
     # Run autogen.sh
-    $x = MTT::DoCommand::Cmd(1, "./autogen.sh") if ($do_autogen);
+    if ($do_autogen) {
+        $x = MTT::DoCommand::Cmd(1, "./autogen.sh");
+        if (0 != $x->{exit_status}) {
+            $ret->{result_message} = "autogen.sh failed.";
+            Verbose("./autogen.sh failed. Skipping this install.\n");
+            return $ret;
+        }
+    }
 
     # Run configure / make all / make check / make install
     my $configure_arguments = $config->{configure_arguments};
 
-    # Handle a scalar or an array
+    # Handle a scalar or an array (scalar for single-lib,
+    # array of configure_arguments for multi-lib)
     if (ref($configure_arguments) eq "") {
         my $tmp = $configure_arguments;
         undef $configure_arguments;
@@ -130,6 +127,19 @@ sub Install {
 
     my $i = 0;
     foreach my $_configure_arguments (@$configure_arguments) {
+
+        # Add some versioning info:
+        #   1. package-string shows up in ompi_info
+        #   2. ident-string is embedded into all the binaries as 
+        #      a #pragma ident
+        #
+        # Note: we must use *double* quotes here
+        $_configure_arguments .=
+            " --with-package-string=\"ClusterTools $release_number\"" .
+            " --with-ident-string=\"@(#)RELEASE VERSION $greek\"";
+
+        # Convert newlines to spaces
+        $_configure_arguments =~ s/\n|\r/ /g;
 
         # Note: in the case of creating packages, we explicitly set --prefix
         # ourselves in &Sun::get_configure_arguments()
@@ -172,33 +182,30 @@ sub Install {
     &_create_wrapper_data_files($wrapper_destdir, $wrapper_rpath, $greek);
 
     # Fetch Install_Utilities using Teamware
-    my $teamware_file_list_program = Value($ini, $section, "clustertools_teamware_file_list_program");
-    my $install_gate_path = Value($ini, $section, "clustertools_install_gate_path");
+    my $installer_get_cmd = Value($ini, $section, "clustertools_installer_get_command");
 
     # Setup the Installer, if we pointed at one
     my $installer_dir;
-    if ($install_gate_path) {
-        MTT::Files::teamware_bringover($teamware_file_list_program, $install_gate_path, "install", ".");
+    my $installer_dir_src = "installer-src";
+    if ($installer_get_cmd) {
 
-        my $save_cwd = File::Spec->rel2abs(cwd());
-        MTT::DoCommand::Chdir("install");
+        MTT::Files::mkdir($installer_dir_src);
+        MTT::Module::Run("MTT::Common::SCM::Unknown", "Checkout", $installer_get_cmd . " -w $installer_dir_src");
+
+        MTT::DoCommand::Pushdir($installer_dir_src);
 
         # Build the Install_Utilities (OMPIompiat package)
-        my $cmd = "make clean release";
+        my $cwd = cwd();
+        $installer_dir = "$cwd/Install_Utilities";
 
+        my $cmd = "make all install DESTDIR=$installer_dir";
         my $x = MTT::DoCommand::Cmd(1, $cmd);
 
         if (0 != $x->{exit_status}) {
-            Warning("$package: Error in building the Installer: '$cmd'\n");
-        } else {
-
-            # Figure out where the installer is
-            # (We need to do this because the Installer workspace Makefile has
-            # a bizarre package staging area of its own)
-            ($installer_dir) = MTT::Files::FindName(cwd(), "Install_Utilities");
+            Warning("$package: Error in building the Installer.\n");
         }
 
-        MTT::DoCommand::Chdir($save_cwd);
+        MTT::DoCommand::Popdir();
     }
 
     # Create Solaris packages using pkgproto and pkgmk
@@ -219,12 +226,16 @@ sub Install {
         # Install Utilities for boot-strapping
         MTT::DoCommand::Cmd(1, "cp -r $installer_dir $destination_dir");
 
+        # Run the pkg* commands
         create_packages($staging_dir, $destination_dir);
-    }
 
-    # Install the packages using the installer
-    if ($do_ctinstall) {
-        _do_ctinstall($ini, $section, $config);
+        # Make the installer available to the post-installation steps
+        my $installer_path = "$destination_dir/Install_Utilities";
+        if (exists($ENV{PATH})) {
+            $ENV{PATH} = "$installer_path/bin:" . $ENV{PATH};
+        } else {
+            $ENV{PATH} = "$installer_path/bin";
+        }
     }
 
     # Set which bindings were compiled
@@ -249,58 +260,6 @@ sub Install {
     return $ret;
 }
 
-sub _do_ctinstall {
-    my ($ini, $section, $config) = @_;
-    my ($x, $ret);
-
-    # Process clustertools input parameters
-    my $connection_method = Value($ini, $section, "clustertools_ctinstall_connection_method");
-    my $activate = Value($ini, $section, "clustertools_ctinstall_activate");
-
-    if ($activate) {
-        $activate = "-a";
-    }
-
-    my $bindir = "$config->{abs_srcdir}/Product/Install_Utilities/bin";
-    my $installer = "ctinstall";
-    my $ctinstall = "$bindir/$installer";
-
-    # Find sudo
-    my $sudo = FindProgram("sudo");
-    if (!defined($sudo)) {
-        Error("$package: requires 'sudo'.\n");
-        return undef;
-    }
-
-    my $want_unique = 1;
-    my $hosts = &MTT::Values::Functions::env_hosts($want_unique);
-
-    # Set package location of packages
-    my $basedir = "/opt/SUNWhpc";
-
-    # Deactivate packages
-    my $ctdeact = "$basedir/bin/Install_Utilities/bin/ctdeact";
-    my $x;
-    if (-x $ctdeact) {
-        $x = MTT::DoCommand::Cmd(1, "$sudo $ctdeact -n $hosts -r $connection_method");
-    }
-
-    # Install packages using ctinstall
-    $x = MTT::DoCommand::Cmd(1, "$sudo $ctinstall $activate -n $hosts -r $connection_method");
-
-    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
-        Verbose("$package: $installer failed: $@\n");
-        return undef;
-    }
-
-    $ret->{installdir} = $basedir;
-    $ret->{bindir} = "$ret->{installdir}/bin";
-    $ret->{libdir} = "$ret->{installdir}/lib";
-
-    return $ret;
-}
-
-# Update the VERSION file
 sub _update_version_file {
     my ($greek) = @_;
 
@@ -363,11 +322,11 @@ sub _create_wrapper_data_files {
     if ($arch =~ /sparc/i) {
         $lib_label_for_64_bit = "sparcv9";
         $include_label_for_64_bit = "v9";
-        $compiler_args = "-xarch=v9;-xarch=v9a;-xarch=v9b;-xarch=native64;-xarch=generic64;-xtarget=native64;-xtarget=generic64;";
+        $compiler_args = "-xarch=v9;-xarch=v9a;-xarch=v9b;-xarch=native64;-xarch=generic64;-xtarget=native64;-xtarget=generic64;-m64;";
     } elsif ($arch =~ /i386/i) {
         $lib_label_for_64_bit = "amd64";
         $include_label_for_64_bit = "amd64";
-        $compiler_args = "-xarch=amd64;-xarch=amd64a;-xarch=native64;-xarch=generic64;-xtarget=native64;-xtarget=generic64;";
+        $compiler_args = "-xarch=amd64;-xarch=amd64a;-xarch=native64;-xarch=generic64;-xtarget=native64;-xtarget=generic64;-m64";
     } else {
         $lib_label_for_64_bit = "unknown";
         $include_label_for_64_bit = "unknown";
@@ -535,8 +494,7 @@ sub create_packages {
     # Prepare an overarching status variable
     my $success = 1;
 
-    my $save_cwd = File::Spec->rel2abs(cwd());
-    MTT::DoCommand::Chdir($staging_dir);
+    MTT::DoCommand::Pushdir($staging_dir);
 
     my $username  = $ENV{"USER"};
     my $groupname = $ENV{"GROUP"};
@@ -575,7 +533,7 @@ sub create_packages {
                        "\n";
 
         my @directories = @{$packages->{$package_name}->{"directories"}};
-        my $pkgproto_args = join(" ", map { "$_=\$SUNW_PRODVERS/$_/" } @directories);
+        my $pkgproto_args = join(" ", map { "$_=${package_name_prefix}hpc/\$SUNW_PRODVERS/$_/" } @directories);
         my $cmd = "pkgproto $pkgproto_args";
 
         my $x = MTT::DoCommand::Cmd(1, $cmd);
@@ -618,7 +576,7 @@ sub create_packages {
     }
 
     # Return the directory we were in before entering this subroutine
-    MTT::DoCommand::Chdir($save_cwd);
+    MTT::DoCommand::Popdir();
 }
 
 # Write a pkginfo file for the specified package.
@@ -631,6 +589,7 @@ sub _write_pkginfo_file {
     $pkgvers->{"7.0"} = "1.0";
     $pkgvers->{"7.1"} = "2.0";
     $pkgvers->{"8.0"} = "3.0";
+    $pkgvers->{"9.0"} = "4.0";
 
     # Default to a bogus release number
     $release_number = "unknown" if (!defined($release_number));
@@ -643,6 +602,9 @@ sub _write_pkginfo_file {
     $version = "unknown" if (!$version);
     $product_version = "HPCx" if (!$product_version);
 
+    # Note: in the case of the ClusterTools installer, some of the below
+    # settings (e.g., BASEDIR) may be overridden via an administration file
+    # (see admin(4)) passed to the "pkgadd" command
     my $contents = "# Copyright (c) $year Sun Microsystems, Inc. All rights reserved.
 #                         Use is subject to license terms.
 # \$COPYRIGHT\$
@@ -652,7 +614,7 @@ sub _write_pkginfo_file {
 PKG=\"$name\"
 NAME=\"$short_name\"
 VERSION=\"$release_number\"
-BASEDIR=\"/opt/${package_name_prefix}hpc\"
+BASEDIR=\"/opt\"
 ARCH=\"ISA\"
 SUNW_PRODVERS=\"$product_version\"
 SUNW_PRODNAME=\"Open MPI\"

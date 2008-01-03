@@ -66,6 +66,7 @@ sub Analyze {
 
     # Grab the table body
     my $rows = 0;
+    my $have_some_data = 0;
     while (defined($line = shift(@lines))) {
 
         # If test is timed out or killed, exit loop
@@ -73,13 +74,17 @@ sub Analyze {
 
         if ($line =~
                 (/
-                  (?:([\d\.]+) \s*)
-                  (?:([\d\.]+) \s*)
-                  (?:([\d\.]+) \s*)
+                  (?:([\d\.]+) \s+)
+                  (?:([\d\.]+) \s+)
+                  (?:([\d\.]+) \s+)
                   (?:([\d\.]+) \s*)?
                   (?:([\d\.]+) \s*)?
                   (?:([\d\.]+) \s*)?
                  /ix)) {
+
+            # Set this flag so that we know whether we have begun 
+            # reading in the data table
+            $have_some_data = 1;
 
             my $i = 1;
             my $match;
@@ -94,7 +99,7 @@ sub Analyze {
             }
             $rows++;
 
-        } elsif ($line =~ /^\s*$/) {
+        } elsif (1 == $have_some_data) {
             last;
         }
     }

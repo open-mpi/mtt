@@ -72,11 +72,16 @@ if (isset($_POST['SERIAL'])) {
 # there is no uploaded file, then we assume its an
 # oldfangled regular _POST submission)
 define("undef", "");
+
 if (sizeof($_FILES)) {
-    eval("\$_POST = " . gunzip_file($_FILES['userfile']['tmp_name']) . ";");
+    $include_file = gunzip_file($_FILES['userfile']['tmp_name']);
+    include_once($include_file);
+    unlink($include_file);
+
+    # If setup_post() is renamed, it must also be renamed in gunzip_file()
+    setup_post();
 }
 
-#
 # Uncomment to get a large dump of debug data
 #debug_dump_data();
 
@@ -2065,16 +2070,31 @@ function var_dump_debug_inserts($function, $line, $var_name, $arr) {
     }
 }
 
-# Return inflated contents of a gzip file
+# Return the name a temporary file to include
 function gunzip_file($filename) {
-    $ret = "";
+
+    $temp_filename = tempnam("/tmp", "mtt-submit-php-");
+
+    $fp = fopen($temp_filename, "wb");
+    chmod($temp_filename, 0664);
+
+    fwrite($fp, "<?php
+function setup_post() {
+        \$_POST = ");
 
     $handle = gzopen($filename, 'r');
     while (! gzeof($handle)) {
-       $ret .= gzgets($handle, 4096);
+        fwrite($fp, gzgets($handle, 4096));
     }
+
+    fwrite($fp, ";
+}
+?>
+");
     gzclose($handle);
-    return $ret;
+    fclose($fp);
+
+    return $temp_filename;
 }
 
 function convert_bool($val) {

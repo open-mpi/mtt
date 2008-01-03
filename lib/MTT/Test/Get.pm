@@ -53,9 +53,7 @@ sub Get {
             # Make the active INI section name known
             $MTT::Globals::Values->{active_section} = $section;
 
-            my $simple_section = $section;
-            $simple_section =~ s/^\s*test get:\s*//;
-
+            my $simple_section = GetSimpleSection($section);
             Verbose(">> $phase_name: [$section]\n");
             $MTT::Globals::Values->{active_phase} = $phase_name;
             $MTT::Globals::Internals->{test_get_name} = $simple_section;

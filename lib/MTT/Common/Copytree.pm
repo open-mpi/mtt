@@ -21,6 +21,8 @@ use MTT::DoCommand;
 use MTT::Messages;
 use MTT::Values;
 use MTT::Files;
+use File::Spec;
+use Data::Dumper;
 
 #--------------------------------------------------------------------------
 
@@ -34,7 +36,7 @@ sub Get {
 
     # See if we got a directory in the ini section
     $data->{src_directory} = Value($ini, $section, "copytree_directory");
-    if (!$data->{src_directory}) {
+    if (! defined($data->{src_directory})) {
         $ret->{result_message} = "No source directory specified in [$section]; skipping";
         Warning("$ret->{result_message}\n");
         return $ret;
@@ -76,8 +78,6 @@ sub Get {
         return $ret;
     }
     
-    # Reset the directory where to copy from to be here
-    $data->{directory} = cwd() . "/$dir";
     $data->{mtime} = defined($src_mtime) ? $src_mtime : MTT::Files::mtime_tree($data->{directory});
 
     # Get other values
@@ -113,10 +113,13 @@ sub PrepareForInstall {
     my ($source, $build_dir) = @_;
 
     Debug(">> copytree copying to $build_dir\n");
+    MTT::DoCommand::Chdir($build_dir);
+
     my $data = $source->{module_data};
 
     # Pre copy
     if ($data->{pre_copy}) {
+
         Debug("copytree running pre_copy command: $data->{pre_copy}\n");
         my $x = MTT::DoCommand::CmdScript(1, $data->{pre_copy});
         if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
@@ -130,20 +133,17 @@ sub PrepareForInstall {
     my $ret = MTT::Files::copy_tree($data->{directory}, 1);
     return undef
         if (!$ret);
+
+    MTT::DoCommand::Chdir($ret);
     
     # Post copy
     if ($data->{post_copy}) {
-        my $old = cwd();
-        MTT::DoCommand::Chdir($ret);
-
         Debug("copytree running post_copy command: $data->{post_copy}\n");
         my $x = MTT::DoCommand::CmdScript(1, $data->{post_copy});
         if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
             Warning("Post-copy command failed: $@\n");
             return undef;
         }
-
-        MTT::DoCommand::Chdir($old);
     }
 
     # All done

@@ -17,11 +17,11 @@ use Config::IniFiles;
 use MTT::Messages;
 use MTT::Values;
 use Data::Dumper;
-use MTT::Util;
+use File::Spec;
 use Storable qw(dclone);
 use vars qw(@EXPORT);
 use base qw(Exporter);
-@EXPORT = qw(WriteINI ReadINI);
+@EXPORT = qw(WriteINI ReadINI GetSimpleSection);
 
 #--------------------------------------------------------------------------
 
@@ -241,6 +241,12 @@ sub InsertINIPredefines {
         $file = undef;
     }
 
+    my $zero;
+
+    # Convert relative paths to absolute paths and expand "~"
+    $file = File::Spec->rel2abs(glob $file);
+    $zero = File::Spec->rel2abs(glob $0);
+
     foreach my $section ($ini->Sections) {
         if (! defined($ini->val($section, "INI_NAME"))) {
             $ini->delval($section, "INI_NAME");
@@ -251,7 +257,7 @@ sub InsertINIPredefines {
     foreach my $section ($ini->Sections) {
         if (! defined($ini->val($section, "PROGRAM_NAME"))) {
             $ini->delval($section, "PROGRAM_NAME");
-            $ini->newval($section, "PROGRAM_NAME", $0);
+            $ini->newval($section, "PROGRAM_NAME", $zero);
         }
     }
 
@@ -306,6 +312,18 @@ sub _expand_includes {
                 }
             }
         }
+    }
+}
+
+# Takes "Foo: bar" as an argument, and returns "bar"
+sub GetSimpleSection {
+    my ($str) = @_;
+    if ($str =~ /^\s*[^:]+:\s*(.*)$/) {
+        my $ret = $1;
+        $ret =~ s/\s+$//g;
+        return $ret;
+    } else {
+        return $str;
     }
 }
 

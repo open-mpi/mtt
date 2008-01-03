@@ -15,11 +15,22 @@ use strict;
 
 use vars qw(@EXPORT);
 use base qw(Exporter);
-@EXPORT = qw(does_hash_key_exist);
+@EXPORT = qw(does_hash_key_exist
+             split_comma_list
+             find_terminate_file
+             is_valid_compiler_name
+             is_valid_resource_manager_name
+             is_valid_network_name
+             is_valid_in_array
+             delete_duplicates_from_array
+             delete_matches_from_array
+             parse_time_to_seconds
+);
 
 use MTT::Globals;
 use MTT::Messages;
 use MTT::Values;
+use Data::Dumper;
 
 #--------------------------------------------------------------------------
 
@@ -61,7 +72,7 @@ sub find_terminate_file {
         my $files = $MTT::Globals::Values->{terminate_files};
         if (defined($files) && $files) {
             foreach my $f (@$files) {
-                push(@_terminate_files, EvaluateString($f));
+                push(@_terminate_files, MTT::Values::EvaluateString($f));
             }
         }
     }

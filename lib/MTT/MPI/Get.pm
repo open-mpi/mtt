@@ -96,8 +96,7 @@ sub _do_get {
     Verbose("   Checking for new MPI sources...\n");
 
     # Simple section name
-    my $simple_section = $section;
-    $simple_section =~ s/^\s*mpi get:\s*//;
+    my $simple_section = GetSimpleSection($section);
 
     my $module = Value($ini, $section, "module");
     if (!$module) {
