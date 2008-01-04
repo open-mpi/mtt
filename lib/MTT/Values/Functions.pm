@@ -703,56 +703,61 @@ sub step {
 sub get_platform_type {
     Debug("&get_platform_type\n");
     my $ret = whatami("-t");
-    if (!defined($ret)) {
-        my $x = MTT::DoCommand::Cmd(1, "uname -p");
-        if (0 == $x->{return_status}) {
-            chomp($x->{result_stdout});
-            return $x->{result_stdout};
-        }
-        return "unknown";
+    return $ret
+        if (defined($ret));
+
+    my $x = MTT::DoCommand::Cmd(1, "uname -p");
+    if (0 == $x->{return_status}) {
+        chomp($x->{result_stdout});
+        return $x->{result_stdout};
     }
+    return "unknown";
 }
 
 # Get the platform hardware
 sub get_platform_hardware {
     Debug("&get_platform_hardware\n");
     my $ret = whatami("-m");
-    if (!defined($ret)) {
-        my $x = MTT::DoCommand::Cmd(1, "uname -m");
-        if (0 == $x->{return_status}) {
-            chomp($x->{result_stdout});
-            return $x->{result_stdout};
-        }
-        return "unknown";
+    return $ret
+        if (defined($ret));
+
+    my $x = MTT::DoCommand::Cmd(1, "uname -m");
+    if (0 == $x->{return_status}) {
+        chomp($x->{result_stdout});
+        return $x->{result_stdout};
     }
+    return "unknown";
 }
 
 # Get the OS name
 sub get_os_name {
     Debug("&get_os_name\n");
     my $ret = whatami("-n");
-    if (!defined($ret)) {
-        my $x = MTT::DoCommand::Cmd(1, "uname -s");
-        if (0 == $x->{return_status}) {
-            chomp($x->{result_stdout});
-            return $x->{result_stdout};
-        }
-        return "unknown";
+    return $ret
+        if (defined($ret));
+
+    my $x = MTT::DoCommand::Cmd(1, "uname -s");
+    if (0 == $x->{return_status}) {
+        chomp($x->{result_stdout});
+        return $x->{result_stdout};
     }
+
+    return "unknown";
 }
 
 # Get the OS version
 sub get_os_version {
     Debug("&get_os_version\n");
     my $ret = whatami("-r");
-    if (!defined($ret)) {
-        my $x = MTT::DoCommand::Cmd(1, "uname -v");
-        if (0 == $x->{return_status}) {
-            chomp($x->{result_stdout});
-            return $x->{result_stdout};
-        }
-        return "unknown";
+    return $ret
+        if (defined($ret));
+
+    my $x = MTT::DoCommand::Cmd(1, "uname -v");
+    if (0 == $x->{return_status}) {
+        chomp($x->{result_stdout});
+        return $x->{result_stdout};
     }
+    return "unknown";
 }
 
 #--------------------------------------------------------------------------
