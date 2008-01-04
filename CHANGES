@@ -71,6 +71,8 @@ To announce to OMPI core testers:
   - SVK
   - Mercurial
   - Unknown (basically run a shell command)
+  --> Users will get warnings but the old "SVN" module will still work
+  --> Users encouraged to convert to the new SCM module
 
 - terminate_files field in MTT section.  Defaults to $HOME/mtt-stop
   and &scratch_root()/mtt-stop.
