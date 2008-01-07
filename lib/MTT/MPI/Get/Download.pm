@@ -100,9 +100,9 @@ sub PrepareForInstall {
     # Extract the tarball
     Debug(">> Download extracting tarball to $build_dir\n");
 
-    MTT::DoCommand::Pushdir($build_dir);
+    MTT::DoCommand::Chdir($build_dir);
     my $ret = MTT::Files::unpack_tarball($source->{module_data}->{tarball}, 1);
-    MTT::DoCommand::Popdir();
+    MTT::DoCommand::Chdir($ret);
 
     Debug(">> Download finished extracting tarball\n");
     return $ret;
