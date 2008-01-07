@@ -248,6 +248,7 @@ sub Install {
                                 $MTT::Globals::Internals->{mpi_get_name} =
                                     $mpi_get_key;
                                 $MTT::Globals::Internals->{mpi_install_name} = $simple_section;
+                                MTT::DoCommand::Chdir($install_base);
                                 my $mpi_dir = _make_random_dir(4);
                                 MTT::DoCommand::Chdir($mpi_dir);
                             
