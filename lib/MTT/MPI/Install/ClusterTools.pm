@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 #
-# Copyright (c) 2007 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -98,7 +98,11 @@ sub Install {
     # resulting .la files. How can we recreate those .la files so that the
     # libtool invocations use -R/opt, instead of -R/workspace?
     if ($create_packages) {
-        $config->{make_install_arguments} = "DESTDIR=$config->{installdir}";
+
+        # If the user supplies no DESTDIR argument, then set it automatically
+        if ($config->{make_install_arguments} !~ /\bDESTDIR\b/) {
+            $config->{make_install_arguments} = "DESTDIR=$config->{installdir}";
+        }
         $staging_dir = "$config->{installdir}/$configure_prefix";
         $wrapper_rpath = $configure_prefix;
     }
@@ -208,10 +212,13 @@ sub Install {
         MTT::DoCommand::Popdir();
     }
 
+    # Copy over the examples directory to the install area
+    my $examples_dir = "$config->{abs_srcdir}/examples";
+    MTT::DoCommand::Cmd(1, "cp -r $examples_dir $staging_dir");
+
     # Create Solaris packages using pkgproto and pkgmk
     if ($create_packages) {
         my $install_dir     = $config->{installdir};
-        my $examples_dir    = "$config->{abs_srcdir}/examples";
         my $destination_dir = "$install_dir/../Product";
 
         # Make a place for the packages to sit
@@ -220,7 +227,6 @@ sub Install {
         # Copy the following two directories to the staging area:
         #   * examples directory (OMPIomsc package)
         #   * Install_Utilities directory (OMPIomiat package)
-        MTT::DoCommand::Cmd(1, "cp -r $examples_dir $staging_dir");
         MTT::DoCommand::Cmd(1, "cp -r $installer_dir $staging_dir");
 
         # Install Utilities for boot-strapping

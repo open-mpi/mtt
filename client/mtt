@@ -3,7 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
-# Copyright (c) 2006-2007 Sun Microsystems, Inc. All rights reserved.
+# Copyright (c) 2006-2008 Sun Microsystems, Inc. All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -549,15 +549,28 @@ sub _process_ini_param {
 
     foreach my $file (@$file_arg) {
 
-        my $orig_file = ($stdin_arg ? "stdin" : $file);
         if (!$stdin_arg && ! -r $file) {
             MTT::Messages::Abort("Could not read file: $file");
         }
-        my $temp_file = MTT::Files::copyfile($file);
+
+        my $orig_file;
+        my $temp_file;
+
+        # If the user pipes the INI to STDIN, then we need to create a copy of
+        # an INI file for include_files expansion. This also means that the
+        # user needs to use absolute path names for include_files
+        if ($stdin_arg) {
+            $orig_file = "stdin";
+            $temp_file = MTT::Files::copyfile($file);
+            $temp_file = MTT::INI::ExpandIncludeFiles($temp_file);
+        } else {
+            $orig_file = $file;
+            $temp_file = MTT::INI::ExpandIncludeFiles($orig_file);
+        }
 
         # Load up the ini file
         MTT::Messages::Debug("Reading ini file: $orig_file\n");
-        my $unfiltered = new Config::IniFiles(-file => $temp_file, 
+        my $unfiltered = new Config::IniFiles(-file => $temp_file,
                                        -nocase => 1,
                                        -allowcontinue => 1);
 

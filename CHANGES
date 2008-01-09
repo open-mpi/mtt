@@ -148,3 +148,5 @@ To announce to OMPI core testers:
   - before_install_timeout
   - after_install
   - after_install_timeout
+
+- include_file(s) INI parameter - just like pre-processor "#include" directives

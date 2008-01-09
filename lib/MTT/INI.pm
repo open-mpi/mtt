@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -18,6 +18,8 @@ use MTT::Messages;
 use MTT::Values;
 use Data::Dumper;
 use File::Spec;
+use File::Basename;
+use File::Temp qw(tempfile);
 use Storable qw(dclone);
 use vars qw(@EXPORT);
 use base qw(Exporter);
@@ -269,13 +271,13 @@ sub ExpandIncludeSections {
     my($ini) = @_;
 
     foreach my $section ($ini->Sections) {
-        _expand_includes($ini, $section);
+        _expand_include_sections($ini, $section);
     }
     return $ini;
 }
 
 # Worker subroutine for recursive ExpandIncludeSections
-sub _expand_includes {
+sub _expand_include_sections {
     my($ini, $section) = @_;
 
     foreach my $parameter ($ini->Parameters($section)) {
@@ -298,7 +300,7 @@ sub _expand_includes {
 
                 # Traverse to other includes in case the include itself
                 # has included sections
-                _expand_includes($ini, $include_section);
+                _expand_include_sections($ini, $include_section);
 
                 # Add in all of the include_section params into the section
                 foreach my $p ($ini->Parameters($include_section)) {
@@ -313,6 +315,78 @@ sub _expand_includes {
             }
         }
     }
+}
+
+# Expand include_file parameters
+sub ExpandIncludeFiles { 
+    my ($file) = @_;
+    Debug("Expanding include_file(s) parameters in $file\n");
+
+    # Get the path to the INI file
+    $file = File::Spec->rel2abs(glob $file);
+    my $dirname = dirname($file);
+
+    # Replace include_file parameters
+    my $contents = MTT::Files::Slurp($file);
+
+    my $ret = _expand_include_files($contents, $dirname);
+
+    # Write the expanded INI file to a temporary file,
+    # and return the file name
+    my ($fh, $tempfile) = tempfile(SUFFIX => ".ini");
+
+    MTT::Files::SafeWrite(1, $tempfile, $ret);
+
+    return $tempfile;
+}
+
+# Recursively expand all the include_files parameters
+sub _expand_include_files {
+    my ($contents, $dirname) = @_;
+
+    # Search for this pattern and splice in contents of its value
+    my $pattern = '\n\s*include_files?\s+=(.*)\n';
+
+    # Just return the contents if there's nothing to expand
+    if ($contents !~ /$pattern/i) {
+        return $contents;
+    }
+
+    my $ret;
+    while ($contents =~ /$pattern/i) {
+        my @files = split(/,/, $1);
+
+        # Gather the contents of the include_files
+        my $include_contents;
+        foreach my $file (@files) {
+            Debug("Including INI file: $file\n");
+
+            # Remove leading/trailing whitespace and make it 
+            # an absolute path (it is all relative to the argument
+            # given to --file|f)
+            $file =~ s/(^\s+)|(\s+$)//g;
+
+            # If an absolute path is not used, then the file is assumed to be
+            # relative to the main --file|f option
+            if ($file !~ /^\s*\//) {
+                $file = "$dirname/" . basename($file);
+            }
+
+            if (! -r $file) {
+                Warning("Could not read include_file parameter: $file; skipping.\n");
+                next;
+            }
+
+            # The inluded contents may contain include_files parameters themselves
+            $include_contents .= _expand_include_files(MTT::Files::Slurp($file), $dirname);
+        }
+
+        $contents =~ s/$pattern/\n$include_contents/;
+    }
+
+    $ret = _expand_include_files($contents);
+
+    return $ret;
 }
 
 # Takes "Foo: bar" as an argument, and returns "bar"
