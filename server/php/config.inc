@@ -1,7 +1,8 @@
 <?php
 
 # Open MPI-specific functionality: deny mirrors access to Open MPI MTT
-$mother_site = "www.open-mpi.org";
+#$mother_site = "www.open-mpi.org";
+$mother_site = "osl.iu.edu";
 $server_dir = "/";
 
 # Are we the "mother site" or a mirror?  Remember that "alerts.php" is
@@ -35,7 +36,7 @@ $mtt_body_html_prefix = "";
 
 # If you want some data output at the end of the <body>, put it
 # in this variable.
-$mtt_body_html_suffix = "";
+$mtt_body_html_suffix = rtrim(file_get_contents("/l/osl/www/www.open-mpi.org/mtt/body_suffix.html"));
 
 # Database name
 $mtt_database_name = "mtt";
