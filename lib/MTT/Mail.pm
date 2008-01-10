@@ -77,7 +77,6 @@ sub Send {
     my $f = "";
     $f = "-r \"$from\""
         if (defined($from));
-    Verbose( "********$mail_agent $f -s \"$subject\" \"$to\"\n");
         
     open MAIL, "|$mail_agent $f -s \"$subject\" \"$to\"" ||
         die "Could not open pipe to output e-mail\n";
