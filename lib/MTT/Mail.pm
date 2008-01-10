@@ -4,6 +4,7 @@
 #                         All rights reserved.
 # Copyright (c) 2007      Sun Microsystems, Inc.
 #                         All rights reserved.
+# Copyright (c) 2008      Cisco Systems, Inc.  All rights reserved
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -33,10 +34,17 @@ my %ENV_original;
 #--------------------------------------------------------------------------
 
 sub Init {
+    my $a = shift;
 
     # Find a mail agent
 
-    $mail_agent = FindProgram(qw(Mail mailx mail rmail mutt elm));
+    if (defined($a) && $a ne "") {
+        Error("Could not find email_agent ($a)\n")
+            if (! -x $a);
+        $mail_agent = $a;
+    } else {
+        $mail_agent = FindProgram(qw(Mail mailx mail rmail mutt elm));
+    }
     if (!defined($mail_agent)) {
         Warning("Could not find a mail agent for MTT::Mail");
         return undef;
@@ -54,7 +62,7 @@ sub Init {
 #--------------------------------------------------------------------------
 
 sub Send {
-    my ($subject, $to, $body) = @_;
+    my ($subject, $to, $from, $body) = @_;
 
     Init()
         if (! $initialized);
@@ -66,7 +74,12 @@ sub Send {
 
     # Invoke the mail agent to send the mail
 
-    open MAIL, "|$mail_agent -s \"$subject\" \"$to\"" ||
+    my $f = "";
+    $f = "-r \"$from\""
+        if (defined($from));
+    Verbose( "********$mail_agent $f -s \"$subject\" \"$to\"\n");
+        
+    open MAIL, "|$mail_agent $f -s \"$subject\" \"$to\"" ||
         die "Could not open pipe to output e-mail\n";
     print MAIL "Subject: $subject\n";
     print MAIL "$body\n";

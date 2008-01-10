@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -51,7 +51,8 @@ sub Init {
         if (!$sep);
 
     # Setup the mailer
-    if (!MTT::Mail::Init()) {
+    my $agent = Value($ini, $section, "email_agent");
+    if (!MTT::Mail::Init($agent)) {
         Debug("Failed to setup Email reporter\n");
         return 0;
     }
@@ -79,8 +80,9 @@ sub Submit {
     # Assume that entries are grouped such that we can just combine
     # the reports into a single body and send it in a single mail
 
-    # Evaluate the email subject header
+    # Evaluate the email subject header and from
     my $subject = Value($ini, $section, "email_subject");
+    my $from = Value($ini, $section, "email_from");
 
     my $s;
     my $body;
@@ -116,7 +118,7 @@ sub Submit {
     }
 
     # Now send it
-    MTT::Mail::Send($s, $to, $body);
+    MTT::Mail::Send($s, $to, $from, $body);
     Verbose(">> Reported to e-mail: $to\n");
 }
 
