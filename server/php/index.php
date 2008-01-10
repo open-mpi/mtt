@@ -79,7 +79,7 @@ debug_cgi($_GET, "GET " . __LINE__);
 debug_cgi($_COOKIE, "COOKIE " . __LINE__);
 
 print hidden_carryover($_GET) .
-      "\n<hr></form></body>$mtt_body_html_suffix</html>";
+      "\n<hr></form>$mtt_body_html_suffix</body></html>";
 
 exit;
 

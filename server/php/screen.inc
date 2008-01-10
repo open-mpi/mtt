@@ -1209,7 +1209,6 @@ function hidden_carryover($params) {
 # Load up some CSS and Javascript
 function html_head($title) {
     global $mtt_head_html;
-    global $mtt_body_html_suffix;
 
     # "Nameless" windows means *more* windows (a new window opens with each click)
     # "Named" windows means *fewer* windows (the same "named" window gets reused again and again)
@@ -1220,7 +1219,7 @@ function html_head($title) {
         newwindow2=window.open('','name','height=' + height + ',width=' + width + ',scrollbars=yes');
         var tmp = newwindow2.document;
         tmp.write('<html><head>' + script + '<title>' + title + '</title></head>');
-        tmp.write('<body ' + style + '><form id=adv name=adv method=get>' + content + '</form>$mtt_body_html_suffix</body></html>');
+        tmp.write('<body ' + style + '><form id=adv name=adv method=get>' + content + '</form></body></html>');
         tmp.close();
     }
 
