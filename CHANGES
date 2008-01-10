@@ -50,6 +50,8 @@ To announce to OMPI core testers:
     resource_manager
   - Can escape &, ', " in INI files
 
+- Added optional delimiter parameter to &hostlist() and &hostlist_hosts()
+
 - --section: beware of section names with spaces!  s/ /./g in --section
     arguments if you have spaces in your section names.
 
