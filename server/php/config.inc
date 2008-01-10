@@ -1,8 +1,7 @@
 <?php
 
 # Open MPI-specific functionality: deny mirrors access to Open MPI MTT
-#$mother_site = "www.open-mpi.org";
-$mother_site = "osl.iu.edu";
+$mother_site = "www.open-mpi.org";
 $server_dir = "/";
 
 # Are we the "mother site" or a mirror?  Remember that "alerts.php" is
