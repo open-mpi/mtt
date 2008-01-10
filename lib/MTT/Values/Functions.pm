@@ -1298,11 +1298,7 @@ sub have_hostlist {
 sub hostlist {
     Debug("&hostlist: $MTT::Globals::Values->{hostlist}\n");
 
-    if (have_hostlist) {
-        return $MTT::Globals::Values->{hostlist};
-    } else {
-        return "";
-    }
+    return hostlist_hosts(@_);
 }
 
 #--------------------------------------------------------------------------
@@ -1323,12 +1319,20 @@ sub hostlist_max_procs {
 # If we have a hostlist, return its hosts
 sub hostlist_hosts {
     Debug("&hostlist_hosts\n");
+    my $delimiter = shift;
 
     return ""
         if (!have_hostlist());
 
-    Debug("&hostlist_hosts returning $MTT::Globals::Values->{hostlist}\n");
-    return $MTT::Globals::Values->{hostlist};
+    if (defined($delimiter)) {
+        my @hosts = split(/,/, $MTT::Globals::Values->{hostlist});
+        my $ret = join($delimiter, @hosts);
+        Debug("&hostlist_hosts (delimiter=$delimiter) returning $ret\n");
+        return $ret;
+    } else {
+        Debug("&hostlist_hosts returning $MTT::Globals::Values->{hostlist}\n");
+        return $MTT::Globals::Values->{hostlist};
+    }
 }
 
 #--------------------------------------------------------------------------
