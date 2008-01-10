@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -44,13 +44,6 @@ sub Install {
     # Prepare $ret
 
     my $ret;
-    $ret->{test_result} = MTT::Values::FAIL;
-    $ret->{exit_status} = 1;
-    $ret->{result_message} = "MPI INSTALL COPYTREE PLUGIN IS OUT OF DATE.  CONTACT AUTHORS";
-    Verbose("*** $ret->{result_message}\n");
-    return $ret;
-
-
     Debug(">> copytree copying to $config->{installdir}\n");
     if (-d $config->{installdir}) {
         system("rm -rf $config->{installdir}");
@@ -69,9 +62,10 @@ sub Install {
     }
 
     # Copy the tree
-    MTT::DoCommand::Pushdir($config->{installdir});
+    my $start_dir = cwd();
+    MTT::DoCommand::Chdir($config->{installdir});
     $x = MTT::Files::copy_tree("$config->{abs_srcdir}", 1);
-    MTT::DoCommand::Popdir();
+    MTT::DoCommand::Chdir($start_dir);
     return undef
         if (!$x);
 
