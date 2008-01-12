@@ -1831,6 +1831,22 @@ sub get_pathcc_version {
 
 #--------------------------------------------------------------------------
 
+# Return the version of the Absoft Fortran compiler
+sub get_absoft_version {
+    Debug("&get_absoft_version\n");
+    my $ret = "unknown";
+
+    if (defined($ENV{ABSOFT}) && -r "$ENV{ABSOFT}/absoft_release") {
+        my $file = cat("$ENV{ABSOFT}/absoft_release");
+        $ret = join(/ /, @$file);
+    }
+    
+    Debug("&get_absoft_version returning: $ret\n");
+    return $ret;
+}
+
+#--------------------------------------------------------------------------
+
 # Detect the bitness of the MPI library in this order:
 #   1) User overridden (CSV of 1 or more valid bitnesses)
 #   2) Small test C program (using void*)
