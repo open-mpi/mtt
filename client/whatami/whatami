@@ -281,9 +281,9 @@ get_darwin_info()
         #           taking them from the arches directory names in the linux kernel
         #           source.) -BEF-
         # 
-        if [ -n "`system_profiler SPHardwareDataType|egrep 'CPU Type: PowerPC G4 '`" ]; then
+        if [ -n "`system_profiler SPHardwareDataType|egrep '(CPU Type|Processor Name): PowerPC G4 '`" ]; then
                 hardware=ppc
-        elif [ -n "`system_profiler SPHardwareDataType|egrep 'CPU Type: PowerPC (970|G5) '`" ]; then
+        elif [ -n "`system_profiler SPHardwareDataType|egrep '(CPU Type|Processor Name): PowerPC (970|G5) '`" ]; then
                 hardware=ppc64
         elif [ -n "`system_profiler SPHardwareDataType|egrep 'Processor Name: Intel Core Duo'`" ]; then
                 hardware=ia32
