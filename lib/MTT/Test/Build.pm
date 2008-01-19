@@ -361,6 +361,7 @@ sub _do_build {
     my @save_env;
     ProcessEnvKeys($mpi_get, \@save_env);
     ProcessEnvKeys($mpi_install, \@save_env);
+    ProcessEnvKeys($test_get, \@save_env);
     $config->{setenv} = Value($ini, $section, "setenv");
     $config->{unsetenv} = Value($ini, $section, "unsetenv");
     $config->{prepend_path} = Value($ini, $section, "prepend_path");

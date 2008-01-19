@@ -83,6 +83,16 @@ sub _do_get {
         return;
     }
     
+    # Process setenv, unsetenv, prepend_path, and
+    # append_path
+    my $config;
+    $config->{setenv} = Value($ini, $section, "setenv");
+    $config->{unsetenv} = Value($ini, $section, "unsetenv");
+    $config->{prepend_path} = Value($ini, $section, "prepend_path");
+    $config->{append_path} = Value($ini, $section, "append_path");
+    my @save_env;
+    ProcessEnvKeys($config, \@save_env);
+  
     # Make a directory just for this section
     MTT::DoCommand::Chdir($source_dir);
     my $section_dir = MTT::Files::make_safe_filename($section);
@@ -105,6 +115,10 @@ sub _do_get {
             $ret->{module_name} = "MTT::Test::Get::$module";
             $ret->{start_timestamp} = timegm(gmtime());
             $ret->{refcount} = 0;
+            $ret->{setenv} = $config->{setenv};
+            $ret->{unsetenv} = $config->{unsetenv};
+            $ret->{prepend_path} = $config->{prepend_path};
+            $ret->{append_path} = $config->{append_path};
 
             # Add this into the $Test::sources hash
             $MTT::Test::sources->{$simple_section} = $ret;
