@@ -59,24 +59,26 @@ sub Install {
         $config->{skip_make_check} = 1;
     }
 
-    $x = _do_step($config, "configure", $config->{configdir});
+    $x = _do_step($config, "configure",
+                  $config->{merge_stdout_stderr},  $config->{configdir});
 
     # Overlapping keys in $x override $ret
     %$ret = (%$ret, %$x);
     return $ret if (!MTT::DoCommand::wsuccess($ret->{exit_status}));
 
     # "make clean" can fail for all we care
-    $x = _do_step($config, "make clean");
+    $x = _do_step($config, "make clean", 1);
     %$ret = (%$ret, %$x);
 
-    $x = _do_step($config, "make all");
+    $x = _do_step($config, "make all", $config->{merge_stdout_stderr});
     %$ret = (%$ret, %$x);
     return $ret if (!MTT::DoCommand::wsuccess($ret->{exit_status}));
 
     # Do we want to run "make check"?  If so, make sure a valid TMPDIR
-    # exists.  Also, merge the result_stdout/result_stderr because we really only
-    # want to see it if something fails (i.e., it's common to display
-    # junk to result_stderr during "make check"'s normal execution).
+    # exists.  Also, merge the result_stdout/result_stderr because we
+    # really only want to see it if something fails (i.e., it's common
+    # to display junk to result_stderr during "make check"'s normal
+    # execution).
 
     my %ENV_SAVE = %ENV;
     $ENV{TMPDIR} = "$config->{installdir}/tmp";
@@ -93,12 +95,12 @@ sub Install {
         $ENV{LD_LIBRARY_PATH} = "$config->{libdir}";
     }
 
-    $x = _do_step($config, "make check");
+    $x = _do_step($config, "make check", 1);
     %$ret = (%$ret, %$x);
     return $ret if (!MTT::DoCommand::wsuccess($ret->{exit_status}));
     %ENV = %ENV_SAVE;
 
-    $x = _do_step($config, "make install");
+    $x = _do_step($config, "make install", 1);
     %$ret = (%$ret, %$x);
     return $ret if (!MTT::DoCommand::wsuccess($ret->{exit_status}));
 
@@ -111,7 +113,7 @@ sub Install {
 }
 
 sub _do_step {
-    my ($config, $cmd, $dir) = @_;
+    my ($config, $cmd, $mss, $dir) = @_;
 
     # Prepare return value. Start with an empty, but defined hash
     my $ret = {};
@@ -146,7 +148,7 @@ sub _do_step {
         my $i = 0;
         do {
             Debug("Restarting $cmd (restart attempt #$i\n") if ($i++ gt 0);
-            $ret = MTT::DoCommand::Cmd(1,
+            $ret = MTT::DoCommand::Cmd($mss,
                         "$cmd $config->{$arguments_key}", -1,
                          $config->{stdout_save_lines},
                          $config->{stderr_save_lines});
