@@ -118,6 +118,7 @@ sub _do_step {
     # Prepare return value. Start with an empty, but defined hash
     my $ret = {};
     my $result_stdout;
+    my $result_stderr;
 
     # As long as this pattern is emitted during the step, keep
     # attempting to re-start the step ("restart_attempts" times)
@@ -141,6 +142,7 @@ sub _do_step {
 
     my $arguments_key = "${hash_key}_arguments";
     my $stdout_key = "${hash_key}_stdout";
+    my $stderr_key = "${hash_key}_stderr";
     my $skip_key = "skip_${hash_key}";
 
     if (!$config->{$skip_key}) {
@@ -153,25 +155,51 @@ sub _do_step {
                          $config->{stdout_save_lines},
                          $config->{stderr_save_lines});
 
-            $result_stdout = $ret->{result_stdout} ?
-                "--- $cmd result_stdout/result_stderr ---\n$ret->{result_stdout}" :
-                undef;
+            # Add header line to stdout
+            if (defined($ret->{result_stdout})) {
+                $result_stdout = "--- $cmd result_stdout";
+                $result_stdout .= "/result_stderr"
+                    if ($mss);
+                $result_stdout .= " ---\n$ret->{result_stdout}";
+            }
 
+            # Add header line to stderr
+            if (!$mss && defined($ret->{result_stderr})) {
+                $result_stderr = "--- $cmd result_stderr ---\n$ret->{result_stderr}";
+            }
+
+            # Repeat *only* if $restart_on_pattern is defined
         } while (!MTT::DoCommand::wsuccess($ret->{exit_status}) and
-                ($ret->{result_stderr} =~ /$restart_on_pattern/i or
-                 $ret->{result_stdout} =~ /$restart_on_pattern/i) and
-                 $restart_attempts++ < $restart_attempts_max);
+                 (defined($restart_on_pattern) &&
+                  ($ret->{result_stderr} =~ /$restart_on_pattern/i or
+                   $ret->{result_stdout} =~ /$restart_on_pattern/i) and
+                  $restart_attempts++ < $restart_attempts_max));
 
+        # If fail, save the results in {result_stdout} and
+        # {result_stderr}.
         if (!MTT::DoCommand::wsuccess($ret->{exit_status})) {
             $ret->{result_message} = "\"$cmd\" failed -- skipping this build.";
             # Put the output of the failure into $ret so that it gets
-            # reported (result_stdout/result_stderr was combined into just result_stdout)
-            $ret->{result_stdout} = $result_stdout;
+            # reported
+            $ret->{result_stdout} = $result_stdout
+                if (defined($result_stdout));
+            $ret->{result_stderr} = $result_stderr
+                if (!$mss && defined($result_stderr));
             $ret->{exit_status} = $ret->{exit_status};
             $ret->{fail} = 1;
+        }
 
-            # We don't need this in the main result_stdout
-            $ret->{$stdout_key} = $result_stdout;
+        # If succeed, keep the stdout/stderr in their respective hash
+        # keys for this step.
+        else {
+            if (defined($result_stdout)) {
+                delete $ret->{result_stdout};
+                $ret->{$stdout_key} = $result_stdout;
+            }
+            if (!$mss && defined($result_stderr)) {
+                delete $ret->{result_stderr};
+                $ret->{$stderr_key} = $result_stderr;
+            }
         }
     } else {
         Debug("Skippping '$cmd' step.\n");
