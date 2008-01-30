@@ -488,8 +488,7 @@ sub _prepare_request {
     my $form = shift;
 
     # Write an anonymous PHP array to a file
-    my ($fh, $filename) = tempfile();
-    $filename .= ".inc";
+    my ($fh, $filename) = tempfile(SUFFIX => "-mttdatabase-submission.inc");
     open(FILE, "> $filename");
     print FILE &_perl_arr_2_php_arr(Dumper($$form));
     close(FILE);

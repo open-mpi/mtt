@@ -22,6 +22,7 @@ BEGIN {
     use Storable qw(dclone);
     use POSIX qw(strftime);
     use File::Spec;
+    use Text::ParseWords;
 
     # Try to find the MTT files.  Assume that mtt executable is in the
     # base directory for the MTT files.  Try three methods:
@@ -183,7 +184,11 @@ foreach my $file (@ARGV) {
 
 # Get command-line overridden ini params
 my $key_val_regexp = '([^=:]+)\=(.*)';
+my $ARGV_JOINED = join(" ", @ARGV);
+my @ARGV = &quotewords('\s+', 0, $ARGV_JOINED);
+
 foreach my $arg (@ARGV) {
+
     if ($arg =~ /$key_val_regexp$/) {
         $ini_args->{$1}->{value} = $2; 
         $ini_args->{$1}->{match} = '.'; 
@@ -195,7 +200,10 @@ foreach my $arg (@ARGV) {
     if ($arg =~ /^([^=:]+):([^=]+)=/) {
         $ini_args->{$2}->{match} = $1; 
     }
+
+    $ARGV_JOINED =~ s/$token_pattern//;
 }
+
 if (! @file_arg and ! $stdin_arg) {
     print "Must specify at least one --file argument or '-' for stdin.\n";
     $ok = 0;

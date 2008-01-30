@@ -19,6 +19,7 @@ use File::Temp qw(tempfile);
 use Socket;
 use Fcntl qw(F_GETFL F_SETFL O_NONBLOCK);
 use MTT::Messages;
+use MTT::Timer;
 use Data::Dumper;
 use File::Spec;
 use Cwd;

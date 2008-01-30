@@ -827,9 +827,12 @@ sub _run_step {
 
     my $cmd;
 
+    # Return if the command is not defined
     $step .= "_install";
     if (defined($params->{$step})) {
         $cmd = $params->{$step};
+    } else {
+        return undef;
     }
 
     # Get the timeout value
