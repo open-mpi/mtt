@@ -93,6 +93,25 @@ sub _do_get {
         return;
     }
 
+    # Load any environment modules?
+    my $config;
+    my @env_modules;
+    $config->{env_modules} = Value($ini, $section, "env_module");
+    if ($config->{env_modules}) {
+        @env_modules = split(",", $config->{env_modules});
+        Env::Modulecmd::load(@env_modules);
+        Debug("Loading environment modules: @env_modules\n");
+    }
+
+    # Process setenv, unsetenv, prepend_path, and
+    # append_path
+    $config->{setenv} = Value($ini, $section, "setenv");
+    $config->{unsetenv} = Value($ini, $section, "unsetenv");
+    $config->{prepend_path} = Value($ini, $section, "prepend_path");
+    $config->{append_path} = Value($ini, $section, "append_path");
+    my @save_env;
+    ProcessEnvKeys($config, \@save_env);
+
     # Make a directory just for this section
     MTT::DoCommand::Chdir($source_dir);
     my $section_dir = MTT::Files::make_safe_filename($section);
@@ -115,6 +134,10 @@ sub _do_get {
             $ret->{mpi_details} = $mpi_details;
             $ret->{module_name} = "MTT::MPI::Get::$module";
             $ret->{start_timestamp} = timegm(gmtime());
+            foreach my $k (qw/env_modules setenv unsetenv prepend_path append_path/) {
+                $ret->{$k} = $config->{$k}
+                    if (defined($config->{$k}));
+            }
             $ret->{refcount} = 0;
             
             # Add this into the $MPI::sources hash

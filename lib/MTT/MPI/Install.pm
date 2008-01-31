@@ -331,11 +331,18 @@ sub _do_install {
     
     # Load any environment modules?
     my @env_modules;
-    $config->{env_modules} = Value($ini, $section, "env_module");
-    if ($config->{env_modules}) {
+    my $tmp = Value($ini, $section, "env_module");
+    if (defined($tmp) && defined($mpi_get->{env_modules})) {
+        $config->{env_modules} = $mpi_get->{env_modules} . "," . $tmp;
+    } elsif (defined($tmp)) {
+        $config->{env_modules} = $tmp;
+    } elsif (defined($mpi_get->{env_modules})) {
+        $config->{env_modules} = $mpi_get->{env_modules};
+    }
+    if (defined($config->{env_modules})) {
         @env_modules = split(",", $config->{env_modules});
-        Env::Modulecmd::load(@env_modules);
         Debug("Loading environment modules: @env_modules\n");
+        Env::Modulecmd::load(@env_modules);
     }
 
     # Process setenv, unsetenv, prepend_path, and
