@@ -232,12 +232,12 @@ sub forall_part_tables() {
 
   foreach $base_table (@main_part_tables) {
     foreach $p (@part_table_postfix) {
-      print($base_cmd."'ing table ".$base_table."_".$p."\n");
       foreach $week (@week_array) {
         my $post_fix = get_part_table_postfix_append_week($p, $week);
         if( defined($debug) ) {
           print("Processing Command <".$base_cmd." ".$base_table."_".$post_fix.">\n");
         } else {
+          print($base_cmd."'ing table ".$base_table."_".$p."\n");
           $stmt = $dbh_mtt->prepare($base_cmd." ".$base_table."_".$post_fix);
           $stmt->execute();
           $stmt->finish;
@@ -263,6 +263,7 @@ sub forall_base_tables() {
     if( defined($debug) ) {
       print("Processing Command <".$base_cmd." ".$base_table.">\n");
     } else {
+      print($base_cmd."'ing table ".$base_table."\n");
       $stmt = $dbh_mtt->prepare($base_cmd." ".$base_table);
       $stmt->execute();
       $stmt->finish;
