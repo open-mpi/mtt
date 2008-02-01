@@ -3,6 +3,7 @@
 #
 # Josh Hursey
 #
+
 # Daily:
 #   VACUUM  - Current Month, Last Month (no args)
 #   ANALYZE - Entire Database (no args)
@@ -15,12 +16,23 @@
 # Yearly:
 #   VACUUM  - Entire Database (FULL)
 #   ANALYZE - Entire Database (no args)
-#   - Email partition tables reminder (JJH TODO)
+#   - Email partition tables reminder
 #
 use strict;
 use DBI;
+use Mail::Sendmail;
 
 my $debug;
+
+my $to_email_address     = "FILL THIS IN";
+my $from_email_address   = "FILL THIS IN";
+my $current_mail_subject = "MTT Database Maintenance: ";
+my $current_mail_header  = "";
+my $current_mail_body    = "";
+my $current_mail_footer  = "\n\n-- MTT Development Team";
+
+my $start_time = 0;
+my $end_time   = 0;
 
 my $MAIN_DAY   = 0;
 my $MAIN_WEEK  = 1;
@@ -65,16 +77,26 @@ my @main_base_tables = ("compiler",
 #
 # Parse Command Line Arguments
 #
+set_date_ranges();
+
 if( 0 != parse_args() ) {
+  print_update("Error: Parse Args Failed!");
+  send_status_mail();
   exit -1;
 }
 
-set_date_ranges();
+if( $MAIN_YEAR == $cur_main ) {
+  send_reminder();
+}
+
+set_mail_header();
 
 #
 # VACUUM database
 #
 if( 0 != do_vacuum() ) {
+  print_update("Error: Vacuum Failed!");
+  send_status_mail();
   exit -1;
 }
 
@@ -82,8 +104,15 @@ if( 0 != do_vacuum() ) {
 # ANALYZE database
 #
 if( 0 != do_analyze() ) {
+  print_update("Error: Analyze Failed!");
+  send_status_mail();
   exit -1;
 }
+
+#
+# Email Report
+#
+send_status_mail();
 
 exit 0;
 
@@ -106,7 +135,8 @@ sub parse_args() {
       $cur_main = $MAIN_YEAR;
     }
     else {
-      print "Unknown ARG $i) <".$ARGV[$i].">\n";
+      print_update("Unknown ARG $i) <".$ARGV[$i].">\n");
+      return -1;
     }
   }
 
@@ -117,7 +147,7 @@ sub set_date_ranges() {
   my ($y, $m);
 
   if( defined($debug) ) {
-    print "Current Year/Month: <$cur_year> <$cur_month>\n";
+    print_update("Current Year/Month: <$cur_year> <$cur_month>\n");
   }
 
   # Daily:   Current Month, Last Month
@@ -147,7 +177,6 @@ sub set_date_ranges() {
         push(@part_table_postfix, get_part_table_postfix($y, $m));
       }
     }
-
   }
 
   return 0;
@@ -185,10 +214,13 @@ sub do_analyze() {
 
   connect_db();
 
-  print("Analyze...\n");
+  $start_time = time();
+
   $stmt = $dbh_mtt->prepare("ANALYZE");
   $stmt->execute();
   $stmt->finish;
+
+  print_update_time("ANALYZE");
 
   disconnect_db();
 
@@ -234,14 +266,13 @@ sub forall_part_tables() {
     foreach $p (@part_table_postfix) {
       foreach $week (@week_array) {
         my $post_fix = get_part_table_postfix_append_week($p, $week);
-        if( defined($debug) ) {
-          print("Processing Command <".$base_cmd." ".$base_table."_".$post_fix.">\n");
-        } else {
-          print($base_cmd."'ing table ".$base_table."_".$p."\n");
+        $start_time = time();
+        if( !defined($debug) ) {
           $stmt = $dbh_mtt->prepare($base_cmd." ".$base_table."_".$post_fix);
           $stmt->execute();
           $stmt->finish;
         }
+        print_update_time($base_cmd." ".$base_table."_".$post_fix);
       }
     }
   }
@@ -260,14 +291,13 @@ sub forall_base_tables() {
   push(@all_tables, @main_base_tables);
 
   foreach $base_table (@all_tables) {
-    if( defined($debug) ) {
-      print("Processing Command <".$base_cmd." ".$base_table.">\n");
-    } else {
-      print($base_cmd."'ing table ".$base_table."\n");
+    $start_time = time();
+    if( !defined($debug) ) {
       $stmt = $dbh_mtt->prepare($base_cmd." ".$base_table);
       $stmt->execute();
       $stmt->finish;
     }
+    print_update_time($base_cmd." ".$base_table);
   }
 
   return 0;
@@ -338,4 +368,99 @@ sub get_part_table_postfix_append_week() {
   else {
     return $postfix . "_wk" . $week;
   }
+}
+
+sub set_mail_header() {
+  my $cur_date = `date`;
+  chomp($cur_date);
+
+  $current_mail_header .= "-"x40 . "\n";
+  $current_mail_header .= "Start Time: ".$cur_date."\n";
+
+  if( $MAIN_DAY == $cur_main ) {
+    $current_mail_subject .= "(Daily)";
+  } elsif( $MAIN_WEEK == $cur_main ) {
+    $current_mail_subject .= "(Weeky)";
+  } elsif( $MAIN_MONTH == $cur_main ) {
+    $current_mail_subject .= "(Monthly)";
+  } elsif( $MAIN_YEAR == $cur_main ) {
+    $current_mail_subject .= "(Yearly)";
+  } else {
+    $current_mail_subject .= "(Unknown)";
+  }
+  $current_mail_subject .= " ".$cur_date;
+
+}
+
+sub print_update() {
+  my $str = shift(@_);
+
+  if( defined($debug) ) {
+    print $str;
+  }
+
+  $current_mail_body .= $str;
+}
+
+sub print_update_time() {
+  my $command = shift(@_);
+  my $diff;
+  my $str;
+
+  $end_time = time();
+  $diff = $end_time - $start_time;
+  $str = sprintf("%5d : %s\n", $diff, $command);
+
+  if( defined($debug) ) {
+    print $str;
+  }
+
+  $current_mail_body .= $str;
+}
+
+sub send_status_mail() {
+  my %mail;
+  my $cur_date = `date`;
+  chomp($cur_date);
+
+  $current_mail_header .= "End   Time: ".$cur_date."\n";
+  $current_mail_header .= "-"x40 . "\n\n";
+
+  $current_mail_body = $current_mail_header . $current_mail_body . $current_mail_footer;
+
+  %mail = ( To      => $to_email_address,
+            From    => $from_email_address,
+            Subject => $current_mail_subject,
+            Message => $current_mail_body
+          );
+
+  if( !sendmail(%mail) ) {
+    print "Error: Unable to send status email! (".$Mail::Sendmail::error.")\n";
+    return -1;
+  }
+
+  return 0;
+}
+
+sub send_reminder() {
+  my %mail;
+  my $mail_body;
+  my $next_year  = `date +\%Y`;
+  chomp($next_year);
+  $next_year += 1;
+
+  $mail_body = "Remember to load the partition tables for $next_year!".$current_mail_footer;
+
+  %mail = ( To      => $to_email_address,
+            From    => $from_email_address,
+            Subject => ($current_mail_subject . " Yearly Reminder"),
+            Message => $mail_body
+          );
+
+  if( !sendmail(%mail) ) {
+    print "Error: Unable to send reminder email! (".$Mail::Sendmail::error.")\n";
+    return -1;
+  }
+
+  return 0;
 }
