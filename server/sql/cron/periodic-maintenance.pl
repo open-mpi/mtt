@@ -23,6 +23,7 @@ use DBI;
 use Mail::Sendmail;
 
 my $debug;
+my $debug_no_email;
 
 my $to_email_address     = "FILL THIS IN";
 my $from_email_address   = "FILL THIS IN";
@@ -77,13 +78,13 @@ my @main_base_tables = ("compiler",
 #
 # Parse Command Line Arguments
 #
-set_date_ranges();
-
 if( 0 != parse_args() ) {
   print_update("Error: Parse Args Failed!");
   send_status_mail();
   exit -1;
 }
+
+set_date_ranges();
 
 if( $MAIN_YEAR == $cur_main ) {
   send_reminder();
@@ -428,6 +429,10 @@ sub send_status_mail() {
 
   $current_mail_body = $current_mail_header . $current_mail_body . $current_mail_footer;
 
+  if( defined($debug_no_email) ) {
+    return 0;
+  }
+
   %mail = ( To      => $to_email_address,
             From    => $from_email_address,
             Subject => $current_mail_subject,
@@ -450,6 +455,10 @@ sub send_reminder() {
   $next_year += 1;
 
   $mail_body = "Remember to load the partition tables for $next_year!".$current_mail_footer;
+
+  if( defined($debug_no_email) ) {
+    return 0;
+  }
 
   %mail = ( To      => $to_email_address,
             From    => $from_email_address,
