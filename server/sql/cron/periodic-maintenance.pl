@@ -32,6 +32,10 @@ my $current_mail_header  = "";
 my $current_mail_body    = "";
 my $current_mail_footer  = "\n\n-- MTT Development Team";
 
+my $pw_sleep_time = 10;
+my $pw_start_time = 0;
+my $pw_time_limit = 60; # seconds
+
 my $start_time = 0;
 my $end_time   = 0;
 
@@ -228,6 +232,27 @@ sub do_analyze() {
   return 0;
 }
 
+sub periodic_wait() {
+  my $pw_cur_time;
+
+  if( 0 >= $pw_start_time ) {
+    $pw_start_time = time();
+    return 0;
+  } else {
+    $pw_cur_time = time() - $pw_start_time;
+
+    if( $pw_cur_time >= $pw_time_limit ) {
+      disconnect_db();
+      sleep($pw_sleep_time);
+      connect_db();
+
+      $pw_start_time = time();
+    }
+  }
+
+  return 0;
+}
+
 sub connect_db() {
   my $mtt_user = "mtt";
   my $stmt;
@@ -267,6 +292,7 @@ sub forall_part_tables() {
     foreach $p (@part_table_postfix) {
       foreach $week (@week_array) {
         my $post_fix = get_part_table_postfix_append_week($p, $week);
+        periodic_wait();
         $start_time = time();
         if( !defined($debug) ) {
           $stmt = $dbh_mtt->prepare($base_cmd." ".$base_table."_".$post_fix);
@@ -292,6 +318,7 @@ sub forall_base_tables() {
   push(@all_tables, @main_base_tables);
 
   foreach $base_table (@all_tables) {
+    periodic_wait();
     $start_time = time();
     if( !defined($debug) ) {
       $stmt = $dbh_mtt->prepare($base_cmd." ".$base_table);
