@@ -31,13 +31,26 @@ my $sql_select_base =
   "  sum(num_test_run_pass + num_test_run_fail + num_test_run_timed) as test_run, ".$v_nl.
   "  sum(num_test_run_perf) as perf ".$v_nl.
   "FROM mtt_stats_contrib ".$v_nl.
-  "WHERE is_day = 't' ".$v_nl.
+  "WHERE is_day = 't' ";
+my $sql_select_group_by =
   "GROUP BY foo_date ".$v_nl.
   "ORDER BY foo_date ";
-my $sql_select_all_day   = "SELECT to_date( to_char(collection_date, 'YYYY-MM-DD'), 'YYYY-MM-DD') as foo_date, " .$v_nl. $sql_select_base;
-my $sql_select_all_week  = "SELECT to_date( to_char(collection_date, 'YYYY-WW'), 'YYYY-WW') as foo_date, " .$v_nl. $sql_select_base;
-my $sql_select_all_month = "SELECT to_date( to_char(collection_date, 'YYYY-MM'), 'YYYY-MM') as foo_date, " .$v_nl. $sql_select_base;
-my $sql_select_all_year  = "SELECT to_date( to_char(collection_date, 'YYYY'), 'YYYY') as foo_date, " .$v_nl. $sql_select_base;
+my $sql_select_all_day   = ("SELECT to_date( date_trunc('day',   collection_date), 'YYYY-MM-DD') as foo_date, " .$v_nl.
+                            $sql_select_base . $v_nl.
+                            " AND date_trunc('day', collection_date) < date_trunc('day', now()) ".$v_nl.
+                            $sql_select_group_by);
+my $sql_select_all_week  = ("SELECT to_date( date_trunc('week',  collection_date), 'YYYY-MM-DD') as foo_date, " .$v_nl.
+                            $sql_select_base . $v_nl.
+                            " AND date_trunc('week', collection_date) < date_trunc('week', now()) ".$v_nl.
+                            $sql_select_group_by);
+my $sql_select_all_month = ("SELECT to_date( date_trunc('month', collection_date), 'YYYY-MM-DD') as foo_date, " .$v_nl.
+                            $sql_select_base . $v_nl.
+                            " AND date_trunc('month', collection_date) < date_trunc('month', now()) ".$v_nl.
+                            $sql_select_group_by);
+my $sql_select_all_year  = ("SELECT to_date( date_trunc('year',  collection_date), 'YYYY-MM-DD') as foo_date, " .$v_nl.
+                            $sql_select_base . $v_nl.
+                            " AND date_trunc('year', collection_date) <= date_trunc('year', now()) ".$v_nl.
+                            $sql_select_group_by);
 
 #
 # Parse any command line arguments
