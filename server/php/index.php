@@ -61,6 +61,12 @@ if (! is_null($do_redir))
 elseif (! is_null($make_redir))
     make_redir($_GET);
 
+#
+# Increase the memory limit for PHP so it can handle larger queries.
+# This is a work around for bug #62
+#
+ini_set("memory_limit","32M");
+
 # Keep track of time
 $start = time();
 
