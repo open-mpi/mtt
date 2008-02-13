@@ -25,6 +25,8 @@ $date_fields;
 #   2. Print the report
 function dump_report() {
 
+    unset($resource);
+
     # Create or update cookie, and set
     # definitions accordingly
     process_cookie($_GET, $_COOKIE);
@@ -109,8 +111,6 @@ function dump_report() {
         # Compose query
         $ret = compose_sql_select($query);
 
-#print "<b>JJH</b> <pre>Final SQL SELECT COMMAND\n".$ret['sql_cmd']."\n</pre><br>\n";
-
         $sql_cmd = $ret['sql_cmd'];
         $sql_count_star = $ret['count_star']; # JJH XXXX
         
@@ -131,7 +131,7 @@ function dump_report() {
     }
 
     # Print the user query screen
-    dump_query_screen($nogo, $sql_cmd);
+    dump_query_screen($nogo, $sql_cmd, $resource);
 
     # Exit if a button hasn't been pressed
     if ($nogo)

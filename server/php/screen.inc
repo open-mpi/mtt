@@ -19,7 +19,7 @@
 include_once("$topdir/google-analytics.inc");
 
 # Print user dash-board 
-function dump_query_screen($nogo, $sql_cmd) {
+function dump_query_screen($nogo, $sql_cmd, $resource) {
     global $mtt_body_html_prefix;
 
     $phases   = process_phase_field($_GET);
@@ -32,8 +32,8 @@ function dump_query_screen($nogo, $sql_cmd) {
     # Fill menus with universe first-time only
     if ($nogo)
         $entries = get_form_universe($defaults);
-    else
-        list($entries, $disable) = get_form_universe2($sql_cmd);
+    else 
+        list($entries, $disable) = get_form_universe2($sql_cmd, $resource);
 
     # Generate advanced popup menus
     $links = selection_popups($defaults, $entries);
@@ -255,9 +255,12 @@ function get_form_universe($columns_arg) {
 
 # Populate menus with entries in ttable,
 # and 'Performance' button ''disable'' value
-function get_form_universe2($sql_cmd) {
-
-    $resource = do_pg_query($sql_cmd);
+function get_form_universe2($sql_cmd, $resource) {
+    # If we have already executed the $sql_cmd then just use this resource
+    # instead of executing the SQL another time.
+    if( !isset($resource) ) {
+        $resource = do_pg_query($sql_cmd);
+    }
 
     $hash = pg_fetch_all($resource);
 
