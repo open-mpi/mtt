@@ -821,7 +821,13 @@ sub _get_cluster_info {
     }
 }
 
-# Run a pre or post-installation step
+# Run a pre or post-installation step. Arguments:
+#
+#   * params  = hash of before/after params
+#   * step    = before|after
+#   * ini     = INI data structure
+#   * section = INI section
+#
 sub _run_step {
     my ($params, $step, $ini, $section) = @_;
 

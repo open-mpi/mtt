@@ -144,6 +144,12 @@ sub _do_step {
     my $stdout_key = "${hash_key}_stdout";
     my $stderr_key = "${hash_key}_stderr";
     my $skip_key = "skip_${hash_key}";
+    my $before_cmd_key = "before_${hash_key}";
+    my $after_cmd_key = "after_${hash_key}";
+
+    if (defined($config->{$before_cmd_key})) {
+        _run_step($config->{$before_cmd_key});
+    }
 
     if (!$config->{$skip_key}) {
 
@@ -205,7 +211,32 @@ sub _do_step {
         Debug("Skippping '$cmd' step.\n");
     }
 
+    if (defined($config->{$after_cmd_key})) {
+        _run_step($config->{$after_cmd_key});
+    }
+
     return $ret;
+}
+
+sub _run_step {
+    my ($cmd) = @_;
+
+    # Steps can be funclets
+    if ($cmd =~ /^\s*&/) {
+
+        EvaluateString($cmd);
+
+    # Steps can be shell commands
+    } else {
+    
+        # Do any needed @var@ expansions
+        my $x = EvaluateString($cmd);
+
+        Debug("Running step: $x\n");
+        my $ret = ($x =~ /\n/) ?
+            MTT::DoCommand::CmdScript(1, $x) : 
+            MTT::DoCommand::Cmd(1, $x);
+    }
 }
 
 1;

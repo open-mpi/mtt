@@ -2413,4 +2413,25 @@ sub current_simple_section {
     return GetSimpleSection($MTT::Globals::Values->{active_section});
 }
 
+# Perform a search and replace operation on a file
+sub search_and_replace {
+    my ($pattern, $replacement, $file) = @_;
+
+    # Read in the file
+    my $contents = MTT::Files::Slurp($file);
+
+    # Search and replace. Use eval here in case there is 
+    # a back-reference in the $replacement (e.g., $1, $2, ...)
+    eval "\$contents =~ s/$pattern/$replacement/gi;";
+
+    # Write out changed file
+    my $x = MTT::Files::SafeWrite(1, $file, $contents);
+
+    if (1 == $x->{success}) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 1;

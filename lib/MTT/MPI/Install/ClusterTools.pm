@@ -58,6 +58,17 @@ sub Install {
     my $do_autogen = Logical($ini, $section, "clustertools_do_autogen");
     my $skip_configure = Logical($ini, $section, "clustertools_skip_configure");
 
+    # Gather before/after GNU install steps
+    # (Do not evalute these just yet, wait until GNU_Install to do so)
+    my $before_configure    = $ini->val($section, "clustertools_before_configure");
+    my $after_configure     = $ini->val($section, "clustertools_after_configure");
+    my $before_make_all     = $ini->val($section, "clustertools_before_make_all");
+    my $after_make_all      = $ini->val($section, "clustertools_after_make_all");
+    my $before_make_check   = $ini->val($section, "clustertools_before_make_check");
+    my $after_make_check    = $ini->val($section, "clustertools_after_make_check");
+    my $before_make_install = $ini->val($section, "clustertools_before_make_install");
+    my $after_make_install  = $ini->val($section, "clustertools_after_make_install");
+
     # Process global clustertools input parameter(s)
     $release_number = Value($ini, $section, "clustertools_release");
     $product_version = Value($ini, $section, "clustertools_product_version");
@@ -161,6 +172,15 @@ sub Install {
             stderr_save_lines => $config->{stderr_save_lines},
             merge_stdout_stderr => $config->{merge_stdout_stderr},
             restart_on_pattern => $config->{restart_on_pattern},
+
+            before_configure    => $before_configure,
+            after_configure     => $after_configure,
+            before_make_all     => $before_make_all,
+            after_make_all      => $after_make_all,
+            before_make_check   => $before_make_check,
+            after_make_check    => $after_make_check,
+            before_make_install => $before_make_install,
+            after_make_install  => $after_make_install,
         };
 
         # Do a make clean every build, just in case
@@ -310,6 +330,9 @@ sub _create_wrapper_data_files {
     my ($destdir, $installdir, $version) = @_;
     Debug("_create_wrapper_data_files: got @_\n");
 
+    # Ensure that the destination directory exists
+    MTT::Files::mkdir($destdir);
+
     my @compilers = (
         "CC",
         "c++",
@@ -317,6 +340,7 @@ sub _create_wrapper_data_files {
         "cxx",
         "f77",
         "f90",
+        "f95",
     );
 
     # Setup architecture dependent labels (for directories) and compiler args
@@ -347,19 +371,33 @@ sub _create_wrapper_data_files {
     # Prepare a structure containing all the wrapper data
     my $wrapper_data;
 
+    # Open MPI does not appear to have f95 support, but put the 
+    # data files stubs in there in case it does someday
     $wrapper_data->{"cc"}->{language}  = "C";
     $wrapper_data->{"CC"}->{language}  = "C++";
     $wrapper_data->{"c++"}->{language} = "C++";
     $wrapper_data->{"cxx"}->{language} = "C++";
     $wrapper_data->{"f77"}->{language} = "Fortran 77";
     $wrapper_data->{"f90"}->{language} = "Fortran 90";
+    $wrapper_data->{"f95"}->{language} = "Fortran 95";
 
+    # MPI wrapper compilers
     $wrapper_data->{"cc"}->{underlying_compiler}  = "cc";
     $wrapper_data->{"CC"}->{underlying_compiler}  = "CC";
     $wrapper_data->{"c++"}->{underlying_compiler} = "CC";
     $wrapper_data->{"cxx"}->{underlying_compiler} = "CC";
     $wrapper_data->{"f77"}->{underlying_compiler} = "f77";
-    $wrapper_data->{"f90"}->{underlying_compiler} = "f95";
+    $wrapper_data->{"f90"}->{underlying_compiler} = "f90";
+    $wrapper_data->{"f95"}->{underlying_compiler} = "f95";
+
+    # VampirTrace wrapper compilers
+    $wrapper_data->{"cc"}->{underlying_vt_compiler}  = "vtcc";
+    $wrapper_data->{"CC"}->{underlying_vt_compiler}  = "vtcxx";
+    $wrapper_data->{"c++"}->{underlying_vt_compiler} = "vtcxx";
+    $wrapper_data->{"cxx"}->{underlying_vt_compiler} = "vtcxx";
+    $wrapper_data->{"f77"}->{underlying_vt_compiler} = "vtf77";
+    $wrapper_data->{"f90"}->{underlying_vt_compiler} = "vtf90";
+    $wrapper_data->{"f95"}->{underlying_vt_compiler} = "vtf90";
 
     $wrapper_data->{"cc"}->{compiler_env}  = "CC";
     $wrapper_data->{"CC"}->{compiler_env}  = "CXX";
@@ -367,6 +405,7 @@ sub _create_wrapper_data_files {
     $wrapper_data->{"cxx"}->{compiler_env} = "CXX";
     $wrapper_data->{"f77"}->{compiler_env} = "F77";
     $wrapper_data->{"f90"}->{compiler_env} = "FC";
+    $wrapper_data->{"f95"}->{compiler_env} = "FC";
 
     $wrapper_data->{"cc"}->{compiler_flags_env}  = "CFLAGS";
     $wrapper_data->{"CC"}->{compiler_flags_env}  = "CXXFLAGS";
@@ -374,6 +413,7 @@ sub _create_wrapper_data_files {
     $wrapper_data->{"cxx"}->{compiler_flags_env} = "CXXFLAGS";
     $wrapper_data->{"f77"}->{compiler_flags_env} = "FFLAGS";
     $wrapper_data->{"f90"}->{compiler_flags_env} = "FCFLAGS";
+    $wrapper_data->{"f95"}->{compiler_flags_env} = "FCFLAGS";
 
     $wrapper_data->{"cc"}->{extra_includes}  = "openmpi";
     $wrapper_data->{"CC"}->{extra_includes}  = "openmpi";
@@ -381,6 +421,7 @@ sub _create_wrapper_data_files {
     $wrapper_data->{"cxx"}->{extra_includes} = "openmpi";
     $wrapper_data->{"f77"}->{extra_includes} = "";
     $wrapper_data->{"f90"}->{extra_includes} = "";
+    $wrapper_data->{"f95"}->{extra_includes} = "";
 
     my $common_libs = "-lmpi -lopen-rte -lopen-pal -lsocket -lnsl -lrt -lm -ldl";
     $wrapper_data->{"cc"}->{libs}  = "$common_libs";
@@ -389,6 +430,7 @@ sub _create_wrapper_data_files {
     $wrapper_data->{"cxx"}->{libs} = "$common_libs -lmpi_cxx";
     $wrapper_data->{"f77"}->{libs} = "$common_libs -lmpi_f77";
     $wrapper_data->{"f90"}->{libs} = "$common_libs -lmpi_f77 -lmpi_f90";
+    $wrapper_data->{"f95"}->{libs} = "$common_libs -lmpi_f77 -lmpi_f90";
 
     $wrapper_data->{32}->{includedir} = "$installdir/include";
     $wrapper_data->{64}->{includedir} = "$installdir/include/$include_label_for_64_bit";
@@ -401,6 +443,7 @@ sub _create_wrapper_data_files {
 
     # For mpif90, point to mpi.mod using the -M flag
     $wrapper_data->{"f90"}->{module_option} = "-M";
+    $wrapper_data->{"f95"}->{module_option} = "-M";
 
     # Template for the wrapper data files
     my $template = "#
@@ -449,36 +492,48 @@ libdir=%s
 ";
 
     foreach my $prefix ("mpi", "opal", "orte") {
-        foreach my $compiler (@compilers) {
+        foreach my $compiler_type ("", "vt") {
+            foreach my $compiler (@compilers) {
 
-            my @top_params = (
-                $wrapper_data->{$compiler}->{language},
-                $wrapper_data->{$compiler}->{compiler_env},
-                $wrapper_data->{$compiler}->{compiler_flags_env},
-                $wrapper_data->{$compiler}->{underlying_compiler},
-                $wrapper_data->{$compiler}->{module_option},
-                $wrapper_data->{$compiler}->{extra_includes},
-                $wrapper_data->{$compiler}->{libs},
-            );
+                # Add in, e.g., "-vt" to wrapper data file name 
+                my $filename_label = ($compiler_type) ? "-$compiler_type" : "";
 
-            my $contents = sprintf($template,
+                # Use either the OMPI or VT underlying compiler name
+                my $underlying_compiler_type_key = 
+                            ($compiler_type) ? 
+                                 "underlying_${compiler_type}_compiler" :
+                                 "underlying_compiler";
 
-                                    # 32-bit
-                                    $wrapper_data->{32}->{compiler_args},
-                                    @top_params,
-                                    $wrapper_data->{32}->{linker_flags},
-                                    $wrapper_data->{32}->{includedir},
-                                    $wrapper_data->{32}->{libdir},
+                my @top_params = (
+                    $wrapper_data->{$compiler}->{language},
+                    $wrapper_data->{$compiler}->{compiler_env},
+                    $wrapper_data->{$compiler}->{compiler_flags_env},
+                    $wrapper_data->{$compiler}->{$underlying_compiler_type_key},
+                    $wrapper_data->{$compiler}->{module_option},
+                    $wrapper_data->{$compiler}->{extra_includes},
+                    $wrapper_data->{$compiler}->{libs},
+                );
 
-                                    # 64-bit
-                                    $wrapper_data->{64}->{compiler_args},
-                                    @top_params,
-                                    $wrapper_data->{64}->{linker_flags},
-                                    $wrapper_data->{64}->{includedir},
-                                    $wrapper_data->{64}->{libdir},
-            );
+                my $contents = sprintf($template,
 
-            MTT::Files::SafeWrite(1, "$destdir/$prefix$compiler-wrapper-data.txt", $contents);
+                                        # 32-bit
+                                        $wrapper_data->{32}->{compiler_args},
+                                        @top_params,
+                                        $wrapper_data->{32}->{linker_flags},
+                                        $wrapper_data->{32}->{includedir},
+                                        $wrapper_data->{32}->{libdir},
+
+                                        # 64-bit
+                                        $wrapper_data->{64}->{compiler_args},
+                                        @top_params,
+                                        $wrapper_data->{64}->{linker_flags},
+                                        $wrapper_data->{64}->{includedir},
+                                        $wrapper_data->{64}->{libdir},
+                );
+
+                # Write out the file
+                MTT::Files::SafeWrite(1, "$destdir/$prefix$compiler$filename_label-wrapper-data.txt", $contents);
+            }
         }
     }
 }
