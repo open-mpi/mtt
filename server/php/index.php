@@ -20,6 +20,7 @@ if (file_exists("$topdir/config.inc")) {
 # Web-based Open MPI Tests Querying Tool
 #
 #
+$global_sql_time_elapsed = 0;
 
 # Set PHP trace levels
 if (isset($_GET['verbose']) or 
@@ -76,7 +77,8 @@ dump_report();
 # Report on script's execution time
 $finish = time();
 $elapsed = $finish - $start;
-print("\n<br><p>Total script execution time: " . $elapsed . " second(s)</p>");
+print("\n<br><p>Total script execution time: " . $elapsed . " second(s)");
+print("\n<br><p>Total SQL execution time: " . $global_sql_time_elapsed . " second(s)</p>");
 
 # Display input parameters
 debug_cgi($_GET, "GET " . __LINE__);

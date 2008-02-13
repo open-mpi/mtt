@@ -129,6 +129,9 @@ function do_pg_query($cmd, $silent) {
           "\nRows affected: "  . pg_affected_rows($db_res) .
           "\nRows retrieved: " . pg_num_rows($db_res));
 
+    global $global_sql_time_elapsed;
+    $global_sql_time_elapsed += $elapsed;
+
     return $db_res;
 }
 
