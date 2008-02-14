@@ -201,6 +201,13 @@ sub Install {
         $i++;
     }
 
+    # Symlink the special arch labels (e.g., "sparcv9" and "amd64") to the generic "64"
+    # (Someday the special arch labels will be deprecated)
+    my ($lib_label_for_64_bit) = &_setup_architecture_dependent_labels();
+    MTT::DoCommand::Pushdir("$staging_dir/lib");
+    symlink($lib_label_for_64_bit, "64");
+    MTT::DoCommand::Popdir();
+
     # Create wrapper data files
     my $wrapper_destdir = "$staging_dir/share/openmpi";
     &_create_wrapper_data_files($wrapper_destdir, $wrapper_rpath, $greek);
@@ -323,6 +330,34 @@ mca_component_show_load_errors = 0
     return $ret;
 }
 
+# Setup architecture dependent labels for 64-bit (e.g., v9 and amd64)
+sub _setup_architecture_dependent_labels {
+
+    # Setup architecture dependent labels (for directories) and compiler args
+    my $arch = `uname -p`;
+    chomp $arch;
+
+    my $lib_label;
+    my $include_label;
+    my $compiler_args;
+
+    if ($arch =~ /sparc/i) {
+        $lib_label = "sparcv9";
+        $include_label = "v9";
+        $compiler_args = "-xarch=v9;-xarch=v9a;-xarch=v9b;-xarch=native64;-xarch=generic64;-xtarget=native64;-xtarget=generic64;-m64;";
+    } elsif ($arch =~ /i386/i) {
+        $lib_label = "amd64";
+        $include_label = "amd64";
+        $compiler_args = "-xarch=amd64;-xarch=amd64a;-xarch=native64;-xarch=generic64;-xtarget=native64;-xtarget=generic64;-m64";
+    } else {
+        $lib_label = "unknown";
+        $include_label = "unknown";
+    }
+    return ($lib_label,
+            $include_label,
+            $compiler_args);
+}
+
 # Arguments:
 #   1. Where we are writing the files
 #   2. -R <PATH> to be used within the wrapper data files
@@ -343,24 +378,9 @@ sub _create_wrapper_data_files {
         "f95",
     );
 
-    # Setup architecture dependent labels (for directories) and compiler args
-    my $arch = `uname -p`;
-    chomp $arch;
-    my $lib_label_for_64_bit;
-    my $include_label_for_64_bit;
-    my $compiler_args;
-    if ($arch =~ /sparc/i) {
-        $lib_label_for_64_bit = "sparcv9";
-        $include_label_for_64_bit = "v9";
-        $compiler_args = "-xarch=v9;-xarch=v9a;-xarch=v9b;-xarch=native64;-xarch=generic64;-xtarget=native64;-xtarget=generic64;-m64;";
-    } elsif ($arch =~ /i386/i) {
-        $lib_label_for_64_bit = "amd64";
-        $include_label_for_64_bit = "amd64";
-        $compiler_args = "-xarch=amd64;-xarch=amd64a;-xarch=native64;-xarch=generic64;-xtarget=native64;-xtarget=generic64;-m64";
-    } else {
-        $lib_label_for_64_bit = "unknown";
-        $include_label_for_64_bit = "unknown";
-    }
+    # Setup architecture dependent labels
+    my ($lib_label_for_64_bit, $include_label_for_64_bit, $compiler_args) =
+            &_setup_architecture_dependent_labels();
 
     my $project = "Open MPI";
     my $project_short = "OMPI";
@@ -557,8 +577,12 @@ sub create_packages {
 
     MTT::DoCommand::Pushdir($staging_dir);
 
-    my $username  = $ENV{"USER"};
-    my $groupname = $ENV{"GROUP"};
+    # Do not use ENV here to get the user id and group id, because it
+    # might be spoofed in the INI using setenv! This is critical
+    # because of the search and replace operation we do using these
+    # patterns below (on the output of the prototype commands)
+    my $username  = getpwuid($<);
+    my $groupname = getgrgid($();
     my $archname  = $ENV{"MACHTYPE"};
 
     my $packages;
