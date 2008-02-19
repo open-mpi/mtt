@@ -23,6 +23,7 @@ use MTT::Util;
 use Cwd;
 use POSIX qw/strftime/;
 use File::Spec;
+use File::Basename;
 
 #--------------------------------------------------------------------------
 
@@ -212,16 +213,15 @@ sub Install {
     my $wrapper_destdir = "$staging_dir/share/openmpi";
     &_create_wrapper_data_files($wrapper_destdir, $wrapper_rpath, $greek);
 
-    # Fetch Install_Utilities using Teamware
-    my $installer_get_cmd = Value($ini, $section, "clustertools_installer_get_command");
+    # Fetch Install_Utilities using Mercurial
+    my $installer_hg_url = Value($ini, $section, "clustertools_installer_hg_url");
 
     # Setup the Installer, if we pointed at one
     my $installer_dir;
-    my $installer_dir_src = "installer-src";
-    if ($installer_get_cmd) {
+    my $installer_dir_src = basename($installer_hg_url);
+    if ($installer_hg_url) {
 
-        MTT::Files::mkdir($installer_dir_src);
-        MTT::Module::Run("MTT::Common::SCM::Unknown", "Checkout", $installer_get_cmd . " -w $installer_dir_src");
+        MTT::Module::Run("MTT::Common::SCM::Mercurial", "Checkout", "hg clone $installer_hg_url", $installer_hg_url);
 
         MTT::DoCommand::Pushdir($installer_dir_src);
 
