@@ -42,6 +42,7 @@ my $_defaults = {
 
     terminate_files => "&getenv(\"HOME\")/mtt-stop, &scratch_root()/mtt-stop",
     time_to_terminate => 0,
+    pause_files => "&getenv(\"HOME\")/mtt-pause, &scratch_root()/mtt-pause",
 
     http_proxy => undef,
     https_proxy => undef,
@@ -110,7 +111,7 @@ sub load {
 
     # Simple parameters
 
-    my @names = qw/max_np textwrap drain_timeout trim_save_successful trim_save_failed trial http_proxy https_proxy ftp_proxy terminate_files/;
+    my @names = qw/max_np textwrap drain_timeout trim_save_successful trim_save_failed trial http_proxy https_proxy ftp_proxy terminate_files pause_files/;
     foreach my $t (qw/before after/) {
         foreach my $a (qw/all each/) {
             push(@names, $t . "_" . $a . "_exec");
@@ -134,6 +135,18 @@ sub load {
                 if ($n);
         }
         $Values->{terminate_files} = \@save;
+    }
+
+    # Parse the list of pause_files into an array
+
+    if (defined($Values->{pause_files})) {
+        my @names = split(/[,\s]+/, $Values->{pause_files});
+        my @save;
+        foreach my $n (@names) {
+            push(@save, $n)
+                if ($n);
+        }
+        $Values->{pause_files} = \@save;
     }
 
     # Proxies

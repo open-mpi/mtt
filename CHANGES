@@ -79,7 +79,12 @@ To announce to OMPI core testers:
   --> Users encouraged to convert to the new SCM module
 
 - terminate_files field in MTT section.  Defaults to $HOME/mtt-stop
-  and &scratch_root()/mtt-stop.
+  and &scratch_root()/mtt-stop.  Causes MTT to stop after the current
+  test and report all of its results.
+
+- pause_files field in MTT section.  Defaults to $HOME/mtt-pause and
+  &scratch_root()/mtt-pause.  Causes MTT to "pause" after the current
+  test.  MTT will resume once the pause file has been removed.
 
 - Added support for MPICH2 (and therefore MVAPICH2) and LAM/MPI
 

@@ -62,17 +62,26 @@ sub split_comma_list {
 #--------------------------------------------------------------------------
 
 my @_terminate_files;
+my @_pause_files;
 sub find_terminate_file {
     # If we previously found a terminate file, just return
     return 1
         if ($MTT::Globals::Values->{time_to_terminate});
 
-    # If we have not yet filled in the @_terminate_files array, do so
+    # If we have not yet filled in the @_terminate_files and
+    # @_pause_files arrays, do so
     if (-1 == $#_terminate_files) {
         my $files = $MTT::Globals::Values->{terminate_files};
         if (defined($files) && $files) {
             foreach my $f (@$files) {
                 push(@_terminate_files, MTT::Values::EvaluateString($f));
+            }
+        }
+
+        $files = $MTT::Globals::Values->{pause_files};
+        if (defined($files) && $files) {
+            foreach my $f (@$files) {
+                push(@_pause_files, MTT::Values::EvaluateString($f));
             }
         }
     }
@@ -86,6 +95,28 @@ sub find_terminate_file {
             return 1;
         }
     }
+
+    # If we find a pause file, sleep and see if it disappears.  If it
+    # does disappear, do one more loop over all pause files just to
+    # see if anyother pause file appeared.
+    my $found;
+    do {
+        $found = 0;
+        foreach my $f (@_pause_files) {
+            if (-f $f) {
+                Verbose("--> Found pause file: $f\n");
+                $found = 1;
+                while (1) {
+                    my $now = localtime;
+                    Verbose("    Sleeping for 30 seconds ($now)...\n");
+                    sleep(30);
+                    last 
+                        if (! -f $f);
+                }
+                last;
+            }
+        }
+    } while ($found == 1);
 
     # We didn't find any, so return false
     return 0;
