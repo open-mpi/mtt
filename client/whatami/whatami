@@ -234,6 +234,12 @@ get_linux_type()
                 elif [ -n "`egrep 'SuSE Linux 9\.1' /etc/issue`" ]; then
                         distro=suse_9.1
 
+                elif [ -n "`egrep 'SuSE Linux 9\.2' /etc/issue`" ]; then
+                        distro=suse_9.2
+
+                elif [ -n "`egrep 'SuSE Linux 9\.3' /etc/issue`" ]; then
+                        distro=suse_9.3
+
                 # Welcome to SUSE LINUX 10.1 (i586) - Kernel \r (\l).
                 elif [ -n "`egrep 'SUSE LINUX 10\.1' /etc/issue`" ]; then
                         distro=suse_10.1
@@ -241,6 +247,9 @@ get_linux_type()
                 # Welcome to openSUSE 10.2 (i586) - Kernel \r (\l).
                 elif [ -n "`egrep 'SUSE 10\.2' /etc/issue`" ]; then
                         distro=suse_10.2
+
+                elif [ -n "`egrep 'SUSE 10\.3' /etc/issue`" ]; then
+                        distro=suse_10.3
 
                 elif [ -n "`egrep 'Tao Linux release 1 ' /etc/issue`" ]; then
                         distro=tao_1.0
