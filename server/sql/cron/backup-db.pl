@@ -7,7 +7,7 @@ use strict;
 
 my $backup_file = "jjhursey-mtt-db-backup.sql.bz2";
 my $tmp_dir = "/tmp";
-my $resting_place = "/u/jjhursey/work/mtt-stuff/backup/";
+my $resting_place = "/scratch/jjhursey/backup/";
 
 #
 # Dump and Zip the file

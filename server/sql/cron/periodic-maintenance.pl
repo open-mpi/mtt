@@ -457,6 +457,13 @@ sub send_status_mail() {
   $current_mail_body = $current_mail_header . $current_mail_body . $current_mail_footer;
 
   if( defined($debug_no_email) ) {
+    print "To:      ".$to_email_address."\n";
+    print "From:    ".$from_email_address."\n";
+    print "Subject: ".$current_mail_subject."\n";
+    print "Body:\n";
+    print "------------------------------------\n";
+    print $current_mail_body . "\n";
+    print "------------------------------------\n";
     return 0;
   }
 
