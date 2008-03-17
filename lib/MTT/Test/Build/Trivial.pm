@@ -55,10 +55,24 @@ sub Build {
                        "trivial_tests_cflags");
     my $fflags = Value($ini, $config->{full_section_name}, 
                        "trivial_tests_fflags");
+    my $languages = Value($ini, $config->{full_section_name}, 
+                       "trivial_tests_languages");
+
+    # Default to running *all* flavors of trivial tests
+    if (!$languages) {
+        $languages = "c,c++,f77,f90";
+    }
+
+    my $languages_hash;
+    my @arr = split(/,|\s+/, $languages);
+    foreach my $lang (@arr) {
+        $lang = lc($lang);
+        $languages_hash->{"$lang"} = 1;
+    }
 
     # Try compiling and linking a simple C application
 
-    if ($mpi_install->{c_bindings}) {
+    if ($mpi_install->{c_bindings} and $languages_hash->{"c"}) {
         Debug("Test compile/link sample C MPI application\n");
         $x = _do_compile("mpicc $cflags", "hello.c", "c_hello");
         return $x
@@ -73,7 +87,7 @@ sub Build {
     # If we have the C++ MPI bindings, try and compile and link a
     # simple C++ application
 
-    if ($mpi_install->{cxx_bindings}) {
+    if ($mpi_install->{cxx_bindings} and $languages_hash->{"c++"}) {
         Debug("Test compile/link sample C++ MPI application\n");
         $x = _do_compile("mpic++ $cflags", "hello.cc", "cxx_hello");
         return $x
@@ -88,7 +102,7 @@ sub Build {
     # If we have the F77 MPI bindings, try compiling and linking a
     # simple F77 application
 
-    if ($mpi_install->{f77_bindings}) {
+    if ($mpi_install->{f77_bindings} and $languages_hash->{"f77"}) {
         Debug("Test compile/link sample F77 MPI application\n");
         $x = _do_compile("mpif77 $fflags", "hello.f", "f77_hello");
         return $x
@@ -103,7 +117,7 @@ sub Build {
     # If we have the F90 MPI bindings, try compiling and linking a
     # simple F90 application
 
-    if ($mpi_install->{f90_bindings}) {
+    if ($mpi_install->{f90_bindings} and $languages_hash->{"f90"}) {
         Debug("Test compile/link sample F90 MPI application\n");
         $x = _do_compile("mpif90 $fflags", "hello.f90", "f90_hello");
         return $x

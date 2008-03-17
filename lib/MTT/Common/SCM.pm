@@ -266,11 +266,11 @@ sub ProcessInputParameters {
 
     # Append arguments to commands
     # EAM: move to SVN.pm
-    $command .= " $command_arguments "   if ($command_arguments);
-    $command .= "-r $r "                if ($r);
-    $command .= "--username $username " if ($username);
-    $command .= "--password $password " if ($password);
-    $command .= "--no-auth-cache "      if ("0" eq $password_cache);
+    $command .= " $command_arguments "  if ($command_arguments);
+    $command .= " -r $r "                if ($r);
+    $command .= " --username $username " if ($username);
+    $command .= " --password $password " if ($password);
+    $command .= " --no-auth-cache "      if ("0" eq $password_cache);
 
     $subcommand .= " $subcommand_arguments "
         if ($subcommand_arguments);

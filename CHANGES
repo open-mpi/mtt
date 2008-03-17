@@ -169,3 +169,6 @@ To announce to OMPI core testers:
   - after_make_install
 
 - include_file(s) INI parameter - just like pre-processor "#include" directives
+
+- trivial_tests_languages - comma separated list of languages to use for trivial 
+  tests (default: "c,c++,f77,f90").

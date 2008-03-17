@@ -31,6 +31,7 @@ use File::Basename;
 my $release_number;
 my $product_version;
 my $package_name_prefix;
+my $package_basedir;
 
 sub Install {
     my ($ini, $section, $config) = @_;
@@ -74,6 +75,8 @@ sub Install {
     $release_number = Value($ini, $section, "clustertools_release");
     $product_version = Value($ini, $section, "clustertools_product_version");
     $package_name_prefix = Value($ini, $section, "clustertools_package_name_prefix");
+    $package_basedir = Value($ini, $section, "clustertools_package_basedir");
+    $package_basedir = $package_basedir ? $package_basedir : "/opt";
 
     # Grab the internal repository revision number
     my $internal_r_number = $config->{module_data}->{r};
@@ -218,11 +221,11 @@ sub Install {
 
     # Setup the Installer, if we pointed at one
     my $installer_dir;
-    my $installer_dir_src = basename($installer_hg_url);
     if ($installer_hg_url) {
 
         MTT::Module::Run("MTT::Common::SCM::Mercurial", "Checkout", "hg clone $installer_hg_url", $installer_hg_url);
 
+        my $installer_dir_src = basename($installer_hg_url);
         MTT::DoCommand::Pushdir($installer_dir_src);
 
         # Build the Install_Utilities (OMPIompiat package)
@@ -667,7 +670,7 @@ sub create_packages {
 # Write a pkginfo file for the specified package.
 # To be passed to the prototype file.
 sub _write_pkginfo_file {
-    my ($name, $short_name, $desc) = @_;
+    my ($name, $short_name, $desc, $package_basedir) = @_;
     Debug("_write_pkginfo_file: got @_\n");
 
     my $pkgvers;
@@ -699,7 +702,7 @@ sub _write_pkginfo_file {
 PKG=\"$name\"
 NAME=\"$short_name\"
 VERSION=\"$release_number\"
-BASEDIR=\"/opt\"
+BASEDIR=\"$package_basedir\"
 ARCH=\"ISA\"
 SUNW_PRODVERS=\"$product_version\"
 SUNW_PRODNAME=\"Open MPI\"
