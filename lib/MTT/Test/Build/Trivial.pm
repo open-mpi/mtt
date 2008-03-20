@@ -89,10 +89,10 @@ sub Build {
 
     if ($mpi_install->{cxx_bindings} and $languages_hash->{"c++"}) {
         Debug("Test compile/link sample C++ MPI application\n");
-        $x = _do_compile("mpic++ $cflags", "hello.cc", "cxx_hello");
+        $x = _do_compile("mpicxx $cflags", "hello.cc", "cxx_hello");
         return $x
             if (defined($x));
-        $x = _do_compile("mpic++ $cflags", "ring.cc", "cxx_ring");
+        $x = _do_compile("mpicxx $cflags", "ring.cc", "cxx_ring");
         return $x
             if (defined($x));
     } else {

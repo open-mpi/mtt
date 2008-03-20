@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -64,10 +64,18 @@ sub Get {
 
     $ret->{module_data}->{installdir} = $installdir;
 
+    my $mpi = Value($ini, $section, "alreadyinstalled_mpi_type");
+    if (!defined($mpi)) {
+        # by default lets guess that it is OMPI
+        $mpi = "OMPI";
+    }
     # Get a version string (E.g., Open MPI r#)
     my $version = Value($ini, $section, "alreadyinstalled_version");
-    if (!defined($version)) {
+    if (!defined($version) && $mpi =~ /OMPI/i) {
         $version = MTT::Values::Functions::MPI::OMPI::get_version("$installdir/bin");
+    }
+    if (!defined($version) && $mpi =~ /MVAPICH/i) {
+        $version = MTT::Values::Functions::MPI::MVAPICH::get_version("$installdir/bin");
     }
     if (!defined($version)) {
         Warning("Could not get an MPI version string, I'll create one based on your alreadyinstalled_dir parameter.\n");

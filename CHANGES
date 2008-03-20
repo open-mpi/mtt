@@ -178,3 +178,8 @@ To announce to OMPI core testers:
   for a specific subsection (and the subsection is exclusive), then
   those tests will not be run.  Handy for explicitly specifying tests
   that exist but should *not* be run.
+
+- added parameter alreadyinstalled_mpi_type.  Defaults to "OMPI", but
+  can also be "MVAPICH".
+
+- Added Functions::MPI::MVAPICH.pm.

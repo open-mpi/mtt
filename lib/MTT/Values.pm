@@ -22,6 +22,7 @@ use MTT::Values::Functions::MPI::HPMPI;
 use MTT::Values::Functions::MPI::IntelMPI;
 use MTT::Values::Functions::MPI::OMPI;
 use MTT::Values::Functions::MPI::MPICH2;
+use MTT::Values::Functions::MPI::MVAPICH;
 use MTT::Values::Functions::MPI::ScaliMPI;
 use MTT::Values::Functions::MPI::ClusterTools;
 use MTT::Values::Functions::SSH;
