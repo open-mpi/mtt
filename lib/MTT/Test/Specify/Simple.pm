@@ -62,6 +62,7 @@ sub Specify {
     # Now go through and see if any of the tests are marked as
     # "exclusive". If they are, remove those tests from all other
     # groups.
+    my @groups_to_delete;
     foreach my $group (keys %$params) {
         # If this group is marked as exclusive, remove each of its
         # tests from all other groups
@@ -85,6 +86,19 @@ sub Specify {
                 }
             }
         }
+
+        # After we've performed the exclusivity filter, if the tests
+        # are marked as "do_not_run", then delete this group (it's a
+        # way of specifying tests to *not* run).  Don't delete them
+        # now, it may (will?) screw up the outter loop's "foreach".
+        if ($params->{$group}->{do_not_run}) {
+            push(@groups_to_delete, $group);
+        }
+    }
+
+    # Delete all the groups that were marked
+    foreach my $t (@groups_to_delete) {
+        delete $params->{$t};
     }
 
     # Now go through those groups and make the final list of tests to pass

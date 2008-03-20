@@ -168,7 +168,13 @@ To announce to OMPI core testers:
   - before_make_install
   - after_make_install
 
-- include_file(s) INI parameter - just like pre-processor "#include" directives
+- include_file(s) INI parameter - just like pre-processor "#include"
+  directives
 
-- trivial_tests_languages - comma separated list of languages to use for trivial 
-  tests (default: "c,c++,f77,f90").
+- trivial_tests_languages - comma separated list of languages to use
+  for trivial tests (default: "c,c++,f77,f90").
+
+- added parameter to Simple specify module: do_not_run.  If set to 1
+  for a specific subsection (and the subsection is exclusive), then
+  those tests will not be run.  Handy for explicitly specifying tests
+  that exist but should *not* be run.
