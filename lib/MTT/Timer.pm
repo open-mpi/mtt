@@ -18,18 +18,25 @@ use Data::Dumper;
 my $start_timestamp_string;
 my $start_benchmark;
 my $start_first_benchmark;
+my $finish_timestamp_string;
+my $finish_benchmark;
 
 sub start {
-    my $time_arg = shift;
-
-    return if (!$time_arg);
-
     $start_benchmark = new Benchmark;
     $start_timestamp_string = localtime;
 
     if (!defined($start_first_benchmark)) {
         $start_first_benchmark = new Benchmark;
     }
+
+    return $start_benchmark;
+}
+
+sub stop {
+    $finish_timestamp_string = localtime;
+    $finish_benchmark = new Benchmark;
+
+    return $finish_benchmark;
 }
 
 # Convert seconds to DD days, HH::MM::SS
@@ -76,15 +83,12 @@ sub convert_seconds_to_hhmmss {
     return $elapsed_string;
 }
 
-sub stop {
+sub print {
     my $label = shift;
     my $time_arg = shift;
     my $verbose = shift;
 
     return if (!$time_arg);
-
-    my $stop_timestamp_string = localtime;
-    my $finish_benchmark = new Benchmark;
 
     my ($real, $user, $system, $children_user, $children_system, $iters);
     my ($real_total, $user_total, $system_total, $children_user_total, $children_system_total, $iters_total);
@@ -115,13 +119,15 @@ sub stop {
     if ($verbose) {
         print ">> $label
    Started:       $start_timestamp_string
-   Stopped:       $stop_timestamp_string
+   Stopped:       $finish_timestamp_string
    Elapsed:       $real_hhmmss ${user}u ${system}s
    Total elapsed: $real_total_hhmmss ${user_total}u ${system_total}s\n";
    } else {
         print ">> $label
    Elapsed:       $real_hhmmss ${user}u ${system}s\n";
    }
+
+    return $finish_benchmark;
 }
 
 1;

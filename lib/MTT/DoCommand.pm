@@ -23,6 +23,7 @@ use MTT::Timer;
 use Data::Dumper;
 use File::Spec;
 use Cwd;
+use Benchmark;
 
 #--------------------------------------------------------------------------
 
@@ -181,9 +182,14 @@ sub Cmd {
 
     Debug("Running command: $cmd\n");
 
+    # Return value
+
+    my $ret;
+    $ret->{timed_out} = 0;
+
     # Start the timer
 
-    &MTT::Timer::start($time_arg);
+    $ret->{start_benchmark} = &MTT::Timer::start();
 
     # Perl kills me here.  It does its own buffering of pipes which
     # interferes with trying to loop over select() and read() from
@@ -229,11 +235,6 @@ sub Cmd {
         listen($server_socket, SOMAXCONN)
             || die "listen: $!";
     }
-
-    # Return value
-
-    my $ret;
-    $ret->{timed_out} = 0;
 
     # Turn shell-quoted words ("foo bar baz") into individual tokens
 
@@ -445,7 +446,14 @@ sub Cmd {
 
     # Display timing info
 
-    &MTT::Timer::stop("Command: $cmd", $time_arg);
+    $ret->{stop_benchmark} = &MTT::Timer::stop();
+    &MTT::Timer::print("Command: $cmd", $time_arg);
+    ($ret->{elapsed_real}, 
+     $ret->{elapsed_user},
+     $ret->{elapsed_children_user},
+     $ret->{elapsed_children_system},
+     $ret->{elapsed_iters}) =
+        @{timediff($ret->{stop_benchmark}, $ret->{start_benchmark})};
 
     # Return an anonymous hash containing the relevant data
 
