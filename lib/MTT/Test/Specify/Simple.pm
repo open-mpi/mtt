@@ -123,7 +123,12 @@ sub Specify {
                 foreach my $key (keys %{$params->{$group}}) {
                     next
                         if ($key eq "tests");
-                    $one->{$key} = $params->{$group}->{$key};
+                    if ($key =~ /^mpi_details:/) {
+                        $key =~ m/^mpi_details:(.+)/;
+                        $one->{mpi_details}->{$1} = $params->{$group}->{$key};
+                    } else {
+                        $one->{$key} = $params->{$group}->{$key};
+                    }
                 }
 
                 # Save it on the final list of tests

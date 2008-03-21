@@ -844,10 +844,12 @@ sub test_argv {
 #--------------------------------------------------------------------------
 
 # Return whether the last test run was terminated by a signal
-sub test_alloc {
-    Debug("&test_alloc returning $MTT::Test::Run::test_alloc\n");
+sub mpi_details {
+    my $name = shift;
+    Debug("&mpi_details: $name returning: " . 
+            $MTT::Test::Run::mpi_details->{$name});
 
-    return $MTT::Test::Run::test_alloc;
+    return $MTT::Test::Run::mpi_details->{$name};
 }
 
 #--------------------------------------------------------------------------

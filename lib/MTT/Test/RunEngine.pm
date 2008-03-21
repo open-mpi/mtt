@@ -75,6 +75,9 @@ sub RunEngine {
         $MTT::Test::Run::test_executable = $run->{executable};
         $MTT::Test::Run::test_argv = $run->{argv};
         my $all_np = MTT::Values::EvaluateString($run->{np}, $ini, $test_run_full_name);
+        my $save_run_mpi_details = $MTT::Test::Run::mpi_details;
+        $MTT::Test::Run::mpi_details = $run->{mpi_details}
+            if (defined($run->{mpi_details}));
         
         # Just one np, or an array of np values?
         if (ref($all_np) eq "") {
@@ -96,6 +99,8 @@ sub RunEngine {
         # Write out the "to be saved" test run results
         MTT::Test::SaveRuns($runs_data_dir);
         
+        $MTT::Test::Run::mpi_details = $save_run_mpi_details;
+
         # Output a progress bar
         if ($verbose_out > 50) {
             $verbose_out = 0;

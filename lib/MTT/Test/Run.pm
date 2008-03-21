@@ -53,6 +53,9 @@ our $test_exit_status;
 # Exported pid of the last test run
 our $test_pid;
 
+# Exported data to mpi details section
+our $mpi_details;
+
 # What we call this phase
 my $phase_name = "Test run";
 
@@ -453,11 +456,14 @@ sub _do_run {
     $tmp = $ini->val($section, "timeout");
     $config->{timeout} = $tmp
         if (defined($tmp));
-    $tmp = $ini->val($section, "alloc");
-    $config->{alloc} = 
-        defined($tmp) ? $tmp : $MTT::Defaults::Test_run->{alloc};
-    $MTT::Test::Run::test_alloc = 
-        MTT::Values::EvaluateString($config->{alloc}, $ini, $section);
+
+    $MTT::Test::Run::mpi_details = undef;
+    foreach my $field ($ini->Parameters($section)) {
+        if ($field =~ /^mpi_details:/) {
+            $field =~ m/^mpi_details:(.+)/;
+            $MTT::Test::Run::mpi_details->{$1} = $ini->val($section, $field);
+        }
+    }
 
     # Fill in the steps to run
     _fill_step($ini, $mpi_details_section, "before_any_exec", $mpi_details);

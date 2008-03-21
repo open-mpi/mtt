@@ -44,6 +44,8 @@ To announce to OMPI core testers:
     - &SVN::get_r_number() - return the revision number of an SVN workspace
     - &search_and_replace() - perform a search and replace
                               operation on a specified file
+    - &mpi_details() - pass arbitrary values from test run sections
+                       to the mpi details section, indexed by string
 
 - See https://svn.open-mpi.org/trac/mtt/changeset/863:
   - re-wrote funclet parser; MUST edit INI file and remove excess
@@ -183,3 +185,4 @@ To announce to OMPI core testers:
   can also be "MVAPICH".
 
 - Added Functions::MPI::MVAPICH.pm.
+
