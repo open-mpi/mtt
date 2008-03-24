@@ -4,6 +4,7 @@
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2008      Mellanox Technologies.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -141,20 +142,29 @@ sub Run {
 
                                     # See if we're supposed to skip
                                     # this MPI get or this MPI install
+                                    my $go_next = 0;
                                     my $skip_mpi_get = 
                                         MTT::Values::Value($ini, $section, 
                                                            "skip_mpi_get");
-                                    if ($skip_mpi_get &&
-                                        $skip_mpi_get eq $mpi_get_key) {
-                                        Verbose("   Skipping run for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] per INI configuration\n");
-                                        next;
+                                    foreach my $skip_one_mpi_get (MTT::Util::split_comma_list($skip_mpi_get)) {
+                                        if ($skip_one_mpi_get &&
+                                                $skip_one_mpi_get eq $mpi_get_key) {
+                                            Verbose("   Skipping run for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] per INI configuration\n");
+                                            $go_next = 1;
+                                        }
                                     }
                                     my $skip_mpi_install = 
                                         MTT::Values::Value($ini, $section, 
                                                            "skip_mpi_install");
-                                    if ($skip_mpi_install &&
-                                        $skip_mpi_install eq $mpi_install_key) {
-                                        Verbose("   Skipping run for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] per INI configuration\n");
+                                    foreach my $skip_one_mpi_install (MTT::Util::split_comma_list($skip_mpi_install)) {
+                                        if ($skip_one_mpi_install &&
+                                                $skip_one_mpi_install eq $mpi_install_key) {
+                                            Verbose("   Skipping run for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] per INI configuration\n");
+                                            $go_next = 1;
+                                        }
+                                    }
+
+                                    if ($go_next) {
                                         next;
                                     }
 
