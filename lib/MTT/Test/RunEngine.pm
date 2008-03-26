@@ -4,6 +4,7 @@
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2008      Mellanox Technologies.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -198,6 +199,7 @@ sub _run_one_test {
     # Setup some environment variables for steps
     delete $ENV{MTT_TEST_NP};
     $ENV{MTT_TEST_PREFIX} = $MTT::Test::Run::test_prefix;
+    $ENV{MTT_TEST_EXECUTABLE} = $MTT::Test::Run::test_executable;
     if (MTT::Values::Functions::have_hostfile()) {
         $ENV{MTT_TEST_HOSTFILE} = MTT::Values::Functions::hostfile();
     } else {
