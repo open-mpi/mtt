@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -53,7 +53,7 @@ sub Specify {
 
         # Split it up if it's a string
         if (ref($tests) eq "") {
-            my @tests = split(/\s+/, $tests);
+            my @tests = split(/(?:\s+,\s+|\s+,|,\s+|,+|\s+)/, $tests);
             $tests = \@tests;
         }
         $params->{$group}->{tests} = $tests;
@@ -91,8 +91,11 @@ sub Specify {
         # are marked as "do_not_run", then delete this group (it's a
         # way of specifying tests to *not* run).  Don't delete them
         # now, it may (will?) screw up the outter loop's "foreach".
-        if ($params->{$group}->{do_not_run}) {
-            push(@groups_to_delete, $group);
+        if (defined($params->{$group}->{do_not_run})) {
+            my $e = MTT::Values::EvaluateString($params->{$group}->{do_not_run},
+                                                $ini, $section);
+            push(@groups_to_delete, $group)
+                if ($e);
         }
     }
 
