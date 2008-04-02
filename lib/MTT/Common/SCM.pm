@@ -64,6 +64,9 @@ sub Get {
     # Sub-command (i.e., export, checkout, clone)
     my $subcommand = $params->{subcommand};
 
+    # Command arguments (i.e., -r, --password, etc.)
+    my $command_arguments = $params->{command_arguments};
+
     # URL or local directory path to sources
     my $url = $params->{url};
 
@@ -75,7 +78,7 @@ sub Get {
     # Default commands/subcommands
     if ($scm_module eq "SVN") {
         $command = "svn" if (! $command);
-        $subcommand = "export" if (! $subcommand);
+        $subcommand = "checkout" if (! $subcommand);
     } elsif ($scm_module eq "Mercurial") {
         $command = "hg" if (! $command);
         $subcommand = "clone" if (! $subcommand);
@@ -139,7 +142,7 @@ sub Get {
             if ($delete_first);
     }
 
-    my $cmd = "$command $subcommand $url $dirname";
+    my $cmd = "$command $command_arguments $subcommand $url $dirname";
 
     if (! $scm_module) {
         $scm_module = "Unknown";
@@ -148,7 +151,7 @@ sub Get {
     # Do the code checkout
     my $r = MTT::Module::Run("MTT::Common::SCM::$scm_module", "Checkout", $cmd, $url);
 
-    if (!$dirname) {
+    if (! -d $dirname) {
         $ret->{test_result} = MTT::Values::FAIL;
         $ret->{result_message} = "Failed to checkout sources.";
         return $ret;
@@ -266,11 +269,10 @@ sub ProcessInputParameters {
 
     # Append arguments to commands
     # EAM: move to SVN.pm
-    $command .= " $command_arguments "  if ($command_arguments);
-    $command .= " -r $r "                if ($r);
-    $command .= " --username $username " if ($username);
-    $command .= " --password $password " if ($password);
-    $command .= " --no-auth-cache "      if ("0" eq $password_cache);
+    $command_arguments .= " -r $r "                if ($r);
+    $command_arguments .= " --username $username " if ($username);
+    $command_arguments .= " --password $password " if ($password);
+    $command_arguments .= " --no-auth-cache "      if ("0" eq $password_cache);
 
     $subcommand .= " $subcommand_arguments "
         if ($subcommand_arguments);
@@ -284,16 +286,17 @@ sub ProcessInputParameters {
     # copytree module, since that's all we have to do (i.e., copy a
     # local tree)
     $ret->{prepare_for_install} = "MTT::Common::Copytree::PrepareForInstall";
-    $ret->{pre_copy}            = Value($ini, $section, &_prefix_parameter("pre_export"));
-    $ret->{post_copy}           = Value($ini, $section, &_prefix_parameter("post_export"));
-    $ret->{version}             = Value($ini, $section, &_prefix_parameter("version"));
+    $ret->{pre_copy}            = IniValue($ini, $section, &_prefix_parameter("pre_export"));
+    $ret->{post_copy}           = IniValue($ini, $section, &_prefix_parameter("post_export"));
+    $ret->{version}             = IniValue($ini, $section, &_prefix_parameter("version"));
 
-    $ret->{delete_first}   = $delete_first;
-    $ret->{command}        = $command;
-    $ret->{subcommand}     = $subcommand;
-    $ret->{url}            = $url;
-    $ret->{module}         = $module;
-    $ret->{scm_module}     = $scm_module;
+    $ret->{delete_first}      = $delete_first;
+    $ret->{command}           = $command;
+    $ret->{command_arguments} = $command_arguments;
+    $ret->{subcommand}        = $subcommand;
+    $ret->{url}               = $url;
+    $ret->{module}            = $module;
+    $ret->{scm_module}        = $scm_module;
 
     $ret->{simple_section} = GetSimpleSection($section);
 

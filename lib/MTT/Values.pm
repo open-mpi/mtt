@@ -33,7 +33,7 @@ use Data::Dumper;
 use Config::IniFiles;
 use vars qw(@EXPORT);
 use base qw(Exporter);
-@EXPORT = qw(EvaluateString Value Logical ProcessEnvKeys);
+@EXPORT = qw(EvaluateString IniValue Value Logical ProcessEnvKeys);
 
 # Exported result values.  These values are in sync with the server --
 # do not change them without also changing the server!  ARRGH.  These
@@ -360,6 +360,26 @@ sub Value {
         }
     }
     Debug("Value returning: $ret\n");
+    return $ret;
+}
+
+# Same as Value, but do not do EvaluateString
+sub IniValue {
+    Debug("IniValue got: $@_\n");
+    my $ini = shift @_;
+    my $section = shift @_;
+    my @names = @_;
+
+    my $val;
+    my $ret;
+    foreach my $name (@names) {
+        $val = $ini->val($section, $name);
+        if (defined($val)) {
+            $ret = $val;
+            last;
+        }
+    }
+    Debug("IniValue returning: $ret\n");
     return $ret;
 }
 

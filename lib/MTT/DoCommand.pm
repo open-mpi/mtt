@@ -19,6 +19,7 @@ use File::Temp qw(tempfile);
 use Socket;
 use Fcntl qw(F_GETFL F_SETFL O_NONBLOCK);
 use MTT::Messages;
+use MTT::Values;
 use MTT::Timer;
 use Data::Dumper;
 use File::Spec;
@@ -536,6 +537,38 @@ sub Popdir {
         Error("Popdir: directory stack empty") if (! $dir);
         chdir $dir or die "$dir: $!";
     }
+}
+
+# Run a "pre" or "post" step before the main command of a given phase
+sub RunStep {
+    my ($force, $cmd, $timeout, $ini, $section, $step) = @_;
+
+    # Prepare a return hash
+    my $ret;
+    $ret->{exit_status} = 0;
+
+    # Steps can be funclets
+    if ($cmd =~ /^\s*&/) {
+
+        my $x = EvaluateString($cmd, $ini, $section);
+        if (!$x) {
+            Verbose("  Warning: step $step FAILED\n");
+            $ret->{exit_status} = 1;
+        }
+
+    # Steps can be shell commands
+    } else {
+    
+        # Do any needed @var@ expansions
+        $cmd = EvaluateString($cmd, $ini, $section);
+
+        Debug("Running step: $step: $cmd / timeout $timeout\n");
+        $ret = ($cmd =~ /\n/) ?
+            MTT::DoCommand::CmdScript($force, $cmd, $timeout) :
+            MTT::DoCommand::Cmd($force, $cmd, $timeout);
+    }
+
+    return $ret;
 }
 
 #--------------------------------------------------------------------------

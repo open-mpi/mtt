@@ -12,6 +12,7 @@ package MTT::Values::Functions::SVN;
 
 use strict;
 use MTT::Messages;
+use Data::Dumper;
 
 #--------------------------------------------------------------------------
 

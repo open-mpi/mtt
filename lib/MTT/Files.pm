@@ -191,6 +191,9 @@ sub copy_tree {
 
     Debug("Copying directory: $srcdir\n");
 
+    # Remove trailing slash
+    $srcdir =~ s/\/\s*$//;
+
     if (! -d $srcdir) {
         Warning("Directory does not exist: $srcdir\n");
         return undef;

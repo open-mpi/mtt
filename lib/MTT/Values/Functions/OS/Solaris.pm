@@ -11,6 +11,7 @@
 package MTT::Values::Functions::OS::Solaris;
 
 use strict;
+use MTT::Messages;
 
 #--------------------------------------------------------------------------
 

@@ -91,13 +91,13 @@ http-proxy-port = bogus\n";
 
         my $x = MTT::DoCommand::Cmd(1, $cmd);
 
-        if (!MTT::DoCommand::wsuccess($ret->{exit_status})) {
-            Warning("SVN failure: $ret->{stdout}");
+        if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
+            Warning("SVN failure: $x->{stdout}");
             next;
         }
 
         # Grab the SVN version
-        if ($x->{result_stdout} =~ m/Exported revision (\d+)\.\n$/) {
+        if ($x->{result_stdout} =~ m/(?:Checked out|Exported) revision (\d+)\.\n$/i) {
             $ret = $1;
         }
 

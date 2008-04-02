@@ -847,23 +847,8 @@ sub _run_step {
     $timeout = undef 
         if ($timeout <= 0);
 
-    # Steps can be funclets
-    if ($cmd =~ /^\s*&/) {
-
-        my $ok = EvaluateString($cmd, $ini, $section);
-        Verbose("  Warning: step $step FAILED\n") if (!$ok);
-
-    # Steps can be shell commands
-    } else {
-    
-        # Do any needed @var@ expansions
-        $cmd = EvaluateString($cmd, $ini, $section);
-
-        Debug("Running step: $step: $cmd / timeout $timeout\n");
-        my $x = ($cmd =~ /\n/) ?
-            MTT::DoCommand::CmdScript(1, $cmd, $timeout) : 
-            MTT::DoCommand::Cmd(1, $cmd, $timeout);
-    }
+    # Run the step
+    MTT::DoCommand::RunStep(1, $cmd, $timeout, $ini, $section, $step);
 }
 
 1;

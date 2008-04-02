@@ -72,6 +72,7 @@ sub Get {
     $data->{directory} = $data->{src_directory};
     $ret->{module_data} = $data;
     my $dir = PrepareForInstall($ret, cwd());
+
     if (!$dir) {
         $ret->{test_result} = MTT::Values::FAIL;
         $ret->{result_message} = "Failed to copy tree";
@@ -115,13 +116,17 @@ sub PrepareForInstall {
     Debug(">> copytree copying to $build_dir\n");
     MTT::DoCommand::Chdir($build_dir);
 
-    my $data = $source->{module_data};
+    my $data      = $source->{module_data};
+    my $pre_copy  = $data->{pre_copy};
+    my $post_copy = $data->{post_copy};
 
     # Pre copy
-    if ($data->{pre_copy}) {
+    if ($pre_copy) {
 
-        Debug("copytree running pre_copy command: $data->{pre_copy}\n");
-        my $x = MTT::DoCommand::CmdScript(1, $data->{pre_copy});
+        # Run the step
+        Debug("copytree running pre_copy command: $pre_copy\n");
+        my $x = MTT::DoCommand::RunStep(1, $pre_copy, 30, undef, undef, "pre_copy");
+
         if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
             Warning("Pre-copy command failed: $@\n");
             return undef;
@@ -137,11 +142,14 @@ sub PrepareForInstall {
     MTT::DoCommand::Chdir($ret);
     
     # Post copy
-    if ($data->{post_copy}) {
-        Debug("copytree running post_copy command: $data->{post_copy}\n");
-        my $x = MTT::DoCommand::CmdScript(1, $data->{post_copy});
+    if ($post_copy) {
+
+        # Run the step
+        Debug("copytree running post_copy command: $post_copy\n");
+        my $x = MTT::DoCommand::RunStep(1, $post_copy, 30, undef, undef, "post_copy");
+
         if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
-            Warning("Post-copy command failed: $@\n");
+            Warning("post-copy command failed: $@\n");
             return undef;
         }
     }

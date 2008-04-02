@@ -122,15 +122,17 @@ sub Install {
         $wrapper_rpath = $configure_prefix;
     }
 
-    
     # Run autogen.sh
-    if ($do_autogen) {
-        $x = MTT::DoCommand::Cmd(1, "./autogen.sh");
+    my $autogen_script = "./autogen.sh";
+    if ($do_autogen and -x $autogen_script) {
+        $x = MTT::DoCommand::Cmd(1, $autogen_script);
         if (0 != $x->{exit_status}) {
-            $ret->{result_message} = "autogen.sh failed.";
-            Verbose("./autogen.sh failed. Skipping this install.\n");
+            $ret->{result_message} = "$autogen_script failed.";
+            Verbose("$autogen_script failed. Skipping this install.\n");
             return $ret;
         }
+    } else {
+        Verbose("Skipping $autogen_script.\n");
     }
 
     # Run configure / make all / make check / make install
