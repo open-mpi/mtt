@@ -3,6 +3,9 @@
 To announce to OMPI core testers:
 
 - New funclets:
+    - &hostlist - not new but 2 new parameters were added: 
+        $1 - delimiter that used between hostnames 
+        $2 - number of hosts that we want to get from the list
     - &perl(): MANY more things are possible now!
     - &regexp()
     - &check_ipoib_connectivity()

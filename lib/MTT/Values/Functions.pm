@@ -1322,18 +1322,28 @@ sub hostlist_max_procs {
 sub hostlist_hosts {
     Debug("&hostlist_hosts\n");
     my $delimiter = shift;
+    my $num = shift;
 
     return ""
         if (!have_hostlist());
 
+    my $list;
+
+    if (defined($num)) {
+        my @hl = split(/,/, $MTT::Globals::Values->{hostlist});
+        $list = join(",", splice(@hl, 0, $num));
+    } else {
+        $list = $MTT::Globals::Values->{hostlist};
+    }
+    
     if (defined($delimiter)) {
-        my @hosts = split(/,/, $MTT::Globals::Values->{hostlist});
+        my @hosts = split(/,/, $list);
         my $ret = join($delimiter, @hosts);
         Debug("&hostlist_hosts (delimiter=$delimiter) returning $ret\n");
         return $ret;
     } else {
-        Debug("&hostlist_hosts returning $MTT::Globals::Values->{hostlist}\n");
-        return $MTT::Globals::Values->{hostlist};
+        Debug("&hostlist_hosts returning $list\n");
+        return $list;
     }
 }
 
