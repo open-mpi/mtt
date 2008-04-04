@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -128,7 +128,7 @@ sub PrepareForInstall {
         my $x = MTT::DoCommand::RunStep(1, $pre_copy, 30, undef, undef, "pre_copy");
 
         if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
-            Warning("Pre-copy command failed: $@\n");
+            Warning("Pre-copy command failed: $x->{result_stdout}\n");
             return undef;
         }
     }
@@ -149,7 +149,7 @@ sub PrepareForInstall {
         my $x = MTT::DoCommand::RunStep(1, $post_copy, 30, undef, undef, "post_copy");
 
         if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
-            Warning("post-copy command failed: $@\n");
+            Warning("Post-copy command failed: $x->{result_stdout}\n");
             return undef;
         }
     }
