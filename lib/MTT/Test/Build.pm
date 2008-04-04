@@ -120,7 +120,8 @@ sub Build {
 
                 # This is only warning about the INI file; we'll see
                 # if we find meta data for the test get later
-                if (!$ini_full->SectionExists("test get: $test_get_name")) {
+                if ($test_get_name ne "all" &&
+                    !$ini_full->SectionExists("test get: $test_get_name")) {
                     Warning("Test Get section \"$test_get_name\" does not seem to exist in the INI file\n");
                 }
 
@@ -128,14 +129,16 @@ sub Build {
                 # skip it.  Don't issue a warning because command line
                 # parameters may well have dictated to skip this
                 # section.
-                if (!exists($MTT::Test::sources->{$test_get_name})) {
+                if ($test_get_name ne "all" &&
+                    !exists($MTT::Test::sources->{$test_get_name})) {
                     Debug("Have no sources for Test Get \"$test_get_name\", skipping\n");
                     next;
                 }
 
                 # Find the matching test source
                 foreach my $test_get_key (keys(%{$MTT::Test::sources})) {
-                    if ($test_get_key eq $test_get_name) {
+                    if ($test_get_name eq "all" ||
+                        $test_get_key eq $test_get_name) {
                         my $test_get = $MTT::Test::sources->{$test_get_key};
 
                         # For each MPI source

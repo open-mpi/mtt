@@ -105,7 +105,8 @@ sub Run {
 
                 # This is only warning about the INI file; we'll see
                 # if we find meta data for the test build later
-                if (!$ini_full->SectionExists("test build: $test_build_name")) {
+                if ($test_build_name ne "all" &&
+                    !$ini_full->SectionExists("test build: $test_build_name")) {
                     Warning("Test Build section \"$test_build_name\" does not seem to exist in the INI file\n");
                 }
 
@@ -130,7 +131,8 @@ sub Run {
                                 last
                                     if (MTT::Util::find_terminate_file());
 
-                                if ($test_build_key eq $test_build_name) {
+                                if ($test_build_name eq "all" ||
+                                    $test_build_key eq $test_build_name) {
                                     my $test_build = $MTT::Test::builds->{$mpi_get_key}->{$mpi_version_key}->{$mpi_install_key}->{$test_build_key};
                                     Debug("Found a match! $test_build_key [$simple_section\n");
                                     if (!$test_build->{test_result}) {

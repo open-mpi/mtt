@@ -50,6 +50,11 @@ To announce to OMPI core testers:
     - &mpi_details() - pass arbitrary values from test run sections
                        to the mpi details section, indexed by string
 
+- Allow mpi_get_name, test_get_name, and test_build_name fields to
+  accept the special value "all", meaning that they'll use all
+  corresponding sections that are found (vs. needing to list every
+  section explicitly)
+
 - Added export for MTT_TEST_EXECUTABLE, may be used for clean up after
   mpi process : pkill -9 $MTT_TEST_EXECUTABLE
 

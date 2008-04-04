@@ -199,7 +199,8 @@ sub Install {
 
                 # This is only warning about the INI file; we'll see
                 # if we find meta data for the MPI get later
-                if (!$ini_full->SectionExists("mpi get: $mpi_get_name")) {
+                if ($mpi_get_name ne "all" &&
+                    !$ini_full->SectionExists("mpi get: $mpi_get_name")) {
                     Warning("Warning: MPI Get section \"$mpi_get_name\" does not seem to exist in the INI file\n");
                 }
 
@@ -207,7 +208,8 @@ sub Install {
                 # skip it.  Don't issue a warning because command line
                 # parameters may well have dictated to skip this MPI
                 # get section.
-                if (!exists($MTT::MPI::sources->{$mpi_get_name})) {
+                if ($mpi_get_name ne "all" && 
+                    !exists($MTT::MPI::sources->{$mpi_get_name})) {
                     Debug("Have no sources for MPI Get \"$mpi_get_name\", skipping\n");
                     next;
                 }
@@ -217,7 +219,8 @@ sub Install {
 
                 # For each MPI source
                 foreach my $mpi_get_key (keys(%{$MTT::MPI::sources})) {
-                    if ($mpi_get_key eq $mpi_get_name) {
+                    if ($mpi_get_name eq "all" ||
+                        $mpi_get_key eq $mpi_get_name) {
 
                         # For each version of that source
                         my $mpi_get = $MTT::MPI::sources->{$mpi_get_key};
