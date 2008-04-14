@@ -173,6 +173,31 @@ function setup_mtt_db_tables() {
     return $ret;
 }
 
+# Convert English fraction to floating point value
+function english_fraction_2_float($english) {
+    $ret = array(
+        'whole'         => (1/1),
+        '*whole'        => (1/1),
+        'no splitting'  => (1/1),
+        '*no splitting' => (1/1),
+        'halves'        => (1/2),
+        'thirds'        => (1/3),
+        'quarters'      => (1/4),
+        'fifths'        => (1/5),
+        'sixths'        => (1/6),
+        'sevenths'      => (1/7),
+        'eighths'       => (1/8),
+        'ninths'        => (1/9),
+        'tenths'        => (1/10),
+    );
+
+    if (isset($ret[$english])) {
+        return $ret[$english];
+    } else {
+        return $english;
+    }
+}
+
 # Return a list of preferences to hand off to prefs_popup
 function setup_prefs() {
 
@@ -189,6 +214,7 @@ function setup_prefs() {
                 'yaxis_scale'      => array(array('Logarithmic', '*Linear')),
                 'xaxis_scale'      => array(array('Logarithmic', '*Text')),
                 'hide_subtitle'    => array(false),
+                'split_graphs'     => array(array('*No splitting', 'Halves', 'Thirds', 'Quarters')),
                 #'graph_size'       => array(array('Small', '*Medium', 'Large')),
                 #'legend_placement' => array(array('*Bottom', 'In plotting area')),
                 #'graph_type'       => array(array('*Line', 'Bar', 'Points')),
@@ -364,6 +390,7 @@ function label($str) {
             "local_username"      => "Local username",
             "merge_stdout_stderr" => "Merge stdout stderr",
             "message_size"        => "Message size",
+            "message_size_range"  => "Message sizes",
             "mpi_name"            => "MPI name",
             "mpi_version"         => "MPI version",
             "mtt_version_major"   => "MTT version major",
@@ -461,6 +488,7 @@ function label($str) {
             'xaxis_scale'          => 'X-axis scale',
             'graph_type'           => 'Graph type',
             'hide_subtitle'        => 'Hide subtitle',
+            'split_graphs'         => 'Split graphs',
 
             # Row number
             "n" => "#",

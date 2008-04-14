@@ -611,22 +611,48 @@ function table_footer($totals, $headers, $result_colors) {
 # Print all the available performance graphs
 function performance_graphs($data) {
 
-    # Do graph(s)
-    $types = array(
-        'latency_avg',
-        'latency_min',
-        'latency_max',
-        'bandwidth_avg',
-        'bandwidth_min',
-        'bandwidth_max',
-    );
+    # These are the "types":
+    #   * latency_avg
+    #   * latency_min
+    #   * latency_max
+    #   * bandwidth_avg
+    #   * bandwidth_min
+    #   * bandwidth_max
+    $arr = setup_performance_fields();
+    unset($arr["performance"]["message_size"]);
+    $types = array_keys($arr["performance"]);
+
+    # Grab the split_graphs preference
+    $split_graphs_param = english_fraction_2_float(SPLIT_GRAPHS);
+    eval("\$split_graphs_increment = $split_graphs_param;");
+
+    # Split up graphs by "split_graph" fraction here. Then pass the
+    # $data to do_graph. We're assuming (I know, always a bad thing to
+    # do) that the user is graphing something relatively sane, e.g., a
+    # few runs of the same test - all of which have the same sequence
+    # of message sizes.
 
     foreach ($types as $type) {
-        $ret = do_graph($data, $type);
-        if (! is_null($ret)) {
-            $images[] = $ret['image'];
-            $widths[] = $ret['width'];
-            $raws[] = $ret['raw'];
+
+        $i = 0;
+        # This loop should break without this "while" condition, but
+        # let's play it safe. We will not split the graph into more
+        # than 10 pieces.
+        while ($i < 10) {
+
+            # Split up the graph data based on iteration and fraction
+            $split_data = split_graph_data($data, $split_graphs_increment, $i++);
+
+            if (! $split_data) {
+                break;
+            }
+
+            $ret = do_graph($split_data, $type);
+            if (! is_null($ret)) {
+                $images[] = $ret['image'];
+                $widths[] = $ret['width'];
+                $raws[] = $ret['raw'];
+            }
         }
     }
 
@@ -648,6 +674,65 @@ function performance_graphs($data) {
         $i++;
     }
     print "</table>";
+}
+
+# Return a slice of graph data (for the split/graphs preference)
+function split_graph_data($data, $fraction, $iteration) {
+
+    # Relegate the x-axis unification to later in the graph-creation process
+    # (grab the longest series of message_size's in the array).
+    # Can't really make this static, since we could be doing several types of 
+    # graphs (latency, bandwidth, etc.)
+    $sizeof_xdata = 0;
+    $sizeof_xdata_max = 0;
+    foreach (array_keys($data['plots']) as $i) {
+        $sizeof_xdata = sizeof($data['plots'][$i]['message_size']);
+        if ($sizeof_xdata > $sizeof_xdata_max) {
+            $xdata = $data['plots'][$i]['message_size'];
+        }
+    }
+
+    # Calculate offset and length of slice
+    $length = ceil($sizeof_xdata * $fraction);
+    $offset = ceil($iteration * $length);
+
+    # (WE MUST AVOID A GRAPH THAT HAS ONLY ONE DATA POINT ON THE X-AXIS BECAUSE
+    # IT CAUSES A JPGRAPH ERROR!
+
+    # We do "minus 1" here because we may have attached the ending graph
+    # fragment from the previous invocation of this function in the next if
+    # block 
+    if ($offset >= ($sizeof_xdata - 1)) {
+        return null;
+    }
+
+    # Oddball case where the graph doesn't divide up evenly and we 
+    # end up with a last graph fragment that is a single message size. we leave a single-message size chunk at the end
+    # which causes a JpGraph error
+    if (($offset + $length + 1) >= $sizeof_xdata) {
+        $length++;
+    }
+
+    # Slice on these sub-arrays
+    $performance_fields = setup_performance_fields();
+    $params = array_keys($performance_fields['performance']);
+
+    foreach ($params as $param) {
+        foreach (array_keys($data['plots']) as $i) {
+            $ret['plots'][$i][$param] = array_slice($data['plots'][$i][$param], $offset, $length);
+        }
+    }
+
+    # Legend does not change between graph slices
+    $ret['legend'] = $data['legend'];
+
+    # Make the message_size range a part of the legend (and thus the filename as well)
+    $ret['legend']['message_size_range'] = array($xdata[$offset].'-'.$xdata[$offset + $length - 1] => 1);
+
+    # Params do not change between graph slices
+    $ret['params'] = $data['params'];
+
+    return $ret;
 }
 
 # Print out the actual binary image data
@@ -736,6 +821,11 @@ function do_graph($data, $type) {
          $titles['yaxis']) = get_axis_labels($type);
 
     $graph->xaxis->SetTickLabels($message_sizes);
+
+    # If you want to use any angles other than 0 and 90 degrees you must make
+    # sure that the labels are using TTF fonts. Internal fonts only support
+    # vertical and horizontal angles. (Could be useful for getting the x-axis
+    # labels out of the way of the x-axis tick labels.)
     $graph->xaxis->SetLabelAngle(90);
     $graph->xaxis->SetFont($xfont);
     $graph->xaxis->SetTitleMargin(25);
