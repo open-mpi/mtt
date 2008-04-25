@@ -489,28 +489,33 @@ foreach my $hash (@ini_list) {
     if ($mpi_get && !MTT::Util::find_terminate_file()) {
         &MTT::Timer::start($time_phases);
         MTT::MPI::Get::Get($ini, $source_dir, $force_arg);
-        &MTT::Timer::stop("Phase: MPI Get", $time_phases, 1);
+        &MTT::Timer::stop();
+        &MTT::Timer::print("Phase: MPI Get", $time_phases, 1);
     }
     if ($mpi_install && !MTT::Util::find_terminate_file()) {
         &MTT::Timer::start($time_phases);
         MTT::MPI::Install::Install($ini, $ini_full, $install_dir, $force_arg);
-        &MTT::Timer::stop("Phase: MPI Install", $time_phases, 1);
+        &MTT::Timer::stop();
+        &MTT::Timer::print("Phase: MPI Install", $time_phases, 1);
     }
     if ($test_get && !MTT::Util::find_terminate_file()) {
         &MTT::Timer::start($time_phases);
         MTT::Test::Get::Get($ini, $source_dir, $force_arg);
-        &MTT::Timer::stop("Phase: Test Get", $time_phases, 1);
+        &MTT::Timer::stop();
+        &MTT::Timer::print("Phase: Test Get", $time_phases, 1);
     }
     if ($test_build && !MTT::Util::find_terminate_file()) {
         &MTT::Timer::start($time_phases);
         MTT::Test::Build::Build($ini, $ini_full, $install_dir, $force_arg);
-        &MTT::Timer::stop("Phase: Test Build", $time_phases, 1);
+        &MTT::Timer::stop();
+        &MTT::Timer::print("Phase: Test Build", $time_phases, 1);
     }
     if ($test_run && !MTT::Util::find_terminate_file()) {
         &MTT::Timer::start($time_phases);
         MTT::Test::Run::Run($ini, $ini_full, $install_dir, $runs_data_dir,
                             $force_arg);
-        &MTT::Timer::stop("Phase: Test Run", $time_phases, 1);
+        &MTT::Timer::stop();
+        &MTT::Timer::print("Phase: Test Run", $time_phases, 1);
     }
 
     # Remove old sources, installs, and builds
@@ -518,7 +523,8 @@ foreach my $hash (@ini_list) {
     if ($trim) {
         &MTT::Timer::start($time_phases);
         MTT::Trim::Trim($ini, $source_dir, $install_dir);
-        &MTT::Timer::stop("Phase: Trim", $time_phases, 1);
+        &MTT::Timer::stop();
+        &MTT::Timer::print("Phase: Trim", $time_phases, 1);
     }
 
     # Shutdown the reporter
