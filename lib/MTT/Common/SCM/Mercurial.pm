@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 #
 # Copyright (c) 2007 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2008 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -22,18 +23,30 @@ use Data::Dumper;
 #--------------------------------------------------------------------------
 
 sub Checkout {
-    my ($cmd, $url) = @_;
+    my ($params, $url) = @_;
 
     my $ret;
 
+    # Assemble the command
+    my $cmd = defined($params->{cmd}) ? $params->{cmd} : "hg";
+    $cmd .= " " . $params->{command_arguments}
+        if (defined($params->{command_arguments}));
+
+    $cmd .= " " . 
+        (defined($params->{subcommand}) ? $params->{subcommand} : "export");
+    $cmd .= " " . $params->{subcommand_arguments}
+        if (defined($params->{subcommand_arguments}));
+    $cmd .= " -r " . $params->{rev}
+        if (defined($params->{rev}));
+    $cmd .= " " . $params->{url} . " " . $params->{dirname};
+
     my $x = MTT::DoCommand::Cmd(1, $cmd);
+    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
+        Warning("HG failure: $x->{result_stdout}\n");
+        return undef;
+    }
 
-    return undef
-        if (!MTT::DoCommand::wsuccess($x->{exit_status}));
-
-    $ret = _hg_identify_n($url);
-
-    return $ret;
+    return _hg_identify_n($url);
 }
 
 sub _hg_identify_n {

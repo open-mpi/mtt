@@ -15,6 +15,7 @@ my ($package) = (__PACKAGE__ =~ m/(\w+)$/);
 use strict;
 use Cwd;
 use File::Basename;
+use POSIX;
 use MTT::Messages;
 use MTT::Values;
 use MTT::INI;
@@ -39,7 +40,6 @@ sub Get {
     $ret->{test_result} = MTT::Values::PASS;
     $ret->{result_message} = "Success";
 
-    #
     # Note on the subtle difference between want_new/have_new:
     #  * want_new = Do we want to Get sources?
     #  * have_new = Do we want to tell the Install 
@@ -50,110 +50,48 @@ sub Get {
     #   * We have old sources
     #   * We have old sources and the repo hasn't changed
     #   * All the above with and without --force
-    $ret->{have_new} = $want_new;
-
-    # Do we want to overwrite previous sources?
-    my $scm_module = $params->{scm_module};
-
-    # Do we want to overwrite previous sources?
-    my $delete_first = $params->{delete_first};
-
-    # Main command (i.e., svn, hg, git)
-    my $command = $params->{command};
-
-    # Sub-command (i.e., export, checkout, clone)
-    my $subcommand = $params->{subcommand};
-
-    # Command arguments (i.e., -r, --password, etc.)
-    my $command_arguments = $params->{command_arguments};
-
-    # URL or local directory path to sources
-    my $url = $params->{url};
 
     # Default scm_module
-    if (! defined($scm_module)) {
-        $scm_module = "SVN";
-    }
+    $params->{scm_module} = "SVN"
+        if (! defined($params->{scm_module}));
 
-    # Default commands/subcommands
-    if ($scm_module eq "SVN") {
-        $command = "svn" if (! $command);
-        $subcommand = "checkout" if (! $subcommand);
-    } elsif ($scm_module eq "Mercurial") {
-        $command = "hg" if (! $command);
-        $subcommand = "clone" if (! $subcommand);
-    } elsif ($scm_module eq "SVK") {
-        $command = "svk" if (! $command);
-        $subcommand = "checkout" if (! $subcommand);
-    } else {
-        Warning("MTT does not have a source control plugin for \"$scm_module\". Using \"Unknown\".\n");
-    }
-
-    # --force equates to overwriting an existing MPI get
-    if ($force) {
-        $delete_first = 1;
-    }
+    # --force equates to overwriting an existing checkout
+    $ret->{have_new} = 1;
+    $params->{delete_first} = 1
+        if ($force);
 
     # Skip this check if we are starting fresh
-    if ((! $delete_first) and defined($previous_r)) {
-
-        if (defined($scm_module)) {
-            $want_new =
-                MTT::Module::Run("MTT::Common::SCM::$scm_module", "check_previous_revision", $previous_r, $url);
-        } else {
-            Warning("MTT does not know how to check whether this is a new revision.\n");
-            Warning("Assuming it is new.\n");
-            $want_new = 1;
-        }
+    if ((! $params->{delete_first}) and defined($previous_r)) {
+        $ret->{have_new} =
+            MTT::Module::Run("MTT::Common::SCM::$params->{scm_module}",
+                             "check_previous_revision", $previous_r,
+                             $params->{url});
     }
 
-    # Set "want_new" status for Get.pm
-    $ret->{have_new} = $want_new;
-
     # We can exit from here if we do not have a new version to test
-    if (! $want_new) {
+    if (! $ret->{have_new}) {
         if ($force) {
             Debug("No new sources, but we are forcing.\n");
         } else {
-            $ret->{result_message} = "No new sources to test";
+            $ret->{result_message} = "No new sources";
             return $ret;
         }
     }
 
-    # Do the scm_module checkout
-    Debug("Checkout: " . ($url ? $url : $command) . "\n");
-
-    my $basename;
-    my $dirname;
+    # Strip off trailing slash for basename
     my $cwd = cwd();
-
-    # Some SCMs do not have a naked [SOURCE] argument.
-    # E.g., teamware uses "-p [SOURCE]". In these cases,
-    # we give the programmer the benefit of the doubt that
-    # they've constructed a valid checkout command, but 
-    # we also ignore the delete_first parameter
-    if ($url) {
-        # Strip off trailing slash for basename
-        $url =~ s/\/\s*$//;
-
-        $basename = basename($url);
-        $dirname = "$cwd/$basename";
-        MTT::DoCommand::Cmd(1, "rm -rf $basename")
-            if ($delete_first);
-    }
-
-    my $cmd = "$command $command_arguments $subcommand $url $dirname";
-
-    if (! $scm_module) {
-        $scm_module = "Unknown";
-    }
+    $params->{url} =~ s/\/\s*$//;
+    my $basename = basename($params->{url});
+    $params->{dirname} = "$cwd/$basename";
+    MTT::DoCommand::Cmd(1, "rm -rf $basename")
+        if ($params->{delete_first});
 
     # Do the code checkout
-    my $r = MTT::Module::Run("MTT::Common::SCM::$scm_module", "Checkout", $cmd, $url);
-
-    if (! -d $dirname) {
+    my $r = MTT::Module::Run("MTT::Common::SCM::$params->{scm_module}",
+                             "Checkout", $params);
+    if (!defined($r)) {
         $ret->{test_result} = MTT::Values::FAIL;
-        $ret->{result_message} = "Failed to checkout sources.";
+        $ret->{result_message} = "Failed to checkout";
         return $ret;
     }
 
@@ -165,24 +103,25 @@ sub Get {
     $data->{pre_copy}           = $params->{pre_copy};
     $data->{post_copy}          = $params->{post_copy};
     $data->{url}                = $params->{url};
-    $data->{directory}          = $dirname;
-    $data->{r}                  = $r;
+    $data->{directory}          = $params->{dirname};
+    $data->{r}                  = $params->{rev};
 
     # Make a best attempt to get a version number
     # 1. Try looking for a field in the INI file
     my $ver;
     if (!defined($ret->{version})) {
         # 2. Try looking for name-<number> in the directory basename
-        if ($ver = &get_version_from_filename($dirname)) {
+        if ($ver = &get_version_from_filename($params->{dirname})) {
             $ret->{version} = $ver;
         } 
         # 3. Use the SVN r number
-        elsif (defined($r)) {
+        elsif (defined($params->{rev})) {
             $ret->{version} = "r$r";
         }
         # Give up
         else {
-            $ret->{version} = "$params->{simple_section}-" . strftime("%m%d%Y-%H%M%S", localtime);
+            $ret->{version} = "$params->{simple_section}-" . 
+                strftime("%m%d%Y-%H%M%S", localtime);
         }
     }
     $ret->{module_data} = $data;
@@ -237,68 +176,59 @@ sub ProcessInputParameters {
     Debug(">> $package: got url $url\n");
 
     # Process INI file parameters
-    my $r                    = Value($ini, $section, &_prefix_parameter("r"));
-    my $username             = Value($ini, $section, &_prefix_parameter("username"));
-    my $password             = Value($ini, $section, &_prefix_parameter("password"));
-    my $password_cache       = Value($ini, $section, &_prefix_parameter("password_cache"));
-    my $export               = Value($ini, $section, &_prefix_parameter("export"));   # Deprecated
-    my $checkout             = Value($ini, $section, &_prefix_parameter("checkout")); # Deprecated
-    my $command              = Value($ini, $section, &_prefix_parameter("command"));
-    my $command_arguments    = Value($ini, $section, &_prefix_parameter("command_arguments"));
-    my $subcommand           = Value($ini, $section, &_prefix_parameter("subcommand"));
-    my $subcommand_arguments = Value($ini, $section, &_prefix_parameter("subcommand_arguments"));
-    my $delete_first         = Value($ini, $section, &_prefix_parameter("delete_first"));
+    foreach my $k (qw/url r rev username password password_cache export checkout command command_arguments subcommand subcommand_arguments delete_first pre_copy post_copy version/) {
+        $ret->{$k} = Value($ini, $section, &_prefix_parameter($k));
+    }
 
     my $module = Value($ini, $section, "module");
     my $scm_module = Value($ini, $section, "scm_module");
 
-    # Setup sub-command
-    # EAM: move to SVN.pm
-    my $export;
-    if ($export and $checkout) {
-        Warning("export and checkout were both specified. Defaulting to export.\n");
-        Warning("Both of these parameters are deprecated. Use \"*_subcommand = <subcommand>\" instead.\n");
-        $subcommand = "export";
-    } elsif ($checkout) {
-        Warning("checkout is deprecated. Use \"*_subcommand = checkout\" instead.\n");
-        $subcommand = "checkout";
-    } elsif ($export) {
-        Warning("export is deprecated. Use \"*_subcommand = export\" instead.\n");
-        $subcommand = "export";
+    if (defined($ret->{r})) {
+        Warning("SCM param 'r' is deprecated.  Use 'rev' instead\n");
+        $ret->{rev} = $ret->{r};
     }
 
-    # Append arguments to commands
+    # Setup sub-command
     # EAM: move to SVN.pm
-    $command_arguments .= " -r $r "                if ($r);
-    $command_arguments .= " --username $username " if ($username);
-    $command_arguments .= " --password $password " if ($password);
-    $command_arguments .= " --no-auth-cache "      if ("0" eq $password_cache);
-
-    $subcommand .= " $subcommand_arguments "
-        if ($subcommand_arguments);
+    if ($ret->{export} and $ret->{checkout}) {
+        Warning("SCM params 'export' and 'checkout' were both specified. Defaulting to export.\n");
+        Warning("Both of these parameters are deprecated. Use \"*_subcommand = <subcommand>\" instead.\n");
+        $ret->{subcommand} = "export";
+    } elsif ($ret->{checkout}) {
+        Warning("SCM param 'checkout' is deprecated. Use \"*_subcommand = checkout\" instead.\n");
+        $ret->{subcommand} = "checkout";
+    } elsif ($ret->{export}) {
+        Warning("SCM param 'export' is deprecated. Use \"*_subcommand = export\" instead.\n");
+        $ret->{subcommand} = "export";
+    }
 
     # Default to overwriting an existing checkout
-    if (! defined($delete_first)) {
-        $delete_first = 1;
+    if (! defined($ret->{delete_first})) {
+        $ret->{delete_first} = 1;
     }
 
     # Set the function pointer -- note that we just re-use the
     # copytree module, since that's all we have to do (i.e., copy a
     # local tree)
     $ret->{prepare_for_install} = "MTT::Common::Copytree::PrepareForInstall";
-    $ret->{pre_copy}            = IniValue($ini, $section, &_prefix_parameter("pre_export"));
-    $ret->{post_copy}           = IniValue($ini, $section, &_prefix_parameter("post_export"));
-    $ret->{version}             = IniValue($ini, $section, &_prefix_parameter("version"));
-
-    $ret->{delete_first}      = $delete_first;
-    $ret->{command}           = $command;
-    $ret->{command_arguments} = $command_arguments;
-    $ret->{subcommand}        = $subcommand;
-    $ret->{url}               = $url;
-    $ret->{module}            = $module;
-    $ret->{scm_module}        = $scm_module;
+    my $tmp;
+    $tmp = Value($ini, $section, &_prefix_parameter("pre_export"));
+    if (defined($tmp)) {
+        Warning("The 'pre_export' SCM field is deprecated.  Please use 'pre_copy' instead.\n");
+        $ret->{pre_copy} = $tmp;
+    }
+    $tmp = Value($ini, $section, &_prefix_parameter("post_export"));
+    if (defined($tmp)) {
+        Warning("The 'post_export' SCM field is deprecated.  Please use 'post_copy' instead.\n");
+        $ret->{post_copy} = $tmp;
+    }
 
     $ret->{simple_section} = GetSimpleSection($section);
+
+    # Sanity check
+
+    Error("Must supply a URL parameter for the SCM module")
+        if (!defined($ret->{url}));
 
     return $ret;
 }

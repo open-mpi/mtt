@@ -125,9 +125,12 @@ sub PrepareForInstall {
 
         # Run the step
         Debug("copytree running pre_copy command: $pre_copy\n");
-        my $x = MTT::DoCommand::RunStep(1, $pre_copy, 30, undef, undef, "pre_copy");
-
-        if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
+        my $x = MTT::DoCommand::RunStep(1, $pre_copy, 3000, undef, 
+                                        undef, "pre_copy");
+        if ($x->{timed_out}) {
+            Warning("Pre-copy command timed out: $x->{result_stdout}\n");
+            return undef;
+        } elsif (!MTT::DoCommand::wsuccess($x->{exit_status})) {
             Warning("Pre-copy command failed: $x->{result_stdout}\n");
             return undef;
         }
@@ -135,20 +138,22 @@ sub PrepareForInstall {
 
     # Copy the tree
 
-    my $ret = MTT::Files::copy_tree($data->{directory}, 1);
+    my $copy_dir = MTT::Files::copy_tree($data->{directory}, 1);
     return undef
-        if (!$ret);
-
-    MTT::DoCommand::Chdir($ret);
+        if (!$copy_dir);
+    MTT::DoCommand::Chdir($copy_dir);
     
     # Post copy
     if ($post_copy) {
 
         # Run the step
         Debug("copytree running post_copy command: $post_copy\n");
-        my $x = MTT::DoCommand::RunStep(1, $post_copy, 30, undef, undef, "post_copy");
-
-        if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
+        my $x = MTT::DoCommand::RunStep(1, $post_copy, 3000, undef, 
+                                        undef, "post_copy");
+        if ($x->{timed_out}) {
+            Warning("Post-copy command timed out: $x->{result_stdout}\n");
+            return undef;
+        } elsif (!MTT::DoCommand::wsuccess($x->{exit_status})) {
             Warning("Post-copy command failed: $x->{result_stdout}\n");
             return undef;
         }
@@ -157,7 +162,7 @@ sub PrepareForInstall {
     # All done
 
     Debug(">> copytree finished copying\n");
-    return $ret;
+    return $copy_dir;
 }
 
 1;

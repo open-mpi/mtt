@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -115,13 +115,19 @@ sub PrepareForInstall {
     MTT::DoCommand::Chdir($build_dir);
 
     my $data = $source->{module_data};
+    my $pre_extract = $data->{pre_extract};
+    my $post_extract = $data->{post_extract};
 
     # Pre extract
-    if ($data->{pre_extract}) {
+    if ($pre_extract) {
 
-        my $x = MTT::DoCommand::CmdScript(1, $data->{pre_copy});
-        if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
-            Warning("Pre-extract command failed: $@\n");
+        my $x = MTT::DoCommand::RunStep(1, $pre_extract, 30, undef, 
+                                        undef, "pre_extract");
+        if ($x->{timed_out}) {
+            Warning("Pre-extra command timed out: $x->{result_stdout}\n");
+            return undef;
+        } elsif (!MTT::DoCommand::wsuccess($x->{exit_status})) {
+            Warning("Pre-extract command failed: $x->{result_stdout}\n");
             return undef;
         }
     }
@@ -135,11 +141,15 @@ sub PrepareForInstall {
     MTT::DoCommand::Chdir($ret);
 
     # Post extract
-    if ($data->{post_extract}) {
+    if ($post_extract) {
 
-        my $x = MTT::DoCommand::Cmds(1, $data->{pre_copy});
-        if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
-            Warning("Post-extract command failed: $@\n");
+        my $x = MTT::DoCommand::RunStep(1, $post_extract, 30, undef, 
+                                        undef, "post_extract");
+        if ($x->{timed_out}) {
+            Warning("Post-extract command timed out: $x->{result_stdout}\n");
+            return undef;
+        } elsif (!MTT::DoCommand::wsuccess($x->{exit_status})) {
+            Warning("Post-extract command failed: $x->{result_stdout}\n");
             return undef;
         }
     }

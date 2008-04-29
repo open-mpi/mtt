@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 #
-# Copyright (c) 2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -22,26 +22,45 @@ use Data::Dumper;
 #--------------------------------------------------------------------------
 
 sub Checkout {
-    my ($cmd, $url) = @_;
+    my ($params) = @_;
 
     my $scheme;
-    if ($url =~ /^http:\/\//) {
+    if ($params->{url} =~ /^http:\/\//) {
         $scheme = "http";
-    } elsif ($url =~ /^https:\/\//) {
+    } elsif ($params->{url} =~ /^https:\/\//) {
         $scheme = "https";
     }
 
-    # If we're not using http or https, there's no need for proxies,
-    # so just do the checkout.
-    my $ret;
-    if (!defined($scheme)) {
-        $ret = MTT::DoCommand::Cmd(1, $cmd);
+    # Assemble the command
+    my $cmd = defined($params->{cmd}) ? $params->{cmd} : "svn";
+    $cmd .= " " . $params->{command_arguments}
+        if (defined($params->{command_arguments}));
 
+    $cmd .= " " . 
+        (defined($params->{subcommand}) ? $params->{subcommand} : "export");
+    $cmd .= " " . $params->{subcommand_arguments}
+        if (defined($params->{subcommand_arguments}));
+    $cmd .= " --username " . $params->{username}
+        if (defined($params->{username}));
+    $cmd .= " --password " . $params->{password}
+        if (defined($params->{username}));
+    $cmd .= " --no-auth-cache"
+        if (defined($params->{password_cache}) && !$params->{password_cache});
+    $cmd .= " -r " . $params->{rev}
+        if (defined($params->{rev}));
+    $cmd .= " " . $params->{url} . " " . $params->{dirname};
+
+    # If we're not using http or https (there's no need for proxies),
+    # or if we're not using proxies, just do the checkout.
+    my $ret;
+    if (!defined($scheme) || 
+        !defined(@{$MTT::Globals::Values->{proxies}->{$scheme}})) {
+        $ret = MTT::DoCommand::Cmd(1, $cmd);
         if (!MTT::DoCommand::wsuccess($ret->{exit_status})) {
              Warning("SVN failure: " . Dumper($ret) . "\n");
              return undef;
         }
-
+        return $ret;
     }
 
     # The rest of this section must be serialized because only one
@@ -90,9 +109,8 @@ http-proxy-port = bogus\n";
         }
 
         my $x = MTT::DoCommand::Cmd(1, $cmd);
-
         if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
-            Warning("SVN failure: $x->{stdout}");
+            Warning("SVN failure: $x->{result_stdout}\n");
             next;
         }
 
