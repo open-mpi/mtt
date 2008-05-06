@@ -108,6 +108,7 @@ sub Run {
                 if ($test_build_name ne "all" &&
                     !$ini_full->SectionExists("test build: $test_build_name")) {
                     Warning("Test Build section \"$test_build_name\" does not seem to exist in the INI file\n");
+                    next;
                 }
 
                 # Don't bother explicitly searching for the test build
