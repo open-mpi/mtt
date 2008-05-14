@@ -72,7 +72,7 @@ sub Finalize {
         if ($server);
     $server = undef;
     Verbose("*** MTT lock server connection shut down\n");
-    0;
+    return 0;
 }
 
 #--------------------------------------------------------------------------

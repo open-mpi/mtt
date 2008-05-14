@@ -65,13 +65,6 @@ my $phase_name = "Test build";
 
 #--------------------------------------------------------------------------
 
-sub _make_safe_dir {
-    my ($ret) = @_;
-
-    $ret = MTT::Files::make_safe_filename($ret);
-    return MTT::Files::mkdir($ret);
-}
-
 #--------------------------------------------------------------------------
 
 sub Build {
@@ -299,7 +292,7 @@ sub _do_build {
     # Make a directory just for this ini section
     my $tests_dir = MTT::Files::mkdir("tests");
     MTT::DoCommand::Chdir($tests_dir);
-    my $build_section_dir = _make_safe_dir($simple_section);
+    my $build_section_dir = MTT::Files::make_safe_dirname($simple_section);
     MTT::DoCommand::Chdir($build_section_dir);
 
     # description

@@ -2178,6 +2178,86 @@ sub _find_libmpi {
 
 #--------------------------------------------------------------------------
 
+# Determine the number of CPUs on the localhost
+sub get_processor_count {
+
+    my $psrinfo = "/usr/sbin/psrinfo";
+    my $cpuinfo = "/proc/cpuinfo";
+    my $count   = 0;
+    my $ret;
+
+    if (-x $psrinfo) {
+
+        # Use the Solaris psrinfo command if it's there
+        open(INFO, "$psrinfo -p|");
+        $ret = <INFO>;
+        close(INFO);
+
+    } elsif (-e $cpuinfo) {
+
+        # $ cat /proc/cpuinfo
+        # processor       : 0
+        # vendor_id       : AuthenticAMD
+        # cpu family      : 15
+        # model           : 37
+        # model name      : AMD Opteron(tm) Processor 252
+        # stepping        : 1
+        # cpu MHz         : 1000.000
+        # cache size      : 1024 KB
+        # fpu             : yes
+        # fpu_exception   : yes
+        # cpuid level     : 1
+        # wp              : yes
+        # flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca...
+        # bogomips        : 1994.36
+        # TLB size        : 1024 4K pages
+        # clflush size    : 64
+        # cache_alignment : 64
+        # address sizes   : 40 bits physical, 48 bits virtual
+        # power management: ts fid vid ttp
+        # 
+        # processor       : 1
+        # vendor_id       : AuthenticAMD
+        # cpu family      : 15
+        # model           : 37
+        # model name      : AMD Opteron(tm) Processor 252
+        # stepping        : 1
+        # cpu MHz         : 1000.000
+        # cache size      : 1024 KB
+        # fpu             : yes
+        # fpu_exception   : yes
+        # cpuid level     : 1
+        # wp              : yes
+        # flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca...
+        # bogomips        : 1994.36
+        # TLB size        : 1024 4K pages
+        # clflush size    : 64
+        # cache_alignment : 64
+        # address sizes   : 40 bits physical, 48 bits virtual
+        # power management: ts fid vid ttp
+
+        open(INFO, $cpuinfo);
+
+        while (<INFO>) {
+            if (/^processor\s*\:\s*\d+\s*$/) {
+                $count++;
+            }
+        }
+        $ret = $count;
+
+        close(INFO);
+
+    } else {
+        Debug("&get_processor_count could not determine the number of CPUs.\n");
+        return undef;
+    }
+
+    Debug("&get_processor_count returning $ret.\n");
+    return $ret;
+}
+
+#--------------------------------------------------------------------------
+
 sub weekday_name {
     my @days = qw/sun mon tue wed thu fri sat/;
     Debug("&weekday_name returning: " . $days[weekday_index()] . "\n");

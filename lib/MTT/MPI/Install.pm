@@ -96,6 +96,7 @@ use MTT::MPI;
 use MTT::Defaults;
 use MTT::EnvModule;
 use MTT::Util;
+use MTT::Files;
 use Data::Dumper;
 use File::Basename;
 
@@ -125,18 +126,9 @@ sub _make_random_dir {
         my $ret = MTT::Values::RandomString($len);
         if (! -d $ret) {
             Debug("Unique directory: $ret\n");
-            return _make_safe_dir($ret);
+            return MTT::Files::make_safe_dirname($ret);
         }
     }
-}
-
-#--------------------------------------------------------------------------
-
-sub _make_safe_dir {
-    my ($ret) = @_;
-
-    $ret = MTT::Files::make_safe_filename($ret);
-    return MTT::Files::mkdir($ret);
 }
 
 #--------------------------------------------------------------------------

@@ -64,7 +64,7 @@ sub Init {
         Debug("File reporter initialized (<stdout>)\n");
     }
 
-    1;
+    return 1;
 }
 
 #--------------------------------------------------------------------------

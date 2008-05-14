@@ -64,6 +64,8 @@ sub Init {
     $detail_header  = Value($ini, $section, "textfile_detail_header ") . "\n"; 
     $detail_footer  = Value($ini, $section, "textfile_detail_footer ") . "\n"; 
     $textwrap       = Value($ini, $section, "textfile_textwrap"); 
+    $filename       = Value($ini, $section, "textfile_filename"); 
+    $dirname        = Value($ini, $section, "textfile_dirname"); 
 
     # Make it an absolute filename, because there's oodles of
     # chdir()'s within the testing.  Whack the file if it's already
@@ -74,16 +76,19 @@ sub Init {
             $dirname = cwd();
             $filename = "$filename";
         } else {
-            $dirname = dirname($filename);
+            $dirname = dirname($filename) if (! defined($dirname));
             $filename = basename($filename);
         }
+
+        # Make sure we have a directory to write to
+        MTT::Files::safe_mkdir($dirname);
 
         Debug("File reporter initialized ($dirname/$filename)\n");
     } else {
         Debug("File reporter initialized (<stdout>)\n");
     }
 
-    1;
+    return 1;
 }
 
 #--------------------------------------------------------------------------
@@ -166,7 +171,7 @@ sub _summary_report {
                     $table->render,
                     $summary_footer)));
 
-    1;
+    return 1;
 }
 
 # Show individual test outputs
@@ -298,28 +303,14 @@ sub _output_results {
         Verbose(">> Reported to stdout\n")
             if (!exists($written_files->{$file}));
     } else {
-        open(OUT, ">>$file");
-        print OUT $str;
-        close(OUT);
+        MTT::Files::SafeWrite(1, $file, $str, ">>");
         Verbose(">> Reported to text file $file\n")
             if (!exists($written_files->{$file}));
     }
     $written_files->{$file} = 1;
 }
 
-sub _create_temp_file {
-    my ($dir, $suffix) = @_;
-
-    use File::Temp qw/tempfile tempdir/;
-
-    my ($filehandle, $tempfile) =
-        tempfile(DIR => $dir, SUFFIX => $suffix);
-
-    return $tempfile;
-}
-
 sub _get_filename {
-
     my ($report, $section) = @_;
 
     # Substitute in the filename
@@ -328,23 +319,16 @@ sub _get_filename {
     my $mpi_name = $report->{mpi_name};
     my $mpi_version = $report->{mpi_version};
     my $phase = $report->{phase};
-    my $file;
+    my $ret;
 
-    # User specifies a filename
-    my $filename = "$phase-$section-$mpi_name-$mpi_version.txt";
+    # Hardcoded filename
+    my $basename = MTT::Files::make_safe_filename("$phase-$section-$mpi_name-$mpi_version.txt");
 
-    # Do not be strict on this eval.  The user may supply
-    # some undeclared vars in the filename format template,
-    # but it's not the end of the world.
-    no strict;
-    eval "\$file = MTT::Files::make_safe_filename(\"$filename\");";
-    use strict;
+    # Use an absolute path
+    $ret = "$dirname/$basename"; 
 
-    if ($@) {
-        Warning("Could not create " . caller() . " $file: $@\n");
-        return undef;
-    }
-    return "$dirname/$file";
+    Debug("_get_filename returning $ret\n");
+    return $ret;
 }
 
 # Make timestamps human-readable

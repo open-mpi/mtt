@@ -220,12 +220,18 @@ sub Install {
 
     # Fetch Install_Utilities using Mercurial
     my $installer_hg_url = Value($ini, $section, "clustertools_installer_hg_url");
+    my $installer_hg_command = Value($ini, $section, "clustertools_installer_hg_command");
+
+    # Default to "hg clone"
+    if (! $installer_hg_command) {
+        $installer_hg_command = "hg clone";
+    }
 
     # Setup the Installer, if we pointed at one
     my $installer_dir;
     if ($installer_hg_url) {
 
-        MTT::Module::Run("MTT::Common::SCM::Mercurial", "Checkout", "hg clone $installer_hg_url", $installer_hg_url);
+        MTT::Module::Run("MTT::Common::SCM::Mercurial", "Checkout", "$installer_hg_command $installer_hg_url", $installer_hg_url);
 
         my $installer_dir_src = basename($installer_hg_url);
         MTT::DoCommand::Pushdir($installer_dir_src);
@@ -247,6 +253,13 @@ sub Install {
     # Copy over the examples directory to the install area
     my $examples_dir = "$config->{abs_srcdir}/examples";
     MTT::DoCommand::Cmd(1, "cp -r $examples_dir $staging_dir");
+
+    # Copy over the mpi.d file to the install area
+    # EAM: THIS WILL NEED TO COME FROM AN ACTUAL PLACE IN THE 
+    # SOURCE TREE. TO BE DETERMINED ...
+    MTT::Files::SafeWrite(1, "mpi.d", "dummy");
+    my $mpi_d_file = "mpi.d";
+    MTT::DoCommand::Cmd(1, "cp -r $mpi_d_file $staging_dir");
 
     # Create Solaris packages using pkgproto and pkgmk
     if ($create_packages) {
@@ -582,14 +595,6 @@ sub create_packages {
 
     MTT::DoCommand::Pushdir($staging_dir);
 
-    # Do not use ENV here to get the user id and group id, because it
-    # might be spoofed in the INI using setenv! This is critical
-    # because of the search and replace operation we do using these
-    # patterns below (on the output of the prototype commands)
-    my $username  = getpwuid($<);
-    my $groupname = getgrgid($();
-    my $archname  = $ENV{"MACHTYPE"};
-
     my $packages;
     my $brand = "Open MPI";
     $packages->{"${package_name_prefix}ompi"}->{"directories"} = [qw(bin etc include lib share)];
@@ -604,6 +609,11 @@ sub create_packages {
     $packages->{"${package_name_prefix}ompiat"}->{"name"} = $brand;
     $packages->{"${package_name_prefix}ompiat"}->{"description"} = "$brand Administrative Tools and Utilities";
 
+    # Special mpi.d package that is not installed in /opt
+    $packages->{"${package_name_prefix}ompir"}->{"name"} = $brand;
+    $packages->{"${package_name_prefix}ompir"}->{"description"} = "$brand /usr Files";
+    $packages->{"${package_name_prefix}ompir"}->{"mpi_d_package"} = 1;
+
     foreach my $package_name (keys %$packages) {
 
         # Write a pkginfo file to pass to the prototype file
@@ -614,44 +624,30 @@ sub create_packages {
         # Write a copyright file to pass to the prototype file
         my $copyright_file = _write_copyright_file();
 
-        # Start with the prologue for the prototype file
-        my $contents = "\n# Copyright (c) $year Sun Microsystems, Inc. All rights reserved." .
-                       "\n#" .
-                       "\ni pkginfo=$pkginfo_file" .
-                       "\ni $copyright_file" .
-                       "\nd none \$SUNW_PRODVERS 0755 root bin" .
-                       "\n";
-
-        my @directories = @{$packages->{$package_name}->{"directories"}};
-        my $pkgproto_args = join(" ", map { "$_=${package_name_prefix}hpc/\$SUNW_PRODVERS/$_/" } @directories);
-        my $cmd = "pkgproto $pkgproto_args";
-
-        my $x = MTT::DoCommand::Cmd(1, $cmd);
-        if (0 != $x->{exit_status}) {
-            Warning("$package: Error in pkgproto: '$cmd'\n");
-            $success = 0;
-            next;
+        my $pkgproto_args;
+        my $prototype_file;
+        my @directories;
+        if ($packages->{$package_name}->{"directories"}) {
+            @directories = @{$packages->{$package_name}->{"directories"}};
         }
 
-        # Remove duplicates from pkgproto output
-        my @contents;
-        @contents = split(/\n/, $x->{result_stdout});
-        @contents = MTT::Util::delete_duplicates_from_array(@contents);
-        @contents = MTT::Util::delete_matches_from_array(@contents, '\.la\b');
-        $contents .= join("\n", sort @contents);
+        # Special flag to create mpi.d package
+        my $mpi_d_package = $packages->{$package_name}->{"mpi_d_package"};
 
-        # ClusterTools are root packages, so specify this in the
-        $contents =~ s/\b$username\b/root/g;
-        $contents =~ s/\b$groupname\b/bin/g;
-        $contents =~ s/="ISA"/="$machname"/g;
+        # We either create a prototype file on the fly (normal case), or
+        # we concoct a special prototype file (oddball case: e.g., mpi.d file package)
+        if (@directories) {
+            $pkgproto_args  = join(" ", map { "$_=${package_name_prefix}hpc/$product_version/$_/" } @directories);
+            $prototype_file = create_prototype_file($package_name, $pkginfo_file, $copyright_file, $pkgproto_args);
+            next if (! $prototype_file);
 
-        # Write out prototype file
-        my $prototype_file = "prototype.$package_name";
-        MTT::Files::SafeWrite(1, $prototype_file, $contents);
+        } elsif ($mpi_d_package) {
+            $prototype_file = create_prototype_file_mpi_d($package_name, $pkginfo_file, $copyright_file);
+        }
 
         # Make the packages
-        $cmd = "pkgmk -o -b $staging_dir -d $destination_dir -f $prototype_file";
-        $x = MTT::DoCommand::Cmd(1, $cmd);
+        my $cmd = "pkgmk -o -b $staging_dir -d $destination_dir -f $prototype_file";
+        my $x = MTT::DoCommand::Cmd(1, $cmd);
         if (0 != $x->{exit_status}) {
             $success = 0;
             Warning("$package: Error in pkgmk: '$cmd'\n");
@@ -667,6 +663,80 @@ sub create_packages {
 
     # Return the directory we were in before entering this subroutine
     MTT::DoCommand::Popdir();
+}
+
+# Prologue the prototype file with the "pkginfo" and "copyright" i (include)
+# lines
+sub create_prototype_file_prologue {
+    my ($pkginfo_file, $copyright_file) = @_;
+
+    my $ret =
+        "\n# Copyright (c) $year Sun Microsystems, Inc. All rights reserved." .
+        "\n#" .
+        "\ni pkginfo=$pkginfo_file" .
+        "\ni $copyright_file";
+
+    return $ret;
+}
+
+# Create a special prototype file for the mpi.d packages
+sub create_prototype_file_mpi_d {
+    my ($package_name, $pkginfo_file, $copyright_file) = @_;
+
+    # Start with the prologue for the prototype file
+    my $contents = create_prototype_file_prologue($pkginfo_file, $copyright_file);
+    $contents .=
+        "\nd none /usr/lib/dtrace 0755 root bin" .
+        "\nf none /usr/lib/dtrace/mpi.d=mpi.d 0644 root bin";
+
+    # Write out prototype file
+    my $ret = "prototype.$package_name";
+    MTT::Files::SafeWrite(1, $ret, $contents);
+
+    return $ret;
+}
+
+# Create a prototype file for one of the opt/ packages
+sub create_prototype_file {
+    my ($package_name, $pkginfo_file, $copyright_file, $pkgproto_args) = @_;
+
+    my $cmd = "pkgproto $pkgproto_args";
+
+    my $x = MTT::DoCommand::Cmd(1, $cmd);
+    if (0 != $x->{exit_status}) {
+        Warning("$package: Error in pkgproto: '$cmd'\n");
+        return undef;
+    }
+
+    # Start with the prologue for the prototype file
+    my $contents = create_prototype_file_prologue($pkginfo_file, $copyright_file);
+    $contents .= "\nd none ${package_name_prefix}hpc/$product_version 0755 root bin" . "\n"; 
+
+    # Remove duplicates from pkgproto output
+    my @contents;
+    @contents = split(/\n/, $x->{result_stdout});
+    @contents = MTT::Util::delete_duplicates_from_array(@contents);
+    @contents = MTT::Util::delete_matches_from_array(@contents, '\.la\b');
+    $contents .= join("\n", sort @contents);
+
+    # Do not use ENV here to get the user id and group id, because it
+    # might be spoofed in the INI using setenv! This is critical
+    # because of the search and replace operation we do using these
+    # patterns below (on the output of the prototype commands)
+    my $username  = getpwuid($<);
+    my $groupname = getgrgid($();
+    my $archname  = $ENV{"MACHTYPE"};
+
+    # ClusterTools are root packages, so specify this in the
+    $contents =~ s/\b$username\b/root/g;
+    $contents =~ s/\b$groupname\b/bin/g;
+    $contents =~ s/="ISA"/="$machname"/g;
+
+    # Write out prototype file
+    my $ret = "prototype.$package_name";
+    MTT::Files::SafeWrite(1, $ret, $contents);
+
+    return $ret;
 }
 
 # Write a pkginfo file for the specified package.

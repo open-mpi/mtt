@@ -200,7 +200,7 @@ sub Init {
 
     Debug("MTTDatabase reporter initialized ($realm, $username, XXXXXX, $url, $platform)\n");
 
-    1;
+    return 1;
 }
 
 #--------------------------------------------------------------------------

@@ -57,7 +57,7 @@ sub Init {
         Debug("INIFile reporter initialized (<stdout>)\n");
     }
 
-    1;
+    return 1;
 }
 
 #--------------------------------------------------------------------------

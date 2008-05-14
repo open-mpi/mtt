@@ -41,6 +41,13 @@ sub make_safe_filename {
     return $filename;
 }
 
+sub make_safe_dirname {
+    my ($ret) = @_;
+
+    $ret = MTT::Files::make_safe_filename($ret);
+    return MTT::Files::mkdir($ret);
+}
+
 #--------------------------------------------------------------------------
 
 sub safe_mkdir {
@@ -463,8 +470,14 @@ sub save_dumpfile {
 
 # Write out a file
 sub SafeWrite {
-    my ($force, $filename, $body) = @_;
+    my ($force, $filename, $body, $redir) = @_;
     my $ret;
+
+    # Allow for various redirections, e.g., ">", ">>", etc.
+    # Default to ">"
+    if (! defined($redir)) {
+        $redir = ">";
+    }
 
     $ret->{success} = 0;
 
@@ -475,7 +488,7 @@ sub SafeWrite {
     }
 
     # Write out the file
-    if (!open FILE, ">$filename") {
+    if (!open FILE, "$redir $filename") {
         $ret->{result_message} = "Failed to write to file: $!";
         return $ret;
     }

@@ -20,7 +20,7 @@ sub get_release {
 
     my $release_file = "/etc/release";
     my $head;
-    my @tokens;
+    my $ret;
 
     if (! -f $release_file) {
         Warning("No $release_file, returning.\n") ;
@@ -34,13 +34,24 @@ sub get_release {
     #              Use is subject to license terms.
     #                 Assembled 14 November 2006
     #
+    # $ cat /etc/release
+    #              OpenSolaris 2008.05 snv_86_rc3 X86
+    # Copyright 2008 Sun Microsystems, Inc.  All Rights Reserved.
+    #              Use is subject to license terms.
+    #                   Assembled 26 April 2008
+    # 
 
     open(FH, "< $release_file");
     $head = <FH>;
-    $head =~ s/^\s+|\s+$//g;
-    @tokens = split(/\s+/, $head);
 
-    return $tokens[3];
+    # Grab the second to last token
+    if ($head =~ /(\w+)\s+\w+$/) {
+        $ret = $1;
+    } else {
+        $ret = "unknown";
+    }
+
+    return $ret;
 }
 
 1;
