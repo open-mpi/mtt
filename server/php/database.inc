@@ -3,6 +3,7 @@
 #
 # Copyright (c) 2006 Sun Microsystems, Inc.
 #                         All rights reserved.
+# Copyright (c) 2008      Mellanox Technologies.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -100,10 +101,13 @@ function do_pg_connect() {
         $pgsql_conn = 
             pg_connect("host=localhost port=5432 dbname=$mtt_database_name user=$mtt_database_username password=$mtt_database_password");
         if (!$pgsql_conn) {
-            print("\nCould not connect to '$dbname' database.");
-            exit;
+            mtt_abort("\nCould not connect to the $dbname database; " .
+                    "submit this run later.");
+        } else {
+            $connected = true;
+# Serialize all transactions by default - Safer that way.
+            do_pg_query("SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL SERIALIZABLE", false);
         }
-        $connected = true;
     }
 }
 
@@ -113,12 +117,17 @@ function do_pg_query($cmd, $silent) {
 
     $start = time();
 
-    debug_sql($cmd, 2);
+    debug("\nSQL: $cmd\n");
     if (! ($db_res = pg_query($cmd))) {
+        $out = "\nSQL QUERY: " . $cmd .
+            "\nSQL ERROR: " . pg_last_error() .
+            "\nSQL ERROR: " . pg_result_error();
+
+# Some errors are unsurprising, allow for silence in
+# such cases
         if (! $silent) {
-            print("\npostgres: " .
-                        pg_last_error() . "\n" .
-                        pg_result_error());
+            mtt_error($out);
+            mtt_send_mail($out);
         }
     }
 
@@ -137,21 +146,9 @@ function do_pg_query($cmd, $silent) {
 
 # Fetch scalar value
 function select_scalar($cmd) {
-    do_pg_connect();
-
-    $rows = null;
-
-    debug_sql($cmd, 2);
-    if (! ($result = pg_query($cmd))) {
-        print("\npostgres: " . pg_last_error() . "\n" .
-                  pg_result_error());
-    }
-    $max = pg_num_rows($result);
-    for ($i = 0; $i < $max; ++$i) {
-        $row = pg_fetch_array($result, $i, PGSQL_NUM);
-        $rows[] = $row[0];
-    }
-    return array_shift($rows);
+    $set = array();
+    $set = simple_select($cmd);
+    return array_shift($set);
 }
 
 # Fetch 1D array
@@ -160,10 +157,13 @@ function simple_select($cmd) {
 
     $rows = null;
 
-    debug_sql($cmd, 2);
+    debug("\nSQL: $cmd\n");
     if (! ($result = pg_query($cmd))) {
-        print("\npostgres: " . pg_last_error() . "\n" .
-                  pg_result_error());
+        $out = "\nSQL QUERY: " . $cmd .
+            "\nSQL ERROR: " . pg_last_error() .
+            "\nSQL ERROR: " . pg_result_error();
+        mtt_error($out);
+        mtt_send_mail($out);
     }
     $max = pg_num_rows($result);
     for ($i = 0; $i < $max; ++$i) {
@@ -177,10 +177,13 @@ function simple_select($cmd) {
 function select($cmd) {
     do_pg_connect();
 
-    debug_sql($cmd, 2);
+    debug("\nSQL: $cmd\n");
     if (! ($result = pg_query($cmd))) {
-        print("\npostgres: " . pg_last_error() . "\n" .
-                  pg_result_error());
+        $out = "\nSQL QUERY: " . $cmd .
+            "\nSQL ERROR: " . pg_last_error() .
+            "\nSQL ERROR: " . pg_result_error();
+        mtt_error($out);
+        mtt_send_mail($out);
     }
     return pg_fetch_all($result);
 }
