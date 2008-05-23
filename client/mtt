@@ -302,6 +302,7 @@ special regexp characters in the pattern such as '.' or '.*'.  E.g.,
 
     \$ client/mtt [...] --section \"test.run.*trivial\"
 
+For more info, please visit <http://www.open-mpi.org/projects/mtt>
 \n";
 
     exit($ok);

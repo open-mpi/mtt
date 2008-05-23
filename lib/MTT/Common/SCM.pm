@@ -180,8 +180,8 @@ sub ProcessInputParameters {
         $ret->{$k} = Value($ini, $section, &_prefix_parameter($k));
     }
 
-    my $module = Value($ini, $section, "module");
-    my $scm_module = Value($ini, $section, "scm_module");
+    $ret->{module} = Value($ini, $section, "module");
+    $ret->{scm_module} = Value($ini, $section, "scm_module");
 
     if (defined($ret->{r})) {
         Warning("SCM param 'r' is deprecated.  Use 'rev' instead\n");

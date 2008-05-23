@@ -23,7 +23,7 @@ use Data::Dumper;
 #--------------------------------------------------------------------------
 
 sub Checkout {
-    my ($params, $url) = @_;
+    my ($params) = @_;
 
     my $ret;
 
@@ -33,7 +33,7 @@ sub Checkout {
         if (defined($params->{command_arguments}));
 
     $cmd .= " " . 
-        (defined($params->{subcommand}) ? $params->{subcommand} : "export");
+        (defined($params->{subcommand}) ? $params->{subcommand} : "clone");
     $cmd .= " " . $params->{subcommand_arguments}
         if (defined($params->{subcommand_arguments}));
     $cmd .= " -r " . $params->{rev}
@@ -42,11 +42,11 @@ sub Checkout {
 
     my $x = MTT::DoCommand::Cmd(1, $cmd);
     if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
-        Warning("HG failure: $x->{result_stdout}\n");
+        Warning("HG clone failure: $x->{result_stdout}\n");
         return undef;
     }
 
-    return _hg_identify_n($url);
+    return _hg_identify_n($params->{url});
 }
 
 sub _hg_identify_n {
@@ -60,14 +60,21 @@ sub _hg_identify_n {
         return undef;
     }
 
-	# Change into the Mercurial directory
+    # Change into the Mercurial directory
     MTT::DoCommand::Pushdir($dir);
 
-	# Run the "identify" command
-    my $ret = `hg identify -n`;
-    chomp $ret;
+    # Run the "identify" command
+    my $ret;
+    my $cmd = "hg identify -n";
+    my $x = MTT::DoCommand::Cmd(1, $cmd);
+    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
+        Warning("HG identify failure: $x->{result_stdout}\n");
+        return undef;
+    } else {
+        $ret = $x->{result_stdout};
+    }
 
-	# Return to the last directory
+    # Return to the last directory
     MTT::DoCommand::Popdir();
 
     Debug("$funclet returning $ret\n");

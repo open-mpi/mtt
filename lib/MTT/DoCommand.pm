@@ -3,7 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
-# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -547,8 +547,17 @@ sub RunStep {
     my $ret;
     $ret->{exit_status} = 0;
 
-    # Steps can be funclets
-    if ($cmd =~ /^\s*&/) {
+    # Steps can be code references
+    if (ref($cmd) =~ /CODE/i) {
+
+        my $x = &$cmd;
+        if (!$x) {
+            Verbose("  Warning: step $step FAILED\n");
+            $ret->{exit_status} = 1;
+        }
+
+    # Steps can be MTT funclets
+    } elsif ($cmd =~ /^\s*&/) {
 
         my $x = EvaluateString($cmd, $ini, $section);
         if (!$x) {
