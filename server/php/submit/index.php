@@ -27,7 +27,7 @@ ini_set("memory_limit", "32M");
 $topdir = '..';
 include_once("$topdir/database.inc");
 include_once("$topdir/reporter.inc");
-
+include_once("$topdir/common.inc");
 
 $GLOBALS['debug']   = isset($_POST['debug'])   ? $_POST['debug']   : 1;
 $GLOBALS['verbose'] = isset($_POST['verbose']) ? $_POST['verbose'] : 1;
@@ -1595,16 +1595,6 @@ function mtt_abort($status, $str) {
     }
     print("MTTDatabase abort: $str\n");
     exit(0);
-}
-
-# Function for reporting errors back to the client
-function mtt_error($str) {
-    print("MTTDatabase server error: $str\n");
-}
-
-# Function for reporting notices back to the client
-function mtt_notice($str) {
-    print("MTTDatabase server notice: $str\n");
 }
 
 function mtt_send_mail($message) {

@@ -1,7 +1,7 @@
 <?php
 
 #
-# Copyright (c) 2006-2007 Sun Microsystems, Inc.
+# Copyright (c) 2006-2008 Sun Microsystems, Inc.
 #                         All rights reserved.
 # $COPYRIGHT$
 #
@@ -61,6 +61,13 @@ define('TIMEZONE', 'GMT');
 #########################################
 
 # Return a listing of which results go with which phase
+
+# XXX: This subquery-aggregating-result-counting madness is required because of
+# the database schema. That is, there's just a single integer test_result
+# column, instead of 5 result field booleans (e.g., pass, fail, timed-out,
+# skipped, perf). Adding these four (boolean) bytes per test result might be a
+# good space-for-performance trade-off, and would also probably simplify the
+# code.
 function phase_results_table($start_date) {
 
     # NOTE: WE CAN'T MAKE $ret STATIC, SINCE IT GETS USED
@@ -125,6 +132,20 @@ function phase_results_table($start_date) {
                   THEN '_rl' END) as latency_bandwidth"
             ),
     );
+
+    $ret['where'] = 
+        array(
+            "_ip" => "mpi_install.$result_name = 1",
+            "_if" => "mpi_install.$result_name = 0",
+            "_bp" => "test_build.$result_name = 1",
+            "_bf" => "test_build.$result_name = 0",
+            "_rp" => "test_run.$result_name = 1",
+            "_rf" => "test_run.$result_name = 0",
+            "_rs" => "test_run.$result_name = 2",
+            "_rt" => "test_run.$result_name = 3",
+            "_rl" => "latency_bandwidth_id > 0",
+    );
+
 
     # Setup aggregate clauses for to get from the
     # *temporary* table
@@ -623,25 +644,78 @@ function setup_bitmapped_fields() {
     if ($ret)
         return $ret;
     
-    $ret = array(
-        "bitness" => "(CASE
-             WHEN (bitness = B'000000')  THEN 'unknown'
-             WHEN (bitness = B'000001')  THEN '8'
-             WHEN (bitness = B'000010')  THEN '16'
-             WHEN (bitness = B'000100')  THEN '32'
-             WHEN (bitness = B'001000')  THEN '64'
-             WHEN (bitness = B'001100')  THEN '32/64'
-             WHEN (bitness = B'010000')  THEN '128'
-             ELSE 'unknown' END) as bitness",
-        "endian" => "(CASE
-             WHEN (endian = B'01')       THEN 'little'
-             WHEN (endian = B'10')       THEN 'big'
-             ELSE 'unknown' END) as endian",
-        "vpath_mode" => "(CASE
-             WHEN (vpath_mode = B'01')   THEN 'relative'
-             WHEN (vpath_mode = B'10')   THEN 'absolute'
-             ELSE 'unknown' END) as vpath_mode",
+    # Map these both ways for both SELECT and WHERE clauses
+    $ret =
+        array(
+            "select" => array(
+                "bitness" => "(CASE
+                     WHEN (bitness = B'000000')  THEN 'unknown'
+                     WHEN (bitness = B'000001')  THEN '8'
+                     WHEN (bitness = B'000010')  THEN '16'
+                     WHEN (bitness = B'000100')  THEN '32'
+                     WHEN (bitness = B'001000')  THEN '64'
+                     WHEN (bitness = B'001100')  THEN '32/64'
+                     WHEN (bitness = B'010000')  THEN '128'
+                     ELSE 'unknown' END) as bitness",
+                "endian" => "(CASE
+                     WHEN (endian = B'01')       THEN 'little'
+                     WHEN (endian = B'10')       THEN 'big'
+                     ELSE 'unknown' END) as endian",
+                "vpath_mode" => "(CASE
+                     WHEN (vpath_mode = B'01')   THEN 'relative'
+                     WHEN (vpath_mode = B'10')   THEN 'absolute'
+                     ELSE 'unknown' END) as vpath_mode",
+            ),
+            "where" => array(
+                "bitness" => array(
+                     'unknown'   => "B000000",
+                     '8'         => "B000001",
+                     '16'        => "B000010",
+                     '32'        => "B000100",
+                     '64'        => "B001000",
+                     '32/64'     => "B001100",
+                     '128'       => "B010000",
+                     '^unknown$' => "B000000",
+                     '^8$'       => "B000001",
+                     '^16$'      => "B000010",
+                     '^32$'      => "B000100",
+                     '^64$'      => "B001000",
+                     '^32/64$'   => "B001100",
+                     '^128$'     => "B010000",
+                ),
+                "endian" => array(
+                     'unknown'   => "B00",
+                     'little'    => "B01",
+                     'big'       => "B10",
+                     '^unknown$' => "B00",
+                     '^little$'  => "B01",
+                     '^big$'     => "B10",
+                ),
+                "vpath_mode" => array(
+                     'unknown'    => "B00",
+                     'relative'   => "B01",
+                     'absolute'   => "B10",
+                     '^unknown$'  => "B00",
+                     '^relative$' => "B01",
+                     '^absolute$' => "B10",
+                ),
+            ),
     );
+
+    return $ret;
+}
+
+function human_to_bitmapped($column, $value) {
+    static $bitmapped_fields;
+    if (! $bitmapped_fields)
+        $bitmapped_fields = setup_bitmapped_fields();
+
+    $ret = $value;
+    # Map human-readable text string to a PostgreSQL bit string
+    if (isset($bitmapped_fields['where']["$column"]["$value"])) {
+        $ret = $bitmapped_fields['where']["$column"]["$value"];
+    }
+
     return $ret;
 }
 

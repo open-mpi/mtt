@@ -18,6 +18,7 @@
 #
 
 include_once("$topdir/config.inc");
+include_once("$topdir/common.inc");
 
 # Select a database name
 if (array_key_exists("db", $_GET) &&
@@ -105,7 +106,7 @@ function do_pg_connect() {
                     "submit this run later.");
         } else {
             $connected = true;
-# Serialize all transactions by default - Safer that way.
+            # Serialize all transactions by default - Safer that way.
             do_pg_query("SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL SERIALIZABLE", false);
         }
     }
@@ -123,11 +124,10 @@ function do_pg_query($cmd, $silent) {
             "\nSQL ERROR: " . pg_last_error() .
             "\nSQL ERROR: " . pg_result_error();
 
-# Some errors are unsurprising, allow for silence in
-# such cases
+        # Some errors are unsurprising, allow for silence in
+        # such cases
         if (! $silent) {
             mtt_error($out);
-            mtt_send_mail($out);
         }
     }
 
@@ -163,7 +163,6 @@ function simple_select($cmd) {
             "\nSQL ERROR: " . pg_last_error() .
             "\nSQL ERROR: " . pg_result_error();
         mtt_error($out);
-        mtt_send_mail($out);
     }
     $max = pg_num_rows($result);
     for ($i = 0; $i < $max; ++$i) {
@@ -183,7 +182,6 @@ function select($cmd) {
             "\nSQL ERROR: " . pg_last_error() .
             "\nSQL ERROR: " . pg_result_error();
         mtt_error($out);
-        mtt_send_mail($out);
     }
     return pg_fetch_all($result);
 }

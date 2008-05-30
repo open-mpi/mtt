@@ -1,7 +1,7 @@
 <?php
 
 #
-# Copyright (c) 2006-2007 Sun Microsystems, Inc.
+# Copyright (c) 2006-2008 Sun Microsystems, Inc.
 #                         All rights reserved.
 # Copyright (c) 2007      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
@@ -113,7 +113,7 @@ function dump_report() {
 
         $sql_cmd = $ret['sql_cmd'];
         $sql_count_star = $ret['count_star']; # JJH XXXX
-        
+
         # Execute query
         $resource = do_pg_query($sql_cmd);
 
@@ -2125,9 +2125,6 @@ function compose_sql_select($query) {
         array_unshift($orderbys, $orderby . $direction);
     }
 
-    $wheres = array_values2($query['where']);
-    $where_not = array_values2($query['where_not']);
-
     if ($explain)
         $cmd .= "\n EXPLAIN ";
 
@@ -2141,16 +2138,6 @@ function compose_sql_select($query) {
     $cmd .= " FROM (\n";
     $cmd .= compose_sql_select_from($query);
     $cmd .= " ) as summary\n";
-
-    if ($wheres) {
-        $cmd .= "\n WHERE " .
-                    $nl . join("$nl AND $nl", $wheres);
-    }
-
-    if ($where_not) {
-        $cmd .= "$nl AND NOT " .
-                    $nl . join("$nl AND NOT $nl", $where_not);
-    }
 
     if (array_keys($query['select'])) {
         $cmd .= "\n GROUP BY " .
@@ -2217,7 +2204,23 @@ function compose_sql_select_from_select($query) {
         }
     }
 
-    $propose =  array_unique( array_merge(
+    # Use the string functions in the subquery (not the outer query!)
+    # If we use the string functions in the outer query, the GROUP BY
+    # does not give the desired effect on the large and timestamp columns
+    $select_keys = array_merge(
+        array_keys($query['select_in_subquery']),
+        array_keys($query['select'])
+    );
+
+    # Use whatever Pg/PgSQL function we have in store for the subquery
+    # (and *only* in the subquery)
+    foreach($select_keys as $k) {
+        if (isset($query['select_in_subquery'][$k])) {
+            $query['select'][$k] = $query['select_in_subquery'][$k];
+        }
+    }
+
+    $propose = array_unique( array_merge(
             $query['select'],
             $query['select_more'],
             $query['performance']
@@ -2236,10 +2239,10 @@ function compose_sql_select_from_select($query) {
             }
         }
     }
-    
+
     return array_unique( array_merge(
-            $propose,
-            $add_rtn
+            $add_rtn,
+            $propose
             ) );
 }
 
@@ -2248,46 +2251,44 @@ function compose_sql_select_from($query) {
     $nl = "\n\t";
     $nlt = "\n\t\t";
 
-    $preface_fields = array("start_timestamp","trial");
+    $preface_fields = array("trial");
 
     $phases = $query['phases'];
 
-    #print "<b>JJH DEBUG</b><pre>\n";
-
-    $select_items = compose_sql_select_from_select($query);
-
-    # Array of tables that we need to pull in for the
-    # query to work properly
-    $needed_tables = array();
-
-    #
-    # Determine tables needed for this phase
-    foreach($select_items as $s ) {
-       $tbl = is_needed($s, $needed_tables);
-       if( null != $tbl) {
-          $needed_tables[] = $tbl;
-          #print "JJH\t\tNeed table ".$tbl."\n";
-       }
-    }
-    #print "JJH NEEDED " . join(", ",$needed_tables) . "\n";
-
    # Handle special bitmapped fields
    $bitmapped_fields = setup_bitmapped_fields();
-   foreach (array_keys($bitmapped_fields) as $field) {
+   foreach (array_keys($bitmapped_fields['select']) as $field) {
        if (isset($query['select'][$field]) || 
            isset($query['select_more'][$field]) || 
            isset($query['where'][$field])) {
-           $query['select_bm'][$field] = $bitmapped_fields[$field];
+           $query['select'][$field] = $bitmapped_fields['select'][$field];
        }
    }
-   #print "</pre>\n";
+
+   $select_items = compose_sql_select_from_select($query);
+
+   # Array of tables that we need to pull in for the
+   # query to work properly
+   $needed_tables = array();
+
+   # Determine tables needed for this phase
+   foreach (array_keys($select_items) as $column) {
+      $tbl = is_needed($column, $needed_tables);
+      if( null != $tbl) {
+         $needed_tables[] = $tbl;
+      }
+   }
+
+   # Gather WHERE clause items
+   $wheres = array_values2($query['where']);
+   $where_not = array_values2($query['where_not']);
 
    foreach($phases as $phase) {
       $aggregates = $query['cases'][$phase];
 
       $selects = array_unique(
           array_merge(
-              $select_items,
+              array_values($select_items),
               $query['select_bm'],
               $aggregates
           )
@@ -2304,7 +2305,7 @@ function compose_sql_select_from($query) {
         if(!$found) {
           $selects[] = $preface;
         }
-     }
+      }
 
       $p_from[$phase] = " (\n";
 
@@ -2319,6 +2320,16 @@ function compose_sql_select_from($query) {
 
       foreach($needed_tables as $tbl) {
         $p_from[$phase] .= get_join_arg($phase, $tbl);
+      }
+
+      if ($wheres) {
+          $p_from[$phase] .= "$nl WHERE $nlt" .
+                      $nl . join(" AND $nlt", $wheres);
+      }
+
+      if ($where_not) {
+          $p_from[$phase] .= "$nl AND NOT $nlt" .
+                      $nl . join(" AND NOT $nlt", $where_not);
       }
 
       $p_from[$phase] .= "$nl";
@@ -2699,18 +2710,20 @@ function process_input_fields($params) {
             $str = $params[$k];
 
             # Use LIKE if there is a '%'
-            if (strpos($str, '%') !== false)
+            if (strpos($str, '%') !== false) {
+                $str = human_to_bitmapped($column, $str);
                 $clauses[] = "$column LIKE '$str'";
 
             # Exact match for '^...$'
             # (Optimize here, by doing a straight '='
             # comparison instead of using the regular
             # expression engine)
-            elseif (preg_match('/^\^.*\$$/', $str))
+            } elseif (preg_match('/^\^.*\$$/', $str)) {
+                $str = human_to_bitmapped($column, $str);
                 $clauses[] = "$column = '" . trim($str, '^$') . "'";
 
             # Otherwise, regular expression(s)
-            else {
+            } else {
                 $str = $params[$k];
                 $pat = '^\s*\!\s*';
 
@@ -2724,6 +2737,7 @@ function process_input_fields($params) {
                 }
 
                 foreach (tokenize($str) as $s) {
+                    $s = human_to_bitmapped($column, $s);
                     $clauses[] = "$column $operator '" . pg_escape_string($s) . "'";
                 }
             }
@@ -2939,6 +2953,8 @@ function process_date_field($params) {
             } elseif (preg_match("/by(?:-| *)years?/i", $token)) {
                 $clause = sprintf($format3, 5, "year", 5);
             }
+
+            $date['select'][$timestamp_name] = $timestamp_name;
             $date["rollup"] = $token;
         }
     }
@@ -2962,7 +2978,11 @@ function process_date_field($params) {
         $date['select'][$timestamp_name] = $timestamp_name;
     }
 
-    $date['select'][$timestamp_name] = $clause;
+    # In order to get the behavior we want with the timestamp column, we have
+    # to move the WHERE clause into the subquery (the WHERE can even be
+    # duplicated in the outer query seemingly without any noticable performance
+    # degradation)
+    $date['select_in_subquery'][$timestamp_name] = $clause;
     $date['where'][$timestamp_name]  = $where;
 
     $date['absolute']       = $absolute_start . ' - ' . $absolute_end;
@@ -2992,6 +3012,7 @@ function process_result_fields($phases, $params) {
     $arr = phase_results_table();
     $table = $arr['aggregates'];
     $cases = $arr['cases'];
+    $where = $arr['where'];
 
     $format_agg = "COUNT(CASE WHEN %s THEN '%s' END) as %s";
 
@@ -3019,7 +3040,7 @@ function process_result_fields($phases, $params) {
     }
 
     if ($test_result)
-        $results['where'][$test_result] = $when[$test_result];
+        $results['where'][$test_result] = $where[$test_result];
 
     return $results;
 }
@@ -3294,7 +3315,8 @@ function process_large_fields($params) {
             # for display in the table
             if ($type == 'summary' or 
                 $type == 'performance') {
-                $query['select'][$field] = $string_func;
+                $query['select'][$field] = $field;
+                $query['select_in_subquery'][$field] = $string_func;
 
             # In Detail view, display the entire field (with the matches highlighted)
             #
