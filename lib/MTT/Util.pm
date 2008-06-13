@@ -34,6 +34,10 @@ use Data::Dumper;
 
 #--------------------------------------------------------------------------
 
+# Wow, Perl sucks sometimes -- you
+# can't check for the entire thing because the very act of
+# checking will bring all the intermediary hash levels into
+# existence if they didn't already exist.
 sub does_hash_key_exist {
     my $hash = shift;
     my $key = shift;

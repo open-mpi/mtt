@@ -3,7 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
-# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
 # Copyright (c) 2008      Mellanox Technologies.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -263,8 +263,13 @@ sub _do_build {
     my ($ini, $section, $build_base, $test_get, $mpi_get, $mpi_install) = @_;
 
     # Simple section name
-    my $simple_section = $section;
-    $simple_section =~ s/^\s*test build:\s*//;
+    my $simple_section = GetSimpleSection($section);
+
+    my $skip_section = Value($ini, $section, "skip_section");
+    if ($skip_section) {
+        Verbose("skip_section evaluates to $skip_section [$simple_section]; skipping\n");
+        return;
+    }
 
     my $config;
     %$config = %$MTT::Defaults::Test_build;

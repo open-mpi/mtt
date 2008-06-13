@@ -34,6 +34,7 @@ my $release_version_number;
 my $build_number;
 my $full_version_number;
 my $product_version;
+my $compiler_name;
 my $product_name = "ClusterTools";
 my $package_name_prefix;
 my $package_basedir;
@@ -107,7 +108,7 @@ sub Install {
     my $internal_r_number = $config->{module_data}->{r};
 
     # Update the version file
-    my $greek = "r${svn_r_number}-ct${full_version_number}b${build_number}r${internal_r_number}";
+    my $greek = "r${svn_r_number}-ct${full_version_number}-b${build_number}-r${internal_r_number}";
     &_update_version_file($greek, "VERSION");
 
     # Update the openmpi-mca-params.conf file
@@ -121,14 +122,14 @@ sub Install {
     # default from "compiler_name".  Note: to be deleted someday
     # (i.e., only rely on this module's compiler_name and not use a
     # higher-level default, per #222).
-    $config->{compiler_name}       = Value($ini, $section, "clustertools_compiler_name");
+    $compiler_name                 = Value($ini, $section, "clustertools_compiler_name");
     $config->{compiler_version}    = Value($ini, $section, "clustertools_compiler_version");
     $config->{configure_arguments} = Value($ini, $section, "clustertools_configure_arguments");
     $config->{make_check}          = Logical($ini, $section, "clustertools_make_check");
 
     # Throw a warning if their compiler doesn't match up with the ones
     # we have in the database
-    MTT::Util::is_valid_compiler_name($section, $config->{compiler_name});
+    MTT::Util::is_valid_compiler_name($section, $compiler_name);
 
     # Hack to set the correct runtime dependency path (-R) for root packages.
     #
@@ -161,8 +162,14 @@ sub Install {
     }
 
     # In some cases, we might need to patch the Libtool script.
-    # Disable for now.
-    # $after_configure = \&_update_libtool_script;
+    # Disable for now. This is only required because:
+    #
+    #   a) There's quirk in Sun Studio's f90 linker flag handling.
+    #   b) Autotools links in Crun and Cstd libraries behind our backs
+    #
+    if ($compiler_name =~ /sun|sos/i) {
+        $after_configure = \&_update_libtool_script;
+    }
 
     # Run configure / make all / make check / make install
     my $configure_arguments = $config->{configure_arguments};
@@ -233,6 +240,12 @@ sub Install {
         return $ret
             if (exists($ret->{fail}));
 
+        # Backup the config.log
+        # EAM: THIS BELONGS IN ITS OWN FUNCTION, BUT HOW CAN WE PASS
+        #       *MULTIPLE* CODE REFERENCES TO RUNSTEP()?
+        my $rand_str = MTT::Values::RandomString(10);
+        MTT::DoCommand::Cmd(1, "mv config.log config-$rand_str.log");
+
         $i++;
     }
 
@@ -245,7 +258,7 @@ sub Install {
 
     # Create wrapper data files
     my $wrapper_destdir = "$staging_dir/share/openmpi";
-    &_create_wrapper_data_files($wrapper_destdir, $wrapper_rpath, $greek);
+    &_create_wrapper_data_files($wrapper_destdir, $compiler_name, $wrapper_rpath, $greek);
 
     # Copy over the examples directory to the install area
     my $examples_dir = "$config->{abs_srcdir}/examples";
@@ -382,9 +395,11 @@ sub _setup_architecture_dependent_labels {
 
 # Arguments:
 #   1. Where we are writing the files
-#   2. -R <PATH> to be used within the wrapper data files
+#   2. Compiler name: "sun" or "gnu"
+#   3. -R (or -Wl,-rpath) <PATH> to be used within the wrapper data files
+#   4. version for wrapper .txt files
 sub _create_wrapper_data_files {
-    my ($destdir, $installdir, $version) = @_;
+    my ($destdir, $compiler_name, $installdir, $version) = @_;
     Debug("_create_wrapper_data_files: got @_\n");
 
     # Ensure that the destination directory exists
@@ -422,14 +437,23 @@ sub _create_wrapper_data_files {
     $wrapper_data->{"f90"}->{language} = "Fortran 90";
     $wrapper_data->{"f95"}->{language} = "Fortran 95";
 
-    # MPI wrapper compilers
-    $wrapper_data->{"cc"}->{underlying_compiler}  = "cc";
-    $wrapper_data->{"CC"}->{underlying_compiler}  = "CC";
-    $wrapper_data->{"c++"}->{underlying_compiler} = "CC";
-    $wrapper_data->{"cxx"}->{underlying_compiler} = "CC";
-    $wrapper_data->{"f77"}->{underlying_compiler} = "f77";
-    $wrapper_data->{"f90"}->{underlying_compiler} = "f90";
-    $wrapper_data->{"f95"}->{underlying_compiler} = "f95";
+    # MPI wrapper compilers (Sun)
+    $wrapper_data->{"cc"}->{underlying_sun_compiler}  = "cc";
+    $wrapper_data->{"CC"}->{underlying_sun_compiler}  = "CC";
+    $wrapper_data->{"c++"}->{underlying_sun_compiler} = "CC";
+    $wrapper_data->{"cxx"}->{underlying_sun_compiler} = "CC";
+    $wrapper_data->{"f77"}->{underlying_sun_compiler} = "f77";
+    $wrapper_data->{"f90"}->{underlying_sun_compiler} = "f90";
+    $wrapper_data->{"f95"}->{underlying_sun_compiler} = "f95";
+
+    # MPI wrapper compilers (GNU)
+    $wrapper_data->{"cc"}->{underlying_gnu_compiler}  = "gcc";
+    $wrapper_data->{"CC"}->{underlying_gnu_compiler}  = "g++";
+    $wrapper_data->{"c++"}->{underlying_gnu_compiler} = "g++";
+    $wrapper_data->{"cxx"}->{underlying_gnu_compiler} = "g++";
+    $wrapper_data->{"f77"}->{underlying_gnu_compiler} = "g77";
+    $wrapper_data->{"f90"}->{underlying_gnu_compiler} = "gfortran";
+    $wrapper_data->{"f95"}->{underlying_gnu_compiler} = "gfortran";
 
     # VampirTrace wrapper compilers
     $wrapper_data->{"cc"}->{underlying_vt_compiler}  = "vtcc";
@@ -482,18 +506,51 @@ sub _create_wrapper_data_files {
     $wrapper_data->{"f90"}->{libs} = "$common_libs -lmpi_f77 -lmpi_f90";
     $wrapper_data->{"f95"}->{libs} = "$common_libs -lmpi_f77 -lmpi_f90";
 
+    # Default to Sun Studio flags
+    my $dash_r =  "-R";
+    my $dash_m =  "-M";
+    my $linker_flags_32;
+    my $linker_flags_64;
+    my $linker_flags_gfortran_32;
+    my $linker_flags_gfortran_64;
+
+    if ($compiler_name =~ /gnu|gcc/i) {
+        $dash_r = "-Wl,-rpath,";
+
+        # Prevent missing module files error from GCC (4.1)
+        # See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=30446
+        # Use the workaround they proposed to get the fortran module
+        $dash_m =  "";
+
+        $linker_flags_gfortran_32 = "-I$installdir/lib " .
+                                    "-J$installdir/lib";
+
+        $linker_flags_gfortran_64 = "-I$installdir/lib/$lib_label_for_64_bit " .
+                                    "-J$installdir/lib/$lib_label_for_64_bit";
+
+    }
+
+    $linker_flags_32 = "$dash_r/opt/mx/lib " .
+                       "$dash_r$installdir/lib";
+    $linker_flags_64 = "$dash_r/opt/mx/lib/$lib_label_for_64_bit " .
+                       "$dash_r$installdir/lib/$lib_label_for_64_bit";
+
     $wrapper_data->{32}->{includedir} = "$installdir/include";
     $wrapper_data->{64}->{includedir} = "$installdir/include/$include_label_for_64_bit";
     $wrapper_data->{32}->{libdir} = "$installdir/lib";
     $wrapper_data->{64}->{libdir} = "$installdir/lib/$lib_label_for_64_bit";
     $wrapper_data->{32}->{compiler_args} = "";
     $wrapper_data->{64}->{compiler_args} = $compiler_args;
-    $wrapper_data->{32}->{linker_flags} = "-R/opt/mx/lib -R$installdir/lib";
-    $wrapper_data->{64}->{linker_flags} = "-R/opt/mx/lib/$lib_label_for_64_bit -R$installdir/lib/$lib_label_for_64_bit";
+    $wrapper_data->{32}->{linker_flags} = $linker_flags_32;
+    $wrapper_data->{64}->{linker_flags} = $linker_flags_64;
+
+    # Special gfortran linker flags
+    $wrapper_data->{"gfortran"}->{32}->{linker_flags} = $linker_flags_gfortran_32;
+    $wrapper_data->{"gfortran"}->{64}->{linker_flags} = $linker_flags_gfortran_64;
 
     # For mpif90, point to mpi.mod using the -M flag
-    $wrapper_data->{"f90"}->{module_option} = "-M";
-    $wrapper_data->{"f95"}->{module_option} = "-M";
+    $wrapper_data->{"f90"}->{module_option} = $dash_m;
+    $wrapper_data->{"f95"}->{module_option} = $dash_m;
 
     # We have to either use -m32 or -m64 for Linux
     $wrapper_data->{32}->{Linux}->{compiler_flags} = "-m32";
@@ -545,18 +602,29 @@ includedir=%s
 libdir=%s
 ";
 
+    # Incorporate the these compiler names into the data file name
+    # if need be
+    my $filename_labels;
+    $filename_labels->{"sun"} = "";
+    $filename_labels->{"sos"} = "";
+    $filename_labels->{"gnu"} = "";
+    $filename_labels->{"gcc"} = "";
+    $filename_labels->{"vt"}  = "-vt";
+
     foreach my $prefix ("mpi", "opal", "orte") {
-        foreach my $compiler_type ("", "vt") {
+        foreach my $compiler_type ($compiler_name, "vt") {
             foreach my $compiler (@compilers) {
 
                 # Add in, e.g., "-vt" to wrapper data file name 
-                my $filename_label = ($compiler_type) ? "-$compiler_type" : "";
+                my $filename_label = $filename_labels->{$compiler_type};
 
                 # Use either the OMPI or VT underlying compiler name
-                my $underlying_compiler_type_key = 
-                            ($compiler_type) ? 
+                my $underlying_compiler_type_key =
+                            ($compiler_type) ?
                                  "underlying_${compiler_type}_compiler" :
                                  "underlying_compiler";
+
+                my $underlying_compiler = $wrapper_data->{$compiler}->{$underlying_compiler_type_key};
 
                 my @top_params = (
                     $wrapper_data->{$compiler}->{language},
@@ -574,7 +642,8 @@ libdir=%s
                                         @top_params,
                                         $wrapper_data->{32}->{$os}->{compiler_flags},
                                         $wrapper_data->{$compiler}->{libs},
-                                        $wrapper_data->{32}->{linker_flags},
+                                        $wrapper_data->{32}->{linker_flags} . " " .
+                                          $wrapper_data->{$underlying_compiler}->{32}->{linker_flags},
                                         $wrapper_data->{32}->{includedir},
                                         $wrapper_data->{32}->{libdir},
 
@@ -583,7 +652,8 @@ libdir=%s
                                         @top_params,
                                         $wrapper_data->{64}->{$os}->{compiler_flags},
                                         $wrapper_data->{$compiler}->{libs},
-                                        $wrapper_data->{64}->{linker_flags},
+                                        $wrapper_data->{64}->{linker_flags} . " " .
+                                          $wrapper_data->{$underlying_compiler}->{64}->{linker_flags},
                                         $wrapper_data->{64}->{includedir},
                                         $wrapper_data->{64}->{libdir},
                 );
@@ -874,7 +944,14 @@ sub create_linux_packages {
     my $nil = '%nil';
     my $cmd = "$rpmbuild --verbose -bb" .
               # Add $os_distro to the RPM filename format
-              " --define=\"_build_name_fmt %%{ARCH}/%%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}-$os_distro.rpm\" " .
+              " --define=\"_build_name_fmt " .
+                          "%%{ARCH}/" .
+                          "%%{NAME}-" .
+                          "%%{VERSION}-" .
+                          "%%{RELEASE}." .
+                          "%%{ARCH}-" .
+                          "$os_distro-" .
+                          "built-with-$compiler_name.rpm\" " .
               # RPM scratch area
               " --define=\"_topdir $temp_dir\"" .
               # Override the below built-in macro because it does annoying
@@ -1002,14 +1079,23 @@ Open MPI jobs.
     return $ret;
 }
 
+# MAGIC REGEXP ALERT! This routine contains some magic
+# strings that are found in an autogenerated libtool scripts.
+# It has been tested with the following libtool, but may need
+# to be adjusted for different versions!
+#
+#   $ libtool --version
+#   ltmain.sh (GNU libtool) 2.2
+#
 sub _update_libtool_script {
-    my ($file) = "./libtool";
+    my ($file) = @_;
+    Debug("_update_libtool_script: got @_\n");
+
+    $file = "./libtool" if (! -e $file);
 
     # Keep a backup copy of the file lying around for debugging
     # purposes
     MTT::DoCommand::Cmd(1, "cp $file $file.orig");
-
-    Debug("_update_libtool_script: got @_\n");
 
     # Grab uname OS variable
     my $os = `uname -s`;
@@ -1026,14 +1112,9 @@ sub _update_libtool_script {
     # characters (e.g., $, \, {, -, ...) like below,
     # but to be expedient, we can just fill in the oddball
     # characters with wildcards (.). 
-    # my $bad_pattern = '\${wl}-soname \$wl\$soname';
-    my $bad_pattern = '..{wl}-soname ..wl..soname';
+    # my $bad_pattern1 = '\${wl}-soname \$wl\$soname';
+    my $bad_pattern1 = '..{wl}-soname ..wl..soname';
     
-    if ($os !~ /Linux/i) {
-        Verbose("$package: We do not need to comment out $bad_var in $file. Yay.\n");
-        return;
-    }
-
     # Read in the libtool script file
     my $contents = MTT::Files::Slurp($file);
 
@@ -1049,7 +1130,7 @@ sub _update_libtool_script {
 ";
 
     my $comment2 = "
-# $bad_pattern has been removed by MTT to avoid the below compiler
+# $bad_pattern1 has been removed by MTT to avoid the below compiler
 # error(s): 
 #   f90: Warning: Option -Wl,-soname passed to ld, if ld is invoked, ignored otherwise
 #   f90: Warning: Option -Wl,libmpi_f90.so.0 passed to ld, if ld is invoked, ignored otherwise
@@ -1058,12 +1139,81 @@ sub _update_libtool_script {
 #   make[2]: *** [libmpi_f90.la] Error 1
 ";
 
+    my $bad_pattern2 ='(\n# ### BEGIN LIBTOOL TAG CONFIG: FC.*)\n(wl="-Wl,")';
+    my $good_pattern2 = '
+# MTT has reassigned wl to "" because Sun Studio f90 (for Linux) does
+# not pass -Wl values to the GNU linker (/usr/bin/ld)
+wl=""';
+
+    my $bad_pattern3 ='(\n# ### BEGIN LIBTOOL TAG CONFIG: CXX.*)\n(postdeps="(?:-library=Cstd)\s*(?:-library=Crun)?")';
+    my $good_pattern3 = '
+# MTT has commented out postdeps so that libCstd.so and libCrun.so are not
+# linked in to libmpi_cxx.so. The autogen.sh patch for this same issue was
+# supposed to take care of this, but apparently Autosomething-or-other has
+# apparently usurped that patch and thrown in the bad -library flags.
+postdeps=""
+';
+
     # Comment out whole_archive_flag_spec
     # $contents =~ s/($bad_var\=.*)/$comment1# $1/;
     
     # Comment out this to avoid -Wl
-    $contents =~ s/$bad_pattern//g;
-    $contents .= $comment2;
+    # $contents =~ s/$bad_pattern1//g;
+    # $contents .= $comment2;
+
+    # From perldoc perlre, the "s" modifier in s///s:
+    #   Treat string as single line. That is, change "." to match any character
+    #   whatsoever, even a newline, which normally it would not match. Used
+    #   together, as /ms, they let the "." match any character whatsoever,
+    #   while still allowing "^" and "$" to match, respectively, just after and
+    #   just before newlines within the string.
+
+    if ($os =~ /Linux/i) {
+        Verbose("$package: We need to patch $file for libmpi_f90.\n");
+
+        # Set wl to "" for f90
+        $contents =~ s/$bad_pattern2/$1\n# $2\n$good_pattern2/s;
+    }
+
+    # Comment this postdeps var out of CXX section
+    # postdeps="-library=Cstd -library=Crun"
+    Verbose("$package: Patching $file to avoid linking with libCstd and libCrun.\n");
+    $contents =~ s/$bad_pattern3/$1\n# $2\n$good_pattern3/s;
+    
+    # Write changed file out
+    MTT::Files::SafeWrite(1, $file, $contents);
+}
+
+# Add "set -x" to libtool script
+sub _set_x_in_libtool_script {
+    my ($file) = @_;
+    Debug("_set_x_in_libtool_script: got @_\n");
+
+    $file = "./libtool" if (! -e $file);
+
+    # Keep a backup copy of the file lying around for debugging
+    # purposes
+    MTT::DoCommand::Cmd(1, "cp $file $file.orig");
+
+    Verbose("$package: Adding 'set -x' to $file.\n");
+
+    # Read in the libtool script file
+    my $contents = MTT::Files::Slurp($file);
+
+    if (!$contents) {
+        Error("Couldn't Slurp $file!\n");
+    }
+
+    my $search_pattern = '\n\s*\n';
+    my $replace_pattern = '
+
+# Set debug
+set -x
+
+';
+
+    # set -x
+    $contents =~ s/$search_pattern/\n$replace_pattern\n/s;
     
     # Write changed file out
     MTT::Files::SafeWrite(1, $file, $contents);

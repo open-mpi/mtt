@@ -57,6 +57,20 @@ sub Build {
                        "trivial_tests_fflags");
     my $languages = Value($ini, $config->{full_section_name}, 
                        "trivial_tests_languages");
+    my $mpicc  = Value($ini, $config->{full_section_name}, 
+                    "trivial_tests_mpicc");
+    my $mpicxx = Value($ini, $config->{full_section_name}, 
+                    "trivial_tests_mpicxx");
+    my $mpif77 = Value($ini, $config->{full_section_name}, 
+                    "trivial_tests_mpif77");
+    my $mpif90 = Value($ini, $config->{full_section_name}, 
+                       "trivial_tests_mpif90");
+
+    # Set some default compilers
+    $mpicc  = "mpicc"  if (!defined($mpicc));
+    $mpicxx = "mpicxx" if (!defined($mpicxx));
+    $mpif77 = "mpif77" if (!defined($mpif77));
+    $mpif90 = "mpif90" if (!defined($mpif90));
 
     # Default to running *all* flavors of trivial tests
     if (!$languages) {
@@ -74,10 +88,10 @@ sub Build {
 
     if ($mpi_install->{c_bindings} and $languages_hash->{"c"}) {
         Debug("Test compile/link sample C MPI application\n");
-        $x = _do_compile("mpicc $cflags", "hello.c", "c_hello");
+        $x = _do_compile("$mpicc $cflags", "hello.c", "c_hello");
         return $x
             if (defined($x));
-        $x = _do_compile("mpicc $cflags", "ring.c", "c_ring");
+        $x = _do_compile("$mpicc $cflags", "ring.c", "c_ring");
         return $x
             if (defined($x));
     } else {
@@ -89,10 +103,10 @@ sub Build {
 
     if ($mpi_install->{cxx_bindings} and $languages_hash->{"c++"}) {
         Debug("Test compile/link sample C++ MPI application\n");
-        $x = _do_compile("mpicxx $cflags", "hello.cc", "cxx_hello");
+        $x = _do_compile("$mpicxx $cflags", "hello.cc", "cxx_hello");
         return $x
             if (defined($x));
-        $x = _do_compile("mpicxx $cflags", "ring.cc", "cxx_ring");
+        $x = _do_compile("$mpicxx $cflags", "ring.cc", "cxx_ring");
         return $x
             if (defined($x));
     } else {
@@ -104,10 +118,10 @@ sub Build {
 
     if ($mpi_install->{f77_bindings} and $languages_hash->{"f77"}) {
         Debug("Test compile/link sample F77 MPI application\n");
-        $x = _do_compile("mpif77 $fflags", "hello.f", "f77_hello");
+        $x = _do_compile("$mpif77 $fflags", "hello.f", "f77_hello");
         return $x
             if (defined($x));
-        $x = _do_compile("mpif77 $fflags", "ring.f", "f77_ring");
+        $x = _do_compile("$mpif77 $fflags", "ring.f", "f77_ring");
         return $x
             if (defined($x));
     } else {
@@ -119,10 +133,10 @@ sub Build {
 
     if ($mpi_install->{f90_bindings} and $languages_hash->{"f90"}) {
         Debug("Test compile/link sample F90 MPI application\n");
-        $x = _do_compile("mpif90 $fflags", "hello.f90", "f90_hello");
+        $x = _do_compile("$mpif90 $fflags", "hello.f90", "f90_hello");
         return $x
             if (defined($x));
-        $x = _do_compile("mpif90 $fflags", "ring.f90", "f90_ring");
+        $x = _do_compile("$mpif90 $fflags", "ring.f90", "f90_ring");
         return $x
             if (defined($x));
     } else {

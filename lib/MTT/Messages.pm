@@ -29,6 +29,11 @@ my $_verbose;
 # Path where mtt was invoked
 my $_cwd;
 
+# For resetting message back to a previous level
+my $debug_save;
+my $verbose_save;
+my $cwd_save;
+
 # Max length of string to pass to wrap() (it seems that at least some
 # versions of wrap() handles Very Large strings and/or strings with
 # Very Long lines extremely poorly -- it thrashes endlessly).
@@ -41,9 +46,9 @@ my $LOGFILE = undef;
 
 
 sub Messages {
-    my $debug_save = $_debug;
-    my $verbose_save = $_verbose;
-    my $cwd_save = $_cwd;
+    $debug_save = $_debug;
+    $verbose_save = $_verbose;
+    $cwd_save = $_cwd;
 
     $_debug = shift;
     $_verbose = shift;

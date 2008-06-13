@@ -3,7 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
-# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -49,6 +49,12 @@ use constant {
 #--------------------------------------------------------------------------
 
 sub EvaluateString {
+
+    # Output can get pretty volumnious in this sub.
+    # Someday there will be a slicker way to silence debug messages:
+    #   https://svn.open-mpi.org/trac/mtt/ticket/284
+    my ($d, $v) = MTT::Messages::Messages(0, 1);
+
     my ($str, $ini, $section) = @_;
     Debug("Evaluating: $str\n");
 
@@ -119,6 +125,7 @@ sub EvaluateString {
                 }
             }
 
+            MTT::Messages::Messages($d, $v);
             return \@ret;
         }
     }
@@ -127,6 +134,7 @@ sub EvaluateString {
     Debug("Got final version before escapes: $str\n");
     $str = _replace_escapes($prefix . $str);
     Debug("Returning: $str\n");
+    MTT::Messages::Messages($d, $v);
     return $str;
 }
 

@@ -3,7 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
-# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -1866,7 +1866,7 @@ sub get_absoft_version {
 #
 # Return a database-ready bitmapped value
 sub get_mpi_install_bitness {
-    Debug("&get_mpi_intall_bitness\n");
+    Debug("&get_mpi_install_bitness got @_\n");
 
     my $override    = shift;
     my $install_dir = $MTT::MPI::Install::install_dir;
@@ -1927,8 +1927,8 @@ int main(int argc, char* argv[]) {
                 $ret = _extract_valid_bitness($x->{result_stdout});
 
                 if (! $ret) {
-                    Warning("&get_mpi_instaled_bitness(): Sample compiled program $prog_name did not execute properly.\n");
-                    Warning("&get_mpi_instaled_bitness(): $prog_name output: " . $x->{result_stdout} . "\n");
+                    Warning("&get_mpi_install_bitness(): Sample compiled program $prog_name did not execute properly.\n");
+                    Warning("&get_mpi_install_bitness(): $prog_name output: " . $x->{result_stdout} . "\n");
                 } else {
                     Debug("$prog_name executed properly.\n");
                     $ret = _bitness_to_bitmapped($ret);
@@ -1939,7 +1939,7 @@ int main(int argc, char* argv[]) {
                 Warning("&get_mpi_install_bitness(): Couldn't execute sample compiled program: $prog_name.\n");
             }
         } else {
-            Warning("&get_mpi_instaled_bitness(): Couldn't compile sample $prog_name.c.\n");
+            Warning("&get_mpi_install_bitness(): Couldn't compile sample $prog_name.c.\n");
         }
     }
 
@@ -1986,6 +1986,7 @@ int main(int argc, char* argv[]) {
 
     $ret = _bitness_to_bitmapped($ret);
     Debug("&get_mpi_install_bitness returning: $ret\n");
+
     return $ret;
 }
 
@@ -2524,6 +2525,25 @@ sub search_and_replace {
     } else {
         return 0;
     }
+}
+
+# Return true if there are some .z VampirTrace files in
+# the cwd
+sub vampir_trace_files_exist {
+    my @exts = ("*.events.z", "*.def.z");
+
+    my @files;
+    foreach my $ext (@exts) {
+        @files = glob $ext;
+
+        if (scalar @files) {
+            Verbose("Found at least one file with $ext extension.\n");
+        } else {
+            Verbose("Could not find at least one file with $ext extension.\n");
+            return 0;
+        }
+    }
+    return 1;
 }
 
 1;

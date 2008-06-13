@@ -3,7 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
-# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
 # Copyright (c) 2008      Mellanox Technologies.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -212,6 +212,15 @@ sub _do_run {
     my ($ini, $section, $test_build, $mpi_get, $mpi_install, $install_dir, 
         $runs_data_dir, $force) = @_;
 
+    # Simple section name
+    my $simple_section = GetSimpleSection($section);
+
+    my $skip_section = Value($ini, $section, "skip_section");
+    if ($skip_section) {
+        Verbose("skip_section evaluates to $skip_section [$simple_section]; skipping\n");
+        return;
+    }
+
     # Check both specify_module and module (for backcompatibility)
     my $specify_module;
     $specify_module = MTT::Values::Value($ini, $section, "specify_module");
@@ -235,8 +244,7 @@ sub _do_run {
         Debug("Found mpi_details [$search] in MPI install [$mpi_install_simple]\n");
         foreach my $s ($ini->Sections()) {
             if ($s =~ /^\s*mpi details:/) {
-                $s =~ m/\s*mpi details:\s*(.+)\s*$/;
-                my $mpi_details_simple = $1;
+                my $mpi_details_simple = GetSimpleSection($s);
                 Debug("Found MPI details: [$mpi_details_simple]\n");
                 if ($search eq $mpi_details_simple) {
                     $match = 1;
@@ -261,8 +269,7 @@ sub _do_run {
         Debug("Found mpi_details [$search] in MPI get [$mpi_install->{mpi_get_simple_section_name}]\n");
         foreach my $s ($ini->Sections()) {
             if ($s =~ /^\s*mpi details:/) {
-                $s =~ m/\s*mpi details:\s*(.+)\s*$/;
-                my $mpi_details_simple = $1;
+                my $mpi_details_simple = GetSimpleSection($s);
                 Debug("Found MPI details: [$mpi_details_simple]\n");
                 if ($search eq $mpi_details_simple) {
                     $match = 1;
@@ -278,8 +285,7 @@ sub _do_run {
     if (!$match) {
         foreach my $s ($ini->Sections()) {
             if ($s =~ /^\s*mpi details:/) {
-                $s =~ m/\s*mpi details:\s*(.+)\s*$/;
-                my $mpi_details_simple = $1;
+                my $mpi_details_simple = GetSimpleSection($s);
                 Debug("Found MPI details: [$mpi_details_simple]\n");
 
                 my $details_mpi_install_simple = 
@@ -298,8 +304,7 @@ sub _do_run {
     if (!$match) {
         foreach my $s ($ini->Sections()) {
             if ($s =~ /^\s*mpi details:/) {
-                $s =~ m/\s*mpi details:\s*(.+)\s*$/;
-                my $mpi_details_simple = $1;
+                my $mpi_details_simple = GetSimpleSection($s);
                 Debug("Found MPI details: [$mpi_details_simple]\n");
 
                 my $details_mpi_get_simple = 
@@ -317,10 +322,10 @@ sub _do_run {
     # Details section that we find.
     if (!$match) {
         foreach my $s ($ini->Sections()) {
-            $s =~ m/\s*mpi details:\s*(.+)\s*$/;
-            my $mpi_details_simple = $1;
-            $MTT::Globals::Internals->{mpi_details_name} = $s;
-            last;
+            if ($s =~ /^\s*mpi details:/) {
+                $MTT::Globals::Internals->{mpi_details_name} = $s;
+                last;
+            }
         }
     }
 

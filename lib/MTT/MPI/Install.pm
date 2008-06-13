@@ -3,7 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
-# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -292,8 +292,13 @@ sub _do_install {
     my ($section, $ini, $mpi_get, $this_install_base, $force) = @_;
 
     # Simple section name
-    my $simple_section = $section;
-    $simple_section =~ s/^\s*mpi install:\s*//;
+    my $simple_section = GetSimpleSection($section);
+
+    my $skip_section = Value($ini, $section, "skip_section");
+    if ($skip_section) {
+        Verbose("skip_section evaluates to $skip_section [$simple_section]; skipping\n");
+        return;
+    }
 
     my $val;
     my $config;

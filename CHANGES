@@ -27,6 +27,10 @@ To announce to OMPI core testers:
       - &MPI::CrayMPI::get_version()
       - &MPI::IntelMPI::get_version()
       - &MPI::ScaliMPI::get_version()
+    - &MPI::OMPI::get_mpicc_compiler_name() - get compiler version found in 
+      ompi_info "C absolute compiler"
+    - &MPI::OMPI::get_mpicc_compiler_version() - get compiler name found in 
+      ompi_info "C absolute compiler"
     - &test_command_line()
     - &split() now takes optional 2nd param to specify token
     - &find(regexp, directory list)
@@ -50,6 +54,8 @@ To announce to OMPI core testers:
     - &mpi_details() - pass arbitrary values from test run sections
                        to the mpi details section, indexed by string
     - &get_processor_count() - return the number of CPUs on the localhost
+    - &vampir_trace_files_exist() - return true if VampirTrace trace files
+      are found in the cwd()
 
 - Allow mpi_get_name, test_get_name, and test_build_name fields to
   accept the special value "all", meaning that they'll use all
@@ -187,6 +193,10 @@ To announce to OMPI core testers:
 
 - trivial_tests_languages - comma separated list of languages to use
   for trivial tests (default: "c,c++,f77,f90").
+- trivial_tests_mpicc - override default mpicc for Trivial test build
+- trivial_tests_mpicxx - override default mpicxx for Trivial test build
+- trivial_tests_mpif77 - override default mpif77 for Trivial test build
+- trivial_tests_mpif90 - override default mpif90 for Trivial test build
 
 - added parameter to Simple specify module: do_not_run.  If set to 1
   for a specific subsection (and the subsection is exclusive), then
@@ -198,3 +208,5 @@ To announce to OMPI core testers:
 
 - Added Functions::MPI::MVAPICH.pm.
 
+- Added "skip_section" INI parameter. If it evaluates to true, the section
+  is skipped.

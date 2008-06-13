@@ -3,7 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
-# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -16,6 +16,7 @@ package MTT::Values::Functions::MPI::OMPI;
 use strict;
 use MTT::Messages;
 use MTT::Values::Functions;
+use MTT::FindProgram;
 use Data::Dumper;
 use Cwd;
 
@@ -155,6 +156,7 @@ sub find_network {
 #--------------------------------------------------------------------------
 
 # Get the OMPI version string from ompi_info
+
 sub get_version {
     my $bindir = shift;
 
@@ -216,6 +218,7 @@ sub find_bitness {
 #--------------------------------------------------------------------------
 
 # Return the name of the sessions directory that was removed
+
 sub remove_sessions_directory {
     my $funclet = (caller(0))[3];
     Debug("$funclet: got @_\n");
@@ -240,6 +243,71 @@ sub remove_sessions_directory {
     }
     Debug("$funclet: returning $sessions_dir\n");
     return $sessions_dir;
+}
+
+
+sub _get_mpicc_compiler_info {
+    my $ompi_info = shift;
+    $ompi_info = FindProgram("ompi_info")
+        if (!defined($ompi_info));
+
+    my $name = "unknown";
+    my $version = "unknown";
+    my @ret = ($name, $version);
+
+    my $compiler_basename;
+    my $compiler_absolute;
+    my $build_host;
+    if (open(INFO, "$ompi_info --parsable|")) {
+        while (<INFO>) {
+            my $line = $_;
+
+            if ($line =~ /build:host:(.*$)/i) {
+                $build_host = $1;
+            }
+
+            if ($line =~ /compiler:c:absolute:(.*$)/i) {
+                $compiler_absolute = $1;
+                last;
+            }
+        }
+    }
+
+    if (! $compiler_absolute) {
+        return \@ret;
+    }
+
+    # Get basebame
+    $compiler_basename = File::Basename::basename($compiler_absolute);
+
+    if ($compiler_basename eq "cc") {
+        $name = "sun";
+        $version = MTT::Values::Functions::get_sun_cc_version($compiler_absolute);
+    } elsif ($compiler_basename eq "gcc") {
+        $name = "gnu";
+        $version = MTT::Values::Functions::get_gcc_version($compiler_absolute);
+    } elsif ($compiler_basename eq "icc") {
+        $name = "intel";
+        $version = MTT::Values::Functions::get_icc_version($compiler_absolute);
+    } elsif ($compiler_basename eq "pgcc") {
+        $name = "pgi";
+        $version = MTT::Values::Functions::get_pgcc_version($compiler_absolute);
+    }
+
+    my @ret = ($name, $version);
+
+    Debug("_get_mpicc_compiler_info returning @ret\n");
+    return \@ret;
+}
+
+sub get_mpicc_compiler_name {
+    my $x = _get_mpicc_compiler_info(@_);
+    return @$x[0];
+}
+
+sub get_mpicc_compiler_version {
+    my $x = _get_mpicc_compiler_info(@_);
+    return @$x[1];
 }
 
 1;

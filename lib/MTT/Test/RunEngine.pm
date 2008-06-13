@@ -166,11 +166,6 @@ sub _run_one_np {
 sub _run_one_test {
     my ($install_dir, $run, $mpi_details, $cmd, $name, $variant, $force) = @_;
 
-    # Have we run this test already?  Wow, Perl sucks sometimes -- you
-    # can't check for the entire thing because the very act of
-    # checking will bring all the intermediary hash levels into
-    # existence if they didn't already exist.
-
     my $basename;
     if (-e $MTT::Test::Run::test_executable) {
         $basename = basename($MTT::Test::Run::test_executable);

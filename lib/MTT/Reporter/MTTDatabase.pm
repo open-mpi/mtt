@@ -3,7 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
-# Copyright (c) 2006-2007 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2006-2008 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -375,9 +375,6 @@ sub Submit {
             if ($response->content =~ m/===\s+(\S+)\s+=\s+([0-9\,]+)\s+===/) {
                 eval "\$phase_serials->{$1} = $2;";
                 _debug("MTTDatabase client parsed serial: $1 = $2\n");
-            } else {
-                Warning("MTTDatabase client did not get a serial; " .
-                        "phases will be isolated from each other in the reports\n");
             }
 
             $num_results += ($count - 1);

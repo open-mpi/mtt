@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #
-# Copyright (c) 2007 Cisco Systems, Inc.  All rights reserved.
-# Copyright (c) 2007 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -95,17 +95,6 @@ sub Get {
         return $ret;
     }
 
-    # More from ProcessInputParameters
-    $ret->{prepare_for_install} = $params->{prepare_for_install};
-    $ret->{version}             = $params->{version};
-
-    # Pass this data back to the main Get module
-    $data->{pre_copy}           = $params->{pre_copy};
-    $data->{post_copy}          = $params->{post_copy};
-    $data->{url}                = $params->{url};
-    $data->{directory}          = $params->{dirname};
-    $data->{r}                  = $params->{rev};
-
     # Make a best attempt to get a version number
     # 1. Try looking for a field in the INI file
     my $ver;
@@ -124,6 +113,17 @@ sub Get {
                 strftime("%m%d%Y-%H%M%S", localtime);
         }
     }
+
+    # More from ProcessInputParameters
+    $ret->{prepare_for_install} = $params->{prepare_for_install};
+
+    # Pass this data back to the main Get module
+    $data->{pre_copy}           = $params->{pre_copy};
+    $data->{post_copy}          = $params->{post_copy};
+    $data->{url}                = $params->{url};
+    $data->{directory}          = $params->{dirname};
+    $data->{r}                  = $r;
+
     $ret->{module_data} = $data;
 
     # All done
