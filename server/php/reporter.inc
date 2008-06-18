@@ -454,6 +454,7 @@ function label($str) {
             'compute_cluster'   => 'Cluster',
             "compiler"          => "Compiler",
             'submit'            => 'Submit',
+            'results'           => 'Results',
 
             # Result types
 
@@ -719,6 +720,20 @@ function human_to_bitmapped($column, $value) {
     return $ret;
 }
 
+# Return true if the column name is a bitmapped field
+# (we should really query the Postgres metadata for this)
+function is_bitmapped($column) {
+    static $bitmapped_fields;
+    if (! $bitmapped_fields)
+        $bitmapped_fields = setup_bitmapped_fields();
+
+    if (isset($bitmapped_fields['where']["$column"])) {
+        return true;
+    }
+
+    return false;
+}
+
 
 # Grab the report type from either a button click or a drilldown's "go"
 function get_go_or_click($params) {
@@ -873,6 +888,8 @@ function process_phase_field($params) {
 }
 
 # Reference: http://www.php.net/strtok
+#
+# Tokenize a whitespace-delimited or ;-delimited string
 function tokenize($string) {
     $tokens = array();
 
@@ -892,6 +909,119 @@ function tokenize($string) {
         $tokens[] = $next_token;
     }
 
+    return $tokens;
+}
+
+# Tokenize a whitespace delimited string which may contain single and double
+# quoted parts.
+
+#
+# Tested on these strings:
+#   "'back'-'to back with single-quoted negation'" .
+#   "\"back\"-\"to back with double-quoted negation\"" .
+#   "'back''to back single-quoted atoms'" .
+#   "\"back\"\"to back double-quoted atoms\"" .
+#   " \"\" - ' ' \"-\" '-foo' '-  space after the -' " .
+#   "\" \" '' '-' " .
+#   "\"foo bar\" -\"negate this string\" " .
+#   "'single quoted \"string' " .
+#   "baz boz -exclude -these -tokens");
+function tokenize_quoted($q) {
+
+    # Check parameters
+    if (!isset($q) or false === $q or !is_string($q)) {
+        return false;
+    }
+
+    # Get the tokens from the query.
+    $x = trim($q);
+
+    # Short circuit
+    if ('' === $x) {
+        return array();
+    }
+
+    # Split the string into single characters
+    $chars  = preg_split("//", $x);
+    $mode   = 'non-quoting';
+    $token  = '';
+    $tokens = array();
+
+    for ($i = 0; $i < count($chars); $i++) {
+
+        switch ($mode) {
+            case 'non-quoting':
+                # Double quoting
+                if ('"' == $chars[$i]) {
+
+                    if ('' != $token) {
+                        $tokens[] = $token;
+                    }
+                    $token = '';
+                    $mode = 'double-quoting';
+                } else if (('"' == $chars[$i+1]) and ('-' == $chars[$i])) {
+
+                    if ('' != $token) {
+                        $tokens[] = $token;
+                    }
+                    $token .= $chars[$i];
+                    $mode = 'double-quoting';
+                    $i++;
+
+                # Single quoting
+                } else if ('\'' == $chars[$i]) {
+                    if ('' != $token) {
+                        $tokens[] = $token;
+                    }
+                    $token = '';
+                    $mode = 'single-quoting';
+                } else if (('\'' == $chars[$i+1]) and ('-' == $chars[$i])) {
+                    if ('' != $token) {
+                        $tokens[] = $token;
+                    }
+                    $token .= $chars[$i];
+                    $mode = 'single-quoting';
+                    $i++;
+
+                # Whitespace is the token separator
+                } else if ((' ' == $chars[$i]) or ("\t" == $chars[$i]) or ("\n" == $chars[$i])) {
+                    if ('' != $token) {
+                        $tokens[] = $token;
+                    }
+                    $token = '';
+                } else {
+                    $token .= $chars[$i];
+                }
+                break;
+
+            case 'double-quoting':
+                if ('"' == $chars[$i]) {
+                    if ('' != $token) {
+                        $tokens[] = $token;
+                    }
+                    $token = '';
+                    $mode = 'non-quoting';
+                } else {
+                    $token .= $chars[$i];
+                }
+                break;
+            case 'single-quoting':
+                if ('\'' == $chars[$i]) {
+                    if ('' != $token) {
+                        $tokens[] = $token;
+                    }
+                    $token = '';
+                    $mode = 'non-quoting';
+                } else {
+                    $token .= $chars[$i];
+                }
+                break;
+        }
+
+    }
+    if ('' != $token) {
+        $tokens[] = $token;
+    }
     return $tokens;
 }
 

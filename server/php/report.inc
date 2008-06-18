@@ -84,8 +84,9 @@ function dump_report() {
         } elseif ($report_type == 'performance') {
             $do_performance = true;
             $performance_fields = setup_performance_fields();
-        } else
+        } else {
             $do_summary = true;
+        }
 
         # Prepare query components
         $query = array_merge_recursive(
@@ -275,17 +276,152 @@ function detail_table($headers, $resource) {
 function highlight_match($param, $value) {
 
     $match = $_GET["text_$param"];
-    $match = preg_replace("/;/", "|", $match);
+
+    # This is beyond the reasonable number of highlight colors
+    # needed, but at least they're there if we need them
+    static $highlight_colors;
+    if (! $highlight_colors) {
+        $highlight_colors = array(
+            "#FFFF00", # Yellow
+            "#00FFFF", # Turquoise
+            "#FF00FF", # Pink
+            "#00FF00", # Pastel Green
+            "#D4A017", # Gold
+            "#FF99FF", # Purple
+            "#FF9900", # Orange
+            "#FFFFCC",
+            "#E0F0FF",
+            "#00FFFF",
+            "#FFCCCC",
+            "#FFCCFF",
+            "#E0E0F0",
+            "#C0DCC0",
+            "#66CC99",
+            "#90EE90", # LightGreen
+            "#ADD8E6", # LightBlue
+            "#FFA500", # Orange
+            "#FF00FF", # Magenta
+            "#00FFFF", # Cyan
+            "#FFFF99", 
+            "#00BBBB", 
+            "#99FFFF", 
+            "#70DB93", # AQUAMARINE 
+            "#0000FF", # BLUE 
+            "#9F5F9F", # BLUE VIOLET 
+            "#B5A642", # BRASS 
+            "#D9D919", # BRIGHT GOLD 
+            "#8C7853", # BRONZE 
+            "#5F9F9F", # CADET BLUE 
+            "#D98719", # COOL COPPER 
+            "#B87333", # COPPER 
+            "#FF7F00", # CORAL 
+            "#42426F", # CORN FLOWER BLUE 
+            "#00FFFF", # CYAN 
+            "#545454", # DIM GRAY 
+            "#856363", # DUSTY ROSE 
+            "#D19275", # FELDSPAR 
+            "#A8A8A8", # LIGHT GRAY 
+            "#8E2323", # FIREBRICK 
+            "#238E23", # FOREST GREEN 
+            "#CD7F32", # GOLD 
+            "#DBDB70", # GOLDENROD 
+            "#C0C0C0", # GRAY 
+            "#00FF00", # GREEN 
+            "#93DB70", # GREEN YELLOW 
+            "#215E21", # HUNTER GREEN 
+            "#4E2F2F", # INDIAN RED 
+            "#9F9F5F", # KHAKI 
+            "#C0D9D9", # LIGHT BLUE 
+            "#8F8FBD", # LIGHT STEEL BLUE 
+            "#E9C2A6", # LIGHT WOOD 
+            "#32CD32", # LIME GREEN 
+            "#FF00FF", # MAGENTA 
+            "#6B8E23", # MEDIUM FOREST GREEN 
+            "#E47833", # MANDARIN ORANGE 
+            "#8E236B", # MAROON 
+            "#32CD99", # MEDIUM AQUAMARINE 
+            "#3232CD", # MEDIUM BLUE 
+            "#EAEAAE", # MEDIUM GOLDENROD 
+            "#FF2400", # ORANGE RED 
+            "#9370DB", # MEDIUM ORCHID 
+            "#426F42", # MEDIUM SEA GREEN 
+            "#00009C", # NEW MIDNIGHT BLUE 
+            "#EBC79E", # NEW TAN 
+            "#CFB53B", # OLD GOLD 
+            "#FF7F00", # ORANGE 
+            "#A67D3D", # BRONZE II
+            "#DB70DB", # ORCHID 
+            "#8FBC8F", # PALE GREEN 
+            "#BC8F8F", # PINK 
+            "#EAADEA", # PLUM 
+            "#D9D9F3", # QUARTZ 
+            "#FF0000", # RED 
+            "#5959AB", # RICH BLUE 
+            "#FF8888", # SALMON 
+            "#8C1717", # SCARLET 
+            "#238E68", # SEA GREEN 
+            "#6B4226", # SEMI-SWEET CHOCOLATE 
+            "#8E6B23", # SIENNA 
+            "#E6E8FA", # SILVER 
+            "#3299CC", # SKY BLUE 
+            "#007FFF", # SLATE BLUE 
+            "#00FF7F", # SLATE GREEN 
+            "#FF1CAE", # SPICY PINK 
+            "#236B8E", # STEEL BLUE 
+            "#38B0DE", # SUMMER SKY 
+            "#DB9370", # TAN 
+            "#D8BFD8", # THISTLE 
+            "#ADEAEA", # TURQUOISE 
+            "#CDCDCD", # VERY LIGHT GREY 
+            "#4F2F4F", # VIOLET 
+            "#CC3299", # VIOLET RED 
+            "#D8D8BF", # WHEAT 
+            "#FFFF00", # YELLOW 
+            "#99CC32", # YELLOW GREEN 
+            "#2F4F2F", # DARK GREEN 
+            "#4A766E", # DARK GREEN COPPER
+            "#4F4F2F", # DARK OLIVE GREEN 
+            "#9932CD", # DARK ORCHID 
+            "#871F78", # DARK PURPLE 
+            "#6F4242", # DARK SALMON 
+            "#6B238E", # DARK SLATE BLUE 
+            "#2F4F4F", # DARK SLATE GRAY
+            "#97694F", # DARK TAN 
+            "#7093DB", # DARK TURQUOISE 
+            "#855E42", # DARK WOOD 
+        );
+    }
 
     # "all" is the magic word for *no filter*
     if (($match == 'all') or ! preg_match("/\w/i", $match))
         return $value;
-    else
-        return preg_replace(
-                    "/(" . escape_nonword_chars($match) . ")/i",
-                    "<font style=\"background-color:yellow\">$1</font>",
-                    $value
+
+    $ret = $value;
+    $i = 0;
+    foreach (tokenize_quoted($match) as $t) {
+
+        # Negated tokens (!|-) will have no match
+        if (preg_match("/^\s*(\!|\-)\s*/i", $t)) {
+            continue;
+        }
+
+        $font_tag_open = "<font style=\"background-color:" . $highlight_colors[$i++] . "\">";
+        $font_tag_close = "</font>";
+
+        # Protect against the oddball case where the user searches
+        # on a string that is part of the highlighting HTML <font> tag
+        if (preg_match("/$t/i", $font_tag_open) or
+            preg_match("/$t/i", $font_tag_close)) {
+            continue;
+        }
+
+        $ret = preg_replace(
+                    "/(" . escape_nonword_chars($t) . ")/i",
+                    "$font_tag_open$1$font_tag_close",
+                    $ret
                );
+    }
+    return $ret;
 }
 
 # Escape non-word characters ([0-9a-zA-Z_]),
@@ -2624,6 +2760,16 @@ function table_exists($table) {
 #
 #########################################
 
+#
+# Search syntax is borrowed from Google's. See
+#   http://www.google.com/advanced_search?hl=en
+# 
+#  * Whitespace implies "AND"
+#  * "foo bar" and 'foo bar' imply exact phrase
+#  * "|" is the same as "OR"
+#  * -foo means NOT foo
+#
+
 # Determine report type, Summary or Detail
 #
 # SHOULD THIS FUNCTION BE "PASS BY REFERENCE"?
@@ -2673,7 +2819,6 @@ function process_report_type($params) {
 # 1. Generate WHERE clause pieces from user-entered textfields
 # 2. Generate SELECT items from user-entered show/hide menus
 function process_input_fields($params) {
-
     global $new_ttable;
 
     static $query;
@@ -2691,59 +2836,79 @@ function process_input_fields($params) {
         setup_large_fields()
     );
 
+    # Separator for SQL clauses
+    $nl = "\n\t\t";
+
     foreach (array_keys($params) as $k) {
 
-        if (preg_match("/" . join("|", $special_fields) . "/i", $k))
+        if (preg_match("/" . join("|", $special_fields) . "/i", $k)) {
             continue;
+        }
 
         # If it's a textfield, tokenize it and add each
         # item to WHERE clause
-        elseif (preg_match("/^text_/i", $k)) {
+        if (preg_match("/^text_/i", $k)) {
             $column = strip_prefix($k);
+            $textfield = $params[$k];
 
-            $clauses = array();
+            $wheres = array();
+            $clause = "";
+            foreach (tokenize_quoted($textfield) as $str) {
 
-            # No WHERE clause, if field is blank or "all"
-            if (preg_match("/^\s*all\s*$|^\s*$/i", $params[$k]))
-                continue;
+                # No WHERE clause, if field is blank or "all"
+                if (preg_match("/^\s*all\s*$|^\s*$/i", $str))
+                    continue;
 
-            $str = $params[$k];
+                # Use LIKE if there is a '%'
+                if (strpos($str, '%') !== false) {
+                    $str = human_to_bitmapped($column, $str);
+                    $clause = "$column LIKE '$str'";
 
-            # Use LIKE if there is a '%'
-            if (strpos($str, '%') !== false) {
-                $str = human_to_bitmapped($column, $str);
-                $clauses[] = "$column LIKE '$str'";
+                # Exact match for '^...$'
+                # (Optimize here, by doing a straight '='
+                # comparison instead of using the regular
+                # expression engine)
+                } elseif (preg_match('/^\^.*\$$/', $str)) {
+                    $str = human_to_bitmapped($column, $str);
+                    $clause = "$column = '" . trim($str, '^$') . "'";
 
-            # Exact match for '^...$'
-            # (Optimize here, by doing a straight '='
-            # comparison instead of using the regular
-            # expression engine)
-            } elseif (preg_match('/^\^.*\$$/', $str)) {
-                $str = human_to_bitmapped($column, $str);
-                $clauses[] = "$column = '" . trim($str, '^$') . "'";
-
-            # Otherwise, regular expression(s)
-            } else {
-                $str = $params[$k];
-                $pat = '^\s*\!\s*';
-
-                # !~ (NOT)
-                if (preg_match("/$pat/", $str)) {
-                    $operator = "!~*";
-                    $str = preg_replace("/$pat/", "", $str);
-                # ~
+                # Otherwise, regular expression(s)
                 } else {
-                    $operator = "~*";
+                    # '!' negates for back compatibility
+                    $pat = '^\s*(\!|\-)\s*';
+
+                    # !~ (NOT)
+                    if (preg_match("/$pat/", $str)) {
+                        $operator = "!~*";
+                        $str = preg_replace("/$pat/", "", $str);
+                    # ~
+                    } else {
+                        $operator = "~*";
+                    }
+
+                    # We have to provide the illusion that a regexp can be performed on
+                    # a bitmapped column (e.g., '32|64')
+                    if (is_bitmapped($column)) {
+                        $clauses = array();
+                        foreach (preg_split("/\|/", $str) as $s) {
+                            $s = human_to_bitmapped($column, $s);
+                            $clauses[] = "$column = '" . pg_escape_string($s) . "'";
+                        }
+                        $clause = '(' . join(' OR ', $clauses) . ')';
+                    } else {
+                        $clause = "$column $operator '" . pg_escape_string($str) . "'";
+                    }
                 }
 
-                foreach (tokenize($str) as $s) {
-                    $s = human_to_bitmapped($column, $s);
-                    $clauses[] = "$column $operator '" . pg_escape_string($s) . "'";
-                }
+                $wheres[] = $clause;
             }
 
-            $query['where'][$column] = "(" . join(" OR ", $clauses) . ")";
+            # Join all the WHERE's with AND
+            if (sizeof($wheres)) {
+                $query['where'][$column] = join(" AND $nl", array_unique($wheres));
+            }
         }
+
         # If "show" is selected, add it to SELECT clause
         elseif (preg_match("/^show_/i", $k)) {
             $column = strip_prefix($k);
@@ -2759,8 +2924,6 @@ function process_input_fields($params) {
                 $query['select_more'][$column] = $column;
         }
     }
-
-    $nl = "\n\t\t";
 
     return $query;
 }
@@ -3285,51 +3448,65 @@ function process_large_fields($params) {
     $fields = setup_large_fields();
 
     foreach ($fields as $field) {
-        $value = $params["text_$field"];
+        $textfield = $params["text_$field"];
 
-        if ($value and $value != 'all') {
-            $pat = '^\s*\!\s*';
+        $wheres = array();
+        foreach (tokenize_quoted($textfield) as $value) {
+            if ($value and ($value != 'all')) {
 
-            # !~ (NOT)
-            if (preg_match("/$pat/", $value)) {
-                $operator = "!~*";
-                $value = preg_replace("/$pat/", "", $value);
+                # "!" negates for back compatibility
+                $pat = '^\s*(\!|\-)\s*';
 
-                # Originally, we pulled out the leading/trailing chars
-                # of the large field. But now ...
-                # when we do a negated search, we do not SELECT on it
-                # because the "^... ...$" string ends up in the VIEW
-                # so the !~* WHERE clause gets applied to that elipses string
-                # and we don't want that. This could be
-                # fixed, but eh.
+                # !~ (NOT)
+                if (preg_match("/$pat/", $value)) {
+                    $operator = "!~*";
+                    $value = preg_replace("/$pat/", "", $value);
 
-            # ~
-            } else {
-                $operator = "~*";
-                $string_func = "substring($field from '" . pg_escape_string($value) . "') as $field";
+                    # Originally, we pulled out the leading/trailing chars
+                    # of the large field. But now ...
+                    # when we do a negated search, we do not SELECT on it
+                    # because the "^... ...$" string ends up in the VIEW
+                    # so the !~* WHERE clause gets applied to that elipses string
+                    # and we don't want that. This could be
+                    # fixed, but eh.
+
+                # ~
+                } else {
+                    $operator = "~*";
+                    $string_func = "substring($field from '" . pg_escape_string($value) . "') as $field";
+                }
+
+                # In Summary view, use a string function to extract the match
+                # for display in the table
+                if ($type == 'summary' or 
+                    $type == 'performance') {
+
+                    $query['select'][$field] = $field;
+
+                    # Take the first string function we get, and use it.
+                    # This means the left-most search string takes precedence
+                    # in the "large field" capture.
+                    if (! isset($query['select_in_subquery'][$field])) {
+                        $query['select_in_subquery'][$field] = $string_func;
+                    }
+
+                # In Detail view, display the entire field (with the matches highlighted)
+                #
+                # X: WE SHOULD PUT THE RETURN VALUES HERE THROUGH A PL/pgSQL FUNCTION OF 
+                # SOME KIND TO DO THE HIGHLIGHTING THERE
+                } else {
+                    $query['select_more'][$field] = $field;
+                }
+
+                $wheres[] = "($field $operator '" . pg_escape_string($value) . "')";
             }
-
-            $value = preg_replace("/;/", "|", $value);
-
-            # In Summary view, use a string function to extract the match
-            # for display in the table
-            if ($type == 'summary' or 
-                $type == 'performance') {
-                $query['select'][$field] = $field;
-                $query['select_in_subquery'][$field] = $string_func;
-
-            # In Detail view, display the entire field (with the matches highlighted)
-            #
-            # X: WE SHOULD PUT THE RETURN VALUES HERE THROUGH A PL/pgSQL FUNCTION OF 
-            # SOME KIND TO DO THE HIGHLIGHTING THERE
-            } else {
-                $query['select_more'][$field] = $field;
-            }
-
-            $query['where'][$field] = "($field $operator '" . pg_escape_string($value) . "')";
+        }
+        # Join all the WHERE's with AND
+        if (sizeof($wheres)) {
+            $query['where'][$field] = join(" AND\n\t\t", array_unique($wheres));
         }
     }
-
+    
     return $query;
 }
 

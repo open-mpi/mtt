@@ -348,7 +348,7 @@ EOT;
 
 	$script .= <<<EOT
 
-            str = items.join(';');
+            str = items.join('|');
             if (items.length > 0) {
                 window.opener.document.report.text_$field.value = str;
             }
@@ -1071,8 +1071,9 @@ function form_popup($elements, $params, $specs) {
         "\n</table>" .
         "\n<i><font size='-1'>" .
         "\n<br>Make one or more selections from the [$title] menu." .
-        "\n<br>(Search strings that contain whitespace need not be wrapped in " .
-        "\nquotes. Delimit multiple search strings with a ';'.)" .
+        "\n<br>Use 'foo bar' to match entire phrases." .
+        "\n<br>Use -'foo bar' to find records that do NOT match 'foo bar'." .
+        "\n<br>Use foo bar (no quotes) to find records that match foo AND bar." .
         "\n</font></i>" .
         "\n</div>";
 
