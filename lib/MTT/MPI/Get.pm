@@ -109,6 +109,12 @@ sub _do_get {
         return;
     }
 
+    my $skip_section = Value($ini, $section, "skip_section");
+    if ($skip_section) {
+        Verbose("skip_section evaluates to $skip_section [$simple_section]; skipping\n");
+        return;
+    }
+
     # Load any environment modules?
     my $config;
     my @env_modules;

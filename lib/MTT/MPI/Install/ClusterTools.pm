@@ -117,6 +117,10 @@ sub Install {
     # Get some OMPI-module-specific config arguments
     $config->{make_all_arguments} = Value($ini, $section, "clustertools_make_all_arguments");
 
+    # Log the make output
+    my $rand_str = MTT::Values::RandomString(10);
+    $config->{make_all_arguments} .= " 2>&1| tee make-$rand_str.log";
+
     # JMS: compiler name may have come in from "compiler_name" in
     # Install.pm. So if we didn't define one for this module, use the
     # default from "compiler_name".  Note: to be deleted someday

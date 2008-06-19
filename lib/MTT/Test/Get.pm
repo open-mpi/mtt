@@ -83,6 +83,12 @@ sub _do_get {
         return;
     }
     
+    my $skip_section = Value($ini, $section, "skip_section");
+    if ($skip_section) {
+        Verbose("skip_section evaluates to $skip_section [$simple_section]; skipping\n");
+        return;
+    }
+
     # Process setenv, unsetenv, prepend_path, and
     # append_path
     my $config;

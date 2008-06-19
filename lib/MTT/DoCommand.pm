@@ -181,6 +181,13 @@ sub Cmd {
     my ($merge_output, $cmd, $timeout, 
         $max_stdout_lines, $max_stderr_lines) = @_;
 
+    # If there are pipes, redirects, shell-bangs, or newlines
+    # write them to a file and run it as a script. Otherwise,
+    # use exec() for improved performance.
+    if (_contains_shell_script_characters($cmd)) {
+        return CmdScript(@_);
+    }
+
     Debug("Running command: $cmd\n");
 
     # Return value
@@ -240,6 +247,7 @@ sub Cmd {
     # Turn shell-quoted words ("foo bar baz") into individual tokens
 
     my $tokens = _quote_escape($cmd);
+
 
     my $pid;
     if (! $no_execute) {
@@ -464,16 +472,27 @@ sub Cmd {
     return $ret;
 }
 
+# Return 1 if the string contains special shell characters
+sub _contains_shell_script_characters {
+    my ($cmd) = @_;
+    return 1 if ($cmd =~ /^\s*\#\!|\>|\||\n/);
+    return 0;
+}
+
 #--------------------------------------------------------------------------
 
 sub CmdScript {
-    my ($merge_output, $cmds, $timeout, 
+    my ($merge_output, $cmds, $timeout,
         $max_stdout_lines, $max_stderr_lines) = @_;
+
+    Debug("Running command script: $cmds\n");
 
     my ($fh, $filename) = tempfile();
 
     # Remove leading/trailing quotes, which
-    # protects against a common funclet syntax error
+    # protects against a common funclet syntax error.
+    # We can safely do this since "foo" (literally, with
+    # quotes included) would never be a valid shell command.
     $cmds =~ s/\"$//
         if ($cmds =~ s/^\"//);
 
@@ -565,16 +584,14 @@ sub RunStep {
             $ret->{exit_status} = 1;
         }
 
-    # Steps can be shell commands
+    # Steps can be shell commands (or scripts)
     } else {
     
         # Do any needed @var@ expansions
         $cmd = EvaluateString($cmd, $ini, $section);
 
         Debug("Running step: $step: $cmd / timeout $timeout\n");
-        $ret = ($cmd =~ /\n/) ?
-            MTT::DoCommand::CmdScript($force, $cmd, $timeout) :
-            MTT::DoCommand::Cmd($force, $cmd, $timeout);
+        MTT::DoCommand::Cmd($force, $cmd, $timeout);
     }
 
     return $ret;
