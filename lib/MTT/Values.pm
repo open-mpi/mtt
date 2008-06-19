@@ -46,6 +46,13 @@ use constant {
     TIMED_OUT => 3,
 };
 
+# Map to human-readable English labels
+our $result_messages;
+$result_messages->{MTT::Values::FAIL}      = "fail";
+$result_messages->{MTT::Values::PASS}      = "pass";
+$result_messages->{MTT::Values::TIMED_OUT} = "timeout";
+$result_messages->{MTT::Values::SKIPPED}   = "skipped";
+
 #--------------------------------------------------------------------------
 
 sub EvaluateString {

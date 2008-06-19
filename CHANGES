@@ -210,3 +210,12 @@ To announce to OMPI core testers:
 
 - Added "skip_section" INI parameter. If it evaluates to true, the section
   is skipped.
+
+- Added the below "threshold" INI parameters for Test run sections. Acceptable
+  in the following formats where "D" is an integer: D% (percentage), D/D
+  fraction, .D (decimal), and DD (integer count of number of tests). The first
+  thershold to break, *breaks* out of the RunEngine loop of mpirun commands.
+  - break_threshold_pass
+  - break_threshold_fail
+  - break_threshold_skipped
+  - break_threshold_timeout

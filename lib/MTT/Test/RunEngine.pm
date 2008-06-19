@@ -3,7 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
-# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
 # Copyright (c) 2008      Mellanox Technologies.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -35,7 +35,11 @@ my $verbose_out;
 # below EvaluateString() calls)
 my $ini;
 my $section;
+my $mpi_details_name;
 my $test_run_full_name;
+
+# Keep track of how many tests have passed, failed, skipped, and timed out
+my $test_results_count;
 
 #--------------------------------------------------------------------------
 
@@ -47,17 +51,95 @@ sub RunEngine {
     ($ini, $section, $install_dir, $runs_data_dir, $mpi_details, $test_build, $force, $ret) = @_;
 
     my $test_results;
-    my $total = $#{$ret->{tests}} + 1;
+
+    # Setup some global variables
+    $mpi_details_name   = $MTT::Globals::Internals->{mpi_details_name};
+    $test_run_full_name = $MTT::Globals::Internals->{test_run_full_name};
+
+    # Reset the results counter for each invocation of RunEngine
+    $test_results_count = undef;
+
+    # Count the number of variants (for use in a break_threshold)
+    my $tmp;
+    my $test_count_total = $#{$ret->{tests}} + 1;
+    $tmp = get_array_ref(MTT::Values::EvaluateString($ret->{tests}[0]->{np}, $ini, $test_run_full_name));
+    my $np_count_total = scalar @$tmp;
+    $tmp = get_array_ref(MTT::Values::EvaluateString($mpi_details->{exec}, $ini, $mpi_details_name));
+    my $exec_count_total = scalar @$tmp;
+    my $variants_count_total =
+        $test_count_total * $np_count_total * $exec_count_total;
+
+    # Set some thresholds for an early exit
+    my $break_threshold;
+    $break_threshold->{MTT::Values::PASS}      = Value($ini, $section, "break_threshold_pass");
+    $break_threshold->{MTT::Values::FAIL}      = Value($ini, $section, "break_threshold_fail");
+    $break_threshold->{MTT::Values::TIMED_OUT} = Value($ini, $section, "break_threshold_timeout");
+    $break_threshold->{MTT::Values::SKIPPED}   = Value($ini, $section, "break_threshold_skipped");
+
+    # Normalize the thresholds. Acceptable formats:
+    #   * D%  - percentage
+    #   * D/D - fraction
+    #   * 0.D - decimal
+    #   * D   - integer count of tests
+    foreach my $k (keys %$break_threshold) {
+        my $str = $break_threshold->{$k};
+        my $result_label = $MTT::Values::result_messages->{$k};
+        my $value;
+
+        # There must be at least one non-space character
+        if ($str !~ /\S/) {
+            delete $break_threshold->{$k};
+            next;
+        }
+
+        # Percentage
+        if ($str =~ /(\d+(?:\.\d+)?)\s*\%/) {
+            $value = $1 / 100;
+            $break_threshold->{$k} = $value;
+
+        # Plain integer (count of tests)
+        } elsif ($str =~ /^\s*(\d+)\s*$/) {
+            $value = $1 / $variants_count_total;
+            $break_threshold->{$k} = $value;
+
+        # All other eval-able Perl expressions
+        } else {
+            eval("\$value = $str;");
+            if ($@) {
+                Error("RunEngine aborted: could not eval $str for break_threshold: $!.\n " .
+                      "Please use either a percentage (D%), a fraction (0.D), an expression (D/D), or \n" .
+                      "an integer count (D).\n");
+            }
+        }
+
+        my $per = sprintf("%d%%", $value * 100);
+        Verbose("Got break_threshold_$result_label of $per\n");
+        $break_threshold->{$k} = $value;
+    }
 
     # Loop through all the tests
-    Verbose("   Total of $total tests to run in this section\n");
+    Verbose("   ###\n");
+    Verbose("   ### Total tests to run in this section:\n");
+    Verbose("   ###     " . sprintf("%4d", $test_count_total) . " test executable(s)\n");
+    Verbose("   ###     " . sprintf("%4d", $np_count_total) . " np value(s)\n");
+    Verbose("   ###     " . sprintf("%4d", $exec_count_total) . " test variant(s)\n");
+    Verbose("   ###     " . sprintf("%4d", $variants_count_total) . " total mpirun command(s) to run\n");
+    Verbose("   ###\n");
     $verbose_out = 0;
-    my $count = 0;
+    my $test_count = 0;
     my $printed = 0;
     foreach my $run (@{$ret->{tests}}) {
+
         # See if we're supposed to terminate.
         last
             if (MTT::Util::find_terminate_file());
+
+        last
+            if (MTT::Util::check_break_threshold(
+                    $test_results_count,
+                    $break_threshold,
+                    $variants_count_total)
+            );
 
         $printed = 0;
         if (!exists($run->{executable})) {
@@ -72,12 +154,12 @@ sub RunEngine {
         $run->{analyze_module} = $ret->{analyze_module};
         
         $run->{test_build_simple_section_name} = $test_build->{simple_section_name};
-        $test_run_full_name = $MTT::Globals::Internals->{test_run_full_name};
 
         # Setup some globals
         $MTT::Test::Run::test_executable = $run->{executable};
         $MTT::Test::Run::test_argv = $run->{argv};
         my $all_np = MTT::Values::EvaluateString($run->{np}, $ini, $test_run_full_name);
+
         my $save_run_mpi_details = $MTT::Test::Run::mpi_details;
         $MTT::Test::Run::mpi_details = $run->{mpi_details}
             if (defined($run->{mpi_details}));
@@ -97,7 +179,7 @@ sub RunEngine {
                                 $force);
             }
         }
-        ++$count;
+        ++$test_count;
 
         # Write out the "to be saved" test run results
         MTT::Test::SaveRuns($runs_data_dir);
@@ -107,12 +189,12 @@ sub RunEngine {
         # Output a progress bar
         if ($verbose_out > 50) {
             $verbose_out = 0;
-            my $per = sprintf("%d%%", $count / $total * 100);
+            my $per = sprintf("%d%%", ($test_count / $test_count_total) * 100);
             $printed = 1;
-            Verbose("   ### Test progress: $count of $total section tests complete ($per)\n");
+            Verbose("   ### Test progress: $test_count of $test_count_total section test executables complete ($per)\n");
         }
     }
-    Verbose("   ### Test progress: $count of $total section tests complete (100%)\n")
+    Verbose("   ### Test progress: $test_count of $test_count_total section test executables complete. Moving on.\n")
         if (!$printed);
 
     # If we ran any tests at all, then run the after_all step and
@@ -127,7 +209,6 @@ sub RunEngine {
 sub _run_one_np {
     my ($install_dir, $run, $mpi_details, $np, $force) = @_;
 
-    my $mpi_details_name = $MTT::Globals::Internals->{mpi_details_name};
     $test_run_full_name = $MTT::Globals::Internals->{test_run_full_name};
 
     my $name;
@@ -287,14 +368,19 @@ sub _run_one_test {
         $MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$MTT::Test::Run::test_np}->{$cmd} = $report;
     MTT::Reporter::QueueAdd("Test Run", $run->{simple_section_name}, $report);
 
+    # Set the test run result and increment the counter
+    $ENV{MTT_TEST_RUN_RESULT} = $report->{test_result};
+    $test_results_count->{$report->{test_result}}++ 
+        if (exists($report->{test_result}));
+
     # If there is an after_each step, run it
-    $ENV{MTT_TEST_RUN_RESULT} = 
+    $ENV{MTT_TEST_RUN_RESULT_MESSAGE} =
         (MTT::Values::PASS == $report->{test_result} ? "passed" :
          (MTT::Values::FAIL == $report->{test_result} ? "failed" :
           (MTT::Values::SKIPPED == $report->{test_result} ? "skipped" :
            (MTT::Values::TIMED_OUT == $report->{test_result} ? "timed_out" : "unknown"))));
     _run_step($mpi_details, "after_each");
-    delete $ENV{MTT_TEST_RUN_RESULT};
+    delete $ENV{MTT_TEST_RUN_RESULT_MESSAGE};
 
     return $run->{pass};
 }

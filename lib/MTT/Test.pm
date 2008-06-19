@@ -257,7 +257,7 @@ sub SaveRuns {
                             my $test_name = $test_run->{$test_name_key};
 
                             my @parts = ($runs_subdir, $mpi_get_key, $mpi_version_key, $mpi_install_key, $test_build_key, $test_run_key, $test_name_key);
-#, $runs_data_filename);
+
                             my $dir = "$topdir";
                             foreach my $d (@parts) {
                                 $dir .= "/" .

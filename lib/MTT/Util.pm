@@ -18,6 +18,7 @@ use base qw(Exporter);
 @EXPORT = qw(does_hash_key_exist
              split_comma_list
              find_terminate_file
+             check_break_threshold
              is_valid_compiler_name
              is_valid_resource_manager_name
              is_valid_network_name
@@ -25,6 +26,7 @@ use base qw(Exporter);
              delete_duplicates_from_array
              delete_matches_from_array
              parse_time_to_seconds
+             get_array_ref
 );
 
 use MTT::Globals;
@@ -123,6 +125,23 @@ sub find_terminate_file {
     } while ($found == 1);
 
     # We didn't find any, so return false
+    return 0;
+}
+
+# Return true if any of the result types have broken
+# a threshold
+sub check_break_threshold {
+    my ($count, $threshold, $total) = @_;
+
+    foreach my $result (keys %$threshold) {
+        my $result_label = $MTT::Values::result_messages->{$result};
+        my $per = sprintf("%d%%", $threshold->{$result} * 100);
+
+        if (($count->{$result} / $total) > $threshold->{$result}) {
+            Verbose("--> Threshold ($per) exceeded for \"$result_label\": $count->{$result} out of $total.\n");
+            return 1;
+        }
+    }
     return 0;
 }
 
@@ -246,6 +265,47 @@ sub parse_time_to_seconds {
         return 99999999999;
     } else {
         Warning("Invalid time specification: $str\n");
+        return undef;
+    }
+}
+
+# Utility subroutine to handle unpredictable types
+# (the only type of argument that would be non-sensical here
+# would be a hashref)
+sub get_array_ref {
+    # We got an argument which will be one of the following things:
+    # - a "string" scalar
+    # - a reference to an array of strings
+    # - an array of strings
+    # - a single string (which is really the same thing as an array of
+    #   strings)
+
+    my $array = shift;
+
+    if (ref($array) !~ /array/i) {
+        # The argument passed wasn't a reference
+        Debug("Returining reference to an array of a single scalar\n");
+        return [$array];
+    }
+
+    # If the first element of the array is a reference to an array,
+    # then return the dereference (so we get just a single reference
+    # to an array [vs. a reference to a reference to an array])
+    my $elem = @$array[0];
+    my $r = ref($elem);
+    if ("" eq $r) {
+        # The first element wasn't a reference, so just return the
+        # outter reference
+        Debug("Returining outter reference\n");
+        return $array;
+    } elsif ($r =~ /array/i) {
+        # The first element was a reference, so return the
+        # "dereference" of it
+        Debug("Returning de-ref'ed array\n");
+        return $elem;
+    } else {
+        # If we got some other type of reference, we don't like it.
+        Warning("get_array_ref got unknown parameter reference type -- ignored\n");
         return undef;
     }
 }

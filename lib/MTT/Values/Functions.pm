@@ -103,7 +103,7 @@ sub print {
 
 # Return the sum of all parameters
 sub sum {
-    my $array = _get_array_ref(\@_);
+    my $array = get_array_ref(\@_);
     Debug("&sum got: @$array\n");
     return "0"
         if (!defined($array));
@@ -121,7 +121,7 @@ sub sum {
 
 # Return the product of all parameters
 sub multiply {
-    my $array = _get_array_ref(\@_);
+    my $array = get_array_ref(\@_);
     Debug("&multiply got: @$array\n");
     return "0"
         if (!defined($array));
@@ -318,7 +318,7 @@ sub prime {
 
 # Return the minimum value of all parameters
 sub min {
-    my $array = _get_array_ref(\@_);
+    my $array = get_array_ref(\@_);
     Debug("&min got: @$array\n");
     return "0"
         if (!defined($array));
@@ -337,7 +337,7 @@ sub min {
 
 # Return the maximum value of all parameters
 sub max {
-    my $array = _get_array_ref(\@_);
+    my $array = get_array_ref(\@_);
     Debug("&max got: @$array\n");
     return "0"
         if (!defined($array));
@@ -357,7 +357,7 @@ sub max {
 # Return 1 if all the values are not equal, 0 otherwise.  If there are
 # no arguments, return 1.
 sub ne {
-    my $array = _get_array_ref(\@_);
+    my $array = get_array_ref(\@_);
     Debug("&ne got: @$array\n");
     return "0"
         if (!defined($array));
@@ -378,7 +378,7 @@ sub ne {
 
 # Return 1 if the first argument is greater than the second
 sub gt {
-    my $array = _get_array_ref(\@_);
+    my $array = get_array_ref(\@_);
     Debug("&gt got: @$array\n");
     return "0"
         if (!defined($array));
@@ -399,7 +399,7 @@ sub gt {
 
 # Return 1 if the first argument is greater than or equal to the second
 sub ge {
-    my $array = _get_array_ref(\@_);
+    my $array = get_array_ref(\@_);
     Debug("&ge got: @$array\n");
     return "0"
         if (!defined($array));
@@ -420,7 +420,7 @@ sub ge {
 
 # Return 1 if the first argument is less than the second
 sub lt {
-    my $array = _get_array_ref(\@_);
+    my $array = get_array_ref(\@_);
     Debug("&lt got: @$array\n");
     return "0"
         if (!defined($array));
@@ -441,7 +441,7 @@ sub lt {
 
 # Return 1 if the first argument is less than or equal to the second
 sub le {
-    my $array = _get_array_ref(\@_);
+    my $array = get_array_ref(\@_);
     Debug("&le got: @$array\n");
     return "0"
         if (!defined($array));
@@ -463,7 +463,7 @@ sub le {
 # Return 1 if all the values are equal, 0 otherwise.  If there are no
 # arguments, return 1.
 sub eq {
-    my $array = _get_array_ref(\@_);
+    my $array = get_array_ref(\@_);
     Debug("&eq got: @$array\n");
     return "1"
         if (!defined($array));
@@ -526,7 +526,7 @@ sub regexp_capture {
 #--------------------------------------------------------------------------
 
 sub and {
-    my $array = _get_array_ref(\@_);
+    my $array = get_array_ref(\@_);
     Debug("&and got: @$array\n");
     return "1"
         if (!@$array);
@@ -547,7 +547,7 @@ sub and {
 # Return 1 if any of the values are true, 0 otherwise.  If there are no
 # arguments, return 1.
 sub or {
-    my $array = _get_array_ref(\@_);
+    my $array = get_array_ref(\@_);
     Debug("&or got: @$array\n");
     return "1"
         if (!@$array);
@@ -580,7 +580,7 @@ sub if {
 
 # Return a reference to all the strings passed in as @_
 sub enumerate {
-    my $array = _get_array_ref(\@_);
+    my $array = get_array_ref(\@_);
     Debug("&enumerate got: @$array\n");
 
     my @ret;
@@ -611,7 +611,7 @@ sub split {
 # Prepend a string to a string or an array of stringd
 sub prepend {
     my $str = shift;
-    my $array = _get_array_ref(\@_);
+    my $array = get_array_ref(\@_);
     Debug("&prepend got $str @$array\n");
     return undef
         if (!defined($array));
@@ -630,7 +630,7 @@ sub prepend {
 
 # Join all the strings passed into one string and return it
 sub stringify {
-    my $array = _get_array_ref(\@_);
+    my $array = get_array_ref(\@_);
     Debug("&stringify got: @$array\n");
 
     my $str;
@@ -937,7 +937,7 @@ sub cmd_wtermsig {
 
 # Return a reference to an array of strings of the contents of a file
 sub cat {
-    my $array = _get_array_ref(\@_);
+    my $array = get_array_ref(\@_);
     Debug("&cat: @$array\n");
 
     my @ret;
@@ -962,7 +962,7 @@ sub cat {
 # found
 my @find_executables_data;
 sub find_executables {
-    my $array = _get_array_ref(\@_);
+    my $array = get_array_ref(\@_);
     Debug("&find_executables got @$array\n");
 
     @find_executables_data = ();
@@ -1002,7 +1002,7 @@ sub find_executables_sub {
 my @find_data;
 my $find_regexp;
 sub find {
-    my $array = _get_array_ref(\@_);
+    my $array = get_array_ref(\@_);
     Debug("&find got @$array\n");
 
     $find_regexp = shift(@$array);
@@ -2462,37 +2462,6 @@ sub mpi_details_simple_name {
 #--------------------------------------------------------------------------
 #--------------------------------------------------------------------------
 #--------------------------------------------------------------------------
-
-sub _get_array_ref {
-    # We got a reference as an argument which will be a reference to
-    # one of three things:
-    # - a reference to an array of strings
-    # - an array of strings
-    # - a single string (which is really the same thing as an array of
-    #   strings)
-
-    # If the first element of the array is a reference to an array,
-    # then return the dereference (so we get just a single reference
-    # to an array [vs. a reference to a reference to an array])
-    my $array = shift;
-    my $elem = @$array[0];
-    my $r = ref($elem);
-    if ("" eq $r) {
-        # The first element wasn't a reference, so just return the
-        # outter reference
-        Debug("Returining outter reference\n");
-        return $array;
-    } elsif ($r =~ /array/i) {
-        # The first element was a reference, so return the
-        # "dereference" of it
-        Debug("Returning de-ref'ed array\n");
-        return $elem;
-    } else {
-        # If we got some other type of reference, we don't like it.
-        Warning("Funclet got unknown parameter reference type -- ignored\n");
-        return undef;
-    }
-}
 
 sub current_phase {
     return $MTT::Globals::Values->{active_phase};
