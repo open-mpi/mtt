@@ -28,7 +28,7 @@ eval "\$_haveit = require Env::Modulecmd";
 
 sub _do_error {
     my $action = shift;
-    Error("The \"env_module\" field was used in the INI file to $action the \"@_\" module(s), but the Env::Modulecmd perl module was not found.  Please install the EnvModulecmd perl module and try again.  Aborting.\n");
+    Error("The \"env_module\" field was used in the INI file to $action the \"@_\" module(s), but the Env::Modulecmd perl module was not found.  Please install the Env::Modulecmd perl module and try again.  Aborting.\n");
 }
 
 #--------------------------------------------------------------------------
