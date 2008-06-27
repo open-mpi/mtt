@@ -113,7 +113,6 @@ sub Init {
 
     my $dir;
     my $host = $url;
-    # http://login3.ranger.tacc.utexas.edu:8008
     if ($host =~ /(http:\/\/[-a-zA-Z0-9.]+):(\d+)\/?(.*)?$/) {
         $host = $1;
         $port = $2;
