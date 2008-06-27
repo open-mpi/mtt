@@ -360,7 +360,7 @@ sub _replace_escapes {
 # Get a value from an INI file and call all the functions that it may
 # have invoked
 sub Value {
-    Debug("Value got: $@_\n");
+    Debug("Value got: @_\n");
     my $ini = shift @_;
     my $section = shift @_;
     my @names = @_;

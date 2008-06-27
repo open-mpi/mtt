@@ -27,7 +27,17 @@ use IO::Handle;
 
 $VERSION = 1.2;
 
-my $modulecmd = $ENV{'PERL_MODULECMD'} || 'modulecmd';
+# Look for modulecmd
+my $modulecmd;
+if (-x "$ENV{PERL_MODULECMD}") {
+    $modulecmd = "$ENV{PERL_MODULECMD}";
+} elsif (-x "$ENV{MODULESHOME}$ENV{MODULE_VERSION}/bin/modulecmd") {
+    $modulecmd = "$ENV{MODULESHOME}$ENV{MODULE_VERSION}/bin/modulecmd";
+} elsif (-x "$ENV{MODULESHOME}/bin/modulecmd") {
+    $modulecmd = "$ENV{MODULESHOME}/bin/modulecmd";
+} else {
+    $modulecmd = "modulecmd";
+}
 
 sub import {
   my @args = @_;

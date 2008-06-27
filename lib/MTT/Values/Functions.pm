@@ -1613,7 +1613,7 @@ sub pbs_hosts {
 sub n1ge_job {
     Debug("&n1ge_job\n");
 
-    return (exists($ENV{JOBID}) ? "1" : "0");
+    return (exists($ENV{JOB_ID}) ? "1" : "0");
 }
 
 #--------------------------------------------------------------------------
@@ -1661,6 +1661,19 @@ sub n1ge_hosts {
     my $hosts = join(",", @hosts);
     Debug("&n1ge_hosts returning: $hosts\n");
     return "$hosts";
+}
+
+#--------------------------------------------------------------------------
+
+# SGE and N1GE are the same package
+sub sge_job {
+    return n1ge_job(@_);
+}
+sub sge_max_procs {
+    return n1ge_max_procs(@_);
+}
+sub sge_hosts {
+    return n1ge_hosts(@_);
 }
 
 #--------------------------------------------------------------------------

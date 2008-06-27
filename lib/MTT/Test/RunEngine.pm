@@ -41,6 +41,9 @@ my $test_run_full_name;
 # Keep track of how many tests have passed, failed, skipped, and timed out
 my $test_results_count;
 
+# Submit results after each run or after *all* the runs
+my $submit_results_after_each = 0;
+
 #--------------------------------------------------------------------------
 
 sub RunEngine {
@@ -75,6 +78,11 @@ sub RunEngine {
     $break_threshold->{MTT::Values::FAIL}      = Value($ini, $section, "break_threshold_fail");
     $break_threshold->{MTT::Values::TIMED_OUT} = Value($ini, $section, "break_threshold_timeout");
     $break_threshold->{MTT::Values::SKIPPED}   = Value($ini, $section, "break_threshold_skipped");
+
+    # This boolean value defaults to 0, and allows the user to submit results
+    # after each test to ensure at least *some* results are submitted (in case
+    # a single test sets the cluster on fire)
+    $submit_results_after_each = Value($ini, $section, "submit_results_after_each");
 
     # Normalize the thresholds. Acceptable formats:
     #   * D%  - percentage
@@ -367,6 +375,11 @@ sub _run_one_test {
     $MTT::Test::runs_to_be_saved->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$MTT::Test::Run::test_np}->{$cmd} = 
         $MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$MTT::Test::Run::test_np}->{$cmd} = $report;
     MTT::Reporter::QueueAdd("Test Run", $run->{simple_section_name}, $report);
+
+    # Submit results after each test?
+    if ($submit_results_after_each) {
+        MTT::Reporter::QueueSubmit();
+    }
 
     # Set the test run result and increment the counter
     $ENV{MTT_TEST_RUN_RESULT} = $report->{test_result};

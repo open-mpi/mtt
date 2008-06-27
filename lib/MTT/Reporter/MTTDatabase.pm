@@ -113,23 +113,25 @@ sub Init {
 
     my $dir;
     my $host = $url;
-    if ($host =~ /(http:\/\/[-a-zA-Z0-9.]+):(\d+)\/(.*)$/) {
+    # http://login3.ranger.tacc.utexas.edu:8008
+    if ($host =~ /(http:\/\/[-a-zA-Z0-9.]+):(\d+)\/?(.*)?$/) {
         $host = $1;
         $port = $2;
         $dir = $3;
-    } elsif ($host =~ /(http:\/\/[-a-zA-Z0-9.]+)\/(.*)$/) {
+    } elsif ($host =~ /(http:\/\/[-a-zA-Z0-9.]+)\/?(.*)?$/) {
         $host = $1;
         $dir = $2;
         $port = 80;
-    } elsif ($host =~ /(https:\/\/[-a-zA-Z0-9.]+)\/(.*)$/) {
+    } elsif ($host =~ /(https:\/\/[-a-zA-Z0-9.]+)\/?(.*)?$/) {
         $host = $1;
         $dir = $2;
         $port = 443;
-    } elsif  ($host =~ /(https:\/\/[-a-zA-Z0-9.]+):(\d+)\/(.*)$/) {
+    } elsif  ($host =~ /(https:\/\/[-a-zA-Z0-9.]+):(\d+)\/?(.*)?$/) {
         $host = $1;
         $port = $2;
         $dir = $3;
     } else {
+        Warning("MTTDatabase Reporter did not get a valid url: $url .\n");
         return undef;
     }
     $url = "$host:$port/$dir";
@@ -145,10 +147,10 @@ sub Init {
         my $ua = LWP::UserAgent->new({ env_proxy => 0 });
         
         # @#$@!$# LWP proxying for https *does not work*.  So
-        # don't set $ua->proxy() for it.  Instead, we'll set #
+        # don't set $ua->proxy() for it.  Instead, we'll set
         # $ENV{https_proxy} whenever we process requests that
-        # require # SSL proxying, because that is obeyed deep down
-        # in the # innards underneath LWP.
+        # require SSL proxying, because that is obeyed deep down
+        # in the innards underneath LWP.
         $ua->proxy([$scheme], $p->{proxy})
             if ($p->{proxy} ne "" && $scheme ne "https");
         $ua->agent("MPI Test MTTDatabase Reporter");
@@ -228,7 +230,7 @@ sub Finalize {
 sub Submit {
     my ($info, $entries) = @_;
 
-    Debug("MTTDatabase reporter\n");
+    Debug("MTTDatabase reporter submit\n");
 
     my $successes = 0;
     my @success_outputs;

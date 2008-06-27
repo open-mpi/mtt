@@ -219,3 +219,12 @@ To announce to OMPI core testers:
   - break_threshold_fail
   - break_threshold_skipped
   - break_threshold_timeout
+
+- submit_results_after_each INI parameter - directs MTT to submit results after
+  each test. (Useful to ensure *some* test results get submitted in case the
+  scheduler kills the MTT run.)
+
+- "sge" aliases for "n1ge" funclets
+  - sge_job
+  - sge_max_procs
+  - sge_hosts
