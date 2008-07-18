@@ -382,7 +382,7 @@ sub _run_one_test {
     # Submit results after each test?
     if ($submit_results_after_each or
        (defined($submit_results_after_n_results) and
-                $submit_results_after_n_results >= $submit_results_count++)) {
+                $submit_results_count++ > $submit_results_after_n_results)) {
         MTT::Reporter::QueueSubmit();
         $submit_results_count = 0;
     }
