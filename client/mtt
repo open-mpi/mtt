@@ -460,6 +460,10 @@ foreach my $hash (@ini_list) {
     MTT::Globals::load($scratch_arg, $ini_full);
     MTT::Messages::Messages($debug, $verbose, cwd());
 
+    # Make the INI file globally accessible
+
+    $MTT::Globals::Internals->{ini} = $ini_full;
+
     if ($get_value_arg) {
         _process_get_value_option($get_value_arg, $ini);
         next;
@@ -470,6 +474,7 @@ foreach my $hash (@ini_list) {
     MTT::Lock::Init($ini);
 
     # Set the logfile, if specified
+
     my $logfile = MTT::Values::Value($ini, "mtt", "log_file", "logfile");
     if (defined($logfile)) {
         MTT::Messages::open_logfile($logfile);

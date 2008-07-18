@@ -118,8 +118,9 @@ sub Install {
     $config->{make_all_arguments} = Value($ini, $section, "clustertools_make_all_arguments");
 
     # Log the make output
-    my $rand_str = MTT::Values::RandomString(10);
-    $config->{make_all_arguments} .= " 2>&1| tee make-$rand_str.log";
+    # MOVE TO THE INI FILE
+    # my $rand_str = MTT::Values::RandomString(10);
+    # $config->{make_all_arguments} .= " | tee make-$rand_str.log";
 
     # JMS: compiler name may have come in from "compiler_name" in
     # Install.pm. So if we didn't define one for this module, use the
@@ -272,6 +273,15 @@ sub Install {
     if ($os =~ /SunOS/i) {
         my $mpi_d_file = "$config->{abs_srcdir}/ompi/dtrace/mpi.d";
         MTT::DoCommand::Cmd(1, "cp $mpi_d_file $staging_dir");
+    }
+
+    # Copy over the libC libraries needed for C++ programs (such as ompi_info)
+    # to dynamically load
+    if (($os =~ /SunOS/i) and ($compiler_name =~ /sun|sos/i)) {
+        my $libc_libraries = _find_sun_studio_libc_libraries();
+        foreach my $lib (@$libc_libraries) {
+            MTT::DoCommand::Cmd(1, "cp $lib $staging_dir");
+        }
     }
 
     # Create binary packages
@@ -975,6 +985,9 @@ sub create_linux_packages {
     MTT::DoCommand::Cmd(1, "cp -r $temp_dir $destination_dir/rpm");
     MTT::DoCommand::Cmd(1, "rm -rf $temp_dir");
 
+    # Open up permissions on "rpm" dir
+    chmod(0755, "$destination_dir/rpm");
+
     # Return the directory we were in before entering this subroutine
     MTT::DoCommand::Popdir();
 
@@ -1195,6 +1208,12 @@ sub _set_x_in_libtool_script {
 
     $file = "./libtool" if (! -e $file);
 
+    # Prevent fatal Slurp error
+    if (! -e $file) {
+        Warning("No $file script to update. Returning.\n");
+        return undef;
+    }
+
     # Keep a backup copy of the file lying around for debugging
     # purposes
     MTT::DoCommand::Cmd(1, "cp $file $file.orig");
@@ -1268,6 +1287,21 @@ sub _setup_installer {
 
     Debug("$package: returning $ret\n");
     return $ret;
+}
+
+# Return a list of .so files needed for Sun Studio
+# C++ programs (e.g., ompi_info)
+sub _find_sun_studio_libc_libraries {
+    my $suncc = FindProgram(qw(suncc));
+    my $dirname = dirname($suncc) . "/../prod/usr/lib";
+    my @libs = ("libCrun", "libCstd");
+
+    my @ret;
+    foreach my $lib (@libs) {
+        my ($l) = glob "$dirname/$lib*";
+        push(@ret, $l) if (-e $l);
+    }
+    return \@ret;
 }
 
 1;

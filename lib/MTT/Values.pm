@@ -31,6 +31,7 @@ use MTT::Values::Functions::SVN;
 use MTT::Values::Functions::OS::Solaris;
 use Data::Dumper;
 use Config::IniFiles;
+use Carp qw(cluck);
 use vars qw(@EXPORT);
 use base qw(Exporter);
 @EXPORT = qw(EvaluateString IniValue Value Logical ProcessEnvKeys);
@@ -55,6 +56,7 @@ $result_messages->{MTT::Values::SKIPPED}   = "skipped";
 
 #--------------------------------------------------------------------------
 
+# Returns either a scalar or array ref
 sub EvaluateString {
 
     # Output can get pretty volumnious in this sub.
@@ -505,6 +507,16 @@ sub ProcessEnvKeys {
             Debug("$str (now: $ENV{$1})\n");
         }
     }
+
+    # env_module (grab the value here for reporter(s))
+    $val = $config->{env_module};
+    if (defined($val)) {
+        my @vals = split(/\n/, $val);
+        foreach my $v (@vals) {
+            push(@$save, "env_module $v");
+        }
+    }
+
 }
 
 #--------------------------------------------------------------------------

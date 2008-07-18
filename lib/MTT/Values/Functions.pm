@@ -25,6 +25,7 @@ use MTT::FindProgram;
 use MTT::Lock;
 use MTT::Util;
 use MTT::INI;
+use MTT::Values;
 use Data::Dumper;
 use Cwd;
 
@@ -836,7 +837,7 @@ sub test_executable {
 
 # Return the current argv (excluding $argv[0]) from a running test
 sub test_argv {
-    Debug("&test_params returning $MTT::Test::Run::test_argv\n");
+    Debug("&test_argv returning $MTT::Test::Run::test_argv\n");
 
     return $MTT::Test::Run::test_argv;
 }
@@ -2205,6 +2206,7 @@ sub get_processor_count {
         # Use the Solaris psrinfo command if it's there
         open(INFO, "$psrinfo -p|");
         $ret = <INFO>;
+        chomp($ret);
         close(INFO);
 
     } elsif (-e $cpuinfo) {
@@ -2253,6 +2255,7 @@ sub get_processor_count {
         open(INFO, $cpuinfo);
 
         while (<INFO>) {
+            chomp;
             if (/^processor\s*\:\s*\d+\s*$/) {
                 $count++;
             }
@@ -2526,6 +2529,16 @@ sub vampir_trace_files_exist {
         }
     }
     return 1;
+}
+
+# Pass in a string length 
+sub random_string {
+    return MTT::Values::RandomString(@_);
+}
+
+sub temp_filename {
+    my ($x, $filename) = tempfile(@_);
+    return $filename;
 }
 
 1;

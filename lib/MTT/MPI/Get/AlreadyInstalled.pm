@@ -70,6 +70,7 @@ sub Get {
     if (!defined($mpi)) {
         # by default lets guess that it is OMPI
         $mpi = "OMPI";
+        Warning("alreadyinstalled_mpi_type was not specified, defaulting to \"$mpi\".\n");
     }
     # Get a version string (E.g., Open MPI r#)
     my $version = Value($ini, $section, "alreadyinstalled_version");

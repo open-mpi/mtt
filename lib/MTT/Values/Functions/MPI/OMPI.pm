@@ -280,7 +280,7 @@ sub _get_mpicc_compiler_info {
     # Get basebame
     $compiler_basename = File::Basename::basename($compiler_absolute);
 
-    if ($compiler_basename eq "cc") {
+    if (($compiler_basename eq "cc") or ($compiler_basename eq "suncc")) {
         $name = "sun";
         $version = MTT::Values::Functions::get_sun_cc_version($compiler_absolute);
     } elsif ($compiler_basename eq "gcc") {

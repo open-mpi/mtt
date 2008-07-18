@@ -13,6 +13,7 @@
 package MTT::Reporter;
 
 use strict;
+use Carp;
 use File::Basename;
 use MTT::Messages;
 use MTT::FindProgram;
@@ -27,13 +28,8 @@ my $cache;
 # Queued requests
 my $queue;
 
-# cache of the ini file
-my $ini;
-
-# modules to invoke upon Reporter()
-my @modules;
-
-#--------------------------------------------------------------------------
+# modules to invoke (module => INI section)
+my $modules;
 
 #--------------------------------------------------------------------------
 
@@ -100,7 +96,7 @@ sub _stringify {
 #--------------------------------------------------------------------------
 
 sub Init {
-    ($ini) = @_;
+    my ($ini) = @_;
 
     Verbose("*** Reporter initializing\n");
 
@@ -121,7 +117,7 @@ sub Init {
             my $ret = MTT::Module::Run("MTT::Reporter::$m", "Init", $ini,
                                        $section);
             if ($ret) {
-                push(@modules, $m);
+                $modules->{$m} = $section;
             }
         }
     }
@@ -134,7 +130,7 @@ sub Init {
 sub Finalize {
     Verbose("*** Reporter finalizing\n");
 
-    foreach my $m (@modules) {
+    foreach my $m (keys %$modules) {
         MTT::Module::Run("MTT::Reporter::$m", "Finalize");
     }
 
@@ -147,13 +143,33 @@ sub Submit {
     my ($phase, $section, $report) = @_;
     my ($serials, $x);
 
-    # Make the common report entry
+    # Make the INI file globally accessible
+    my $ini = $MTT::Globals::Internals->{ini};
 
+    # Make the common report entry
     my $entries;
     push(@{$entries->{$phase}->{$section}}, $report);
 
     # Call all the reporters
-    foreach my $m (@modules) {
+    foreach my $m (keys %$modules) {
+
+        # Grab the INI section
+        my $reporter_section = $modules->{$m};
+
+        # For INI consistency, process setenv, unsetenv, prepend-path, and
+        # append-path, but no need to record these settings for the results. It
+        # is just a convenience (e.g., changing TMPDIR for MTTDatabase).
+        my %ENV_SAVE = %ENV;
+
+        # Process environment for given Reporter
+        my @save_env;
+        my $config;
+        $config->{setenv}       = MTT::Values::Value($ini, $reporter_section, "setenv");
+        $config->{unsetenv}     = MTT::Values::Value($ini, $reporter_section, "unsetenv");
+        $config->{prepend_path} = MTT::Values::Value($ini, $reporter_section, "prepend_path");
+        $config->{append_path}  = MTT::Values::Value($ini, $reporter_section, "append_path");
+        MTT::Values::ProcessEnvKeys($config, \@save_env);
+
         $x = MTT::Module::Run("MTT::Reporter::$m", "Submit", $cache, $entries);
         # Some reporters are not yet returning serials (e.g., text file)
         if (ref($x) ne "") {
@@ -161,6 +177,9 @@ sub Submit {
                 $serials->{$m}->{$k} = $x->{$k};
             }
         }
+
+        # Restore the environment
+        %ENV = %ENV_SAVE;
     }
 
     return $serials;
@@ -179,7 +198,7 @@ sub QueueAdd {
 sub QueueSubmit {
 
     # Call all the reporters
-    foreach my $m (@modules) {
+    foreach my $m (keys %$modules) {
         MTT::Module::Run("MTT::Reporter::$m", "Submit", $cache, $queue);
     }
 

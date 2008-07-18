@@ -392,7 +392,6 @@ sub _do_install {
     }
     if (defined($config->{env_modules})) {
         @env_modules = MTT::Util::split_comma_list($config->{env_modules});
-        Debug("Loading environment modules: @env_modules\n");
         MTT::EnvModule::unload(@env_modules);
         MTT::EnvModule::load(@env_modules);
     }
@@ -559,7 +558,6 @@ sub _do_install {
 
     # Unload any loaded environment modules
     if ($#env_modules >= 0) {
-        Debug("Unloading environment modules: @env_modules\n");
         MTT::EnvModule::unload(@env_modules);
     }
 

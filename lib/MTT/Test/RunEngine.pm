@@ -43,6 +43,8 @@ my $test_results_count;
 
 # Submit results after each run or after *all* the runs
 my $submit_results_after_each = 0;
+my $submit_results_count = 0;
+my $submit_results_after_n_results;
 
 #--------------------------------------------------------------------------
 
@@ -83,6 +85,7 @@ sub RunEngine {
     # after each test to ensure at least *some* results are submitted (in case
     # a single test sets the cluster on fire)
     $submit_results_after_each = Value($ini, $section, "submit_results_after_each");
+    $submit_results_after_n_results = Value($ini, $section, "submit_results_after_n_results");
 
     # Normalize the thresholds. Acceptable formats:
     #   * D%  - percentage
@@ -377,8 +380,11 @@ sub _run_one_test {
     MTT::Reporter::QueueAdd("Test Run", $run->{simple_section_name}, $report);
 
     # Submit results after each test?
-    if ($submit_results_after_each) {
+    if ($submit_results_after_each or
+       (defined($submit_results_after_n_results) and
+                $submit_results_after_n_results >= $submit_results_count++)) {
         MTT::Reporter::QueueSubmit();
+        $submit_results_count = 0;
     }
 
     # Set the test run result and increment the counter

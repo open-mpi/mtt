@@ -123,7 +123,6 @@ sub _do_get {
         @env_modules = MTT::Util::split_comma_list($config->{env_modules});
         MTT::EnvModule::unload(@env_modules);
         MTT::EnvModule::load(@env_modules);
-        Debug("Loading environment modules: @env_modules\n");
     }
 
     # Process setenv, unsetenv, prepend_path, and
@@ -147,7 +146,6 @@ sub _do_get {
     
     # Unload any loaded environment modules
     if ($#env_modules >= 0) {
-        Debug("Unloading environment modules: @env_modules\n");
         MTT::EnvModule::unload(@env_modules);
     }
 

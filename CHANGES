@@ -56,6 +56,8 @@ To announce to OMPI core testers:
     - &get_processor_count() - return the number of CPUs on the localhost
     - &vampir_trace_files_exist() - return true if VampirTrace trace files
       are found in the cwd()
+    - &random_string(n) - return a random string "n" characters long
+    - &temp_filename() - call File::Temp::tempfile() and return the filename
 
 - Allow mpi_get_name, test_get_name, and test_build_name fields to
   accept the special value "all", meaning that they'll use all
@@ -220,11 +222,22 @@ To announce to OMPI core testers:
   - break_threshold_skipped
   - break_threshold_timeout
 
-- submit_results_after_each INI parameter - directs MTT to submit results after
-  each test. (Useful to ensure *some* test results get submitted in case the
-  scheduler kills the MTT run.)
+- Test run INI parameters
+  - submit_results_after_each INI parameter - directs MTT to submit results after
+    each test. (Useful to ensure *some* test results get submitted in case the
+    scheduler kills the MTT run.)
+  - submit_results_after_n_results - directs MTT to submit results after
+    "n" tests
 
 - "sge" aliases for "n1ge" funclets
   - sge_job
   - sge_max_procs
   - sge_hosts
+
+- Accept the below environment INI params in Reporter sections:
+  - setenv
+  - unsetenv
+  - prepend_path
+  - append_path
+
+- MTTDatabase now respects the TMPDIR environment variable

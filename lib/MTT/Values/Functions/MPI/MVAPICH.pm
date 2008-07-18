@@ -28,6 +28,7 @@ sub find_bindings {
 #--------------------------------------------------------------------------
 
 sub get_version {
+    Debug("get_version got @_\n");
     my $bindir = shift;
     my $ver;
     my $first_line = 1;
@@ -45,6 +46,7 @@ sub get_version {
         }
     }
     close(VERSION);
+    Debug("get_version returning $ver\n");
     return $ver;
 }
 

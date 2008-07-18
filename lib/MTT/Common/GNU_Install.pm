@@ -164,7 +164,7 @@ sub _do_step {
 
             # Add header line to stdout
             if (defined($ret->{result_stdout})) {
-                $result_stdout = "--- $cmd result_stdout";
+                $result_stdout = "--- $cmd $config->{$arguments_key} result_stdout";
                 $result_stdout .= "/result_stderr"
                     if ($mss);
                 $result_stdout .= " ---\n$ret->{result_stdout}";
@@ -172,10 +172,10 @@ sub _do_step {
 
             # Add header line to stderr
             if (!$mss && defined($ret->{result_stderr})) {
-                $result_stderr = "--- $cmd result_stderr ---\n$ret->{result_stderr}";
+                $result_stderr = "--- $cmd $config->{$arguments_key} result_stderr ---\n$ret->{result_stderr}";
             }
 
-            # Repeat *only* if $restart_on_pattern is defined
+        # Repeat *only* if $restart_on_pattern is defined
         } while (!MTT::DoCommand::wsuccess($ret->{exit_status}) and
                  (defined($restart_on_pattern) &&
                   ($ret->{result_stderr} =~ /$restart_on_pattern/i or
@@ -185,7 +185,7 @@ sub _do_step {
         # If fail, save the results in {result_stdout} and
         # {result_stderr}.
         if (!MTT::DoCommand::wsuccess($ret->{exit_status})) {
-            $ret->{result_message} = "\"$cmd\" failed -- skipping this build.";
+            $ret->{result_message} = "\"$cmd $config->{$arguments_key}\" failed -- skipping this build.";
             # Put the output of the failure into $ret so that it gets
             # reported
             $ret->{result_stdout} = $result_stdout

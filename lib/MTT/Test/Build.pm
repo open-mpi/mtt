@@ -353,19 +353,15 @@ sub _do_build {
     # test build sections
     my @env_modules;
     my $val = Value($ini, $section, "env_module");
-    if (defined($val) && defined($mpi_install->{env_modules})) {
-        $config->{env_modules} = $mpi_install->{env_modules} . "," .
-            $config->{env_modules};
-    } elsif (defined($val)) {
-        $config->{env_modules} = $val;
-    } elsif (defined($mpi_install->{env_modules})) {
-        $config->{env_modules} = $mpi_install->{env_modules};
-    }
+    $config->{env_modules} = $val 
+        if (defined($val));
+    $config->{env_modules} .= "," . $mpi_install->{env_modules}
+        if (defined($mpi_install->{env_modules}));
+
     if ($config->{env_modules}) {
         @env_modules = MTT::Util::split_comma_list($config->{env_modules});
         MTT::EnvModule::unload(@env_modules);
         MTT::EnvModule::load(@env_modules);
-        Debug("Loading environment modules: @env_modules\n");
     }
 
     # Process setenv, unsetenv, prepend-path, and append-path -- for
@@ -402,7 +398,6 @@ sub _do_build {
             
     # Unload any loaded environment modules
     if ($#env_modules >= 0) {
-        Debug("Unloading environment modules: @env_modules\n");
         MTT::EnvModule::unload(@env_modules);
     }
 

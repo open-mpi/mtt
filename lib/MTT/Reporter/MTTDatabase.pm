@@ -348,6 +348,7 @@ sub Submit {
             }
 
             _debug("Submitting to MTTDatabase...\n");
+            
             my ($req, $file) = _prepare_request(\$form);
             my $response = _do_request($$req);
             unlink($file);
@@ -485,8 +486,20 @@ sub _do_request {
 sub _prepare_request {
     my $form = shift;
 
+    # Find a temporary directory for the .inc files
+    my $tmpdir;
+    if (defined($ENV{TMPDIR})) {
+        $tmpdir = $ENV{TMPDIR};
+    } else {
+        $tmpdir = "/tmp";
+    }
+    MTT::Files::mkdir($tmpdir);
+
     # Write an anonymous PHP array to a file
-    my ($fh, $filename) = tempfile(SUFFIX => "-mttdatabase-submission.inc");
+    my ($fh, $filename) = tempfile(
+        DIR    => $tmpdir,
+        SUFFIX => "-mttdatabase-submission.inc"
+    );
     open(FILE, "> $filename");
     print FILE &_perl_arr_2_php_arr(Dumper($$form));
     close(FILE);
