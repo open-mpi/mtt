@@ -152,7 +152,7 @@ sub Install {
         # outtermost and innermost loops (even though we *could* check
         # at every loop level); that's good enough.
         last
-            if (MTT::Util::find_terminate_file());
+            if (MTT::Util::time_to_terminate());
 
         if ($section =~ /^\s*mpi install:/) {
             Verbose(">> $phase_name [$section]\n");
@@ -224,7 +224,7 @@ sub Install {
                             # check at every loop level); that's good
                             # enough.
                             last
-                                if (MTT::Util::find_terminate_file());
+                                if (MTT::Util::time_to_terminate());
 
                             my $mpi_version = $mpi_get->{$mpi_version_key};
 

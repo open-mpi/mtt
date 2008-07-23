@@ -143,7 +143,7 @@ sub RunEngine {
 
         # See if we're supposed to terminate.
         last
-            if (MTT::Util::find_terminate_file());
+            if (MTT::Util::time_to_terminate());
 
         last
             if (MTT::Util::check_break_threshold(
@@ -183,7 +183,7 @@ sub RunEngine {
             foreach my $this_np (@$all_np) {
                 # See if we're supposed to terminate.
                 last
-                    if (MTT::Util::find_terminate_file());
+                    if (MTT::Util::time_to_terminate());
 
                 $test_results->{$this_np} =
                     _run_one_np($install_dir, $run, $mpi_details, $this_np,
@@ -247,7 +247,7 @@ sub _run_one_np {
             foreach my $e (@$execs) {
                 # See if we're supposed to terminate.
                 last
-                    if (MTT::Util::find_terminate_file());
+                    if (MTT::Util::time_to_terminate());
                 _run_one_test($install_dir, $run, $mpi_details, $e, $name,
                               $variant++, $force);
             }

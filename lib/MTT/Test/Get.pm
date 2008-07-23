@@ -47,7 +47,7 @@ sub Get {
     foreach my $section ($ini->Sections()) {
         # See if we're supposed to terminate
         last
-            if (MTT::Util::find_terminate_file());
+            if (MTT::Util::time_to_terminate());
 
         if ($section =~ /^\s*test get:/) {
             # Make the active INI section name known

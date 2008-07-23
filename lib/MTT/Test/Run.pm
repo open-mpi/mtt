@@ -78,7 +78,7 @@ sub Run {
         # outtermost and innermost loops (even though we *could* check
         # at every loop level); that's good enough.
         last
-            if (MTT::Util::find_terminate_file());
+            if (MTT::Util::time_to_terminate());
 
         if ($section =~ /^\s*test run:/) {
 
@@ -130,7 +130,7 @@ sub Run {
                                 # *could* check at every loop level);
                                 # that's good enough.
                                 last
-                                    if (MTT::Util::find_terminate_file());
+                                    if (MTT::Util::time_to_terminate());
 
                                 if ($test_build_name eq "all" ||
                                     $test_build_key eq $test_build_name) {

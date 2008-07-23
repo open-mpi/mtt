@@ -64,6 +64,9 @@ my $_defaults = {
     after_all_exec => undef,
     after_all_exec_timeout => 10,
     after_all_exec_pass => "&and(&cmd_wifexited(), &eq(&cmd_wexitstatus(), 0))",
+
+    min_disk_free => "5%",
+    min_disk_free_wait => "60",
 };
 
 #--------------------------------------------------------------------------
@@ -111,7 +114,7 @@ sub load {
 
     # Simple parameters
 
-    my @names = qw/max_np textwrap drain_timeout trim_save_successful trim_save_failed trial http_proxy https_proxy ftp_proxy terminate_files pause_files/;
+    my @names = qw/max_np textwrap drain_timeout trim_save_successful trim_save_failed trial http_proxy https_proxy ftp_proxy terminate_files pause_files min_disk_free min_disk_free_wait/;
     foreach my $t (qw/before after/) {
         foreach my $a (qw/all each/) {
             push(@names, $t . "_" . $a . "_exec");

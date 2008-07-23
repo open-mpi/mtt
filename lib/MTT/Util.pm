@@ -29,10 +29,12 @@ use base qw(Exporter);
              get_array_ref
 );
 
+use Cwd;
 use MTT::Globals;
 use MTT::Messages;
 use MTT::Values;
 use Data::Dumper;
+use Filesys::DiskFree;
 
 #--------------------------------------------------------------------------
 
@@ -69,7 +71,8 @@ sub split_comma_list {
 
 my @_terminate_files;
 my @_pause_files;
-sub find_terminate_file {
+my $df_handle;
+sub time_to_terminate {
     # If we previously found a terminate file, just return
     return 1
         if ($MTT::Globals::Values->{time_to_terminate});
@@ -89,6 +92,17 @@ sub find_terminate_file {
             foreach my $f (@$files) {
                 push(@_pause_files, MTT::Values::EvaluateString($f));
             }
+        }
+
+        # Setup min_disk_free to be a number of bytes
+        $df_handle = new Filesys::DiskFree;
+        if ($MTT::Globals::Values->{min_disk_free} =~ m/([0-9]{1,2})\%/) {
+            $df_handle->df();
+            my $val = $1;
+            $val /= 100.0;
+            $val *= $df_handle->total(cwd());
+            $val = int($val);
+            $MTT::Globals::Values->{min_disk_free} = $val;
         }
     }
 
@@ -124,7 +138,39 @@ sub find_terminate_file {
         }
     } while ($found == 1);
 
-    # We didn't find any, so return false
+    # Check the disk space remaining
+    if ($MTT::Globals::Values->{min_disk_free} > 0) {
+        my $c = getcwd();
+        $df_handle->df();
+        if ($df_handle->avail($c) < 
+            $MTT::Globals::Values->{min_disk_free}) {
+            Warning("Disk free is less than minimum (" . 
+                    $df_handle->avail($c) .
+                    " bytes < $MTT::Globals::Values->{min_disk_free} bytes)\n");
+            Warning("Waiting for up to $MTT::Globals::Values->{min_disk_free_wait} minutes to see if the situation resolves itself\n")
+                if ($MTT::Globals::Values->{min_disk_free_wait} > 0);
+
+            my $i = 0;
+            while ($i < 2 * $MTT::Globals::Values->{min_disk_free_wait}) {
+                sleep(30);
+                $df_handle->df();
+                if ($df_handle->avail($c) >
+                    $MTT::Globals::Values->{min_disk_free}) {
+                    last;
+                }
+                ++$i;
+            }
+            # If we reach an hour without more disk, then abort
+            if ($i >= 2 * $MTT::Globals::Values->{min_disk_free_wait}) {
+                Warning("Still not enough disk space available\n");
+                Warning("Exiting...\n");
+                $MTT::Globals::Values->{time_to_terminate} = 1;
+                return 1;
+            }
+        }
+    }
+
+    # Ok to keep running; return false
     return 0;
 }
 

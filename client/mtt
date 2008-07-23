@@ -112,6 +112,7 @@ use MTT::Lock;
 use MTT::Values;
 use MTT::Timer;
 use MTT::Util;
+use Filesys::DiskFree;
 
 my @file_arg;
 my $stdin_arg;
@@ -492,31 +493,31 @@ foreach my $hash (@ini_list) {
         MTT::Reporter::Init($ini);
     }
 
-    if ($mpi_get && !MTT::Util::find_terminate_file()) {
+    if ($mpi_get && !MTT::Util::time_to_terminate()) {
         &MTT::Timer::start($time_phases);
         MTT::MPI::Get::Get($ini, $source_dir, $force_arg);
         &MTT::Timer::stop();
         &MTT::Timer::print("Phase: MPI Get", $time_phases, 1);
     }
-    if ($mpi_install && !MTT::Util::find_terminate_file()) {
+    if ($mpi_install && !MTT::Util::time_to_terminate()) {
         &MTT::Timer::start($time_phases);
         MTT::MPI::Install::Install($ini, $ini_full, $install_dir, $force_arg);
         &MTT::Timer::stop();
         &MTT::Timer::print("Phase: MPI Install", $time_phases, 1);
     }
-    if ($test_get && !MTT::Util::find_terminate_file()) {
+    if ($test_get && !MTT::Util::time_to_terminate()) {
         &MTT::Timer::start($time_phases);
         MTT::Test::Get::Get($ini, $source_dir, $force_arg);
         &MTT::Timer::stop();
         &MTT::Timer::print("Phase: Test Get", $time_phases, 1);
     }
-    if ($test_build && !MTT::Util::find_terminate_file()) {
+    if ($test_build && !MTT::Util::time_to_terminate()) {
         &MTT::Timer::start($time_phases);
         MTT::Test::Build::Build($ini, $ini_full, $install_dir, $force_arg);
         &MTT::Timer::stop();
         &MTT::Timer::print("Phase: Test Build", $time_phases, 1);
     }
-    if ($test_run && !MTT::Util::find_terminate_file()) {
+    if ($test_run && !MTT::Util::time_to_terminate()) {
         &MTT::Timer::start($time_phases);
         MTT::Test::Run::Run($ini, $ini_full, $install_dir, $runs_data_dir,
                             $force_arg);

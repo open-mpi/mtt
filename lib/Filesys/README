@@ -1,0 +1,86 @@
+NAME
+    Filesys::DiskFree -- perform the Unix command 'df' in a portable fashion
+
+SYNOPSIS
+        use Filesys::DiskFree;
+
+        $handle = new Filesys::DiskFree;
+        $handle->df();
+        print "The root device is ".$handle->device("/")."\n";
+        print "It has ".$handle->avail("/")." bytes available\n";
+        print "It has ".$handle->total("/")." bytes total\n";
+        print "It has ".$handle->used("/")." bytes used\n";
+
+DESCRIPTION
+    Filesys::DiskFree does about what the unix command df(1) does, listing
+    the mounted disks, and the amount of free space used & available.
+
+  Functions
+
+    Filesys::DiskFree->set('option' => 'value')
+        Sets various options within the module.
+
+        The most common option to change is the mode, which can be either
+        blocks or inodes. By default, blocks is used.
+
+        If reading a file from a 'foreign' OS using the load() function,
+        format may be used, which takes the name of an OS as set in the $^O
+        variable.
+
+        Returns the previous values of the options.
+
+    Filesys::DiskFree->df()
+        Perfoms a 'df' command, and stores the values for later use.
+
+    Filesys::DiskFree->command()
+        Returns the appropriate command to do a 'df' command, for the
+        current format. This is used when you wish to call a df on a remote
+        system. Use the df() method for local df's.
+
+        Returns undef if there isn't an appropriate command.
+
+    Filesys::DiskFree->load($line)
+        Reads in the output of a 'df', $line can be either a scalar or a
+        filehandle. If $line is a filehandle, then the filehandle is read
+        until EOF.
+
+        Returns undef on failure
+
+    Filesys::DiskFree->disks()
+        Returns all the disks known about
+
+    Filesys::DiskFree->device($id)
+        Returns the device for $id, which is a scalar containing the device
+        name of a disk or a filename, in which case the disk that filename
+        in stored upon is used.
+
+    Filesys::DiskFree->mount($id)
+        Returns the mount point for $id, which is a scalar containing the
+        device name of a disk or a filename, in which case the disk that
+        filename in stored upon is used.
+
+    Filesys::DiskFree->avail($id)
+        Returns the amount of available space in bytes for $id, which is a
+        scalar containing the device name of a disk or a filename, in which
+        case the disk that filename in stored upon is used.
+
+    Filesys::DiskFree->total($id)
+        Returns the amount of total space in bytes for $id, which is a
+        scalar containing the device name of a disk or a filename, in which
+        case the disk that filename in stored upon is used.
+
+    Filesys::DiskFree->used($id)
+        Returns the amount of used space in bytes for $id, which is a scalar
+        containing the device name of a disk or a filename, in which case
+        the disk that filename in stored upon is used.
+
+BUGS
+        It should support more formats, currently only Linux, Irix, Solaris
+        & BSD are supported. Other formats will be added as available.
+        Please sent your OS Name & version, the 'best' df options to use,
+        and the output of df with those options, and the contents of $^O if
+        you have access to a non-supported format.
+
+AUTHOR
+        Alan R. Barclay <gorilla@drink.com>
+

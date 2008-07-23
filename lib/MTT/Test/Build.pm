@@ -85,7 +85,7 @@ sub Build {
         # outtermost and innermost loops (even though we *could* check
         # at every loop level); that's good enough.
         last
-            if (MTT::Util::find_terminate_file());
+            if (MTT::Util::time_to_terminate());
 
         if ($section =~ /^\s*test build:/) {
             Verbose(">> $phase_name [$section]\n");
@@ -152,7 +152,7 @@ sub Build {
                                     # every loop level); that's good
                                     # enough.
                                     last
-                                        if (MTT::Util::find_terminate_file());
+                                        if (MTT::Util::time_to_terminate());
 
                                     my $mpi_install = $mpi_version->{$mpi_install_key};
                                     # Only take sucessful MPI installs
