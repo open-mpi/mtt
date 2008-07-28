@@ -31,6 +31,9 @@ sub Checkout {
         $scheme = "https";
     }
 
+    # Using "r23" instead of "23" is an honest mistake
+    $params->{rev} =~ s/^\s*r//g;
+
     # Assemble the command
     my $cmd = defined($params->{cmd}) ? $params->{cmd} : "svn";
     $cmd .= " " . $params->{command_arguments}

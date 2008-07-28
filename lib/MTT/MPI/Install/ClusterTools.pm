@@ -36,6 +36,7 @@ my $full_version_number;
 my $product_version;
 my $compiler_name;
 my $product_name = "ClusterTools";
+my $dist_tarball_name;
 my $package_name_prefix;
 my $package_basedir;
 my $configure_prefix;
@@ -71,6 +72,7 @@ sub Install {
     # Otherwise, staging area is installdir/configure_prefix.
     my $staging_dir = $config->{installdir};
     my $wrapper_rpath = $config->{installdir};
+    my $abs_srcdir = "$config->{abs_srcdir}";
 
     # Process clustertools input parameters
     # These variables are primarily only of interest to Release Engineering
@@ -166,14 +168,21 @@ sub Install {
         Verbose("Skipping $autogen_script.\n");
     }
 
+    # Create a tarball on the directory that has already been "autogen'd"
+    # TODO: Move this block into create_linux_packages
+    $dist_tarball_name = "$product_name-$full_version_number";
+    my $cwd = cwd();
+    $config->{dist_tarball} = _make_dist_tarball(cwd(), $dist_tarball_name);
+
     # In some cases, we might need to patch the Libtool script.
-    # Disable for now. This is only required because:
+    # This is only required because:
     #
     #   a) There's quirk in Sun Studio's f90 linker flag handling.
     #   b) Autotools links in Crun and Cstd libraries behind our backs
     #
     if ($compiler_name =~ /sun|sos/i) {
-        $after_configure = \&_update_libtool_script;
+        # $after_configure = \&_update_libtool_script;
+        $after_configure = "config/patch-libtool-for-sun-studio.pl";
     }
 
     # Run configure / make all / make check / make install
@@ -186,6 +195,10 @@ sub Install {
         undef $configure_arguments;
         push(@$configure_arguments, $tmp);
     }
+
+    # DEBUGGING
+    # MTT::Files::mkdir($staging_dir);
+    # goto CREATE_PACKAGES;
 
     my $i = 0;
     foreach my $_configure_arguments (@$configure_arguments) {
@@ -246,8 +259,6 @@ sub Install {
             if (exists($ret->{fail}));
 
         # Backup the config.log
-        # EAM: THIS BELONGS IN ITS OWN FUNCTION, BUT HOW CAN WE PASS
-        #       *MULTIPLE* CODE REFERENCES TO RUNSTEP()?
         my $rand_str = MTT::Values::RandomString(10);
         MTT::DoCommand::Cmd(1, "mv config.log config-$rand_str.log");
 
@@ -275,6 +286,8 @@ sub Install {
         MTT::DoCommand::Cmd(1, "cp $mpi_d_file $staging_dir");
     }
 
+    CREATE_PACKAGES:
+
     # Copy over the libC libraries needed for C++ programs (such as ompi_info)
     # to dynamically load
     if (($os =~ /SunOS/i) and ($compiler_name =~ /sun|sos/i)) {
@@ -284,7 +297,7 @@ sub Install {
         }
     }
 
-    # Create binary packages
+    # Create packages
     if ($create_packages) {
 
         # Setup the ClusterTools installer
@@ -306,7 +319,7 @@ sub Install {
         }
 
         # Create Solaris or Linux (RPM) packages
-        create_packages($staging_dir, $destination_dir, $install_dir);
+        create_packages($staging_dir, $destination_dir, $install_dir, $config);
 
         # Make the installer available to the post-installation steps
         my $installer_path = "$destination_dir/Install_Utilities";
@@ -318,7 +331,9 @@ sub Install {
     }
 
     # Remove the mpi.d file from the staging area
-    MTT::DoCommand::Cmd(1, "rm $staging_dir/mpi.d");
+    if (-e "$staging_dir/mpi.d") {
+        MTT::DoCommand::Cmd(1, "rm $staging_dir/mpi.d");
+    }
 
     # Set which bindings were compiled
     $ret->{c_bindings} = 1;
@@ -616,7 +631,7 @@ includedir=%s
 libdir=%s
 ";
 
-    # Incorporate the these compiler names into the data file name
+    # Incorporate these compiler names into the data file name
     # if need be
     my $filename_labels;
     $filename_labels->{"sun"} = "";
@@ -896,12 +911,12 @@ PKG=\"$name\"
 NAME=\"$short_name\"
 VERSION=\"$release_version_number\"
 BASEDIR=\"$package_basedir\"
-ARCH=\"ISA\"
+ARCH=\"$arch\"
 SUNW_PRODVERS=\"$product_version\"
-SUNW_PRODNAME=\"Open MPI\"
+SUNW_PRODNAME=\"Sun HPC $product_name\"
 SUNW_PKGVERS=\"$version\"
 DESC=\"$desc\"
-VENDOR=\"Open MPI\"
+VENDOR=\"$vendor\"
 CATEGORY=\"system\"
 CLASSES=\"none\"
 MAXINST=\"1000\"
@@ -933,7 +948,7 @@ sub _write_copyright_file {
 # RPM, because we are creating a lot of dummy sections
 # and files to feed to rpmbuild.
 sub create_linux_packages {
-    my ($staging_dir, $destination_dir, $install_dir) = @_;
+    my ($staging_dir, $destination_dir, $install_dir, $config) = @_;
     Debug("create_linux_packages: got @_\n");
 
     # Prepare an overarching status variable
@@ -948,15 +963,21 @@ sub create_linux_packages {
     my $temp_dir = tempdir(TEMPLATE => "XXXXXX-mtt-rpm-scratch", DIR => "/tmp");
 
     # Create a .spec file on the fly
-    my $spec_file = _create_spec_file($temp_dir, $install_dir);
+    #
+    # TODO: lump the "source" and "binary" RPM steps into one, so that we
+    # create the binary RPM using our very own source RPM
+    my $binary_rpm_spec_file = _create_binary_rpm_spec_file($temp_dir, $install_dir);
+    my $source_rpm_spec_file = _create_source_rpm_spec_file($temp_dir, $install_dir, $config);
 
     # From man rpmbuild:
     #  -bb  Build a binary package (after doing the %prep,  %build,
     #       and %install stages).
     my $rpmbuild = FindProgram(qw(rpmbuild));
 
+    # Create the binary RPM
     my $nil = '%nil';
-    my $cmd = "$rpmbuild --verbose -bb" .
+    my $cmd;
+    $cmd = "$rpmbuild --verbose -bb" .
               # Add $os_distro to the RPM filename format
               " --define=\"_build_name_fmt " .
                           "%%{ARCH}/" .
@@ -971,21 +992,42 @@ sub create_linux_packages {
               # Override the below built-in macro because it does annoying
               # things like gzipping every file in the installation
               " --define=\"suse_check $nil\"" .
-              " $spec_file";
+              " $binary_rpm_spec_file";
 
     my $ret = MTT::DoCommand::Cmd(1, $cmd);
     if (0 != $ret->{exit_status}) {
         $success = 0;
     }
 
-    # We can use the %_build_name_fmt macro instead of this subroutine
-    # &_update_rpm_file_name($temp_dir);
+    # Create the source RPM
+    $cmd = "$rpmbuild --verbose -bs" .
+              # Add $os_distro to the RPM filename format
+              " --define=\"_build_name_fmt " .
+                          "%%{ARCH}/" .
+                          "%%{NAME}-" .
+                          "%%{VERSION}-" .
+                          "%%{RELEASE}." .
+                          "src.rpm\"" .
+              # RPM scratch area
+              " --define=\"_topdir $temp_dir\"" .
+              # Override the below built-in macro because it does annoying
+              # things like gzipping every file in the installation
+              " --define=\"suse_check $nil\"" .
+              " $source_rpm_spec_file";
+
+    my $ret = MTT::DoCommand::Cmd(1, $cmd);
+    if (0 != $ret->{exit_status}) {
+        $success = 0;
+    }
 
     MTT::DoCommand::Cmd(1, "rm -rf rpm");
     MTT::DoCommand::Cmd(1, "cp -r $temp_dir $destination_dir/rpm");
     MTT::DoCommand::Cmd(1, "rm -rf $temp_dir");
 
     # Open up permissions on "rpm" dir
+    # (Why is this needed?) 
+    MTT::DoCommand::Cmd(1, "chmod -R a+r $destination_dir/rpm");
+    MTT::DoCommand::Cmd(1, "find $destination_dir/rpm -type d | xargs chmod a+x");
     chmod(0755, "$destination_dir/rpm");
 
     # Return the directory we were in before entering this subroutine
@@ -1001,51 +1043,13 @@ sub create_linux_packages {
     return $ret;
 }
 
-# For some reason RPMs are traditionally named in the below format,
-# though the RPM file name is not critical to the RPMs functionality.
-# (For all rpm cares, the file could even have the wrong extension.)
-#
-#   E.g., <product>-<version>-<release>.<arch>.rpm
-#
-# Since we're creating RPMs for multiple Linuxes (Linuxi?), let's
-# include it in the RPM filename.
-sub _update_rpm_file_name {
-    my ($dir) = @_;
-    Debug("_update_rpm_file_name: got @_\n");
-    MTT::DoCommand::Pushdir($dir);
-
-    my $ext = "rpm";
-    my @rpms = glob "*RPMS/$arch/*.$ext";
-    my $old_rpm_name;
-    my $new_rpm_name;
-
-    foreach my $rpm (@rpms) {
-        $old_rpm_name = $rpm;
-        $rpm =~ s/(.$ext)$/-$os_distro$1/;
-        $new_rpm_name = $rpm;
-        MTT::DoCommand::Cmd(1, "mv $old_rpm_name $new_rpm_name");
-    }
-
-    MTT::DoCommand::Popdir();
-}
-
-sub _create_spec_file {
+# Create the binary RPM spec file
+sub _create_binary_rpm_spec_file {
     my ($rpm_top_dir, $build_root) = @_;
-    Debug("_create_spec_file: got @_\n");
+    Debug("_create_binary_rpm_spec_file: got @_\n");
 
-    # Set up RPM scratch area
-    MTT::Files::mkdir("$rpm_top_dir");
-    MTT::Files::mkdir("$rpm_top_dir/BUILD");
-    MTT::Files::mkdir("$rpm_top_dir/RPMS");
-    MTT::Files::mkdir("$rpm_top_dir/RPMS/i386");
-    MTT::Files::mkdir("$rpm_top_dir/RPMS/i586");
-    MTT::Files::mkdir("$rpm_top_dir/RPMS/i686");
-    MTT::Files::mkdir("$rpm_top_dir/RPMS/x86_64");
-    MTT::Files::mkdir("$rpm_top_dir/RPMS/noarch");
-    MTT::Files::mkdir("$rpm_top_dir/RPMS/athlon");
-    MTT::Files::mkdir("$rpm_top_dir/SOURCES");
-    MTT::Files::mkdir("$rpm_top_dir/SPECS");
-    MTT::Files::mkdir("$rpm_top_dir/SRPMS");
+    # Setup standard RPM top dir structure
+    _setup_rpm_top_dir($rpm_top_dir);
 
     my $contents = "
 #
@@ -1088,12 +1092,217 @@ Open MPI jobs.
 %attr(-, root, root) $configure_prefix/share
 %attr(-, root, root) $configure_prefix/etc
 %attr(-, root, root) $configure_prefix/examples
+
+# Ensure that the Open MPI .conf files are not overwritten on
+# an --upgrade operation, since they may contain local changes
+%config $configure_prefix/etc
+
+# Make sure prefix is removed in an \"rpm --erase\" operation
+%dir $configure_prefix
+
 ";
 
-    my $ret = "$rpm_top_dir/SPECS/$product_name-$full_version_number-$build_number.spec";
+    my $ret = "$rpm_top_dir/SPECS/$product_name-$full_version_number-$build_number-binary.spec";
 
     MTT::Files::SafeWrite(1, $ret, $contents);
     return $ret;
+}
+
+# Create the source RPM spec file
+sub _create_source_rpm_spec_file {
+    my ($rpm_top_dir, $build_root, $config) = @_;
+    Debug("_create_source_rpm_spec_file: got @_\n");
+
+    # Run configure / make all / make check / make install
+    my $configure_arguments = _get_configure_arguments($config->{configure_arguments});
+
+    # Setup standard RPM top dir structure
+    _setup_rpm_top_dir($rpm_top_dir);
+
+    # Grab the source name
+    my $dist_tarball = $config->{dist_tarball};
+    MTT::DoCommand::Cmd(1, "cp $config->{dist_tarball} $rpm_top_dir/SOURCES");
+    $dist_tarball = basename($config->{dist_tarball});
+
+    # Set-up an optional post configure step (e.g., the below step
+    # fixes up libtool to function properly with sun-studio)
+    my $post_configure_step;
+    if ($compiler_name =~ /sun|sos/i) {
+        $post_configure_step = "config/patch-libtool-for-sun-studio.pl";
+    }
+
+    # Compose the RPM %build section
+    my $build_section;
+    foreach my $args (@$configure_arguments) {
+        $build_section .= "
+%configure $args %{_append_to_configure_options}
+$post_configure_step
+%{__make}
+%{__make} install";
+    }
+
+    my $contents = "
+#
+#
+# SPEC file for $product_name $full_version_number
+#
+#
+    
+#############################################################################
+#
+# Preamble Section
+#
+#############################################################################
+
+Summary: A powerful implementaion of MPI
+Name: $product_name
+Version: $full_version_number
+# Certain characters (e.g., '-') are not allowed for the Release field
+Release: $build_number
+Vendor: $vendor
+License: BSD
+Group: Development/Libraries
+Source: $dist_tarball
+URL: http://www.sun.com/software/products/clustertools
+AutoReqProv: no
+Distribution: $vendor
+Packager: ompi-clustertools-ext\@sun.com
+
+%description
+Open MPI is a project combining technologies and resources from
+several other projects (FT-MPI, LA-MPI, LAM/MPI, and PACX-MPI) in
+order to build the best MPI library available.
+
+This RPM contains all the tools necessary to compile, link, and run
+Open MPI jobs.
+
+#############################################################################
+#
+# Prepatory Section
+#
+#############################################################################
+
+%prep
+%setup -n $dist_tarball_name
+
+#############################################################################
+#
+# Build Section
+#
+#############################################################################
+
+$build_section
+
+#############################################################################
+#
+# Clean Section
+#
+#############################################################################
+
+%clean
+
+#############################################################################
+#
+# Files Section
+#
+#############################################################################
+
+%files
+%defattr(-, root, root, -)
+%doc README INSTALL LICENSE
+
+# Ends up attempting to install into /etc, instead of %_prefix/etc
+# %config etc
+";
+
+    my $ret = "$rpm_top_dir/SPECS/$product_name-$full_version_number-$build_number-source.spec";
+
+    MTT::Files::SafeWrite(1, $ret, $contents);
+    return $ret;
+}
+
+sub _get_configure_arguments {
+    my ($args) = @_;
+
+    # Handle a scalar or an array (scalar for single-lib,
+    # array of args for multi-lib)
+    if (ref($args) eq "") {
+        my $tmp = $args;
+        undef $args;
+        push(@$args, $tmp);
+    }
+
+    # Otherwise we already have an array ref
+
+    # Massage the configure arguments a bit into something
+    # sane for a user of the source RPM
+    my @ret;
+    foreach my $arg (@$args) {
+
+        # Convert the hard-coded prefix to the RPM %_prefix macro
+        $arg =~ s/$configure_prefix/%_prefix/g;
+
+        # Convert newlines to spaces
+        $arg =~ s/\n|\r/ /g;
+
+        # Pull out any options that use an absolute path
+        # which the user may not have access to
+        $arg =~ s/(?:\S+=)\/\S+//g;
+
+        push(@ret, $arg);
+    }
+
+    return \@ret;
+}
+
+# Pass a directory to this subroutine that has already undergone autogen.sh.
+# Return the tarball name.
+#
+# TODO: Get contrib/make_dist_tarball to perform this step
+sub _make_dist_tarball {
+    my ($dir, $name) = @_;
+
+    my $ret;
+    my $temp_dir = tempdir(TEMPLATE => "XXXXXX-mtt-dist-tarball-scratch", DIR => "/tmp");
+    MTT::DoCommand::Cmd(1, "cp -r $dir $temp_dir/$name");
+
+    # If the copy operation was successful, tar up the sources
+    if (-d "$temp_dir/$name") {
+        MTT::DoCommand::Pushdir($temp_dir);
+
+        # Remove versioning data from the source tarball
+        MTT::DoCommand::Cmd(1, "find $name | grep -E \'\.hg\$\|\.svn\$\' | xargs rm -rf");
+        MTT::DoCommand::Cmd(1, "tar cf $name.tar $name");
+        MTT::DoCommand::Cmd(1, "gzip $name.tar");
+        MTT::DoCommand::Cmd(1, "mv $name.tar.gz $dir");
+        MTT::DoCommand::Popdir();
+        MTT::DoCommand::Cmd(1, "rm -rf $temp_dir");
+
+    } else {
+        return undef;
+    }
+
+    $ret = "$dir/$name.tar.gz";
+
+    return $ret;
+}
+
+sub _setup_rpm_top_dir {
+    my ($dir) = @_;
+
+    # Set up RPM scratch area
+    MTT::Files::mkdir("$dir");
+    MTT::Files::mkdir("$dir/BUILD");
+    MTT::Files::mkdir("$dir/RPMS");
+    MTT::Files::mkdir("$dir/RPMS/i386");
+    MTT::Files::mkdir("$dir/RPMS/i586");
+    MTT::Files::mkdir("$dir/RPMS/i686");
+    MTT::Files::mkdir("$dir/RPMS/x86_64");
+    MTT::Files::mkdir("$dir/RPMS/noarch");
+    MTT::Files::mkdir("$dir/RPMS/athlon");
+    MTT::Files::mkdir("$dir/SOURCES");
+    MTT::Files::mkdir("$dir/SPECS");
+    MTT::Files::mkdir("$dir/SRPMS");
 }
 
 # MAGIC REGEXP ALERT! This routine contains some magic

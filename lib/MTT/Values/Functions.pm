@@ -120,7 +120,64 @@ sub sum {
 
 #--------------------------------------------------------------------------
 
-# Return the product of all parameters
+# Increment the argument:
+#   * For integers, add $offset
+#   * For non-integers, increment the ASCII value by $offset
+# The offset defaults to 1.
+sub increment {
+    my ($val, $offset) = @_;
+    my $ret;
+    Debug("&increment got: $val\n");
+
+    $offset = 1 if (!defined($offset));
+
+    # Pass through, if there's no alphanumeric
+    # to increment
+    if ($val !~ /\w/) {
+        $ret = $val;
+
+    } elsif ($val =~ /(.*)?([a-zA-Z])$/) {
+        $ret = $1 . chr(ord($2) + $offset);
+
+    # For an integer, add $offset
+    } elsif ($val =~ /\d+/) {
+        $ret = $val + $offset;
+    } 
+
+    Debug("&increment returning: $ret\n");
+    return $ret;
+}
+
+# Decrement the argument:
+#   * For integers, subtract $offset
+#   * For non-integers, decrement the ASCII value by $offset
+# The offset defaults to 1.
+sub decrement {
+    my ($val, $offset) = @_;
+    my $ret;
+    Debug("&decrement got: $val\n");
+
+    $offset = 1 if (!defined($offset));
+
+    # Pass through, if there's no alphanumeric
+    # to decrement
+    if ($val !~ /\w/) {
+        $ret = $val;
+
+    # If there's only a trailing letter, decrement
+    # just that
+    } elsif ($val =~ /(.*)?([a-zA-Z])$/) {
+        $ret = $1 . chr(ord($2) - $offset);
+
+    # For an integer, subtract $offset
+    } elsif ($val =~ /\d+/) {
+        $ret = $val - $offset;
+    } 
+
+    Debug("&decrement returning: $ret\n");
+    return $ret;
+}
+
 sub multiply {
     my $array = get_array_ref(\@_);
     Debug("&multiply got: @$array\n");
@@ -2349,9 +2406,8 @@ sub _get_hash_keys {
 # Instead, leave out the mpi_get command-line override, and set 
 # mpi_get like this in the INI:
 #
-#   mpi_get = &get_any_mpi_get_name()
+#   mpi_get = &get_mpi_get_names()
 #
-
 sub get_mpi_get_names {
     my ($pattern) = @_;
     my @arr = _get_hash_keys($pattern, $MTT::MPI::sources);

@@ -58,6 +58,8 @@ To announce to OMPI core testers:
       are found in the cwd()
     - &random_string(n) - return a random string "n" characters long
     - &temp_filename() - call File::Temp::tempfile() and return the filename
+    - &increment(n) - increment the integer or character by "n"
+    - &decrement(n) - decrement the integer or character by "n"
 
 - Allow mpi_get_name, test_get_name, and test_build_name fields to
   accept the special value "all", meaning that they'll use all
