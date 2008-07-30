@@ -424,6 +424,8 @@ sub _do_build {
             $ret->{test_result} = MTT::Values::FAIL;
         }
         
+        Trace("\n" . '$start = ' . Dumper($start) . "\n");
+
         # Send the results back to the reporter
         my $report = {
             phase => "Test Build",
