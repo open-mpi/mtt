@@ -678,8 +678,6 @@ sub _do_install {
         $ret->{build_dir} = $config->{builddir};
         $ret->{refcount} = 0;
 
-        Trace("\n" . '$ret->{start_timestamp} = ' . Dumper($ret->{start_timestamp}) . "\n");
-
         # Delete keys with empty values
         foreach my $k (keys(%$report)) {
             if ($report->{$k} eq "") {

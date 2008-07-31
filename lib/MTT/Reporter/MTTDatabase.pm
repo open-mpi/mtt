@@ -316,11 +316,9 @@ sub Submit {
                         # If we have an epoch timestamp (raw seconds from 1970-01-01)
                         # convert to MTTDatabase format (e.g., Postgres)
                         if ($result->{$key} =~ /^\s*\d+\s*$/) {
-                            Trace("\n" . '$result->{$key} = ' . Dumper($result->{$key}) . "\n");
                             $form->{$name} = gmtime($result->{$key});
                         # Otherwise, assume the timestamp is already in MTTDatabase format
                         } else {
-                            Trace("\n" . '$result->{$key} = ' . Dumper($result->{$key}) . "\n");
                             $form->{$name} = $result->{$key};
 
                         }
