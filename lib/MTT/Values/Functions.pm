@@ -1164,6 +1164,8 @@ sub env_name {
     # Resource managers
     return "SLURM"
         if slurm_job();
+    return "ALPS"
+        if alps_job();
     return "TM"
         if pbs_job();
     return "N1GE"
@@ -1204,6 +1206,8 @@ sub env_max_procs {
     # Resource managers
     return slurm_max_procs()
         if slurm_job();
+    return alps_max_procs()
+        if alps_job();
     return pbs_max_procs()
         if pbs_job();
     return n1ge_max_procs()
@@ -1246,6 +1250,8 @@ sub env_hosts {
     my $ret;
     if (slurm_job()) {
         $ret = slurm_hosts();
+    } elsif (alps_job()) {
+        $ret = alps_hosts();
     } elsif (pbs_job()) {
         $ret = pbs_hosts();
     } elsif (n1ge_job()) {
@@ -1606,6 +1612,70 @@ sub slurm_hosts {
 
     Debug("&slurm_max_procs returning: $ret\n");
     return $ret;
+}
+
+#--------------------------------------------------------------------------
+
+# Return "1" if we're running in an ALPS job; "0" otherwise.
+sub alps_job {
+    Debug("&alps_job\n");
+
+#   It is true that ALPS can be run in an interactive access mode; however,
+#   this would not be a true managed environment.  Such only can be
+#   achieved under a batch scheduler.
+    return ((exists($ENV{BATCH_PARTITION_ID}) &&
+             exists($ENV{PBS_NNODES})) ? "1" : "0");
+}
+
+#--------------------------------------------------------------------------
+
+# If in an ALPS job, return the max number of processes we can run.
+# Otherwise, return 0.
+sub alps_max_procs {
+    Debug("&alps_max_procs\n");
+
+    return "0"
+        if (!alps_job());
+
+#   If we were not running under PBS or some other batch system, we would
+#   not have the foggiest idea of how many processes mpirun could spawn.
+    my $ret;
+    $ret=$ENV{PBS_NNODES};
+
+    Debug("&alps_max_procs returning: $ret\n");
+    return "$ret";
+}
+
+#--------------------------------------------------------------------------
+
+# If in an ALPS job, return the hosts we can run on.  Otherwise, return
+# "".
+sub alps_hosts {
+    Debug("&alps_hosts\n");
+
+    return ""
+        if (!alps_job());
+
+#   Again, we need a batch system to achieve management; return the uniq'ed
+#   contents of $PBS_HOSTFILE.  Actually, on the Cray XT, we can return the
+#   NIDS allocated by ALPS; but, without launching servers to other service
+#   nodes, all communication is via the launching node and NIDS actually
+#   have no persistent resource allocated to the user.  That is, all file
+#   resources accessible from a NID are shared with the launching node.  
+#   And, since ALPS is managed by the batch system, only the launching node
+#   can initiate communication with a NID.  In effect, the Cray XT model is
+#   of a single service node with a varying number of compute processors.
+    open (FILE, $ENV{PBS_NODEFILE}) || return "";
+    my $lines;
+    while (<FILE>) {
+        chomp;
+        $lines->{$_} = 1;
+    }
+
+    my @hosts = sort(keys(%$lines));
+    my $hosts = join(",", @hosts);
+    Debug("&alps_hosts returning: $hosts\n");
+    return "$hosts";
 }
 
 #--------------------------------------------------------------------------
