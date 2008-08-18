@@ -17,13 +17,13 @@ use Data::Dumper;
 #--------------------------------------------------------------------------
 
 sub get_r_number {
-    my ($url) = @_;
+    my ($cmd) = @_;
 
     my $funclet = '&' . FuncName((caller(0))[3]);
     Debug("$funclet: got @_\n");
 
-    my $svn_cmd = "svn info $url";
-    my $out = `$svn_cmd`;
+    $cmd = "svn info" if (!defined($cmd));
+    my $out = `$cmd`;
 
     # Sample output:
     #

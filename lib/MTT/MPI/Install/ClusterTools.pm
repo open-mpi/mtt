@@ -36,7 +36,6 @@ my $full_version_number;
 my $product_version;
 my $compiler_name;
 my $product_name = "ClusterTools";
-my $dist_tarball_name;
 my $package_name_prefix;
 my $package_basedir;
 my $configure_prefix;
@@ -47,7 +46,7 @@ my $os   = `uname -s`;
 chomp $arch;
 chomp $os;
 
-# Grab the OS distro string. E.g., "rhel4" in: 
+# Grab the OS distro string. E.g., "rhel4" in:
 #   $ whatami -t
 #   linux-rhel4-x86_64
 my $whatami = MTT::Values::Functions::whatami("-t");
@@ -168,12 +167,6 @@ sub Install {
         Verbose("Skipping $autogen_script.\n");
     }
 
-    # Create a tarball on the directory that has already been "autogen'd"
-    # TODO: Move this block into create_linux_packages
-    $dist_tarball_name = "$product_name-$full_version_number";
-    my $cwd = cwd();
-    $config->{dist_tarball} = _make_dist_tarball(cwd(), $dist_tarball_name);
-
     # In some cases, we might need to patch the Libtool script.
     # This is only required because:
     #
@@ -205,7 +198,7 @@ sub Install {
 
         # Add some versioning info:
         #   1. package-string shows up in ompi_info
-        #   2. ident-string is embedded into all the binaries as 
+        #   2. ident-string is embedded into all the binaries as
         #      a #pragma ident
         #
         # Note: we must use *double* quotes here
@@ -301,6 +294,7 @@ sub Install {
     if ($create_packages) {
 
         # Setup the ClusterTools installer
+        # TODO: Move installer stuff to create_solaris_packages()
         my $installer_dir   = &_setup_installer($ini, $section);
         my $install_dir     = $config->{installdir};
         my $destination_dir = "$install_dir/../Product";
@@ -369,6 +363,13 @@ sub _update_version_file {
     $contents =~ s/(\nwant_svn)=.*/$1=0/;
     $contents =~ s/(\nsvn_r)=.*/$1=0/;
 
+    # Set the date to be used in the man pages
+    # in this format: 08 Aug 2008
+    my $month = strftime("%b",localtime);
+    my $mday = strftime("%d",localtime);
+    my $year = strftime("%Y",localtime);
+    $contents =~ s/(\ndate)=.*/$1="$mday $month $year"/;
+
     # Write changed file out
     MTT::Files::SafeWrite(1, "./VERSION", $contents);
 }
@@ -399,27 +400,45 @@ sub _setup_architecture_dependent_labels {
 
     my $lib_label;
     my $include_label;
-    my $compiler_args;
+    my $primary_compiler_args;
+    my $secondary_compiler_args;
+    my $primary_wordsize;
+    my $secondary_wordsize;
 
     if ($os =~ /SunOS/i) {
+        $primary_wordsize = 32;
+        $secondary_wordsize = 64;
+        $primary_compiler_args = "";
+
         if ($arch =~ /sparc/i) {
             $lib_label = "sparcv9";
             $include_label = "v9";
-            $compiler_args = "-xarch=v9;-xarch=v9a;-xarch=v9b;-xarch=native64;-xarch=generic64;-xtarget=native64;-xtarget=generic64;-m64;";
+            $secondary_compiler_args = "-xarch=v9;-xarch=v9a;-xarch=v9b;-xarch=native64;-xarch=generic64;-xtarget=native64;-xtarget=generic64;-m64;";
         } elsif ($arch =~ /i386/i) {
             $lib_label = "amd64";
             $include_label = "amd64";
-            $compiler_args = "-xarch=amd64;-xarch=amd64a;-xarch=native64;-xarch=generic64;-xtarget=native64;-xtarget=generic64;-m64";
+            $secondary_compiler_args = "-xarch=amd64;-xarch=amd64a;-xarch=native64;-xarch=generic64;-xtarget=native64;-xtarget=generic64;-m64";
         }
+
+    # GCC AND SUN STUDIO BOTH DEFAULT TO 64-BIT ON LINUX,
+    # BUT IF THIS FACT CHANGES - SO TOO WILL THE BELOW BLOCK
+    # NEED TO CHANGE!
     } elsif ($os =~ /Linux/i) {
+        $primary_wordsize = 64;
+        $secondary_wordsize = 32;
+
         $lib_label = "lib64";
         $include_label = "64";
-        $compiler_args = "-m64";
+        $primary_compiler_args = "";
+        $secondary_compiler_args = "-m32";
     }
 
     return ($lib_label,
             $include_label,
-            $compiler_args);
+            $primary_compiler_args,
+            $secondary_compiler_args,
+            $primary_wordsize,
+            $secondary_wordsize);
 }
 
 # Arguments:
@@ -445,7 +464,12 @@ sub _create_wrapper_data_files {
     );
 
     # Setup architecture dependent labels
-    my ($lib_label_for_64_bit, $include_label_for_64_bit, $compiler_args) =
+    my ($lib_label_for_64_bit,
+        $include_label_for_64_bit,
+        $primary_compiler_args,
+        $secondary_compiler_args,
+        $primary_wordsize,
+        $secondary_wordsize) =
             &_setup_architecture_dependent_labels();
 
     my $project = "Open MPI";
@@ -456,7 +480,7 @@ sub _create_wrapper_data_files {
     # Prepare a structure containing all the wrapper data
     my $wrapper_data;
 
-    # Open MPI does not appear to have f95 support, but put the 
+    # Open MPI does not appear to have f95 support, but put the
     # data files stubs in there in case it does someday
     $wrapper_data->{"cc"}->{language}  = "C";
     $wrapper_data->{"CC"}->{language}  = "C++";
@@ -568,10 +592,12 @@ sub _create_wrapper_data_files {
     $wrapper_data->{64}->{includedir} = "$installdir/include/$include_label_for_64_bit";
     $wrapper_data->{32}->{libdir} = "$installdir/lib";
     $wrapper_data->{64}->{libdir} = "$installdir/lib/$lib_label_for_64_bit";
-    $wrapper_data->{32}->{compiler_args} = "";
-    $wrapper_data->{64}->{compiler_args} = $compiler_args;
     $wrapper_data->{32}->{linker_flags} = $linker_flags_32;
     $wrapper_data->{64}->{linker_flags} = $linker_flags_64;
+
+    # Primary and secondary compiler_args
+    $wrapper_data->{$primary_wordsize}->{compiler_args} = $primary_compiler_args;
+    $wrapper_data->{$secondary_wordsize}->{compiler_args} = $secondary_compiler_args;
 
     # Special gfortran linker flags
     $wrapper_data->{"gfortran"}->{32}->{linker_flags} = $linker_flags_gfortran_32;
@@ -587,7 +613,7 @@ sub _create_wrapper_data_files {
 
     # Template for the wrapper data files
     my $template = "#
-# default / 32 bit compilations block below
+# Default word-size (used when -m flag is supplied to wrapper compiler)
 #
 compiler_args=%s
 
@@ -609,7 +635,7 @@ includedir=%s
 libdir=%s
 
 #
-# 64 bit compilations block below
+# Alternative word-size (used when -m flag is not supplied to wrapper compiler)
 #
 compiler_args=%s
 
@@ -644,7 +670,7 @@ libdir=%s
         foreach my $compiler_type ($compiler_name, "vt") {
             foreach my $compiler (@compilers) {
 
-                # Add in, e.g., "-vt" to wrapper data file name 
+                # Add in, e.g., "-vt" to wrapper data file name
                 my $filename_label = $filename_labels->{$compiler_type};
 
                 # Use either the OMPI or VT underlying compiler name
@@ -666,25 +692,25 @@ libdir=%s
 
                 my $contents = sprintf($template,
 
-                                        # 32-bit
-                                        $wrapper_data->{32}->{compiler_args},
-                                        @top_params,
-                                        $wrapper_data->{32}->{$os}->{compiler_flags},
-                                        $wrapper_data->{$compiler}->{libs},
-                                        $wrapper_data->{32}->{linker_flags} . " " .
-                                          $wrapper_data->{$underlying_compiler}->{32}->{linker_flags},
-                                        $wrapper_data->{32}->{includedir},
-                                        $wrapper_data->{32}->{libdir},
+                    # Default
+                    $wrapper_data->{$primary_wordsize}->{compiler_args},
+                    @top_params,
+                    $wrapper_data->{$primary_wordsize}->{$os}->{compiler_flags},
+                    $wrapper_data->{$compiler}->{libs},
+                    $wrapper_data->{$primary_wordsize}->{linker_flags} . " " .
+                      $wrapper_data->{$underlying_compiler}->{$primary_wordsize}->{linker_flags},
+                    $wrapper_data->{$primary_wordsize}->{includedir},
+                    $wrapper_data->{$primary_wordsize}->{libdir},
 
-                                        # 64-bit
-                                        $wrapper_data->{64}->{compiler_args},
-                                        @top_params,
-                                        $wrapper_data->{64}->{$os}->{compiler_flags},
-                                        $wrapper_data->{$compiler}->{libs},
-                                        $wrapper_data->{64}->{linker_flags} . " " .
-                                          $wrapper_data->{$underlying_compiler}->{64}->{linker_flags},
-                                        $wrapper_data->{64}->{includedir},
-                                        $wrapper_data->{64}->{libdir},
+                    # Specific -m32/-m64 argument used
+                    $wrapper_data->{$secondary_wordsize}->{compiler_args},
+                    @top_params,
+                    $wrapper_data->{$secondary_wordsize}->{$os}->{compiler_flags},
+                    $wrapper_data->{$compiler}->{libs},
+                    $wrapper_data->{$secondary_wordsize}->{linker_flags} . " " .
+                      $wrapper_data->{$underlying_compiler}->{$secondary_wordsize}->{linker_flags},
+                    $wrapper_data->{$secondary_wordsize}->{includedir},
+                    $wrapper_data->{$secondary_wordsize}->{libdir},
                 );
 
                 # Write out the file
@@ -846,7 +872,7 @@ sub _create_prototype_file {
 
     # Start with the prologue for the prototype file
     my $contents = _create_prototype_file_prologue($pkginfo_file, $copyright_file);
-    $contents .= "\nd none ${package_name_prefix}hpc/$product_version 0755 root bin" . "\n"; 
+    $contents .= "\nd none ${package_name_prefix}hpc/$product_version 0755 root bin" . "\n";
 
     # Remove duplicates from pkgproto output
     my @contents;
@@ -944,7 +970,7 @@ sub _write_copyright_file {
     return $filename;
 }
 
-# This is admittedly a complete bastardization of 
+# This is admittedly a complete bastardization of
 # RPM, because we are creating a lot of dummy sections
 # and files to feed to rpmbuild.
 sub create_linux_packages {
@@ -955,9 +981,6 @@ sub create_linux_packages {
     my $success = 1;
 
     MTT::DoCommand::Pushdir($staging_dir);
-
-    my @staging_dirs = ($staging_dir);
-    my $filelist = MTT::Values::Functions::find(".", \@staging_dirs);
 
     # Setup a scratch area for RPM creation
     my $temp_dir = tempdir(TEMPLATE => "XXXXXX-mtt-rpm-scratch", DIR => "/tmp");
@@ -974,34 +997,42 @@ sub create_linux_packages {
     #       and %install stages).
     my $rpmbuild = FindProgram(qw(rpmbuild));
 
-    # Create the binary RPM
+    # Create three RPMs:
+    #   1) 32-bit (i386 RPM)
+    #   2) 64-bit (x86_64 RPM)
+    #   3) Any (source RPM)
+    my @targets = qw(i386 x86_64);
+
+    # Create the binary RPM(s)
     my $nil = '%nil';
     my $cmd;
-    $cmd = "$rpmbuild --verbose -bb" .
-              # Add $os_distro to the RPM filename format
-              " --define=\"_build_name_fmt " .
-                          "%%{ARCH}/" .
-                          "%%{NAME}-" .
-                          "%%{VERSION}-" .
-                          "%%{RELEASE}." .
-                          "%%{ARCH}-" .
-                          "$os_distro-" .
-                          "built-with-$compiler_name.rpm\" " .
-              # RPM scratch area
-              " --define=\"_topdir $temp_dir\"" .
-              # Override the below built-in macro because it does annoying
-              # things like gzipping every file in the installation
-              " --define=\"suse_check $nil\"" .
-              " $binary_rpm_spec_file";
 
-    my $ret = MTT::DoCommand::Cmd(1, $cmd);
-    if (0 != $ret->{exit_status}) {
-        $success = 0;
+    # Do rpmbuild for both targets
+    foreach my $target (@targets) {
+        $cmd = "$rpmbuild --verbose -bb" .
+                  " --define=\"_build_name_fmt " .
+                              "%%{ARCH}/" .
+                              "%%{NAME}-" .
+                              "%%{VERSION}-" .
+                              "%%{RELEASE}." .
+                              "%%{ARCH}-" .
+                              "built-with-$compiler_name.rpm\" " .
+                  # RPM scratch area
+                  " --define=\"_topdir $temp_dir\"" .
+                  # Override the below built-in macro because it does annoying
+                  # things like gzipping every file in the installation
+                  " --define=\"suse_check $nil\"" .
+                  " --target $target" .
+                  " $binary_rpm_spec_file";
+
+        my $ret = MTT::DoCommand::Cmd(1, $cmd);
+        if (0 != $ret->{exit_status}) {
+            $success = 0;
+        }
     }
 
     # Create the source RPM
     $cmd = "$rpmbuild --verbose -bs" .
-              # Add $os_distro to the RPM filename format
               " --define=\"_build_name_fmt " .
                           "%%{ARCH}/" .
                           "%%{NAME}-" .
@@ -1025,7 +1056,7 @@ sub create_linux_packages {
     MTT::DoCommand::Cmd(1, "rm -rf $temp_dir");
 
     # Open up permissions on "rpm" dir
-    # (Why is this needed?) 
+    # (Why is this needed?)
     MTT::DoCommand::Cmd(1, "chmod -R a+r $destination_dir/rpm");
     MTT::DoCommand::Cmd(1, "find $destination_dir/rpm -type d | xargs chmod a+x");
     chmod(0755, "$destination_dir/rpm");
@@ -1056,7 +1087,7 @@ sub _create_binary_rpm_spec_file {
 # This file was automatically generated by MTT.
 # Any changes made to it will likely be lost!
 #
-    
+
 Summary: A powerful implementaion of MPI
 Name: $product_name
 Version: $full_version_number
@@ -1083,7 +1114,7 @@ Open MPI jobs.
 %files
 %defattr(-, root, root, -)
 
-# The file permissions are already set properly by 
+# The file permissions are already set properly by
 # the OMPI build process. Use '-' to leave them as is.
 %attr(-, root, root) $configure_prefix/bin
 %attr(-, root, root) $configure_prefix/include
@@ -1120,9 +1151,10 @@ sub _create_source_rpm_spec_file {
     _setup_rpm_top_dir($rpm_top_dir);
 
     # Grab the source name
-    my $dist_tarball = $config->{dist_tarball};
-    MTT::DoCommand::Cmd(1, "cp $config->{dist_tarball} $rpm_top_dir/SOURCES");
-    $dist_tarball = basename($config->{dist_tarball});
+    my $dist_tarball_name = "$product_name-$full_version_number";
+    my $dist_tarball = _make_dist_tarball($config->{abs_srcdir}, $dist_tarball_name);
+    MTT::DoCommand::Cmd(1, "cp $dist_tarball $rpm_top_dir/SOURCES");
+    $dist_tarball = basename($dist_tarball);
 
     # Set-up an optional post configure step (e.g., the below step
     # fixes up libtool to function properly with sun-studio)
@@ -1147,7 +1179,7 @@ $post_configure_step
 # SPEC file for $product_name $full_version_number
 #
 #
-    
+
 #############################################################################
 #
 # Preamble Section
@@ -1270,8 +1302,9 @@ sub _make_dist_tarball {
     if (-d "$temp_dir/$name") {
         MTT::DoCommand::Pushdir($temp_dir);
 
-        # Remove versioning data from the source tarball
+        # Remove versioning data and logs from the source tarball
         MTT::DoCommand::Cmd(1, "find $name | grep -E \'\.hg\$\|\.svn\$\' | xargs rm -rf");
+        MTT::DoCommand::Cmd(1, "find $name | grep -E \'config.*.log\$\|.*make.out\$\' | xargs rm -rf");
         MTT::DoCommand::Cmd(1, "tar cf $name.tar $name");
         MTT::DoCommand::Cmd(1, "gzip $name.tar");
         MTT::DoCommand::Cmd(1, "mv $name.tar.gz $dir");
@@ -1337,10 +1370,10 @@ sub _update_libtool_script {
     # To be absolutely sure, we really want to match all the funny
     # characters (e.g., $, \, {, -, ...) like below,
     # but to be expedient, we can just fill in the oddball
-    # characters with wildcards (.). 
+    # characters with wildcards (.).
     # my $bad_pattern1 = '\${wl}-soname \$wl\$soname';
     my $bad_pattern1 = '..{wl}-soname ..wl..soname';
-    
+
     # Read in the libtool script file
     my $contents = MTT::Files::Slurp($file);
 
@@ -1357,7 +1390,7 @@ sub _update_libtool_script {
 
     my $comment2 = "
 # $bad_pattern1 has been removed by MTT to avoid the below compiler
-# error(s): 
+# error(s):
 #   f90: Warning: Option -Wl,-soname passed to ld, if ld is invoked, ignored otherwise
 #   f90: Warning: Option -Wl,libmpi_f90.so.0 passed to ld, if ld is invoked, ignored otherwise
 #   /usr/bin/ld: unrecognized option '-Wl,-soname'
@@ -1382,7 +1415,7 @@ postdeps=""
 
     # Comment out whole_archive_flag_spec
     # $contents =~ s/($bad_var\=.*)/$comment1# $1/;
-    
+
     # Comment out this to avoid -Wl
     # $contents =~ s/$bad_pattern1//g;
     # $contents .= $comment2;
@@ -1405,7 +1438,7 @@ postdeps=""
     # postdeps="-library=Cstd -library=Crun"
     Verbose("$package: Patching $file to avoid linking with libCstd and libCrun.\n");
     $contents =~ s/$bad_pattern3/$1\n# $2\n$good_pattern3/s;
-    
+
     # Write changed file out
     MTT::Files::SafeWrite(1, $file, $contents);
 }
@@ -1446,7 +1479,7 @@ set -x
 
     # set -x
     $contents =~ s/$search_pattern/\n$replace_pattern\n/s;
-    
+
     # Write changed file out
     MTT::Files::SafeWrite(1, $file, $contents);
 }
