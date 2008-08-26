@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
 # Copyright (c) 2008      Mellanox Technologies.  All rights reserved.
 # $COPYRIGHT$
@@ -58,7 +58,7 @@ our $test_pid;
 our $mpi_details;
 
 # What we call this phase
-my $phase_name = "Test run";
+my $phase_name = "Test Run";
 
 #--------------------------------------------------------------------------
 

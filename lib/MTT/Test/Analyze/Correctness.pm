@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #
 # Copyright (c) 2006 Sun Microsystems, Inc. All rights reserved.
-# Copyright (c) 2006-2007 Cisco Systems, Inc. All rights reserved.
+# Copyright (c) 2006-2008 Cisco Systems, Inc. All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -41,7 +41,7 @@ sub Analyze {
 
     # Queue up a report on this test
     my $report = {
-        phase => "Test run",
+        phase => "Test Run",
 
         start_timestamp => $run->{start},
         duration => $run->{duration},
