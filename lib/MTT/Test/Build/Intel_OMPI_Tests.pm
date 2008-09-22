@@ -39,6 +39,9 @@ sub Build {
                        "intel_ompi_tests_fflags");
     my $buildfile = Value($ini, $config->{full_section_name}, 
                           "intel_ompi_tests_buildfile");
+    my $make_arguments = Value($ini, $config->{full_section_name}, 
+                          "intel_ompi_tests_make_arguments");
+
     $buildfile = $default_buildfile
         if (!$buildfile);
     if (! -f $buildfile) {
@@ -118,16 +121,17 @@ sub Build {
     }
 
     # Clean it (just to be sure)
-    my $x = MTT::DoCommand::Cmd(1, "make clean");
+    my $cmd = "make $make_arguments clean";
+    my $x = MTT::DoCommand::Cmd(1, $cmd);
     if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
-        $ret->{result_message} = "Intel_ompi_tests: make clean failed; skipping";
+        $ret->{result_message} = "Intel_ompi_tests: \"$cmd\" failed; skipping";
         $ret->{result_stdout} = $x->{result_stdout};
         $ret->{exit_status} = $x->{exit_status};
         return $ret;
     }
 
     # Build the test suite.
-    my $cmd = "make compile FILE=$buildfile";
+    $cmd = "make $make_arguments compile FILE=$buildfile";
     $cmd .= " \"CFLAGS=$cflags\""
         if ($cflags);
     $cmd .= " \"FFLAGS=$fflags\""

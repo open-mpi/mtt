@@ -168,6 +168,8 @@ sub Get {
 
     # now adjust the tarball name to be absolute
     $ret->{module_data}->{tarball} = "$tarball_dir/$tarball_name";
+    $ret->{module_data}->{version} = $ret->{version};
+    $ret->{module_data}->{r} = $ret->{version};
     $ret->{prepare_for_install} = __PACKAGE__ . "::PrepareForInstall";
 
     # All done

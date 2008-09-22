@@ -2667,4 +2667,221 @@ sub temp_filename {
     return $filename;
 }
 
+# Thanks to http://predef.sourceforge.net/precomp.html for the list of
+# defines to check. This subroutine is pulled directly from the below
+# Open MPI M4 file:
+#
+#   http://svn.open-mpi.org/trac/ompi/browser/trunk/config/ompi_check_vendor.m4
+#
+sub get_compiler_vendor {
+    Debug("get_compiler_vendor got @_\n");
+    my ($compiler) = @_;
+    my $ret = "unknown";
+
+    # Default to using mpicc
+    $compiler = "mpicc -c" if (! defined($compiler));
+
+    # GNU is probably the most common, so check that one as soon as
+    # possible.  Intel pretends to be GNU, so need to check Intel
+    # before checking for GNU.
+
+    # Intel
+    if (_check_c_if("defined(__INTEL_COMPILER) || defined(__ICC)", $compiler)) {
+        $ret = "intel";
+    }
+    # GNU
+    elsif (_check_c_ifdef("__GNUC__", $compiler)) {
+        $ret = "gnu";
+    }
+    # Borland Turbo C
+    elsif (_check_c_ifdef("__TURBOC__", $compiler)) {
+        $ret = "borland";
+    }
+    # Borland C++
+    elsif (_check_c_ifdef("__BORLANDC__", $compiler)) {
+        $ret = "borland";
+    }
+    # Comeau C++
+    elsif (_check_c_ifdef("__COMO__", $compiler)) {
+        $ret = "comeau";
+    }
+    # Compaq C/C++
+    elsif (_check_c_if("defined(__DECC) || defined(VAXC) || defined(__VAXC)", $compiler)) {
+        $ret = "compaq";
+        if (_check_c_if("defined(__osf__) && defined(__LANGUAGE_C__)", $compiler)) {
+            $ret = "compaq";
+            if (_check_c_ifdef("__DECCXX", $compiler)) {
+                $ret = "compaq";
+            }
+        }
+    }
+    # Cray C/C++
+    elsif (_check_c_ifdef("_CRAYC", $compiler)) {
+        $ret = "cray";
+    }
+    # Diab C/C++
+    elsif (_check_c_ifdef("__DCC__", $compiler)) {
+        $ret = "diab";
+    }
+    # Digital Mars
+    elsif (_check_c_if("defined(__DMC__) || defined(__SC__) || defined(__ZTC__)", $compiler)) {
+        $ret = "digital mars";
+    }
+    # HP ANSI C / aC++
+    elsif (_check_c_if("defined(__HP_cc) || defined(__HP_aCC)", $compiler)) {
+        $ret = "hp";
+    }
+    # IBM XL C/C++
+    elsif (_check_c_if("defined(__xlC__) || defined(__IBMC__) || defined(__IBMCPP__)", $compiler)) {
+        $ret = "ibm";
+        if (_check_c_if("defined(_AIX) && defined(__GNUC__)", $compiler)) {
+            $ret = "ibm";
+        }
+    }
+    # KAI C++ (rest in peace)
+    elsif (_check_c_ifdef("__KCC", $compiler)) {
+        $ret = "kai";
+    }
+    # LCC
+    elsif (_check_c_ifdef("__LCC__", $compiler)) {
+        $ret = "lcc";
+    }
+    # MetaWare High C/C++
+    elsif (_check_c_ifdef("__HIGHC__", $compiler)) {
+        $ret = "metaware high";
+    }
+    # Metrowerks Codewarrior
+    elsif (_check_c_ifdef("__MWERKS__", $compiler)) {
+        $ret = "metrowerks";
+    }
+    # MIPSpro (SGI)
+    elsif (_check_c_if("defined(sgi) || defined(__sgi)", $compiler)) {
+        $ret = "sgi";
+    }
+    # MPW C++
+    elsif (_check_c_if("defined(__MRC__) || defined(MPW_C) || defined(MPW_CPLUS)", $compiler)) {
+        $ret = "mpw";
+    }
+    # Microsoft
+    # (Always use C compiler when checking for Microsoft, as
+    # Visual C++ doesn't recognize .cc as a C++ file.)
+    elsif (_check_c_if("defined(_MSC_VER) || defined(__MSC_VER)", $compiler)) {
+        $ret = "microsoft";
+    }
+    # Norcroft C
+    elsif (_check_c_ifdef("__CC_NORCROFT", $compiler)) {
+        $ret = "norcroft";
+    }
+    # Pelles C
+    elsif (_check_c_ifdef("__POCC__", $compiler)) {
+        $ret = "pelles";
+    }
+    # Portland Group
+    elsif (_check_c_ifdef("__PGI", $compiler)) {
+        $ret = "pgi";
+    }
+    # SAS/C
+    elsif (_check_c_if("defined(SASC) || defined(__SASC) || defined(__SASC__)", $compiler)) {
+        $ret = "sas";
+    }
+    # Sun Workshop C/C++
+    elsif (_check_c_if("defined(__SUNPRO_C) || defined(__SUNPRO_CC)", $compiler)) {
+        $ret = "sun";
+    }
+    # TenDRA C/C++
+    elsif (_check_c_ifdef("__TenDRA__", $compiler)) {
+        $ret = "tendra";
+    }
+    # Tiny C
+    elsif (_check_c_ifdef("__TINYC__", $compiler)) {
+        $ret = "tiny";
+    }
+    # USL C
+    elsif (_check_c_ifdef("__USLC__", $compiler)) {
+        $ret = "usl";
+    }
+    # Watcom C++
+    elsif (_check_c_ifdef("__WATCOMC__", $compiler)) {
+        $ret = "watcom";
+    }
+
+    Debug("get_compiler_vendor returning $ret\n");
+    return $ret;
+}
+
+sub _check_compile {
+    Debug("_check_compile got @_\n");
+    my ($macro, $c_code, $compiler) = @_;
+
+    # Default to using mpicc
+    $compiler = "mpicc" if (! defined($compiler));
+
+    # Suffix for the tempfile
+    my $filename_suffix = "-check_compile.c";
+
+    # Write out a little test program
+    my ($fh, $filename) = tempfile(DIR => "/tmp", SUFFIX => $filename_suffix);
+    MTT::Files::SafeWrite(1, $filename, $c_code);
+
+    # Compile the little test
+    my $ret;
+    my $cmd = "$compiler $filename";
+    my $x = MTT::DoCommand::Cmd(1, $cmd);
+
+    # Clean up the test
+    unlink($filename);
+
+    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
+        Debug("_check_compile: $compiler does not predefine \"$macro\"\n");
+        $ret = 0;
+    } else {
+        Debug("_check_compile: $compiler predefines \"$macro\"\n");
+        $ret = 1;
+    }
+
+    Debug("_check_compile returning $ret\n");
+    return $ret;
+}
+
+sub _check_c_ifdef {
+    my ($macro, $compiler) = @_;
+
+    my $c_code = "/*
+ * This program is automatically generated by Functions.pm
+ * of MPI Testing Tool (MTT).  Any changes you make here may
+ * get lost!
+ *
+ * Copyrights and licenses of this file are the same as for the MTT.
+ *
+ */
+
+#ifndef $macro
+#error \"symbol $macro not defined\"
+choke me
+#endif
+";
+
+    return _check_compile($macro, $c_code, $compiler);
+}
+
+sub _check_c_if {
+    my ($macro, $compiler) = @_;
+
+    my $c_code = "/*
+ * This program is automatically generated by Functions.pm
+ * of MPI Testing Tool (MTT).  Any changes you make here may
+ * get lost!
+ *
+ * Copyrights and licenses of this file are the same as for the MTT.
+ *
+ */
+
+#if !( $macro )
+#error \"condition $macro not met\"
+choke me
+#endif";
+
+    return _check_compile($macro, $c_code, $compiler);
+}
+
 1;

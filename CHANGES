@@ -60,6 +60,8 @@ To announce to OMPI core testers:
     - &temp_filename() - call File::Temp::tempfile() and return the filename
     - &increment(n) - increment the integer or character by "n"
     - &decrement(n) - decrement the integer or character by "n"
+    - &get_compiler_vendor() - Determine the compiler vendor using
+                               predefined compiler C macros
 
 - Allow mpi_get_name, test_get_name, and test_build_name fields to
   accept the special value "all", meaning that they'll use all
@@ -243,3 +245,5 @@ To announce to OMPI core testers:
   - append_path
 
 - MTTDatabase now respects the TMPDIR environment variable
+
+- Added intel_ompi_tests_make_arguments

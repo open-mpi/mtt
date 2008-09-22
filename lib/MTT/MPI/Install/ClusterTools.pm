@@ -108,8 +108,18 @@ sub Install {
     # Grab the internal repository revision number
     my $internal_r_number = $config->{module_data}->{r};
 
+    # Grab the Open MPI version number
+    my $ompi_version_number = _get_ompi_version_number();
+
     # Update the version file
-    my $greek = "r${svn_r_number}-ct${full_version_number}-b${build_number}-r${internal_r_number}";
+    my @greek_parts;
+    push(@greek_parts, "$ompi_version_number")   if ($ompi_version_number);
+    push(@greek_parts, "r$svn_r_number")         if ($svn_r_number);
+    push(@greek_parts, "ct$full_version_number") if ($full_version_number);
+    push(@greek_parts, "b$build_number")         if ($build_number);
+    push(@greek_parts, "r$internal_r_number")    if ($internal_r_number);
+    my $greek = join("-", @greek_parts);
+
     &_update_version_file($greek, "VERSION");
 
     # Update the openmpi-mca-params.conf file
@@ -175,7 +185,10 @@ sub Install {
     #
     if ($compiler_name =~ /sun|sos/i) {
         # $after_configure = \&_update_libtool_script;
-        $after_configure = "config/patch-libtool-for-sun-studio.pl";
+        my $after_configure_script =  "config/patch-libtool-for-sun-studio.pl";
+        if (-x $after_configure_script) {
+            $after_configure = $after_configure_script;
+        }
     }
 
     # Run configure / make all / make check / make install
@@ -283,10 +296,10 @@ sub Install {
 
     # Copy over the libC libraries needed for C++ programs (such as ompi_info)
     # to dynamically load
-    if (($os =~ /SunOS/i) and ($compiler_name =~ /sun|sos/i)) {
+    if ($compiler_name =~ /sun|sos/i) {
         my $libc_libraries = _find_sun_studio_libc_libraries();
         foreach my $lib (@$libc_libraries) {
-            MTT::DoCommand::Cmd(1, "cp $lib $staging_dir");
+            MTT::DoCommand::Cmd(1, "cp $lib $staging_dir/lib");
         }
     }
 
@@ -348,6 +361,35 @@ sub Install {
     $ret->{test_result} = MTT::Values::PASS;
     $ret->{result_message} = "Success";
 
+    return $ret;
+}
+
+sub _get_ompi_version_number {
+    my ($file) = @_;
+
+    my $ret;
+
+    # Get version number from VERSION file by default
+    my $file = "./VERSION" if (! defined($file));
+    my $contents = MTT::Files::Slurp($file);
+
+    my $major;
+    my $minor;
+    my $release;
+
+    if ($contents =~ /\nmajor=(.*)/) {
+        $major = $1;
+    }
+    if ($contents =~ /\nminor=(.*)/) {
+        $minor = $1;
+    }
+    if ($contents =~ /\nminor=(.*)/) {
+        $release = $1;
+    }
+
+    $ret = "$major.$minor";
+
+    Debug("_get_ompi_version_number returning $ret\n");
     return $ret;
 }
 
@@ -1535,13 +1577,22 @@ sub _setup_installer {
 # C++ programs (e.g., ompi_info)
 sub _find_sun_studio_libc_libraries {
     my $suncc = FindProgram(qw(suncc));
-    my $dirname = dirname($suncc) . "/../prod/usr/lib";
-    my @libs = ("libCrun", "libCstd");
+    my $dirname_suncc = dirname($suncc);
+
+    # Is there a way we can get these setup to mirror the way
+    # they're actually linked in the Studio directory? E.g.,
+    #
+    #   libCrun.so -> libCrun.so.1
+    #
+    my @libs = ("libCrun*1", "libCstd*1");
+    my @dirs = ("$dirname_suncc/../prod/usr/lib", "$dirname_suncc/../rtlibs");
 
     my @ret;
-    foreach my $lib (@libs) {
-        my ($l) = glob "$dirname/$lib*";
-        push(@ret, $l) if (-e $l);
+    foreach my $dirname (@dirs) {
+        foreach my $lib (@libs) {
+            my ($l) = glob "$dirname/$lib";
+            push(@ret, $l) if (-e $l);
+        }
     }
     return \@ret;
 }
