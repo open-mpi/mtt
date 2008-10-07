@@ -38,7 +38,9 @@ sub load {
         if (!$_haveit);
 
     Debug("Loading environment modules: @_\n");
-    Env::Modulecmd::load(@_);
+    my $ret = Env::Modulecmd::load(@_);
+    Error("Failed to load environment modules @_\n")
+        if (0 != $ret);
 }
 
 #--------------------------------------------------------------------------
@@ -48,7 +50,9 @@ sub unload {
         if (!$_haveit);
 
     Debug("Unloading environment modules: @_\n");
-    Env::Modulecmd::unload(@_);
+    my $ret = Env::Modulecmd::unload(@_);
+    Error("Failed to unload environment modules @_\n")
+        if (0 != $ret);
 }
 
 1;
