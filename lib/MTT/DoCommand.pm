@@ -591,7 +591,7 @@ sub RunStep {
         $cmd = EvaluateString($cmd, $ini, $section);
 
         Debug("Running step: $step: $cmd / timeout $timeout\n");
-        MTT::DoCommand::Cmd($force, $cmd, $timeout);
+        $ret = MTT::DoCommand::Cmd($force, $cmd, $timeout);
     }
 
     return $ret;
