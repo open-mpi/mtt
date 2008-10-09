@@ -163,7 +163,8 @@ sub _do_step {
                          $config->{stderr_save_lines});
 
             # Add header line to stdout
-            if (defined($ret->{result_stdout})) {
+            if (defined($ret->{result_stdout}) &&
+                $ret->{result_stdout} !~ /^\s*$/) {
                 $result_stdout = "--- $cmd $config->{$arguments_key} result_stdout";
                 $result_stdout .= "/result_stderr"
                     if ($mss);
@@ -171,7 +172,8 @@ sub _do_step {
             }
 
             # Add header line to stderr
-            if (!$mss && defined($ret->{result_stderr})) {
+            if (!$mss && defined($ret->{result_stderr}) &&
+                $ret->{result_stderr} !~ /^\s*$/) {
                 $result_stderr = "--- $cmd $config->{$arguments_key} result_stderr ---\n$ret->{result_stderr}";
             }
 
