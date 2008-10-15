@@ -247,3 +247,8 @@ To announce to OMPI core testers:
 - MTTDatabase now respects the TMPDIR environment variable
 
 - Added intel_ompi_tests_make_arguments
+
+- Added "disk_free_min" to [MTT] section - pause MTT progress if free disk
+  space falls below a certain percentage (e.g., 5%) 
+- Added "disk_free_min_wait" to [MTT] section - number of minutes to wait for
+  the user to remedy the situation if the "disk_free_min" threshold is broken
