@@ -423,12 +423,14 @@ sub _run_step {
         # Get the timeout value
         my $name = $step . "_timeout";
         my $timeout = MTT::Util::parse_time_to_seconds($mpi_details->{$name});
-        $timeout = undef 
+        $timeout = 30 
             if ($timeout <= 0);
 
         # Get the pass criteria
         $name = $step . "_pass";
         my $pass = $mpi_details->{$name};
+        $pass = "&and(&cmd_wifexited(), &eq(&cmd_wexitstatus(), 0))"
+            if (!defined($pass));
 
         # Run the step
         my $x = MTT::DoCommand::RunStep(1, $cmd, $timeout, $ini, $section, $step);
