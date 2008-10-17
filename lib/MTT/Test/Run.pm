@@ -240,7 +240,7 @@ sub _do_run {
     my $match = 0;
     my $mpi_install_simple = $mpi_install->{simple_section_name};
     if (defined($mpi_install->{mpi_details})) {
-        my $search = lc($mpi_install->{simple_section_name});
+        my $search = lc($mpi_install->{mpi_details});
         Debug("Found mpi_details [$search] in MPI install [$mpi_install_simple]\n");
         foreach my $s ($ini->Sections()) {
             if ($s =~ /^\s*mpi details:/) {

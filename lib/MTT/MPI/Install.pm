@@ -454,6 +454,11 @@ sub _do_install {
     $config->{compiler_version} =
         "unknown" if (!defined($config->{compiler_version}));
 
+    # See if this MPI install has an override for the mpi_details section
+    $tmp = Value($ini, $section, "mpi_details");
+    $config->{mpi_details} = $tmp
+        if (defined($tmp));
+
     # What to do with result_stdout/result_stderr?
     my $tmp;
     $tmp = Logical($ini, $section, "save_stdout_on_success");
@@ -598,7 +603,6 @@ sub _do_install {
             mpi_install_id => $ret->{mpi_install_id},
             result_stdout => "filled in below",
             result_stderr => "filled in below",
-
         };
 
         # See if we want to save the result_stdout
@@ -656,6 +660,10 @@ sub _do_install {
         $ret->{mpi_get_full_section_name} = $mpi_get->{full_section_name};
         $ret->{mpi_get_simple_section_name} = $mpi_get->{simple_section_name};
         $ret->{mpi_version} = $mpi_get->{version};
+
+        # If we had an MPI details, save it
+        $ret->{mpi_details} = $config->{mpi_details}
+            if (defined($config->{mpi_details}));
 
         # Some additional values
         $ret->{description} = $config->{description};
