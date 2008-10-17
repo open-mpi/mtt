@@ -158,7 +158,7 @@ sub _replace_vars {
 
         # @foo@ gets evaluated before it gets substituted in
         my $val = EvaluateString($ini->val($section, $var_name), $ini, $section);
-        Verbose("Got var_name: $var_name -> $val\n");
+        Debug("Got var_name: $var_name -> $val\n");
         if (!defined($val)) {
             # If we got nothing back, eliminate the token
             $str =~ s/\@$var_name\@//g;
