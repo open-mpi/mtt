@@ -21,6 +21,7 @@ use MTT::Values;
 use MTT::Files;
 use MTT::Version;
 use Data::Dumper;
+use MTT::Mail;
 use File::Basename;
 use Text::Wrap;
 
@@ -43,6 +44,13 @@ my $detail_footer;
 # wordwrap pref for reports
 my $textwrap;
 
+# global ini variables
+my ($ini, $section);
+
+
+# send summary by email if requested
+my $to;
+
 # Do we have Text::TabularDisplay?
 my $have_tabulardisplay;
 eval "\$have_tabulardisplay = require Text::TabularDisplay";
@@ -50,7 +58,7 @@ eval "\$have_tabulardisplay = require Text::TabularDisplay";
 #--------------------------------------------------------------------------
 
 sub Init {
-    my ($ini, $section) = @_;
+    ($ini, $section) = @_;
 
     # Sanity check
     if (!$have_tabulardisplay) {
@@ -87,6 +95,24 @@ sub Init {
     } else {
         Debug("File reporter initialized (<stdout>)\n");
     }
+
+
+    # Initialize nail notification for summary 
+
+    $to = Value($ini, $section, "email_to");
+    if ($to) {
+        # Setup the mailer
+        my $agent = Value($ini, $section, "email_agent");
+        if (!MTT::Mail::Init($agent)) {
+            Debug("Failed to setup TextFileEmail reporter\n");
+            return 0;
+        }
+
+        Debug("TextFileEmail reporter initialized ($to)\n");
+    }
+
+
+
 
     return 1;
 }
@@ -132,7 +158,8 @@ sub _summary_report {
 
     print $summary_header;
 
-    my $table = Text::TabularDisplay->new(("Phase","Section","Pass","Fail","Time out","Skip"));
+    my $table = Text::TabularDisplay->new(("Phase","Section","MPI Version", "Duration (secs.)","Pass","Fail","Time out","Skip"));
+    my ($total_fail, $total_succ, $total_tests,$total_duration) = (0,0,0,0);
 
     foreach my $results (@$results_arr) {
 
@@ -142,7 +169,7 @@ sub _summary_report {
             foreach my $section (keys %{$phase_obj}) {
                 my $section_obj = $results->{$phase}{$section};
 
-                my ($pass, $fail, $timed, $skipped) = (0, 0, 0, 0);
+                my ($pass, $fail, $timed, $skipped, $duration, $mpi_version) = (0, 0, 0, 0, 0, undef);
 
                 foreach my $results_hash (@$section_obj) {
 
@@ -155,22 +182,69 @@ sub _summary_report {
                     } elsif ($results_hash->{test_result} eq MTT::Values::SKIPPED) {
                         $skipped++;
                     }
+                    if ( defined($results_hash->{duration}) ) {
+                        my $one_test_duration = $results_hash->{duration};
+                        $one_test_duration =~ s/(\d+).+/$1/g;
+                        $duration += $one_test_duration;
+                    }
+
+                    if (defined($results_hash->{mpi_version}) and !$mpi_version) {
+                        $mpi_version = $results_hash->{mpi_version};
+                    }
                 }
-                $table->add($phase, $section, $pass, $fail, $timed, $skipped);
+
+
+                $total_fail += $fail + $timed;
+                $total_succ += $pass;
+                $total_duration += $duration;
+                $table->add($phase, $section, $mpi_version, $duration, $pass, $fail, $timed, $skipped);
             }
         }
     }
-    print $table->render . "\n" . $summary_footer;
+    $total_tests =  $total_fail + $total_succ;
+
+    my $total_duration_human = _convert_duration($total_duration);
+    my $perf_stat = "
+
+    Total Tests:    $total_tests
+    Total Failures: $total_fail
+    Total Passed:   $total_succ
+    Total Duration: $total_duration secs. ($total_duration_human)
+
+    ";
+    print $table->render . "\n" . $perf_stat . $summary_footer;
 
     # Write the Summary report to a file
     my $filename = "All_phase-summary.txt";
     my $file = "$dirname/" . MTT::Files::make_safe_filename("$filename");
 
-    _output_results($file,
-        join("\n", ($summary_header, 
-                    $table->render,
-                    $summary_footer)));
+    my $body = join("\n", ($summary_header, $table->render, $perf_stat, $summary_footer));
 
+    print $body;
+    _output_results($file, $body);
+
+   if ( $to ) {
+     # Evaluate the email subject header and from
+     my ($subject, $body_footer);
+     my $subject_tmpl = Value($ini, $section, "email_subject");
+     my $body_footer_tmpl = Value($ini, $section, "email_footer");
+     my $from = Value($ini, $section, "email_from");
+
+     my $overall_mtt_status = "success";
+     if ( $total_fail > 0 ) {
+         $overall_mtt_status = "failed";
+     }
+     my $str = "\$body_footer = \"$body_footer_tmpl\"";
+     eval $str;
+
+     my $str = "\$subject = \"$subject_tmpl\"";
+     eval $str;
+     Verbose(">> Subject: $subject\n");
+
+     # Now send it
+     MTT::Mail::Send($subject, $to, $from, $body . $body_footer);
+     Verbose(">> Reported to e-mail: $to\n");
+    }
     return 1;
 }
 
@@ -343,5 +417,33 @@ sub _convert_timestamps {
 
     return $report;
 }
+
+# convert duration in secs to human-readable dd HH:MM:SS
+sub _convert_duration
+{
+    use integer;
+    my ($rtime)= @_;
+
+    my $min   = $rtime / 60;
+    my $sec   = $rtime % 60;
+    my $hour  = $min   / 60;
+    my $min   = $min   % 60;
+    my $day   = $hour  / 24;
+    my $hour  = $hour  % 24;
+    my @times;
+
+    if ($day) {
+        @times = ($day, $hour, $min, $sec);
+    } elsif ($hour) {
+        @times = ($hour, $min, $sec);
+    } else {
+        @times = ($min, $sec);
+    }
+
+    my $res = join(':', @times);
+    $res =~ s/\b(\d)\b/0$1/g;
+    return $res;
+}
+
 
 1;
