@@ -36,19 +36,19 @@
 #
 #   Remy Evard <evard@mcs.anl.gov>
 #       - Version 1.0 and 2.0:
-#   2003.03.12 Brian Elliott Finley <finley@mcs.anl.gov>
+#   2003.03.12 Brian Elliott Finley <finley@anl.gov>
 #       - added get_linux_type function to provide a three part type:
 #         Ie: linux-debian_unstable-ia32, or linux-sles8-ia64
 #       - added -o (option_test)
 #   2003.10.16 Larry A. Diegel <diegella@sdsc.edu>
 #       - patch for aix-5
-#   2004.01.17 Brian Elliott Finley <finley@mcs.anl.gov>
+#   2004.01.17 Brian Elliott Finley <finley@anl.gov>
 #       - modified --help output
 #       - accept --long-options as well as -s (short options)
-#   2004.02.04 Brian Elliott Finley <finley@mcs.anl.gov>
+#   2004.02.04 Brian Elliott Finley <finley@anl.gov>
 #       - identify macosx on ppc and ppc64
 #       - identify linux on Opteron (x86_64)
-#   2004.02.26 Brian Elliott Finley <finley@mcs.anl.gov>
+#   2004.02.26 Brian Elliott Finley <finley@anl.gov>
 #       - add redhat AS
 #       - add mandrake 9.1
 #       - add redhat 9
@@ -83,6 +83,9 @@
 #       - Add SuSE 10.2
 #   2007.02.06 Ti Leggett <leggett@mcs.anl.gov>
 #       - Add MacOS on Intel support
+#   2008.10.14 Brian Finley <finley@anl.gov>
+#       - Add generic lsb_release support
+#         - includes CentOS 5.x
 #
 #   Authors -- Be sure to increment the version number appropriately!
 #
@@ -118,7 +121,7 @@
 # ===========================================================================
 
 program=`echo $0 | sed 's:.*/::'` 
-version="2.3.3"
+version="2008.04.07"
 
 ################################################################################
 #
@@ -161,8 +164,25 @@ get_linux_type()
         #
         #          NOTES: Put newer tests higher up, as they'll most 
         #                 likely get hit first. -BEF-
+        #          NOTES: But, make sure that newer programatic tests don't override
+        #                 older tests with different results. -BEF-
         #
-        if [ -f /etc/issue ]; then
+        if [ -f /etc/lsb-release ]; then
+            #
+            # Example contents of /etc/lsb-release:
+            #   DISTRIB_ID=Ubuntu
+            #   DISTRIB_RELEASE=8.04
+            #   DISTRIB_CODENAME=hardy
+            #   DISTRIB_DESCRIPTION="Ubuntu hardy (development branch)"
+            . /etc/lsb-release
+            distro=${DISTRIB_ID}_${DISTRIB_RELEASE}
+
+        elif [ -x /usr/bin/lsb_release ]; then
+            DISTRIB_ID=$(/usr/bin/lsb_release -i | sed -e 's/^Distributor ID:[[:space:]]//')
+            DISTRIB_RELEASE=$(/usr/bin/lsb_release -r | sed -e 's/^Release:[[:space:]]//')
+            distro=${DISTRIB_ID}_${DISTRIB_RELEASE}
+            
+        elif [ -f /etc/issue ]; then
         
                 if [ -e /etc/debian_version ]; then
                         distro_brand=debian
@@ -195,7 +215,7 @@ get_linux_type()
                 elif [ -n "`egrep 'SGI ProPack 3' /etc/issue`" ]; then
                         distro=rhel3
                 
-                elif [ -n "`egrep 'CentOS release [45].[0-9]' /etc/issue`" ]; then
+                elif [ -n "`egrep 'CentOS release 4.[0-9]' /etc/issue`" ]; then
                         distro=rhel4
 
                 elif [ -n "`egrep 'SuSE SLES 8' /etc/issue`" ]; then
