@@ -95,6 +95,8 @@ sub RunEngine {
     $report_after_n_results = 
         Value($ini, $section, "submit_results_after_n_results")
         if (!defined($report_after_n_results));
+    $report_after_n_results = 100
+        if (!defined($report_after_n_results));
 
     # Normalize the thresholds. Acceptable formats:
     #   * D%  - percentage
