@@ -26,7 +26,7 @@ our $System_config = {
     
     http_agents => { 
         wget => { 
-            command => "wget -nv \$url", 
+            command => "wget --no-check-certificate -nv \$url", 
             auth => "--user=\$username --password=\$password",
         },
         curl => {
