@@ -112,9 +112,9 @@ sub unpack_tarball {
     # Decide which unpacker to use
 
     my $unpacker;
-    if ($tarball =~ /.*\.bz2$/) {
+    if ($tarball =~ /.*\.t?bz2?$/) {
         $unpacker="bunzip2";
-    } elsif ($tarball =~ /.*\.gz$/) {
+    } elsif ($tarball =~ /.*\.t?gz$/) {
         $unpacker="gunzip";
     } else {
         Warning("Unrecognized tarball extension ($tarball); don't know how to uncompress -- skipped\n");
