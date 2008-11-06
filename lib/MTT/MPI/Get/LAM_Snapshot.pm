@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -14,7 +14,6 @@
 package MTT::MPI::Get::LAM_Snapshot;
 
 use strict;
-use Cwd;
 use File::Basename;
 use Data::Dumper;
 use POSIX;

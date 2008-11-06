@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 #
 # Copyright (c) 2007 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2008 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -13,7 +14,7 @@ my $package = __PACKAGE__;
 
 use strict;
 use MTT::Values;
-use Cwd;
+use MTT::DoCommand;
 
 #--------------------------------------------------------------------------
 
@@ -30,7 +31,7 @@ sub Get {
 #--------------------------------------------------------------------------
 
 sub PrepareForInstall {
-    return cwd();
+    return MTT::DoCommand::cwd();
 }
 
 1;

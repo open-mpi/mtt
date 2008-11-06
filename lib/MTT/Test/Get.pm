@@ -18,7 +18,6 @@
 package MTT::Test::Get;
 
 use strict;
-use Cwd;
 use POSIX qw(strftime);
 use File::Basename;
 use Time::Local;

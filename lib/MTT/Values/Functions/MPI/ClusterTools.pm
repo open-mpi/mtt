@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 #
 # Copyright (c) 2007 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2008 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -16,7 +17,6 @@ use Data::Dumper;
 use MTT::Messages;
 use MTT::DoCommand;
 use MTT::FindProgram;
-use Cwd;
 
 #--------------------------------------------------------------------------
 

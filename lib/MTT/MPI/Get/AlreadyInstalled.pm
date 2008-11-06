@@ -14,13 +14,13 @@
 package MTT::MPI::Get::AlreadyInstalled;
 
 use strict;
-use Cwd;
 use File::Basename;
 use Data::Dumper;
 use MTT::Messages;
 use MTT::Files;
 use MTT::FindProgram;
 use MTT::Values;
+use MTT::DoCommand;
 use File::Basename;
 
 #--------------------------------------------------------------------------
@@ -101,7 +101,7 @@ sub Get {
 
 # NoOp
 sub PrepareForInstall {
-    return cwd();
+    return MTT::DoCommand::cwd();
 }
 
 1;

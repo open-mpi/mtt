@@ -35,7 +35,6 @@
 package MTT::Test::Build;
 
 use strict;
-use Cwd;
 use Time::Local;
 use MTT::Reporter;
 use MTT::Messages;
@@ -254,7 +253,7 @@ sub _prepare_source {
     my $module = $1;
     my $method = $2;
 
-    return MTT::Module::Run($module, $method, $test, cwd());
+    return MTT::Module::Run($module, $method, $test, MTT::DoCommand::cwd());
 }
 
 #--------------------------------------------------------------------------
@@ -312,7 +311,7 @@ sub _do_build {
     $config->{srcdir} = _prepare_source($test_get);
 
     # We'll check for failure of this step later
-    $config->{srcdir} = cwd();
+    $config->{srcdir} = MTT::DoCommand::cwd();
 
     # What to do with result_stdout/result_stderr?
     my $tmp;

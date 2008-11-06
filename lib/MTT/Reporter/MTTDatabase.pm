@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2006-2008 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -14,7 +14,6 @@
 package MTT::Reporter::MTTDatabase;
 
 use strict;
-use Cwd;
 use MTT::Messages;
 use MTT::Values;
 use MTT::Version;
@@ -194,7 +193,8 @@ sub Init {
 
     # If filename given is relative, branch it off the scratch tree
     if ($debug_filename !~ /\//) {
-        $debug_filename = cwd() . "/mttdatabase-submit/$debug_filename";
+        $debug_filename = MTT::DoCommand::cwd() . 
+            "/mttdatabase-submit/$debug_filename";
     }
     MTT::Files::mkdir(dirname($debug_filename));
     Debug("MTTDatabase reporter writing to debug file ($debug_filename)\n");

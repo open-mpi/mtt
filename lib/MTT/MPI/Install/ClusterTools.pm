@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 #
 # Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2008      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -20,7 +21,6 @@ use MTT::FindProgram;
 use MTT::Common::GNU_Install;
 use MTT::Files;
 use MTT::Util;
-use Cwd;
 use POSIX qw/strftime/;
 use File::Spec;
 use File::Basename;
@@ -1556,7 +1556,7 @@ sub _setup_installer {
         MTT::DoCommand::Pushdir($installer_dir_src);
 
         # Build the Install_Utilities (OMPIompiat package)
-        my $cwd = cwd();
+        my $cwd = MTT::DoCommand::cwd();
         $ret = "$cwd/Install_Utilities";
 
         my $cmd = "make all install DESTDIR=$ret";

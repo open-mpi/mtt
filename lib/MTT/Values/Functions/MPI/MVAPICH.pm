@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 #
 # Copyright (c) 2008      Mellanox Technologies.  All rights reserved.
+# Copyright (c) 2008      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -13,7 +14,6 @@ package MTT::Values::Functions::MPI::MVAPICH;
 use strict;
 use MTT::Messages;
 use Data::Dumper;
-use Cwd;
 
 #--------------------------------------------------------------------------
 

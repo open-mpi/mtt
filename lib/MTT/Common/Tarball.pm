@@ -14,7 +14,6 @@
 package MTT::Common::Tarball;
 
 use strict;
-use Cwd;
 use File::Basename;
 use POSIX qw(strftime);
 use MTT::DoCommand;
@@ -62,7 +61,7 @@ sub Get {
 
     # Copy this tarball locally
     Debug(">> tarball: caching\n");
-    my $dir = cwd();
+    my $dir = MTT::DoCommand::cwd();
     my $x = MTT::DoCommand::Cmd(1, "cp $data->{tarball} .");
     if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         $ret->{test_result} = MTT::Values::FAIL;
@@ -72,7 +71,8 @@ sub Get {
     }
 
     # Reset the directory where to copy from to be here
-    $data->{tarball} = cwd() . "/" . basename($data->{tarball});
+    $data->{tarball} = MTT::DoCommand::cwd() . "/" . 
+        basename($data->{tarball});
     $data->{md5sum} = defined($src_md5) ? $src_md5 : MTT::Files::md5sum($data->{tarball});
 
     # Get other module-data values

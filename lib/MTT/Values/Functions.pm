@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -27,7 +27,6 @@ use MTT::Util;
 use MTT::INI;
 use MTT::Values;
 use Data::Dumper;
-use Cwd;
 
 # Do NOT use MTT::Test::Run here, even though we use some
 # MTT::Test::Run values below.  This will create a "use loop".  Be
@@ -1104,12 +1103,12 @@ sub dirname {
 
 # return cwd()
 sub cwd {
-    return cwd();
+    return MTT::DoCommand::cwd();
 }
 
 # return cwd()
 sub pwd {
-    return cwd();
+    return MTT::Functions::cwd();
 }
 
 # Just like the "which" shell command
@@ -2429,6 +2428,13 @@ sub getenv {
 sub scratch_root {
     Debug("&scratch_root() returning: $MTT::Globals::Values->{scratch_root}\n");
     return $MTT::Globals::Values->{scratch_root};
+}
+
+#--------------------------------------------------------------------------
+
+sub local_scratch_root {
+    Debug("&local_scratch_root() returning: $MTT::Globals::Values->{local_scratch_root}\n");
+    return $MTT::Globals::Values->{local_scratch_root};
 }
 
 #--------------------------------------------------------------------------

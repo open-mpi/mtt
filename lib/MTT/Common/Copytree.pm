@@ -14,7 +14,6 @@
 package MTT::Common::Copytree;
 
 use strict;
-use Cwd;
 use File::Basename;
 use POSIX qw(strftime);
 use MTT::DoCommand;
@@ -71,7 +70,7 @@ sub Get {
     # build/install).  And set "directory" to be the "src_directory".
     $data->{directory} = $data->{src_directory};
     $ret->{module_data} = $data;
-    my $dir = PrepareForInstall($ret, cwd());
+    my $dir = PrepareForInstall($ret, MTT::DoCommand::cwd());
 
     if (!$dir) {
         $ret->{test_result} = MTT::Values::FAIL;

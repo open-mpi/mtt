@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -14,7 +14,6 @@
 package MTT::Test::Get::Download;
 
 use strict;
-use Cwd;
 use File::Basename;
 use Data::Dumper;
 use MTT::DoCommand;
@@ -31,7 +30,7 @@ sub Get {
     my $ret;
     my $data;
     $ret->{test_result} = MTT::Values::FAIL;
-    my $tarball_dir = cwd();
+    my $tarball_dir = MTT::DoCommand::cwd();
 
     # See if we got a url in the ini section
     my $url = Value($ini, $section, "download_url");

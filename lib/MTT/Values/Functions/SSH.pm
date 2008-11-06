@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -20,7 +20,6 @@ use MTT::Messages;
 use MTT::FindProgram;
 use MTT::Lock;
 use File::Temp qw(tempfile);
-use Cwd;
 
 #--------------------------------------------------------------------------
 
@@ -70,7 +69,8 @@ sub refresh_known_hosts_file {
 
     # Create a simple expect script to update the SSH
     # known_hosts file
-    my ($fh, $filename) = tempfile(DIR => cwd(), SUFFIX => "-update-ssh-known-hosts-file");
+    my ($fh, $filename) = tempfile(DIR => MTT::DoCommand::cwd(), 
+                                   SUFFIX => "-update-ssh-known-hosts-file");
 
     my $expect_path = FindProgram(qw(expect));
     if (! $expect_path) {

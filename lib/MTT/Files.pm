@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -14,7 +14,6 @@
 package MTT::Files;
 
 use strict;
-use Cwd;
 use File::Basename;
 use File::Find;
 use File::Spec;
@@ -60,7 +59,7 @@ sub safe_mkdir {
 sub mkdir {
     my ($dir, $safe) = @_;
 
-    my $c = cwd();
+    my $c = MTT::DoCommand::cwd();
     Debug("Making dir: $dir (cwd: $c)\n");
     my @parts = split(/\//, $dir);
 
@@ -526,6 +525,52 @@ sub FindName {
         $dir);
 
     return @ret;
+}
+
+#--------------------------------------------------------------------------
+
+sub save_fast_scratch_files {
+    my ($fast_root, $save_root) = @_;
+
+    if (exists($MTT::Globals::Values->{save_fast_scratch_files}) &&
+        defined($MTT::Globals::Values->{save_fast_scratch_files})) {
+        my @target_files = 
+            MTT::Util::split_comma_list($MTT::Globals::Values->{save_fast_scratch_files});
+        
+
+        # Scan the fast scratch tree fo find all filenames that we
+        # care about
+        Debug("Scanning fast scratch for files to save: $fast_root ($MTT::Globals::Values->{save_fast_scratch_files})\n");
+        my @save_files;
+        &File::Find::find(
+            sub { 
+                foreach my $f (@target_files) {
+                    if ($_ =~ /$f/) {
+                        push(@save_files, $File::Find::name);
+                        last;
+                    }
+                }
+            },
+                          $fast_root);
+
+        Debug("Saving files from fast scratch to persistent scratch...\n");
+        # Save the found files in the persistent scratch.  Use the
+        # same directory structure in the persistent scratch as we
+        # have in the fast scratch so that we don't have problems with
+        # multiple files of the same basename overwriting each other.
+        foreach my $f (@save_files) {
+            my $base = basename($f);
+            my $dir = dirname($f);
+
+            my $target_dir = $dir;
+            $target_dir =~ s/$fast_root//;
+            $target_dir = "$save_root/$target_dir";
+
+            MTT::Files::mkdir($target_dir)
+                if (! -d $target_dir);
+            system("cp $f $target_dir");
+        }
+    }
 }
 
 1;

@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 #
-# Copyright (c) 2007      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -13,7 +13,6 @@ package MTT::Common::SCM;
 my ($package) = (__PACKAGE__ =~ m/(\w+)$/);
 
 use strict;
-use Cwd;
 use File::Basename;
 use POSIX;
 use MTT::Messages;
@@ -79,7 +78,7 @@ sub Get {
     }
 
     # Strip off trailing slash for basename
-    my $cwd = cwd();
+    my $cwd = MTT::DoCommand::cwd();
     $params->{url} =~ s/\/\s*$//;
     my $basename = basename($params->{url});
     $params->{dirname} = "$cwd/$basename";

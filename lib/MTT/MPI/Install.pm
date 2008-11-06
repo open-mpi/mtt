@@ -83,7 +83,6 @@ package MTT::MPI::Install;
 ########################################################################
 
 use strict;
-use Cwd;
 use POSIX qw(strftime);
 use Time::Local;
 use MTT::DoCommand;
@@ -108,6 +107,9 @@ my $installed_section = "mpi_installed";
 
 # Where the top-level installation tree is
 my $install_base;
+
+# Where the top-level build tree is, may or may not be same as $install_base
+my $build_base;
 
 # Where the MPI library is
 our $install_dir;
@@ -145,12 +147,26 @@ sub Install {
     # Go through all the sections in the ini file looking for section
     # names that begin with "MPI Install:"
     $install_base = $install_dir;
-    MTT::DoCommand::Chdir($install_base);
+
+    # If we have a "fast" scratch, use that as the build base.
+    # Otherwise, just use the install_dir base.
+    $build_base = $install_dir;
+    $build_base = $MTT::Globals::Values->{fast_scratch_root}
+        if (exists($MTT::Globals::Values->{fast_scratch_root}) &&
+            defined($MTT::Globals::Values->{fast_scratch_root}));
+
+    # If we have a separate "fast" scratch, then make our own section
+    # in it for MPI install things.
+    if ($build_base ne $install_dir) {
+        $build_base .= "/mpi-install";
+        MTT::Files::mkdir($build_base)
+    }
     foreach my $section ($ini->Sections()) {
 
         # See if we're supposed to terminate.  Only check in the
         # outtermost and innermost loops (even though we *could* check
         # at every loop level); that's good enough.
+        MTT::DoCommand::Chdir($install_base);
         last
             if (MTT::Util::time_to_terminate());
 
@@ -223,6 +239,7 @@ sub Install {
                             # innermost loops (even though we *could*
                             # check at every loop level); that's good
                             # enough.
+                            MTT::DoCommand::Chdir($install_base);
                             last
                                 if (MTT::Util::time_to_terminate());
 
@@ -243,16 +260,31 @@ sub Install {
                                 $MTT::Globals::Internals->{mpi_get_name} =
                                     $mpi_get_key;
                                 $MTT::Globals::Internals->{mpi_install_name} = $simple_section;
+
+                                # Make a directory just for this section.
+                                # It's gotta be darn short because some
+                                # compilers will run out of room and complain
+                                # about filenames that are too long (doh!).
                                 MTT::DoCommand::Chdir($install_base);
                                 my $mpi_dir = _make_random_dir(4);
-                                MTT::DoCommand::Chdir($mpi_dir);
+                            
+                                # If we are building in a different place,
+                                # make another short uniq directory name.
+                                my $local_mpi_dir;
+                                if ($install_base ne $build_base) {
+                                    MTT::DoCommand::Chdir($build_base);
+                                    $local_mpi_dir = _make_random_dir(4);
+                                } else {
+                                    $local_mpi_dir = $mpi_dir;
+                                }
+                                MTT::DoCommand::Chdir($local_mpi_dir);
                             
                                 # Perform specified steps before the Install
                                 _run_step($step_params, "before", $ini, $section);
 
                                 # Install and restore the environment
                                 _do_install($section, $ini,
-                                            $mpi_version, $mpi_dir, $force);
+                                            $mpi_version, $local_mpi_dir, $mpi_dir, $force);
                                 delete $MTT::Globals::Internals->{mpi_get_name};
                                 delete $MTT::Globals::Internals->{mpi_install_name};
 
@@ -282,14 +314,46 @@ sub _prepare_source {
     my $module = $1;
     my $method = $2;
 
-    return MTT::Module::Run($module, $method, $mpi, cwd());
+    return MTT::Module::Run($module, $method, $mpi, MTT::DoCommand::cwd());
 }
+
+#--------------------------------------------------------------------------
+
+# If the sym link already exists, whack the old directory that it
+# points to (and the sym link).
+sub _make_fresh_symlink {
+    my ($target_dir, $sym_link_name) = @_;
+
+    MTT::DoCommand::Pushdir($target_dir);
+    MTT::DoCommand::Chdir("..");
+    if (-l $sym_link_name) {
+        my $start = MTT::DoCommand::cwd();
+        MTT::DoCommand::Chdir($sym_link_name);
+        my $dir_to_die = MTT::DoCommand::cwd();
+        MTT::DoCommand::Chdir($start);
+        # If the link was pointing somewhere valid, whack the previous
+        # directory
+        if ($dir_to_die ne $start) {
+            my $x = MTT::DoCommand::Cmd(1, "rm -rf $dir_to_die");
+        }
+        unlink($sym_link_name);
+    } elsif (-d $sym_link_name) {
+        # Can't think of why this would happen, but let's cover the bases.
+        MTT::DoCommand::Cmd(1, "rm -rf $sym_link_name");
+    }
+
+    # Make the sym link
+    symlink(basename($target_dir), $sym_link_name);
+    Debug("Sym linked: " . basename($target_dir) . " to $sym_link_name\n");
+    MTT::DoCommand::Popdir();
+}
+    
 
 #--------------------------------------------------------------------------
 
 # Install an MPI from sources
 sub _do_install {
-    my ($section, $ini, $mpi_get, $this_install_base, $force) = @_;
+    my ($section, $ini, $mpi_get, $this_build_base, $this_install_base, $force) = @_;
 
     # Simple section name
     my $simple_section = GetSimpleSection($section);
@@ -345,11 +409,10 @@ sub _do_install {
     $config->{description} = Value($ini, "MTT", "description")
         if (!$config->{description});
 
-    # Make a directory just for this section.  It's gotta be darn
-    # short because some compilers will run out of room and complain
-    # about filenames that are too long (doh!).
-    MTT::DoCommand::Chdir($this_install_base);
     $config->{version_dir} = $this_install_base;
+    $config->{build_version_dir} = $this_build_base;
+
+    # Make a human-readable sym link to the directory just for this section.
     my $sym_link_name = 
       MTT::Files::make_safe_filename($mpi_get->{simple_section_name}) .
       "--" . MTT::Files::make_safe_filename($simple_section) . "--" .
@@ -358,27 +421,11 @@ sub _do_install {
 
     # If the sym link already exists, whack the old directory that it
     # points to (and the sym link)
-    MTT::DoCommand::Chdir("..");
-    if (-l $sym_link_name) {
-        my $start = cwd();
-        MTT::DoCommand::Chdir($sym_link_name);
-        my $dir_to_die = cwd();
-        MTT::DoCommand::Chdir($start);
-        # If the link was pointing somewhere valid, whack the previous
-        # directory
-        if ($dir_to_die ne $start) {
-            my $x = MTT::DoCommand::Cmd(1, "rm -rf $dir_to_die");
-        }
-        unlink($sym_link_name);
-    } elsif (-d $sym_link_name) {
-        # Can't think of why this would happen, but let's cover the bases.
-        MTT::DoCommand::Cmd(1, "rm -rf $sym_link_name");
+    _make_fresh_symlink($config->{version_dir}, $sym_link_name);
+    # If the build is in a different place, make a sym link for it too.
+    if ($config->{version_dir} ne $config->{build_version_dir}) {
+      _make_fresh_symlink($config->{build_version_dir}, $sym_link_name);
     }
-
-    # Make the sym link
-    symlink(basename($this_install_base), $sym_link_name);
-    MTT::DoCommand::Chdir($this_install_base);
-    Debug("Sym linked: " . basename($this_install_base) . " to $sym_link_name\n");
     
     # Load any environment modules?
     my @env_modules;
@@ -479,8 +526,9 @@ sub _do_install {
     $config->{restart_on_pattern} = $tmp
         if (defined($tmp));
 
-    # We're in the section directory.  Make a subdir for the source
-    # and build.
+    # Make sure we're in the build section directory.
+    # Make a subdir for the source and build.
+    MTT::DoCommand::Chdir($config->{build_version_dir});
     MTT::DoCommand::Cmd(1, "rm -rf src");
     my $source_dir = MTT::Files::mkdir("src");
     MTT::DoCommand::Chdir($source_dir);
@@ -488,7 +536,7 @@ sub _do_install {
     # Unpack the source and find out the subdirectory
     # name it created
     $config->{srcdir} = _prepare_source($mpi_get);
-    $config->{abs_srcdir} = cwd();
+    $config->{abs_srcdir} = MTT::DoCommand::cwd();
 
     # vpath mode (error checking was already done above)
     if (!$config->{vpath_mode} || $config->{vpath_mode} eq "" ||
@@ -500,11 +548,11 @@ sub _do_install {
         if ($config->{vpath_mode} eq "absolute") {
             $config->{vpath_mode} = 2;
             $config->{configdir} = $config->{abs_srcdir};
-            $config->{builddir} = "$config->{version_dir}/build_vpath_absolute";
+            $config->{builddir} = "$config->{build_version_dir}/build_vpath_absolute";
         } else {
             $config->{vpath_mode} = 1;
             $config->{configdir} = "../$config->{srcdir}";
-            $config->{builddir} = "$config->{version_dir}/build_vpath_relative";
+            $config->{builddir} = "$config->{build_version_dir}/build_vpath_relative";
         }
 
         MTT::Files::mkdir($config->{builddir});
@@ -565,6 +613,12 @@ sub _do_install {
     if ($#env_modules >= 0) {
         MTT::EnvModule::unload(@env_modules);
     }
+
+    # If we're using a fast scratch, save any necessary files to the
+    # global / persistent scratch ("fssf" = "fast scratch save files")
+    MTT::Files::save_fast_scratch_files($this_build_base, 
+                                        "$this_install_base/fssf")
+        if ($this_build_base ne $this_install_base);
 
     # Analyze the return
     if ($ret) {
@@ -682,6 +736,7 @@ sub _do_install {
         $ret->{start_timestamp} = timegm(gmtime());
         $ret->{sym_link_name} = $config->{sym_link_name};
         $ret->{version_dir} = $config->{version_dir};
+        $ret->{build_version_dir} = $config->{build_version_dir};
         $ret->{source_dir} = $config->{srcdir};
         $ret->{build_dir} = $config->{builddir};
         $ret->{refcount} = 0;

@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2006-2008 Sun Microsystems, Inc. All rights reserved.
 # $COPYRIGHT$
 # 
@@ -148,6 +148,7 @@ my @SAVE_ARGV = @ARGV;
 my $ok = Getopt::Long::GetOptions("file|f=s" => \@file_arg,
                                   "" => \$stdin_arg,
                                   "scratch|s=s" => \$scratch_arg,
+                                  "fast-scratch=s" => \$fast_scratch_arg,
                                   "help|h" => \$help_arg,
                                   "debug|d" => \$debug_arg,
                                   "verbose|v" => \$verbose_arg,
@@ -222,7 +223,15 @@ if (!$ok || $help_arg) {
         if (!$ok);
     print "Options:
 --file|-f <config_file>         Specify the configuration file
---scratch|-s <dir_name>         Scratch directory (where all work is done)
+--scratch|-s <dir_name>         Scratch directory (global filsysyem)
+                                Global filesystem where most MTT work is 
+                                performed
+--fast-scratch <dir_name>       Fast scratch dir (e.g., a local filesystem)
+                                This should be on a fast/local filesystem; 
+                                some portions of MTT may choose to use this
+                                filesystem for IO-intensive operations
+                                that are not persistent across
+                                multiple MTT invocations
 --help|-h                       This message
 --debug|-d                      Output lots of debug messages
 --verbose|-v                    Output some status / verbose messages
@@ -338,8 +347,12 @@ MTT::FindProgram::FindZeroDir();
 my @ini_list = _process_ini_param(\@file_arg, $stdin_arg, \@section_arg, \@no_section_arg);
 
 # Determine scratch from command-line or INI param
-my $scratch_arg = _process_scratch_param($scratch_arg, $ini_list[0]->{unfiltered});
+my $scratch_arg = _process_scratch_param("scratch", $scratch_arg, $ini_list[0]->{unfiltered}, ".");
 $MTT::Globals::Values->{scratch_root} = $scratch_arg;
+MTT::DoCommand::Chdir($scratch_arg);
+
+my $fast_scratch_arg = _process_scratch_param("fast_scratch", $fast_scratch_arg, $ini_list[0]->{unfiltered}, $scratch_arg);
+$MTT::Globals::Values->{fast_scratch_root} = $fast_scratch_arg;
 
 # Determine --force from command-line or INI param
 my $force_arg = _process_force_param($force_arg, $ini_list[0]->{unfiltered});
@@ -458,7 +471,7 @@ foreach my $hash (@ini_list) {
     # determined the scratch_root, so pass it in so that it gets set
     # in the Globals hash.
 
-    MTT::Globals::load($scratch_arg, $ini_full);
+    MTT::Globals::load($scratch_arg, $fast_scratch_arg, $ini_full);
     MTT::Messages::Messages($debug, $verbose, cwd());
 
     # Make the INI file globally accessible
@@ -547,6 +560,13 @@ foreach my $hash (@ini_list) {
     # Close the log
 
     MTT::Messages::close_logfile();
+
+    # Whack the fast scratch area
+    if ($fast_scratch_arg &&
+        $MTT::Globals::Values->{delete_fast_scratch}) {
+        Verbose("Deleting fast scratch tree: $fast_scratch_arg\n");
+        system("rm -rf $fast_scratch_arg");
+    }
 }
 
 # That's it!
@@ -637,32 +657,30 @@ sub _process_ini_param {
 
 # Determine scratch directory
 sub _process_scratch_param {
-
-    my ($scratch_option, $ini) = @_;
+    my ($name, $scratch_option, $ini, $def_dir) = @_;
     my $scratch_arg;
 
     # The --scratch option overrides the INI scratch param
     if ($scratch_option) {
         $scratch_arg = $scratch_option;
     } else {
-        $scratch_arg = Value($ini, "MTT", "scratch");
+        $scratch_arg = Value($ini, "MTT", $name);
     }
 
     # See if we got a scratch root
     if (! $scratch_arg) {
-        $scratch_arg = ".";
+        $scratch_arg = $def_dir;
     }
-    MTT::Messages::Debug("Scratch: $scratch_arg\n");
+    MTT::Messages::Debug("$name: $scratch_arg\n");
     if (! -d $scratch_arg) {
         MTT::Files::mkdir($scratch_arg, 0777);
     }
     if (! -d $scratch_arg) {
-        MTT::Messages::Abort("Could not make scratch dir: $scratch_arg\n");
+        MTT::Messages::Abort("Could not make $name dir: $scratch_arg\n");
     }
 
-    chdir($scratch_arg);
-    $scratch_arg = cwd();
-    MTT::Messages::Debug("Scratch resolved: $scratch_arg\n");
+    $scratch_arg = MTT::DoCommand::ResolveDir($scratch_arg);
+    MTT::Messages::Debug("$name resolved: $scratch_arg\n");
 
     # Convert relative path to absolute path and expand "~"
     $scratch_arg = File::Spec->rel2abs(glob $scratch_arg);

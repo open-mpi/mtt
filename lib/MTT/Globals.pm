@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 #
-# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -67,6 +67,9 @@ my $_defaults = {
 
     min_disk_free => "5%",
     min_disk_free_wait => "60",
+
+    delete_fast_scratch => 1,
+    save_fast_scratch_files => "config.log",
 };
 
 #--------------------------------------------------------------------------
@@ -74,10 +77,11 @@ my $_defaults = {
 # Reset $Globals per a specific ini file
 
 sub load {
-    my ($scratch_root, $ini) = @_;
+    my ($scratch_root, $fast_scratch_root, $ini) = @_;
 
     %$Values = %$_defaults;
     $Values->{scratch_root} = $scratch_root;
+    $Values->{fast_scratch_root} = $fast_scratch_root;
 
     # Are there funclet .pm files to load?  If so, do these first so
     # that the funclets can be used by the rest of the fields.
@@ -114,7 +118,7 @@ sub load {
 
     # Simple parameters
 
-    my @names = qw/max_np textwrap drain_timeout trim_save_successful trim_save_failed trial http_proxy https_proxy ftp_proxy terminate_files pause_files min_disk_free min_disk_free_wait/;
+    my @names = qw/max_np textwrap drain_timeout trim_save_successful trim_save_failed trial http_proxy https_proxy ftp_proxy terminate_files pause_files min_disk_free min_disk_free_wait delete_fast_scratch save_fast_scratch_files/;
     foreach my $t (qw/before after/) {
         foreach my $a (qw/all each/) {
             push(@names, $t . "_" . $a . "_exec");

@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -13,12 +13,12 @@
 package MTT::Reporter::ParsableTextfile;
 
 use strict;
-use Cwd;
 use POSIX qw(strftime);
 use MTT::Messages;
 use MTT::Values;
 use MTT::Files;
 use MTT::Version;
+use MTT::DoCommand;
 use Data::Dumper;
 
 # directory and file to write to
@@ -53,7 +53,7 @@ sub Init {
 
     if ($filename ne "-") {
         if ($filename !~ /\//) {
-            $dirname = cwd();
+            $dirname = MTT::DoCommand::cwd();
             $filename = "$filename";
         } else {
             $dirname = dirname($filename);

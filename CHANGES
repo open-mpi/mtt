@@ -112,6 +112,14 @@ To announce to OMPI core testers:
   &scratch_root()/mtt-pause.  Causes MTT to "pause" after the current
   test.  MTT will resume once the pause file has been removed.
 
+- delete_fast_scratch field in MTT section.  Defaults to 1, but can be
+  overridden to 0.  If 1, the "fast scratch" tree will be completely
+  removed at the end of the run.
+
+- save_fast_scratch_files field in the MTT section.  A comma-delimited
+  list of files that are saved from the fast scratch area before it is
+  deleted.
+
 - Added support for MPICH2 (and therefore MVAPICH2) and LAM/MPI
 
 - Added support for the ClusterTools package installer
@@ -176,6 +184,7 @@ To announce to OMPI core testers:
 - New options:
   - --no-force
   - --no-reporter
+  - --fast-scratch (currently used by the MPI install section)
 
 - New MPI install INI params used to do *stuff* before and/or after an MPI
   Install (e.g., create a tarball, install on cluster):

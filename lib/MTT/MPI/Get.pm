@@ -33,7 +33,6 @@
 package MTT::MPI::Get;
 
 use strict;
-use Cwd;
 use POSIX qw(strftime);
 use File::Basename;
 use Time::Local;

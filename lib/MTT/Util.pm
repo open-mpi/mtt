@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 #
-# Copyright (c) 2007 Cisco, Inc.  All rights reserved.
+# Copyright (c) 2007-2008 Cisco, Inc.  All rights reserved.
 # Copyright (c) 2007 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -29,10 +29,10 @@ use base qw(Exporter);
              get_array_ref
 );
 
-use Cwd;
 use MTT::Globals;
 use MTT::Messages;
 use MTT::Values;
+use MTT::DoCommand;
 use Data::Dumper;
 use Filesys::DiskFree;
 
@@ -94,16 +94,7 @@ sub time_to_terminate {
             }
         }
 
-        # Setup min_disk_free to be a number of bytes
         $df_handle = new Filesys::DiskFree;
-        if ($MTT::Globals::Values->{min_disk_free} =~ m/([0-9]{1,2})\%/) {
-            $df_handle->df();
-            my $val = $1;
-            $val /= 100.0;
-            $val *= $df_handle->total(cwd());
-            $val = int($val);
-            $MTT::Globals::Values->{min_disk_free} = $val;
-        }
     }
 
     # Check to see if any of the files exist
@@ -139,14 +130,43 @@ sub time_to_terminate {
     } while ($found == 1);
 
     # Check the disk space remaining
-    if ($MTT::Globals::Values->{min_disk_free} > 0) {
-        my $c = getcwd();
+    if (defined($MTT::Globals::Values->{min_disk_free}) &&
+        ($MTT::Globals::Values->{min_disk_free} ne "0")) {
+        my $c = MTT::DoCommand::cwd();
+        my $min_disk_free;
         $df_handle->df();
-        if ($df_handle->avail($c) < 
-            $MTT::Globals::Values->{min_disk_free}) {
+
+        # compute min_disk_free *of this partition* in bytes if it was
+        # specified as a percentage
+        if ($MTT::Globals::Values->{min_disk_free} =~ m/([0-9]{1,2})\s*\%/) {
+            my $val = $1;
+            $val /= 100.0;
+            $val *= $df_handle->total(MTT::DoCommand::cwd());
+            $val = int($val);
+            $min_disk_free = $val;
+        } 
+        # Or look for a number folloed by k, m, or g (kilobyte,
+        # megabyte, gigabyte)
+        elsif ($MTT::Globals::Values->{min_disk_free} =~ m/^\s*([0-9]+)([kmg])\s*$/i) {
+            $min_disk_free = $1;
+            if (lc($2) eq "k") {
+                $min_disk_free *= 1024;
+            } elsif (lc($2) eq "m") {
+                $min_disk_free *= 1048576;
+            } elsif (lc($2) eq "g") {
+                $min_disk_free *= 1073741824;
+            }
+        } 
+        # Otherwise just take the number
+        else {
+            $min_disk_free = $MTT::Globals::Values->{min_disk_free};
+        }
+
+        Debug("Global min free specified as: $MTT::Globals::Values->{min_disk_free}, resolved as $min_disk_free\n");
+        if ($df_handle->avail($c) < $min_disk_free) {
             Warning("Disk free is less than minimum (" . 
                     $df_handle->avail($c) .
-                    " bytes < $MTT::Globals::Values->{min_disk_free} bytes)\n");
+                    " bytes < $min_disk_free bytes)\n");
             Warning("Waiting for up to $MTT::Globals::Values->{min_disk_free_wait} minutes to see if the situation resolves itself\n")
                 if ($MTT::Globals::Values->{min_disk_free_wait} > 0);
 
@@ -154,8 +174,7 @@ sub time_to_terminate {
             while ($i < 2 * $MTT::Globals::Values->{min_disk_free_wait}) {
                 sleep(30);
                 $df_handle->df();
-                if ($df_handle->avail($c) >
-                    $MTT::Globals::Values->{min_disk_free}) {
+                if ($df_handle->avail($c) > $min_disk_free) {
                     last;
                 }
                 ++$i;

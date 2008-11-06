@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -16,7 +16,6 @@ package MTT::Values::Functions::MPI::MPICH2;
 use strict;
 use MTT::Messages;
 use Data::Dumper;
-use Cwd;
 
 #--------------------------------------------------------------------------
 

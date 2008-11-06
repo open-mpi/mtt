@@ -13,7 +13,6 @@
 package MTT::Test::Specify::Simple;
 
 use strict;
-use Cwd;
 use MTT::Messages;
 use MTT::Values;
 use MTT::Defaults;

@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -18,7 +18,6 @@ use MTT::Messages;
 use MTT::DoCommand;
 use MTT::FindProgram;
 use Data::Dumper;
-use Cwd;
 
 #--------------------------------------------------------------------------
 
@@ -106,7 +105,8 @@ sub _check_solaris_ipoib_connectivity {
 
     # Create a simple script to ping an IB interface
     # (Assume we are currently in an NFS mounted directory)
-    my ($fh, $filename) = tempfile(DIR => cwd(), SUFFIX => "-ping");
+    my ($fh, $filename) = tempfile(DIR => MTT::DoCommand::cwd(), 
+                                   SUFFIX => "-ping");
     my $scriptlet1 = "#!/bin/sh
 $ping -i $ib_interface \$*  > /dev/null
 
@@ -187,7 +187,8 @@ fi";
 
     # Create a simple script to check DAT registry
     # (Assume we are currently in an NFS mounted directory)
-    ($fh, $filename) = tempfile(DIR => cwd(), SUFFIX => "-datadm");
+    ($fh, $filename) = tempfile(DIR => MTT::DoCommand::cwd(), 
+                                SUFFIX => "-datadm");
     my $scriptlet2 = "#!/bin/sh
 datadm=`$datadm -v | grep $ib_interface | cut -f1 -d' '`
 if test \"\$datadm\" != \"\"; then
@@ -303,7 +304,8 @@ sub _check_linux_ipoib_connectivity {
 
     # Create a simple script to ping an IB interface
     # (Assume we are currently in an NFS mounted directory)
-    my ($fh, $filename) = tempfile(DIR => cwd(), SUFFIX => "-ping");
+    my ($fh, $filename) = tempfile(DIR => MTT::DoCommand::cwd(), 
+                                   SUFFIX => "-ping");
     my $scriptlet1 = "#!/bin/sh
 $ping -c 3 -I $ib_interface \$*  > /dev/null
 

@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -13,7 +13,6 @@
 package MTT::Test::Get::Trivial;
 
 use strict;
-use Cwd;
 use File::Temp qw(tempfile);
 use MTT::Messages;
 use MTT::DoCommand;
@@ -400,7 +399,7 @@ end\n");
     $ret->{test_result} = MTT::Values::PASS;
     $ret->{have_new} = $x->{success};
     $ret->{prepare_for_install} = "MTT::Common::Copytree::PrepareForInstall";
-    $ret->{module_data}->{directory} = cwd();
+    $ret->{module_data}->{directory} = MTT::DoCommand::cwd();
     $ret->{result_message} = "Success";
     return $ret;
 } 

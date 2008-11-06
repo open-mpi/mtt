@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -14,14 +14,14 @@
 package MTT::Reporter::TextFile;
 
 use strict;
-use Cwd;
 use POSIX qw(strftime);
 use MTT::Messages;
 use MTT::Values;
 use MTT::Files;
 use MTT::Version;
-use Data::Dumper;
 use MTT::Mail;
+use MTT::DoCommand;
+use Data::Dumper;
 use File::Basename;
 use Text::Wrap;
 
@@ -81,7 +81,7 @@ sub Init {
 
     if ($filename ne "-") {
         if ($filename !~ /\//) {
-            $dirname = cwd();
+            $dirname = MTT::DoCommand::cwd();
             $filename = "$filename";
         } else {
             $dirname = dirname($filename) if (! defined($dirname));

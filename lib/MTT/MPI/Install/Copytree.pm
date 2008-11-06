@@ -13,7 +13,6 @@
 package MTT::MPI::Install::Copytree;
 
 use strict;
-use Cwd;
 use File::Basename;
 use Data::Dumper;
 use MTT::DoCommand;
@@ -62,7 +61,7 @@ sub Install {
     }
 
     # Copy the tree
-    my $start_dir = cwd();
+    my $start_dir = MTT::DoCommand::cwd();
     MTT::DoCommand::Chdir($config->{installdir});
     $x = MTT::Files::copy_tree("$config->{abs_srcdir}", 1);
     MTT::DoCommand::Chdir($start_dir);

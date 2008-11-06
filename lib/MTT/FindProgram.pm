@@ -3,6 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2008      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -14,8 +15,8 @@ package MTT::FindProgram;
 
 use strict;
 use File::Basename;
-use Cwd;
 use MTT::Messages;
+use MTT::DoCommand;
 use Data::Dumper;
 use vars qw(@EXPORT);
 use base qw(Exporter);
@@ -56,13 +57,13 @@ sub FindZeroDir {
 
     # First check $0 itself to see if it gives any clues
 
-    my $start = cwd();
+    my $start = MTT::DoCommand::cwd();
 
     my $dir = dirname($0);
     my $cmd = basename($0);
     if (-x "$dir/$cmd") {
         MTT::DoCommand::Chdir($dir);
-        $zero_dir = cwd();
+        $zero_dir = MTT::DoCommand::cwd();
         MTT::DoCommand::Chdir($start);
         return $zero_dir;
     }
@@ -72,7 +73,7 @@ sub FindZeroDir {
         foreach my $p (split(/:/, $ENV{PATH})) {
             if (-x "$p/$0") {
                 MTT::DoCommand::Chdir($p);
-                $zero_dir = cwd();
+                $zero_dir = MTT::DoCommand::cwd();
                 MTT::DoCommand::Chdir($start);
                 return $zero_dir;
             }

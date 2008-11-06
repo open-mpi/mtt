@@ -521,17 +521,33 @@ sub Chdir {
     }
 }
 
+# Ensure to properly resolve a directory into its absolute name
+sub ResolveDir {
+    my ($dir) = @_;
+    return File::Spec->rel2abs(glob($dir));
+}
+
+# Wrap Cwd::cwd() to ensure to check the return value properly (e.g.,
+# if you're in a directory that was removed, cwd() returns "")
+sub cwd {
+    my $dir = ::cwd();
+    die "Current working directory does not exist!"
+        if ($dir eq "");
+    return $dir;
+}
+
 # Cached cwd's for Pushdir/Popdir
 my @dir_stack;
 
 # Just like the pushd shell command
 sub Pushdir {
+    my ($dir) = @_;
 
     # Translate ~ or * using the glob subroutine
-    my($dir) = map { glob } @_;
+    $dir = glob($dir);
     Debug("Pushdir $dir\n");
 
-    my $cwd = File::Spec->rel2abs(cwd());
+    my $cwd = ResolveDir(MTT::DoCommand::cwd());
     push(@dir_stack, $cwd);
 
     # In --no-execute mode, it is acceptable
