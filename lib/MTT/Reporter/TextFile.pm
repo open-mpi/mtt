@@ -158,8 +158,8 @@ sub _summary_report {
 
     print $summary_header;
 
-    my $table = Text::TabularDisplay->new(("Phase","Section","MPI Version", "Duration (secs.)","Pass","Fail","Time out","Skip"));
-    my ($total_fail, $total_succ, $total_tests,$total_duration) = (0,0,0,0);
+    my $table = Text::TabularDisplay->new(("Phase","Section","MPI Version", "Duration","Pass","Fail","Time out","Skip","Detailed report"));
+    my ($total_fail, $total_succ, $total_duration, $html_table_content) = (0,0,0,"");
 
     foreach my $results (@$results_arr) {
 
@@ -168,41 +168,48 @@ sub _summary_report {
 
             foreach my $section (keys %{$phase_obj}) {
                 my $section_obj = $results->{$phase}{$section};
-
-                my ($pass, $fail, $timed, $skipped, $duration, $mpi_version) = (0, 0, 0, 0, 0, undef);
+                my ($per_mpiver) = ();
 
                 foreach my $results_hash (@$section_obj) {
 
+                    my $mpi_version = $results_hash->{mpi_version};
                     if ($results_hash->{test_result} eq MTT::Values::PASS) {
-                        $pass++;
+                        $per_mpiver->{$mpi_version}{pass}++;
+                        $total_succ++;
                     } elsif ($results_hash->{test_result} eq MTT::Values::FAIL) {
-                        $fail++;
+                        $per_mpiver->{$mpi_version}{fail}++;
+                        $total_fail++;
                     } elsif ($results_hash->{test_result} eq MTT::Values::TIMED_OUT) {
-                        $timed++;
+                        $per_mpiver->{$mpi_version}{timed}++;
+                        $total_fail++;
                     } elsif ($results_hash->{test_result} eq MTT::Values::SKIPPED) {
-                        $skipped++;
+                        $per_mpiver->{$mpi_version}{skipped}++;
                     }
                     if ( defined($results_hash->{duration}) ) {
                         my $one_test_duration = $results_hash->{duration};
                         $one_test_duration =~ s/(\d+).+/$1/g;
-                        $duration += $one_test_duration;
+                        $per_mpiver->{$mpi_version}{duration} += $one_test_duration;
+                        $total_duration += $one_test_duration;
                     }
-
-                    if (defined($results_hash->{mpi_version}) and !$mpi_version) {
-                        $mpi_version = $results_hash->{mpi_version};
-                    }
+                    $per_mpiver->{$mpi_version}{report} = $results_hash;
                 }
 
+                foreach my $mpi_version (keys %{$per_mpiver}) {
+                    my $mpi_stat        = $per_mpiver->{$mpi_version};
+                    my $report          = $mpi_stat->{report};
+                    my $rep_file        = basename(_get_filename($report, $section));
 
-                $total_fail += $fail + $timed;
-                $total_succ += $pass;
-                $total_duration += $duration;
-                $table->add($phase, $section, $mpi_version, $duration, $pass, $fail, $timed, $skipped);
+                    my $duration_human  = _convert_duration($mpi_stat->{duration});
+                    $table->add($phase, $section, $mpi_version, $duration_human, $mpi_stat->{pass}, $mpi_stat->{fail}, 
+                        $mpi_stat->{timed}, $mpi_stat->{skipped}, $rep_file);
+                    $html_table_content .= add_tr($phase, $section, $mpi_version, $duration_human, $mpi_stat->{pass}, $mpi_stat->{fail},
+                        $mpi_stat->{timed}, $mpi_stat->{skipped}, $rep_file);
+                }
             }
         }
     }
-    $total_tests =  $total_fail + $total_succ;
 
+    my $total_tests =  $total_fail + $total_succ;
     my $total_duration_human = _convert_duration($total_duration);
     my $perf_stat = "
 
@@ -223,27 +230,40 @@ sub _summary_report {
     print $body;
     _output_results($file, $body);
 
-   if ( $to ) {
-     # Evaluate the email subject header and from
-     my ($subject, $body_footer);
-     my $subject_tmpl = Value($ini, $section, "email_subject");
-     my $body_footer_tmpl = Value($ini, $section, "email_footer");
-     my $from = Value($ini, $section, "email_from");
 
-     my $overall_mtt_status = "success";
-     if ( $total_fail > 0 ) {
-         $overall_mtt_status = "failed";
-     }
-     my $str = "\$body_footer = \"$body_footer_tmpl\"";
-     eval $str;
+    # Wrte html report to a file
+    my $html_body = get_html_template();
+    $html_body =~ s/%TESTS_RESULTS%/$html_table_content/g;
+    my $html_totals = "<td>$total_tests</td><td>$total_fail</td><td>$total_succ</td><td>$total_duration_human</td>\n";
+    $html_body =~ s/%TOTALS%/$html_totals/g;
 
-     my $str = "\$subject = \"$subject_tmpl\"";
-     eval $str;
-     Verbose(">> Subject: $subject\n");
+    my $html_filename = "All_phase-summary.html";
+    my $html_file = "$dirname/" . MTT::Files::make_safe_filename("$html_filename");
 
-     # Now send it
-     MTT::Mail::Send($subject, $to, $from, $body . $body_footer);
-     Verbose(">> Reported to e-mail: $to\n");
+    _output_results($html_file, $html_body);
+
+
+    if ( $to ) {
+        # Evaluate the email subject header and from
+        my ($subject, $body_footer);
+        my $subject_tmpl = Value($ini, $section, "email_subject");
+        my $body_footer_tmpl = Value($ini, $section, "email_footer");
+        my $from = Value($ini, $section, "email_from");
+
+        my $overall_mtt_status = "success";
+        if ( $total_fail > 0 ) {
+            $overall_mtt_status = "failed";
+        }
+        my $str = "\$body_footer = \"$body_footer_tmpl\"";
+        eval $str;
+
+        my $str = "\$subject = \"$subject_tmpl\"";
+        eval $str;
+        Verbose(">> Subject: $subject\n");
+
+        # Now send it
+        MTT::Mail::Send($subject, $to, $from, $body . $body_footer);
+        Verbose(">> Reported to e-mail: $to\n");
     }
     return 1;
 }
@@ -444,6 +464,102 @@ sub _convert_duration
     $res =~ s/\b(\d)\b/0$1/g;
     return $res;
 }
+
+sub add_tr
+{
+    my ($phase, $section, $mpi_version, $duration_human, $pass, $fail, $timed, $skipped, $rep_file_url) = @_;
+    my $trClass = "Passed";
+    if ($fail or $timed) {
+        $trClass = "Error";
+    } 
+
+    my $tr = "<tr valign='top' class='$trClass'>\n";
+    $tr .= "<td><a href='$rep_file_url'>$phase</a></td><td>$section</td><td>$mpi_version</td><td>$duration_human</td><td>$pass</td><td>$fail</td><td>$timed</td><td>$skipped</td>\n</tr>\n";
+
+    return $tr;
+}
+
+sub get_html_template
+{
+    my $tmpl = '
+    <html xmlns:lxslt="http://xml.apache.org/xslt" xmlns:stringutils="xalan://org.apache.tools.ant.util.StringUtils">
+    <META http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+    <head>
+    <style type="text/css" media=screen>
+    body {
+    font:normal 68% verdana,arial,helvetica;
+    color:#000000;
+    }
+    table tr td, table tr th {
+    font-size: 68%;
+    }
+    table.details tr th{
+    font-weight: bold;
+    text-align:left;
+    background:#a6caf0;
+    }
+    table.details tr td{
+    background:#eeeee0;
+    }
+    p {
+    line-height:1.5em;
+    margin-top:0.5em; margin-bottom:1.0em;
+    }
+    h1 {
+    margin: 0px 0px 5px; font: 165% verdana,arial,helvetica
+    }
+    h2 {
+    margin-top: 1em; margin-bottom: 0.5em; font: bold 125% verdana,arial,helvetica
+    }
+    h3 {
+    margin-bottom: 0.5em; font: bold 115% verdana,arial,helvetica
+    }
+    h4 {
+    margin-bottom: 0.5em; font: bold 100% verdana,arial,helvetica
+    }
+    h5 {
+    margin-bottom: 0.5em; font: bold 100% verdana,arial,helvetica
+    }
+    h6 {
+    margin-bottom: 0.5em; font: bold 100% verdana,arial,helvetica
+    }
+    .Error {
+    font-weight:bold; color:red;
+    }
+    .Failure {
+    font-weight:bold; color:purple;
+    }
+    .Properties {
+    text-align:right;
+    }
+    </style>
+    </head>
+    <title>MTT Results: Summary</title>
+    <h1>MTT Results</h1>
+    <hr size="1">
+    <h2>Summary</h2>
+    <table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
+    <tr valign="top">
+    <th>Phase</th><th>Section</th><th>MPI Version</th><th>Duration</th><th>Pass</th><th>Fail</th><th>Time Out</th><th>Skip</th>
+    </tr>
+    %TESTS_RESULTS%
+    </table>
+    <h2>Totals</h2>
+    <table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
+    <tr valign="top">
+    <th>Tests</th><th>Failed</th><th>Passed</th><th nowrap>Duration</th>
+    </tr>
+    <tr valign="top" class="Pass">
+    %TOTALS%
+    </tr>
+    </table>
+
+    </body>
+    </html>
+    ';
+    return $tmpl;
+}
+
 
 
 1;
