@@ -86,6 +86,13 @@
 #   2008.10.14 Brian Finley <finley@anl.gov>
 #       - Add generic lsb_release support
 #         - includes CentOS 5.x
+#   2008.10.30 Ethan Mallove <ethan.mallove@sun.com>
+#       - Support two different SuSE 10 lsb-release file formats
+#   2008.10.30 Brian Finley <finley@anl.gov>
+#       - Turn Ethan's code and concept into a subroutine.
+#   2008.11.06 Brian Finley <finley@anl.gov>
+#       - Use back-ticks instead of $() for running commands for Solaris
+#         compatibility
 #
 #   Authors -- Be sure to increment the version number appropriately!
 #
@@ -121,12 +128,32 @@
 # ===========================================================================
 
 program=`echo $0 | sed 's:.*/::'` 
-version="2008.04.07"
+version="2008.11.06"
 
 ################################################################################
 #
 # Subroutines
 #
+
+get_lsb_info_if_available()
+{
+        if [ -f /etc/lsb-release ]; then
+            #
+            # 1) Example contents of /etc/lsb-release from Ubuntu Hardy:
+            #   DISTRIB_ID=Ubuntu
+            #   DISTRIB_RELEASE=8.04
+            #   DISTRIB_CODENAME=hardy
+            #   DISTRIB_DESCRIPTION="Ubuntu hardy (development branch)"
+            # 2) Example contents of /etc/lsb-release from SLES 9:
+            #   LSB_VERSION="core-2.0-noarch:core-3.0-noarch:core-2.0-x86_64:core-3.0-x86_64"
+            . /etc/lsb-release
+
+        elif [ -x /usr/bin/lsb_release ]; then
+            DISTRIB_ID=`/usr/bin/lsb_release -i      | sed -e 's/^Distributor ID:[[:space:]]//'`
+            DISTRIB_RELEASE=`/usr/bin/lsb_release -r | sed -e 's/^Release:[[:space:]]//'`
+        fi
+}
+
 get_linux_type()
 {
         ############################################################################
@@ -167,21 +194,15 @@ get_linux_type()
         #          NOTES: But, make sure that newer programatic tests don't override
         #                 older tests with different results. -BEF-
         #
-        if [ -f /etc/lsb-release ]; then
-            #
-            # Example contents of /etc/lsb-release:
-            #   DISTRIB_ID=Ubuntu
-            #   DISTRIB_RELEASE=8.04
-            #   DISTRIB_CODENAME=hardy
-            #   DISTRIB_DESCRIPTION="Ubuntu hardy (development branch)"
-            . /etc/lsb-release
+
+        #
+        # If lsb-release contains the DISTRIB* variables we need - use
+        # them, otherwise, defer to tests later down the line.
+        #
+        get_lsb_info_if_available
+        if [ "${DISTRIB_ID}" != "" -a "${DISTRIB_RELEASE}" != "" ]; then
             distro=${DISTRIB_ID}_${DISTRIB_RELEASE}
 
-        elif [ -x /usr/bin/lsb_release ]; then
-            DISTRIB_ID=$(/usr/bin/lsb_release -i | sed -e 's/^Distributor ID:[[:space:]]//')
-            DISTRIB_RELEASE=$(/usr/bin/lsb_release -r | sed -e 's/^Release:[[:space:]]//')
-            distro=${DISTRIB_ID}_${DISTRIB_RELEASE}
-            
         elif [ -f /etc/issue ]; then
         
                 if [ -e /etc/debian_version ]; then
