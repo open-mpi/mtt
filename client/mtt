@@ -355,6 +355,9 @@ MTT::DoCommand::Chdir($scratch_arg);
 my $fast_scratch_arg = _process_scratch_param("fast_scratch", $fast_scratch_arg, $ini_list[0]->{unfiltered}, $scratch_arg);
 $MTT::Globals::Values->{fast_scratch_root} = $fast_scratch_arg;
 
+Verbose("*** Main scratch tree: $scratch_arg\n");
+Verbose("*** Fast scratch tree: $fast_scratch_arg\n");
+
 # Determine --force from command-line or INI param
 my $force_arg = _process_force_param($force_arg, $ini_list[0]->{unfiltered});
 
@@ -562,9 +565,11 @@ foreach my $hash (@ini_list) {
 
     MTT::Messages::close_logfile();
 
-    # Whack the fast scratch area
+    # Whack the fast scratch area if it's unique/different than the
+    # main scratch tree
     if ($fast_scratch_arg &&
-        $MTT::Globals::Values->{delete_fast_scratch}) {
+        $MTT::Globals::Values->{delete_fast_scratch} &&
+        $fast_scratch_arg ne $scratch_arg) {
         Verbose("Deleting fast scratch tree: $fast_scratch_arg\n");
         system("rm -rf $fast_scratch_arg");
     }
