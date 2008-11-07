@@ -544,8 +544,10 @@ sub Pushdir {
     my ($dir) = @_;
 
     # Translate ~ or * using the glob subroutine
-    $dir = glob($dir);
-    Debug("Pushdir $dir\n");
+    my $newdir = glob($dir);
+    $dir = $newdir
+        if ($newdir && $newdir ne $dir);
+    Debug("Pushdir to $dir\n");
 
     my $cwd = ResolveDir(MTT::DoCommand::cwd());
     push(@dir_stack, $cwd);
@@ -562,7 +564,7 @@ sub Pushdir {
 # Just like the popd shell command
 sub Popdir {
     my $dir = pop(@dir_stack);
-    Debug("Popdir $dir\n");
+    Debug("Popdir to $dir\n");
 
     # In --no-execute mode, it is acceptable
     # if this chdir does not work
