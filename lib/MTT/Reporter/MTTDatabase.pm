@@ -142,7 +142,8 @@ sub Init {
     # entry, even if it's empty).
     my $proxies = \@{$MTT::Globals::Values->{proxies}->{$scheme}};
     foreach my $p (@{$proxies}) {
-        my $ua = LWP::UserAgent->new({ env_proxy => 0 });
+        my %params = { env_proxy => 0 };
+        my $ua = LWP::UserAgent->new(%params);
         
         # @#$@!$# LWP proxying for https *does not work*.  So
         # don't set $ua->proxy() for it.  Instead, we'll set
