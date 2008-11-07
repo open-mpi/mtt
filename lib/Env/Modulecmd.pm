@@ -11,7 +11,7 @@ BEGIN {
   # magic strings below are replaced with values supplied to 'make' at
   # build time
 
-  my $modulecmd  = '/usr/local/Modules/default/bin/modulecmd';
+  my $modulecmd  = '@@DEFAULT_PERL_MODULECMD@@';
   my $modulepath = '@@DEFAULT_MODULEPATH@@';
 
   $ENV{PERL_MODULECMD} ||= $modulecmd  unless ($modulecmd  =~ /^\@\@/);
