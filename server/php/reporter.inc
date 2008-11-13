@@ -893,7 +893,7 @@ function process_phase_field($params) {
 function tokenize($string) {
     $tokens = array();
 
-    $c = "/\s*;\s*/";
+    $c = "/\s*(;|\|)\s*/";
     if (preg_match($c, $string))
         return preg_split($c, $string);
 

@@ -2159,7 +2159,7 @@ function handle_absolute_date($date_fields) {
     $date_field      = $absolute_date;
 
     if (! is_null($rollup))
-        $date_field .= "; $rollup";
+        $date_field .= " $rollup";
 
     return $date_field;
 }
@@ -2975,7 +2975,6 @@ function process_date_field($params) {
     $tokens = array();
 
     $sep = '[\s\+]';
-    $c = '/\s*;\s*/';
     $nl = "\n\t";
 
     # Remove the GMT offset from fetched string
@@ -2990,7 +2989,7 @@ function process_date_field($params) {
     $timestamp_name        = "start_timestamp";
     $starttime_at_timezone = "CAST($timestamp_name as TIMESTAMP WITH TIME ZONE) AT TIME ZONE '$timezone'";
     $time_at_timezone_fmt  = "$nl CAST('%s' as TIMESTAMP WITH TIME ZONE) AT TIME ZONE '$timezone'";
-    # JJH XXX FIGURE OUT HOW TO DEAD WITH TIMEZONE
+    # JJH XXX FIGURE OUT HOW TO DEAL WITH TIMEZONE
     $starttime_at_timezone = "$timestamp_name";
     $time_at_timezone_fmt  = "'%s'";
     $timestamp_param       = $params["text_$timestamp_name"];
@@ -3008,10 +3007,23 @@ function process_date_field($params) {
     $format4 = "$starttime_at_timezone " .
                "$nl   as $timestamp_name";
 
-    if (preg_match($c, $timestamp_param, $m))
+    # ^ and $ only have meaning for text columns (not for timestamps),
+    # but the drilldown generator is dumbed down so that it treats all
+    # columns like text columns.
+    $timestamp_param = preg_replace("/\^/", "", $timestamp_param);
+    $timestamp_param = preg_replace("/\\$/", "", $timestamp_param);
+
+    # For back-compatibility (e.g., permalinks!), accept a non-quoted,
+    # semi-colon delimited date specifier
+    if (preg_match('/\s*(;|\|)\s*/', $timestamp_param, $m) and 
+        !preg_match('/"/', $timestamp_param, $m)) {
         $tokens = tokenize($timestamp_param);
-    else
+    # Quoted date specifier
+    } elseif (preg_match('/"/', $timestamp_param, $m)) {
+        $tokens = tokenize_quoted($timestamp_param);
+    } else {
         $tokens[] = $timestamp_param;
+    }
 
     foreach ($tokens as $token) {
 
@@ -3021,16 +3033,16 @@ function process_date_field($params) {
             # Yesterday
             if (preg_match("/yesterday/i", $token, $m)) {
                 $operand        = "'yesterday' AT TIME ZONE '$timezone'";
-                $where          = "$starttime_at_timezone > $operand";
-                $absolute_start = select_scalar("SELECT " . sprintf($trunc_format, $operand));
-                $absolute_end   = $now;
+                $wheres[]       = "$starttime_at_timezone > $operand";
+                $absolute_start[] = select_scalar("SELECT " . sprintf($trunc_format, $operand));
+                $absolute_end[]   = $now;
             }
             # Today
             elseif (preg_match("/today/i", $token, $m)) {
                 $operand        = "'today' AT TIME ZONE '$timezone'";
-                $where          = "$starttime_at_timezone > $operand";
-                $absolute_start = select_scalar("SELECT " . sprintf($trunc_format, $operand));
-                $absolute_end   = $now;
+                $wheres[]       = "$starttime_at_timezone > $operand";
+                $absolute_start[] = select_scalar("SELECT " . sprintf($trunc_format, $operand));
+                $absolute_end[]   = $now;
             }
             # Past x increments
             elseif (preg_match(
@@ -3068,31 +3080,31 @@ function process_date_field($params) {
 
                 $operand        = "now() AT TIME ZONE '$timezone' - interval '" . strtonumeral($quantity) . " $unit'";
                 $start_time     = select_scalar("SELECT " . sprintf($trunc_format, $operand));
-                $where          = "$starttime_at_timezone > " . sprintf($time_at_timezone_fmt, $start_time);
-                $absolute_start = $start_time;
-                $absolute_end   = $now;
+                $wheres[]       = "$starttime_at_timezone > " . sprintf($time_at_timezone_fmt, $start_time);
+                $absolute_start[] = $start_time;
+                $absolute_end[]   = $now;
             }
             # Range (e.g., date1 - date2)
             elseif (preg_match("/(?:between)?" .
                                 "(.*)" .
                                 "(?:through|thru|and| +- +)" .
                                 "(.*)/i", $token, $m)) {
-                $where =
-                    "$starttime_at_timezone > '$m[1]'" . " AND " .
-                    "$nl $starttime_at_timezone < '$m[2]'";
-                $absolute_start = $m[1];
-                $absolute_end   = $m[2];
+                $wheres[] =
+                    "($starttime_at_timezone > '$m[1]'" . " AND" . 
+                    " $starttime_at_timezone < '$m[2]')";
+                $absolute_start[] = $m[1];
+                $absolute_end[]   = $m[2];
             }
             # Exact date
             elseif (preg_match("/-|\//", $token)) {
-                $where = "$starttime_at_timezone = '$token'";
-                $absolute_start = $token;
-                $absolute_end   = $token;
+                $wheres[] = "$starttime_at_timezone = '$token'";
+                $absolute_start[] = $token;
+                $absolute_end[]   = $token;
             }
             # Nothing (used to prevent an SQL error on a
             # clean bring-up of reporter.php)
             else {
-                $where = "$starttime_at_timezone = 'now()'";
+                $wheres[] = "$starttime_at_timezone = 'now()'";
             }
         }
         # Do date aggregation
@@ -3118,7 +3130,7 @@ function process_date_field($params) {
             }
 
             $date['select'][$timestamp_name] = $timestamp_name;
-            $date["rollup"] = $token;
+            $date["rollup"] = "\"$token\"";
         }
     }
 
@@ -3127,28 +3139,36 @@ function process_date_field($params) {
     # Always show ''by second'' timestamps in Detail view
     if ($type == 'detail') {
         $clause = $format4;
-        $date["rollup"] = 'by second';
+        $date["rollup"] = '"by second"';
     }
 
     # PROTECT AGAINST AN EMPTY DATE RANGE.
     # OUGHT TO PRINT A JAVASCRIPT ALERT AS WELL
-    if (! $where) {
+    if (! sizeof($wheres)) {
         $operand        = "now() AT TIME ZONE '$timezone' - interval '24 hours'";
         $where          = "$starttime_at_timezone > $operand";
-        $absolute_start = select_scalar("SELECT " . sprintf($trunc_format, $operand));
-        $absolute_end   = $now;
+        $absolute_start[] = select_scalar("SELECT " . sprintf($trunc_format, $operand));
+        $absolute_end[]   = $now;
 
         $date['select'][$timestamp_name] = $timestamp_name;
     }
+
+    # JOIN all the WHERE clauses with OR
+    # (unlike string searches on e.g., STDOUT, date searching requires an OR,
+    # not an AND since a test result can only have one timestamp)
+    $where = "(" . join(" OR $nl", array_unique($wheres)) . ")";
 
     # In order to get the behavior we want with the timestamp column, we have
     # to move the WHERE clause into the subquery (the WHERE can even be
     # duplicated in the outer query seemingly without any noticable performance
     # degradation)
     $date['select_in_subquery'][$timestamp_name] = $clause;
-    $date['where'][$timestamp_name]  = $where;
+    $date['where'][$timestamp_name] = $where;
 
-    $date['absolute']       = $absolute_start . ' - ' . $absolute_end;
+    for ($i = 0; $i < sizeof($absolute_start); $i++) {
+        $date['absolute'] .= '"' . $absolute_start[$i] . ' - ' . $absolute_end[$i] . '" ';
+    }
+
     $date['absolute_start'] = $absolute_start;
     $date['absolute_end']   = $absolute_end;
 
