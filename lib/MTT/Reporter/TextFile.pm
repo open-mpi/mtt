@@ -387,7 +387,7 @@ sub _add_to_tables {
                     $has_result++;
                 }
                 my $trClass = "Passed";
-                if ($key eq "result_message" and  (($include_hash->{$key} ne "Success") or ($include_hash->{$key} ne "Passed"))) {
+                if (($key eq "result_message") and  ($include_hash->{$key} ne "Success") and ($include_hash->{$key} ne "Passed")) {
                     $trClass = "Error";
                 }
 
