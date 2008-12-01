@@ -889,6 +889,12 @@ sub test_executable {
     return $MTT::Test::Run::test_executable;
 }
 
+sub test_executable_dir {
+    Debug("&test_executable_dir returning: $MTT::Test::Run::test_executable_dir\n");
+
+    return $MTT::Test::Run::test_executable_dir;
+}
+
 #--------------------------------------------------------------------------
 
 # Return the current argv (excluding $argv[0]) from a running test
