@@ -198,6 +198,7 @@ sub _summary_report {
                     my $mpi_stat        = $per_mpiver->{$mpi_version};
                     my $report          = $mpi_stat->{report};
                     my $rep_file        = basename(_get_filename($report, $section));
+                    $rep_file           =~ s/\.txt/\.html/g;
 
                     my $duration_human  = _convert_duration($mpi_stat->{duration});
                     $table->add($phase, $section, $mpi_version, $duration_human, $mpi_stat->{pass}, $mpi_stat->{fail}, 
@@ -232,7 +233,7 @@ sub _summary_report {
 
 
     # Wrte html report to a file
-    my $html_body = get_html_template();
+    my $html_body = get_html_summary_report_template();
     $html_body =~ s/%TESTS_RESULTS%/$html_table_content/g;
     my $html_totals = "<td>$total_tests</td><td>$total_fail</td><td>$total_succ</td><td>$total_duration_human</td>\n";
     $html_body =~ s/%TOTALS%/$html_totals/g;
@@ -275,6 +276,7 @@ sub _detail_report {
     my $file;
 
     my $table = Text::TabularDisplay->new(("Field", "Value"));
+    my $html_table = "";
 
     my $separator = { " " => " " };
 
@@ -292,8 +294,8 @@ sub _detail_report {
             # Make timestamps human-readable
             $title = _convert_timestamps($title);
 
-            $table = _add_to_table($table, $title, undef);
-            $table = _add_to_table($table, $separator, undef);
+            _add_to_tables($table, \$html_table, $title, undef);
+            _add_to_table($table, $separator, undef);
 
             foreach my $report (@$section_obj) {
 
@@ -301,11 +303,18 @@ sub _detail_report {
 
                 $report = _convert_timestamps($report);
 
-                $table = _add_to_table($table, $report, $title);
-                $table = _add_to_table($table, $separator, undef);
+                _add_to_tables($table, \$html_table, $report, $title);
+                _add_to_table($table, $separator, undef);
             }
 
             # Write the report to a file (or stdout)
+            my $html_file = $file;
+            $html_file    =~  s/\.txt/\.html/g;
+
+            my $html_body = get_html_phase_report_template();
+            $html_body =~ s/%TESTS_RESULTS%/$html_table/g;
+            _output_results($html_file, $html_body);
+
             _output_results($file,
                 join("\n", ($detail_header, 
                             $table->render,
@@ -352,8 +361,8 @@ sub _get_replicated_fields {
 
 # Add rows to the TabularDisplay object
 # (exclude_hash items will not be added)
-sub _add_to_table {
-    my($table, $include_hash, $exclude_hash) = @_;
+sub _add_to_tables {
+    my($table, $htable_ref, $include_hash, $exclude_hash) = @_;
 
     # Skip over database fields that will have
     # *no* meaning to the MTT operator
@@ -364,6 +373,7 @@ sub _add_to_table {
     );
     my $frivolous = join("|", @frivolous);
 
+    my $has_result = 0;
     foreach my $key (sort keys %$include_hash) {
 
         # Skip over frivolous data
@@ -371,10 +381,31 @@ sub _add_to_table {
 
         if (! defined($exclude_hash->{$key})) {
             $table->add($key, wrap('', '', $include_hash->{$key}));
+            if (defined $htable_ref) {
+                if (!$has_result ) {
+                    $$htable_ref .= get_html_phase_report_table_start_template();
+                    $has_result++;
+                }
+                my $trClass = "Passed";
+                if ($key eq "result_message" and  $include_hash->{$key} ne "Success") {
+                    $trClass = "Error";
+                }
+
+                my $val = $include_hash->{$key};
+                $val =~ s/\n/<br>/g;
+                $val =~ s/[ ]/&nbsp;/g;
+                $$htable_ref .= "<tr valign='top' class='$trClass'><td>$key</td><td>$val</td></tr>\n";
+            }
         }
     }
+    if ($has_result && defined $htable_ref) {
+        $$htable_ref .= get_html_phase_report_table_stop_template();
+    }
+}
 
-    return $table;
+sub _add_to_table {
+    my($table, $include_hash, $exclude_hash) = @_;
+    return _add_to_tables($table, undef, $include_hash, $exclude_hash);
 }
 
 # Output results to a file or 
@@ -479,7 +510,7 @@ sub add_tr
     return $tr;
 }
 
-sub get_html_template
+sub get_css_template
 {
     my $tmpl = '
     <html xmlns:lxslt="http://xml.apache.org/xslt" xmlns:stringutils="xalan://org.apache.tools.ant.util.StringUtils">
@@ -534,6 +565,14 @@ sub get_html_template
     }
     </style>
     </head>
+    ';
+    return $tmpl;
+}
+
+sub get_html_summary_report_template
+{
+    my $css = get_css_template();
+    my $tmpl = '
     <title>MTT Results: Summary</title>
     <h1>MTT Results</h1>
     <hr size="1">
@@ -557,9 +596,41 @@ sub get_html_template
     </body>
     </html>
     ';
-    return $tmpl;
+    return $css . $tmpl;
 }
 
 
+sub get_html_phase_report_table_start_template
+{
+    my $tmpl = '
+    <table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
+    <tr valign="top">
+    <th width="20%">Field</th><th>Value</th>
+    </tr>
+    ';
+    return $tmpl;
+}
+sub get_html_phase_report_table_stop_template
+{
+    my $tmpl = '
+    </table>
+    ';
+    return $tmpl;
+}
+sub get_html_phase_report_template
+{
+    my $css = get_css_template();
+    my $tmpl = '
+    <title>Phase report</title>
+    <h1>MTT Report for single phase execution</h1>
+    <hr size="1">
+    <h2>Report</h2>
+    %TESTS_RESULTS%
+    </table>
+    </body>
+    </html>
+    ';
+    return $css . $tmpl;
+}
 
 1;
