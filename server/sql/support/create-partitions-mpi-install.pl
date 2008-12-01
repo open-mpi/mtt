@@ -162,6 +162,13 @@ foreach $month (@month_array) {
   }
 
   #
+  # Set Grant access
+  #
+  for($cur_wk = 1; $cur_wk <= 5; ++$cur_wk) {
+    print "GRANT SELECT on ".$child_table_base."y" . $year . "_m" . $month . "_wk" . $cur_wk ." to mtt_viewer;\n";
+  }
+
+  #
   # Drop tables
   #
   print "--\n";
