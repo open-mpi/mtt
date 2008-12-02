@@ -32,13 +32,17 @@ use File::Temp qw(tempfile tempdir);
 my $major_version_number;
 my $release_version_number;
 my $build_number;
-my $full_version_number;
+my $full_ct_version_number;
+my $ompi_version_number;
 my $product_version;
 my $compiler_name;
 my $product_name = "ClusterTools";
 my $package_name_prefix;
 my $package_basedir;
 my $configure_prefix;
+my $solaris_copyright_file;
+my $opensolaris_copyright_file;
+my $installer_request_script;
 
 # Global uname variables
 my $arch = `uname -p`;
@@ -97,33 +101,41 @@ sub Install {
     my $after_make_install  = $ini->val($section, "clustertools_after_make_install");
 
     # Process global clustertools input parameter(s)
-    $major_version_number   = Value($ini, $section, "clustertools_major_version");
-    $release_version_number = Value($ini, $section, "clustertools_release_version");
-    $full_version_number    = Value($ini, $section, "clustertools_full_version");
-    $product_version        = Value($ini, $section, "clustertools_product_version");
-    $package_name_prefix    = Value($ini, $section, "clustertools_package_name_prefix");
-    $package_basedir        = Value($ini, $section, "clustertools_package_basedir");
-    $package_basedir        = $package_basedir ? $package_basedir : "/opt";
+    $major_version_number       = Value($ini, $section, "clustertools_major_version");
+    $release_version_number     = Value($ini, $section, "clustertools_release_version");
+    $full_ct_version_number     = Value($ini, $section, "clustertools_full_version");
+    $product_version            = Value($ini, $section, "clustertools_product_version");
+    $package_name_prefix        = Value($ini, $section, "clustertools_package_name_prefix");
+    $solaris_copyright_file     = Value($ini, $section, "clustertools_solaris_copyright_file");
+    $opensolaris_copyright_file = Value($ini, $section, "clustertools_opensolaris_copyright_file");
+    $installer_request_script   = Value($ini, $section, "clustertools_installer_request_script");
+    $package_basedir            = Value($ini, $section, "clustertools_package_basedir");
+    $package_basedir        = defined($package_basedir) ? $package_basedir : "/opt";
 
     # Grab the internal repository revision number
     my $internal_r_number = $config->{module_data}->{r};
 
     # Grab the Open MPI version number
-    my $ompi_version_number = _get_ompi_version_number();
+    $ompi_version_number = _get_ompi_version_number();
 
     # Update the version file
     my @greek_parts;
-    push(@greek_parts, "$ompi_version_number")   if ($ompi_version_number);
-    push(@greek_parts, "r$svn_r_number")         if ($svn_r_number);
-    push(@greek_parts, "ct$full_version_number") if ($full_version_number);
-    push(@greek_parts, "b$build_number")         if ($build_number);
-    push(@greek_parts, "r$internal_r_number")    if ($internal_r_number);
+    # With this we get a duplicate string, e.g., 1.3-1.3r12345 ...
+    # push(@greek_parts, "$ompi_version_number")   if ($ompi_version_number);
+    push(@greek_parts, "r$svn_r_number")            if ($svn_r_number);
+    push(@greek_parts, "ct$full_ct_version_number") if ($full_ct_version_number);
+    push(@greek_parts, "b$build_number")            if ($build_number);
+    push(@greek_parts, "r$internal_r_number")       if ($internal_r_number);
     my $greek = join("-", @greek_parts);
 
     &_update_version_file($greek, "VERSION");
 
     # Update the openmpi-mca-params.conf file
-    &_update_openmpi_mca_params_conf("opal/etc/openmpi-mca-params.conf");
+    my $mca_params_conf_file = "opal/etc/openmpi-mca-params.conf";
+    &_update_openmpi_mca_params_conf($mca_params_conf_file);
+    if ($os =~ /SunOS/i) {
+        &_update_openmpi_mca_params_conf_solaris($mca_params_conf_file);
+    }
 
     # Get some OMPI-module-specific config arguments
     $config->{make_all_arguments} = Value($ini, $section, "clustertools_make_all_arguments");
@@ -177,20 +189,6 @@ sub Install {
         Verbose("Skipping $autogen_script.\n");
     }
 
-    # In some cases, we might need to patch the Libtool script.
-    # This is only required because:
-    #
-    #   a) There's quirk in Sun Studio's f90 linker flag handling.
-    #   b) Autotools links in Crun and Cstd libraries behind our backs
-    #
-    if ($compiler_name =~ /sun|sos/i) {
-        # $after_configure = \&_update_libtool_script;
-        my $after_configure_script =  "config/patch-libtool-for-sun-studio.pl";
-        if (-x $after_configure_script) {
-            $after_configure = $after_configure_script;
-        }
-    }
-
     # Run configure / make all / make check / make install
     my $configure_arguments = $config->{configure_arguments};
 
@@ -202,10 +200,6 @@ sub Install {
         push(@$configure_arguments, $tmp);
     }
 
-    # DEBUGGING
-    # MTT::Files::mkdir($staging_dir);
-    # goto CREATE_PACKAGES;
-
     my $i = 0;
     foreach my $_configure_arguments (@$configure_arguments) {
 
@@ -216,8 +210,8 @@ sub Install {
         #
         # Note: we must use *double* quotes here
         $_configure_arguments .=
-            " --with-package-string=\"$product_name $full_version_number\"" .
-            " --with-ident-string=\"@(#)RELEASE VERSION $greek\"";
+            " --with-package-string=\"$product_name $full_ct_version_number\"" .
+            " --with-ident-string=\"@(#)RELEASE VERSION $ompi_version_number$greek\"";
 
         # Convert newlines to spaces
         $_configure_arguments =~ s/\n|\r/ /g;
@@ -278,6 +272,13 @@ sub Install {
     symlink($lib_label_for_64_bit, "64");
     MTT::DoCommand::Popdir();
 
+    # Create a symlink in the "instrument" area only if it exists
+    if (-d "$staging_dir/instrument/lib") {
+        MTT::DoCommand::Pushdir("$staging_dir/instrument/lib");
+        symlink($lib_label_for_64_bit, "64");
+        MTT::DoCommand::Popdir();
+    }
+
     # Create wrapper data files
     my $wrapper_destdir = "$staging_dir/share/openmpi";
     &_create_wrapper_data_files($wrapper_destdir, $compiler_name, $wrapper_rpath, $greek);
@@ -321,12 +322,27 @@ sub Install {
             #   * Install_Utilities directory (OMPIomiat package)
             MTT::DoCommand::Cmd(1, "cp -r $installer_dir $staging_dir");
 
+            # Make a place for the packages to sit
+            MTT::Files::mkdir("$destination_dir-Solaris");
+            MTT::Files::mkdir("$destination_dir-OpenSolaris");
+
             # Install Utilities for boot-strapping
-            MTT::DoCommand::Cmd(1, "cp -r $installer_dir $destination_dir");
+            MTT::DoCommand::Cmd(1, "cp -r $installer_dir $destination_dir-Solaris");
+            MTT::DoCommand::Cmd(1, "cp -r $installer_dir $destination_dir-OpenSolaris");
         }
 
-        # Create Solaris or Linux (RPM) packages
-        create_packages($staging_dir, $destination_dir, $install_dir, $config);
+        if ($os =~ /SunOS/i) {
+
+            # We need to create two sets of packages: one for Solaris, and one for
+            # OpenSolaris (each with different copyright files embedded in the
+            # packages). [Sigh] The things we do to please Legal Dept ...
+            create_packages($staging_dir, "$destination_dir-Solaris", $solaris_copyright_file);
+            create_packages($staging_dir, "$destination_dir-OpenSolaris", $opensolaris_copyright_file);
+
+        } elsif ($os =~ /Linux/i) {
+            # Create Solaris or Linux (RPM) packages
+            create_packages($staging_dir, $destination_dir, $install_dir, $config);
+        }
 
         # Make the installer available to the post-installation steps
         my $installer_path = "$destination_dir/Install_Utilities";
@@ -430,6 +446,21 @@ btl_udapl_conn_priv_data = 1
 
 # Do not print messages mca load errors
 mca_component_show_load_errors = 0
+";
+
+    my $ret = MTT::Files::SafeWrite(1, $file, $contents . $str);
+
+    return $ret;
+}
+
+# Append some special ClusterTools settings to mca_params.conf (for Solaris only)
+sub _update_openmpi_mca_params_conf_solaris {
+    my ($file) = @_;
+
+    my $contents = MTT::Files::Slurp($file);
+    my $str = "
+# Exclude the sppp0 interface on the M9000 machines
+btl_tcp_if_exclude = lo0,sppp0
 ";
 
     my $ret = MTT::Files::SafeWrite(1, $file, $contents . $str);
@@ -608,6 +639,8 @@ sub _create_wrapper_data_files {
     my $linker_flags_64;
     my $linker_flags_gfortran_32;
     my $linker_flags_gfortran_64;
+    my $compiler_flags_gfortran_32;
+    my $compiler_flags_gfortran_64;
 
     if ($compiler_name =~ /gnu|gcc/i) {
         $dash_r = "-Wl,-rpath,";
@@ -617,23 +650,26 @@ sub _create_wrapper_data_files {
         # Use the workaround they proposed to get the fortran module
         $dash_m =  "";
 
-        $linker_flags_gfortran_32 = "-I$installdir/lib " .
-                                    "-J$installdir/lib";
+        $linker_flags_gfortran_32 = "-I\${prefix}/lib " .
+                                    "-J\${prefix}/lib";
 
-        $linker_flags_gfortran_64 = "-I$installdir/lib/$lib_label_for_64_bit " .
-                                    "-J$installdir/lib/$lib_label_for_64_bit";
+        $linker_flags_gfortran_64 = "-I\${prefix}/lib/$lib_label_for_64_bit " .
+                                    "-J\${prefix}/lib/$lib_label_for_64_bit";
+
+        $compiler_flags_gfortran_32 = "-I\${prefix}/lib";
+        $compiler_flags_gfortran_64 = "-I\${prefix}/lib/$lib_label_for_64_bit";
 
     }
 
     $linker_flags_32 = "$dash_r/opt/mx/lib " .
-                       "$dash_r$installdir/lib";
+                       "$dash_r\${prefix}/lib";
     $linker_flags_64 = "$dash_r/opt/mx/lib/$lib_label_for_64_bit " .
-                       "$dash_r$installdir/lib/$lib_label_for_64_bit";
+                       "$dash_r\${prefix}/lib/$lib_label_for_64_bit";
 
-    $wrapper_data->{32}->{includedir} = "$installdir/include";
-    $wrapper_data->{64}->{includedir} = "$installdir/include/$include_label_for_64_bit";
-    $wrapper_data->{32}->{libdir} = "$installdir/lib";
-    $wrapper_data->{64}->{libdir} = "$installdir/lib/$lib_label_for_64_bit";
+    $wrapper_data->{32}->{includedir} = "\${prefix}/include";
+    $wrapper_data->{64}->{includedir} = "\${prefix}/include/$include_label_for_64_bit";
+    $wrapper_data->{32}->{libdir} = "\${prefix}/lib";
+    $wrapper_data->{64}->{libdir} = "\${prefix}/lib/$lib_label_for_64_bit";
     $wrapper_data->{32}->{linker_flags} = $linker_flags_32;
     $wrapper_data->{64}->{linker_flags} = $linker_flags_64;
 
@@ -644,13 +680,18 @@ sub _create_wrapper_data_files {
     # Special gfortran linker flags
     $wrapper_data->{"gfortran"}->{32}->{linker_flags} = $linker_flags_gfortran_32;
     $wrapper_data->{"gfortran"}->{64}->{linker_flags} = $linker_flags_gfortran_64;
+    $wrapper_data->{"gfortran"}->{32}->{compiler_flags} = $compiler_flags_gfortran_32;
+    $wrapper_data->{"gfortran"}->{64}->{compiler_flags} = $compiler_flags_gfortran_64;
 
     # For mpif90, point to mpi.mod using the -M flag
     $wrapper_data->{"f90"}->{module_option} = $dash_m;
     $wrapper_data->{"f95"}->{module_option} = $dash_m;
 
     # We have to either use -m32 or -m64 for Linux
-    $wrapper_data->{32}->{Linux}->{compiler_flags} = "-m32";
+    # (but there's no need to include -m32 in both the compiler_args
+    # and compiler_flags field, because that results in redundancy,
+    # e.g., cc ... -m32 -m32)
+    $wrapper_data->{32}->{Linux}->{compiler_flags} = "";
     $wrapper_data->{64}->{Linux}->{compiler_flags} = "";
 
     # Template for the wrapper data files
@@ -737,7 +778,8 @@ libdir=%s
                     # Default
                     $wrapper_data->{$primary_wordsize}->{compiler_args},
                     @top_params,
-                    $wrapper_data->{$primary_wordsize}->{$os}->{compiler_flags},
+                    $wrapper_data->{$primary_wordsize}->{$os}->{compiler_flags} . " " .
+                      $wrapper_data->{$underlying_compiler}->{$primary_wordsize}->{compiler_flags},
                     $wrapper_data->{$compiler}->{libs},
                     $wrapper_data->{$primary_wordsize}->{linker_flags} . " " .
                       $wrapper_data->{$underlying_compiler}->{$primary_wordsize}->{linker_flags},
@@ -747,7 +789,8 @@ libdir=%s
                     # Specific -m32/-m64 argument used
                     $wrapper_data->{$secondary_wordsize}->{compiler_args},
                     @top_params,
-                    $wrapper_data->{$secondary_wordsize}->{$os}->{compiler_flags},
+                    $wrapper_data->{$secondary_wordsize}->{$os}->{compiler_flags} . " " .
+                      $wrapper_data->{$underlying_compiler}->{$secondary_wordsize}->{compiler_flags},
                     $wrapper_data->{$compiler}->{libs},
                     $wrapper_data->{$secondary_wordsize}->{linker_flags} . " " .
                       $wrapper_data->{$underlying_compiler}->{$secondary_wordsize}->{linker_flags},
@@ -784,7 +827,7 @@ sub create_packages {
 }
 
 sub create_solaris_packages {
-    my ($staging_dir, $destination_dir) = @_;
+    my ($staging_dir, $destination_dir, $copyright_file) = @_;
     Debug("create_solaris_packages: got @_\n");
 
     # Default to prefixing package names with "OMPI"
@@ -799,32 +842,61 @@ sub create_solaris_packages {
 
     my $packages;
     my $brand = "Open MPI";
-    $packages->{"${package_name_prefix}ompi"}->{"directories"} = [qw(bin etc include lib share)];
+
+    # SUNW_PKGTYPE 
+    #   Solaris-only parameter for Sun internal use only. Required for packages part of
+    #   the The Solaris operating environment releases which install into the /, /usr,
+    #   /usr/kvm, and /usr/openwin file systems. The Solaris operating environment
+    #   installation software must know which packages are part of which file system to
+    #   properly install a server/client configuration. The currently allowable values
+    #   for this parameter are root, usr, kvm, and ow. If no SUNW_PKGTYPE parameter is
+    #   present, the package is assumed to be of BASEDIR= /opt. SUNW_PKGTYPE is
+    #   optional only for packages which install into the /opt name space as is the
+    #   case for the majority of Solaris add-on software. See the SUNW_PKGTYPE
+    #   parameter in packagetoc(4) for further information.
+
+    $packages->{"${package_name_prefix}ompi"}->{"directories"} = [qw(bin etc include lib share instrument)];
     $packages->{"${package_name_prefix}ompi"}->{"name"} = $brand;
     $packages->{"${package_name_prefix}ompi"}->{"description"} = "$brand Message Passing Interface";
+    $packages->{"${package_name_prefix}ompi"}->{"basedir"} = $package_basedir;
+    $packages->{"${package_name_prefix}ompi"}->{"pkgtype"} = "";
     $packages->{"${package_name_prefix}ompimn"}->{"directories"} = [qw(man)];
     $packages->{"${package_name_prefix}ompimn"}->{"name"} = $brand;
+    $packages->{"${package_name_prefix}ompimn"}->{"description"} = "$brand Message Passing Interface Man Pages";
+    $packages->{"${package_name_prefix}ompimn"}->{"basedir"} = $package_basedir;
+    $packages->{"${package_name_prefix}ompimn"}->{"pkgtype"} = "";
     $packages->{"${package_name_prefix}omsc"}->{"directories"} = [qw(examples)];
     $packages->{"${package_name_prefix}omsc"}->{"name"} = $brand;
     $packages->{"${package_name_prefix}omsc"}->{"description"} = "$brand Message Passing Interface Miscellaneous Files";
+    $packages->{"${package_name_prefix}omsc"}->{"basedir"} = $package_basedir;
+    $packages->{"${package_name_prefix}omsc"}->{"pkgtype"} = "";
     $packages->{"${package_name_prefix}ompiat"}->{"directories"} = [qw(Install_Utilities)];
     $packages->{"${package_name_prefix}ompiat"}->{"name"} = $brand;
     $packages->{"${package_name_prefix}ompiat"}->{"description"} = "$brand Administrative Tools and Utilities";
+    $packages->{"${package_name_prefix}ompiat"}->{"basedir"} = $package_basedir;
+    $packages->{"${package_name_prefix}ompiat"}->{"pkgtype"} = "";
 
     # Special mpi.d package that is not installed in /opt
     $packages->{"${package_name_prefix}ompir"}->{"name"} = $brand;
     $packages->{"${package_name_prefix}ompir"}->{"description"} = "$brand Root Filesystem Files";
     $packages->{"${package_name_prefix}ompir"}->{"mpi_d_package"} = 1;
+    $packages->{"${package_name_prefix}ompir"}->{"basedir"} = "/usr";
+    $packages->{"${package_name_prefix}ompir"}->{"pkgtype"} = "usr";
 
     foreach my $package_name (keys %$packages) {
 
         # Write a pkginfo file to pass to the prototype file
         my $short_name     = $packages->{$package_name}->{"name"};
         my $description    = $packages->{$package_name}->{"description"};
-        my $pkginfo_file   = _write_pkginfo_file($package_name, $short_name, $description);
+        my $basedir        = $packages->{$package_name}->{"basedir"};
+        my $pkgtype        = $packages->{$package_name}->{"pkgtype"};
+        my $pkginfo_file   = _write_pkginfo_file($package_name, $short_name, $description, $basedir, $pkgtype);
 
-        # Write a copyright file to pass to the prototype file
-        my $copyright_file = _write_copyright_file();
+        # Copy the copyright file to pass to the prototype file
+        my $copyright_filename = "copyright";
+        my $request_filename = "request";
+        MTT::DoCommand::Cmd(1, "cp $copyright_file $copyright_filename");
+        MTT::DoCommand::Cmd(1, "cp $installer_request_script $request_filename");
 
         my $pkgproto_args;
         my $prototype_file;
@@ -839,12 +911,11 @@ sub create_solaris_packages {
         # We either create a prototype file on the fly (normal case), or
         # we concoct a special prototype file (oddball case: e.g., mpi.d file package)
         if (@directories) {
-            $pkgproto_args  = join(" ", map { "$_=${package_name_prefix}hpc/$product_version/$_/" } @directories);
-            $prototype_file = _create_prototype_file($package_name, $pkginfo_file, $copyright_file, $pkgproto_args);
+            $prototype_file = _create_prototype_file($package_name, $pkginfo_file, $copyright_filename, \@directories);
             next if (! $prototype_file);
 
         } elsif ($mpi_d_package) {
-            $prototype_file = _create_prototype_file_mpi_d($package_name, $pkginfo_file, $copyright_file);
+            $prototype_file = _create_prototype_file_mpi_d($package_name, $pkginfo_file, $copyright_filename);
         }
 
         # Make the packages
@@ -872,13 +943,17 @@ my $vendor = "Sun Microsystems, Inc.";
 # Prologue the prototype file with the "pkginfo" and "copyright" i (include)
 # lines
 sub _create_prototype_file_prologue {
-    my ($pkginfo_file, $copyright_file) = @_;
+    my ($pkginfo_file, $copyright_file, $request_script) = @_;
 
     my $ret =
         "\n# Copyright (c) $year $vendor All rights reserved." .
         "\n#" .
         "\ni pkginfo=$pkginfo_file" .
         "\ni $copyright_file";
+
+    # Include a request script, if there is one
+    $ret .=
+        "\ni $request_script" if ($request_script);
 
     return $ret;
 }
@@ -890,8 +965,8 @@ sub _create_prototype_file_mpi_d {
     # Start with the prologue for the prototype file
     my $contents = _create_prototype_file_prologue($pkginfo_file, $copyright_file);
     $contents .=
-        "\nd none /usr/lib/dtrace 0755 root bin" .
-        "\nf none /usr/lib/dtrace/mpi.d=mpi.d 0644 root bin";
+        "\nd none lib/dtrace 0755 root bin" .
+        "\nf none lib/dtrace/mpi.d=mpi.d 0644 root bin";
 
     # Write out prototype file
     my $ret = "prototype.$package_name";
@@ -902,7 +977,20 @@ sub _create_prototype_file_mpi_d {
 
 # Create a prototype file for one of the opt/ packages
 sub _create_prototype_file {
-    my ($package_name, $pkginfo_file, $copyright_file, $pkgproto_args) = @_;
+    my ($package_name, $pkginfo_file, $copyright_file, $directories) = @_;
+
+    # Compose the pkgproto command
+    my $pkgproto_args;
+    foreach my $dir (@$directories) {
+
+        # We can skip over some directories (e.g., instrument will not be here
+        # if building with_instrument=0), but we print a Warning about missing directories
+        if (-d $dir) {
+            $pkgproto_args = "$dir=${package_name_prefix}hpc/$product_version/$dir/ ";
+        } else {
+            Warning("$package: Did not find \"$dir\" directory to include in packages.\n");
+        }
+    }
 
     my $cmd = "pkgproto $pkgproto_args";
 
@@ -912,8 +1000,19 @@ sub _create_prototype_file {
         return undef;
     }
 
+    # Check to see if this prototype file is for the Installer package (it's
+    # always suffixed with ompiat, as in "Open MPI Admin Tools"). If it is, we
+    # have to include a request script so it will be installed in the global
+    # zone. Barfalicious.    
+    my $request_script;
+    if ($package_name =~ /ompiat/) {
+        $request_script = "request";
+    }
+
     # Start with the prologue for the prototype file
-    my $contents = _create_prototype_file_prologue($pkginfo_file, $copyright_file);
+    my $contents = _create_prototype_file_prologue($pkginfo_file, $copyright_file, $request_script);
+    my $product_version_dirname = dirname($product_version);
+    $contents .= "\nd none ${package_name_prefix}hpc/$product_version_dirname 0755 root bin" . "\n";
     $contents .= "\nd none ${package_name_prefix}hpc/$product_version 0755 root bin" . "\n";
 
     # Remove duplicates from pkgproto output
@@ -946,20 +1045,29 @@ sub _create_prototype_file {
 # Write a pkginfo file for the specified package.
 # To be passed to the prototype file.
 sub _write_pkginfo_file {
-    my ($name, $short_name, $desc, $package_basedir) = @_;
+    my ($name, $short_name, $desc, $basedir, $sunw_pkgtype) = @_;
     Debug("_write_pkginfo_file: got @_\n");
 
     my $pkgvers;
     $pkgvers->{"7.0"} = "1.0";
     $pkgvers->{"7.1"} = "2.0";
     $pkgvers->{"8.0"} = "3.0";
-    $pkgvers->{"9.0"} = "4.0";
+    $pkgvers->{"8.1"} = "4.0";
+    $pkgvers->{"8.2"} = "5.0";
+    $pkgvers->{"9.0"} = "6.0";
 
     # Default to a bogus release number
-    $release_version_number = "unknown" if (!defined($release_version_number));
+    $full_ct_version_number = "unknown" if (!defined($full_ct_version_number));
 
     # Set the SUNW_PKGVERS string
-    my $version = $pkgvers->{$release_version_number};
+    my $version = $pkgvers->{$full_ct_version_number};
+    my $sunw_pkgvers = $full_ct_version_number;
+
+    # Grab a date string for the VERSION param so that we never get two
+    # identical VERSION strings. (Why doesn't the Solaris package manager use
+    # PSTAMP?)
+    my $x = MTT::DoCommand::Cmd(1, "date '+%Y.%m.%d.%H.%M'");
+    my $rev_date_string = $x->{result_stdout};
 
     # Default the package version to 99.0 to safely
     # avoid conflict with other installed packages
@@ -977,38 +1085,25 @@ sub _write_pkginfo_file {
 
 PKG=\"$name\"
 NAME=\"$short_name\"
-VERSION=\"$release_version_number\"
-BASEDIR=\"$package_basedir\"
+VERSION=\"$version,REV=$rev_date_string\"
+BASEDIR=\"$basedir\"
 ARCH=\"$arch\"
 SUNW_PRODVERS=\"$product_version\"
-SUNW_PRODNAME=\"Sun HPC $product_name\"
-SUNW_PKGVERS=\"$version\"
+SUNW_PRODNAME=\"Sun HPC $product_name $full_ct_version_number, based on Open MPI $ompi_version_number\"
+SUNW_PKGVERS=\"$sunw_pkgvers\"
+SUNW_PKGTYPE=\"$sunw_pkgtype\"
 DESC=\"$desc\"
 VENDOR=\"$vendor\"
 CATEGORY=\"system\"
 CLASSES=\"none\"
 MAXINST=\"1000\"
 HOTLINE=\"Please contact your local service provider.\"
-EMAIL=\"\"";
+EMAIL=\"ct-feedback\@sun.com\"";
 
     my $filename = "pkginfo.$name";
     MTT::Files::SafeWrite(1, $filename, $contents);
 
     Debug("_write_pkginfo_file returning $filename\n");
-    return $filename;
-}
-
-# Write a copyright file
-sub _write_copyright_file {
-    my $contents = "# Copyright (c) $year $vendor All rights reserved.
-#                         Use is subject to license terms.
-# \$COPYRIGHT\$
-#
-# Additional copyrights may follow";
-
-    my $filename = "copyright";
-    MTT::Files::SafeWrite(1, $filename, $contents);
-
     return $filename;
 }
 
@@ -1124,6 +1219,17 @@ sub _create_binary_rpm_spec_file {
     # Setup standard RPM top dir structure
     _setup_rpm_top_dir($rpm_top_dir);
 
+    # Compose the %files section, but do not include 
+    # directories that do not exist (e.g., "instrument" in
+    # the case of a with_instrument=0 build)
+    my $files_rpm_macro;
+    my @directories = qw(bin include lib man share etc instrument examples);
+    foreach my $dir (@directories) {
+        if (-d $dir) {
+            $files_rpm_macro .= "\n%attr(-, root, root) $configure_prefix/$dir";
+        }
+    }
+
     my $contents = "
 #
 # This file was automatically generated by MTT.
@@ -1132,7 +1238,7 @@ sub _create_binary_rpm_spec_file {
 
 Summary: A powerful implementaion of MPI
 Name: $product_name
-Version: $full_version_number
+Version: $full_ct_version_number
 Release: $build_number
 Vendor: $vendor
 License: BSD
@@ -1158,13 +1264,7 @@ Open MPI jobs.
 
 # The file permissions are already set properly by
 # the OMPI build process. Use '-' to leave them as is.
-%attr(-, root, root) $configure_prefix/bin
-%attr(-, root, root) $configure_prefix/include
-%attr(-, root, root) $configure_prefix/lib
-%attr(-, root, root) $configure_prefix/man
-%attr(-, root, root) $configure_prefix/share
-%attr(-, root, root) $configure_prefix/etc
-%attr(-, root, root) $configure_prefix/examples
+$files_rpm_macro
 
 # Ensure that the Open MPI .conf files are not overwritten on
 # an --upgrade operation, since they may contain local changes
@@ -1175,7 +1275,7 @@ Open MPI jobs.
 
 ";
 
-    my $ret = "$rpm_top_dir/SPECS/$product_name-$full_version_number-$build_number-binary.spec";
+    my $ret = "$rpm_top_dir/SPECS/$product_name-$full_ct_version_number-$build_number-binary.spec";
 
     MTT::Files::SafeWrite(1, $ret, $contents);
     return $ret;
@@ -1193,24 +1293,16 @@ sub _create_source_rpm_spec_file {
     _setup_rpm_top_dir($rpm_top_dir);
 
     # Grab the source name
-    my $dist_tarball_name = "$product_name-$full_version_number";
+    my $dist_tarball_name = "$product_name-$full_ct_version_number";
     my $dist_tarball = _make_dist_tarball($config->{abs_srcdir}, $dist_tarball_name);
     MTT::DoCommand::Cmd(1, "cp $dist_tarball $rpm_top_dir/SOURCES");
     $dist_tarball = basename($dist_tarball);
-
-    # Set-up an optional post configure step (e.g., the below step
-    # fixes up libtool to function properly with sun-studio)
-    my $post_configure_step;
-    if ($compiler_name =~ /sun|sos/i) {
-        $post_configure_step = "config/patch-libtool-for-sun-studio.pl";
-    }
 
     # Compose the RPM %build section
     my $build_section;
     foreach my $args (@$configure_arguments) {
         $build_section .= "
 %configure $args %{_append_to_configure_options}
-$post_configure_step
 %{__make}
 %{__make} install";
     }
@@ -1218,7 +1310,7 @@ $post_configure_step
     my $contents = "
 #
 #
-# SPEC file for $product_name $full_version_number
+# SPEC file for $product_name $full_ct_version_number
 #
 #
 
@@ -1230,7 +1322,7 @@ $post_configure_step
 
 Summary: A powerful implementaion of MPI
 Name: $product_name
-Version: $full_version_number
+Version: $full_ct_version_number
 # Certain characters (e.g., '-') are not allowed for the Release field
 Release: $build_number
 Vendor: $vendor
@@ -1289,7 +1381,7 @@ $build_section
 # %config etc
 ";
 
-    my $ret = "$rpm_top_dir/SPECS/$product_name-$full_version_number-$build_number-source.spec";
+    my $ret = "$rpm_top_dir/SPECS/$product_name-$full_ct_version_number-$build_number-source.spec";
 
     MTT::Files::SafeWrite(1, $ret, $contents);
     return $ret;
@@ -1569,7 +1661,7 @@ sub _setup_installer {
         MTT::DoCommand::Popdir();
     }
 
-    Debug("$package: returning $ret\n");
+    Debug("_setup_installer returning $ret\n");
     return $ret;
 }
 

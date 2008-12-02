@@ -23,14 +23,17 @@ our $System_config = {
     source_subdir => "sources",
     install_subdir => "installs",
     runs_data_subdir => "test_runs",
+    mpi_install_subdir => "mpi-install",
     
     http_agents => { 
+        # Early versions of wget do not have the --no-check-certificate option. Provide
+        # alternative wget options.
         wget => { 
-            command => "wget --no-check-certificate -nv \$url", 
+            command => [ "wget --no-check-certificate -nv \$url", "wget -nv \$url" ], 
             auth => "--user=\$username --password=\$password",
         },
         curl => {
-            command => "curl -# -# \$url -o \$outfile",
+            command => [ "curl -# -# \$url -o \$outfile" ],
             auth => "--user \$username:\$password",
         }
     },

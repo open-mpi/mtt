@@ -54,14 +54,16 @@ sub Messages {
     $_verbose = shift;
     $_cwd = shift;
 
-    my $textwrap = $MTT::Globals::Values->{textwrap};
-    $Text::Wrap::columns = ($textwrap ? $textwrap : 76);
-
     # Set autoflush
     select STDOUT;
     $| = 1;
 
     return ($debug_save, $verbose_save, $cwd_save);
+}
+
+sub SetTextwrap {
+    my $textwrap = $MTT::Globals::Values->{textwrap};
+    $Text::Wrap::columns = ($textwrap ? $textwrap : 76);
 }
 
 sub open_logfile {

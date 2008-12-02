@@ -333,6 +333,7 @@ my $time_cmd = ($time_cmd_arg ? 1 : 0);
 my $time_phases = ($time_phases_arg ? 1 : 0);
 my $no_execute = ($no_execute_arg ? 1 : 0);
 MTT::Messages::Messages($debug, $verbose, cwd());
+MTT::Messages::SetTextwrap();
 MTT::Messages::Debug("Debug is $debug, Verbose is $verbose\n");
 MTT::Messages::Verbose("*** MTT: $0 @SAVE_ARGV\n");
 MTT::Messages::Verbose("*** Running on " . `hostname` ."\n");
@@ -423,12 +424,14 @@ if (defined($mpi_get_arg) || defined($mpi_install_arg) || defined($mpi_phases_ar
 my $source_dir = "$scratch_arg/$MTT::Defaults::System_config->{source_subdir}";
 my $install_dir = "$scratch_arg/$MTT::Defaults::System_config->{install_subdir}";
 my $runs_data_dir = "$scratch_arg/$MTT::Defaults::System_config->{runs_data_subdir}";
+my $mpi_install_dir = "$scratch_arg/$MTT::Defaults::System_config->{mpi_install_subdir}";
 
 # If requested, do a clean start
 if ($clean_start_arg) {
     MTT::DoCommand::Cmd(1, "rm -rf $source_dir");
     MTT::DoCommand::Cmd(1, "rm -rf $install_dir");
     MTT::DoCommand::Cmd(1, "rm -rf $runs_data_dir");
+    MTT::DoCommand::Cmd(1, "rm -rf $mpi_install_dir");
 }
 
 # Make directories
@@ -477,6 +480,7 @@ foreach my $hash (@ini_list) {
 
     MTT::Globals::load($scratch_arg, $fast_scratch_arg, $ini_full);
     MTT::Messages::Messages($debug, $verbose, cwd());
+    MTT::Messages::SetTextwrap();
 
     # Make the INI file globally accessible
 
@@ -571,7 +575,7 @@ foreach my $hash (@ini_list) {
         $MTT::Globals::Values->{delete_fast_scratch} &&
         $fast_scratch_arg ne $scratch_arg) {
         Verbose("Deleting fast scratch tree: $fast_scratch_arg\n");
-        system("rm -rf $fast_scratch_arg");
+        MTT::DoCommand::Cmd(1, "rm -rf $fast_scratch_arg");
     }
 }
 

@@ -530,7 +530,7 @@ sub ResolveDir {
 # Wrap Cwd::cwd() to ensure to check the return value properly (e.g.,
 # if you're in a directory that was removed, cwd() returns "")
 sub cwd {
-    my $dir = ::cwd();
+    my $dir = Cwd::cwd();
     die "Current working directory does not exist!"
         if ($dir eq "");
     return $dir;

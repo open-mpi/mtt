@@ -347,28 +347,32 @@ sub http_get {
     my $proxies = \@{$MTT::Globals::Values->{proxies}->{$scheme}};
     my %ENV_SAVE = %ENV;
     foreach my $p (@{$proxies}) {
-        my $cmd;
+        foreach my $c (@{$http_agent->{command}}) {
+            my $cmd;
 
-        # Setup the proxy in the environment
-        if ("" ne $p->{proxy}) {
-            Debug("Using $scheme proxy: $p->{proxy}\n");
-            $ENV{$scheme . "_proxy"} = $p->{proxy};
+            # Setup the proxy in the environment
+            if ("" ne $p->{proxy}) {
+                Debug("Using $scheme proxy: $p->{proxy}\n");
+                $ENV{$scheme . "_proxy"} = $p->{proxy};
+            }
+
+            my $str = "\$cmd = \"" . $c;
+            if (defined($username) && defined($password)) {
+                $str .= " " . $http_agent->{auth};
+            }
+            $str .= "\"";
+            eval $str;
+            my $x = MTT::DoCommand::Cmd(1, $cmd);
+
+            # Restore the environment
+            %ENV = %ENV_SAVE;
+
+            # If it succeeded, return happiness
+            # (Some programs, e.g., wget, can actually exit 0 *and* fail to get
+            # the file! Make sure we successfully downloaded what we need.)
+            return 1
+                if (MTT::DoCommand::wsuccess($x->{exit_status}) and (-e $outfile));
         }
-
-        my $str = "\$cmd = \"" . $http_agent->{command};
-        if (defined($username) && defined($password)) {
-            $str .= " " . $http_agent->{auth};
-        }
-        $str .= "\"";
-        eval $str;
-        my $x = MTT::DoCommand::Cmd(1, $cmd);
-
-        # Restore the environment
-        %ENV = %ENV_SAVE;
-
-        # If it succeeded, return happiness
-        return 1
-            if (MTT::DoCommand::wsuccess($x->{exit_status}));
     }
 
     # Failure

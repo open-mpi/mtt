@@ -466,7 +466,20 @@ sub ProcessEnvKeys {
     $val = $config->{prepend_path};
     if (defined($val)) {
         my @vals = split(/\n/, $val);
-        foreach my $v (@vals) {
+
+        # If the prepend_path parameter is a newline-delimited list, e.g.,
+        #
+        #   prepend_path = <<EOT
+        #   PATH /foo
+        #   PATH /bar
+        #   PATH /baz
+        #   EOT
+        #
+        # We assume the user means they want their PATH to be
+        # /foo:/bar:/baz:$PATH with the top lines at the top of the PATH.
+        # To get this behavior we have to *reverse* the ordering of @vals when 
+        # prepending.
+        foreach my $v (reverse @vals) {
             $v =~ m/^(\w+)\s+(.+)$/;
 
             if ((!defined($1)) or (!defined($2))) {
