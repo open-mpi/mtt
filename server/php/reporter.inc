@@ -1025,6 +1025,25 @@ function tokenize_quoted($q) {
     return $tokens;
 }
 
+
+# String conversion function to convert this:
+#   "foo" "bar" "baz"
+# to:
+#   foo | bar | baz
+function convert_quoted_tokens_to_pipe_delimited($str) {
+    if (!preg_match('/"/', $str)) {
+        return $str;
+    }
+
+    $tokens = tokenize_quoted($str);
+    foreach ($tokens as $t) {
+        $ret .= "$t |";
+    }
+    $ret = rtrim($ret, " |");
+
+    return $ret;
+}
+
 # Convert an associative array to an HTTP-ready query string
 function arr2qstring($arr) {
     foreach (array_keys($arr) as $key)

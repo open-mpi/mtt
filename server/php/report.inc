@@ -2130,7 +2130,11 @@ function permalinks($date_fields) {
     $links["Absolute date range"] = $absolute_date;
 
     # Do not display two permalinks with identical URLs
-    $pat = '\s*;.*$';
+
+    $pat = '\s*(;|\|)\s*';
+    $absolute_date = convert_quoted_tokens_to_pipe_delimited($absolute_date);
+    $start_timestamp = convert_quoted_tokens_to_pipe_delimited($start_timestamp);
+
     if (preg_replace("/$pat/", "", $absolute_date) != 
         preg_replace("/$pat/", "", $start_timestamp)) {
         $links["Relative date range"] = $start_timestamp;
@@ -3130,7 +3134,7 @@ function process_date_field($params) {
             }
 
             $date['select'][$timestamp_name] = $timestamp_name;
-            $date["rollup"] = "\"$token\"";
+            $date["rollup"] = " | $token";
         }
     }
 
@@ -3139,7 +3143,7 @@ function process_date_field($params) {
     # Always show ''by second'' timestamps in Detail view
     if ($type == 'detail') {
         $clause = $format4;
-        $date["rollup"] = '"by second"';
+        $date["rollup"] = ' | by second';
     }
 
     # PROTECT AGAINST AN EMPTY DATE RANGE.
@@ -3166,8 +3170,9 @@ function process_date_field($params) {
     $date['where'][$timestamp_name] = $where;
 
     for ($i = 0; $i < sizeof($absolute_start); $i++) {
-        $date['absolute'] .= '"' . $absolute_start[$i] . ' - ' . $absolute_end[$i] . '" ';
+        $date['absolute'] .= $absolute_start[$i] . ' - ' . $absolute_end[$i] . ' | ';
     }
+    $date['absolute'] = rtrim($date['absolute'], ' |');
 
     $date['absolute_start'] = $absolute_start;
     $date['absolute_end']   = $absolute_end;
