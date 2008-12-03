@@ -895,6 +895,18 @@ sub test_executable_dir {
     return $MTT::Test::Run::test_executable_dir;
 }
 
+sub test_executable_abspath{
+    Debug("&test_executable_abspath returning: $MTT::Test::Run::test_executable_abspath\n");
+
+    return $MTT::Test::Run::test_executable_abspath;
+}
+
+sub test_executable_basename {
+    Debug("&test_executable_basename returning: $MTT::Test::Run::test_executable_basename\n");
+
+    return $MTT::Test::Run::test_executable_basename;
+}
+
 #--------------------------------------------------------------------------
 
 # Return the current argv (excluding $argv[0]) from a running test
