@@ -82,6 +82,14 @@ sub Get {
     $params->{url} =~ s/\/\s*$//;
     my $basename = basename($params->{url});
     $params->{dirname} = "$cwd/$basename";
+
+    # Remove the cwd portion of the dirname so that we do not erroneously get a
+    # version string from the users scratch dirname or INI section name
+    my $scm_dirname = $params->{dirname};
+    $scm_dirname    =~ s/(\/+|\\+)/\//g;
+    $cwd            =~ s/(\/+|\\+)/\//g;
+    $scm_dirname    =~ s/$cwd//;
+
     MTT::DoCommand::Cmd(1, "rm -rf $basename")
         if ($params->{delete_first});
 
@@ -99,15 +107,18 @@ sub Get {
     my $ver;
     if (!defined($ret->{version})) {
         # 2. Try looking for name-<number> in the directory basename
-        if ($ver = &get_version_from_filename($params->{dirname})) {
+        if ($ver = &get_version_from_filename($scm_dirname)) {
+            Debug("Getting version string from name-<number> in the directory basename.\n");
             $ret->{version} = $ver;
         } 
         # 3. Use the SVN r number
         elsif (defined($params->{rev})) {
-            $ret->{version} = "r$r";
+            Debug("Getting version string from the SCM r number.\n");
+            $ret->{version} = "r$params->{rev}";
         }
         # Give up
         else {
+            Debug("Couldn't find a decent version string. Using a date string.\n");
             $ret->{version} = "$params->{simple_section}-" . 
                 strftime("%m%d%Y-%H%M%S", localtime);
         }
@@ -121,7 +132,7 @@ sub Get {
     $data->{post_copy}          = $params->{post_copy};
     $data->{url}                = $params->{url};
     $data->{directory}          = $params->{dirname};
-    $data->{r}                  = $r;
+    $data->{r}                  = $params->{rev};
 
     $ret->{module_data} = $data;
 
@@ -131,6 +142,7 @@ sub Get {
 }
 
 sub get_version_from_filename {
+    Debug("get_version_from_filename got @_\n");
     my ($fullname) = @_;
 
     my $ret;
@@ -152,6 +164,7 @@ sub get_version_from_filename {
         $fullname = dirname($fullname);
     }
 
+    Debug("get_version_from_filename returning $ret\n");
     return $ret;
 }
 
