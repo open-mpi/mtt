@@ -888,27 +888,27 @@ sub test_prefix {
 # after: /path/to/scratch/installs/ompi-nightly-v1.3--gcc--1.3rc2r20078/install
 #
 sub test_prefix_pretty {
-    if (not defined $MTT::Test::Run::test_prefix_pretty) {
-        my $exe1 = test_prefix();
-        $MTT::Test::Run::test_prefix_pretty = $exe1; 
-        my ($up1_name, $up1_path) = fileparse($exe1);
-        $up1_path =~ s/\/$//g;
+    my $exe1 = test_prefix();
+    $MTT::Test::Run::test_prefix_pretty = $exe1; 
+    my ($up1_name, $up1_path) = fileparse($exe1);
+    $up1_path =~ s/\/$//g;
 
-        my ($up2_name, $up2_path) = fileparse($up1_path);
-        my $cmd = "find $up2_path -maxdepth 1 -type l -ls";
-        foreach my $item (`$cmd`) {
-            if ($item =~ /\b$up2_name\b$/) {
-                my @tokens = split(" ", $item);
-                my $res = $tokens[10] . "/$up1_name";
-                if ( -d $res ) {
-                    $MTT::Test::Run::test_prefix_pretty = $res;
-                }
+    my ($up2_name, $up2_path) = fileparse($up1_path);
+    my $cmd = "find $up2_path -maxdepth 1 -type l -ls";
+    foreach my $item (`$cmd`) {
+        if ($item =~ /\b$up2_name\b$/) {
+            my @tokens = split(" ", $item);
+            my $res = $tokens[10] . "/$up1_name";
+            if ( -d $res ) {
+                Verbose("Found link: $item\n");
+                Debug("&test_prefix_pretty returning: $res\n");
+                return $res;
             }
-            next;
         }
+        next;
     }
-    Debug("&test_prefix_pretty returning: $MTT::Test::Run::test_prefix_pretty\n");
-    return $MTT::Test::Run::test_prefix_pretty;
+    Debug("&test_prefix_pretty returning: $MTT::Test::Run::test_prefix\n");
+    return $MTT::Test::Run::test_prefix;
 }
 
 #--------------------------------------------------------------------------
