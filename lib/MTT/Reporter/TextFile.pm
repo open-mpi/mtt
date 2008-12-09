@@ -276,9 +276,9 @@ sub _detail_report {
     my $file;
 
     my $table = Text::TabularDisplay->new(("Field", "Value"));
-    my $html_table = "";
 
     my $separator = { " " => " " };
+    my %existing_report_file = ();
 
     foreach my $phase (keys(%$entries)) {
         my $phase_obj = $entries->{$phase};
@@ -286,6 +286,7 @@ sub _detail_report {
         foreach my $section (keys(%$phase_obj)) {
             my $section_obj = $phase_obj->{$section};
             my $multi_line;
+            my $html_table = "";
 
             # Put fields that are identical all the way through in 
             # the title
@@ -311,14 +312,23 @@ sub _detail_report {
             my $html_file = $file;
             $html_file    =~  s/\.txt/\.html/g;
 
-            my $html_body = get_html_phase_report_template();
-            $html_body =~ s/%TESTS_RESULTS%/$html_table/g;
+            my $html_body = "";
+            if ( !$existing_report_file{$html_file} ) {
+                my $html_start = get_html_phase_report_template_start();
+                $existing_report_file{$html_file} = 1;
+                $html_body = $html_start;
+            }
+            $html_body .= $html_table;
             _output_results($html_file, $html_body);
 
             _output_results($file,
                 join("\n", ($detail_header, 
                             $table->render,
                             $detail_footer)));
+        }
+        foreach my $rep_file (keys %existing_report_file) {
+            my $close_report_html = get_html_phase_report_template_stop();
+            _output_results($rep_file, $close_report_html);
         }
     }
 }
@@ -617,7 +627,7 @@ sub get_html_phase_report_table_stop_template
     ';
     return $tmpl;
 }
-sub get_html_phase_report_template
+sub get_html_phase_report_template_start
 {
     my $css = get_css_template();
     my $tmpl = '
@@ -625,12 +635,17 @@ sub get_html_phase_report_template
     <h1>MTT Report for single phase execution</h1>
     <hr size="1">
     <h2>Report</h2>
-    %TESTS_RESULTS%
-    </table>
+    ';
+    return $css . $tmpl;
+}
+
+sub get_html_phase_report_template_stop
+{
+    my $tmpl = '
     </body>
     </html>
     ';
-    return $css . $tmpl;
+    return $tmpl;
 }
 
 1;
