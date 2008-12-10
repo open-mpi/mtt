@@ -46,7 +46,7 @@ sub Checkout {
         return undef;
     }
 
-    return _hg_identify_n($params->{url});
+    return _hg_identify_n($params->{dirname});
 }
 
 sub _hg_identify_n {
