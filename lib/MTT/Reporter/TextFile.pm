@@ -313,10 +313,12 @@ sub _detail_report {
             $html_file    =~  s/\.txt/\.html/g;
 
             my $html_body = "";
-            if ( !$existing_report_file{$html_file} ) {
-                my $html_start = get_html_phase_report_template_start();
+            if (not defined $existing_report_file{$html_file}) {
                 $existing_report_file{$html_file} = 1;
-                $html_body = $html_start;
+                if (! -f $html_file) {
+                    my $html_start = get_html_phase_report_template_start();
+                    $html_body = $html_start;
+                }
             }
             $html_body .= $html_table;
             _output_results($html_file, $html_body);
