@@ -45,6 +45,8 @@ my $test_results_count;
 my $report_after_each_result = 0;
 my $report_results_count = 0;
 my $report_after_n_results;
+my $prev_section_name = undef;
+my $group_reports = 0;
 
 #--------------------------------------------------------------------------
 
@@ -56,6 +58,8 @@ sub RunEngine {
     ($ini, $section, $install_dir, $runs_data_dir, $mpi_details, $test_build, $force, $ret) = @_;
 
     my $test_results;
+    $group_reports = MTT::Values::Value($ini, "mtt", "submit_group_results");
+    Verbose(">>> Using group_reports\n") if ($group_reports);
 
     # Setup some global variables
     $mpi_details_name   = $MTT::Globals::Internals->{mpi_details_name};
@@ -396,14 +400,23 @@ sub _run_one_test {
 
     $MTT::Test::runs_to_be_saved->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$MTT::Test::Run::test_np}->{$cmd} = 
         $MTT::Test::runs->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{$run->{simple_section_name}}->{$name}->{$MTT::Test::Run::test_np}->{$cmd} = $report;
-    MTT::Reporter::QueueAdd("Test Run", $run->{simple_section_name}, $report);
 
     # Submit results after each test?
-    if ($report_after_each_result or
-       (defined($report_after_n_results) and
-                $report_results_count++ > $report_after_n_results)) {
-        MTT::Reporter::QueueSubmit();
-        $report_results_count = 0;
+    $report_results_count++;
+    if ($group_reports) {
+        if ((defined $prev_section_name) and ($prev_section_name ne $run->{simple_section_name})) {
+            MTT::Reporter::QueueSubmit();
+            $report_results_count = 0;
+        }
+        MTT::Reporter::QueueAdd("Test Run", $run->{simple_section_name}, $report);
+    } else { 
+        MTT::Reporter::QueueAdd("Test Run", $run->{simple_section_name}, $report);
+        if ($report_after_each_result or
+            (defined($report_after_n_results) and
+                $report_results_count > $report_after_n_results)) {
+            MTT::Reporter::QueueSubmit();
+            $report_results_count = 0;
+        }
     }
 
     # Set the test run result and increment the counter
@@ -420,6 +433,7 @@ sub _run_one_test {
     _run_step($mpi_details, "after_each");
     delete $ENV{MTT_TEST_RUN_RESULT_MESSAGE};
 
+    $prev_section_name = $run->{simple_section_name};
     return $run->{pass};
 }
 
