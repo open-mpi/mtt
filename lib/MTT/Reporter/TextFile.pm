@@ -269,6 +269,23 @@ sub _summary_report {
     return 1;
 }
 
+sub is_result_failed
+{
+    my ($key) = @_;
+    my $failed = 0;
+    if (($key ne "Success") and ($key ne "Passed") and ($key ne "Skipped")) {
+        $failed = 1;
+    }
+    $failed;
+}
+
+sub _bystatus
+{
+    my $key1 = $$a{result_message};
+    my $key2 = $$b{result_message};
+    is_result_failed($key2) <=> is_result_failed($key1);
+}
+
 # Show individual test outputs
 sub _detail_report {
     my ($info, $entries) = @_;
@@ -298,7 +315,7 @@ sub _detail_report {
             _add_to_tables($table, \$html_table, $title, undef);
             _add_to_table($table, $separator, undef);
 
-            foreach my $report (@$section_obj) {
+            foreach my $report (sort _bystatus @$section_obj) {
 
                 $file   = _get_filename($report, $section);
 
