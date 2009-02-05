@@ -3,7 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
-# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -515,6 +515,21 @@ sub Slurp {
     }
     close(INPUT) || warn "can't close $file: $!";
     return $contents;
+}
+
+# Grep the contents of a file
+sub Grep {
+    my ($pattern, $file) = @_;
+
+    my @contents;
+    open (INPUT, $file) || warn "can't open $file: $!";
+    while (<INPUT>) {
+        push(@contents, $_);
+    }
+    close(INPUT) || warn "can't close $file: $!";
+
+    my @ret = grep (/$pattern/, @contents);
+    return \@ret;
 }
 
 # Does the equivalent of "find $dir -name $name"

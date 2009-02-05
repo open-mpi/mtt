@@ -3,7 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
-# Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -530,6 +530,14 @@ sub ProcessEnvKeys {
         }
     }
 
+    # env_importer (grab the value here for reporter(s))
+    $val = $config->{env_importer};
+    if (defined($val)) {
+        my @vals = split(/\n/, $val);
+        foreach my $v (@vals) {
+            push(@$save, "env_importer $v");
+        }
+    }
 }
 
 #--------------------------------------------------------------------------

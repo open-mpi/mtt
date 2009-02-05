@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 #
-# Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
 # Copyright (c) 2008      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
@@ -140,11 +140,6 @@ sub Install {
     # Get some OMPI-module-specific config arguments
     $config->{make_all_arguments} = Value($ini, $section, "clustertools_make_all_arguments");
 
-    # Log the make output
-    # MOVE TO THE INI FILE
-    # my $rand_str = MTT::Values::RandomString(10);
-    # $config->{make_all_arguments} .= " | tee make-$rand_str.log";
-
     # JMS: compiler name may have come in from "compiler_name" in
     # Install.pm. So if we didn't define one for this module, use the
     # default from "compiler_name".  Note: to be deleted someday
@@ -243,8 +238,15 @@ sub Install {
             after_make_install  => $after_make_install,
         };
 
-        # Do a make clean every build, just in case
+        # If this is the first time through (e.g., the first configure, make,
+        # make install in a series of two or more) then we do not need to do a
+        # make clean. We can't do the make clean every time, because a "make
+        # clean" can invoke aclocal (and friends), which in turn recreates the
+        # libtool script which we might need to modify ... deep breath.
         $gnu->{make_clean} = 1;
+        if ($i == 0) {
+            $gnu->{make_clean} = 0;
+        }
 
         # Optionally skip configure
         $gnu->{skip_configure} = 1 if ($skip_configure);
@@ -270,12 +272,14 @@ sub Install {
     my ($lib_label_for_64_bit) = &_setup_architecture_dependent_labels();
     MTT::DoCommand::Pushdir("$staging_dir/lib");
     symlink($lib_label_for_64_bit, "64");
+    symlink(".", "32");
     MTT::DoCommand::Popdir();
 
     # Create a symlink in the "instrument" area only if it exists
     if (-d "$staging_dir/instrument/lib") {
         MTT::DoCommand::Pushdir("$staging_dir/instrument/lib");
         symlink($lib_label_for_64_bit, "64");
+        symlink(".", "32");
         MTT::DoCommand::Popdir();
     }
 
@@ -423,9 +427,9 @@ sub _update_version_file {
 
     # Set the date to be used in the man pages
     # in this format: 08 Aug 2008
-    my $month = strftime("%b",localtime);
-    my $mday = strftime("%d",localtime);
-    my $year = strftime("%Y",localtime);
+    my $month = strftime("%b", localtime);
+    my $mday = strftime("%d", localtime);
+    my $year = strftime("%Y", localtime);
     $contents =~ s/(\ndate)=.*/$1="$mday $month $year"/;
 
     # Write changed file out
@@ -581,6 +585,33 @@ sub _create_wrapper_data_files {
     $wrapper_data->{"f90"}->{underlying_gnu_compiler} = "gfortran";
     $wrapper_data->{"f95"}->{underlying_gnu_compiler} = "gfortran";
 
+    # MPI wrapper compilers (Pathscale)
+    $wrapper_data->{"cc"}->{underlying_pathscale_compiler}  = "pathcc";
+    $wrapper_data->{"CC"}->{underlying_pathscale_compiler}  = "pathCC";
+    $wrapper_data->{"c++"}->{underlying_pathscale_compiler} = "pathCC";
+    $wrapper_data->{"cxx"}->{underlying_pathscale_compiler} = "pathCC";
+    $wrapper_data->{"f77"}->{underlying_pathscale_compiler} = "pathf90";
+    $wrapper_data->{"f90"}->{underlying_pathscale_compiler} = "pathf90";
+    $wrapper_data->{"f95"}->{underlying_pathscale_compiler} = "pathf90";
+
+    # MPI wrapper compilers (Intel)
+    $wrapper_data->{"cc"}->{underlying_intel_compiler}  = "icc";
+    $wrapper_data->{"CC"}->{underlying_intel_compiler}  = "icpc";
+    $wrapper_data->{"c++"}->{underlying_intel_compiler} = "icpc";
+    $wrapper_data->{"cxx"}->{underlying_intel_compiler} = "icpc";
+    $wrapper_data->{"f77"}->{underlying_intel_compiler} = "ifort";
+    $wrapper_data->{"f90"}->{underlying_intel_compiler} = "ifort";
+    $wrapper_data->{"f95"}->{underlying_intel_compiler} = "ifort";
+
+    # MPI wrapper compilers (PGI)
+    $wrapper_data->{"cc"}->{underlying_pgi_compiler}  = "pgcc";
+    $wrapper_data->{"CC"}->{underlying_pgi_compiler}  = "pgCC";
+    $wrapper_data->{"c++"}->{underlying_pgi_compiler} = "pgCC";
+    $wrapper_data->{"cxx"}->{underlying_pgi_compiler} = "pgCC";
+    $wrapper_data->{"f77"}->{underlying_pgi_compiler} = "pgf77";
+    $wrapper_data->{"f90"}->{underlying_pgi_compiler} = "pgf90";
+    $wrapper_data->{"f95"}->{underlying_pgi_compiler} = "pgf90";
+
     # VampirTrace wrapper compilers
     $wrapper_data->{"cc"}->{underlying_vt_compiler}  = "vtcc";
     $wrapper_data->{"CC"}->{underlying_vt_compiler}  = "vtcxx";
@@ -642,7 +673,7 @@ sub _create_wrapper_data_files {
     my $compiler_flags_gfortran_32;
     my $compiler_flags_gfortran_64;
 
-    if ($compiler_name =~ /gnu|gcc/i) {
+    if ($compiler_name =~ /gnu|gcc|intel|path|pgi/i) {
         $dash_r = "-Wl,-rpath,";
 
         # Prevent missing module files error from GCC (4.1)
@@ -650,11 +681,15 @@ sub _create_wrapper_data_files {
         # Use the workaround they proposed to get the fortran module
         $dash_m =  "";
 
-        $linker_flags_gfortran_32 = "-I\${prefix}/lib " .
-                                    "-J\${prefix}/lib";
+        $linker_flags_gfortran_32 = "-I\${prefix}/lib ";
+        $linker_flags_gfortran_64 = "-I\${prefix}/lib/$lib_label_for_64_bit ";
 
-        $linker_flags_gfortran_64 = "-I\${prefix}/lib/$lib_label_for_64_bit " .
-                                    "-J\${prefix}/lib/$lib_label_for_64_bit";
+        # Only gfortran requires the -J option. gfortran compatible compilers
+        # (e.g., Intel and Pathscale) do not require the -J workaround
+        if ($compiler_name =~ /gnu|gcc/i) {
+            $linker_flags_gfortran_64 .= "-J\${prefix}/lib/$lib_label_for_64_bit ";
+            $linker_flags_gfortran_32 .= "-J\${prefix}/lib ";
+        }
 
         $compiler_flags_gfortran_32 = "-I\${prefix}/lib";
         $compiler_flags_gfortran_64 = "-I\${prefix}/lib/$lib_label_for_64_bit";
@@ -682,6 +717,14 @@ sub _create_wrapper_data_files {
     $wrapper_data->{"gfortran"}->{64}->{linker_flags} = $linker_flags_gfortran_64;
     $wrapper_data->{"gfortran"}->{32}->{compiler_flags} = $compiler_flags_gfortran_32;
     $wrapper_data->{"gfortran"}->{64}->{compiler_flags} = $compiler_flags_gfortran_64;
+    $wrapper_data->{"ifort"}->{32}->{linker_flags} = $linker_flags_gfortran_32;
+    $wrapper_data->{"ifort"}->{64}->{linker_flags} = $linker_flags_gfortran_64;
+    $wrapper_data->{"ifort"}->{32}->{compiler_flags} = $compiler_flags_gfortran_32;
+    $wrapper_data->{"ifort"}->{64}->{compiler_flags} = $compiler_flags_gfortran_64;
+    $wrapper_data->{"pathf90"}->{32}->{linker_flags} = $linker_flags_gfortran_32;
+    $wrapper_data->{"pathf90"}->{64}->{linker_flags} = $linker_flags_gfortran_64;
+    $wrapper_data->{"pathf90"}->{32}->{compiler_flags} = $compiler_flags_gfortran_32;
+    $wrapper_data->{"pathf90"}->{64}->{compiler_flags} = $compiler_flags_gfortran_64;
 
     # For mpif90, point to mpi.mod using the -M flag
     $wrapper_data->{"f90"}->{module_option} = $dash_m;
@@ -743,11 +786,14 @@ libdir=%s
     # Incorporate these compiler names into the data file name
     # if need be
     my $filename_labels;
-    $filename_labels->{"sun"} = "";
-    $filename_labels->{"sos"} = "";
-    $filename_labels->{"gnu"} = "";
-    $filename_labels->{"gcc"} = "";
-    $filename_labels->{"vt"}  = "-vt";
+    $filename_labels->{"sun"}       = "";
+    $filename_labels->{"sos"}       = "";
+    $filename_labels->{"gnu"}       = "";
+    $filename_labels->{"gcc"}       = "";
+    $filename_labels->{"intel"}     = "";
+    $filename_labels->{"pgi"}       = "";
+    $filename_labels->{"pathscale"} = "";
+    $filename_labels->{"vt"}        = "-vt";
 
     foreach my $prefix ("mpi", "opal", "orte") {
         foreach my $compiler_type ($compiler_name, "vt") {
@@ -978,6 +1024,7 @@ sub _create_prototype_file_mpi_d {
 # Create a prototype file for one of the opt/ packages
 sub _create_prototype_file {
     my ($package_name, $pkginfo_file, $copyright_file, $directories) = @_;
+    Debug("_create_prototype_file got @_\n");
 
     # Compose the pkgproto command
     my $pkgproto_args;
@@ -986,18 +1033,23 @@ sub _create_prototype_file {
         # We can skip over some directories (e.g., instrument will not be here
         # if building with_instrument=0), but we print a Warning about missing directories
         if (-d $dir) {
-            $pkgproto_args = "$dir=${package_name_prefix}hpc/$product_version/$dir/ ";
+            $pkgproto_args .= "$dir=${package_name_prefix}hpc/$product_version/$dir/ ";
         } else {
             Warning("$package: Did not find \"$dir\" directory to include in packages.\n");
         }
     }
 
-    my $cmd = "pkgproto $pkgproto_args";
-
-    my $x = MTT::DoCommand::Cmd(1, $cmd);
-    if (0 != $x->{exit_status}) {
-        Warning("$package: Error in pkgproto: '$cmd'\n");
-        return undef;
+    # Ensure that pkgproto has some arguments, because it will *hang*
+    # without them. (Perhaps, it waits for something at
+    # STDIN?)
+    my ($cmd, $x);
+    if ($pkgproto_args) {
+        $cmd = "pkgproto $pkgproto_args";
+        $x = MTT::DoCommand::Cmd(1, $cmd);
+        if (0 != $x->{exit_status}) {
+            Warning("$package: Error in pkgproto: '$cmd'\n");
+            return undef;
+        }
     }
 
     # Check to see if this prototype file is for the Installer package (it's
@@ -1066,8 +1118,7 @@ sub _write_pkginfo_file {
     # Grab a date string for the VERSION param so that we never get two
     # identical VERSION strings. (Why doesn't the Solaris package manager use
     # PSTAMP?)
-    my $x = MTT::DoCommand::Cmd(1, "date '+%Y.%m.%d.%H.%M'");
-    my $rev_date_string = $x->{result_stdout};
+    my $rev_date_string = strftime("%Y.%m.%d.%H.%M", localtime);
 
     # Default the package version to 99.0 to safely
     # avoid conflict with other installed packages
@@ -1470,152 +1521,6 @@ sub _setup_rpm_top_dir {
     MTT::Files::mkdir("$dir/SOURCES");
     MTT::Files::mkdir("$dir/SPECS");
     MTT::Files::mkdir("$dir/SRPMS");
-}
-
-# MAGIC REGEXP ALERT! This routine contains some magic
-# strings that are found in an autogenerated libtool scripts.
-# It has been tested with the following libtool, but may need
-# to be adjusted for different versions!
-#
-#   $ libtool --version
-#   ltmain.sh (GNU libtool) 2.2
-#
-sub _update_libtool_script {
-    my ($file) = @_;
-    Debug("_update_libtool_script: got @_\n");
-
-    $file = "./libtool" if (! -e $file);
-
-    # Keep a backup copy of the file lying around for debugging
-    # purposes
-    MTT::DoCommand::Cmd(1, "cp $file $file.orig");
-
-    # Grab uname OS variable
-    my $os = `uname -s`;
-    chomp $os;
-
-    my $bad_var = "whole_archive_flag_spec";
-
-    # We could be more precise here with this REGEXP!
-    # Perhaps even better would be to place a patch in
-    # (e.g., config/foo.diff)
-    # There is precedent for doing this in autogen.sh. See this file:
-    # https://svn.open-mpi.org/trac/ompi/browser/trunk/config/lt21a-pathCC.diff
-    # To be absolutely sure, we really want to match all the funny
-    # characters (e.g., $, \, {, -, ...) like below,
-    # but to be expedient, we can just fill in the oddball
-    # characters with wildcards (.).
-    # my $bad_pattern1 = '\${wl}-soname \$wl\$soname';
-    my $bad_pattern1 = '..{wl}-soname ..wl..soname';
-
-    # Read in the libtool script file
-    my $contents = MTT::Files::Slurp($file);
-
-    if (!$contents) {
-        Error("Couldn't Slurp $file!\n");
-    }
-
-    my $comment1 = "
-# $bad_var has been commented out by MTT to avoid linker flag errors
-# in Sun Studio 12 (Linux). See the below link for the purpose of this
-# variable:
-# http://www.gnu.org/software/libtool/manual.html#index-whole_005farchive_005fflag_005fspec-352
-";
-
-    my $comment2 = "
-# $bad_pattern1 has been removed by MTT to avoid the below compiler
-# error(s):
-#   f90: Warning: Option -Wl,-soname passed to ld, if ld is invoked, ignored otherwise
-#   f90: Warning: Option -Wl,libmpi_f90.so.0 passed to ld, if ld is invoked, ignored otherwise
-#   /usr/bin/ld: unrecognized option '-Wl,-soname'
-#   /usr/bin/ld: use the --help option for usage information
-#   make[2]: *** [libmpi_f90.la] Error 1
-";
-
-    my $bad_pattern2 ='(\n# ### BEGIN LIBTOOL TAG CONFIG: FC.*)\n(wl="-Wl,")';
-    my $good_pattern2 = '
-# MTT has reassigned wl to "" because Sun Studio f90 (for Linux) does
-# not pass -Wl values to the GNU linker (/usr/bin/ld)
-wl=""';
-
-    my $bad_pattern3 ='(\n# ### BEGIN LIBTOOL TAG CONFIG: CXX.*)\n(postdeps="(?:-library=Cstd)\s*(?:-library=Crun)?")';
-    my $good_pattern3 = '
-# MTT has commented out postdeps so that libCstd.so and libCrun.so are not
-# linked in to libmpi_cxx.so. The autogen.sh patch for this same issue was
-# supposed to take care of this, but apparently Autosomething-or-other has
-# apparently usurped that patch and thrown in the bad -library flags.
-postdeps=""
-';
-
-    # Comment out whole_archive_flag_spec
-    # $contents =~ s/($bad_var\=.*)/$comment1# $1/;
-
-    # Comment out this to avoid -Wl
-    # $contents =~ s/$bad_pattern1//g;
-    # $contents .= $comment2;
-
-    # From perldoc perlre, the "s" modifier in s///s:
-    #   Treat string as single line. That is, change "." to match any character
-    #   whatsoever, even a newline, which normally it would not match. Used
-    #   together, as /ms, they let the "." match any character whatsoever,
-    #   while still allowing "^" and "$" to match, respectively, just after and
-    #   just before newlines within the string.
-
-    if ($os =~ /Linux/i) {
-        Verbose("$package: We need to patch $file for libmpi_f90.\n");
-
-        # Set wl to "" for f90
-        $contents =~ s/$bad_pattern2/$1\n# $2\n$good_pattern2/s;
-    }
-
-    # Comment this postdeps var out of CXX section
-    # postdeps="-library=Cstd -library=Crun"
-    Verbose("$package: Patching $file to avoid linking with libCstd and libCrun.\n");
-    $contents =~ s/$bad_pattern3/$1\n# $2\n$good_pattern3/s;
-
-    # Write changed file out
-    MTT::Files::SafeWrite(1, $file, $contents);
-}
-
-# Add "set -x" to libtool script
-sub _set_x_in_libtool_script {
-    my ($file) = @_;
-    Debug("_set_x_in_libtool_script: got @_\n");
-
-    $file = "./libtool" if (! -e $file);
-
-    # Prevent fatal Slurp error
-    if (! -e $file) {
-        Warning("No $file script to update. Returning.\n");
-        return undef;
-    }
-
-    # Keep a backup copy of the file lying around for debugging
-    # purposes
-    MTT::DoCommand::Cmd(1, "cp $file $file.orig");
-
-    Verbose("$package: Adding 'set -x' to $file.\n");
-
-    # Read in the libtool script file
-    my $contents = MTT::Files::Slurp($file);
-
-    if (!$contents) {
-        Error("Couldn't Slurp $file!\n");
-    }
-
-    my $search_pattern = '\n\s*\n';
-    my $replace_pattern = '
-
-# Set debug
-set -x
-
-';
-
-    # set -x
-    $contents =~ s/$search_pattern/\n$replace_pattern\n/s;
-
-    # Write changed file out
-    MTT::Files::SafeWrite(1, $file, $contents);
 }
 
 # Setup the (Solaris) Installer.

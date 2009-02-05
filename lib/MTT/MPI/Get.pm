@@ -3,7 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
-# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -45,6 +45,7 @@ use MTT::MPI;
 use MTT::Values;
 use MTT::Util;
 use MTT::EnvModule;
+use MTT::EnvImporter;
 use Data::Dumper;
 
 # What we call this phase
@@ -124,6 +125,14 @@ sub _do_get {
         MTT::EnvModule::load(@env_modules);
     }
 
+    # Load any environment importer files?
+    my @env_importers;
+    $config->{env_importers} = Value($ini, $section, "env_importer");
+    if ($config->{env_importers}) {
+        @env_importers = MTT::Util::split_comma_list($config->{env_importers});
+        MTT::EnvImporter::load(@env_importers);
+    }
+
     # Process setenv, unsetenv, prepend_path, and
     # append_path
     $config->{setenv} = Value($ini, $section, "setenv");
@@ -146,6 +155,14 @@ sub _do_get {
     # Unload any loaded environment modules
     if ($#env_modules >= 0) {
         MTT::EnvModule::unload(@env_modules);
+    }
+
+    # Unload any loaded environment importers
+    if ($#env_importers >= 0) {
+        # We need to reverse the order for the shell environment 
+        # importers, because unloading an env importer actually
+        # means reverting to an env snapshot.
+        MTT::EnvImporter::unload(reverse @env_importers);
     }
 
     # Did we get a source tree back?

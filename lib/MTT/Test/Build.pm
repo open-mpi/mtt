@@ -3,7 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
-# Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
 # Copyright (c) 2008      Mellanox Technologies.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -45,6 +45,7 @@ use MTT::Files;
 use MTT::Defaults;
 use MTT::Test;
 use MTT::EnvModule;
+use MTT::EnvImporter;
 use MTT::Util;
 use Data::Dumper;
 
@@ -356,11 +357,23 @@ sub _do_build {
         if (defined($val));
     $config->{env_modules} .= "," . $mpi_install->{env_modules}
         if (defined($mpi_install->{env_modules}));
-
     if ($config->{env_modules}) {
         @env_modules = MTT::Util::split_comma_list($config->{env_modules});
         MTT::EnvModule::unload(@env_modules);
         MTT::EnvModule::load(@env_modules);
+    }
+
+    # Process loading of env importers -- for both the MPI install and the
+    # test build sections
+    my @env_importers;
+    my $val = Value($ini, $section, "env_importer");
+    $config->{env_importers} = $val 
+        if (defined($val));
+    $config->{env_importers} .= "," . $mpi_install->{env_importers}
+        if (defined($mpi_install->{env_importers}));
+    if ($config->{env_importers}) {
+        @env_importers = MTT::Util::split_comma_list($config->{env_importers});
+        MTT::EnvImporter::load(@env_importers);
     }
 
     # Process setenv, unsetenv, prepend-path, and append-path -- for
@@ -398,6 +411,14 @@ sub _do_build {
     # Unload any loaded environment modules
     if ($#env_modules >= 0) {
         MTT::EnvModule::unload(@env_modules);
+    }
+
+    # Unload any loaded environment importers
+    if ($#env_importers >= 0) {
+        # We need to reverse the order for the shell environment 
+        # importers, because unloading an env importer actually
+        # means reverting to an env snapshot
+        MTT::EnvImporter::unload(reverse @env_importers);
     }
 
     # Analyze the return

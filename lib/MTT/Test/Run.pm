@@ -3,7 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
-# Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
 # Copyright (c) 2008      Mellanox Technologies.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -25,6 +25,7 @@ use MTT::Test::Specify;
 use MTT::Test::RunEngine;
 use MTT::Util;
 use MTT::EnvModule;
+use MTT::EnvImporter;
 use MTT::INI;
 use Data::Dumper;
 
@@ -419,6 +420,24 @@ sub _do_run {
         MTT::EnvModule::load(@env_modules);
     }
 
+    # Process loading of importers -- for both the MPI install and the
+    # test build sections
+    my $config;
+    my @env_importers;
+    my $val = MTT::Values::Value($ini, $section, "env_importer");
+    if (defined($val) && defined($test_build->{env_importers})) {
+        $config->{env_importers} = $test_build->{env_importers} . "," .
+            $config->{env_importers};
+    } elsif (defined($val)) {
+        $config->{env_importers} = $val;
+    } elsif (defined($test_build->{env_importers})) {
+        $config->{env_importers} = $test_build->{env_importers};
+    }
+    if (defined($config->{env_importers})) {
+        @env_importers = MTT::Util::split_comma_list($config->{env_importers});
+        MTT::EnvImporter::load(@env_importers);
+    }
+
     # Process setenv, unsetenv, prepend-path, and append-path -- for
     # both the MPI that we're building with and the section of the ini
     # file that we're building.
@@ -513,6 +532,15 @@ sub _do_run {
     if ($#env_modules >= 0) {
         MTT::EnvModule::unload(@env_modules);
     }
+
+    # Unload any loaded environment importers
+    if ($#env_importers >= 0) {
+        # We need to reverse the order for the shell environment 
+        # importers, because unloading an env importer actually
+        # means reverting to an env snapshot.
+        MTT::EnvImporter::unload(reverse @env_importers);
+    }
+
 }
 
 #--------------------------------------------------------------------------

@@ -3,7 +3,7 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
-# Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -94,6 +94,7 @@ use MTT::Reporter;
 use MTT::MPI;
 use MTT::Defaults;
 use MTT::EnvModule;
+use MTT::EnvImporter;
 use MTT::Util;
 use MTT::Files;
 use Data::Dumper;
@@ -443,6 +444,21 @@ sub _do_install {
         MTT::EnvModule::load(@env_modules);
     }
 
+    # Load any environment modules?
+    my @env_importers;
+    my $tmp = Value($ini, $section, "env_importer");
+    if (defined($tmp) && defined($mpi_get->{env_importers})) {
+        $config->{env_importers} = $mpi_get->{env_importers} . "," . $tmp;
+    } elsif (defined($tmp)) {
+        $config->{env_importers} = $tmp;
+    } elsif (defined($mpi_get->{env_importers})) {
+        $config->{env_importers} = $mpi_get->{env_importers};
+    }
+    if (defined($config->{env_importers})) {
+        @env_importers = MTT::Util::split_comma_list($config->{env_importers});
+        MTT::EnvImporter::load(@env_importers);
+    }
+
     # Process setenv, unsetenv, prepend_path, and
     # append_path
     my @save_env;
@@ -612,6 +628,14 @@ sub _do_install {
     # Unload any loaded environment modules
     if ($#env_modules >= 0) {
         MTT::EnvModule::unload(@env_modules);
+    }
+
+    # Unload any loaded environment importers
+    if ($#env_importers >= 0) {
+        # We need to reverse the order for the shell environment 
+        # importers, because unloading an env importer actually
+        # means reverting to an env snapshot
+        MTT::EnvImporter::unload(reverse @env_importers);
     }
 
     # If we're using a fast scratch, save any necessary files to the

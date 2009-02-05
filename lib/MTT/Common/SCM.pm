@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #
 # Copyright (c) 2007-2008 Cisco Systems, Inc.  All rights reserved.
-# Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -100,6 +100,8 @@ sub Get {
         $ret->{test_result} = MTT::Values::FAIL;
         $ret->{result_message} = "Failed to checkout";
         return $ret;
+    } else {
+        $params->{rev} = $r;
     }
 
     # Make a best attempt to get a version number

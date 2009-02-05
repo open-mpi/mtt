@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #
-# Copyright (c) 2007 Sun Microsystems, Inc.  All rights reserved.
-# Copyright (c) 2008 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2008      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -73,6 +73,9 @@ sub _hg_identify_n {
     } else {
         $ret = $x->{result_stdout};
     }
+
+    # Remove the newline
+    chomp $ret;
 
     # Return to the last directory
     MTT::DoCommand::Popdir();

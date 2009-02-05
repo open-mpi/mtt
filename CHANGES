@@ -261,3 +261,6 @@ To announce to OMPI core testers:
   space falls below a certain percentage (e.g., 5%) 
 - Added "disk_free_min_wait" to [MTT] section - number of minutes to wait for
   the user to remedy the situation if the "disk_free_min" threshold is broken
+
+- Added env_importer. Works similarly to env_module, only it accepts shell
+  environment importer files (sh, bash, csh, sh, ksh, zsh, and tcsh)
