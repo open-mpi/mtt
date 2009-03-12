@@ -3,6 +3,8 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2009      High Performance Computing Center Stuttgart, 
+#                         University of Stuttgart.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -20,6 +22,7 @@ use MTT::FindProgram;
 use MTT::Values;
 use MTT::Files;
 use MTT::Common::GNU_Install;
+use MTT::Common::Cmake;
 use MTT::Values::Functions::MPI::OMPI;
 
 #--------------------------------------------------------------------------
@@ -86,7 +89,16 @@ sub Install {
         stderr_save_lines => $config->{stderr_save_lines},
         merge_stdout_stderr => $config->{merge_stdout_stderr},
     };
-    my $install = MTT::Common::GNU_Install::Install($gnu);
+
+    my $install;
+    my $sys_type=`uname -o`;
+    if(($sys_type =~ /cygwin/i || $sys_type =~ /msys/i) &&
+        $config->{compiler_name} eq "microsoft") {
+        $install = MTT::Common::Cmake::Install($gnu);
+    } else {
+        $install = MTT::Common::GNU_Install::Install($gnu);
+    }
+
     foreach my $k (keys(%{$install})) {
         $ret->{$k} = $install->{$k};
     }

@@ -3,6 +3,8 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2009      High Performance Computing Center Stuttgart, 
+#                         University of Stuttgart.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -39,7 +41,7 @@ our $System_config = {
     },
 
     known_compiler_names => [ "gnu", "pgi", "ibm", "intel", "kai", "absoft",
-                              "pathscale", "sun", "none", "unknown" ],
+                              "pathscale", "sun", "microsoft", "none", "unknown" ],
     known_resource_manager_names => [ "slurm", "tm", "loadleveler", "n1ge",
                                       "alps", "none", "unknown" ],
     known_network_names => [ "tcp", "udp", "ethernet", "gm", "mx", "verbs",

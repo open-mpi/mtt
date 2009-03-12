@@ -29,6 +29,16 @@ $VERSION = 0.06;
 	'inodes' => "df -Pi",
 	'format' => "linuxish",
     },
+    'cygwin' => {
+	'blocks' => "df -P",
+	'inodes' => "df -Pi",
+	'format' => "linuxish",
+    },
+    'msys' => {
+	'blocks' => "df -P",
+	'inodes' => "df -Pi",
+	'format' => "linuxish",
+    },
     'solaris' =>  {
 	'blocks' => "df -k",
 	'inodes' => "df -k -o i -F ufs",
