@@ -31,7 +31,7 @@ sub Analyze {
         $report->{test_name} = "osu_latency";
     } elsif ($result_stdout =~ /MPI Bandwidth/) {
         $report->{test_name} = "osu_bw";
-    } elsif ($result_stdout =~ /MPI Bidirectional Bandwidth/) {
+    } elsif ($result_stdout =~ /MPI Bidirectional Bandwidth/ || $result_stdout=~/MPI Bi-Directional Bandwidth/) {
         $report->{test_name} = "osu_bibw";
     } else {
         Warning("Unknown OSU benchmark!  Skipping\n");
