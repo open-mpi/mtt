@@ -227,9 +227,10 @@ function setup_prefs() {
     if (! $prefs)
         $prefs = array(
             'general'  => array(
-                'limit'          => array(array('10', '50', '*100', '200')),
-                'wrap'           => array(100),
-                'trial'          => array(false),
+                'limit'             => array(array('10', '50', '*100', '200')),
+                'wrap'              => array(100),
+                'trial'             => array(false),
+                'enable_drilldowns' => array(true),
             ),
             'graphing' => array(
                 'yaxis_scale'      => array(array('Logarithmic', '*Linear')),
@@ -500,6 +501,7 @@ function label($str) {
             # Two labels: one for the UI, one for the column header
             'trial'                => 'Trial',
             'Trial'                => 'Show trial runs',
+            'enable_drilldowns'    => 'Enable drilldown links',
 
             # Graphing preferences
             'graphing'             => 'Graphing',

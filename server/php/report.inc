@@ -1777,7 +1777,7 @@ function drilldown_links() {
 
         # Drilldowns are not allowed from a cherry-picked report
         # Return plain non-clickable text labels
-        if (is_cherry_pick($_GET))
+        if (is_cherry_pick($_GET) or (ENABLE_DRILLDOWNS == false))
             return array(
                 'links' => $results,
                 'counts' => $results,
@@ -1845,7 +1845,7 @@ function drilldown_links() {
 
         # Drilldowns are not allowed from a cherry-picked report
         # Return plain non-clickable text labels
-        if (is_cherry_pick($_GET))
+        if (is_cherry_pick($_GET) or (ENABLE_DRILLDOWNS == false))
             return $param;
 
         $qstring_arr["text_$header"] = 
@@ -1874,7 +1874,7 @@ function drilldown_links() {
 
         # Drilldowns are not allowed from a cherry-picked
         # report. Return plain non-clickable text labels.
-        if (is_cherry_pick($_GET)) {
+        if (is_cherry_pick($_GET) or (ENABLE_DRILLDOWNS == false)) {
             foreach ($phases as $phase) {
                 $ret[$phase][] = label($phase);
                 foreach ($phase_results_table[$phase] as $result)
