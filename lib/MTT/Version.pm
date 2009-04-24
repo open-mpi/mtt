@@ -19,7 +19,7 @@ use strict;
 our $Major = "3";
 our $Minor = "0";
 our $Release = "0";
-our $Greek = "a1";
+our $Greek = "";
 
 our $Combined = "$Major.$Minor";
 $Combined .= ".$Release" if ("0" ne $Release);
