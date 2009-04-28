@@ -49,6 +49,11 @@ $VERSION = 0.06;
 	'inodes' => "df -i",
 	'format' => 'bsdish',
     },
+    'darwin' => {
+	'blocks' => "df -i",
+	'inodes' => "df -i",
+	'format' => 'bsdish',
+    },
 
     'irix' => {
     	'blocks' => "df",
