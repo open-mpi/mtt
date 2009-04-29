@@ -69,6 +69,27 @@ sub Get {
     chomp($ret->{version});
 
     # see if we need to download the tarball
+
+    # first check the version file (if it exists) to compare to the
+    # last version that was run with MTT
+    my $ver_file = Value($ini, $section, "ompi_snapshot_version_file");
+    if ($ver_file && -r $ver_file) {
+        open(VER, $ver_file);
+        my $ver = <VER>;
+        chomp($ver);
+        close(VER);
+
+        # If it's the same (and we're not forcing), then drive on --
+        # nothing to see here
+        if ($ret->{version} eq $ver && !$force) {
+            $ret->{test_result} = MTT::Values::PASS;
+            $ret->{have_new} = 0;
+            $ret->{result_message} = "Last version tested was the same (did not re-download)";
+            return $ret;
+        }
+    }
+
+    # now check the scratch records
     my $tarball_name = "openmpi-$ret->{version}.tar.gz";
     my $found = 0;
     foreach my $mpi_get_key (keys(%{$MTT::MPI::sources})) {
@@ -170,6 +191,18 @@ sub Get {
     $ret->{module_data}->{version} = $ret->{version};
     $ret->{module_data}->{r} = $ret->{version};
     $ret->{prepare_for_install} = __PACKAGE__ . "::PrepareForInstall";
+
+    # If there is a version filename, save it
+    if ($ver_file) {
+        if (-r $ver_file) {
+            unlink($ver_file);
+        } else {
+            MTT::Files::mkdir(dirname($ver_file));
+        }
+        open(VER, ">$ver_file");
+        print VER "$ret->{version}\n";
+        close(VER);
+    }
 
     # All done
     Debug(">> OMPI_Snapshot complete\n");
