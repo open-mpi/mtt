@@ -90,10 +90,12 @@ sub Install {
         merge_stdout_stderr => $config->{merge_stdout_stderr},
     };
 
+    # See perval(1) for a description of $^O (although it doesn't
+    # explicitly mention "cygwin" as an output on Windows, it does
+    # happen).
     my $install;
-    my $sys_type=`uname -o`;
-    if(($sys_type =~ /cygwin/i || $sys_type =~ /msys/i) &&
-        $config->{compiler_name} eq "microsoft") {
+    if (($^O =~ /mswin32/i || $^O =~ /cygwin/i) && 
+         $config->{compiler_name} eq "microsoft") {
         $install = MTT::Common::Cmake::Install($gnu);
     } else {
         $install = MTT::Common::GNU_Install::Install($gnu);
