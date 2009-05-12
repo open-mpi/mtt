@@ -67,10 +67,18 @@ sub do_step {
         my $i = 0;
         do {
             Debug("Restarting $cmd (restart attempt #$i\n") if ($i++ gt 0);
-            $ret = MTT::DoCommand::Cmd($mss,
-                        "$cmd $config->{$arguments_key}", -1,
-                         $config->{stdout_save_lines},
-                         $config->{stderr_save_lines});
+            
+            if (MTT::Util::is_running_on_windows() && $config->{compiler_name} eq "microsoft") {
+                $ret = MTT::DoCommand::Win_Cmd($mss,
+                                               "$cmd $config->{$arguments_key}", -1,
+                                               $config->{stdout_save_lines},
+                                               $config->{stderr_save_lines});
+            } else {
+                $ret = MTT::DoCommand::Cmd($mss,
+                                           "$cmd $config->{$arguments_key}", -1,
+                                           $config->{stdout_save_lines},
+                                           $config->{stderr_save_lines});
+            }
 
             # Add header line to stdout
             if (defined($ret->{result_stdout}) &&

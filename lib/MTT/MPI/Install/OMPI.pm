@@ -79,6 +79,7 @@ sub Install {
     my $gnu = {
         configdir => $config->{configdir},
         configure_arguments => $config->{configure_arguments},
+        compiler_name => $config->{compiler_name},
         vpath => "no",
         installdir => $config->{installdir},
         bindir => $config->{bindir},
@@ -90,12 +91,8 @@ sub Install {
         merge_stdout_stderr => $config->{merge_stdout_stderr},
     };
 
-    # See perval(1) for a description of $^O (although it doesn't
-    # explicitly mention "cygwin" as an output on Windows, it does
-    # happen).
     my $install;
-    if (($^O =~ /mswin32/i || $^O =~ /cygwin/i) && 
-         $config->{compiler_name} eq "microsoft") {
+    if (MTT::Util::is_running_on_windows() && $config->{compiler_name} eq "microsoft") {
         $install = MTT::Common::Cmake::Install($gnu);
     } else {
         $install = MTT::Common::GNU_Install::Install($gnu);

@@ -472,6 +472,192 @@ sub Cmd {
     return $ret;
 }
 
+#--------------------------------------------------------------------------
+
+# run a Windows command and save the stdout / stderr
+
+sub Win_Cmd {
+    my ($merge_output, $cmd, $timeout, 
+        $max_stdout_lines, $max_stderr_lines) = @_;
+
+    Debug("Running Windows command: $cmd\n");
+
+    # Return value
+
+    my $ret;
+    $ret->{timed_out} = 0;
+
+    # Start the timer
+
+    $ret->{start_benchmark} = &MTT::Timer::start();
+
+    # Turn shell-quoted words ("foo bar baz") into individual tokens
+
+    my $tokens = _quote_escape($cmd);
+
+    my $pid;
+    my @lines;
+    if (! $no_execute) {
+
+        if (($pid = fork()) == 0) {
+
+            # Remove leading/trailing quotes, which
+            # protects against a common funclet syntax error
+            @$tokens[(@$tokens - 1)] =~ s/\"$//
+                if (@$tokens[0] =~ s/^\"//);
+            
+            # Run it!
+
+            print "running command: $cmd \n";
+
+            if (! exec("@$tokens 1> stdout.txt 2> stderr.txt")) {
+                my $die_msg;
+                $die_msg .= "Can't execute command: $cmd\n";
+                $die_msg .= "Error: $!\n";
+                die $die_msg;
+            }
+        }
+
+        # Return the pid
+        $ret->{pid} = $pid;
+    } else {
+        # For no_execute, just print the command
+        print join(" ", @$tokens) . "\n";
+
+        $ret->{timed_out} = 0;
+        $ret->{exit_status} = 0;
+        $ret->{result_stdout} = "";
+        $ret->{result_stderr} = "";
+        return $ret;
+    }
+
+    # wait a sec for some initial input
+
+    sleep(1);
+
+    open(OUTread, "<stdout.txt");
+    open(ERRread, "<stderr.txt")
+        if (!$merge_output);
+
+    # Parent
+
+    my (@out, @err);
+    my $kid=0;
+
+    my $t;
+    my $end_time;
+    if (defined($timeout) && $timeout > 0) {
+        $t = 1;
+        $end_time = time() + $timeout;
+        Debug("Timeout: $timeout - $end_time (vs. now: " . time() . ")\n");
+    }
+    my $killed_status = undef;
+    my $last_over = 0;
+    while (!$kid) {
+
+        while(<OUTread>) {
+            push(@out, $_);
+            Debug("OUT:$_");
+            chomp($_);
+            # clear the EOF flag, so that we can continue reading
+            seek(OUTread, 0, 1);
+        }
+    
+        if (!$merge_output) {
+            while(<ERRread>) {
+                push(@err, $_);
+                Debug("ERR:$_");
+                chomp($_);
+                # clear the EOF flag, so that we can continue reading
+                seek(ERRread, 0, 1);
+            }
+        }
+
+        # check the child process status
+        $kid = waitpid($pid, WNOHANG);
+
+        # If we're running with a timeout, bail if we're past the end
+        # time
+        if (defined($end_time) && time() > $end_time) {
+            my $over = time() - $end_time;
+            if ($over > $last_over) {
+                Verbose("*** Past timeout of $timeout seconds by $over seconds\n");
+                _kill_proc($pid);
+                # We don't care about the exit status if we timed out
+                # -- fill it with a bogus value.
+                $ret->{exit_status} = 0;
+
+                # Set that we timed out.
+                $ret->{timed_out} = 1;
+            }
+            $last_over = $over;
+
+            # See if we've over the drain_timeout
+            if ($over > $MTT::Globals::Values->{drain_timeout}) {
+                Verbose("*** Past drain timeout; quitting\n");
+                last;
+            }
+        }
+    }
+
+    close OUTerr;
+    close OUTread
+        if (!$merge_output);
+
+    unlink "stdout.txt", "stderr.txt";
+
+    # If we didn't timeout, we need to reap the process (timeouts will
+    # have already been reaped).
+    my $msg = "Command ";
+    if (!$ret->{timed_out}) {
+        $ret->{exit_status} = $?;
+        $msg .= "complete";
+        print "return status: $ret->{exit_status}\n"
+    } else {
+        $ret->{exit_status} = 0;
+        $msg .= "timed out";
+        print "time out!"
+    }
+    $MTT::DoCommand::last_exit_status = $ret->{exit_status};
+
+    # Was it signaled?
+    if (wifsignaled($ret->{exit_status})) {
+        my $s = wtermsig($ret->{exit_status});
+        $msg .= ", signal $s";
+        if (wcoredump($ret->{exit_status} & 128)) {
+            if ($ret->{core_dump}) {
+                $msg .= " (core dump)";
+            }
+        }
+    }
+    # No, it was not signaled
+    else {
+        my $s = wexitstatus($ret->{exit_status});
+        $msg .= ", exit status: $s";
+    }
+    $msg .= "\n";
+    Debug($msg);
+
+    # Display timing info
+
+    $ret->{stop_benchmark} = &MTT::Timer::stop();
+    &MTT::Timer::print("Command: $cmd", $time_arg);
+    ($ret->{elapsed_real}, 
+     $ret->{elapsed_user},
+     $ret->{elapsed_children_user},
+     $ret->{elapsed_children_system},
+     $ret->{elapsed_iters}) =
+        @{timediff($ret->{stop_benchmark}, $ret->{start_benchmark})};
+
+    # Return an anonymous hash containing the relevant data
+
+    $ret->{result_stdout} = join('', @out);
+    $ret->{result_stderr} = join('', @err),
+        if (!$merge_output);
+
+    return $ret;
+}
+
 # Return 1 if the string contains special shell characters
 sub _contains_shell_script_characters {
     my ($cmd) = @_;

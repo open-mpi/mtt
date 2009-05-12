@@ -375,4 +375,17 @@ sub get_array_ref {
     }
 }
 
+#--------------------------------------------------------------------------
+
+sub is_running_on_windows {
+    # See perval(1) for a description of $^O (although it doesn't
+    # explicitly mention "cygwin" as an output on Windows, it does
+    # happen).
+    if ($^O =~ /mswin32/i || $^O =~ /cygwin/i) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 1;
