@@ -47,7 +47,7 @@ sub Install {
     # generate Visual Studio solution files
     # use 'script' to redirect MS command output
     $x = MTT::Common::Do_step::do_step($config,
-                                        "script -a -c \"cmake $config->{configure_arguments} -D CMAKE_INSTALL_PREFIX:PATH=$win_prefix .\" -f temp.txt", 
+                                        "cmake $config->{configure_arguments} -D CMAKE_INSTALL_PREFIX:PATH=$win_prefix . ", 
                                         $config->{merge_stdout_stderr});
 
     # Overlapping keys in $x override $ret
@@ -55,13 +55,13 @@ sub Install {
     return $ret if (!MTT::DoCommand::wsuccess($ret->{exit_status}));
 
     # compile the whole solution
-    $x = MTT::Common::Do_step::do_step($config, "script -a -c \"devenv.com *.sln /build debug\" -f temp.txt",
+    $x = MTT::Common::Do_step::do_step($config, "devenv.com *.sln /build debug ",
                                         $config->{merge_stdout_stderr});
     %$ret = (%$ret, %$x);
     return $ret if (!MTT::DoCommand::wsuccess($ret->{exit_status}));
 
     # install to the prefix dir
-    $x = MTT::Common::Do_step::do_step($config, "script -a -c \"devenv.com *.sln /project INSTALL.vcproj /build\" -f temp.txt",
+    $x = MTT::Common::Do_step::do_step($config, "devenv.com *.sln /project INSTALL.vcproj /build ",
                                         $config->{merge_stdout_stderr});
     %$ret = (%$ret, %$x);
     return $ret if (!MTT::DoCommand::wsuccess($ret->{exit_status}));

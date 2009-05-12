@@ -375,4 +375,14 @@ sub get_array_ref {
     }
 }
 
+#--------------------------------------------------------------------------
+
+sub is_running_on_windows {
+    if ($^O =~ /mswin32/i || $^O =~ /cygwin/i) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 1;
