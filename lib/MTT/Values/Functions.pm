@@ -2744,6 +2744,10 @@ sub get_compiler_vendor {
     if (_check_c_if("defined(__INTEL_COMPILER) || defined(__ICC)", $compiler)) {
         $ret = "intel";
     }
+    # Pathscale
+    elsif (_check_c_ifdef("__PATHSCALE__", $compiler)) {
+        $ret = "pathscale";
+    }
     # GNU
     elsif (_check_c_ifdef("__GNUC__", $compiler)) {
         $ret = "gnu";

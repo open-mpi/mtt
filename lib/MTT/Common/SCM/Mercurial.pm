@@ -27,6 +27,11 @@ sub Checkout {
 
     my $ret;
 
+    # Default destination dir to the URL's basename
+    if (! defined($params->{dirname})) {
+        $params->{dirname} = basename($params->{url});
+    }
+
     # Assemble the command
     my $cmd = defined($params->{cmd}) ? $params->{cmd} : "hg";
     $cmd .= " " . $params->{command_arguments}

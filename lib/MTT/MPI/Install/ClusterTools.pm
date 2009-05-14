@@ -42,7 +42,6 @@ my $package_basedir;
 my $configure_prefix;
 my $solaris_copyright_file;
 my $opensolaris_copyright_file;
-my $installer_request_script;
 
 # Global uname variables
 my $arch = `uname -p`;
@@ -86,6 +85,9 @@ sub Install {
     # Set the global configure prefix
     $configure_prefix = Value($ini, $section, "clustertools_configure_prefix");
 
+    # Use ${prefix} or hardcode the path into wrapper data files?
+    my $wrapper_hardcode_prefix = Value($ini, $section, "clustertools_wrapper_hardcode_prefix");
+
     my $do_autogen = Logical($ini, $section, "clustertools_do_autogen");
     my $skip_configure = Logical($ini, $section, "clustertools_skip_configure");
 
@@ -108,7 +110,6 @@ sub Install {
     $package_name_prefix        = Value($ini, $section, "clustertools_package_name_prefix");
     $solaris_copyright_file     = Value($ini, $section, "clustertools_solaris_copyright_file");
     $opensolaris_copyright_file = Value($ini, $section, "clustertools_opensolaris_copyright_file");
-    $installer_request_script   = Value($ini, $section, "clustertools_installer_request_script");
     $package_basedir            = Value($ini, $section, "clustertools_package_basedir");
     $package_basedir        = defined($package_basedir) ? $package_basedir : "/opt";
 
@@ -285,7 +286,7 @@ sub Install {
 
     # Create wrapper data files
     my $wrapper_destdir = "$staging_dir/share/openmpi";
-    &_create_wrapper_data_files($wrapper_destdir, $compiler_name, $wrapper_rpath, $greek);
+    &_create_wrapper_data_files($wrapper_destdir, $compiler_name, $wrapper_rpath, $greek, $wrapper_hardcode_prefix);
 
     # Copy over the examples directory to the install area
     my $examples_dir = "$config->{abs_srcdir}/examples";
@@ -342,10 +343,12 @@ sub Install {
             # packages). [Sigh] The things we do to please Legal Dept ...
             create_packages($staging_dir, "$destination_dir-Solaris", $solaris_copyright_file);
             create_packages($staging_dir, "$destination_dir-OpenSolaris", $opensolaris_copyright_file);
+            create_tarball($staging_dir, "$destination_dir-Solaris");
 
         } elsif ($os =~ /Linux/i) {
             # Create Solaris or Linux (RPM) packages
             create_packages($staging_dir, $destination_dir, $install_dir, $config);
+            create_tarball($staging_dir, $destination_dir);
         }
 
         # Make the installer available to the post-installation steps
@@ -465,6 +468,9 @@ sub _update_openmpi_mca_params_conf_solaris {
     my $str = "
 # Exclude the sppp0 interface on the M9000 machines
 btl_tcp_if_exclude = lo0,sppp0
+
+# Exclude openib BTL, not currently supported
+btl = ^openib
 ";
 
     my $ret = MTT::Files::SafeWrite(1, $file, $contents . $str);
@@ -497,6 +503,16 @@ sub _setup_architecture_dependent_labels {
             $secondary_compiler_args = "-xarch=amd64;-xarch=amd64a;-xarch=native64;-xarch=generic64;-xtarget=native64;-xtarget=generic64;-m64";
         }
 
+    # Intel is the oddball compiler that defaults to 32-bit
+    } elsif ($compiler_name =~ /intel/i) {
+        $primary_wordsize = 32;
+        $secondary_wordsize = 64;
+
+        $lib_label = "lib64";
+        $include_label = "64";
+        $primary_compiler_args = "";
+        $secondary_compiler_args = "-m64";
+
     # GCC AND SUN STUDIO BOTH DEFAULT TO 64-BIT ON LINUX,
     # BUT IF THIS FACT CHANGES - SO TOO WILL THE BELOW BLOCK
     # NEED TO CHANGE!
@@ -508,6 +524,13 @@ sub _setup_architecture_dependent_labels {
         $include_label = "64";
         $primary_compiler_args = "";
         $secondary_compiler_args = "-m32";
+
+        # Most of the GNU-compatible compilers support -m32/-m64,
+        # except for PGI which has some oddball -tp options
+        if ($compiler_name =~ /pgi/i) {
+            $primary_compiler_args = "";
+            $secondary_compiler_args = "-tp=k8-32;-tp=barcelona;-tp=core2";
+        }
     }
 
     return ($lib_label,
@@ -524,7 +547,7 @@ sub _setup_architecture_dependent_labels {
 #   3. -R (or -Wl,-rpath) <PATH> to be used within the wrapper data files
 #   4. version for wrapper .txt files
 sub _create_wrapper_data_files {
-    my ($destdir, $compiler_name, $installdir, $version) = @_;
+    my ($destdir, $compiler_name, $installdir, $version, $wrapper_hardcode_prefix) = @_;
     Debug("_create_wrapper_data_files: got @_\n");
 
     # Ensure that the destination directory exists
@@ -673,6 +696,13 @@ sub _create_wrapper_data_files {
     my $compiler_flags_gfortran_32;
     my $compiler_flags_gfortran_64;
 
+    # By default, use the wrapper-expanded ${prefix} varaible
+    # (but allow for hardcoded prefix, e.g., v1.2 testing)
+    my $wrapper_prefix = "\${prefix}";
+    if ($wrapper_hardcode_prefix) {
+        $wrapper_prefix = $installdir;
+    }
+
     if ($compiler_name =~ /gnu|gcc|intel|path|pgi/i) {
         $dash_r = "-Wl,-rpath,";
 
@@ -681,30 +711,30 @@ sub _create_wrapper_data_files {
         # Use the workaround they proposed to get the fortran module
         $dash_m =  "";
 
-        $linker_flags_gfortran_32 = "-I\${prefix}/lib ";
-        $linker_flags_gfortran_64 = "-I\${prefix}/lib/$lib_label_for_64_bit ";
+        $linker_flags_gfortran_32 = "-I$wrapper_prefix/lib ";
+        $linker_flags_gfortran_64 = "-I$wrapper_prefix/lib/$lib_label_for_64_bit ";
 
         # Only gfortran requires the -J option. gfortran compatible compilers
         # (e.g., Intel and Pathscale) do not require the -J workaround
         if ($compiler_name =~ /gnu|gcc/i) {
-            $linker_flags_gfortran_64 .= "-J\${prefix}/lib/$lib_label_for_64_bit ";
-            $linker_flags_gfortran_32 .= "-J\${prefix}/lib ";
+            $linker_flags_gfortran_64 .= "-J$wrapper_prefix/lib/$lib_label_for_64_bit ";
+            $linker_flags_gfortran_32 .= "-J$wrapper_prefix/lib ";
         }
 
-        $compiler_flags_gfortran_32 = "-I\${prefix}/lib";
-        $compiler_flags_gfortran_64 = "-I\${prefix}/lib/$lib_label_for_64_bit";
+        $compiler_flags_gfortran_32 = "-I$wrapper_prefix/lib";
+        $compiler_flags_gfortran_64 = "-I$wrapper_prefix/lib/$lib_label_for_64_bit";
 
     }
 
     $linker_flags_32 = "$dash_r/opt/mx/lib " .
-                       "$dash_r\${prefix}/lib";
+                       "$dash_r$wrapper_prefix/lib";
     $linker_flags_64 = "$dash_r/opt/mx/lib/$lib_label_for_64_bit " .
-                       "$dash_r\${prefix}/lib/$lib_label_for_64_bit";
+                       "$dash_r$wrapper_prefix/lib/$lib_label_for_64_bit";
 
-    $wrapper_data->{32}->{includedir} = "\${prefix}/include";
-    $wrapper_data->{64}->{includedir} = "\${prefix}/include/$include_label_for_64_bit";
-    $wrapper_data->{32}->{libdir} = "\${prefix}/lib";
-    $wrapper_data->{64}->{libdir} = "\${prefix}/lib/$lib_label_for_64_bit";
+    $wrapper_data->{32}->{includedir} = "$wrapper_prefix/include";
+    $wrapper_data->{64}->{includedir} = "$wrapper_prefix/include/$include_label_for_64_bit";
+    $wrapper_data->{32}->{libdir} = "$wrapper_prefix/lib";
+    $wrapper_data->{64}->{libdir} = "$wrapper_prefix/lib/$lib_label_for_64_bit";
     $wrapper_data->{32}->{linker_flags} = $linker_flags_32;
     $wrapper_data->{64}->{linker_flags} = $linker_flags_64;
 
@@ -725,6 +755,10 @@ sub _create_wrapper_data_files {
     $wrapper_data->{"pathf90"}->{64}->{linker_flags} = $linker_flags_gfortran_64;
     $wrapper_data->{"pathf90"}->{32}->{compiler_flags} = $compiler_flags_gfortran_32;
     $wrapper_data->{"pathf90"}->{64}->{compiler_flags} = $compiler_flags_gfortran_64;
+    $wrapper_data->{"vtf90"}->{32}->{linker_flags} = $linker_flags_gfortran_32;
+    $wrapper_data->{"vtf90"}->{64}->{linker_flags} = $linker_flags_gfortran_64;
+    $wrapper_data->{"vtf90"}->{32}->{compiler_flags} = $compiler_flags_gfortran_32;
+    $wrapper_data->{"vtf90"}->{64}->{compiler_flags} = $compiler_flags_gfortran_64;
 
     # For mpif90, point to mpi.mod using the -M flag
     $wrapper_data->{"f90"}->{module_option} = $dash_m;
@@ -940,9 +974,7 @@ sub create_solaris_packages {
 
         # Copy the copyright file to pass to the prototype file
         my $copyright_filename = "copyright";
-        my $request_filename = "request";
         MTT::DoCommand::Cmd(1, "cp $copyright_file $copyright_filename");
-        MTT::DoCommand::Cmd(1, "cp $installer_request_script $request_filename");
 
         my $pkgproto_args;
         my $prototype_file;
@@ -989,17 +1021,13 @@ my $vendor = "Sun Microsystems, Inc.";
 # Prologue the prototype file with the "pkginfo" and "copyright" i (include)
 # lines
 sub _create_prototype_file_prologue {
-    my ($pkginfo_file, $copyright_file, $request_script) = @_;
+    my ($pkginfo_file, $copyright_file) = @_;
 
     my $ret =
         "\n# Copyright (c) $year $vendor All rights reserved." .
         "\n#" .
         "\ni pkginfo=$pkginfo_file" .
         "\ni $copyright_file";
-
-    # Include a request script, if there is one
-    $ret .=
-        "\ni $request_script" if ($request_script);
 
     return $ret;
 }
@@ -1052,17 +1080,8 @@ sub _create_prototype_file {
         }
     }
 
-    # Check to see if this prototype file is for the Installer package (it's
-    # always suffixed with ompiat, as in "Open MPI Admin Tools"). If it is, we
-    # have to include a request script so it will be installed in the global
-    # zone. Barfalicious.    
-    my $request_script;
-    if ($package_name =~ /ompiat/) {
-        $request_script = "request";
-    }
-
     # Start with the prologue for the prototype file
-    my $contents = _create_prototype_file_prologue($pkginfo_file, $copyright_file, $request_script);
+    my $contents = _create_prototype_file_prologue($pkginfo_file, $copyright_file);
     my $product_version_dirname = dirname($product_version);
     $contents .= "\nd none ${package_name_prefix}hpc/$product_version_dirname 0755 root bin" . "\n";
     $contents .= "\nd none ${package_name_prefix}hpc/$product_version 0755 root bin" . "\n";
@@ -1260,6 +1279,35 @@ sub create_linux_packages {
     }
 
     return $ret;
+}
+
+# The tarball will contain the identical binaries that the packages
+# contain, but they will just be in the form of a simple gzipped tar
+# archive. The only feature the packages provide that the tarball does
+# not, is the ability to monitor the system's package metadata. To each
+# their own.
+sub create_tarball {
+    my ($staging_dir, $destination_dir) = @_;
+    Debug("create_tarball: got @_\n");
+
+    # Get into the directory containing bin, lib, man, ...
+    MTT::DoCommand::Pushdir($staging_dir);
+
+    my @directories = qw(bin include lib man share etc instrument examples);
+    my $dir_arguments;
+    foreach my $dir (@directories) {
+        if (-d $dir) {
+            $dir_arguments .= " $dir";
+        }
+    }
+
+    # Name the tarball file similarly to the RPM file name
+    my $tarfile_name = "$product_name-$full_ct_version_number-$build_number.$arch-built-with-$compiler_name.tar";
+
+    MTT::DoCommand::Cmd(1, "tar cf $tarfile_name $dir_arguments");
+    MTT::DoCommand::Cmd(1, "gzip $tarfile_name");
+    MTT::DoCommand::Cmd(1, "mv $tarfile_name.gz $destination_dir");
+    MTT::DoCommand::Popdir();
 }
 
 # Create the binary RPM spec file
@@ -1487,8 +1535,13 @@ sub _make_dist_tarball {
     if (-d "$temp_dir/$name") {
         MTT::DoCommand::Pushdir($temp_dir);
 
+        # Clean up any files that should not be included in the source RPM
+        MTT::DoCommand::Pushdir($name);
+        MTT::DoCommand::Cmd(1, "make clean");
+        MTT::DoCommand::Popdir();
+
         # Remove versioning data and logs from the source tarball
-        MTT::DoCommand::Cmd(1, "find $name | grep -E \'\.hg\$\|\.svn\$\' | xargs rm -rf");
+        MTT::DoCommand::Cmd(1, "find $name | grep -E \'mpi\.mod\$\|\.hg\$\|\.svn\$\' | xargs rm -rf");
         MTT::DoCommand::Cmd(1, "find $name | grep -E \'config.*.log\$\|.*make.out\$\' | xargs rm -rf");
         MTT::DoCommand::Cmd(1, "tar cf $name.tar $name");
         MTT::DoCommand::Cmd(1, "gzip $name.tar");
@@ -1547,6 +1600,7 @@ sub _setup_installer {
         $params->{cmd}        = "hg";
         $params->{subcommand} = "clone";
         $params->{url}        = $installer_hg_url;
+        $params->{dirname}    = basename($installer_hg_url);
         MTT::Module::Run("MTT::Common::SCM::Mercurial", "Checkout", $params);
 
         my $installer_dir_src = basename($installer_hg_url);
@@ -1581,8 +1635,8 @@ sub _find_sun_studio_libc_libraries {
     #
     #   libCrun.so -> libCrun.so.1
     #
-    my @libs = ("libCrun*1", "libCstd*1");
-    my @dirs = ("$dirname_suncc/../prod/usr/lib", "$dirname_suncc/../rtlibs");
+    my @libs = ("libCrun*1", "libCstd*1", "libmtsk*1");
+    my @dirs = ("$dirname_suncc/../prod/usr/lib", "$dirname_suncc/../rtlibs", "$dirname_suncc/../lib");
 
     my @ret;
     foreach my $dirname (@dirs) {

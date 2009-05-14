@@ -320,6 +320,7 @@ sub _detail_report {
                 $file   = _get_filename($report, $section);
 
                 $report = _convert_timestamps($report);
+                $report = _convert_array_refs($report);
 
                 _add_to_tables($table, \$html_table, $report, $title);
                 _add_to_table($table, $separator, undef);
@@ -483,6 +484,20 @@ sub _get_filename {
 
     Debug("_get_filename returning $ret\n");
     return $ret;
+}
+
+# Stringify any array references
+sub _convert_array_refs {
+    my $report = shift;
+
+    foreach my $key (keys(%$report)) {
+
+        if (ref($report->{$key}) =~ /array/i) {
+            $report->{$key} = join("\n\n---\n\n", @{$report->{$key}});
+        }
+    }
+
+    return $report;
 }
 
 # Make timestamps human-readable
