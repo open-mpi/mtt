@@ -59,17 +59,33 @@ sub Specify {
     }
 
     # Now go through and see if any of the tests are marked as
-    # "exclusive". If they are, remove those tests from all other
-    # groups.
+    # "exclusive".  If they are, remove those tests from all other
+    # groups.  Note that exclusivity is based on priority ordering --
+    # if a test is in multiple exclusive groups, it will remain in the
+    # group with the highest exclusivity value.  If a test is in
+    # multiple groups with the same highest exclusivity value, it's
+    # undefined which group it ends up in.
     my @groups_to_delete;
+    my @exclusive_groups;
     foreach my $group (keys %$params) {
         # If this group is marked as exclusive, remove each of its
         # tests from all other groups
         if ($params->{$group}->{exclusive}) {
             foreach my $t (@{$params->{$group}->{tests}}) {
                 foreach my $g2 (keys %$params) {
+                    # Skip this $g2 if: a) it's me, or b) that group
+                    # has a higher exclusivity value than me (in which
+                    # case, that group will come through and trim any
+                    # overlapping tests from my group at some other
+                    # point in this double loop).  Note that
+                    # transitivity makes this all work.  Say there are
+                    # 3 groups A,exclusive=10, B,exclusive=20,
+                    # C,exclusive=30, and all of them contain the
+                    # "foo" test. No matter which order the groups are
+                    # checked, only C will end up with the "foo" test.
                     next 
-                        if ($g2 eq $group);
+                        if ($g2 eq $group ||
+                            ($params->{$group}->{exclusive} < $params->{$g2}->{exclusive}));
 
                     my @to_delete;
                     my $i = 0;
