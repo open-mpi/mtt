@@ -156,6 +156,32 @@ sub Submit {
         # Grab the INI section
         my $reporter_section = $modules->{$m};
 
+	my $skip_mpi_get = MTT::Values::Value($ini, $reporter_section, 
+					      "skip_mpi_get");
+	my $go_next = 0;
+	foreach my $skip_one_mpi_get (MTT::Util::split_comma_list($skip_mpi_get)) {
+	    if (lc($report->{mpi_get_section_name}) eq lc($skip_one_mpi_get)) {
+		Verbose("   Skipping reporter [$reporter_section]\n");
+		$go_next = 1;
+		last;
+	    }
+	}
+	next
+	    if ($go_next);
+
+	my $skip_mpi_install = MTT::Values::Value($ini, $reporter_section, 
+						  "skip_mpi_install");
+	$go_next = 0;
+	foreach my $skip_one_mpi_install (MTT::Util::split_comma_list($skip_mpi_install)) {
+	    if (lc($report->{mpi_install_simple_section_name}) eq lc($skip_one_mpi_install)) {
+		Verbose("   Skipping reporter [$reporter_section]\n");
+		$go_next = 1;
+		last;
+	    }
+	}
+	next
+	    if ($go_next);
+
         # For INI consistency, process setenv, unsetenv, prepend-path, and
         # append-path, but no need to record these settings for the results. It
         # is just a convenience (e.g., changing TMPDIR for MTTDatabase).
