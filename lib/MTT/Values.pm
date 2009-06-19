@@ -153,7 +153,7 @@ sub _replace_vars {
     # Loop until there are no more @vars@, but only if $ini and
     # $section were provided
     Debug("Replacing vars from section $section: $str\n");
-    while ($str =~ /\@(.+?)\@/) {
+    while ($str =~ /\@(\w+?)\@/) {
         my $var_name = $1;
 
         # @foo@ gets evaluated before it gets substituted in
