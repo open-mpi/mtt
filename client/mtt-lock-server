@@ -358,7 +358,7 @@ sub client_print {
     my $out;
     my @k = keys(%$locks);
 
-    if (!defined($locks) || $#k <= 0) {
+    if (!defined($locks) || $#k < 0) {
         $out = "No locks$EOL";
     } else {
         $out = "";
