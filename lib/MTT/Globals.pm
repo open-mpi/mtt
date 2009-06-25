@@ -72,7 +72,7 @@ my $_defaults = {
     save_fast_scratch_files => "config.log",
 
     docommand_timeout_notify_file => undef,
-    docommand_timeout_email_recipient => undef,
+    docommand_timeout_notify_email => undef,
     docommand_timeout_notify_timeout => undef,
 };
 
@@ -122,7 +122,7 @@ sub load {
 
     # Simple parameters
 
-    my @names = qw/max_np textwrap drain_timeout trim_save_successful trim_save_failed trial http_proxy https_proxy ftp_proxy terminate_files pause_files min_disk_free min_disk_free_wait delete_fast_scratch save_fast_scratch_files docommand_timeout_notify_file docommand_timeout_email_recipient docommand_timeout_notify_timeout/;
+    my @names = qw/max_np textwrap drain_timeout trim_save_successful trim_save_failed trial http_proxy https_proxy ftp_proxy terminate_files pause_files min_disk_free min_disk_free_wait delete_fast_scratch save_fast_scratch_files docommand_timeout_notify_file docommand_timeout_notify_email docommand_timeout_notify_timeout/;
     foreach my $t (qw/before after/) {
         foreach my $a (qw/all each/) {
             push(@names, $t . "_" . $a . "_exec");
