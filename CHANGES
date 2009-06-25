@@ -264,3 +264,11 @@ To announce to OMPI core testers:
 
 - Added env_importer. Works similarly to env_module, only it accepts shell
   environment importer files (sh, bash, csh, sh, ksh, zsh, and tcsh)
+
+- Timeout notification
+  - docommand_timeout_notify_file - file name to touch and check while waiting
+    for user to investigate a possibly hanging test 
+  - docommand_timeout_email_recipient - CSV of email receipients to send timeout
+    notification to
+  - docommand_timeout_notify_timeout - time to wait for user to remove "notify
+    file" before moving on to other tests

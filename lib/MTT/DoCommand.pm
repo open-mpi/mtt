@@ -20,7 +20,10 @@ use Socket;
 use Fcntl qw(F_GETFL F_SETFL O_NONBLOCK);
 use MTT::Messages;
 use MTT::Values;
+use MTT::Values::Functions;
 use MTT::Timer;
+use MTT::Mail;
+use MTT::FindProgram;
 use Data::Dumper;
 use File::Spec;
 use Cwd;
@@ -401,7 +404,30 @@ sub Cmd {
             my $over = time() - $end_time;
             if ($over > $last_over) {
                 Verbose("*** Past timeout of $timeout seconds by $over seconds\n");
-                _kill_proc($pid);
+
+                # Handle timeout file
+                my $timeout_sentinel_file   = $MTT::Globals::Values->{docommand_timeout_notify_file};
+                my $timeout_email_recipient = $MTT::Globals::Values->{docommand_timeout_notify_email};
+                my $timeout_notify_timeout  = $MTT::Globals::Values->{docommand_timeout_notify_timeout};
+
+                if (defined($timeout_sentinel_file)) {
+
+                    # Email someone, if an email address has been specified
+                    _do_email_timeout_notification(
+                        $cmd,
+                        $pid,
+                        $over,
+                        $timeout_sentinel_file,
+                        $timeout_email_recipient,
+                        $timeout_notify_timeout,
+                    );
+
+                    $done = 0;
+                    _kill_proc($pid);
+                } else {
+                    _kill_proc($pid);
+                }
+
                 # We don't care about the exit status if we timed out
                 # -- fill it with a bogus value.
                 $ret->{exit_status} = 0;
@@ -411,7 +437,7 @@ sub Cmd {
             }
             $last_over = $over;
 
-            # See if we've over the drain_timeout
+            # See if we're over the drain_timeout
             if ($over > $MTT::Globals::Values->{drain_timeout}) {
                 Verbose("*** Past drain timeout; quitting\n");
                 $done = 0;
@@ -473,6 +499,95 @@ sub Cmd {
 }
 
 #--------------------------------------------------------------------------
+
+# Send an email to notify of a hanging test
+sub _do_email_timeout_notification {
+    my ($cmd, $pid, $over, $timeout_sentinel_file, $timeout_email_recipient, $timeout_notify_timeout) = @_;
+    Debug("_do_email_timeout_notification got @_\n");
+
+    my $timeout;
+    my $end_time;
+    if (defined($timeout_notify_timeout)) {
+        $timeout = MTT::Util::parse_time_to_seconds($timeout_notify_timeout)
+    }
+    if (defined($timeout) && $timeout > 0) {
+        $end_time = time() + $timeout;
+    }
+
+    my $username = getpwuid($<);
+    my $hostname = MTT::Values::Functions::hostname();
+
+    if (defined($timeout_email_recipient)) {
+
+        # Gather a GDB stack trace
+        my $backtrace;
+        my $gdb_cmd;
+        if (FindProgram(qw(gdb))) {
+
+            # Create a temporary GDB command filename which will be
+            # used to grab a stack trace in GDB batch mode
+            my ($gdb_command_fh, $gdb_command_filename) = tempfile();
+            print $gdb_command_fh "backtrace";
+            close($gdb_command_fh);
+
+            # Use ps -Af output to fetch the child pids,
+            # and grab a stack trace from each one
+            my $ps_af = `ps -Af`;
+            foreach (split(/\r|\n/, $ps_af)) {
+                my $l = $_;
+                if ($l =~ /^\w+\s+\b$pid\b\s+(\d+)/) {
+                    $gdb_cmd = "gdb - $1 --command=$gdb_command_filename --batch";
+                    $backtrace .= "\n $gdb_cmd";
+                    $backtrace .= "\n" . `$gdb_cmd`;
+                }
+            }
+
+            # Remove the GDB batch command file
+            unlink($gdb_command_filename);
+
+        } else {
+            Warning("MTT could not locate \"gdb\" to gather a backtrace\n");
+        }
+
+        my $from = "$username\@$hostname";
+        my $subject = "An MTT command has exceeded the timeout limit *ACTION REQUIRED*";
+        MTT::Mail::Send(
+            $subject,
+            $timeout_email_recipient,
+            $from,
+            "The following MTT command (pid $pid) is past the timeout of $timeout seconds by " .
+               "$over seconds:" .
+               "\n\t$cmd\n\n" .
+
+               "Here is a stack trace(s) from the forked a.out processes: " .
+               "\n\t$backtrace\n\n" .
+
+               "To force the MTT client to resume execution, remove the following file:" .
+               "\n\t$timeout_sentinel_file\n\n"
+        );
+    }
+
+    # Touch a sentinel file, and wait for the user to remove it
+    my $duration = $end_time - time();
+    open(TIMEOUT_SENTINEL_FILE, ">$timeout_sentinel_file");
+    while (-e $timeout_sentinel_file) {
+        Verbose("--> A timeout sentinel file was specified: $timeout_sentinel_file\n");
+        Verbose("--> MTT will wait $duration seconds for the file to be removed.\n")
+            if ($duration > 0);
+
+        # Remove the timeout sentinel file, if a timeout notify timeout value is set
+        if (defined($end_time) and time() > $end_time) {
+            unlink($timeout_sentinel_file);
+        }
+
+        my $now = localtime;
+        # CHANGE THIS TO 30!
+        my $sleep_time = 3;
+        Verbose("--> Sleeping for $sleep_time seconds ($now)...\n");
+        sleep($sleep_time);
+    }
+    close(TIMEOUT_SENTINEL_FILE);
+}
 
 # run a Windows command and save the stdout / stderr
 
