@@ -470,7 +470,7 @@ sub _update_openmpi_mca_params_conf_solaris {
 btl_tcp_if_exclude = lo0,sppp0
 
 # Exclude openib BTL, not currently supported
-btl = ^openib
+btl = ^openib,ofud
 ";
 
     my $ret = MTT::Files::SafeWrite(1, $file, $contents . $str);
@@ -1336,7 +1336,7 @@ sub _create_binary_rpm_spec_file {
 #
 
 Summary: A powerful implementaion of MPI
-Name: $product_name
+Name: ${product_name}_${compiler_name}
 Version: $full_ct_version_number
 Release: $build_number
 Vendor: $vendor
@@ -1347,6 +1347,7 @@ AutoReqProv: no
 Distribution: $vendor
 Packager: ompi-clustertools-ext\@sun.com
 BuildRoot: $build_root
+Prefix: $configure_prefix
 
 %description
 Open MPI is a project combining technologies and resources from
