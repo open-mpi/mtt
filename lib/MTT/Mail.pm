@@ -74,11 +74,7 @@ sub Send {
 
     # Invoke the mail agent to send the mail
 
-    my $f = "";
-    $f = "-r \"$from\""
-        if (defined($from));
-        
-    open MAIL, "|$mail_agent $f -s \"$subject\" \"$to\"" ||
+    open MAIL, "|$mail_agent -s \"$subject\" \"$to\"" ||
         die "Could not open pipe to output e-mail\n";
     print MAIL "Subject: $subject\n";
     print MAIL "$body\n";
