@@ -191,7 +191,7 @@ sub RunEngine {
         $MTT::Test::Run::test_executable_abspath = $test_exe_abs;
         $MTT::Test::Run::test_executable_basename = $test_exe_basename;
 
-        $MTT::Test::Run::test_argv = $run->{argv};
+        $MTT::Test::Run::test_argv = MTT::Values::EvaluateString($run->{argv}, $ini, $test_run_full_name);
         my $all_np = MTT::Values::EvaluateString($run->{np}, $ini, $test_run_full_name);
 
         my $save_run_mpi_details = $MTT::Test::Run::mpi_details;
