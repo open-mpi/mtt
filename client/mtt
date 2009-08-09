@@ -495,6 +495,9 @@ foreach my $hash (@ini_list) {
 
     MTT::Lock::Init($ini);
 
+    # execute on_start callback if exists
+    _process_get_value_option("mtt,on_start", $ini);
+
     # Set the logfile, if specified
 
     my $logfile = MTT::Values::Value($ini, "mtt", "log_file", "logfile");
@@ -560,6 +563,9 @@ foreach my $hash (@ini_list) {
     if (!$no_reporter_arg) {
         MTT::Reporter::Finalize();
     }
+
+    # execute on_stop callback if exists
+    _process_get_value_option("mtt,on_stop", $ini);
 
     # Shut down locks
 
