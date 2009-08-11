@@ -2943,4 +2943,10 @@ choke me
     return _check_compile($macro, $c_code, $compiler);
 }
 
+sub get_ini_val {
+	my($section,$param) = @_;
+	my $ini = $MTT::Globals::Values->{iniFile};
+	return MTT::Values::Value($ini, $section, $param);
+}
+
 1;
