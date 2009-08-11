@@ -652,6 +652,9 @@ sub _process_ini_param {
         # Expand all the "include_section" parameters
         $unfiltered = MTT::INI::ExpandIncludeSections($unfiltered);
 
+        # Expand all the "%PREDEFINED_VARS%" parameters
+        $unfiltered = MTT::INI::ExpandPredefinedVars($unfiltered);
+
         # Keep an unfiltered version of the ini file for error checking
         my $filtered = dclone($unfiltered);
 

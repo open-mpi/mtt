@@ -275,6 +275,30 @@ sub ExpandIncludeSections {
     return $ini;
 }
 
+sub ExpandPredefinedVars {
+    my($ini) = @_;
+
+    foreach my $section ($ini->Sections) {
+		foreach my $parameter ($ini->Parameters($section)) {
+			my $val = $ini->val($section, $parameter);
+			if ( $val =~ /%INI_SECTION_NAME%/i ) {
+				my $sect = $section;
+				$sect =~ s/test run://gi;
+				$sect =~ s/test build://gi;
+				$sect =~ s/test get://gi;
+				$sect =~ s/mpi get://gi;
+				$sect =~ s/mpi install://gi;
+				$sect =~ s/mpi details://gi;
+				$sect =~ s/reporter://gi;
+				$val =~ s/%INI_SECTION_NAME%/$sect/g;
+				$ini->delval($section, $parameter);
+				$ini->newval($section, $parameter, $val);
+			}
+		}
+    }
+    return $ini;
+}
+
 # Worker subroutine for recursive ExpandIncludeSections
 sub _expand_include_sections {
     my($ini, $section) = @_;
