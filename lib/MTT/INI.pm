@@ -260,6 +260,12 @@ sub InsertINIPredefines {
             $ini->delval($section, "PROGRAM_NAME");
             $ini->newval($section, "PROGRAM_NAME", $zero);
         }
+
+        if (! defined($ini->val($section, "INI_SECTION_NAME"))) {
+            my $sect = GetSimpleSection($section);
+            $ini->delval($section, "INI_SECTION_NAME");
+            $ini->newval($section, "INI_SECTION_NAME", $sect);
+        }
     }
 
     return $ini;
@@ -271,30 +277,6 @@ sub ExpandIncludeSections {
 
     foreach my $section ($ini->Sections) {
         _expand_include_sections($ini, $section);
-    }
-    return $ini;
-}
-
-sub ExpandPredefinedVars {
-    my($ini) = @_;
-
-    foreach my $section ($ini->Sections) {
-		foreach my $parameter ($ini->Parameters($section)) {
-			my $val = $ini->val($section, $parameter);
-			if ( $val =~ /%INI_SECTION_NAME%/i ) {
-				my $sect = $section;
-				$sect =~ s/test run://gi;
-				$sect =~ s/test build://gi;
-				$sect =~ s/test get://gi;
-				$sect =~ s/mpi get://gi;
-				$sect =~ s/mpi install://gi;
-				$sect =~ s/mpi details://gi;
-				$sect =~ s/reporter://gi;
-				$val =~ s/%INI_SECTION_NAME%/$sect/g;
-				$ini->delval($section, $parameter);
-				$ini->newval($section, $parameter, $val);
-			}
-		}
     }
     return $ini;
 }
