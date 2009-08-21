@@ -714,7 +714,7 @@ sub preg_replace {
     my $ret = $subject;
     $ret =~ s/$pattern/$replacement/;
     Verbose("&preg_replace returning: $ret\n");
-    return $str;
+    return $ret;
 }
 
 #--------------------------------------------------------------------------
