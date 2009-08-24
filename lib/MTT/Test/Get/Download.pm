@@ -40,7 +40,8 @@ sub Get {
         return $ret;
     }
     Debug(">> Download got url: $url\n");
-    my $tarball_name = basename($url);
+    my $tarball_name = Value($ini, $section, "tarball_name");
+    $tarball_name = basename($url) if ( not defined $tarball_name );
 
     # Do we already have this?
     if (-f $tarball_name && !$force) {
