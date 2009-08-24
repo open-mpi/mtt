@@ -117,7 +117,7 @@ sub find_network {
         } elsif ($1 eq "cm") {
             $find_btl = 0;
         } else {
-            Warn("Unknown PML in MPI::OMPI::find_network()!");
+            Warning("Unknown PML in MPI::OMPI::find_network()!");
         }
     }
 

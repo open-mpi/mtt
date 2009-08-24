@@ -698,7 +698,7 @@ sub stringify {
         } elsif ("" eq ref($val)) {
             $str .= $val;
         } else {
-            Warn("Got an argument to &stringify() that was not understood; ignored\n");
+            Warning("Got an argument to &stringify() that was not understood; ignored\n");
         }
     }
     Debug("&stringify returning: $str\n");
