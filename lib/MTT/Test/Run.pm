@@ -350,6 +350,11 @@ sub _do_run {
     # Do not evaluate this one yet
     my $suffix = $mpi_details_exec ? ":$mpi_details_exec" : "";
     my $exec = $ini->val($mpi_details_section, "exec$suffix");
+    if (!defined($exec) || $exec eq "")
+    {
+        Warning("Exec is empty for section $mpi_details_section; Skip.\n");
+        return;
+    }
     while ($exec =~ m/@(.+?)@/) {
         my $val = $ini->val($mpi_details_section, $1);
         if (! $val) {
