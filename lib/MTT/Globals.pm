@@ -90,7 +90,6 @@ sub load {
     # Are there funclet .pm files to load?  If so, do these first so
     # that the funclets can be used by the rest of the fields.
 
-    $Values->{iniFile} = $ini;
 
     my $val = MTT::Values::Value($ini, "MTT", "funclet_files");
     if (defined($val)) {

@@ -2946,8 +2946,21 @@ choke me
 
 sub get_ini_val {
 	my($section,$param) = @_;
-	my $ini = $MTT::Globals::Values->{iniFile};
+	my $ini = $MTT::Globals::Internals->{ini};
+    if (!defined($ini)) {
+       die "MTT::Globals::Internals->{ini} undefined";
+    }
 	return MTT::Values::Value($ini, $section, $param);
 }
 
+our $current_report;
+
+sub get_report_data {
+	my($param) = @_;
+       if (!defined($current_report)) {
+           return undef;
+       }
+	my $val = $current_report->{$param};
+	return $val;
+}
 1;
