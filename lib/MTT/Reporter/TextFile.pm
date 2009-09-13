@@ -506,7 +506,7 @@ sub _convert_timestamps {
 
     foreach my $key (keys(%$report)) {
         if ($key =~ /timestamp/ && $report->{$key} =~ /\d+/) {
-            $report->{$key} = gmtime($report->{$key});
+            $report->{$key . "_human"} = gmtime($report->{$key});
         }
     }
 
