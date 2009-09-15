@@ -2963,4 +2963,28 @@ sub get_report_data {
 	my $val = $current_report->{$param};
 	return $val;
 }
+# generates hostlist for mtt
+# example: create_hostlist("node[1-100],nodeXXX", 16)
+sub create_hostlist {
+	my ($host_list, $cpu_per_node) = @_;
+
+	my @hosts = split(/,/,$host_list);
+
+	my @expanded_hosts = ();
+	for (my $x=0; $x < $#hosts + 1; $x++) {
+		my $h = $hosts[$x];
+		$h=~s/[\[\]]//g;
+		if ($h =~ /^([^\d]+)(\d+)-(\d+)$/) {
+			my $n = $1;
+			for (my $i=$2; $i<=$3;$i++) {
+				push @expanded_hosts, $n . $i . ":" . $cpu_per_node;
+			}
+		} else {
+			push @expanded_hosts, $h . ":" . $cpu_per_node;
+		}
+	}
+	my $ret = join(" ", @expanded_hosts);
+	$ret;
+
+}
 1;
