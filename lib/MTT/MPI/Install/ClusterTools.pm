@@ -31,6 +31,7 @@ use File::Temp qw(tempfile tempdir);
 # Global package variables
 my $major_version_number;
 my $release_version_number;
+my $minor_release_version_number = 0;
 my $build_number;
 my $full_ct_version_number;
 my $ompi_version_number;
@@ -42,6 +43,10 @@ my $package_basedir;
 my $configure_prefix;
 my $solaris_copyright_file;
 my $opensolaris_copyright_file;
+
+# Stupid hardcoded BFD version for VampirTrace
+# 
+my $bfd_version = "2.19";
 
 # Global uname variables
 my $arch = `uname -p`;
@@ -103,14 +108,15 @@ sub Install {
     my $after_make_install  = $ini->val($section, "clustertools_after_make_install");
 
     # Process global clustertools input parameter(s)
-    $major_version_number       = Value($ini, $section, "clustertools_major_version");
-    $release_version_number     = Value($ini, $section, "clustertools_release_version");
-    $full_ct_version_number     = Value($ini, $section, "clustertools_full_version");
-    $product_version            = Value($ini, $section, "clustertools_product_version");
-    $package_name_prefix        = Value($ini, $section, "clustertools_package_name_prefix");
-    $solaris_copyright_file     = Value($ini, $section, "clustertools_solaris_copyright_file");
-    $opensolaris_copyright_file = Value($ini, $section, "clustertools_opensolaris_copyright_file");
-    $package_basedir            = Value($ini, $section, "clustertools_package_basedir");
+    $major_version_number         = Value($ini, $section, "clustertools_major_version");
+    $release_version_number       = Value($ini, $section, "clustertools_release_version");
+    $minor_release_version_number = Value($ini, $section, "clustertools_minor_release_version");
+    $full_ct_version_number       = Value($ini, $section, "clustertools_full_version");
+    $product_version              = Value($ini, $section, "clustertools_product_version");
+    $package_name_prefix          = Value($ini, $section, "clustertools_package_name_prefix");
+    $solaris_copyright_file       = Value($ini, $section, "clustertools_solaris_copyright_file");
+    $opensolaris_copyright_file   = Value($ini, $section, "clustertools_opensolaris_copyright_file");
+    $package_basedir              = Value($ini, $section, "clustertools_package_basedir");
     $package_basedir        = defined($package_basedir) ? $package_basedir : "/opt";
 
     # Grab the internal repository revision number
@@ -136,6 +142,8 @@ sub Install {
     &_update_openmpi_mca_params_conf($mca_params_conf_file);
     if ($os =~ /SunOS/i) {
         &_update_openmpi_mca_params_conf_solaris($mca_params_conf_file);
+    } elsif ($os =~ /linux/i) {
+        &_update_openmpi_mca_params_conf_linux($mca_params_conf_file);
     }
 
     # Get some OMPI-module-specific config arguments
@@ -268,29 +276,71 @@ sub Install {
         $i++;
     }
 
-    # Symlink the special arch labels (e.g., "sparcv9" and "amd64") to the generic "64"
-    # (Someday the special arch labels will be deprecated)
-    my ($lib_label_for_64_bit) = &_setup_architecture_dependent_labels();
-    MTT::DoCommand::Pushdir("$staging_dir/lib");
-    symlink($lib_label_for_64_bit, "64");
-    symlink(".", "32");
-    MTT::DoCommand::Popdir();
+    # Setup ompi_info.sh wrapper
+    my $ompi_info_wrapper_basename = "ompi_info.sh";
+    my $ompi_info_wrapper = "$config->{abs_srcdir}/ompi/tools/ompi_info/$ompi_info_wrapper_basename";
+    foreach my $d ("$staging_dir/bin", "$staging_dir/bin/64", "$staging_dir/instrument/bin", "$staging_dir/instrument/bin/64") {
+        next if (! -d $d);
 
-    # Create a symlink in the "instrument" area only if it exists
-    if (-d "$staging_dir/instrument/lib") {
-        MTT::DoCommand::Pushdir("$staging_dir/instrument/lib");
+        MTT::DoCommand::Pushdir($d);
+
+        # Add a ".bin" extension to the binary ompi_info executable, and
+        # install the new ompi_info(.sh) wrapper script
+        if (-x "ompi_info") {
+            MTT::DoCommand::Cmd(1, "mv ompi_info ompi_info.bin");
+            MTT::DoCommand::Cmd(1, "cp $ompi_info_wrapper $ompi_info_wrapper_basename");
+            unlink("ompi_info");
+            symlink($ompi_info_wrapper_basename, "ompi_info");
+        }
+
+        MTT::DoCommand::Popdir();
+    }
+
+    # Setup symlinks to 32/64-bit lib directories
+    my ($lib_label_for_64_bit) = &_setup_architecture_dependent_labels();
+    foreach my $d ("$staging_dir/lib", "$staging_dir/instrument/lib") {
+        next if (! -d $d);
+
+        # Symlink the special arch labels (e.g., "sparcv9" and "amd64") to the generic "64"
+        # (Someday the special arch labels will be deprecated)
+        MTT::DoCommand::Pushdir($d);
         symlink($lib_label_for_64_bit, "64");
         symlink(".", "32");
         MTT::DoCommand::Popdir();
     }
 
-    # Create wrapper data files
-    my $wrapper_destdir = "$staging_dir/share/openmpi";
-    &_create_wrapper_data_files($wrapper_destdir, $compiler_name, $wrapper_rpath, $greek, $wrapper_hardcode_prefix);
+    # The bin dir is now being split into two in the case where a user
+    # does not have certain 32-bit compiler support libs
+    foreach my $d ("$staging_dir/bin", "$staging_dir/instrument/bin") {
+        next if (! -d $d);
 
-    # Copy over the examples directory to the install area
+        MTT::DoCommand::Pushdir($d);
+        symlink(".", "32");
+        MTT::DoCommand::Popdir();
+    }
+
+    # Create the custom wrapper data files
+    foreach my $d ("$staging_dir/share/openmpi", "$staging_dir/instrument/share/openmpi") {
+        next if (! -d $d);
+
+        # Create main MPI wrapper data files
+        my $openmpi_wrapper_destdir = $d;
+        &_create_openmpi_wrapper_data_files($openmpi_wrapper_destdir, $compiler_name, $wrapper_rpath, $greek, $wrapper_hardcode_prefix);
+    }
+
+    # Adjust VampirTrace wrapper data files
+    # TURN OFF FOR BUILD 09H. LEGAL MAY NOT ALLOW US TO SHIP LIBBFD.
+    # my $vampirtrace_wrapper_destdir = "$staging_dir/share/vampirtrace";
+    # my $original_vampirtrace_wrapper_data_dir = "$config->{abs_srcdir}/ompi/contrib/vt/vt/tools/compwrap";
+    # &_create_vampirtrace_wrapper_data_files($vampirtrace_wrapper_destdir, $compiler_name, $original_vampirtrace_wrapper_data_dir);
+
     my $examples_dir = "$config->{abs_srcdir}/examples";
-    MTT::DoCommand::Cmd(1, "cp -r $examples_dir $staging_dir");
+    foreach my $d ($staging_dir, "$staging_dir/instrument") {
+        next if (! -d $d);
+
+        # Copy over the examples directory to the install area
+        MTT::DoCommand::Cmd(1, "cp -r $examples_dir $d");
+    }
 
     # Copy over the mpi.d file to the install area
     if ($os =~ /SunOS/i) {
@@ -303,11 +353,29 @@ sub Install {
     # Copy over the libC libraries needed for C++ programs (such as ompi_info)
     # to dynamically load
     if ($compiler_name =~ /sun|sos/i) {
-        my $libc_libraries = _find_sun_studio_libc_libraries();
+        my $libc_libraries;
+
+        # 32-bit
+        $libc_libraries = _find_sun_studio_libc_libraries();
         foreach my $lib (@$libc_libraries) {
             MTT::DoCommand::Cmd(1, "cp $lib $staging_dir/lib");
         }
+
+        # 64-bit
+        $libc_libraries = _find_sun_studio_libc_libraries("64");
+        foreach my $lib (@$libc_libraries) {
+            MTT::DoCommand::Cmd(1, "cp $lib $staging_dir/lib/64");
+        }
     }
+
+    # Deliver shared BFD libraries
+    # (Sun Studio and PGI do not use the BFD library)
+    #
+    # TURN OFF FOR BUILD 09H. LEGAL MAY NOT ALLOW US TO SHIP LIBBFD.
+    # if ($compiler_name !~ /sun|sos|pgi/i) {
+    #     MTT::DoCommand::Cmd(1, "cp /usr/local/lib64/libbfd-$bfd_version.so $staging_dir/lib/64");
+    #     MTT::DoCommand::Cmd(1, "cp /usr/local/lib/libbfd-$bfd_version.so $staging_dir/lib");
+    # }
 
     # Create packages
     if ($create_packages) {
@@ -478,6 +546,24 @@ btl = ^openib,ofud
     return $ret;
 }
 
+# Append some special ClusterTools settings to mca_params.conf (for Linux only)
+sub _update_openmpi_mca_params_conf_linux {
+    my ($file) = @_;
+
+    my $contents = MTT::Files::Slurp($file);
+    my $str = "
+# bind to socket
+orte_process_binding = socket
+
+# map bysocket
+rmaps_base_schedule_policy = socket
+";
+
+    my $ret = MTT::Files::SafeWrite(1, $file, $contents . $str);
+
+    return $ret;
+}
+
 # Setup architecture dependent labels for 64-bit (e.g., v9 and amd64)
 sub _setup_architecture_dependent_labels {
 
@@ -502,16 +588,6 @@ sub _setup_architecture_dependent_labels {
             $include_label = "amd64";
             $secondary_compiler_args = "-xarch=amd64;-xarch=amd64a;-xarch=native64;-xarch=generic64;-xtarget=native64;-xtarget=generic64;-m64";
         }
-
-    # Intel is the oddball compiler that defaults to 32-bit
-    } elsif ($compiler_name =~ /intel/i) {
-        $primary_wordsize = 32;
-        $secondary_wordsize = 64;
-
-        $lib_label = "lib64";
-        $include_label = "64";
-        $primary_compiler_args = "";
-        $secondary_compiler_args = "-m64";
 
     # GCC AND SUN STUDIO BOTH DEFAULT TO 64-BIT ON LINUX,
     # BUT IF THIS FACT CHANGES - SO TOO WILL THE BELOW BLOCK
@@ -546,9 +622,9 @@ sub _setup_architecture_dependent_labels {
 #   2. Compiler name: "sun" or "gnu"
 #   3. -R (or -Wl,-rpath) <PATH> to be used within the wrapper data files
 #   4. version for wrapper .txt files
-sub _create_wrapper_data_files {
+sub _create_openmpi_wrapper_data_files {
     my ($destdir, $compiler_name, $installdir, $version, $wrapper_hardcode_prefix) = @_;
-    Debug("_create_wrapper_data_files: got @_\n");
+    Debug("_create_openmpi_wrapper_data_files: got @_\n");
 
     # Ensure that the destination directory exists
     MTT::Files::mkdir($destdir);
@@ -676,7 +752,16 @@ sub _create_wrapper_data_files {
         $common_libs .= " -lutil";
         # -lpthread is needed if using --without-threads!
         $common_libs .= " -lpthread";
-    }
+    } 
+    
+    # Fixes CR 6855347 (Warning in Intel compilers)
+    #   [rolfv@login1 examples]$ mpicc -m64 connectivity_c.c
+    #   /opt/intel/Compiler/11.0/083/lib/intel64/libimf.so: warning: feupdateenv is not implemented and will always fail
+
+    # On second thought, we need to investigate this:
+    # if ($compiler_name =~ /intel/i) {
+    #     $common_libs .= " -limf -lsvml";
+    # }
 
     $wrapper_data->{"cc"}->{libs}  = "$common_libs";
     $wrapper_data->{"CC"}->{libs}  = "$common_libs -lmpi_cxx";
@@ -723,7 +808,6 @@ sub _create_wrapper_data_files {
 
         $compiler_flags_gfortran_32 = "-I$wrapper_prefix/lib";
         $compiler_flags_gfortran_64 = "-I$wrapper_prefix/lib/$lib_label_for_64_bit";
-
     }
 
     $linker_flags_32 = "$dash_r/opt/mx/lib " .
@@ -770,6 +854,11 @@ sub _create_wrapper_data_files {
     # e.g., cc ... -m32 -m32)
     $wrapper_data->{32}->{Linux}->{compiler_flags} = "";
     $wrapper_data->{64}->{Linux}->{compiler_flags} = "";
+
+    # Fixes CR 6735316
+    if ($compiler_name =~ /sun|sos/i) {
+        $wrapper_data->{"f90"}->{"SunOS"}->{compiler_flags} = "-xalias=actual";
+    }
 
     # Template for the wrapper data files
     my $template = "#
@@ -859,10 +948,12 @@ libdir=%s
                     $wrapper_data->{$primary_wordsize}->{compiler_args},
                     @top_params,
                     $wrapper_data->{$primary_wordsize}->{$os}->{compiler_flags} . " " .
-                      $wrapper_data->{$underlying_compiler}->{$primary_wordsize}->{compiler_flags},
+                      $wrapper_data->{$underlying_compiler}->{$primary_wordsize}->{compiler_flags} . " " .
+                      $wrapper_data->{$compiler}->{$os}->{compiler_flags},
                     $wrapper_data->{$compiler}->{libs},
                     $wrapper_data->{$primary_wordsize}->{linker_flags} . " " .
-                      $wrapper_data->{$underlying_compiler}->{$primary_wordsize}->{linker_flags},
+                      $wrapper_data->{$underlying_compiler}->{$primary_wordsize}->{linker_flags} . " "
+                      ,
                     $wrapper_data->{$primary_wordsize}->{includedir},
                     $wrapper_data->{$primary_wordsize}->{libdir},
 
@@ -870,7 +961,8 @@ libdir=%s
                     $wrapper_data->{$secondary_wordsize}->{compiler_args},
                     @top_params,
                     $wrapper_data->{$secondary_wordsize}->{$os}->{compiler_flags} . " " .
-                      $wrapper_data->{$underlying_compiler}->{$secondary_wordsize}->{compiler_flags},
+                      $wrapper_data->{$underlying_compiler}->{$secondary_wordsize}->{compiler_flags} . " " .
+                      $wrapper_data->{$compiler}->{$os}->{compiler_flags},
                     $wrapper_data->{$compiler}->{libs},
                     $wrapper_data->{$secondary_wordsize}->{linker_flags} . " " .
                       $wrapper_data->{$underlying_compiler}->{$secondary_wordsize}->{linker_flags},
@@ -882,6 +974,39 @@ libdir=%s
                 MTT::Files::SafeWrite(1, "$destdir/$prefix$compiler$filename_label-wrapper-data.txt", $contents);
             }
         }
+    }
+}
+
+sub _create_vampirtrace_wrapper_data_files {
+    my ($vampirtrace_wrapper_destdir, $compiler_name, $original_vampirtrace_wrapper_data_dir) = @_;
+    Debug("_create_vampirtrace_wrapper_data_files: got @_\n");
+
+    if ($compiler_name =~ /sun|sos|pgi/i) {
+        Verbose("$compiler_name does not use libbfd, so we do not need to customize the " .
+                "VampirTrace wrapper compilers.");
+        return;
+    }
+
+    # Ensure that the destination directory exists
+    MTT::Files::mkdir($vampirtrace_wrapper_destdir);
+
+    my @wrapper_data_files = (
+        "vtcc-wrapper-data.txt",
+        "vtcxx-wrapper-data.txt",
+        "vtf77-wrapper-data.txt",
+        "vtf90-wrapper-data.txt",
+    );
+
+    my $contents;
+    foreach my $wrapper_data_file (@wrapper_data_files) {
+        $contents = MTT::Files::Slurp("$original_vampirtrace_wrapper_data_dir/$wrapper_data_file");
+
+        # Append -lbfd-$bfd_version to this line:
+        # libs= -lotf  -lz    -liberty    -ldl 
+        $contents =~ s/(\nlibs\=)/$1 -lbfd-$bfd_version/;
+
+        # Write out the file
+        MTT::Files::SafeWrite(1, "$vampirtrace_wrapper_destdir/$wrapper_data_file", $contents);
     }
 }
 
@@ -1222,8 +1347,8 @@ sub create_linux_packages {
                               "%%{NAME}-" .
                               "%%{VERSION}-" .
                               "%%{RELEASE}." .
-                              "%%{ARCH}-" .
-                              "built-with-$compiler_name.rpm\" " .
+                              "%%{ARCH}" .
+                              ".rpm\" " .
                   # RPM scratch area
                   " --define=\"_topdir $temp_dir\"" .
                   # Override the below built-in macro because it does annoying
@@ -1302,7 +1427,7 @@ sub create_tarball {
     }
 
     # Name the tarball file similarly to the RPM file name
-    my $tarfile_name = "$product_name-$full_ct_version_number-$build_number.$arch-built-with-$compiler_name.tar";
+    my $tarfile_name = "${product_name}_${compiler_name}-$full_ct_version_number-$build_number.$arch.tar";
 
     MTT::DoCommand::Cmd(1, "tar cf $tarfile_name $dir_arguments");
     MTT::DoCommand::Cmd(1, "gzip $tarfile_name");
@@ -1328,6 +1453,15 @@ sub _create_binary_rpm_spec_file {
             $files_rpm_macro .= "\n%attr(-, root, root) $configure_prefix/$dir";
         }
     }
+
+    # Ensure that both of these dirs are removed with rpm --erase 
+    #   /opt/SUNWhpc/HPC8.2/
+    #   /opt/SUNWhpc/HPC8.2/<compiler_name>
+    #
+    # NOTE: THIS VARIABLE LINE WILL NEED TO BE REMOVED IF WE STOP USING THE
+    # <compiler_name> SUBDIR
+    my $configure_prefix_dirname1 = dirname(dirname($configure_prefix));
+    my $configure_prefix_dirname2 = dirname($configure_prefix);
 
     my $contents = "
 #
@@ -1371,11 +1505,13 @@ $files_rpm_macro
 %config $configure_prefix/etc
 
 # Make sure prefix is removed in an \"rpm --erase\" operation
+%dir $configure_prefix_dirname1
+%dir $configure_prefix_dirname2
 %dir $configure_prefix
 
 ";
 
-    my $ret = "$rpm_top_dir/SPECS/$product_name-$full_ct_version_number-$build_number-binary.spec";
+    my $ret = "$rpm_top_dir/SPECS/${product_name}_${compiler_name}-$full_ct_version_number-$build_number-binary.spec";
 
     MTT::Files::SafeWrite(1, $ret, $contents);
     return $ret;
@@ -1421,7 +1557,7 @@ sub _create_source_rpm_spec_file {
 #############################################################################
 
 Summary: A powerful implementaion of MPI
-Name: $product_name
+Name: ${product_name}_${compiler_name}
 Version: $full_ct_version_number
 # Certain characters (e.g., '-') are not allowed for the Release field
 Release: $build_number
@@ -1481,7 +1617,7 @@ $build_section
 # %config etc
 ";
 
-    my $ret = "$rpm_top_dir/SPECS/$product_name-$full_ct_version_number-$build_number-source.spec";
+    my $ret = "$rpm_top_dir/SPECS/${product_name}_${compiler_name}-$full_ct_version_number-$build_number-source.spec";
 
     MTT::Files::SafeWrite(1, $ret, $contents);
     return $ret;
@@ -1628,6 +1764,7 @@ sub _setup_installer {
 # Return a list of .so files needed for Sun Studio
 # C++ programs (e.g., ompi_info)
 sub _find_sun_studio_libc_libraries {
+    my ($subdir) = @_;
     my $suncc = FindProgram(qw(suncc));
     my $dirname_suncc = dirname($suncc);
 
@@ -1637,7 +1774,9 @@ sub _find_sun_studio_libc_libraries {
     #   libCrun.so -> libCrun.so.1
     #
     my @libs = ("libCrun*1", "libCstd*1", "libmtsk*1");
-    my @dirs = ("$dirname_suncc/../prod/usr/lib", "$dirname_suncc/../rtlibs", "$dirname_suncc/../lib");
+    my @dirs = ("$dirname_suncc/../prod/usr/lib/$subdir",
+                "$dirname_suncc/../rtlibs/$subdir",
+                "$dirname_suncc/../lib/$subdir");
 
     my @ret;
     foreach my $dirname (@dirs) {
