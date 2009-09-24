@@ -1291,6 +1291,9 @@ sub env_max_hosts {
 #--------------------------------------------------------------------------
 
 # Find the hosts that we can run with
+# env_hosts(1) - returns uniq host list
+# env_hosts(2) - returns uniq host list, keeps order of list items
+#
 sub env_hosts {
     my ($want_unique) = @_;
     Debug("&env_hosts: want_unique=$want_unique\n");
@@ -1329,15 +1332,24 @@ sub env_hosts {
     if ($want_unique) {
         my @h = split(/,/, $ret);
         my %hmap;
+		my @hlist;
         foreach my $h (@h) {
+			push( @hlist, $h ) if (!defined($hmap{$h}));
             $hmap{$h} = 1;
         }
+
+		# Do we want to keep order of result?
+		if ( $want_unique == 2 ) {
+			$ret = join(',', @hlist);
+		} else {
         $ret = join(',', keys(%hmap));
+		}
     }
 
     Debug("&env_hosts returning: $ret\n");
     return "$ret";
 }
+
 
 #--------------------------------------------------------------------------
 
@@ -2955,6 +2967,7 @@ sub get_ini_val {
 
 our $current_report;
 
+# returns a value from report object
 sub get_report_data {
 	my($param) = @_;
        if (!defined($current_report)) {
@@ -2963,8 +2976,11 @@ sub get_report_data {
 	my $val = $current_report->{$param};
 	return $val;
 }
+
 # generates hostlist for mtt
-# example: create_hostlist("node[1-100],nodeXXX", 16)
+# Example: &create_hostlist("node[1-3],node7", 16)
+# Result: node1:16 node2:16 node3:16 node7:16
+
 sub create_hostlist {
 	my ($host_list, $cpu_per_node) = @_;
 
@@ -2987,4 +3003,27 @@ sub create_hostlist {
 	$ret;
 
 }
+
+# Generate a hash value from function parameters
+sub generate_md5_hash {
+    eval {
+        require Digest::MD5;
+        import Digest::MD5 'md5_hex'
+    };
+    if ($@) { # ups, no Digest::MD5
+        require Digest::Perl::MD5;
+        import Digest::Perl::MD5 'md5_hex'
+    }
+
+    my $str = shift @_;
+
+    for my $attr (@_) {
+        $str .= "_" . $attr;
+    }
+
+    Debug("generate_md5_hash string is $str\n");
+
+    return md5_hex($str);
+}
+
 1;

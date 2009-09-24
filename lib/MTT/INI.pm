@@ -242,23 +242,27 @@ sub InsertINIPredefines {
         $file = undef;
     }
 
-    my $zero;
 
     # Convert relative paths to absolute paths and expand "~"
     $file = File::Spec->rel2abs(glob $file);
-    $zero = File::Spec->rel2abs(glob $0);
+    my $zero = File::Spec->rel2abs(glob $0);
+	my $zero_dir = dirname($zero);
+
 
     foreach my $section ($ini->Sections) {
         if (! defined($ini->val($section, "INI_NAME"))) {
             $ini->delval($section, "INI_NAME");
             $ini->newval($section, "INI_NAME", $file);
         }
-    }
 
-    foreach my $section ($ini->Sections) {
         if (! defined($ini->val($section, "PROGRAM_NAME"))) {
             $ini->delval($section, "PROGRAM_NAME");
             $ini->newval($section, "PROGRAM_NAME", $zero);
+        }
+
+        if (! defined($ini->val($section, "PROGRAM_DIR"))) {
+            $ini->delval($section, "PROGRAM_DIR");
+            $ini->newval($section, "PROGRAM_DIR", $zero_dir);
         }
 
         if (! defined($ini->val($section, "INI_SECTION_NAME"))) {
