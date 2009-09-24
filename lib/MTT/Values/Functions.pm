@@ -3026,4 +3026,23 @@ sub generate_md5_hash {
     return md5_hex($str);
 }
 
+# Run shell commands as a script, i.e
+#
+# [mtt]
+# myscript=<<EOT
+# #!/bin/sh
+# pwd
+# ls
+# EOT
+# on_stop=&shell_script("mtt",myscript)
+# 
+#
+
+sub shell_script {
+	my ($cmd_section, $cmd_param) = @_;
+	my $cmd = &get_ini_val($cmd_section, $cmd_param);
+	my $x = MTT::DoCommand::CmdScript(1, $cmd);
+	return $x->{result_stdout};
+}
+
 1;

@@ -797,7 +797,7 @@ sub CmdScript {
     $cmds =~ s/\"$//
         if ($cmds =~ s/^\"//);
 
-    print $fh ":\n$cmds\n";
+    print $fh "$cmds\n";
     close($fh);
     chmod(0700, $filename);
 
