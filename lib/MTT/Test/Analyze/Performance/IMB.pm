@@ -22,10 +22,12 @@ sub Analyze {
 
     my @lines = split(/\n|\r/, $result_stdout);
 
+    $report->{test_name} = "unknown";
+
     my $line;
     while (defined($line = shift(@lines))) {
 
-        if ($line =~ /benchmarking\s+(\w+)/i) {
+        if ($line =~ /\#\sBenchmarking\s+(\w+)/i) {
             $report->{test_name} = $1;
             last;
         }
@@ -134,6 +136,15 @@ sub Analyze {
             "{" . join(",", map { "0" } (1..$rows)) . "}";
     }
 
+    my $imb_version = "unknown";
+
+    if ($result_stdout =~ m/Benchmark Suite V([\d\.]+)/) {
+        $imb_version = $1;
+    }
+
+    $report->{suiteinfo}->{suite_name} = "imb";
+    $report->{suiteinfo}->{suite_version} = $imb_version;
+
     return $report;
 }
 
@@ -141,6 +152,14 @@ sub Analyze {
 sub trim {
     s/^\s+|\s+$//;
     return $_;
+}
+
+sub PreReport
+{
+    my ($phase, $section, $report) = @_;
+
+    $report->{test_case} = $report->{test_name};
+    $report->{test_name} = "IMB_MPI1";
 }
 
 1;

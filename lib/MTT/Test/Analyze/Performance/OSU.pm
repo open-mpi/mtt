@@ -95,7 +95,26 @@ sub Analyze {
         if ($bandwidth);
     $report->{message_size}  = "{" . join(",", @bytes) . "}";
 
+    my $osu_version = "unknown";
+
+    if ($result_stdout =~ m/Version\s([\d\.]+)/) {
+        $osu_version = $1;
+    }
+    if ($result_stdout =~ m/OSU.+v([\d\.]+)[\n\r]/) {
+        $osu_version = $1;
+    }
+
+    $report->{suiteinfo}->{suite_name} = "osu";
+    $report->{suiteinfo}->{suite_version} = $osu_version;
+
     return $report;
+}
+
+sub PreReport
+{
+    my ($phase, $section, $report) = @_;
+
+    $report->{test_case} = $report->{test_name};
 }
 
 1;

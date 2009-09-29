@@ -1,0 +1,29 @@
+#
+# Copyright (c) 2009 Voltaire
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
+
+application: vbench-dev
+version: 4
+runtime: python
+api_version: 1
+
+handlers:
+- url: /favicon.ico
+  static_files: templates/images/favicon.ico
+  upload: templates/images/favicon.ico
+
+- url: /images
+  static_dir: templates/images
+
+- url: /admin/.*
+  script: admin/admin.py
+  login: admin
+
+- url: /.*
+  script: main.py
+
