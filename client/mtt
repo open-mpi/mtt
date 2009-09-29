@@ -496,7 +496,8 @@ foreach my $hash (@ini_list) {
     MTT::Lock::Init($ini);
 
     # execute on_start callback if exists
-    _process_get_value_option("mtt,on_start", $ini);
+	_do_step($ini, "mtt", "before_mtt_start_exec");
+
 
     # Set the logfile, if specified
 
@@ -565,7 +566,7 @@ foreach my $hash (@ini_list) {
     }
 
     # execute on_stop callback if exists
-    _process_get_value_option("mtt,on_stop", $ini);
+	_do_step($ini, "mtt", "after_mtt_start_exec");
 
     # Shut down locks
 
@@ -736,4 +737,14 @@ sub _print_value {
     } else {
         print "$value\n";
     }
+}
+
+# Run cmd, specified in the non Test* sections
+sub _do_step {
+	my ($ini, $section,$param) = @_;
+	my $cmd = $ini->val($section, $param);
+	if ( defined $cmd ) {
+		my $x = MTT::DoCommand::RunStep(1, $cmd, -1, $ini, $section, $param);
+		Verbose("  Output: $x->{result_stdout}\n")
+	}
 }

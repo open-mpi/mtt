@@ -794,9 +794,10 @@ sub CmdScript {
     # protects against a common funclet syntax error.
     # We can safely do this since "foo" (literally, with
     # quotes included) would never be a valid shell command.
-    $cmds =~ s/\"$//
-        if ($cmds =~ s/^\"//);
+    $cmds =~ s/\"$// if ($cmds =~ s/^\"//);
 
+
+	print $fh ":\n" if ($cmds !~ /^\s*\#\!/); # no shell specified - use default
     print $fh "$cmds\n";
     close($fh);
     chmod(0700, $filename);

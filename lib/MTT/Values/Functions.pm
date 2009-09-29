@@ -3038,7 +3038,7 @@ sub generate_md5_hash {
 # 
 #
 
-sub shell_script {
+sub executable {
 	my ($cmd_section, $cmd_param) = @_;
 	my $cmd = &get_ini_val($cmd_section, $cmd_param);
 	my $x = MTT::DoCommand::CmdScript(1, $cmd);
