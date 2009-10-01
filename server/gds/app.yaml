@@ -8,7 +8,7 @@
 #
 
 application: vbench-dev
-version: 4
+version: 6
 runtime: python
 api_version: 1
 

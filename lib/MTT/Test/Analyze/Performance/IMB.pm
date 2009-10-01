@@ -27,7 +27,7 @@ sub Analyze {
     my $line;
     while (defined($line = shift(@lines))) {
 
-        if ($line =~ /\#\sBenchmarking\s+(\w+)/i) {
+        if ($line =~ /benchmarking\s+(\w+)/i) {
             $report->{test_name} = $1;
             last;
         }
@@ -158,7 +158,7 @@ sub PreReport
 {
     my ($phase, $section, $report) = @_;
 
-    $report->{test_case} = $report->{test_name};
+    $report->{testphase}->{test_case} = $report->{test_name};
     $report->{test_name} = "IMB_MPI1";
 }
 

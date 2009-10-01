@@ -114,7 +114,7 @@ sub PreReport
 {
     my ($phase, $section, $report) = @_;
 
-    $report->{test_case} = $report->{test_name};
+    $report->{testphase}->{test_case} = $report->{test_name};
 }
 
 1;

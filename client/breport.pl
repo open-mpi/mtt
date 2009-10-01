@@ -770,7 +770,7 @@ sub create_sheet_view
                     # draw border around graph
                     box_axis => 0,
                     # put legend to the centre right of chart 
-                    legend_placement =>'BL',
+                    legend_placement =>'BC',
                     # width of lines
                     line_width => 2,
                     # Show the grid
