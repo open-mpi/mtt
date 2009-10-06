@@ -15,23 +15,20 @@ use Getopt::Long;
 
 sub Collect_Hosts_Info
 {
-    my ($r_cpu,$r_mem,@hosts)=@_;
-    foreach my $host (@hosts){
-    my $tmp_cpu_info=`ssh $host \"cat /proc/cpuinfo\" | egrep \'processor\\s*:\' |wc -l`;
-    chomp $tmp_cpu_info;
-    push (@$r_cpu,$tmp_cpu_info);
-    my $tmp_mem_info=`ssh $host \"cat /proc/meminfo  |grep MemTotal\"`;
-    chomp $tmp_mem_info;
-    if($tmp_mem_info=~/(\d+)/){
-        $tmp_mem_info=$1;
-    }
-    else {
-      print ("Can't get info from $host\n");
-       exit;
-    }
-    push (@$r_mem,$tmp_mem_info);
-}
-    
+	my ($r_cpu,$r_mem,@hosts)=@_;
+	foreach my $host (@hosts){
+		my $tmp_cpu_info=`ssh $host \"cat /proc/cpuinfo\" | egrep \'processor\\s*:\' |wc -l`;
+		chomp $tmp_cpu_info;
+		push (@$r_cpu,$tmp_cpu_info);
+		my $tmp_mem_info=`ssh $host \"cat /proc/meminfo  |grep MemTotal\"`;
+		chomp $tmp_mem_info;
+		if($tmp_mem_info=~/(\d+)/){
+			$tmp_mem_info=$1;
+		} else {
+			die ("Error: Can't get info from $host\n");
+		}
+		push (@$r_mem,$tmp_mem_info);
+	}
     
 }
 
@@ -110,7 +107,12 @@ sub usage{
     my $help = "Usage: $myname [-l] <-h host1,host2,host3> <-t /path/to/HPL.dat>
 
 		where
-			-l - generate HPL.dat with big sized problem definiton
+			-l 					- generate HPL.dat with big sized problem definiton
+			-h host1,host2,...	- Generate HPL config for specified hosts
+
+			-np <int>			- Generate HPL config for specified NP and MEM
+			-m <m>
+			-t <filename>		- output /path/to/HPL.dat
 
 	";
 	die "$help\n";
@@ -121,27 +123,40 @@ sub usage{
 my $hosts;
 my $dat_file = "/tmp/HPL.dat";
 my $opt_long;
+my $opt_np;
+my $opt_mem;
 
-GetOptions( 'l' => \$opt_long, 'h|hosts=s' => \$hosts,'target|t=s' =>\$dat_file) or die "Incorrect usage!\n";
+GetOptions( 
+	'l' => \$opt_long, 
+	'h|hosts=s' => \$hosts,
+	'target|t=s' =>\$dat_file,
+	'np=i' => \$opt_np,
+	'm=i' => \$opt_mem,
+) or die "Incorrect usage!\n";
 
-usage() if (not defined $hosts);
+usage() if (not (defined $hosts or defined ($opt_mem and $opt_np)));
 
 
 
 
-my @arr_hosts=split(/\,/,$hosts);
 my (@cpuinfo,@meminfo);
 
+if ( $opt_mem and $opt_np ) {
+	push @cpuinfo, $opt_np;
+	push @meminfo, $opt_mem;
+} else {
+	my @arr_hosts=split(/\,/,$hosts);
+	Collect_Hosts_Info(\@cpuinfo,\@meminfo,@arr_hosts);
+}
 
-Collect_Hosts_Info(\@cpuinfo,\@meminfo,@arr_hosts);
+my $np=0;
+foreach my $cpu (@cpuinfo) {
+	$np+=$cpu;
+}
 print ("meminfo=@meminfo\n");
 print ("cpuinfo=@cpuinfo\n");
 
 
-my $np=0;
-foreach my $cpu (@cpuinfo) {
-    $np+=$cpu;
-}
 
 my $ram_per_core=($meminfo[0]/($cpuinfo[0]*1000000));
 if($ram_per_core >= 0.9) {
