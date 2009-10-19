@@ -62,6 +62,7 @@ To announce to OMPI core testers:
     - &decrement(n) - decrement the integer or character by "n"
     - &get_compiler_vendor() - Determine the compiler vendor using
                                predefined compiler C macros
+    - &cmd_pid() - return pid of last DoCommand::Cmd
 
 - Allow mpi_get_name, test_get_name, and test_build_name fields to
   accept the special value "all", meaning that they'll use all
@@ -272,3 +273,6 @@ To announce to OMPI core testers:
     notification to
   - docommand_timeout_notify_timeout - time to wait for user to remove "notify
     file" before moving on to other tests
+
+- docommand_timeout_backtrace_program - use either "padb" or "gdb" to collect
+  stack traces of timed out tests

@@ -305,6 +305,7 @@ sub Cmd {
 
         # Return the pid
         $ret->{pid} = $pid;
+        $MTT::DoCommand::pid = $pid;
 
     } else {
         # For no_execute, just print the command
@@ -340,6 +341,7 @@ sub Cmd {
     # Parent
 
     my (@out, @err);
+    my ($backtrace, $got_backtrace);
     my ($rin, $rout);
     my $done = $merge_output ? 1 : 2;
 
@@ -409,6 +411,15 @@ sub Cmd {
                 my $timeout_sentinel_file   = $MTT::Globals::Values->{docommand_timeout_notify_file};
                 my $timeout_email_recipient = $MTT::Globals::Values->{docommand_timeout_notify_email};
                 my $timeout_notify_timeout  = $MTT::Globals::Values->{docommand_timeout_notify_timeout};
+                my $timeout_backtrace_program = $MTT::Globals::Values->{docommand_timeout_backtrace_program};
+
+                # If a backtrace program was specified, use it
+                if (defined($timeout_backtrace_program) and !$got_backtrace) {
+                    $backtrace = _get_backtrace($timeout_backtrace_program, $pid);
+
+                    # Do not collect a backtrace twice
+                    $got_backtrace = 1;
+                }
 
                 if (defined($timeout_sentinel_file)) {
 
@@ -420,7 +431,9 @@ sub Cmd {
                         $timeout_sentinel_file,
                         $timeout_email_recipient,
                         $timeout_notify_timeout,
+                        $backtrace,
                     );
+
 
                     $done = 0;
                     _kill_proc($pid);
@@ -495,6 +508,10 @@ sub Cmd {
     $ret->{result_stdout} = join('', @out);
     $ret->{result_stderr} = join('', @err),
         if (!$merge_output);
+
+    # Tack on a backtrace, if we got one
+    $ret->{result_stdout} .= $backtrace;
+
     return $ret;
 }
 
@@ -502,7 +519,7 @@ sub Cmd {
 
 # Send an email to notify of a hanging test
 sub _do_email_timeout_notification {
-    my ($cmd, $pid, $over, $timeout_sentinel_file, $timeout_email_recipient, $timeout_notify_timeout) = @_;
+    my ($cmd, $pid, $over, $timeout_sentinel_file, $timeout_email_recipient, $timeout_notify_timeout, $backtrace) = @_;
     Debug("_do_email_timeout_notification got @_\n");
 
     my $timeout;
@@ -518,36 +535,6 @@ sub _do_email_timeout_notification {
     my $hostname = MTT::Values::Functions::hostname();
 
     if (defined($timeout_email_recipient)) {
-
-        # Gather a GDB stack trace
-        my $backtrace;
-        my $gdb_cmd;
-        if (FindProgram(qw(gdb))) {
-
-            # Create a temporary GDB command filename which will be
-            # used to grab a stack trace in GDB batch mode
-            my ($gdb_command_fh, $gdb_command_filename) = tempfile();
-            print $gdb_command_fh "backtrace";
-            close($gdb_command_fh);
-
-            # Use ps -Af output to fetch the child pids,
-            # and grab a stack trace from each one
-            my $ps_af = `ps -Af`;
-            foreach (split(/\r|\n/, $ps_af)) {
-                my $l = $_;
-                if ($l =~ /^\w+\s+\b$pid\b\s+(\d+)/) {
-                    $gdb_cmd = "gdb - $1 --command=$gdb_command_filename --batch";
-                    $backtrace .= "\n $gdb_cmd";
-                    $backtrace .= "\n" . `$gdb_cmd`;
-                }
-            }
-
-            # Remove the GDB batch command file
-            unlink($gdb_command_filename);
-
-        } else {
-            Warning("MTT could not locate \"gdb\" to gather a backtrace\n");
-        }
 
         my $from = "$username\@$hostname";
         my $subject = "An MTT command has exceeded the timeout limit *ACTION REQUIRED*";
@@ -587,6 +574,65 @@ sub _do_email_timeout_notification {
         sleep($sleep_time);
     }
     close(TIMEOUT_SENTINEL_FILE);
+}
+
+sub _get_backtrace {
+    my ($program, $pid) = @_;
+    Debug("_get_backtrace got: @_\n");
+
+    my @valid_backtrace_programs = ("gdb", "padb");
+
+    my $ret;
+    if ($program eq "gdb") {
+
+        # Gather a GDB stack trace
+        my $gdb_cmd;
+        if (FindProgram(qw(gdb))) {
+
+            # Create a temporary GDB command filename which will be
+            # used to grab a stack trace in GDB batch mode
+            my ($gdb_command_fh, $gdb_command_filename) = tempfile();
+            print $gdb_command_fh "backtrace";
+            close($gdb_command_fh);
+
+            # Use ps -Af output to fetch the child pids,
+            # and grab a stack trace from each one
+            my $ps_af = `ps -Af`;
+            foreach (split(/\r|\n/, $ps_af)) {
+                my $l = $_;
+                if ($l =~ /^\w+\s+\b$pid\b\s+(\d+)/) {
+                    $gdb_cmd = "gdb - $1 --command=$gdb_command_filename --batch";
+                    $ret .= "\n $gdb_cmd";
+                    $ret .= "\n" . `$gdb_cmd`;
+                }
+            }
+
+            # Remove the GDB batch command file
+            unlink($gdb_command_filename);
+
+        } else {
+            Warning("MTT could not locate \"gdb\" to gather a backtrace\n");
+        }
+
+    } elsif ($program eq "padb") {
+
+        if (FindProgram(qw(padb))) {
+
+            my $padb_cmd = "padb --config-option rmgr=mpirun --full-report=$pid";
+            $ret .= "\n $padb_cmd";
+            $ret .= "\n" . `$padb_cmd`;
+
+        } else {
+            Warning("MTT could not locate \"padb\" to gather a backtrace\n");
+        }
+
+    } else {
+        Warning("MTT does not recognize \"$program\" as a backtrace program. " .
+                "Please use one of the following: @valid_backtrace_programs");
+    }
+
+    Debug("_get_backtrace returning $ret\n");
+    return $ret;
 }
 
 # run a Windows command and save the stdout / stderr

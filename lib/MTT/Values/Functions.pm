@@ -1009,7 +1009,7 @@ sub test_wtermsig {
 # Return whether the last DoCommand::Cmd[Script] terminated normally
 sub cmd_wifexited {
     my $ret = MTT::DoCommand::wifexited($MTT::DoCommand::last_exit_status);
-    Debug("&test_wifexited returning: $ret\n");
+    Debug("&cmd_wifexited returning: $ret\n");
     return $ret ? "1" : "0";
 }
 
@@ -1018,7 +1018,7 @@ sub cmd_wifexited {
 # Return the exit status from the last DoCommand::Cmd[Script]
 sub cmd_wexitstatus {
     my $ret = MTT::DoCommand::wexitstatus($MTT::DoCommand::last_exit_status);
-    Debug("&test_wexitstatus returning $ret\n");
+    Debug("&cmd_wexitstatus returning $ret\n");
     return "$ret";
 }
 
@@ -1027,7 +1027,7 @@ sub cmd_wexitstatus {
 # Return whether the last DoCommand::Cmd[Script] was terminated by a signal
 sub cmd_wifsignaled {
     my $ret = MTT::DoCommand::wifsignaled($MTT::DoCommand::last_exit_status);
-    Debug("&test_widsignaled returning: $ret\n");
+    Debug("&cmd_widsignaled returning: $ret\n");
     return $ret ? "1" : "0";
 }
 
@@ -1036,7 +1036,16 @@ sub cmd_wifsignaled {
 # Return whether the last DoCommand::Cmd[Script] was terminated by a signal
 sub cmd_wtermsig {
     my $ret = MTT::DoCommand::wtermsig($MTT::DoCommand::last_exit_status);
-    Debug("&test_wtermsig returning: $ret\n");
+    Debug("&cmd_wtermsig returning: $ret\n");
+    return "$ret";
+}
+
+#--------------------------------------------------------------------------
+
+# Return pid of last DoCommand::Cmd
+sub cmd_pid {
+    my $ret = $MTT::DoCommand::pid;
+    Debug("&cmd_pid returning: $ret\n");
     return "$ret";
 }
 
