@@ -67,11 +67,11 @@ class MainPage(webapp.RequestHandler):
                 bookmark = self.request.get('bookmark')
                 query_collection = pager.PagerQuery(models.TestRunPhase)
                 prev, result_set, next = query_collection.fetch(15, bookmark)
-#                result_count = query_collection._get_query().count()
+                result_count = query_collection._get_query().count()
 
                 # query.count() is not used because of count() ignores the LIMIT clause on GQL queries.
-                for result in query_collection._get_query():
-                    result_count += 1
+#                for result in query_collection._get_query():
+#                    result_count += 1
             else:
                 temp_query_str = query_str
                 (temp_query_str, status) = gql_ex(temp_query_str)
@@ -91,7 +91,7 @@ class MainPage(webapp.RequestHandler):
             prev = ''
             next = ''
             query_str == ''
-
+           
         if os.environ.has_key('APPLICATION_ID'):
                app_id=os.environ['APPLICATION_ID']
 
@@ -525,7 +525,7 @@ class ClientHandler(webapp.RequestHandler):
                             # query.count() is not used because of count() ignores the LIMIT clause on GQL queries.
                             for result in result_set:
                                 result_count += 1
-                    except (datastore_errors.BadQueryError, datastore_errors.BadFilterError, db.KindError), err:
+                    except (datastore_errors.BadQueryError, datastore_errors.BadArgumentError, datastore_errors.BadRequestError, datastore_errors.BadRequestError, datastore_errors.BadFilterError, db.KindError), err:
                         logging.error("Incorrect GQL line: <_query> GQL='%s' error='%s'\n" % 
                                           (query_str, err))
                         respond = str(err)
@@ -603,7 +603,6 @@ class ClientHandler(webapp.RequestHandler):
             status = 400
             
         return status
-    
 
     def _view(self):
         status = 0
@@ -699,7 +698,7 @@ class ClientHandler(webapp.RequestHandler):
                             
                         data.append({'tag': '', 'data': key_values})
                         
-            except (datastore_errors.BadQueryError, datastore_errors.BadFilterError, db.KindError), err:
+            except (datastore_errors.BadQueryError, datastore_errors.BadArgumentError, datastore_errors.BadRequestError, datastore_errors.BadFilterError, db.KindError), err:
                 logging.error("Incorrect GQL line: <_view> GQL='%s' error='%s'\n" % 
                                     (query_str, err))
                 respond = str(err)
@@ -751,9 +750,23 @@ class ClientHandler(webapp.RequestHandler):
                         entity.__setattr__(key, prop.validate(str(value)))
                     elif (datastore.typename(prop) in ['TextProperty']):
                         entity.__setattr__(key, prop.validate(unicode(value)))
+                    elif (datastore.typename(prop) in ['DateTimeProperty'] and 
+                          type(value).__name__ in ['str', 'unicode']):
+                        value = value.strip('\'')
+                        value = datetime.datetime.strptime(str(value), '%Y-%m-%d %H:%M:%S')
+                        entity.__setattr__(key, prop.validate(value))
+                    elif (datastore.typename(prop) in ['ListProperty', 'StringListProperty'] and 
+                          type(value).__name__ in ['str', 'unicode']):
+                        value = value.lstrip('(')
+                        value = value.rstrip(')')
+                        value = value.strip()
+                        value = re.sub(r"\'\s+\'", "\'\t\'", value)
+                        value = re.sub(r"\'", "", value)
+                        value = value.split('\t')
+                        entity.__setattr__(key, prop.validate(value))
                     else:
                         entity.__setattr__(key, prop.validate(value))
-                except (datastore_errors.BadValueError, TypeError), err:
+                except (datastore_errors.BadValueError, ValueError, TypeError), err:
                     logging.error("Incorrect value: <__fill_entity> entity=%s field=%s value=%s %s error='%s'\n" % 
                                   (entity.kind(), key, value, value.__class__, err))
 
@@ -945,15 +958,74 @@ class ClientHandler(webapp.RequestHandler):
             status = 400
             
         return status
+
+    def _update(self):
+        status = 0
+        respond = ''
+        if 'UPDATE' in self.request.arguments():
+            query_str = ''
+            if ('gql' in self.request.arguments()):
+                query_str = self.request.get('gql')
+                if (not query_str):
+                    status = 400
+                    
+                if (not status):
+                    match = re.search(r"^\s*[Uu][Pp][Dd][Aa][Tt][Ee]\s+(\w+)\s+[Ss][Ee][Tt]\s+([^\"]+)\s+[Ww][Hh][Ee][Rr][Ee]\s+([^\"]+)", query_str)
+                    available_set = [ 'TestRunPhase', 'TestBuildPhase', 'MpiInstallPhase' ]
+                    if (not match is None and 
+                        not match.group(1) in available_set): 
+                        query_str = ''
+                        status = 400   
+
+                if (not status):
+                    fields = []
+                    fields = re.split(',', match.group(2))
+                    key_dict = {}
+                    for set_value in fields:
+                        (key, value) = re.split('=', set_value)
+                        key_dict[key.strip()] = value.strip()
+                        
+                    query_str = 'select * from ' + match.group(1) + ' where ' + match.group(3)
+                    try:
+                        (query_str, status) = gql_ex(query_str)
+                        
+                        if (not status and query_str):
+                            query = db.GqlQuery(query_str)
+                            result_set = query
+
+                            for entity in result_set:
+                                self.__fill_entity(entity, key_dict)
+                                entity.put()
+                                
+                    except (datastore_errors.BadQueryError, datastore_errors.BadArgumentError, datastore_errors.BadRequestError, datastore_errors.BadRequestError, datastore_errors.BadFilterError, db.KindError), err:
+                        logging.error("Incorrect GQL line: <_update> GQL='%s' error='%s'\n" % 
+                                          (query_str, err))
+                        respond = str(err)
+                        status = 400                
+                    except (datastore_errors.NeedIndexError), err:
+                        logging.error("No matching index found: <_update> GQL='%s' error='%s'\n" % 
+                                          (query_str, err))
+                        respond = str(err)
+                        status = 400                
+
+            self.response.headers['Content-Type'] = 'text/html'
+            self.response.out.write(respond)        
+        else:
+            status = 400
+            
+        return status
     
     def post(self):
         logging.debug('%s: post=> %s' % (self.__class__.__name__, self.request.POST))
         status = 0
         respond = ''
 
+###########################################################################################
+# COMMENT FOLLOWING THREE LINES IN ORDER TO SKIP AUTHORIZATION WHEN GDS IS RUNNING LOCALLY
         self.user = auth.authenticate(auth.get_credential())
         if self.user is None:
             status = 401    # Unauthorized
+############################################################################################
         try:
             if not status and 'PING' in self.request.arguments():
                 status = self._ping();
@@ -966,6 +1038,11 @@ class ClientHandler(webapp.RequestHandler):
             elif not status and 'ADMIN' in self.request.arguments():
                 if self.user.is_superuser:
                     status = self._admin()
+                else:
+                    status = 403    # Forbidden
+            elif not status and 'UPDATE' in self.request.arguments():
+                if self.user.is_superuser:
+                    status = self._update()
                 else:
                     status = 403    # Forbidden
             elif not status:
@@ -1003,7 +1080,7 @@ def gql_ex(query_str):
             try:
                 query = db.GqlQuery(match.group(3))
                 result_set = query
-            except (datastore_errors.BadQueryError, datastore_errors.BadFilterError, db.KindError), err:
+            except (datastore_errors.BadQueryError, datastore_errors.BadArgumentError, datastore_errors.BadRequestError, datastore_errors.BadFilterError, db.KindError), err:
                 logging.error("Incorrect GQL line: <gql_ex> GQL='%s' error='%s'\n" % 
                                 (match.group(3), err))
                 return (query_str, 400)

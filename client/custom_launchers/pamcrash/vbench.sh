@@ -124,4 +124,9 @@ EXIT_VALUE=$?
 head -n 20 $WORKDIR/pamcrash.log | grep Version
 echo Last 100 lines from log file
 tail -100 $WORKDIR/pamcrash.log
+licenseerr=`grep "License Manager Error" $WORKDIR/pamcrash.log | wc -l`;
+if [ "0" != "${licenseerr}" ]; then
+  echo FATAL: License error
+  exit 1
+fi
 exit $EXIT_VALUE

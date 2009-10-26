@@ -132,12 +132,14 @@ my @opt_axis_y;
 my @opt_label_x;
 my @opt_label_y;
 my $opt_legend;
+my $opt_v;
+my $opt_custom_groupby;
+my $opt_max;
 
 
 my $report_file = ();
 my $report_title = ();
 my $dir = ();
-my @files = ();
 my @axis_x = ();
 my @axis_y = ();
 my @label_x = ();
@@ -157,7 +159,10 @@ GetOptions ("help|h"=>\$opt_help,
             "label_x|LX=s" => \@opt_label_x,
             "label_y|LY=s" => \@opt_label_y,
             "legend|L=s" => \$opt_legend,
-            "email|e=s" => \$opt_mailto
+            "email|m|e=s" => \$opt_mailto,
+			"verbose|v" => \$opt_v,
+			"groupby_field|g=s" => \$opt_custom_groupby,
+			"max" => \$opt_max,
             );
 
 
@@ -197,21 +202,20 @@ $report_title = $opt_title ? $opt_title : "List of objects";
 $dir = $opt_dir ? $opt_dir : "";
 
 
+my %custom_groups;
 if ($dir ne '')
 {
-    # Process --dir option
-    opendir (DIR, "$dir") or die "$!";
-    my @temp_files = grep {/.*?\.yaml/}  readdir DIR;
-    close DIR;
-    foreach (@temp_files) 
-    {
-        push(@files, "$dir/$_");
-    }   
+	if ( $opt_custom_groupby ) {
+		%custom_groups = create_report1($dir, $opt_axis_y[0], $opt_custom_groupby);
+	} else {
+		my @files = readFiles($dir);
+		push @{$custom_groups{'default'}}, @files;
+	}
 }
 else
 {
 	# Process --src option
-	@files=split(/,/,join(',',@opt_src));
+	push @{$custom_groups{'default'}}, split(/,/,join(',',@opt_src));
 }
     
 # Split the string into a list of axis_x properties
@@ -237,32 +241,40 @@ if (@axis_x != @axis_y)
    die "pairs axis_x & axis_y should have valid values";
 }
 
+foreach my $group (keys %custom_groups) {
 
-# Check if files existed
-verify_opt_file( @files );
+	my @files = @{$custom_groups{$group}};
 
-# Create report file
-my %report_conf = ('title' => $report_title, 
-                   'dest' => $report_file,
-                   'src' => \@files,
-                   'data_count' => ($#axis_x + 1),
-                   'axis_x' => \@axis_x,
-                   'axis_y' => \@axis_y,
-                   'label_x' => \@label_x,
-                   'label_y' => \@label_y,
-                   'legend' => \@legend
-                    );
-create_report( \%report_conf ); 
+	if ($group ne 'default') {
+		$report_file = "${module_path}report-$group.xls";
+	}
+	# Check if files existed
+	verify_opt_file( @files );
 
-# Send notification by e-mail
-if ( $opt_mailto ) {
-    send_results_by_mail($opt_mailto, $report_file);
+	# Create report file
+	my %report_conf = ('title' => $report_title, 
+		'dest' => $report_file,
+		'src' => \@files,
+		'data_count' => ($#axis_x + 1),
+		'axis_x' => \@axis_x,
+		'axis_y' => \@axis_y,
+		'label_x' => \@label_x,
+		'label_y' => \@label_y,
+		'legend' => \@legend
+	);
+	create_report( \%report_conf ); 
+
+	# Send notification by e-mail
+	if ( $opt_mailto ) {
+		send_results_by_mail($opt_mailto, $report_file);
+	}
+
+	if(-e $report_file)
+	{
+		print ("Report file $report_file has been prepared\n");
+	}
 }
-
-if(-e $report_file)
-{
-    print ("Report file $report_file has been prepared\n");
-}
+exit 0;
 
 
 ###########################################################
@@ -1149,7 +1161,7 @@ sub create_report
 sub send_results_by_mail 
 {
     my ($mail_to, $mail_file) = @_;
-    system("echo report is attached | /usr/bin/mutt -s 'breport' -a $mail_file $mail_to");
+    system("echo report is attached | /usr/bin/mutt -s 'breport $mail_file' -a $mail_file $mail_to");
 }
 
 
@@ -1262,4 +1274,74 @@ sub string_width {
     return 1.1 * length($_[0]);
 }
 
+
+sub create_report1
+{
+	my ($dir, $metric, $dimension) = @_;
+	my @files = readFiles($dir);
+	my (%selected_vals, %selected_files, %clusters);
+	print "Custom groupby=$metric axis_y=$dimension dir=$dir\n" if $opt_v;
+	foreach my $file (@files) {
+		print "Working of $file\n" if $opt_v;
+		my $data = eval {YAML::XS::LoadFile($file)};
+		die "Error: $!" if (not defined $data or $@);
+
+		# generate uniq cluster name, based on host names used in MPI job
+		my $mpi_nproc = $data->{modules}->{TestRunPhase}->{mpi_nproc};
+		my @hlist = split(",",$data->{modules}->{TestRunPhase}->{mpi_hlist});
+
+		my %hlist_hash;
+		foreach my $item (@hlist) {
+			$hlist_hash{$item}++;
+		}
+		my $uniq_hosts = join("_",sort(keys %hlist_hash));
+		my $cluster_key = join("_", $uniq_hosts);
+		# generate key based on cluster_key and nproc used in MPI job
+		my $key = join("_", $cluster_key, $mpi_nproc);
+
+		$clusters{$key} 	= $cluster_key;
+		my $val 			= $data->{modules}->{TestRunPhase}->{$metric};
+		my $dimension_value = $data->{modules}->{TestRunPhase}->{$dimension};
+
+		if ( not defined $selected_vals{$key}->{$dimension_value} or 
+			(not defined $opt_max and ($selected_vals{$key}->{$dimension_value} > $val)) or
+			($opt_max  and $selected_vals{$key}->{$dimension_value} < $val))
+		{
+			$selected_vals{$key}->{$dimension_value} = $val;
+			$selected_files{$key}->{$dimension_value} = $file;
+			print "Adding key=$key $dimension=$dimension_value val=$val file=$file cluster=$cluster_key\n" if $opt_v;
+		}
+	}
+
+	my (%results);
+	foreach my $key (sort keys %selected_vals) {
+		my $nres = keys %{ $selected_vals{$key} };
+		# todo: need pass as a cmd line how much results to expect (2)
+		next if $nres != 2;
+		my $cluster_key = $clusters{$key};
+		for my $dim ( keys %{ $selected_vals{$key} } ) {
+			push @{$results{$cluster_key}}, $selected_files{$key}{$dim};
+			print "$key.$dim=$selected_vals{$key}{$dim} file=$selected_files{$key}{$dim}\n" if $opt_v;
+		}
+	}
+
+	foreach my $res (sort keys %results) {
+		print "cluster=$res files=", join(",", @{$results{$res}}), "\n" if $opt_v;
+	}
+	%results;
+}
+
+sub readFiles
+{
+	my ($dir) = @_;
+	# Process --dir option
+	opendir (DIR, "$dir") or die "$!";
+	my @temp_files = grep {/.*?\.yaml/}  readdir DIR;
+	close DIR;
+	my @files;
+	foreach (@temp_files) {
+		push(@files, "$dir/$_");
+	}
+	@files;
+}
 

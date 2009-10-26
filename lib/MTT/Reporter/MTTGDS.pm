@@ -256,6 +256,15 @@ sub _do_submit {
         version => "0.1",
         app_id  => 'submit',
     };
+
+    my $ini = $MTT::Globals::Internals->{ini};
+    my $submit_failed_results = MTT::Values::Value( $ini, "VBench", 'submit_failed_results_to_gds' );
+
+    # mtt ini flag to control what mtt results to submit to GDS
+    if (!defined($submit_failed_results) || $submit_failed_results eq '')
+    {
+        $submit_failed_results = 1;
+    }
     
     #foreach my $phase (keys(%$entries)) {
     foreach my $phase ( "MPI Install", "Test Build", "Test Run" ) {
@@ -287,6 +296,7 @@ sub _do_submit {
                 if ( $phase eq "Test Run" ) {
                     my $mpi_install = $entries->{"MPI Install"}->{$report->{mpi_install_section_name}};
                     my $mpi_report = @$mpi_install[0];
+                    
                     _process_phase_mpi_install("MPI Install", $report->{mpi_install_section_name}, $mpi_report, $form->{modules});
 
                     my $test_build = $entries->{"Test Build"}->{$report->{test_build_section_name}};
@@ -316,6 +326,14 @@ sub _do_submit {
                 Debug("Submitting to MTTGDS...\n");
 	            
                 my ($req, $file) = _prepare_request($phase, $report, $form, $attachment);
+                
+                # do not submit result with non PASS status in case 'submit_failed_results_to_gds' key is set as '0'
+                if ( ($submit_failed_results == 0) && ($report->{test_result} != 1) )
+                {
+                    Debug("MTT ini-file has key \'submit_failed_results_to_gds\'=$submit_failed_results and phase: $phase test_result: $report->{test_result}\n");
+                    next;
+                }
+                
                 my $response = _do_request($$req);
                 #unlink($file);            
             }
@@ -383,7 +401,6 @@ sub _process_phase_test_build {
     _fill_mpi_info( $phase, $section, $report, $form );
     _fill_suite_info( $phase, $section, $report, $form );
     
-    $phase_form->{status} = $report->{test_result};
     $phase_form->{start_time} = strftime( "%Y-%m-%d %H:%M:%S",
                         localtime $report->{start_timestamp} );
 
@@ -903,7 +920,7 @@ sub _prepare_request {
 	            SUBMIT      => 1,
 	            data        => ["$filename"],
 	            raw         => ["$raw_filename"],
-	            description => 'Submit data and raw on the phase <$phase>'
+	            description => "Submit data and raw on the phase <$phase>"
 	         ];
     }
     else
@@ -913,7 +930,7 @@ sub _prepare_request {
             Content => [
                 SUBMIT      => 1,
                 data        => ["$filename"],
-                description => 'Submit data only on the phase <$phase>'
+                description => "Submit data only on the phase <$phase>"
              ];
     }
 

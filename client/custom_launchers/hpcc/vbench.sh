@@ -67,6 +67,14 @@ cd $WORKDIR
 WORKDIR=`pwd`
 echo "OUTPUT: $WORKDIR"
 
+echo Execute breate_conf.pl...
+$mydir/bcreate_conf.pl -hpcc -h $HOSTS -t $WORKDIR/hpccinf.txt
+EXIT_VALUE=$?
+echo End of execute bcreate_conf.pl
+if [ $EXIT_VALUE != 0 ]; then
+  exit $EXIT_VALUE;
+fi
+
 echo Start HPCC...
 $COMMAND < /dev/null
 EXIT_VALUE=$?
