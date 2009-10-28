@@ -134,7 +134,8 @@ my @opt_label_y;
 my $opt_legend;
 my $opt_v;
 my $opt_custom_groupby;
-my $opt_max;
+my $opt_comparator;
+my $opt_groupby_nres;
 
 
 my $report_file = ();
@@ -162,7 +163,8 @@ GetOptions ("help|h"=>\$opt_help,
             "email|m|e=s" => \$opt_mailto,
 			"verbose|v" => \$opt_v,
 			"groupby_field|g=s" => \$opt_custom_groupby,
-			"max" => \$opt_max,
+			"groupby_nres=i" => \$opt_groupby_nres,
+			"comparator=s" => \$opt_comparator,
             );
 
 
@@ -244,6 +246,7 @@ if (@axis_x != @axis_y)
 foreach my $group (keys %custom_groups) {
 
 	my @files = @{$custom_groups{$group}};
+	print "Woring in group: $group\n";
 
 	if ($group ne 'default') {
 		$report_file = "${module_path}report-$group.xls";
@@ -1281,6 +1284,7 @@ sub create_report1
 	my @files = readFiles($dir);
 	my (%selected_vals, %selected_files, %clusters);
 	print "Custom groupby=$metric axis_y=$dimension dir=$dir\n" if $opt_v;
+	open(REP, ">rep_$dir.txt") or die "Error: $!\n";
 	foreach my $file (@files) {
 		print "Working of $file\n" if $opt_v;
 		my $data = eval {YAML::XS::LoadFile($file)};
@@ -1303,21 +1307,32 @@ sub create_report1
 		my $val 			= $data->{modules}->{TestRunPhase}->{$metric};
 		my $dimension_value = $data->{modules}->{TestRunPhase}->{$dimension};
 
+		my @txt_rep;
+		push @txt_rep, $key;
+		push @txt_rep, $dimension_value;
+		push @txt_rep, $val;
+		push @txt_rep, basename($file);
+		print REP join(",", @txt_rep), "\n";
+
 		if ( not defined $selected_vals{$key}->{$dimension_value} or 
-			(not defined $opt_max and ($selected_vals{$key}->{$dimension_value} > $val)) or
-			($opt_max  and $selected_vals{$key}->{$dimension_value} < $val))
+			($opt_comparator eq "noop") or
+			(($opt_comparator eq "min") and ($selected_vals{$key}->{$dimension_value} > $val)) or
+			(($opt_comparator eq "max") and ($selected_vals{$key}->{$dimension_value} < $val)))
 		{
 			$selected_vals{$key}->{$dimension_value} = $val;
 			$selected_files{$key}->{$dimension_value} = $file;
 			print "Adding key=$key $dimension=$dimension_value val=$val file=$file cluster=$cluster_key\n" if $opt_v;
 		}
 	}
+	close REP;
 
 	my (%results);
 	foreach my $key (sort keys %selected_vals) {
 		my $nres = keys %{ $selected_vals{$key} };
 		# todo: need pass as a cmd line how much results to expect (2)
-		next if $nres != 2;
+		if ( defined $opt_groupby_nres and ($nres != $opt_groupby_nres) ) {
+			next;
+		}
 		my $cluster_key = $clusters{$key};
 		for my $dim ( keys %{ $selected_vals{$key} } ) {
 			push @{$results{$cluster_key}}, $selected_files{$key}{$dim};
