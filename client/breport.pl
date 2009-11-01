@@ -1329,14 +1329,13 @@ sub create_report1
 	my (%results);
 	foreach my $key (sort keys %selected_vals) {
 		my $nres = keys %{ $selected_vals{$key} };
-		# todo: need pass as a cmd line how much results to expect (2)
 		if ( defined $opt_groupby_nres and ($nres != $opt_groupby_nres) ) {
 			next;
 		}
 		my $cluster_key = $clusters{$key};
 		for my $dim ( keys %{ $selected_vals{$key} } ) {
 			push @{$results{$cluster_key}}, $selected_files{$key}{$dim};
-			print "$key.$dim=$selected_vals{$key}{$dim} file=$selected_files{$key}{$dim}\n" if $opt_v;
+			print " Res: $key.$dim=$selected_vals{$key}{$dim} file=$selected_files{$key}{$dim}\n" if $opt_v;
 		}
 	}
 

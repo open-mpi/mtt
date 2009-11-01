@@ -63,9 +63,8 @@ sub Calc_NP
 
 sub Generate_HPL_DAT
 {
-	my ($Ns,$p,$q,$hpl,$hpcc)=@_;
+	my ($Ns,$Nb, $p,$q,$hpl,$hpcc)=@_;
 
-	my $Nb=128;
 
 	open HPL,">$hpl" or die "$!";
 	print HPL  "HPLinpack benchmark input file\n" ;
@@ -114,7 +113,7 @@ sub Generate_HPL_DAT
 sub usage{
 	my $myname = `basename $0`;
 	chomp($myname);
-    my $help = "Usage: $myname [-l] <-h host1,host2,host3> <-t /path/to/HPL.dat>
+    my $help = "Usage: $myname [-p <int>] [-q <int] [-np <int>] [-ns <int>] [-nb <int>] [-l] <-h host1,host2,host3> <-t /path/to/HPL.dat>
 
 		where
 			-l - generate HPL.dat with big sized problem definiton
@@ -130,46 +129,70 @@ my $dat_file = "/tmp/HPL.dat";
 my $opt_long;
 
 my $opt_hpcc;
+my $opt_nb=128;
+my $opt_ns;
+my $opt_np;
+my $opt_p;
+my $opt_q;
+my $opt_help;
 
-GetOptions( 'l' => \$opt_long, 'h|hosts=s' => \$hosts,'target|t=s' =>\$dat_file, 'hpcc' => \$opt_hpcc) or die "Incorrect usage!\n";
+GetOptions( 
+	'l' => \$opt_long, 
+	'h|hosts=s' => \$hosts,
+	'target|t=s' =>\$dat_file, 
+	'hpcc' => \$opt_hpcc,
+	'nb=i', => \$opt_nb,
+	'ns=i', => \$opt_ns,
+	'np=i', => \$opt_np,
+	'p=i', => \$opt_p,
+	'q=i', => \$opt_q,
+	'help', => \$opt_help,
+) or die "Incorrect usage!\n";
 
-usage() if (not defined $hosts);
-
-
-
-
-my @arr_hosts=split(/\,/,$hosts);
-my (@cpuinfo,@meminfo);
-
-
-Collect_Hosts_Info(\@cpuinfo,\@meminfo,@arr_hosts);
-print ("meminfo=@meminfo\n");
-print ("cpuinfo=@cpuinfo\n");
-
+usage() if $opt_help;
 
 my $np=0;
-foreach my $cpu (@cpuinfo) {
-    $np+=$cpu;
+my $ns;
+
+if ( $opt_ns and $opt_np ) {
+	$np = $opt_np;
+	$ns = $opt_ns;
+
+} elsif ( defined $hosts ) {
+
+	my @arr_hosts=split(/\,/,$hosts);
+	my (@cpuinfo,@meminfo);
+
+	Collect_Hosts_Info(\@cpuinfo,\@meminfo,@arr_hosts);
+	print ("meminfo=@meminfo\n");
+	print ("cpuinfo=@cpuinfo\n");
+	foreach my $cpu (@cpuinfo) {
+		$np+=$cpu;
+	}
+	my $ram_per_core=($meminfo[0]/($cpuinfo[0]*1000000));
+	if($ram_per_core >= 0.9) {
+		$ram_per_core=1;
+	}
+
+	$ns=int(sqrt(0.8*$ram_per_core*1024*1024*1024*$np/8));
+	print ("ram_per_core=$ram_per_core\n");
 }
 
-my $ram_per_core=($meminfo[0]/($cpuinfo[0]*1000000));
-if($ram_per_core >= 0.9) {
-    $ram_per_core=1;
-}
-
-
-
-my $ns=int(sqrt(0.8*$ram_per_core*1024*1024*1024*$np/8));
 
 my (@p,@q);
-if ( $opt_long ) {
-	Calc_NP(\@p,\@q,$np);
+if ( not defined $opt_p and not defined $opt_q ) {
+	if ( $opt_long ) {
+		Calc_NP(\@p,\@q,$np);
+	} else {
+		Calc_Np_Short(\@p,\@q,$np);
+	}
 } else {
-	Calc_Np_Short(\@p,\@q,$np);
+	push @p, $opt_p;
+	push @q, $opt_q;
 }
-print ("ram_per_core=$ram_per_core\n");
-print ("NP=$np,NS=$ns.P=@p,Q=@q\n");
 
-Generate_HPL_DAT($ns,\@p,\@q,$dat_file,$opt_hpcc);
+print ("NP=$np, NS=$ns, P=@p, Q=@q\n");
+
+Generate_HPL_DAT($ns,$opt_nb,\@p,\@q,$dat_file,$opt_hpcc);
 
 print ("dat file : $dat_file\n");
