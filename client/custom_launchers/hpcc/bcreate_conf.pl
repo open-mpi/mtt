@@ -51,14 +51,10 @@ GetOptions(
 
 usage() if $opt_help;
 
-my $np=0;
-my $ns;
+my $np = $opt_np? $opt_np : undef;
+my $ns = $opt_ns? $opt_ns : undef;
 
-if ( $opt_ns and $opt_np ) {
-	$np = $opt_np;
-	$ns = $opt_ns;
-
-} elsif ( defined $hosts ) {
+if ( defined $hosts ) {
 
 	my @arr_hosts=split(/\,/,$hosts);
 	my (@cpuinfo,@meminfo);
@@ -76,24 +72,23 @@ if ( $opt_ns and $opt_np ) {
 
 	$ns=int(sqrt(0.8*$ram_per_core*1024*1024*1024*$np/8));
 	print ("ram_per_core=$ram_per_core\n");
-} else {
-	usage();
 }
 
-
 my (@p,@q);
-if ( not defined $opt_p and not defined $opt_q ) {
+if ( $np and not defined $opt_p and not defined $opt_q ) {
 	if ( $opt_long ) {
 		Calc_NP(\@p,\@q,$np);
 	} else {
 		Calc_Np_Short(\@p,\@q,$np);
 	}
-} else {
+} elsif ( defined $opt_p and defined $opt_q) {
 	push @p, $opt_p;
 	push @q, $opt_q;
+} else {
+	usage();
 }
 
-print ("NP=$np, NS=$ns, P=@p, Q=@q\n");
+print ("NS=$ns, P=@p, Q=@q\n");
 
 Generate_HPL_DAT($ns,$opt_nb,\@p,\@q,$dat_file,$opt_hpcc);
 
