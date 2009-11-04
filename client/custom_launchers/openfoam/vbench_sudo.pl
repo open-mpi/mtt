@@ -134,7 +134,11 @@ sub run_openfoam
 	} else {
 		runcmd("cp $casedir/$decomposefile $casedir/system/decomposeParDict");
 		runcmd("rm -rf  $casedir/processor*");
-		runcmd("decomposePar -case $casedir");
+		my @hostarray = split( /,/, $opt_hosts );
+		my $hostName = @hostarray[0];
+		print "Launch decompose stage on $hostName...\n";
+		runcmd("ssh $hostName decomposePar -case $casedir");
+		print "Decompose stage finished\n";
 	}
 
 	my $cmd_opt = "$mpiroot/bin/mpirun";
