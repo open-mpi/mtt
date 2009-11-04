@@ -125,6 +125,7 @@ my $opt_upload;
 my $opt_query;
 my $opt_view;
 my $opt_admin;
+my $opt_update;
 
 my @opt_data;
 my @opt_raw;
@@ -133,6 +134,7 @@ my $opt_gqls;
 my @opt_gqlf;
 my @opt_section;
 my $opt_dir;
+my $opt_no_limit;
 my $opt_no_raw;
 my $opt_no_ref;
 
@@ -152,6 +154,7 @@ GetOptions ("help|h" => \$opt_help,
             "query" => \$opt_query,
             "view" => \$opt_view,
             "admin" => \$opt_admin,
+            "update" => \$opt_update,
             
             "data|S=s" => \@opt_data,
             "raw|R=s" => \@opt_raw,         
@@ -160,6 +163,7 @@ GetOptions ("help|h" => \$opt_help,
             "gqlf|F=s" => \@opt_gqlf,
             "section|T=s" => \@opt_section,
             "dir|O=s" => \$opt_dir,
+            "no-limit" => \$opt_no_limit,
             "no-raw" => \$opt_no_raw,
             "no-ref" => \$opt_no_ref,
 
@@ -194,6 +198,7 @@ if ($opt_help)
     $action = 'query' if ($opt_query);
     $action = 'view' if ($opt_view);
     $action = 'admin' if ($opt_admin);
+    $action = 'update' if ($opt_update);
 
     help($action);
     
@@ -309,6 +314,7 @@ elsif ($opt_query)
 
     $conf{'gql'} = $gql;
     $conf{'dir'} = $opt_dir ? $opt_dir : "$module_path/dstore";
+    $conf{'no-limit'} = undef if $opt_no_limit;
     $conf{'no-raw'} = undef if $opt_no_raw;
     $conf{'no-ref'} = undef if $opt_no_ref;
 
@@ -427,9 +433,28 @@ elsif ($opt_admin)
  
     admin( \%conf ); 
 }
+elsif ($opt_update)
+{
+    my $gql = ();
+
+    if ($opt_gqls) 
+    {
+        $gql = $opt_gqls;
+    }
+    else
+    {
+        help('update');
+    }
+
+    $conf{'gql'} = $gql;
+
+    update( \%conf ); 
+}
 else
 {
-    help();
+    my $action = '';
+
+    help($action);
     exit;
 }
 
@@ -486,6 +511,10 @@ sub help
     {
         printf (" %-10s %-s\n", '--admin', "The 'admin' command executes administrative operations.");
     }
+    if (!defined($action) || $action eq '' || $action eq 'update')
+    {
+        printf (" %-10s %-s\n", '--update', "The 'update' command executes update operation for datastore table.");
+    }
 
     print ("\nArguments:\n");
     
@@ -500,6 +529,7 @@ sub help
         printf (" %-5s %-10s\t%-s\n", '-F,', '--gqlf', "Inclusive query file path.");
         printf (" %-5s %-10s\t%-s\n", '-T,', '--section', "Section of configuration file with the query.");
         printf (" %-5s %-10s\t%-s\n", '-O,', '--dir', "Output directory with retrieved data.");
+        printf (" %-5s %-10s\t%-s\n", '', '--no-limit', "Increase the number of results returned by a query. Can be used with restriction.");
         printf (" %-5s %-10s\t%-s\n", '', '--no-raw', "Don't download raw files associated with the data.");
         printf (" %-5s %-10s\t%-s\n", '', '--no-ref', "Download a short format of data.");
     }
@@ -515,6 +545,10 @@ sub help
     if (!defined($action) || $action eq '' || $action eq 'admin')
     {
         printf (" %-5s %-10s\t%-s\n", '', '--newuser', "User information as username, password, email (mandatory) and first_name, last_name (optional). Keep order of values.");
+    }
+    if (!defined($action) || $action eq '' || $action eq 'update')
+    {
+        printf (" %-5s %-10s\t%-s\n", '-L,', '--gqls', "String with GQL query.");
     }
     printf (" %-5s %-10s\t%-s\n", '-e,', '--email', "e-mail address to get notification");
     
@@ -643,75 +677,88 @@ sub query
 {
     my ($conf_ref)=@_;
     
+    my $gql = ();
+    my $data = undef;
+    my $loop_threshold = 2;
     my $ua = LWP::UserAgent->new();
     $ua->agent("mtt-submit");
     $ua->proxy('http', $ENV{'http_proxy'});
 
-    my %cntx = ( QUERY       => 1,
-                 gql         => $conf_ref->{gql},
-                 description => 'bquery view'
-                );
-    $cntx{'no-raw'} = undef if exists($conf_ref->{'no-raw'});
-    $cntx{'no-ref'} = undef if exists($conf_ref->{'no-ref'});
-                
-    my $request = POST(
-                    $conf_ref->{url},
-                    Content_Type => 'form-data',
-                    Content => \%cntx);
-
-    $request->authorization_basic($conf_ref->{username}, $conf_ref->{password});
-
-    my $response = $ua->request($request);
-
-    die "Error at $conf_ref->{url}\n ", $response->status_line, "\n"
-        unless $response->is_success;
-    die "content type at $conf_ref->{url} -- ", $response->content_type, "\n"
-        unless $response->content_type eq 'text/yaml';
-
-	# Load respond into YAML hash
-    use YAML::Syck ();
-    $YAML::Syck::ImplicitTyping = 1;
-	my $temp_str = $response->content;
-    my $data = eval {YAML::Syck::Load($temp_str)};
-#    use YAML::XS ();
-#    my $temp_str = $response->content;
-#    my $data = eval {YAML::XS::Load($temp_str)};
-    if (not defined $data or $@)
+    do
     {
-        die "$!";
-    }
+    	$gql = $conf_ref->{gql};
+    	if (exists($conf_ref->{'no-limit'}))
+    	{
+    		$gql = $gql . " and __key__>key('$data->{last_key}')" if ( defined($data) );
+    		$gql = $gql . " order by __key__ asc limit $loop_threshold";
+    	}
 
-    MTT::Files::mkdir($conf_ref->{dir}) || die "cannot mkdir $conf_ref->{dir}: $!";
-    
-    my $default_form = {
-        product => 'mtt-gds',
-        version => "0.1",
-        app_id  => 'query'
-    };
-    
-    foreach my $respond_form (@{$data->{data}}) 
-    {
-    	my $filename = "$conf_ref->{dir}\/$respond_form->{key}";
-    	my $raw_filename = $filename.'.zip';
-    	$filename = $filename.'.yaml';
-     	
-     	my %form = (%$respond_form, %$default_form);
-
-	    if (exists($form{raw}))
+	    my %cntx = ( QUERY       => 1,
+	                 gql         => $gql,
+	                 description => 'bquery query'
+	                );
+	    $cntx{'no-raw'} = undef if exists($conf_ref->{'no-raw'});
+	    $cntx{'no-ref'} = undef if exists($conf_ref->{'no-ref'});
+	                
+	    my $request = POST(
+	                    $conf_ref->{url},
+	                    Content_Type => 'form-data',
+	                    Content => \%cntx);
+	
+	    $request->authorization_basic($conf_ref->{username}, $conf_ref->{password});
+	
+	    my $response = $ua->request($request);
+	
+	    die "Error at $conf_ref->{url}\n ", $response->status_line, "\n"
+	        unless $response->is_success;
+	    die "content type at $conf_ref->{url} -- ", $response->content_type, "\n"
+	        unless $response->content_type eq 'text/yaml';
+	
+		# Load respond into YAML hash
+	    use YAML::Syck ();
+	    $YAML::Syck::ImplicitTyping = 1;
+		my $temp_str = $response->content;
+	    $data = eval {YAML::Syck::Load($temp_str)};
+	#    use YAML::XS ();
+	#    my $temp_str = $response->content;
+	#    my $data = eval {YAML::XS::Load($temp_str)};
+	    if (not defined $data or $@)
 	    {
-	    	open(fh_temp, ">$raw_filename") || die "cannot create $raw_filename: $!";
-	    	binmode fh_temp;
-	    	print fh_temp $form{raw};
-	    	close fh_temp;
-            
-            delete $form{raw};
+	        die "$!";
 	    }
+	
+            MTT::Files::mkdir($conf_ref->{dir}) || die "cannot mkdir $conf_ref->{dir}: $!" if (! -d $conf_ref->{dir});
 	    
-        delete $form{key};
-         
-        # Generate YAML file contents
-        YAML::XS::DumpFile($filename, \%form);
-    }
+	    my $default_form = {
+	        product => 'mtt-gds',
+	        version => "0.1",
+	        app_id  => 'query'
+	    };
+	    
+	    foreach my $respond_form (@{$data->{data}}) 
+	    {
+	    	my $filename = "$conf_ref->{dir}\/$respond_form->{key}";
+	    	my $raw_filename = $filename.'.zip';
+	    	$filename = $filename.'.yaml';
+	     	
+	     	my %form = (%$respond_form, %$default_form);
+	
+		    if (exists($form{raw}))
+		    {
+		    	open(fh_temp, ">$raw_filename") || die "cannot create $raw_filename: $!";
+		    	binmode fh_temp;
+		    	print fh_temp $form{raw};
+		    	close fh_temp;
+	            
+	            delete $form{raw};
+		    }
+		    
+	        delete $form{key};
+	         
+	        # Generate YAML file contents
+	        YAML::XS::DumpFile($filename, \%form);
+	    }
+    } while (exists($conf_ref->{'no-limit'}) && (defined($data) && $data->{count} == $loop_threshold));
 }
 
 
@@ -805,6 +852,42 @@ sub admin
     print "Error at $conf_ref->{url}\n ", $response->status_line, "\n"
         unless $response->is_success;
     print "content type at $conf_ref->{url} -- ", $response->content_type, "\n"
+        unless $response->content_type eq 'text/html';
+
+    print $response->content;
+}
+
+
+###############################################################################
+#
+# Update procedure
+#
+###############################################################################
+sub update
+{
+    my ($conf_ref)=@_;
+    
+    my $ua = LWP::UserAgent->new();
+    $ua->agent("mtt-submit");
+    $ua->proxy('http', $ENV{'http_proxy'});
+
+    my %cntx = ( UPDATE       => 1,
+                 gql         => $conf_ref->{gql},
+                 description => 'bquery update'
+                );
+                
+    my $request = POST(
+                    $conf_ref->{url},
+                    Content_Type => 'form-data',
+                    Content => \%cntx);
+
+    $request->authorization_basic($conf_ref->{username}, $conf_ref->{password});
+
+    my $response = $ua->request($request);
+
+    die "Error at $conf_ref->{url}\n ", $response->status_line, "\n"
+        unless $response->is_success;
+    die "content type at $conf_ref->{url} -- ", $response->content_type, "\n"
         unless $response->content_type eq 'text/html';
 
     print $response->content;
