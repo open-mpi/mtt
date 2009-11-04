@@ -29,8 +29,14 @@ my $opt_ndiv   = "2";
 my $opt_help;
 my $opt_bcast = "0";
 my $opt_depth = "0";
+# for hpcc
+my $opt_p_problem_sizes = "0";
+my $opt_p_vals_of_n = "1200 10000 30000";
+my $opt_p_blocking_sizes = "0";
+my $opt_p_values_of_nb = "40 9 8 13 13 20 16 32 64";
 
 GetOptions( 
+	'help', => \$opt_help,
 	'l' => \$opt_long, 
 	'h|hosts=s' => \$hosts,
 	'target|t=s' =>\$dat_file, 
@@ -46,8 +52,12 @@ GetOptions(
 	'depth=s' => \$opt_depth,
 	'nbmins=s' => \$opt_nbmins,
 	'ndiv=s' => \$opt_ndiv,
-	'help', => \$opt_help,
+	'p_ps=s' => \$opt_p_problem_sizes,
+	'p_pvon=s' => \$opt_p_vals_of_n,
+	'p_bs=s' => \$opt_p_blocking_sizes,
+	'p_vonb=s' => \$opt_p_values_of_nb,
 ) or die "Incorrect usage!\n";
+
 
 usage() if $opt_help;
 
@@ -199,12 +209,13 @@ sub Generate_HPL_DAT
 	print HPL "1            Equilibration (0=no,1=yes)\n" ;
     print HPL "8            memory alignment in double (> 0)\n";
 
+
 	if ($hpcc){
 	    print HPL "##### This line (no. 32) is ignored (it serves as a separator). ######\n";
-	    print HPL "0                               Number of additional problem sizes for PTRANS\n";
-	    print HPL "1200 10000 30000                values of N\n";
-	    print HPL "0                               number of additional blocking sizes for PTRANS\n";
-	    print HPL "40 9 8 13 13 20 16 32 64        values of NB\n";
+	    print HPL "$opt_p_problem_sizes                                Number of additional problem sizes for PTRANS\n";
+	    print HPL "$opt_p_vals_of_n                                    values of N\n";
+	    print HPL "$opt_p_blocking_sizes                               number of additional blocking sizes for PTRANS\n";
+	    print HPL "$opt_p_values_of_nb                                 values of NB\n";
 	}
 	close HPL;
 	return $hpl;
@@ -214,10 +225,36 @@ sub usage{
 	my $myname = `basename $0`;
 	chomp($myname);
 
-    my $help = "Usage: $myname [-p <int>] [-q <int] [-np <int>] [-ns <int>] [-nb <int>] [-pfacts <str>] [-rfacts <str>] [-depth <str>] [-nbmins <str>] [-ndiv <str>] [-l] <-h host1,host2,host3> <-t /path/to/HPL.dat>
+    my $help = "Usage: $myname <options>
+	
+	
+	Where options are:
+	
+	The following params are available to configure Linpack (HPL)
+	[-p <int>] 
+	[-q <int] 
+	[-np <int>] 
+	[-ns <int>] 
+	[-nb <int>] 
+	[-pfacts <str>] 
+	[-rfacts <str>] 
+	[-depth <str>] 
+	[-nbmins <str>] 
+	[-ndiv <str>] 
 
-		where
-			-l - generate HPL.dat with big sized problem definiton
+
+	The following params are available in HPCC only:
+	[-p_ps <string>]
+	[-p_pvon <string>]
+	[-p_bs <string>]
+	[-p_vonb <string]
+
+
+	General parameters:
+	[-hpcc]                         - Generate HPCC configuration file
+	[-l]                            - Generate long running HPL.dat
+	<-h host1,host2,host3>          - Use specified nodes to gather cpu/mem info and calc HPL.dat
+	<-t /path/to/result/file.dat>   - Path to resulting file
 
 	";
 	die "$help\n";
