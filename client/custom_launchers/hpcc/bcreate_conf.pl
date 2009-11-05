@@ -136,6 +136,10 @@ sub Calc_Np_Short
 	my $j = int($np / $i);
 	push (@$p,$i);
 	push (@$q,$j);
+
+	$opt_pfacts = "1";
+	$opt_rfacts = "2";
+	$opt_nbmins = "4";
 }
 
 
