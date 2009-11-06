@@ -1693,8 +1693,11 @@ sub alps_job {
 #   It is true that ALPS can be run in an interactive access mode; however,
 #   this would not be a true managed environment.  Such only can be
 #   achieved under a batch scheduler.
-    return ((exists($ENV{BATCH_PARTITION_ID}) &&
-             exists($ENV{PBS_NNODES})) ? "1" : "0");
+#   Since cray changed the CLE2.1, BATCH_PARTITION_ID is not valid anymore, therefore
+#   check for anything, that ALPS' aprun may take...
+    return (((exists($ENV{BATCH_PARTITION_ID}) &&
+              exists($ENV{PBS_NNODES})) ||
+              exists($ENV{APRUN_XFER_LIMITS})) ? "1" : "0");
 }
 
 #--------------------------------------------------------------------------
