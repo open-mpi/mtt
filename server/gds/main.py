@@ -521,10 +521,6 @@ class ClientHandler(webapp.RequestHandler):
                         if (not status and query_str):
                             query = db.GqlQuery(query_str)
                             result_set = query
-                            result_count = 0
-                            # query.count() is not used because of count() ignores the LIMIT clause on GQL queries.
-                            for result in result_set:
-                                result_count += 1
                     except (datastore_errors.BadQueryError, datastore_errors.BadArgumentError, datastore_errors.BadRequestError, datastore_errors.BadRequestError, datastore_errors.BadFilterError, db.KindError), err:
                         logging.error("Incorrect GQL line: <_query> GQL='%s' error='%s'\n" % 
                                           (query_str, err))
@@ -537,8 +533,8 @@ class ClientHandler(webapp.RequestHandler):
                         status = 400                
             
             if not status and result_set:
+                result_count = 0
                 data_file = {}
-                data_file['count'] = result_count
                 data_file['data'] = []
                 for entity in result_set:
                     raw = None
@@ -594,7 +590,10 @@ class ClientHandler(webapp.RequestHandler):
                         data_entity['modules'][temp_entity.kind()] = key_dict
 
                     data_file['data'].append(data_entity)
+                    data_file['last_key'] = str(entity.key())
+                    result_count += 1
                 
+                data_file['count'] = result_count
                 respond = yaml.safe_dump(data_file, default_flow_style=False, canonical=False)
                 
             self.response.headers['Content-Type'] = 'text/yaml'
@@ -658,8 +657,13 @@ class ClientHandler(webapp.RequestHandler):
                 (query_str, status) = gql_ex(query_str)
                 
                 if (not status and query_str):
-                    if (re.search(r"\s*[Ss][Ee][Ll][Ee][Cc][Tt]\s+([Cc][Oo][Uu][Nn][Tt]\s*\(\s*\*\s*\)\s+)", query_str)):
-                        query_str = re.sub(r"\s*[Ss][Ee][Ll][Ee][Cc][Tt]\s+([Cc][Oo][Uu][Nn][Tt]\s*\(\s*\*\s*\)\s+)", "select * ", query_str)
+                    if (re.search(r"\s*[Ss][Ee][Ll][Ee][Cc][Tt]\s+([Cc][Oo][Uu][Nn][Tt]\s*\(\s*\*\s*\)\s+)", 
+                                  query_str)):
+                        # Queries that return keys are faster and cost less CPU than queries that return entities, since the keys themselves are already in the index,
+                        # so the query doesn't need to fetch the actual entities.
+                        query_str = re.sub(r"\s*[Ss][Ee][Ll][Ee][Cc][Tt]\s+([Cc][Oo][Uu][Nn][Tt]\s*\(\s*\*\s*\)\s+)",
+                                           "select __key__ ", 
+                                           query_str)
                         query = db.GqlQuery(query_str)
                         result_set = query
                         # query.count() is not used because of count() ignores the LIMIT clause on GQL queries.
@@ -670,9 +674,13 @@ class ClientHandler(webapp.RequestHandler):
                         key_values = {'count': [str(result_count)]}
                         data.append({'tag': '', 'data': key_values})
                         
-                    elif (re.search(r"\s*[Ss][Ee][Ll][Ee][Cc][Tt]\s+([\w\,\s]+)\s+[Ff][Rr][Oo][Mm]", query_str)):
-                        match = re.search(r"\s*[Ss][Ee][Ll][Ee][Cc][Tt]\s+([\w\,\s]+)\s+[Ff][Rr][Oo][Mm]", query_str)
-                        query_str = re.sub(r"\s*[Ss][Ee][Ll][Ee][Cc][Tt]\s+([\w\,\s]+)\s+[Ff][Rr][Oo][Mm]", "select * from", query_str)
+                    elif (re.search(r"\s*[Ss][Ee][Ll][Ee][Cc][Tt]\s+([\w\,\s]+)\s+[Ff][Rr][Oo][Mm]", 
+                                    query_str)):
+                        match = re.search(r"\s*[Ss][Ee][Ll][Ee][Cc][Tt]\s+([\w\,\s]+)\s+[Ff][Rr][Oo][Mm]", 
+                                          query_str)
+                        query_str = re.sub(r"\s*[Ss][Ee][Ll][Ee][Cc][Tt]\s+([\w\,\s]+)\s+[Ff][Rr][Oo][Mm]", 
+                                           "select * from", 
+                                           query_str)
                         fields = []
                         fields = re.split('\W+', match.group(1))
                         

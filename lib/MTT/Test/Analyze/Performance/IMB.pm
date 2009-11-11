@@ -106,6 +106,10 @@ sub Analyze {
         }
     }
 
+    if (0 == $have_some_data) {
+        return undef;
+    }
+
     $report->{test_type} = 'latency_bandwidth';
 
     foreach my $k (keys %$data) {

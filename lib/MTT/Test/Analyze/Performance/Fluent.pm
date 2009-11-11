@@ -92,6 +92,10 @@ sub Analyze {
     }
     close RESULT;
 
+    if (!defined($rating)) {
+        return undef;
+    }
+
     $test_case =~ s/^\s+//;
     $test_case =~ s/\s+$//;
     $report->{testphase}->{test_case} = $test_case;

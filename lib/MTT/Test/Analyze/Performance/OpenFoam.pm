@@ -26,13 +26,25 @@ sub Analyze {
     
     my $output_file;
     
-    # Find "Run directory: " string in stdout
+    my $test_exec; # oodles
+    my $test_case; # pitzDaily
+
     foreach my $line (@lines)
     {
-    	if ($line =~ m/^OUTPUT: (.+)$/) {
-    		$output_file = $1;
-    		last;
-    	}	
+        if (!defined($test_exec) && $line =~ /EXEC:\s+(\S.+)$/) {
+        	$test_exec = $1;
+        	Verbose("OpenFoam: test exec: $test_exec\n");
+        	next;
+        }
+        if (!defined($test_case) && $line =~ /CASE:\s+(\S.+)$/) {
+        	$test_case = $1;
+        	Verbose("OpenFoam: test case: $test_case\n");
+        	next;
+        }
+        if ($line =~ m/^OUTPUT: (.+)$/) {
+            $output_file = $1;
+            last;
+        }
     }
     if (!defined($output_file))
     {
@@ -48,21 +60,9 @@ sub Analyze {
         return undef;
     }
 
-    my $test_exec; # oodles
-    my $test_case; # pitzDaily
     my $exec_time;
     my $clock_time;
     while (<OUTPUT>) {
-        if (!defined($test_exec) && /EXEC:\s+(\S.+)$/) {
-        	$test_exec = $1;
-        	Verbose("OpenFoam: test exec: $test_exec\n");
-        	next;
-        }
-        if (!defined($test_case) && /CASE:\s+(\S.+)$/) {
-        	$test_case = $1;
-        	Verbose("OpenFoam: test case: $test_case\n");
-        	next;
-        }
         if (/ExecutionTime\s=\s+([\d\.]+)\ss\s+ClockTime\s=\s+([\d\.]+)/) {
         	$exec_time = $1;
         	$clock_time = $2;
@@ -71,6 +71,9 @@ sub Analyze {
         if (/Version:\s+([\d\.\S]+)\s/) {
             $openfoam_version = $1;
         }
+    }
+    if (!defined($exec_time) || !defined($clock_time)) {
+        return undef;
     }
     Verbose("OpenFoam: exec_time=$exec_time, clock_time=$clock_time\n");
     close OUTPUT;

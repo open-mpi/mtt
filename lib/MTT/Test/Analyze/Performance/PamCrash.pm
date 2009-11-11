@@ -65,6 +65,9 @@ sub Analyze {
         	next;
         }
     }
+    if (!defined($exec_time) || !defined($clock_time)) {
+        return undef;
+    }
     Verbose("PamCrash: exec_time=$exec_time, clock_time=$clock_time\n");
     close OUTPUT;
 

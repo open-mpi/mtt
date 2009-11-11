@@ -15,6 +15,8 @@ use strict;
 use Data::Dumper;
 use MTT::Messages;
 
+my $error_str = "HPL: Input file corrupted";
+
 # Process the result_stdout emitted from one of hpl tests
 sub Analyze {
 
@@ -65,7 +67,7 @@ $report->{test_name}="HPL";
         }
     }
 
-      # Postgres uses brackets for array insertion
+    # Postgres uses brackets for array insertion
     # (see postgresql.org/docs/7.4/interactive/arrays.html)
     $report->{tv}   = "{" . join(",", @t_v) . "}";
     $report->{time}   = "{" . join(",", @time) . "}";
@@ -92,10 +94,101 @@ $report->{test_name}="HPL";
         $report->{testphase}->{data_performance} = int($performance*100.0);
     } else {
         Warning("Can't fill data_performance metric: total_mhz is undefined\n");
+        return undef;
+    }
+
+    my $input_file = "$output_dir/HPL.dat";
+    $report->{files_to_copy}->{$input_file} = "";        
+ 
+    open my $input, "$input_file" || ($error = 1);
+
+    if ($error) {
+        Warning("HPL: Unable to read $input_file! Skipping\n");
+        return undef;
+    }
+
+    my $inputline;
+    $inputline = <$input>; if (!defined($inputline)) { Debug($error_str . "\n"); return undef; }
+    $inputline = <$input>; if (!defined($inputline)) { Debug($error_str . "\n"); return undef; }
+    $inputline = <$input>; if (!defined($inputline)) { Debug($error_str . "\n"); return undef; }
+    $inputline = <$input>; if (!defined($inputline)) { Debug($error_str . "\n"); return undef; }
+    
+    my $ncount = process_input_one_parameter(\%$report, $input, "n_count"); if (!defined($ncount)) { return undef; }
+    if (!defined(process_input_array(\%$report, $input, "n", $ncount))) { return undef; }
+
+    my $nbcount = process_input_one_parameter(\%$report, $input, "nb_count"); if (!defined($nbcount)) { return undef; }
+    if (!defined(process_input_array(\%$report, $input, "nb", $nbcount))) { return undef; }
+
+    my $pmap = process_input_one_parameter(\%$report, $input, "pmap"); if (!defined($pmap)) { return undef; }
+
+    my $gridcount = process_input_one_parameter(\%$report, $input, "grid_count"); if (!defined($gridcount)) { return undef; }
+    if (!defined(process_input_array(\%$report, $input, "p", $gridcount))) { return undef; }
+    if (!defined(process_input_array(\%$report, $input, "q", $gridcount))) { return undef; }
+
+    my $threshold = process_input_one_parameter(\%$report, $input, "threshold"); if (!defined($threshold)) { return undef; }
+
+    my $pfactcount = process_input_one_parameter(\%$report, $input, "pfact_count"); if (!defined($pfactcount)) { return undef; }
+    if (!defined(process_input_array(\%$report, $input, "pfact", $pfactcount))) { return undef; }
+
+    my $nbmincount = process_input_one_parameter(\%$report, $input, "nbmin_count"); if (!defined($nbmincount)) { return undef; }
+    if (!defined(process_input_array(\%$report, $input, "nbmin", $nbmincount))) { return undef; }
+
+    my $ndivcount = process_input_one_parameter(\%$report, $input, "ndiv_count"); if (!defined($ndivcount)) { return undef; }
+    if (!defined(process_input_array(\%$report, $input, "ndiv", $ndivcount))) { return undef; }
+
+    my $rfactcount = process_input_one_parameter(\%$report, $input, "rfact_count"); if (!defined($rfactcount)) { return undef; }
+    if (!defined(process_input_array(\%$report, $input, "rfact", $rfactcount))) { return undef; }
+
+    my $bcastcount = process_input_one_parameter(\%$report, $input, "bcast_count"); if (!defined($bcastcount)) { return undef; }
+    if (!defined(process_input_array(\%$report, $input, "bcast", $bcastcount))) { return undef; }
+
+    my $depthcount = process_input_one_parameter(\%$report, $input, "depth_count"); if (!defined($depthcount)) { return undef; }
+    if (!defined(process_input_array(\%$report, $input, "depth", $depthcount))) { return undef; }
+
+    my $swap = process_input_one_parameter(\%$report, $input, "swap"); if (!defined($swap)) { return undef; }
+
+    my $swapthreshold = process_input_one_parameter(\%$report, $input, "swap_threshold"); if (!defined($swapthreshold)) { return undef; }
+
+    my $l1 = process_input_one_parameter(\%$report, $input, "l1"); if (!defined($l1)) { return undef; }
+
+    my $u = process_input_one_parameter(\%$report, $input, "u"); if (!defined($u)) { return undef; }
+
+    my $equil = process_input_one_parameter(\%$report, $input, "equil"); if (!defined($equil)) { return undef; }
+
+    my $hpl_align = process_input_one_parameter(\%$report, $input, "align"); if (!defined($hpl_align)) { return undef; }
+
+    close $input;
+
+    return $report;
+}
+
+sub process_input_one_parameter
+{
+    my ($report, $input, $parameter_name) = @_;
+    my $inputline;
+    $inputline = <$input>; if (!defined($inputline)) { Debug($error_str . "\n"); return undef; }
+    my $res;
+    if ($inputline =~ m/^([\d.]+)\s/) {
+        $res = $1;
+        ${report}->{testphase}->{"custom_hpl_input_" . $parameter_name} = $res;
+        return $res;
+    } else { Debug($error_str . ": " . $inputline . "\n"); return undef; }
+}
+
+sub process_input_array
+{
+    my ($report, $input, $parameter_name, $count) = @_;
+    my $inputline;
+    $inputline = <$input>; if (!defined($inputline)) { Debug($error_str . "\n"); return undef; }
+    my $value = "";
+    for (my $i=1; $i <= $count; $i++) {
+        if ($inputline =~ m/^([\d.]+)\s/) {
+            $value .= $1; $value .= " " if ($i != $count);
+            #${report}->{testphase}->{"custom_hpl_input_" . $parameter_name . "_" . lc($i)} = $1;
+            $inputline =~ s/^([\d.]+)\s//;
+        } else { Debug($error_str . ": " . $inputline . "\n"); return undef; }
     } 
-
-    $report->{files_to_copy}->{"$output_dir/HPL.dat"} = "";        
-
+    ${report}->{testphase}->{"custom_hpl_input_" . $parameter_name} = $value;
     return $report;
 }
 

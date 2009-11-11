@@ -34,6 +34,10 @@ sub Analyze {
         if ($m and ($m !~ /\bcorrectness\b/i)) {
             $performance = MTT::Module::Run("MTT::Test::Analyze::Performance::$m", 
                                     "Analyze", $correctness->{result_stdout});
+            if (!defined($performance)) {
+                Warning("Analyzer $m returns a undef perfomance data. Change test status to FAIL.\n");
+                $correctness->{test_result} = MTT::Values::FAIL;
+            }
         }
     }
 
