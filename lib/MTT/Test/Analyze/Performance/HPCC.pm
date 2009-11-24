@@ -39,8 +39,9 @@ sub Analyze {
     }
     if (!defined($output_file))
     {
-        Warning("HPCC: Output file is unknown! Skipping\n");
-        return undef;    	
+        Warning("HPCC: Output directory is unknown! Using current dir.\n");
+        $output_file = "hpccoutf.txt";
+        $input_file = "hpccinf.txt";
     }
     my $error = 0;
 

@@ -94,12 +94,14 @@ use Spreadsheet::WriteExcel::Format;
 use GD::Graph::lines;
 use GD::Graph::bars;
 use File::Temp;
+use File::Basename;
 use Config::IniFiles;   
 use YAML::XS;
 
 
 use constant Type_Line => 0;
 use constant Type_Column => 1;
+use constant Type_External => 2;
 
 
 ###########################################################
@@ -132,20 +134,19 @@ my @opt_axis_y;
 my @opt_label_x;
 my @opt_label_y;
 my $opt_legend;
-my $opt_v;
-my $opt_custom_groupby;
-my $opt_comparator;
-my $opt_groupby_nres;
+my @opt_chartex;
 
 
 my $report_file = ();
 my $report_title = ();
 my $dir = ();
+my @files = ();
 my @axis_x = ();
 my @axis_y = ();
 my @label_x = ();
 my @label_y = ();
 my @legend = ();
+my @chartex = ();
 
 
 GetOptions ("help|h"=>\$opt_help,
@@ -160,11 +161,8 @@ GetOptions ("help|h"=>\$opt_help,
             "label_x|LX=s" => \@opt_label_x,
             "label_y|LY=s" => \@opt_label_y,
             "legend|L=s" => \$opt_legend,
-            "email|m|e=s" => \$opt_mailto,
-			"verbose|v" => \$opt_v,
-			"groupby_field|g=s" => \$opt_custom_groupby,
-			"groupby_nres=i" => \$opt_groupby_nres,
-			"comparator=s" => \$opt_comparator,
+            "chart_ex|CH=s" => \@opt_chartex,
+            "email|m|e=s" => \$opt_mailto
             );
 
 
@@ -196,6 +194,7 @@ if ($opt_ini && $opt_section)
     @opt_label_y = $cfg->val("$opt_section", 'label_y') if ($cfg->val("$opt_section", 'label_y'));
     
     $opt_legend = $cfg->val("$opt_section", 'legend');
+    @opt_chartex = $cfg->val("$opt_section", 'chartex');
 }
 
 # Parse command line
@@ -204,20 +203,21 @@ $report_title = $opt_title ? $opt_title : "List of objects";
 $dir = $opt_dir ? $opt_dir : "";
 
 
-my %custom_groups;
 if ($dir ne '')
 {
-	if ( $opt_custom_groupby ) {
-		%custom_groups = create_report1($dir, $opt_axis_y[0], $opt_custom_groupby);
-	} else {
-		my @files = readFiles($dir);
-		push @{$custom_groups{'default'}}, @files;
-	}
+    # Process --dir option
+    opendir (DIR, "$dir") or die "$!";
+    my @temp_files = grep {/.*?\.yaml/}  readdir DIR;
+    close DIR;
+    foreach (@temp_files) 
+    {
+        push(@files, "$dir/$_");
+    }   
 }
 else
 {
 	# Process --src option
-	push @{$custom_groups{'default'}}, split(/,/,join(',',@opt_src));
+	@files=split(/,/,join(',',@opt_src));
 }
     
 # Split the string into a list of axis_x properties
@@ -236,6 +236,8 @@ else
 my $pattern = qr/\$(\w+)/;
 @legend = $opt_legend =~ m/$pattern/ig if (defined($opt_legend));
 
+# Split the string into a list of chart_ex properties
+@chartex=split(/,/,join(',',@opt_chartex)) if (@opt_chartex);
 
 # Check different arguments    
 if (@axis_x != @axis_y)
@@ -243,40 +245,34 @@ if (@axis_x != @axis_y)
    die "pairs axis_x & axis_y should have valid values";
 }
 
-foreach my $group (keys %custom_groups) {
 
-	my @files = @{$custom_groups{$group}};
-	print "Woring in group: $group\n";
+# Check if files existed
+verify_opt_file( @files );
 
-	if ($group ne 'default') {
-		$report_file = "${module_path}report-$group.xls";
-	}
-	# Check if files existed
-	verify_opt_file( @files );
+# Create report file
+my %report_conf = ('title' => $report_title, 
+                   'dest' => $report_file,
+                   'src' => \@files,
+                   'data_count' => ($#axis_x + 1),
+                   'axis_x' => \@axis_x,
+                   'axis_y' => \@axis_y,
+                   'label_x' => \@label_x,
+                   'label_y' => \@label_y,
+                   'legend' => \@legend,
+                   'chart_ex' => \@chartex
+                    );
+create_report( \%report_conf ); 
 
-	# Create report file
-	my %report_conf = ('title' => $report_title, 
-		'dest' => $report_file,
-		'src' => \@files,
-		'data_count' => ($#axis_x + 1),
-		'axis_x' => \@axis_x,
-		'axis_y' => \@axis_y,
-		'label_x' => \@label_x,
-		'label_y' => \@label_y,
-		'legend' => \@legend
-	);
-	create_report( \%report_conf ); 
-
-	# Send notification by e-mail
-	if ( $opt_mailto ) {
-		send_results_by_mail($opt_mailto, $report_file);
-	}
-
-	if(-e $report_file)
-	{
-		print ("Report file $report_file has been prepared\n");
-	}
+# Send notification by e-mail
+if ( $opt_mailto ) {
+    send_results_by_mail($opt_mailto, $report_file);
 }
+
+if(-e $report_file)
+{
+    print ("Report file $report_file has been prepared\n");
+}
+
 exit 0;
 
 
@@ -312,6 +308,8 @@ sub help
     printf (" %-5s %-10s\t%-s\n", '-LY,', '--label_y', "Axis Y label.");
 
     printf (" %-5s %-10s\t%-s\n", '-L,', '--legend', "Template to legend in the following format: '\$<property1>\$<property2>...'");
+
+    printf (" %-5s %-10s\t%-s\n", '-CH,', '--chart_ex', "External chart template binary file.");
 
     printf (" %-5s %-10s\t%-s\n", '-e,', '--email', "e-mail address to get notification");
 }
@@ -372,8 +370,12 @@ sub check_list_to_regexp
             	return 0;            	
             }
         }
+        else
+        {
+        	return 0;
+        }
     }
-    
+
     return 1;
 }
 
@@ -596,7 +598,8 @@ sub create_sheet_title
         $temp_format = ( $i%2 ? $format2 : $format3);
         $sheet->write($frow + ($i * $hrow) + 1, $fcol - 1, "$i", $temp_format);
 
-        $sheet->write($frow + ($i * $hrow) + 1, $fcol, $a_data_object_ref->[$i]->{file_name}, $temp_format);
+        $temp_str = $a_data_object_ref->[$i]->{file_name};
+        $sheet->write_url($frow + ($i * $hrow) + 1, $fcol, "internal:'${temp_str}'!A1", $temp_str, $temp_format);
 
         $sheet->write($frow + ($i * $hrow) + 1, $fcol + 1, "Name:", $temp_format);
         $sheet->write($frow + ($i * $hrow) + 1, $fcol + 2, $h_modules_ref->{TestRunPhase}->{cached_suiteinfo_suite_name}, $temp_format);
@@ -626,7 +629,7 @@ sub create_sheet_title
 ###############################################################################
 sub create_sheet_view
 {
-    my ($workbook, $a_legend_ref, $a_data_view_ref)=@_;
+    my ($workbook, $a_data_view_ref)=@_;
     my $img;
     my $temp_str;
     my $temp_format;
@@ -668,7 +671,7 @@ sub create_sheet_view
                                 color => 'black',
                                 valign  => 'top',
                                 align   => 'left',
-                                bg_color => 'white',
+                                bg_color => undef,
                                 pattern  => 0
                                 );
 
@@ -683,44 +686,89 @@ sub create_sheet_view
 	                            pattern  => 0,
                                 text_wrap => 1
 	                            );
+
+    my $format5 = $workbook->add_format(
+                                font  => 'Arial',
+                                size  => 10,
+                                color => 'black',
+                                bold  => 1,
+                                valign  => 'top',
+                                align   => 'center',
+                                bg_color => undef,
+                                pattern  => 0,
+                                text_wrap => 1
+                                );
             
     my $a_data_ref = 0;
+    my $a_legend_ref = 0;
     my $a_label_ref = 0;
     for($i=0; $i < @{$a_data_view_ref}; $i++)
     {
+        $frow = 4;
+        $fcol = 1;
+        $frow = $a_data_view_ref->[$i]->{position}->[1];
+        $fcol = $a_data_view_ref->[$i]->{position}->[0];
         $a_data_ref = $a_data_view_ref->[$i]->{a_data};
+        $a_legend_ref = $a_data_view_ref->[$i]->{a_legend};
         $a_label_ref = $a_data_view_ref->[$i]->{a_label};
         $temp_str = $a_data_view_ref->[$i]->{caption};
+        
         $temp_str = (length($temp_str) > 31) ? substr($temp_str, 0, 31) : $temp_str;
         
-        my $sheet = $workbook->add_worksheet($temp_str);  
+        my $sheet = undef;
+        foreach ($workbook->sheets()) {
+            if ($temp_str eq $_->get_name())
+            {
+                $sheet = $_;
+                last;
+            }
+        }
+        $sheet = $workbook->add_worksheet($temp_str) if (!defined($sheet));  
     
         # Show title of a table
-        # Set the first head level
-        if (@{$a_data_ref->[0]} > 1)
+        if (defined($a_data_view_ref->[$i]->{title}))
         {
-            $sheet->merge_range($frow - 2, $fcol + 1,
-                                $frow - 2, $fcol + @{$a_data_ref->[0]},
-                                $a_label_ref->[1],
-                                $format4);
-                                
+            $sheet->merge_range($frow - 3, $fcol,
+                                $frow - 3, $fcol + @{$a_data_ref->[0]},
+                                $a_data_view_ref->[$i]->{title},
+                                $format5);
+        }
+        # Set the first head level
+        if (defined($a_label_ref->[1]))
+        {
+            if (@{$a_data_ref->[0]} > 1)
+            {
+                $sheet->merge_range($frow - 2, $fcol + 1,
+                                    $frow - 2, $fcol + @{$a_data_ref->[0]},
+                                    $a_label_ref->[1],
+                                    $format4);
+                                    
+                # Add a handler to store the width of the longest string written to a column.
+                $sheet->add_write_handler(qr[\w], \&store_string_widths);
+            }
+            else
+            {       
+                # Add a handler to store the width of the longest string written to a column.
+                $sheet->add_write_handler(qr[\w], \&store_string_widths);
+            
+                $sheet->write($frow - 2, $fcol + 1,
+                              $a_label_ref->[1],
+                              $format1);
+            }
+        }
+        else
+        {
             # Add a handler to store the width of the longest string written to a column.
             $sheet->add_write_handler(qr[\w], \&store_string_widths);
         }
-        else
-        {       
-	        # Add a handler to store the width of the longest string written to a column.
-	        $sheet->add_write_handler(qr[\w], \&store_string_widths);
-        
-            $sheet->write($frow - 2, $fcol + 1,
-	                      $a_label_ref->[1],
-	                      $format1);
-        }
 
         # Set the second head level
-        $sheet->write($frow - 1, $fcol,
-                      $a_label_ref->[0],
-                      $format1);
+        if (defined($a_label_ref->[0]))
+        {
+            $sheet->write($frow - 1, $fcol,
+                          $a_label_ref->[0],
+                          $format1);
+        }
         for($k=0; $k < @{$a_data_ref->[0]}; $k++)
         {
             $sheet->write($frow - 1, $fcol + ($k * $wcol) + 1,
@@ -735,7 +783,7 @@ sub create_sheet_view
             $sheet->write($frow + ($j * $hrow), $fcol,
                           $a_legend_ref->[$j],
                           $temp_format);
-            for($k=0; $k < @{$a_data_ref->[$j]}; $k++)
+            for($k=0; $k < @{$a_data_ref->[0]}; $k++)
             {
                 $sheet->write($frow + ($j * $hrow), $fcol + ($k * $wcol) + 1,
                               $a_data_ref->[$j + 1]->[$k],
@@ -746,76 +794,85 @@ sub create_sheet_view
         autofit_columns($sheet);    
 
         # Create graph
-    
-        #create graph object for canvas 800 X 500 pixels by default
-        my $img_width = 800;
-        $img_width += (scalar(@{$a_data_ref->[0]}) - 30) * 10 if (scalar(@{$a_data_ref->[0]}) > 30);
-        my $img_height = 500;
-        $img_height += (scalar(@{$a_legend_ref}) - 50) * 10 if (scalar(@{$a_legend_ref}) > 50);
-        if ($a_data_view_ref->[$i]->{view_type} == Type_Column)
+        if ($a_data_view_ref->[$i]->{view_type} != Type_External)
         {
-            $img= GD::Graph::bars->new($img_width, $img_height) or die GD::Graph->error;
+	        #create graph object for canvas 800 X 500 pixels by default
+	        my $img_width = 800;
+	        $img_width += (scalar(@{$a_data_ref->[0]}) - 30) * 10 if (scalar(@{$a_data_ref->[0]}) > 30);
+	        my $img_height = 500;
+	        $img_height += (scalar(@{$a_legend_ref}) - 50) * 10 if (scalar(@{$a_legend_ref}) > 50);
+	        if ($a_data_view_ref->[$i]->{view_type} == Type_Column)
+	        {
+	            $img= GD::Graph::bars->new($img_width, $img_height) or die GD::Graph->error;
+	        }
+	        elsif ($a_data_view_ref->[$i]->{view_type} == Type_Line)
+	        {
+	            $img= GD::Graph::lines->new($img_width, $img_height) or die GD::Graph->error;
+	        }
+		    else
+		    {
+		        printf("Error: Invalid data view - %s\n", $a_data_view_ref->[$i]->{view_type});
+		        return ;
+		    }
+	
+	        #set graph options required 
+	        $img->set(
+	                    # graph title 
+	                    title       => $a_data_view_ref->[$i]->{title},
+	                    x_label     => $a_label_ref->[0],
+	                    y_label     => $a_label_ref->[1],
+	                    # position of both X axis labels
+	                    x_label_position => 1,
+	                    # position of both Y axis labels
+	                    y_label_position => 1,
+	#                    y_min_value => min_2D($a_data_ref, 1) - (max_2D($a_data_ref, 1) - min_2D($a_data_ref, 1)) / 100,
+	#                    y_max_value => max_2D($a_data_ref, 1) + (max_2D($a_data_ref, 1) - min_2D($a_data_ref, 1)) / 100,
+	                    # use transparent background
+	                    transparent   => 0,
+	                    # background colour
+	                    bgclr         => '#e6e6e6',
+	                    # draw border around graph
+	                    box_axis => 0,
+	                    # put legend to the centre right of chart 
+	                    legend_placement =>'BC',
+	                    # width of lines
+	                    line_width => 2,
+	                    # Show the grid
+	                    long_ticks  => 0,
+	                    # Set the length for the 'short' ticks on the axes.
+	                    x_tick_length => 4,
+	                    y_tick_length => 4,
+	                    # vertical printing of x labels in case 1 - there are a lot of data
+	                    x_labels_vertical   => ((max_len_2D($a_data_ref, 0, 1) < 10) && (scalar(@{$a_data_ref->[0]}) > 20)? 1 : 0),
+	                    # Show values on top of each bar
+	                    show_values => ($a_data_view_ref->[$i]->{view_type} == Type_Column ? 1 : 0),
+	                    values_vertical => ($a_data_view_ref->[$i]->{view_type} == Type_Column ? 1 : 0),
+	                    dclrs  => [GD::Graph::colour::colour_list]
+	                ) or warn $img->error and return;
+	                
+	        # Number of pixels to leave between groups of bars when multiple datasets are being displayed
+	        $img->set(bargroup_spacing   => 30) if $img->_has_default('bargroup_spacing');
+	                
+	        # set legend
+	        $img->set_legend(@$a_legend_ref);
+	           
+	        # plot graph with table data
+	        my $gd = $img->plot($a_data_ref) or warn $img->error and return;
+	        $temp_image = new File::Temp();
+	        open(fh_temp, ">$temp_image") or warn ("Failed to write file: $!") and return;
+	        binmode fh_temp;
+	        print fh_temp $gd->png;
+	        close fh_temp;
+	    
+	        $sheet->insert_image( 21, $fcol, $temp_image);
         }
-        elsif ($a_data_view_ref->[$i]->{view_type} == Type_Line)
+        else
         {
-            $img= GD::Graph::lines->new($img_width, $img_height) or die GD::Graph->error;
+            $sheet->embed_chart( 21, $fcol, $a_data_view_ref->[$i]->{chart_ex}, 3, 3, 1.08, 1.21);
+            
+            $temp_str = '=' . $sheet->get_name() . '!A1';
+            $sheet->store_formula($temp_str);        	
         }
-	    else
-	    {
-	        printf("Error: Invalid data view - %s\n", $a_data_view_ref->[$i]->{view_type});
-	        return ;
-	    }
-
-        #set graph options required 
-        $img->set(
-                    # graph title 
-                    title       => $sheet->get_name(),
-                    x_label     => $a_label_ref->[0],
-                    y_label     => $a_label_ref->[1],
-                    # position of both X axis labels
-                    x_label_position => 1,
-                    # position of both Y axis labels
-                    y_label_position => 1,
-#                    y_min_value => min_2D($a_data_ref, 1) - (max_2D($a_data_ref, 1) - min_2D($a_data_ref, 1)) / 100,
-#                    y_max_value => max_2D($a_data_ref, 1) + (max_2D($a_data_ref, 1) - min_2D($a_data_ref, 1)) / 100,
-                    # use transparent background
-                    transparent   => 0,
-                    # background colour
-                    bgclr         => '#e6e6e6',
-                    # draw border around graph
-                    box_axis => 0,
-                    # put legend to the centre right of chart 
-                    legend_placement =>'BC',
-                    # width of lines
-                    line_width => 2,
-                    # Show the grid
-                    long_ticks  => 0,
-                    # Set the length for the 'short' ticks on the axes.
-                    x_tick_length => 4,
-                    y_tick_length => 4,
-                    # vertical printing of x labels in case 1 - there are a lot of data
-                    x_labels_vertical   => ((max_len_2D($a_data_ref, 0, 1) < 10) && (scalar(@{$a_data_ref->[0]}) > 20)? 1 : 0),
-                    # Show values on top of each bar
-                    show_values => ($a_data_view_ref->[$i]->{view_type} == Type_Column ? 1 : 0),
-                    values_vertical => ($a_data_view_ref->[$i]->{view_type} == Type_Column ? 1 : 0),
-                    dclrs  => [GD::Graph::colour::colour_list]
-                ) or warn $img->error and return;
-                
-        # Number of pixels to leave between groups of bars when multiple datasets are being displayed
-        $img->set(bargroup_spacing   => 30) if $img->_has_default('bargroup_spacing');
-                
-        # set legend
-        $img->set_legend(@$a_legend_ref);
-           
-        # plot graph with table data
-        my $gd = $img->plot($a_data_ref) or warn $img->error and return;
-        $temp_image = new File::Temp();
-        open(fh_temp, ">$temp_image") or warn ("Failed to write file: $!") and return;
-        binmode fh_temp;
-        print fh_temp $gd->png;
-        close fh_temp;
-    
-        $sheet->insert_image( 21, 1, $temp_image);
     }
 } 
 
@@ -827,7 +884,7 @@ sub create_sheet_view
 ###############################################################################
 sub create_sheet_data
 {
-    my ($workbook, $a_legend_ref, $a_data_object_ref )=@_;
+    my ($workbook, $a_data_object_ref )=@_;
     my $temp_str = '';
     my $temp_format = ();
     my $i=0;
@@ -874,7 +931,7 @@ sub create_sheet_data
     {
         $h_modules_ref = $a_data_object_ref->[$i]->{modules};
 
-    	$temp_str = "$a_legend_ref->[$i]";
+    	$temp_str = "$a_data_object_ref->[$i]->{file_name}";
     	$temp_str = (length($temp_str) > 31) ? substr($temp_str, 0, 31) : $temp_str;
     	
         my $sheet = $workbook->add_worksheet($temp_str);
@@ -931,8 +988,8 @@ sub create_report
 
     my $view_type = Type_Line;
     my @a_raw_data = ();
-    my @a_legend = ();
     my @a_data;
+    my @a_legend;
     my @a_data_object;
     my @a_data_view;
     my $temp_str = '';
@@ -957,40 +1014,39 @@ sub create_report
 
 		if ($data)
 		{
-			use File::Basename;
-			
 			my($filename, $directory, $suffix) = fileparse("$file", qr/\.[^.]*/);
 		    my $temp_file = "$directory$filename.zip";
             $data->{file_name} = $filename;
 		    $data->{raw_data} = (! -e $temp_file) ? 'none' : $temp_file;
+
+	        # Construct legend
+	        $temp_str = "$i";
+	        if (!@{$report_conf->{legend}})
+	        {
+	            my($filename, $directory, $suffix) = fileparse("$file", qr/\.[^.]*/);
+	            $temp_str = "$temp_str-$filename";
+	        }
+	        else
+	        {
+	            foreach (@{$report_conf->{legend}})
+	            {
+	                if (exists($data->{modules}->{TestRunPhase}->{$_})) 
+	                {
+	                    $temp_str = "$temp_str-$data->{modules}->{TestRunPhase}->{$_}";
+	                }
+	                elsif ($_ eq 'filename')
+	                {
+	                    my($filename, $directory, $suffix) = fileparse("$file", qr/\.[^.]*/);
+	                    $temp_str = "$temp_str-$filename";
+	                }
+	            }
+	        }   
+            $data->{legend} = $temp_str;
 		}
         
         # Parse source file and save data in special structure
         push (@a_data_object, $data);
         
-        # Construct legend
-        $temp_str = "$i";
-        if (!@{$report_conf->{legend}})
-        {
-            my($filename, $directory, $suffix) = fileparse("$file", qr/\.[^.]*/);
-            $temp_str = "$temp_str-$filename";
-        }
-        else
-        {
-	        foreach (@{$report_conf->{legend}})
-	        {
-	            if (exists($data->{modules}->{TestRunPhase}->{$_})) 
-	            {
-	            	$temp_str = "$temp_str-$data->{modules}->{TestRunPhase}->{$_}";
-	            }
-	            elsif ($_ eq 'filename')
-	            {
-	            	my($filename, $directory, $suffix) = fileparse("$file", qr/\.[^.]*/);
-	            	$temp_str = "$temp_str-$filename";
-	            }
-	        }
-        }   
-        push (@a_legend, $temp_str);
         $i++;                
     }
 
@@ -1020,26 +1076,6 @@ sub create_report
         {
         	die "incorrect view condition (axis_y is not set)\n";
         }
-        elsif ($report_conf->{axis_x}->[$i] ne 'none' &&
-              !exists($a_data_object[0]->{modules}->{TestRunPhase}->{$report_conf->{axis_x}->[$i]}))
-        {
-            die "incorrect view condition (axis_x=$report_conf->{axis_x}->[$i] data is not found in file)\n";
-        }
-        elsif ($report_conf->{axis_y}->[$i] ne 'none' &&
-              !exists($a_data_object[0]->{modules}->{TestRunPhase}->{$report_conf->{axis_y}->[$i]}))
-        {
-            die "incorrect view condition (axis_y=$report_conf->{axis_y}->[$i] data is not found in file)\n";
-        }
-        elsif (is_array( $a_data_object[0]->{modules}->{TestRunPhase}->{$report_conf->{axis_x}->[$i]}) &&
-              !is_array( $a_data_object[0]->{modules}->{TestRunPhase}->{$report_conf->{axis_y}->[$i]}))
-        {
-            die "incorrect view condition (axis_x=$report_conf->{axis_x}->[$i] is an array while axis_y=$report_conf->{axis_y}->[$i] is value)\n";
-        }
-        elsif (!is_array( $a_data_object[0]->{modules}->{TestRunPhase}->{$report_conf->{axis_x}->[$i]}) &&
-              is_array( $a_data_object[0]->{modules}->{TestRunPhase}->{$report_conf->{axis_y}->[$i]}))
-        {
-            die "incorrect view condition (axis_x=$report_conf->{axis_x}->[$i] is value while axis_y=$report_conf->{axis_y}->[$i] is an array)\n";
-        }
             
         # create array of arrays for graph
         # first array is assumed to be the x-axis labels 
@@ -1049,75 +1085,122 @@ sub create_report
         $report_conf->{label_y}->[$i] = "" if ($report_conf->{label_y}->[$i] eq 'none');
         
         @a_data = ();
+        @a_legend = ();
+        my $a_data_ref = 0;
         my $graph_type = Type_Column;
-        if ($report_conf->{axis_x}->[$i] eq 'none')
+
         {
-        	$a_data[0][0] = '';
-        }
-        elsif (is_array( $a_data_object[0]->{modules}->{TestRunPhase}->{$report_conf->{axis_x}->[$i]}))
-        {
-        	$temp_str = $a_data_object[0]->{modules}->{TestRunPhase}->{$report_conf->{axis_x}->[$i]};
-        	$temp_str =~ s/^\{//i;
-            $temp_str =~ s/\}$//i;
-            push (@{$a_data[0]}, split(/,/,$temp_str));
-        }
-        else
-        {
-        	# Prepare data for axis X
-            for($j=0; $j < @a_data_object; $j++)
+            # Prepare data for axis X and axis Y
+            $j=0;
+            foreach (@a_data_object)
             {
-                for($k=0; (defined($a_data[0]) && $k < @{$a_data[0]}); $k++)
+            	$a_data_ref = $_->{modules}->{TestRunPhase};
+            	
+                # Check error condition
+                if ($report_conf->{axis_x}->[$i] ne 'none' &&
+                      !exists($a_data_ref->{$report_conf->{axis_x}->[$i]}))
                 {
-                	if ($a_data[0][$k] eq $a_data_object[$j]->{modules}->{TestRunPhase}->{$report_conf->{axis_x}->[$i]})
+                    #die "incorrect view condition (axis_x=$report_conf->{axis_x}->[$i] data is not found in file)\n";
+                    next;
+                }
+                elsif ($report_conf->{axis_y}->[$i] ne 'none' &&
+                      !exists($a_data_ref->{$report_conf->{axis_y}->[$i]}))
+                {
+                    #die "incorrect view condition (axis_y=$report_conf->{axis_y}->[$i] data is not found in file)\n";
+                    next;
+                }
+                elsif (is_array( $a_data_ref->{$report_conf->{axis_x}->[$i]}) &&
+                      !is_array( $a_data_ref->{$report_conf->{axis_y}->[$i]}))
+                {
+                    #die "incorrect view condition (axis_x=$report_conf->{axis_x}->[$i] is an array while axis_y=$report_conf->{axis_y}->[$i] is value)\n";
+                    next;
+                }
+                elsif (!is_array( $a_data_ref->{$report_conf->{axis_x}->[$i]}) &&
+                      is_array( $a_data_ref->{$report_conf->{axis_y}->[$i]}))
+                {
+                    #die "incorrect view condition (axis_x=$report_conf->{axis_x}->[$i] is value while axis_y=$report_conf->{axis_y}->[$i] is an array)\n";
+                    next;
+                }
+
+                # Fill data
+	        if ($report_conf->{axis_x}->[$i] eq 'none')
+	        {
+	            if ($j == 0)
+	            {
+	            	$a_data[0][0] = '';	
+	            }
+           
+                    $a_data[$j+1][0] = $a_data_ref->{$report_conf->{axis_y}->[$i]};
+	        }		        
+	        elsif (is_array( $a_data_ref->{$report_conf->{axis_x}->[$i]}) &&
+	            is_array( $a_data_ref->{$report_conf->{axis_y}->[$i]}))
+	        {
+                    if ($j == 0)
+                    {
+                        $temp_str = $a_data_ref->{$report_conf->{axis_x}->[$i]};
+                        $temp_str =~ s/^\{//i;
+                        $temp_str =~ s/\}$//i;
+                        push (@{$a_data[0]}, split(/,/,$temp_str));
+
+                        $graph_type = Type_Line;
+                    }
+                    $temp_str = $a_data_ref->{$report_conf->{axis_y}->[$i]};
+                    $temp_str =~ s/^\{//i;
+                    $temp_str =~ s/\}$//i;
+                    push (@{$a_data[$j+1]}, split(/,/,$temp_str));
+                }
+                else
+                {
+                    for($k=0; (defined($a_data[0]) && $k < @{$a_data[0]}); $k++)
+                    {
+                	if ($a_data[0][$k] eq $a_data_ref->{$report_conf->{axis_x}->[$i]})
                 	{
-                		last;
-                	}
+                            last;
+                        }
+                    }
+	                
+                    if (!defined($a_data[0]) || $k == @{$a_data[0]})
+                    {
+                        $a_data[0][$k] = $a_data_ref->{$report_conf->{axis_x}->[$i]};
+                    }
+
+                    for($k=0; $k < @{$a_data[0]}; $k++)
+                    {
+                        if ($a_data[0][$k] eq $a_data_ref->{$report_conf->{axis_x}->[$i]})
+                        {
+                            $a_data[$j+1][$k] = $a_data_ref->{$report_conf->{axis_y}->[$i]};
+                        }
+                        else
+                        {
+                            $a_data[$j+1][$k] = undef;
+                        }
+                    }
                 }
-                
-                if (!defined($a_data[0]) || $k == @{$a_data[0]})
-                {
-                    $a_data[0][$k] = $a_data_object[$j]->{modules}->{TestRunPhase}->{$report_conf->{axis_x}->[$i]};
-                }
+                push (@a_legend, $_->{legend});
+                $j++;
             }
             
             # Sort numeric axis_x labels
             my $re = qr/^\d+$/;
             if (check_list_to_regexp($re, $a_data[0]))
             {
+            	my @a_temp = @a_data;
+            	
             	@{$a_data[0]} = sort { $a <=>$b } @{$a_data[0]};
-            }
-        }
-
-        {
-            # Prepare data for axis Y
-            for($j=0; $j < @a_data_object; $j++)
-            {
-		        if ($report_conf->{axis_x}->[$i] eq 'none')
-		        {
-		            $a_data[$j+1][0] = $a_data_object[$j]->{modules}->{TestRunPhase}->{$report_conf->{axis_y}->[$i]};
-		        }
-		        elsif (is_array( $a_data_object[$j]->{modules}->{TestRunPhase}->{$report_conf->{axis_y}->[$i]}))
-		        {
-                    $graph_type = Type_Line;
-		            $temp_str = $a_data_object[$j]->{modules}->{TestRunPhase}->{$report_conf->{axis_y}->[$i]};
-		            $temp_str =~ s/^\{//i;
-		            $temp_str =~ s/\}$//i;
-		            push (@{$a_data[$j+1]}, split(/,/,$temp_str));
-		        }
-		        else
-		        {
-	                for($k=0; $k < @{$a_data[0]}; $k++)
-	                {
-	                    if ($a_data[0][$k] eq $a_data_object[$j]->{modules}->{TestRunPhase}->{$report_conf->{axis_x}->[$i]})
-	                    {
-	                        $a_data[$j+1][$k] = $a_data_object[$j]->{modules}->{TestRunPhase}->{$report_conf->{axis_y}->[$i]};
-	                    }
-	                    else
-	                    {
-	                        $a_data[$j+1][$k] = undef;
-	                    }
-	                }
-		        }
+            	for($j=0; $j < @{$a_data[0]}; $j++)
+            	{
+                    for($k=0; $k < @{$a_data[0]}; $k++)
+                    {
+                        if ($a_data[0][$j] == $a_temp[0][$k])
+                        {
+                            for(my $l=1; $l < scalar(@a_data); $l++)
+                            {
+                                $a_data[$l][$j] = $a_temp[$l][$k]; 
+                            }
+                            last;
+                        }
+                    }
+                }
             }
         }
             
@@ -1138,19 +1221,31 @@ sub create_report
 #            $_ = str_wrap($_);
 #        } 
         
+        my $chart_ex = undef;
+        if (defined($report_conf->{chart_ex}->[$i]) && $report_conf->{chart_ex}->[$i] ne 'none')
+        {
+            $graph_type = Type_External;
+            $chart_ex = $report_conf->{chart_ex}->[$i];
+        }
+      	$temp_str = "view\#$i";
+
         push (@a_data_view, 
                 { view_type => $graph_type, 
                   a_label => [$report_conf->{label_x}->[$i], $report_conf->{label_y}->[$i]],
+                  a_legend => [@a_legend],
                   a_data => [@a_data],
-                  caption => "view\#$i($report_conf->{axis_x}->[$i]-$report_conf->{axis_y}->[$i])"
+                  caption => $temp_str,
+                  title => "$report_conf->{axis_x}->[$i]-$report_conf->{axis_y}->[$i]",
+                  position => [1, 3],
+                  chart_ex => $chart_ex
                 });
     }
 
     # Create 'View' tabs
-    create_sheet_view($workbook, \@a_legend, \@a_data_view);
+    create_sheet_view($workbook, \@a_data_view);
 
     # Create 'Data' tabs
-    create_sheet_data($workbook, \@a_legend, \@a_data_object);
+    create_sheet_data($workbook, \@a_data_object);
 
     $workbook->close();
 }
@@ -1277,85 +1372,4 @@ sub string_width {
     return 1.1 * length($_[0]);
 }
 
-
-sub create_report1
-{
-	my ($dir, $metric, $dimension) = @_;
-	my @files = readFiles($dir);
-	my (%selected_vals, %selected_files, %clusters);
-	print "Custom groupby=$metric axis_y=$dimension dir=$dir\n" if $opt_v;
-	open(REP, ">rep_$dir.txt") or die "Error: $!\n";
-	foreach my $file (@files) {
-		print "Working of $file\n" if $opt_v;
-		my $data = eval {YAML::XS::LoadFile($file)};
-		die "Error: $!" if (not defined $data or $@);
-
-		# generate uniq cluster name, based on host names used in MPI job
-		my $mpi_nproc = $data->{modules}->{TestRunPhase}->{mpi_nproc};
-		my @hlist = split(",",$data->{modules}->{TestRunPhase}->{mpi_hlist});
-
-		my %hlist_hash;
-		foreach my $item (@hlist) {
-			$hlist_hash{$item}++;
-		}
-		my $uniq_hosts = join("_",sort(keys %hlist_hash));
-		my $cluster_key = join("_", $uniq_hosts);
-		# generate key based on cluster_key and nproc used in MPI job
-		my $key = join("_", $cluster_key, $mpi_nproc);
-
-		$clusters{$key} 	= $cluster_key;
-		my $val 			= $data->{modules}->{TestRunPhase}->{$metric};
-		my $dimension_value = $data->{modules}->{TestRunPhase}->{$dimension};
-
-		my @txt_rep;
-		push @txt_rep, $key;
-		push @txt_rep, $dimension_value;
-		push @txt_rep, $val;
-		push @txt_rep, basename($file);
-		print REP join(",", @txt_rep), "\n";
-
-		if ( not defined $selected_vals{$key}->{$dimension_value} or 
-			($opt_comparator eq "noop") or
-			(($opt_comparator eq "min") and ($selected_vals{$key}->{$dimension_value} > $val)) or
-			(($opt_comparator eq "max") and ($selected_vals{$key}->{$dimension_value} < $val)))
-		{
-			$selected_vals{$key}->{$dimension_value} = $val;
-			$selected_files{$key}->{$dimension_value} = $file;
-			print "Adding key=$key $dimension=$dimension_value val=$val file=$file cluster=$cluster_key\n" if $opt_v;
-		}
-	}
-	close REP;
-
-	my (%results);
-	foreach my $key (sort keys %selected_vals) {
-		my $nres = keys %{ $selected_vals{$key} };
-		if ( defined $opt_groupby_nres and ($nres != $opt_groupby_nres) ) {
-			next;
-		}
-		my $cluster_key = $clusters{$key};
-		for my $dim ( keys %{ $selected_vals{$key} } ) {
-			push @{$results{$cluster_key}}, $selected_files{$key}{$dim};
-			print " Res: $key.$dim=$selected_vals{$key}{$dim} file=$selected_files{$key}{$dim}\n" if $opt_v;
-		}
-	}
-
-	foreach my $res (sort keys %results) {
-		print "cluster=$res files=", join(",", @{$results{$res}}), "\n" if $opt_v;
-	}
-	%results;
-}
-
-sub readFiles
-{
-	my ($dir) = @_;
-	# Process --dir option
-	opendir (DIR, "$dir") or die "$!";
-	my @temp_files = grep {/.*?\.yaml/}  readdir DIR;
-	close DIR;
-	my @files;
-	foreach (@temp_files) {
-		push(@files, "$dir/$_");
-	}
-	@files;
-}
 

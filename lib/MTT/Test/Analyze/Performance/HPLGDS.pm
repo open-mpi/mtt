@@ -45,7 +45,7 @@ $report->{test_name}="HPL";
 #--------------------------------------------------------------------------------
 #WR00L2L4       29184   128     2     4           15251.81              1.087e+00
     my $line;
-    my $output_dir=undef;
+    my $output_dir=".";
     my $max_gflops=0;
     my $hpl_version;
     while (defined($line = shift(@lines))) {
