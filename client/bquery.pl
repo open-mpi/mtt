@@ -679,7 +679,7 @@ sub query
     
     my $gql = ();
     my $data = undef;
-    my $loop_threshold = 2;
+    my $loop_threshold = 10;
     my $ua = LWP::UserAgent->new();
     $ua->agent("mtt-submit");
     $ua->proxy('http', $ENV{'http_proxy'});

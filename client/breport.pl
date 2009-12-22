@@ -122,7 +122,7 @@ $module_path=~s/([^\/\\]+)$//;
 use Getopt::Long qw(:config no_ignore_case);
 
 my $opt_help;
-my $opt_dir;
+my @opt_dir;
 my @opt_src;
 my $opt_dest;
 my $opt_ini;
@@ -135,11 +135,14 @@ my @opt_label_x;
 my @opt_label_y;
 my $opt_legend;
 my @opt_chartex;
+my $opt_tab_title = 1;
+my $opt_tab_view = 1;
+my $opt_tab_data = 1;
 
 
 my $report_file = ();
 my $report_title = ();
-my $dir = ();
+my @dir = ();
 my @files = ();
 my @axis_x = ();
 my @axis_y = ();
@@ -150,12 +153,15 @@ my @chartex = ();
 
 
 GetOptions ("help|h"=>\$opt_help,
-            "dir|d=s" => \$opt_dir,
+            "dir|d=s" => \@opt_dir,
             "src|s=s" => \@opt_src,
             "dest|o=s" => \$opt_dest,
             "ini|i=s" => \$opt_ini,
             "section|t=s" => \$opt_section,
             "title|T=s" => \$opt_title,
+            "tab_title!" => \$opt_tab_title,
+            "tab_view!" => \$opt_tab_view,
+            "tab_data!" => \$opt_tab_data,
             "axis_x|AX=s" => \@opt_axis_x,
             "axis_y|AY=s" => \@opt_axis_y,
             "label_x|LX=s" => \@opt_label_x,
@@ -167,7 +173,7 @@ GetOptions ("help|h"=>\$opt_help,
 
 
 # Print help by request or in case invalid options
-if ( (!$opt_dir && !@opt_src && !($opt_ini && $opt_section)) || $opt_help ) 
+if ( (!@opt_dir && !@opt_src && !($opt_ini && $opt_section)) || $opt_help ) 
 {
     help();
     exit;
@@ -185,8 +191,8 @@ if ($opt_ini && $opt_section)
     
     $opt_dest = $cfg->val("$opt_section", 'dest') if ($cfg->val("$opt_section", 'dest'));
     $opt_title = $cfg->val("$opt_section", 'title') if ($cfg->val("$opt_section", 'title'));
-    $opt_dir = $cfg->val("$opt_section", 'dir') if ($cfg->val("$opt_section", 'dir'));
-    
+
+    @opt_dir = $cfg->val("$opt_section", 'dir') if ($cfg->val("$opt_section", 'dir'));   
     @opt_src = $cfg->val("$opt_section", 'src') if ($cfg->val("$opt_section", 'src'));
     @opt_axis_x = $cfg->val("$opt_section", 'axis_x') if ($cfg->val("$opt_section", 'axis_x'));
     @opt_axis_y = $cfg->val("$opt_section", 'axis_y') if ($cfg->val("$opt_section", 'axis_y'));
@@ -200,24 +206,34 @@ if ($opt_ini && $opt_section)
 # Parse command line
 $report_file = $opt_dest ? $opt_dest : "${module_path}report.xls";
 $report_title = $opt_title ? $opt_title : "List of objects";
-$dir = $opt_dir ? $opt_dir : "";
 
 
-if ($dir ne '')
+@dir=split(/,/,join(',',@opt_dir)) if (@opt_dir);
+
+if ($#dir != (-1))
 {
     # Process --dir option
-    opendir (DIR, "$dir") or die "$!";
-    my @temp_files = grep {/.*?\.yaml/}  readdir DIR;
-    close DIR;
-    foreach (@temp_files) 
+    my %h_temp = ();
+    foreach (@dir)
     {
-        push(@files, "$dir/$_");
+    	$h_temp{$_} = undef;
+    }
+
+    foreach my $cur_dir (keys %h_temp)
+    {
+        opendir (DIR, "$cur_dir") or die "$!";
+        my @temp_files = grep {/.*?\.yaml/}  readdir DIR;
+        close DIR;
+        foreach (@temp_files) 
+        {
+            push(@files, "$cur_dir/$_");
+        }
     }   
 }
 else
 {
-	# Process --src option
-	@files=split(/,/,join(',',@opt_src));
+    # Process --src option
+    @files=split(/,/,join(',',@opt_src));
 }
     
 # Split the string into a list of axis_x properties
@@ -242,9 +258,14 @@ my $pattern = qr/\$(\w+)/;
 # Check different arguments    
 if (@axis_x != @axis_y)
 {
-   die "pairs axis_x & axis_y should have valid values";
+    die "pairs axis_x & axis_y should have valid values";
 }
 
+# Check different arguments    
+if ( (scalar(@dir) > 1) && (@dir != @axis_x) )
+{
+    die "set --dir option for every pair axis_x & axis_y";
+}
 
 # Check if files existed
 verify_opt_file( @files );
@@ -254,6 +275,7 @@ my %report_conf = ('title' => $report_title,
                    'dest' => $report_file,
                    'src' => \@files,
                    'data_count' => ($#axis_x + 1),
+                   'match' => ((scalar(@dir) > 1) ? \@dir : undef),
                    'axis_x' => \@axis_x,
                    'axis_y' => \@axis_y,
                    'label_x' => \@label_x,
@@ -300,6 +322,10 @@ sub help
     printf (" %-5s %-10s\t%-s\n", '-t,', '--section', "Name of configuration file section.");
 
     printf (" %-5s %-10s\t%-s\n", '-T,', '--title', "Title of report (default is 'List of objects').");
+
+    printf (" %-5s %-10s\t%-s\n", '', '--tab_title', "Include 'objects' tabsheet (default ON).");
+    printf (" %-5s %-10s\t%-s\n", '', '--tab_view', "Include 'view' tabsheet (default ON).");
+    printf (" %-5s %-10s\t%-s\n", '', '--tab_data', "Include 'data' tabsheet (default ON).");
 
     printf (" %-5s %-10s\t%-s\n", '-AX,', '--axis_x', "Property name of data that should be displayed on axis X or 'none'.");
     printf (" %-5s %-10s\t%-s\n", '-AY,', '--axis_y', "Property name of data that should be displayed on axis Y or 'none'.");
@@ -996,7 +1022,7 @@ sub create_report
     my $i=0;
     my $j=0;
     my $k=0;
- 
+
     # Load YAML file into hash
     $i = 0;
     foreach my $file (sort(@{$report_conf->{src}})) 
@@ -1017,6 +1043,7 @@ sub create_report
 			my($filename, $directory, $suffix) = fileparse("$file", qr/\.[^.]*/);
 		    my $temp_file = "$directory$filename.zip";
             $data->{file_name} = $filename;
+            $data->{file_path} = $directory;
 		    $data->{raw_data} = (! -e $temp_file) ? 'none' : $temp_file;
 
 	        # Construct legend
@@ -1062,7 +1089,10 @@ sub create_report
     }
             
     # Create 'Title' tab
-    create_sheet_title($workbook, $report_conf->{title}, \@a_data_object);
+    if ( $opt_tab_title )
+    {
+        create_sheet_title($workbook, $report_conf->{title}, \@a_data_object);
+    }
 
     # Create data for 'View' tabs
     for($i=0; $i < $report_conf->{data_count}; $i++)
@@ -1083,20 +1113,25 @@ sub create_report
         $report_conf->{label_y}->[$i] = $report_conf->{axis_y}->[$i] if (!defined($report_conf->{label_y}->[$i]));
         $report_conf->{label_x}->[$i] = "" if ($report_conf->{label_x}->[$i] eq 'none');
         $report_conf->{label_y}->[$i] = "" if ($report_conf->{label_y}->[$i] eq 'none');
-        
+
         @a_data = ();
         @a_legend = ();
         my $a_data_ref = 0;
         my $graph_type = Type_Column;
 
-        {
+#        {
             # Prepare data for axis X and axis Y
             $j=0;
             foreach (@a_data_object)
             {
-            	$a_data_ref = $_->{modules}->{TestRunPhase};
-            	
+                $a_data_ref = $_->{modules}->{TestRunPhase};
+
                 # Check error condition
+                if (defined($report_conf->{match}) && !($_->{file_path} =~ /^$report_conf->{match}->[$i]/))
+                {
+                    next;
+                }
+                
                 if ($report_conf->{axis_x}->[$i] ne 'none' &&
                       !exists($a_data_ref->{$report_conf->{axis_x}->[$i]}))
                 {
@@ -1122,69 +1157,75 @@ sub create_report
                     next;
                 }
 
-                # Fill data
-	        if ($report_conf->{axis_x}->[$i] eq 'none')
-	        {
-	            if ($j == 0)
+
+	            # Fill data
+		        if ($report_conf->{axis_x}->[$i] eq 'none')
+		        {
+		            if ($j == 0)
+		            {
+		            	$a_data[0][0] = '';	
+		            }
+	           
+	                    $a_data[$j+1][0] = $a_data_ref->{$report_conf->{axis_y}->[$i]};
+		        }		        
+		        elsif (is_array( $a_data_ref->{$report_conf->{axis_x}->[$i]}) &&
+		            is_array( $a_data_ref->{$report_conf->{axis_y}->[$i]}))
+		        {
+	                    if ($j == 0)
+	                    {
+	                        $temp_str = $a_data_ref->{$report_conf->{axis_x}->[$i]};
+	                        $temp_str =~ s/^\{//i;
+	                        $temp_str =~ s/\}$//i;
+	                        push (@{$a_data[0]}, split(/,/,$temp_str));
+	
+	                        $graph_type = Type_Line;
+	                    }
+	                    $temp_str = $a_data_ref->{$report_conf->{axis_y}->[$i]};
+	                    $temp_str =~ s/^\{//i;
+	                    $temp_str =~ s/\}$//i;
+	                    push (@{$a_data[$j+1]}, split(/,/,$temp_str));
+                }
+	            else
 	            {
-	            	$a_data[0][0] = '';	
+	                for($k=0; (defined($a_data[0]) && $k < @{$a_data[0]}); $k++)
+	                {
+	                	if ($a_data[0][$k] eq $a_data_ref->{$report_conf->{axis_x}->[$i]})
+	                	{
+	                        last;
+	                    }
+	                }
+		                
+	                if (!defined($a_data[0]) || $k == @{$a_data[0]})
+	                {
+	                    $a_data[0][$k] = $a_data_ref->{$report_conf->{axis_x}->[$i]};
+	                }
+	
+	                for($k=0; $k < @{$a_data[0]}; $k++)
+	                {
+	                    if ($a_data[0][$k] eq $a_data_ref->{$report_conf->{axis_x}->[$i]})
+	                    {
+	                        $a_data[$j+1][$k] = $a_data_ref->{$report_conf->{axis_y}->[$i]};
+	                    }
+	                    else
+	                    {
+	                        $a_data[$j+1][$k] = undef;
+	                    }
+	                }
 	            }
-           
-                    $a_data[$j+1][0] = $a_data_ref->{$report_conf->{axis_y}->[$i]};
-	        }		        
-	        elsif (is_array( $a_data_ref->{$report_conf->{axis_x}->[$i]}) &&
-	            is_array( $a_data_ref->{$report_conf->{axis_y}->[$i]}))
-	        {
-                    if ($j == 0)
-                    {
-                        $temp_str = $a_data_ref->{$report_conf->{axis_x}->[$i]};
-                        $temp_str =~ s/^\{//i;
-                        $temp_str =~ s/\}$//i;
-                        push (@{$a_data[0]}, split(/,/,$temp_str));
-
-                        $graph_type = Type_Line;
-                    }
-                    $temp_str = $a_data_ref->{$report_conf->{axis_y}->[$i]};
-                    $temp_str =~ s/^\{//i;
-                    $temp_str =~ s/\}$//i;
-                    push (@{$a_data[$j+1]}, split(/,/,$temp_str));
-                }
-                else
-                {
-                    for($k=0; (defined($a_data[0]) && $k < @{$a_data[0]}); $k++)
-                    {
-                	if ($a_data[0][$k] eq $a_data_ref->{$report_conf->{axis_x}->[$i]})
-                	{
-                            last;
-                        }
-                    }
-	                
-                    if (!defined($a_data[0]) || $k == @{$a_data[0]})
-                    {
-                        $a_data[0][$k] = $a_data_ref->{$report_conf->{axis_x}->[$i]};
-                    }
-
-                    for($k=0; $k < @{$a_data[0]}; $k++)
-                    {
-                        if ($a_data[0][$k] eq $a_data_ref->{$report_conf->{axis_x}->[$i]})
-                        {
-                            $a_data[$j+1][$k] = $a_data_ref->{$report_conf->{axis_y}->[$i]};
-                        }
-                        else
-                        {
-                            $a_data[$j+1][$k] = undef;
-                        }
-                    }
-                }
                 push (@a_legend, $_->{legend});
                 $j++;
+
             }
+
+            # error processing in case a_data array is empty            
+            next if ($#a_data == (-1));
             
             # Sort numeric axis_x labels
             my $re = qr/^\d+$/;
             if (check_list_to_regexp($re, $a_data[0]))
             {
             	my @a_temp = @a_data;
+
             	
             	@{$a_data[0]} = sort { $a <=>$b } @{$a_data[0]};
             	for($j=0; $j < @{$a_data[0]}; $j++)
@@ -1202,7 +1243,7 @@ sub create_report
                     }
                 }
             }
-        }
+#        }
             
         # We do not display sheet if all data is '0' or the display the same property by both axises
         if ((min_2D(\@a_data, 1) == 0 && max_2D(\@a_data, 1) == 0) ||
@@ -1242,11 +1283,17 @@ sub create_report
     }
 
     # Create 'View' tabs
-    create_sheet_view($workbook, \@a_data_view);
+    if ( $opt_tab_view )
+    {
+        create_sheet_view($workbook, \@a_data_view);
+    }
 
     # Create 'Data' tabs
-    create_sheet_data($workbook, \@a_data_object);
-
+    if ( $opt_tab_data )
+    {
+        create_sheet_data($workbook, \@a_data_object);
+    }
+    
     $workbook->close();
 }
 
