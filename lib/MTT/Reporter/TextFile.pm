@@ -142,12 +142,14 @@ sub Submit {
 
     # TextFile output has its own columns-width
     my $save_columns = $Text::Wrap::columns;
-    $Text::Wrap::columns = $textwrap;
+    $Text::Wrap::columns = $textwrap
+        if ($textwrap);
 
     # Do a detail report
     _detail_report($info, $entries);
 
-    $Text::Wrap::columns = $save_columns;
+    $Text::Wrap::columns = $save_columns
+        if ($textwrap);
 }
 
 # Show counts of section results
