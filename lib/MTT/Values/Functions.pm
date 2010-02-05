@@ -1226,7 +1226,7 @@ sub env_name {
         if alps_job();
     return "TM"
         if pbs_job();
-    return "N1GE"
+    return "SGE"
         if n1ge_job();
     return "loadleveler"
         if loadleveler_job();

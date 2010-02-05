@@ -142,8 +142,6 @@ sub Install {
     &_update_openmpi_mca_params_conf($mca_params_conf_file);
     if ($os =~ /SunOS/i) {
         &_update_openmpi_mca_params_conf_solaris($mca_params_conf_file);
-    } elsif ($os =~ /linux/i) {
-        &_update_openmpi_mca_params_conf_linux($mca_params_conf_file);
     }
 
     # Get some OMPI-module-specific config arguments
@@ -279,25 +277,33 @@ sub Install {
     # Setup ompi_info.sh wrapper
     my $ompi_info_wrapper_basename = "ompi_info.sh";
     my $ompi_info_wrapper = "$config->{abs_srcdir}/ompi/tools/ompi_info/$ompi_info_wrapper_basename";
-    foreach my $d ("$staging_dir/bin", "$staging_dir/bin/64", "$staging_dir/instrument/bin", "$staging_dir/instrument/bin/64") {
-        next if (! -d $d);
 
-        MTT::DoCommand::Pushdir($d);
+    # Only create the ompi_info wrapper script if ompi_info.sh is in the
+    # source tree (e.g., it is currently only in the Sun HG repository)
+    if (-x $ompi_info_wrapper) {
+        foreach my $d ("$staging_dir/bin", "$staging_dir/bin/64", "$staging_dir/instrument/bin", "$staging_dir/instrument/bin/64") {
+            next if (! -d $d);
 
-        # Add a ".bin" extension to the binary ompi_info executable, and
-        # install the new ompi_info(.sh) wrapper script
-        if (-x "ompi_info") {
-            MTT::DoCommand::Cmd(1, "mv ompi_info ompi_info.bin");
-            MTT::DoCommand::Cmd(1, "cp $ompi_info_wrapper $ompi_info_wrapper_basename");
-            unlink("ompi_info");
-            symlink($ompi_info_wrapper_basename, "ompi_info");
+            MTT::DoCommand::Pushdir($d);
+
+            # Add a ".bin" extension to the binary ompi_info executable, and
+            # install the new ompi_info(.sh) wrapper script
+            if (-x "ompi_info") {
+                MTT::DoCommand::Cmd(1, "mv ompi_info ompi_info.bin");
+                MTT::DoCommand::Cmd(1, "cp $ompi_info_wrapper $ompi_info_wrapper_basename");
+                unlink("ompi_info");
+                symlink($ompi_info_wrapper_basename, "ompi_info");
+            }
+
+            MTT::DoCommand::Popdir();
         }
-
-        MTT::DoCommand::Popdir();
+    } else {
+        Warning("$package: MTT will not create the dual-bitness ompi_info wrapper script because " .
+                "\nit could not find the ompi_info wrapper script ($ompi_info_wrapper).\n");
     }
 
     # Setup symlinks to 32/64-bit lib directories
-    my ($lib_label_for_64_bit) = &_setup_architecture_dependent_labels();
+    my ($lib_label_for_64_bit, $include_label_for_64_bit) = &_setup_architecture_dependent_labels();
     foreach my $d ("$staging_dir/lib", "$staging_dir/instrument/lib") {
         next if (! -d $d);
 
@@ -305,6 +311,18 @@ sub Install {
         # (Someday the special arch labels will be deprecated)
         MTT::DoCommand::Pushdir($d);
         symlink($lib_label_for_64_bit, "64");
+        symlink(".", "32");
+        MTT::DoCommand::Popdir();
+    }
+
+    # Setup symlinks to 32/64-bit include directories
+    foreach my $d ("$staging_dir/include", "$staging_dir/instrument/include") {
+        next if (! -d $d);
+
+        # Symlink the special arch labels (e.g., "sparcv9" and "amd64") to the generic "64"
+        # (Someday the special arch labels will be deprecated)
+        MTT::DoCommand::Pushdir($d);
+        symlink($include_label_for_64_bit, "64");
         symlink(".", "32");
         MTT::DoCommand::Popdir();
     }
@@ -433,6 +451,10 @@ sub Install {
         MTT::DoCommand::Cmd(1, "rm $staging_dir/mpi.d");
     }
 
+    # Clean up all the .la files left by libtool (otherwise they can force the linker to
+    # load conflicting .so's in /opt/SUNWhpc)
+    MTT::DoCommand::Cmd(1, "find $staging_dir -name '*.la' -exec rm {} \\;");
+
     # Set which bindings were compiled
     $ret->{c_bindings} = 1;
     Debug("$package: Have C bindings: 1\n");
@@ -536,27 +558,6 @@ sub _update_openmpi_mca_params_conf_solaris {
     my $str = "
 # Exclude the sppp0 interface on the M9000 machines
 btl_tcp_if_exclude = lo0,sppp0
-
-# Exclude openib BTL, not currently supported
-btl = ^openib,ofud
-";
-
-    my $ret = MTT::Files::SafeWrite(1, $file, $contents . $str);
-
-    return $ret;
-}
-
-# Append some special ClusterTools settings to mca_params.conf (for Linux only)
-sub _update_openmpi_mca_params_conf_linux {
-    my ($file) = @_;
-
-    my $contents = MTT::Files::Slurp($file);
-    my $str = "
-# bind to socket
-orte_process_binding = socket
-
-# map bysocket
-rmaps_base_schedule_policy = socket
 ";
 
     my $ret = MTT::Files::SafeWrite(1, $file, $contents . $str);
@@ -810,6 +811,12 @@ sub _create_openmpi_wrapper_data_files {
         $compiler_flags_gfortran_64 = "-I$wrapper_prefix/lib/$lib_label_for_64_bit";
     }
 
+    # Ensure the MPI State feature works (see: 6855155)
+    if ($compiler_name =~ /gnu|gcc|intel|path/i) {
+        $wrapper_data->{32}->{linker_flags} .= " -Wl,--enable-new-dtags";
+        $wrapper_data->{64}->{linker_flags} .= " -Wl,--enable-new-dtags";
+    }
+
     $linker_flags_32 = "$dash_r/opt/mx/lib " .
                        "$dash_r$wrapper_prefix/lib";
     $linker_flags_64 = "$dash_r/opt/mx/lib/$lib_label_for_64_bit " .
@@ -819,8 +826,8 @@ sub _create_openmpi_wrapper_data_files {
     $wrapper_data->{64}->{includedir} = "$wrapper_prefix/include/$include_label_for_64_bit";
     $wrapper_data->{32}->{libdir} = "$wrapper_prefix/lib";
     $wrapper_data->{64}->{libdir} = "$wrapper_prefix/lib/$lib_label_for_64_bit";
-    $wrapper_data->{32}->{linker_flags} = $linker_flags_32;
-    $wrapper_data->{64}->{linker_flags} = $linker_flags_64;
+    $wrapper_data->{32}->{linker_flags} .= " $linker_flags_32";
+    $wrapper_data->{64}->{linker_flags} .= " $linker_flags_64";
 
     # Primary and secondary compiler_args
     $wrapper_data->{$primary_wordsize}->{compiler_args} = $primary_compiler_args;
@@ -1218,6 +1225,9 @@ sub _create_prototype_file {
     @contents = MTT::Util::delete_matches_from_array(@contents, '\.la\b');
     $contents .= join("\n", sort @contents);
 
+    # Tack a final newline char here for the pattern match on $groupname\n below
+    $contents .= "\n";
+
     # Do not use ENV here to get the user id and group id, because it
     # might be spoofed in the INI using setenv! This is critical
     # because of the search and replace operation we do using these
@@ -1226,9 +1236,11 @@ sub _create_prototype_file {
     my $groupname = getgrgid($();
     my $archname  = $ENV{"MACHTYPE"};
 
-    # ClusterTools are root packages, so specify this in the
-    $contents =~ s/\b$username\b/root/g;
-    $contents =~ s/\b$groupname\b/bin/g;
+    # ClusterTools are root packages, so specify this in the pkgmap
+    # (Put some other Sun-internal pattern matches in here to ensure we don't
+    # wind up with 6906145 issues)
+    $contents =~ s/ \b(sun|em162155|rolfv|tdd|eugene|dkerr|$username)\b / root /g;
+    $contents =~ s/ \b(sun|hpcgroup|$groupname)\n/ bin\n/g;
     $contents =~ s/="ISA"/="$machname"/g;
 
     # Write out prototype file
@@ -1245,12 +1257,13 @@ sub _write_pkginfo_file {
     Debug("_write_pkginfo_file: got @_\n");
 
     my $pkgvers;
-    $pkgvers->{"7.0"} = "1.0";
-    $pkgvers->{"7.1"} = "2.0";
-    $pkgvers->{"8.0"} = "3.0";
-    $pkgvers->{"8.1"} = "4.0";
-    $pkgvers->{"8.2"} = "5.0";
-    $pkgvers->{"9.0"} = "6.0";
+    $pkgvers->{"7.0"}   = "1.0";
+    $pkgvers->{"7.1"}   = "2.0";
+    $pkgvers->{"8.0"}   = "3.0";
+    $pkgvers->{"8.1"}   = "4.0";
+    $pkgvers->{"8.2"}   = "5.0";
+    $pkgvers->{"8.2.1"} = "6.0";
+    $pkgvers->{"9.0"}   = "7.0";
 
     # Default to a bogus release number
     $full_ct_version_number = "unknown" if (!defined($full_ct_version_number));
