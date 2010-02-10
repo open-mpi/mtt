@@ -573,7 +573,34 @@ sub verify_opt_file
     }
 }
       
-      
+###############################################################################
+#
+# Proxy-aware LWP creator
+#
+###############################################################################
+sub get_lwp
+{
+    my ($url) = @_;
+
+    my $scheme = $url;
+    $scheme =~ s/^\s*(http[s]*):\/\/.*$/$1/;
+    # Get the proxy corresponding to the scheme
+    my $env_proxy = $ENV{"${scheme}_proxy"};
+        
+    my $ua = LWP::UserAgent->new();
+    return undef
+        if (!$ua);
+        
+    if ($env_proxy) {
+        # Ensure the env proxy has the scheme at the prefix
+        $env_proxy = "$scheme://$env_proxy"
+            if ($env_proxy !~ /^\s*http/);
+        $ua->proxy($scheme, $env_proxy);
+    }
+
+    $ua;
+}
+
 ###############################################################################
 #
 # Ping procedure
@@ -583,20 +610,8 @@ sub ping
 {
     my ($conf_ref)=@_;
     
-    my $scheme = $conf_ref->{url};
-    $scheme =~ s/^\s*(http[s]*):\/\/.*$/$1/;
-    # Get the proxy corresponding to the scheme
-    my $env_proxy = $ENV{"${scheme}_proxy"};
-        
-    my $ua = LWP::UserAgent->new();
-    $ua->agent("mtt-bquery.pl");
-        
-    if ($env_proxy) {
-        # Ensure the env proxy has the scheme at the prefix
-        $env_proxy = "$scheme://$env_proxy"
-            if ($env_proxy !~ /^\s*http/);
-        $ua->proxy($scheme, $env_proxy);
-    }
+    my $ua = get_lwp($conf_ref->{url});
+    $ua->agent("bquery.pl:ping");
 
     my $request = POST(
                     $conf_ref->{url},
@@ -631,9 +646,8 @@ sub upload
     
     for ($i=0; $i<@{$conf_ref->{data}}; $i++)
     {
-        my $ua = LWP::UserAgent->new();
-        $ua->agent("mtt-submit");
-        $ua->proxy('http', $ENV{'http_proxy'});
+        my $ua = get_lwp($conf_ref->{url});
+        $ua->agent("bquery.pl:mtt-submit");
         
         my $request;
         my $data_file = "$conf_ref->{data}->[$i]" if defined($conf_ref->{data}->[$i]);
@@ -691,9 +705,9 @@ sub query
     my $gql = ();
     my $data = undef;
     my $loop_threshold = 10;
-    my $ua = LWP::UserAgent->new();
-    $ua->agent("mtt-submit");
-    $ua->proxy('http', $ENV{'http_proxy'});
+
+    my $ua = get_lwp($conf_ref->{url});
+    $ua->agent("bquery.pl:query");
 
     do
     {
@@ -782,10 +796,9 @@ sub view
 {
     my ($conf_ref)=@_;
     
-    my $ua = LWP::UserAgent->new();
-    $ua->agent("mtt-submit");
-    $ua->proxy('http', $ENV{'http_proxy'});
-        
+    my $ua = get_lwp($conf_ref->{url});
+    $ua->agent("bquery.pl:view");
+
     my $request;
     if (exists($conf_ref->{kind}))
     {
@@ -834,9 +847,8 @@ sub admin
 {
     my ($conf_ref)=@_;
     
-    my $ua = LWP::UserAgent->new();
-    $ua->agent("mtt-submit");
-    $ua->proxy('http', $ENV{'http_proxy'});
+    my $ua = get_lwp($conf_ref->{url});
+    $ua->agent("bquery.pl:admin");
 
     my $request;
     if (exists($conf_ref->{newuser}) && $#{$conf_ref->{newuser}} >=2)
@@ -878,9 +890,8 @@ sub update
 {
     my ($conf_ref)=@_;
     
-    my $ua = LWP::UserAgent->new();
-    $ua->agent("mtt-submit");
-    $ua->proxy('http', $ENV{'http_proxy'});
+    my $ua = get_lwp($conf_ref->{url});
+    $ua->agent("bquery.pl:update");
 
     my %cntx = ( UPDATE       => 1,
                  gql         => $conf_ref->{gql},
