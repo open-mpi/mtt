@@ -203,7 +203,6 @@ sub Submit {
         Warning("[MTTGDS reporter]: Submit parameter is undef. Skip.\n");
         return;
     }
-
     
     if ( !defined($entries) ) {
         %$entries = ();
@@ -228,14 +227,14 @@ sub Submit {
        }
     }
 
+    Verbose(">> Reporter MTTGDS: cached for later submit\n");
     Debug("[MTTGDS reporter] Exit from Submit\n");
 }
 
 sub Finalize {
-
     Debug("[MTTGDS reporter] Finalize\n");
     
-	_do_submit();
+    _do_submit();
     undef $entries;
 	
     undef $username;
@@ -268,6 +267,7 @@ sub _do_submit {
     
     #foreach my $phase (keys(%$entries)) {
     foreach my $phase ( "MPI Install", "Test Build", "Test Run" ) {
+        my $submitted = 0;
         my $phase_obj = $entries->{$phase};
 
         foreach my $section ( keys(%$phase_obj) ) {
@@ -336,8 +336,11 @@ sub _do_submit {
                 
                 my $response = _do_request($$req);
                 #unlink($file);            
+                $submitted = 1;
             }
         }
+        Verbose(">> Submitted $phase to GDS\n")
+            if ($submitted);
     }
 }
 
