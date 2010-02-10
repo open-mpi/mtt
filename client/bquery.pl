@@ -583,10 +583,21 @@ sub ping
 {
     my ($conf_ref)=@_;
     
-    my $ua = LWP::UserAgent->new();
-    $ua->agent("mtt-submit");
-    $ua->proxy('http', $ENV{'http_proxy'});
+    my $scheme = $conf_ref->{url};
+    $scheme =~ s/^\s*(http[s]*):\/\/.*$/$1/;
+    # Get the proxy corresponding to the scheme
+    my $env_proxy = $ENV{"${scheme}_proxy"};
         
+    my $ua = LWP::UserAgent->new();
+    $ua->agent("mtt-bquery.pl");
+        
+    if ($env_proxy) {
+        # Ensure the env proxy has the scheme at the prefix
+        $env_proxy = "$scheme://$env_proxy"
+            if ($env_proxy !~ /^\s*http/);
+        $ua->proxy($scheme, $env_proxy);
+    }
+
     my $request = POST(
                     $conf_ref->{url},
                     Content_Type => 'form-data',
