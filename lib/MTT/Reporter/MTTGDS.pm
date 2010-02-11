@@ -576,6 +576,11 @@ sub _pre_process_phase {
 
     my $ini    = $MTT::Globals::Internals->{ini};
     my $module = $ini->val( "Test run: " . $section, "analyze_module" );
+
+    # If there's no analyze module, then just return
+    return $form
+        if (!$module);
+
     $module = "MTT::Test::Analyze::Performance::$module";
     my $method = "PreReport";
     my @args   = ( $phase, $section, $report );
