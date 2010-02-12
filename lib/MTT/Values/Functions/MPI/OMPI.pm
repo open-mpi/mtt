@@ -309,4 +309,34 @@ sub get_mpicc_compiler_version {
     return @$x[1];
 }
 
+#--------------------------------------------------------------------------
+
+# Extract the MCA parameters from an mpirun command line.  Also scour
+# the environment looking for OMPI_MCA_* environment variables and
+# list those, too.
+
+sub find_mca_params {
+    my ($cmd) = @_;
+    my @params;
+    my $str;
+
+    # Extract from command line
+    while ($cmd =~ s/\s([\-]*-mca)\s+(\S+)\s+(\S+)\s/ /) {
+        push(@params, "$1 $2 $3");
+    }
+
+    # Check the environment for OMPI_MCA_* values
+    foreach my $e (keys(%ENV)) {
+        Debug("Functions::MPI::OMPI: Checking env key: $e\n");
+        if ($e =~ m/^OMPI_MCA_(\S+)/) {
+            my $v = $ENV{"OMPI_MCA_$1"};
+            push(@params, "--env-mca $1 $v");
+        }
+    }
+
+    $str = join(' ', @params);
+    Debug("Functions::MPI::OMPI: Returning MCA params $str\n");
+    $str;
+}
+
 1;

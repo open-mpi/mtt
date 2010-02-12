@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 #
 # Copyright (c) 2009 Voltaire
+# Copyright (c) 2010 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -487,18 +488,15 @@ sub _process_phase_test_run {
     $phase_form->{test_case} = $report->{parameters}
         if ( !defined( $phase_form->{test_case} ) );
 
+    # JMS Why do we have an mpi_mca field?  Shouldn't this kind of
+    # stuff be in the MPI Details parameters and network fields?
     if (!defined($phase_form->{mpi_mca})) {
-        my $mca = $report->{command};
-        $mca =~ s/^\s*$report->{launcher}//;
-        $mca =~ s/\s(-n|--n|-np|--np)\s\S+//;
-        $mca =~ s/\s(-rf|--rankfile)\s\S+//;
-        $mca =~ s/\s(-hostfile|--hostfile)\s\S+//;
-        $mca =~ s/\s(-host|--host)\s\S+//;
-        $mca =~ s/\s*(-x)\s\S+//g;
-        $mca =~ s/\s[\S\/\\]*$report->{test_name}.*//;
-        $mca =~ s/\s\s/ /g;
-        $mca =~ s/^\s+|\s+$//g;
-        $phase_form->{mpi_mca} = $mca;
+
+        # JMS Should generlize this to be "extract from the current
+        # ::MPI::module".  There are other instances of this direct
+        # call in MTT::Test::Analyze::Performance::*.
+        $phase_form->{mpi_mca} = 
+            MTT::Values::Functions::MPI::OMPI::find_mca_params($report->{command});
 
         if (!defined($phase_form->{mpi_rlist})) {
             my $rankfile = undef;
@@ -591,13 +589,17 @@ sub _pre_process_phase {
     my $check = eval $str;
     if ($@) {
         Warning("Could not load module $module: $@\n");
-    }
-    else {
+    } else {
         my $ret = undef;
-        $str   = "\$ret = \&${module}::$method(\@args)";
-        $check = eval $str;
-        if ($@) {
-            Warning("Could not run module $module:$method: $@\n");
+        $str = "\$ret = exists(\$${module}::{$method})";
+        eval $str;
+        if (1 == $ret) {
+            $ret = undef;
+            $str   = "\$ret = \&${module}::$method(\@args)";
+            $check = eval $str;
+            if ($@) {
+                Warning("Could not run module $module:$method: $@\n");
+            }
         }
     }
     
