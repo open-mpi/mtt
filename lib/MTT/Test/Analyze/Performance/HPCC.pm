@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 #
 # Copyright (c) 2009      Voltaire
+# Copyright (c) 2010 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -211,17 +212,8 @@ sub PreReport
     if ($mca =~ m/-cmd(\s+|=)\"([\S\s]*)\"/) {
         $mca = $2;
     }
-    $mca =~ s/^\S+//;
-    $mca =~ s/\s(-n|--n|-np|--np)\s\S+//;
-    $mca =~ s/\s(-rf|--rankfile)\s\S+//;
-    $mca =~ s/\s(-hostfile|--hostfile)\s\S+//;
-    $mca =~ s/\s(-host|--host)\s\S+//;
-    $mca =~ s/\s[\S\/\\]*hpcc.*//;
-    $mca =~ s/\s(-x)\s\S+//g;
-    $mca =~ s/\s\s/ /g;
-    $mca =~ s/^\s+|\s+$//g;
-
-    $report->{testphase}->{mpi_mca} = $mca;
+    $report->{testphase}->{mpi_mca} =
+        MTT::Values::Functions::MPI::OMPI::find_mca_params($mca);
 
     my $rankfile = undef;
     my $cmdline  = $report->{command};

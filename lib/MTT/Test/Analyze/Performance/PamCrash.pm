@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 #
 # Copyright (c) 2009      Voltaire
+# Copyright (c) 2010 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -99,17 +100,10 @@ sub PreReport
     $report->{test_name} = "pamcrash";
 	
     if ($report->{command} =~ m/-mpiopt(\s+|=)\"([^\"]*)\"/) {
-        my $mca = $2;
-        Debug("Found mpiopt parameter: $mca\n");
-        $mca =~ s/\s*(-n|--n|-np|--np)\s\S+//;
-        $mca =~ s/\s*(-rf|--rankfile)\s\S+//;
-        $mca =~ s/\s*(-hostfile|--hostfile)\s\S+//;
-        $mca =~ s/\s*(-host|--host)\s\S+//;
-        $mca =~ s/\s*(-x)\s\S+//g;
-        $mca =~ s/\s+\s/ /g;
-        $mca =~ s/^\s+|\s+$//g;
-        Debug("mca parameter: $mca\n");
-        $report->{testphase}->{mpi_mca} = $mca;
+        Debug("Found mpiopt parameter: $2\n");
+        $report->{testphase}->{mpi_mca} =
+            MTT::Values::Functions::MPI::OMPI::find_mca_params($2);
+        Debug("Extracted mca parameters: $report->{testphase}->{mpi_mca}\n");
     } else {
         Warning("Fluent: can't find -mpiopt parameter: $report->{command}\n");
         $report->{testphase}->{mpi_mca} = "";
