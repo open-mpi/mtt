@@ -7,8 +7,8 @@
 # $HEADER$
 #
 
-application: vbench-dev
-version: 8
+application: open-mpi-mtt
+version: 2
 runtime: python
 api_version: 1
 

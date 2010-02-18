@@ -69,10 +69,6 @@ class AddUserHandler(webapp.RequestHandler):
             status = 401
         else:
             user = auth.add_user(username = self.request.get('username_'),
-                                 password = self.request.get('password_'),
-                                 email = self.request.get('email_'),
-                                 first_name = self.request.get('first_name_'),
-                                 last_name = self.request.get('last_name_'),
                                  is_superuser = self.request.get('is_superuser_')
                                  )
             

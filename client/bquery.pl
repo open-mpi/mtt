@@ -143,7 +143,7 @@ my $opt_info;
 my $opt_format;
 my $opt_mailto;
 
-my @opt_newuser;
+my $opt_newuser;
 
 GetOptions ("help|h" => \$opt_help,
             "server|a=s" => \$opt_server,
@@ -172,7 +172,7 @@ GetOptions ("help|h" => \$opt_help,
             "format|V=s" => \$opt_format,
             "email|e=s" => \$opt_mailto,
 
-            "newuser=s{3,5}" => \@opt_newuser
+            "newuser=s" => \$opt_newuser
             );
 
 
@@ -426,10 +426,7 @@ elsif ($opt_view)
 }
 elsif ($opt_admin)
 {
-    if ($#opt_newuser > 0) 
-    {
-        $conf{newuser} = \@opt_newuser;
-    }
+    $conf{newuser} = $opt_newuser;
  
     admin( \%conf ); 
 }
@@ -544,7 +541,7 @@ sub help
     }
     if (!defined($action) || $action eq '' || $action eq 'admin')
     {
-        printf (" %-5s %-10s\t%-s\n", '', '--newuser', "User information as username, password, email (mandatory) and first_name, last_name (optional). Keep order of values.");
+        printf (" %-5s %-10s\t%-s\n", '', '--newuser', "User information as username (Google account).");
     }
     if (!defined($action) || $action eq '' || $action eq 'update')
     {
@@ -851,7 +848,7 @@ sub admin
     $ua->agent("bquery.pl:admin");
 
     my $request;
-    if (exists($conf_ref->{newuser}) && $#{$conf_ref->{newuser}} >=2)
+    if (exists($conf_ref->{newuser}))
     {
         $request = POST(
                     $conf_ref->{url},
@@ -859,11 +856,7 @@ sub admin
                     Content => [
                             ADMIN       => 1,
                             _NEWUSER_   => 1,
-                            username    => $conf_ref->{newuser}->[0],
-                            password    => $conf_ref->{newuser}->[1],
-                            email       => $conf_ref->{newuser}->[2],
-                            first_name  => ($#{$conf_ref->{newuser}} >=3 ? $conf_ref->{newuser}->[3] : ''),
-                            last_name   => ($#{$conf_ref->{newuser}} >=4 ? $conf_ref->{newuser}->[4] : ''),
+                            username    => $conf_ref->{newuser},
                             description => 'bquery admin'
                              ]);
     }

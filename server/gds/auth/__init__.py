@@ -32,9 +32,18 @@ def check_login(handler_method):
         logging.debug('check_login %s: <%s> admin = %s user = %s' % 
                       (self.__class__.__name__, self.request.method, str(users.is_current_user_admin()), str(self.user)))
 
+        user = users.get_current_user()
+        
+        if not user:
+            greeting = ("<a href=\"%s\">Sign in or register</a>." %
+                  users.create_login_url("/"))
+            self.response.set_status(401) # Unauthorized
+            self.response.out.write("<html><body>%s</body></html>" % greeting)
+            return
+        
         if not users.is_current_user_admin() and self.user is None:
             if self.request.method == 'GET':
-                credential = [self.request.get('username'), self.request.get('password')]
+                credential = [user.email(), None]
                 self.user = authenticate(credential)
                 if self.user is None:
                     self.redirect('%s?%s=%s' % ('/login/', 'next', urllib.quote(self.request.uri)))
@@ -86,9 +95,8 @@ def authenticate(credential):
     users = query.filter('is_active =', True)
     user = users.get()
 
-    if user:
-        if ((not user.check_password(raw_password = credential[1], password = user.password)) and
-            (user.password != credential[1])): 
+    if user and credential[1] is not None:
+        if (not user.check_password(raw_password = credential[1])): 
             user = None
 
     logging.debug('authenticate: %s' % str(user))
@@ -103,25 +111,14 @@ def add_user(**credential):
     logging.debug('add_user: %s' % str(credential))
 
     user = None
-    email_re = re.compile(r'[\w\d\.\-\+]+@[\w\d\.\-\+]+\.[\w\d\.\-\+]+')
-    if (not credential.has_key('email') or 
-        not email_re.match(credential['email'])):
-        logging.error("Invalid email = '%s'" % (credential['email']))
-        return user
         
     query = db.Query(User)
     query_users = query.filter('username =', credential['username'])
     if query_users.count()>1:
         logging.error("There are several users with username = '%s' and email = '%s'" % (credential['username'], credential['email']))
         user = query_users.get()   
-    elif (credential.has_key('username') and 
-          credential.has_key('password')):
-        user = User(username = credential['username'],
-                    email = credential['email']
-                    )
-        user.set_password(credential['password'])
-        if (credential.has_key('first_name')): user.first_name = credential['first_name']
-        if (credential.has_key('last_name')): user.last_name = credential['last_name']
+    elif (credential.has_key('username')):
+        user = User(username = credential['username'])
         if (credential.has_key('is_superuser') and
             credential['is_superuser'].lower() in ('yes', 'true')): user.is_superuser = True
         else:

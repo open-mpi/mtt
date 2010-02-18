@@ -150,13 +150,7 @@ class LoginHandler(webapp.RequestHandler):
             status = 401    # Unauthorized
             
         else:
-            query = {}
-            query['username'] = user.username
-            query['password'] = user.password
-            url = '%s?%s' % (self.request.get('next') , 
-                             '&'.join('%s=%s' % (urllib.quote_plus(k.encode('utf8')),
-                                                 urllib.quote_plus(v.encode('utf8')))
-                             for k, v in query.iteritems()))
+            url = '%s' % (self.request.get('next'))
             status = 302    # Found
         
         self.response.set_status(status)        
@@ -952,11 +946,7 @@ class ClientHandler(webapp.RequestHandler):
         status = 0
         if 'ADMIN' in self.request.arguments():
             if ('_NEWUSER_' in self.request.arguments()):                
-                user = auth.add_user(username = self.request.get('username'),
-                                     password = self.request.get('password'),
-                                     email = self.request.get('email'),
-                                     first_name = self.request.get('first_name'),
-                                     last_name = self.request.get('last_name'))
+                user = auth.add_user(username = self.request.get('username'))
                 if user is None:
                     status = 400
                 else:                   
@@ -1001,8 +991,18 @@ class ClientHandler(webapp.RequestHandler):
                             query = db.GqlQuery(query_str)
                             result_set = query
 
+                            excluded_list = [ 
+                                     'submitinfo',
+                                     'clusterinfo',
+                                     'mpiinfo',
+                                     'compilerinfo',
+                                     'suiteinfo',
+                                     'mpiinstallphase',
+                                     'testbuildphase',
+                                     'data_file'
+                                     ]
                             for entity in result_set:
-                                self.__fill_entity(entity, key_dict)
+                                self.__fill_entity(entity, key_dict, excluded_list, True)
                                 entity.put()
                                 
                     except (datastore_errors.BadQueryError, datastore_errors.BadArgumentError, datastore_errors.BadRequestError, datastore_errors.BadRequestError, datastore_errors.BadFilterError, db.KindError), err:
@@ -1122,52 +1122,67 @@ def get_table_data(entities):
     value from one of the entities for the key name.
     """
     key_dict = {}
+    key_dict['_id_'] = []
+    key_dict['_key_'] = []
     for entity in entities:
-        if key_dict.has_key('_key_'):
-            key_dict['_id_'].append(str(entity.key().id()))
-            key_dict['_key_'].append(str(entity.key()))
-        else:
-            key_dict['_id_'] = [str(entity.key().id())]
-            key_dict['_key_'] = [str(entity.key())]
         for prop in entity.properties().values():
-            val = prop.get_value_for_datastore(entity)
-
-            if (datastore.typename(prop) in ['BlobProperty']):
-                val = 'blob'
-            elif (datastore.typename(prop) in ['ReferenceProperty']):
-                val = str(val)
-            elif (datastore.typename(prop) in ['EmailProperty', 'BooleanProperty']):
-                val = str(val)
-            elif (datastore.typename(prop) in ['TextProperty']):
-                val = unicode(val)
-                
-            if val is None or val == 'unknown':
-                val = ''
-
-            if key_dict.has_key(prop.name):
-                key_dict[prop.name].append(str(val))
-            else:
-                key_dict[prop.name] = [str(val)]
-
+            if not key_dict.has_key(prop):
+                key_dict[prop.name] = []
         for prop in entity.dynamic_properties():
-            val = entity.__getattr__(prop)
-
-            if (type(val).__name__ in ['Blob']):
-                val = 'blob'
-            elif (type(val).__name__ in ['Key']):
-                val = str(val)
-            elif (type(val).__name__ in ['Email', 'bool']):
-                val = str(val)
-            elif (type(val).__name__ in ['Text']):
-                val = unicode(val)
-
-            if val is None or val == 'unknown':
-                val = ''
-
-            if key_dict.has_key(prop):
-                key_dict[prop].append(str(val))
+            if not key_dict.has_key(prop):
+                key_dict[prop] = []
+                
+    for entity in entities:            
+        for key in key_dict.keys():
+            if key in ['_id_']:
+                key_dict['_id_'].append(str(entity.key().id()))
+            elif key in ['_key_']:
+                key_dict['_key_'].append(str(entity.key()))
+                    
+            elif key in entity.properties():
+                prop = entity.properties()[key]
+                
+                val = prop.get_value_for_datastore(entity)
+    
+                if (datastore.typename(prop) in ['BlobProperty']):
+                    val = 'blob'
+                elif (datastore.typename(prop) in ['ReferenceProperty']):
+                    val = str(val)
+                elif (datastore.typename(prop) in ['EmailProperty', 'BooleanProperty']):
+                    val = str(val)
+                elif (datastore.typename(prop) in ['TextProperty']):
+                    val = unicode(val)
+                    
+                if val is None or val == 'unknown':
+                    val = ''
+    
+                if key_dict.has_key(key):
+                    key_dict[key].append(str(val))
+                else:
+                    key_dict[key] = [str(val)]
+    
+            elif key in entity.dynamic_properties():
+                val = entity.__getattr__(key)
+    
+                if (type(val).__name__ in ['Blob']):
+                    val = 'blob'
+                elif (type(val).__name__ in ['Key']):
+                    val = str(val)
+                elif (type(val).__name__ in ['Email', 'bool']):
+                    val = str(val)
+                elif (type(val).__name__ in ['Text']):
+                    val = unicode(val)
+    
+                if val is None or val == 'unknown':
+                    val = ''
+    
+                if key_dict.has_key(key):
+                    key_dict[key].append(str(val))
+                else:
+                    key_dict[key] = [str(val)]
+                    
             else:
-                key_dict[prop] = [str(val)]
+                key_dict[key].append('')
 
     return key_dict
 
