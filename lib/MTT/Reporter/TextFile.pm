@@ -335,10 +335,11 @@ sub _detail_report {
             my $html_body = "";
             if (not defined $existing_report_file{$html_file}) {
                 $existing_report_file{$html_file} = 1;
-                if (! -f $html_file) {
-                    my $html_start = get_html_phase_report_template_start();
-                    $html_body = $html_start;
-                }
+                my $html_start = get_html_phase_report_template_start();
+                Verbose(">> html: adding css $html_file\n");
+                $html_body = $html_start;
+            } else {
+                Verbose(">> html: not adding report css, already exists: $html_file\n");
             }
             $html_body .= $html_table;
             _output_results($html_file, $html_body);
