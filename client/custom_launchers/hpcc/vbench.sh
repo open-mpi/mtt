@@ -23,6 +23,11 @@ do
       ;;
     -cmd)
       COMMAND=${!i1}
+      COMMAND=`echo ${COMMAND} | sed -e 's/ -x "custom_[^"]*"//g'`
+      COMMAND=`echo ${COMMAND} | sed -e "s/ -x 'custom_[^']*'//g"`
+      COMMAND=`echo ${COMMAND} | sed -e 's/ -x custom_[^ =]*="[^"]*"//g'`
+      COMMAND=`echo ${COMMAND} | sed -e "s/ -x custom_[^ =]*='[^']*'//g"`
+      COMMAND=`echo ${COMMAND} | sed -e "s/ -x custom_[^ \"']*//g"`
       i=$i+1
       ;;
     -help)

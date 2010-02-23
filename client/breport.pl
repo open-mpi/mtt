@@ -98,6 +98,7 @@ use File::Basename;
 use Config::IniFiles;   
 use YAML::XS;
 
+my @ARGV_SAVED = @ARGV;
 
 use constant Type_Line => 0;
 use constant Type_Column => 1;
@@ -122,6 +123,7 @@ $module_path=~s/([^\/\\]+)$//;
 use Getopt::Long qw(:config no_ignore_case);
 
 my $opt_help;
+my $opt_verbose;
 my @opt_dir;
 my @opt_src;
 my $opt_dest;
@@ -153,6 +155,7 @@ my @chartex = ();
 
 
 GetOptions ("help|h"=>\$opt_help,
+            "verbose|v"=>\$opt_verbose,
             "dir|d=s" => \@opt_dir,
             "src|s=s" => \@opt_src,
             "dest|o=s" => \$opt_dest,
@@ -171,6 +174,11 @@ GetOptions ("help|h"=>\$opt_help,
             "email|m|e=s" => \$opt_mailto
             );
 
+if ($opt_verbose)
+{
+  print("cmd: $0 ", join(' ', @ARGV_SAVED), "\n");
+  print("legend template: \'$opt_legend\'\n");
+}
 
 # Print help by request or in case invalid options
 if ( (!@opt_dir && !@opt_src && !($opt_ini && $opt_section)) || $opt_help ) 
@@ -246,11 +254,7 @@ else
 @label_x=split(/,/,join(',',@opt_label_x)) if (@opt_label_x);
     
 # Split the string into a list of label_y properties
-@label_y=split(/,/,join(',',@opt_label_y)) if (@opt_label_y);
-    
-# Split the string into a list of properties that should be in legend
-my $pattern = qr/\$(\w+)/;
-@legend = $opt_legend =~ m/$pattern/ig if (defined($opt_legend));
+@label_y=split(/,/,join(',',@opt_label_y)) if (@opt_label_y);   
 
 # Split the string into a list of chart_ex properties
 @chartex=split(/,/,join(',',@opt_chartex)) if (@opt_chartex);
@@ -280,7 +284,7 @@ my %report_conf = ('title' => $report_title,
                    'axis_y' => \@axis_y,
                    'label_x' => \@label_x,
                    'label_y' => \@label_y,
-                   'legend' => \@legend,
+                   'legend' => \$opt_legend,
                    'chart_ex' => \@chartex
                     );
 create_report( \%report_conf ); 
@@ -1002,7 +1006,6 @@ sub create_sheet_data
     }
 } 
 
-
 ###############################################################################
 #
 # Create xls report
@@ -1046,29 +1049,42 @@ sub create_report
             $data->{file_path} = $directory;
 		    $data->{raw_data} = (! -e $temp_file) ? 'none' : $temp_file;
 
+            my @legend_parameters = ();
+
 	        # Construct legend
-	        $temp_str = "$i";
-	        if (!@{$report_conf->{legend}})
+            $temp_str = '';
+            if (!${$report_conf->{legend}})
 	        {
-	            my($filename, $directory, $suffix) = fileparse("$file", qr/\.[^.]*/);
-	            $temp_str = "$temp_str-$filename";
+                $temp_str = "$filename";
 	        }
 	        else
 	        {
-	            foreach (@{$report_conf->{legend}})
+                my $legend_template = ${$report_conf->{legend}};
+                my $legend = "";
+                while ($legend_template =~ m/(^[^\$]*)\$(\w+)(.*)$/g) {
+                    my $replace_str = '?';
+                    if (exists($data->{modules}->{TestRunPhase}->{$2})) 
 	            {
-	                if (exists($data->{modules}->{TestRunPhase}->{$_})) 
-	                {
-	                    $temp_str = "$temp_str-$data->{modules}->{TestRunPhase}->{$_}";
+                        $replace_str = "$data->{modules}->{TestRunPhase}->{$2}";
 	                }
-	                elsif ($_ eq 'filename')
+                    elsif ($2 eq 'filename')
 	                {
-	                    my($filename, $directory, $suffix) = fileparse("$file", qr/\.[^.]*/);
-	                    $temp_str = "$temp_str-$filename";
+                        $replace_str = "$filename";
 	                }
+                    elsif ($2 eq 'id')
+                    {
+                        $replace_str = "$i";
 	            }
+                    push (@legend_parameters, $replace_str);
+                    $legend = "$legend$1$replace_str";
+                    $legend_template = $3;
+                }
+                $legend = "$legend$legend_template";
+
+                $temp_str = $legend;
 	        }   
             $data->{legend} = $temp_str;
+            $data->{sort_parameters} = \@legend_parameters;
 		}
         
         # Parse source file and save data in special structure
@@ -1081,6 +1097,19 @@ sub create_report
     {
     	return ;
     }
+
+    @a_data_object = sort {
+        my @a_sort_parameters = @{$a->{sort_parameters}};
+        my @b_sort_parameters = @{$b->{sort_parameters}};
+        my $i = 0;
+        foreach my $ap (@a_sort_parameters) {
+          my $bp = $b_sort_parameters[$i];
+          if ("$ap" gt "$bp") { return 1; }
+          if ("$ap" lt "$bp") { return -1; }
+          $i++;
+        }
+        return 0;
+    } @a_data_object;
 
     my $workbook = Spreadsheet::WriteExcel->new($report_conf->{dest});
     if (!defined($workbook))
@@ -1296,7 +1325,6 @@ sub create_report
     
     $workbook->close();
 }
-
 
 ###############################################################################
 #

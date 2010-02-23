@@ -539,7 +539,19 @@ sub _process_phase_test_run {
 
     # Special named export environment variables set in mpirun command line
     # should be stored as part of data in GDS datastore
-    while ( $phase_form->{cmdline} =~ m/\s+-x\s*(custom_\w+)\=(\w+)/g ){
+    while ( $phase_form->{cmdline} =~ m/\s+-x\s+(custom_\w+)\=([^\s\"\']+)/g){
+        $phase_form->{$1} = $2;
+    }
+    while ( $phase_form->{cmdline} =~ m/\s+-x\s+(custom_\w+)\=\"([^\"]*)\"/g ){
+        $phase_form->{$1} = $2;
+    }
+    while ( $phase_form->{cmdline} =~ m/\s+-x\s+\"(custom_\w+)\=([^\"]*)\"/g){
+        $phase_form->{$1} = $2;
+    }
+    while ( $phase_form->{cmdline} =~ m/\s+-x\s+(custom_\w+)\=\'([^\']*)\'/g ){
+        $phase_form->{$1} = $2;
+    }
+    while ( $phase_form->{cmdline} =~ m/\s+-x\s+\'(custom_\w+)\=([^\']*)\'/g){
         $phase_form->{$1} = $2;
     }
     

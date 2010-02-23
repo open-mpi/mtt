@@ -81,7 +81,7 @@ sub Analyze {
 
     $test_case =~ s/^\s+//;
     $test_case =~ s/\s+$//;
-    $report->{testphase}->{test_case} = $test_case;
+    $report->{testphase}->{test_case} = "$test_exec/$test_case";
     $exec_time =~ s/^\s+//;
     $exec_time =~ s/\s+$//;
     $report->{testphase}->{data_exectime} = $exec_time;

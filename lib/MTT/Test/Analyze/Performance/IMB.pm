@@ -163,7 +163,7 @@ sub PreReport
     my ($phase, $section, $report) = @_;
 
     $report->{testphase}->{test_case} = $report->{test_name};
-    $report->{test_name} = "IMB_MPI1";
+    $report->{test_name} = "IMB-MPI1";
 }
 
 1;

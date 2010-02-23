@@ -40,6 +40,11 @@ my $opt_prepare=undef;
 my $opt_run=undef;
 my $opt_output_file=undef;
 
+# remove -x parameters with quotes
+foreach my $arg (@ARGV)
+{
+  $arg =~ s/\s+-x\s+(\"[^\"]*\"|\'[^\']*\')//g;
+}
 
 my @ARGV_SAVED=@ARGV;
 

@@ -31,6 +31,12 @@ do
       ;;
     -mpiopt)
       MPIOPT=${!i1}
+      # remove -x parameters
+      MPIOPT=`echo ${MPIOPT} | sed -e 's/ -x "custom_[^"]*"//g'`
+      MPIOPT=`echo ${MPIOPT} | sed -e "s/ -x 'custom_[^']*'//g"`
+      MPIOPT=`echo ${MPIOPT} | sed -e 's/ -x custom_[^ =]*="[^"]*"//g'`
+      MPIOPT=`echo ${MPIOPT} | sed -e "s/ -x custom_[^ =]*='[^']*'//g"`
+      MPIOPT=`echo ${MPIOPT} | sed -e "s/ -x custom_[^ \"']*//g"`
       i=$i+1
       ;;
     -mpiver)
@@ -119,6 +125,8 @@ ln -s $INPUT_DIR/*.inc $WORKDIR/
 ln -s $INPUT_DIR/*.pc $WORKDIR/
 echo WORKING DIRECTORY:
 ls
+echo Launch:
+echo $PAMWORLD -wd $WORKDIR -np $OMPI_NP -cf $WORKDIR/clusterfile -mpiext \"$OMPI_PARAMS\" -mpi $OMPI_VER -mpidir $OMPI_DIR/bin -lic CRASHSAF $INPUT_FILE_NAME
 $PAMWORLD -wd $WORKDIR -np $OMPI_NP -cf $WORKDIR/clusterfile -mpiext "$OMPI_PARAMS" -mpi $OMPI_VER -mpidir $OMPI_DIR/bin -lic CRASHSAF $INPUT_FILE_NAME > $WORKDIR/pamcrash.log < /dev/null
 EXIT_VALUE=$?
 head -n 20 $WORKDIR/pamcrash.log | grep Version

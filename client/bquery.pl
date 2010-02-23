@@ -97,6 +97,7 @@ use File::Temp;
 use Config::IniFiles;
 use YAML::XS;
 
+my @ARGV_SAVED = @ARGV;
 
 ###########################################################
 # Set variables
@@ -116,6 +117,7 @@ $module_path=~s/([^\/\\]+)$//;
 use Getopt::Long qw(:config no_ignore_case);
 
 my $opt_help;
+my $opt_verbose;
 my $opt_server;
 my $opt_username;
 my $opt_password;
@@ -146,6 +148,7 @@ my $opt_mailto;
 my $opt_newuser;
 
 GetOptions ("help|h" => \$opt_help,
+            "verbose|v" => \$opt_verbose,
             "server|a=s" => \$opt_server,
             "username|u=s" => \$opt_username,
             "password|p=s" => \$opt_password,
@@ -175,6 +178,10 @@ GetOptions ("help|h" => \$opt_help,
             "newuser=s" => \$opt_newuser
             );
 
+if ($opt_verbose)
+{
+  print("cmd: $0 ", join(' ', @ARGV_SAVED), "\n");
+}
 
 my $url = ();
 my $username = ();

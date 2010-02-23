@@ -44,6 +44,12 @@ my $benchs = "eddy_417k,turbo_500k,aircraft_2m,sedan_4m,truck_14m,truck_poly_14m
 my $fluent_path=undef; # "/hpc/home/inst/local/x86_64/commercial/fluent/Fluent.Inc";
                        # or "/hpc/home/inst/local/x86_64/commercial/fluent/beta/ansys_inc/v120/fluent";
 
+# remove -x parameters with quotes
+foreach my $arg (@ARGV)
+{
+  $arg =~ s/\s+-x\s+(\"[^\"]*\"|\'[^\']*\')//g;
+}
+
 my @ARGV_SAVED=@ARGV;
 
 GetOptions ("help|h"=>\$opt_help,
