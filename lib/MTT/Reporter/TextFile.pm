@@ -23,6 +23,7 @@ use MTT::Mail;
 use MTT::DoCommand;
 use Data::Dumper;
 use File::Basename;
+use File::Temp;
 use Text::Wrap;
 
 # directory and file to write to
@@ -406,6 +407,16 @@ sub _add_to_tables {
     );
     my $frivolous = join("|", @frivolous);
 
+    # it can absent, if test did not start from some reason (wrong path to already installed mpi)
+    my $strClass = "Passed";
+    if ( !$include_hash->{"result_message"} and !$include_hash->{"test_result"}) {
+        $strClass = "Error";
+    } elsif ( ($include_hash->{"result_message"} ne "Success") and 
+        ($include_hash->{"result_message"} ne "Passed") and 
+        ($include_hash->{"result_message"} ne "Skipped")) {
+        $strClass = "Error";
+    }
+
     my $has_result = 0;
     foreach my $key (sort keys %$include_hash) {
 
@@ -419,15 +430,26 @@ sub _add_to_tables {
                     $$htable_ref .= get_html_phase_report_table_start_template();
                     $has_result++;
                 }
-                my $trClass = "Passed";
-                if (($key eq "result_message") and  ($include_hash->{$key} ne "Success") and ($include_hash->{$key} ne "Passed") and ($include_hash->{$key} ne "Skipped")) {
-                    $trClass = "Error";
-                }
 
                 my $val = $include_hash->{$key};
-                $val =~ s/\n/<br>/g;
-                $val =~ s/[ ]/&nbsp;/g;
-                $$htable_ref .= "<tr valign='top' class='$trClass'><td>$key</td><td>$val</td></tr>\n";
+
+                # can be too big, browser hangs, save it as a href
+                if ($key eq "result_stdout") {
+                    my $tmp = new File::Temp(UNLINK => 0, SUFFIX => '.txt', TEMPLATE=>'test_stdout_XXXXXX', DIR=>$dirname);
+                    my $fname = $tmp->filename;
+                    my $fname_base = basename($fname);
+                    close $tmp;
+                    _output_results($fname, $val);
+                    $$htable_ref .= "<tr valign='top' class='$strClass'><td>$key</td><td><a href='$fname_base'>$fname_base</a></td></tr>\n";
+                } elsif ( $key eq "result_message") {
+                    $val =~ s/\n/<br>/g;
+                    $val =~ s/[ ]/&nbsp;/g;
+                    $$htable_ref .= "<tr valign='top' class='$strClass'><td>$key</td><td>$val</td></tr>\n";
+                } else {
+                    $val =~ s/\n/<br>/g;
+                    $val =~ s/[ ]/&nbsp;/g;
+                    $$htable_ref .= "<tr valign='top' class='Passed'><td>$key</td><td>$val</td></tr>\n";
+                }
             }
         }
     }
