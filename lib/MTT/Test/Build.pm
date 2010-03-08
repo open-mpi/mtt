@@ -551,10 +551,15 @@ sub _do_build {
         # memory...
         delete $ret->{result_stdout};
         delete $ret->{result_stderr};
-        
+
         # Save it
         $MTT::Test::builds->{$mpi_install->{mpi_get_simple_section_name}}->{$mpi_install->{mpi_version}}->{$mpi_install->{simple_section_name}}->{$simple_section} = $ret;
-        MTT::Test::SaveBuilds($build_base);
+        MTT::Test::SaveBuilds($build_base,
+            $MTT::Globals::Internals->{mpi_get_name} . "." .
+            $MTT::Globals::Internals->{mpi_install_name} . "." .
+            $MTT::Globals::Internals->{test_get_name} . "." .
+            $MTT::Globals::Internals->{test_build_name}
+        );
         
         # Print
         if (MTT::Values::PASS == $ret->{test_result}) {

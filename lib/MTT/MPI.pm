@@ -16,6 +16,8 @@ package MTT::MPI;
 
 use strict;
 use MTT::Files;
+use MTT::Messages;
+use MTT::Util;
 
 #--------------------------------------------------------------------------
 
@@ -28,10 +30,13 @@ our $installs;
 #--------------------------------------------------------------------------
 
 # Filename where list of MPI sources is kept
-my $sources_data_filename = "mpi_sources.dump";
+my $sources_data_filename = "mpi_sources";
 
 # Filename where list of MPI installs is kept
-my $installs_data_filename = "mpi_installs.dump";
+my $installs_data_filename = "mpi_installs";
+
+# Filename extension for all the Dumper data files
+my $data_filename_extension = "dump";
 
 #--------------------------------------------------------------------------
 
@@ -42,10 +47,15 @@ sub LoadSources {
     # Explicitly delete anything that was there
     $MTT::MPI::sources = undef;
 
-    # If the file exists, read it in
-    my $data;
-    MTT::Files::load_dumpfile("$dir/$sources_data_filename", \$data);
-    $MTT::MPI::sources = $data->{VAR1};
+    my @dumpfiles = glob("$dir/$sources_data_filename-*.$data_filename_extension");
+    foreach my $dumpfile (@dumpfiles) {
+
+        # If the file exists, read it in
+        my $data;
+        MTT::Files::load_dumpfile($dumpfile, \$data);
+        $MTT::MPI::sources = MTT::Util::merge_hashes($MTT::MPI::sources, $data->{VAR1});
+
+    }
 
     # Rebuild the refcounts
     foreach my $get_key (keys(%{$MTT::MPI::sources})) {
@@ -62,9 +72,14 @@ sub LoadSources {
 #--------------------------------------------------------------------------
 
 sub SaveSources {
-    my ($dir) = @_;
+    my ($dir, $name) = @_;
 
-    MTT::Files::save_dumpfile("$dir/$sources_data_filename", 
+    # We write the entire MPI::sources hash to file, even
+    # though the filename indicates a single INI section
+    # MTT::Util::hashes_merge will take care of duplicate
+    # hash keys. The reason for splitting up the .dump files
+    # is to keep them read and write safe across INI sections
+    MTT::Files::save_dumpfile("$dir/$sources_data_filename-$name.$data_filename_extension", 
                               $MTT::MPI::sources);
 }
 
@@ -76,10 +91,14 @@ sub LoadInstalls {
     # Explicitly delete anything that was there
     $MTT::MPI::installs = undef;
 
-    # If the file exists, read it in
-    my $data;
-    MTT::Files::load_dumpfile("$dir/$installs_data_filename", \$data);
-    $MTT::MPI::installs = $data->{VAR1};
+    my @dumpfiles = glob("$dir/$installs_data_filename-*.$data_filename_extension");
+    foreach my $dumpfile (@dumpfiles) {
+
+        # If the file exists, read it in
+        my $data;
+        MTT::Files::load_dumpfile($dumpfile, \$data);
+        $MTT::MPI::installs = MTT::Util::merge_hashes($MTT::MPI::installs, $data->{VAR1});
+    }
 
     # Rebuild the refcounts
     foreach my $get_key (keys(%{$MTT::MPI::installs})) {
@@ -106,9 +125,14 @@ sub LoadInstalls {
 #--------------------------------------------------------------------------
 
 sub SaveInstalls {
-    my ($dir) = @_;
+    my ($dir, $name) = @_;
 
-    MTT::Files::save_dumpfile("$dir/$installs_data_filename", 
+    # We write the entire MPI::installs hash to file, even
+    # though the filename indicates a single INI section.
+    # MTT::Util::hashes_merge will take care of duplicate
+    # hash keys. The reason for splitting up the .dump files
+    # is to keep them read and write safe across INI sections
+    MTT::Files::save_dumpfile("$dir/$installs_data_filename-$name.$data_filename_extension", 
                               $MTT::MPI::installs);
 }
 

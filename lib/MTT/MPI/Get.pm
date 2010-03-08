@@ -187,7 +187,7 @@ sub _do_get {
             $MTT::MPI::sources->{$simple_section}->{$ret->{version}} = $ret;
 
             # Save the data file recording all the sources
-            MTT::MPI::SaveSources($source_dir);
+            MTT::MPI::SaveSources($source_dir, $MTT::Globals::Internals->{mpi_get_name});
         } else {
             Verbose("   No new MPI sources\n");
         }

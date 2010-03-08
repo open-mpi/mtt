@@ -17,6 +17,7 @@ use File::Find;
 use MTT::Files;
 use MTT::Messages;
 use MTT::DoCommand;
+use MTT::Util;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -33,17 +34,20 @@ our $runs_to_be_saved;
 
 #--------------------------------------------------------------------------
 
+# Filename extension for all the Dumper data files
+my $data_filename_extension = "dump";
+
 # Filename where list of test sources information is kept
-my $sources_data_filename = "test_sources.dump";
+my $sources_data_filename = "test_sources";
 
 # Filename where list of test build information is kept
-my $builds_data_filename = "test_builds.dump";
+my $builds_data_filename = "test_builds";
 
 # Subdir where test runs are kept
 my $runs_subdir = "test_runs";
 
 # Filename where list of test run information is kept
-my $runs_data_filename = "test_runs.dump";
+my $runs_data_filename = "test_runs.$data_filename_extension";
 
 # Helper variable for when we're loading test run data
 my $load_run_file_start_dir;
@@ -56,11 +60,14 @@ sub LoadSources {
     # Explicitly delete anything that was there
     $MTT::Test::sources = undef;
 
-    # If the file exists, read it in
-    my $data;
-    MTT::Files::load_dumpfile("$dir/$sources_data_filename", \$data);
-    $MTT::Test::sources = $data->{VAR1};
+    my @dumpfiles = glob("$dir/$sources_data_filename-*.$data_filename_extension");
+    foreach my $dumpfile (@dumpfiles) {
 
+        # If the file exists, read it in
+        my $data;
+        MTT::Files::load_dumpfile($dumpfile, \$data);
+        $MTT::Test::sources = MTT::Util::merge_hashes($MTT::Test::sources, $data->{VAR1});
+    }
 
     # Rebuild the refcounts
     foreach my $test_key (keys(%{$MTT::Test::sources})) {
@@ -74,9 +81,14 @@ sub LoadSources {
 #--------------------------------------------------------------------------
 
 sub SaveSources {
-    my ($dir) = @_;
+    my ($dir, $name) = @_;
 
-    MTT::Files::save_dumpfile("$dir/$sources_data_filename", 
+    # We write the entire Test::sources hash to file, even
+    # though the filename indicates a single INI section
+    # MTT::Util::hashes_merge will take care of duplicate
+    # hash keys. The reason for splitting up the .dump files
+    # is to keep them read and write safe across INI sections
+    MTT::Files::save_dumpfile("$dir/$sources_data_filename-$name.$data_filename_extension", 
                               $MTT::Test::sources);
 }
 
@@ -88,10 +100,14 @@ sub LoadBuilds {
     # Explicitly delete anything that was there
     $MTT::Test::builds = undef;
 
-    # If the file exists, read it in
-    my $data;
-    MTT::Files::load_dumpfile("$dir/$builds_data_filename", \$data);
-    $MTT::Test::builds = $data->{VAR1};
+    my @dumpfiles = glob("$dir/$builds_data_filename-*.$data_filename_extension");
+    foreach my $dumpfile (@dumpfiles) {
+
+        # If the file exists, read it in
+        my $data;
+        MTT::Files::load_dumpfile($dumpfile, \$data);
+        $MTT::Test::builds = MTT::Util::merge_hashes($MTT::Test::builds, $data->{VAR1});
+    }
 
     # Rebuild the refcounts
     foreach my $get_key (keys(%{$MTT::Test::builds})) {
@@ -129,9 +145,14 @@ sub LoadBuilds {
 #--------------------------------------------------------------------------
 
 sub SaveBuilds {
-    my ($dir) = @_;
+    my ($dir, $name) = @_;
 
-    MTT::Files::save_dumpfile("$dir/$builds_data_filename", 
+    # We write the entire Test::builds hash to file, even
+    # though the filename indicates a single INI section
+    # MTT::Util::hashes_merge will take care of duplicate
+    # hash keys. The reason for splitting up the .dump files
+    # is to keep them read and write safe across INI sections
+    MTT::Files::save_dumpfile("$dir/$builds_data_filename-$name.$data_filename_extension", 
                               $MTT::Test::builds);
 }
 

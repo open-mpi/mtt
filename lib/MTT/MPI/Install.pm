@@ -794,7 +794,9 @@ sub _do_install {
             $ret->{$k} = $serials->{$module}->{$k};
         }
 
-        MTT::MPI::SaveInstalls($install_base);
+        MTT::MPI::SaveInstalls($install_base,
+            $MTT::Globals::Internals->{mpi_get_name} . "." .
+            $MTT::Globals::Internals->{mpi_install_name});
 
         # Successful build?
         if (MTT::Values::PASS == $ret->{test_result}) {

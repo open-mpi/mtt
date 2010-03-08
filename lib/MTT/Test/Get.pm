@@ -129,7 +129,7 @@ sub _do_get {
             $MTT::Test::sources->{$simple_section} = $ret;
             
             # Save the data file recording all the sources
-            MTT::Test::SaveSources($source_dir);
+            MTT::Test::SaveSources($source_dir, $MTT::Globals::Internals->{test_get_name});
         } else {
             Verbose("   No new test sources\n");
         }
