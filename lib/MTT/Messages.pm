@@ -174,7 +174,7 @@ sub Trace {
     $lev = 0 if (! defined($lev));
     my @called = caller($lev);
 
-    my $s = wrap("", "   ", (join(":", map { &_relative_path($_) } @called[1..2]), @_));
+    my $s = (join(":", map { &_relative_path($_) } @called[1..2]), @_);
     print $s;
     print $LOGFILE $s
         if (defined($LOGFILE));

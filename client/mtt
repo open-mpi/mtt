@@ -498,6 +498,15 @@ foreach my $hash (@ini_list) {
     # execute on_start callback if exists
 	_do_step($ini, "mtt", "before_mtt_start_exec");
 
+    # Process setenv, unsetenv, prepend_path, and append_path
+
+    my $config;
+    $config->{setenv} = Value($ini, "mtt", "setenv");
+    $config->{unsetenv} = Value($ini, "mtt", "unsetenv");
+    $config->{prepend_path} = Value($ini, "mtt", "prepend_path");
+    $config->{append_path} = Value($ini, "mtt", "append_path");
+    my @save_env;
+    ProcessEnvKeys($config, \@save_env);
 
     # Set the logfile, if specified
 
