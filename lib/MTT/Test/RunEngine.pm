@@ -73,10 +73,12 @@ sub RunEngine {
     my $test_count_total = $#{$ret->{tests}} + 1;
     $tmp = get_array_ref(MTT::Values::EvaluateString($ret->{tests}[0]->{np}, $ini, $test_run_full_name));
     my $np_count_total = scalar @$tmp;
+    $tmp = get_array_ref(MTT::Values::EvaluateString($ret->{tests}[0]->{argv}, $ini, $test_run_full_name));
+    my $argv_count_total = scalar @$tmp;
     $tmp = get_array_ref(MTT::Values::EvaluateString($mpi_details->{exec}, $ini, $mpi_details_name));
     my $exec_count_total = scalar @$tmp;
     my $variants_count_total =
-        $test_count_total * $np_count_total * $exec_count_total;
+        $test_count_total * $np_count_total * $argv_count_total * $exec_count_total;
 
     # Set some thresholds for an early exit
     my $break_threshold;
@@ -148,6 +150,7 @@ sub RunEngine {
     Verbose("   ### Total tests to run in this section:\n");
     Verbose("   ###     " . sprintf("%4d", $test_count_total) . " test executable(s)\n");
     Verbose("   ###     " . sprintf("%4d", $np_count_total) . " np value(s)\n");
+    Verbose("   ###     " . sprintf("%4d", $argv_count_total) . " argv value(s)\n");
     Verbose("   ###     " . sprintf("%4d", $exec_count_total) . " test variant(s)\n");
     Verbose("   ###     " . sprintf("%4d", $variants_count_total) . " total mpirun command(s) to run\n");
     Verbose("   ###\n");
@@ -258,24 +261,40 @@ sub _run_one_np {
     my $ok = MTT::Values::EvaluateString($run->{np_ok}, $ini, $test_run_full_name);
     if ($ok) {
 
-        # Get all the exec's for this one np
-        my $execs = MTT::Values::EvaluateString($mpi_details->{exec}, $ini, $mpi_details_name);
+        # To implement loop for argv parameter
+        # Just one argv, or an array of argv values?
+        my $all_argv = MTT::Values::EvaluateString($run->{argv}, $ini, $test_run_full_name);
 
-        # If we just got one, run it.  Otherwise, loop over running them.
-        if (ref($execs) eq "") {
-            _run_one_test($install_dir, $run, $mpi_details, $execs, $name, 1,
-                          $force);
-        } else {
-            my $variant = 1;
-            foreach my $e (@$execs) {
-                # See if we're supposed to terminate.
-                last
-                    if (MTT::Util::time_to_terminate());
-                _run_one_test($install_dir, $run, $mpi_details, $e, $name,
-                              $variant++, $force);
+        if (ref($all_argv) eq "") {
+            $all_argv = [$all_argv];
+        }
+
+        foreach my $this_argv (@$all_argv) {
+            $MTT::Test::Run::test_argv = $this_argv;
+        
+            # Get all the exec's for this one np
+            my $execs = MTT::Values::EvaluateString($mpi_details->{exec}, $ini, $mpi_details_name);
+    
+            # If we just got one, run it.  Otherwise, loop over running them.
+            if (ref($execs) eq "") {
+                _run_one_test($install_dir, $run, $mpi_details, $execs, $name, 1,
+                              $force);
+            } else {
+                my $variant = 1;
+                foreach my $e (@$execs) {
+                    # See if we're supposed to terminate.
+                    last
+                        if (MTT::Util::time_to_terminate());
+                    _run_one_test($install_dir, $run, $mpi_details, $e, $name,
+                                  $variant++, $force);
+                }
             }
+            
+            $MTT::Test::Run::test_argv = undef;
         }
     }
+    
+    $MTT::Test::Run::test_np = undef;
 }
 
 sub _run_one_test {

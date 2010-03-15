@@ -58,11 +58,11 @@ sub Analyze {
     my $clock_time;
     while (<OUTPUT>) {
         if (/ CPU TIME\s+([-+]?[0-9]*\.?[0-9]+[eE][-+]?[0-9]+)\s/) {
-        	$clock_time = $1;
+        	$exec_time = $1;
         	next;
         }
         if (/ ELAPSED TIME\s+([-+]?[0-9]*\.?[0-9]+[eE][-+]?[0-9]+)\s/) {
-        	$exec_time = $1;
+        	$clock_time = $1;
         	next;
         }
     }

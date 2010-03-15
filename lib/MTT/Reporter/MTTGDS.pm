@@ -466,7 +466,7 @@ sub _process_phase_test_run {
     $phase_form->{test_name} = $report->{test_name} if (!defined($phase_form->{test_name}));
 
     $phase_form->{mpi_nproc}    = int($report->{np});
-    $phase_form->{mpi_hlist} = MTT::Values::Functions::hostlist();
+    $phase_form->{mpi_hlist} = MTT::Values::Functions::env_hosts(2);
 
     $phase_form->{net_note} = _get_value( "vbench:net_note", @sections );
 
@@ -474,13 +474,14 @@ sub _process_phase_test_run {
     my @taglist = ();
     my @tagsections = (@sections);
     foreach my $tagsection (@tagsections) {
-        my @val = $ini->val( $tagsection, "vbench:tag" );
-        if ( $#val != (-1) ) {
-        	foreach (@val)
-        	{
-                my $tag = EvaluateString( $_, $ini, $tagsection );
+       my @val = MTT::Values::Value($ini,  $tagsection, "vbench:tag");
+       if ( $#val != (-1) ) {
+            @val = split(/\n/, $val[0]) if ($#val == 0);
+            foreach (@val)
+            {
+                my $tag = $_;
                 push( @taglist, $tag ) if ($tag);
-        	}
+            }
         }
     }
     @{$phase_form->{tag}} = @taglist;
@@ -491,7 +492,6 @@ sub _process_phase_test_run {
     # JMS Why do we have an mpi_mca field?  Shouldn't this kind of
     # stuff be in the MPI Details parameters and network fields?
     if (!defined($phase_form->{mpi_mca})) {
-
         # JMS Should generlize this to be "extract from the current
         # ::MPI::module".  There are other instances of this direct
         # call in MTT::Test::Analyze::Performance::*.
