@@ -91,6 +91,7 @@ sub Init {
 
         # Make sure we have a directory to write to
         MTT::Files::safe_mkdir($dirname);
+        MTT::Files::safe_mkdir("$dirname/html");
 
         Debug("File reporter initialized ($dirname/$filename)\n");
     } else {
@@ -435,12 +436,12 @@ sub _add_to_tables {
 
                 # can be too big, browser hangs, save it as a href
                 if ($key eq "result_stdout") {
-                    my $tmp = new File::Temp(UNLINK => 0, SUFFIX => '.txt', TEMPLATE=>'test_stdout_XXXXXX', DIR=>$dirname);
+                    my $tmp = new File::Temp(UNLINK => 0, SUFFIX => '.txt', TEMPLATE=>'test_stdout_XXXXXX', DIR=>"$dirname/html");
                     my $fname = $tmp->filename;
                     my $fname_base = basename($fname);
                     close $tmp;
                     _output_results($fname, $val);
-                    $$htable_ref .= "<tr valign='top' class='$strClass'><td>$key</td><td><a href='$fname_base'>$fname_base</a></td></tr>\n";
+                    $$htable_ref .= "<tr valign='top' class='$strClass'><td>$key</td><td><a href='html/$fname_base'>$fname_base</a></td></tr>\n";
                 } elsif ( $key eq "result_message") {
                     $val =~ s/\n/<br>/g;
                     $val =~ s/[ ]/&nbsp;/g;
