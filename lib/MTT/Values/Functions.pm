@@ -1302,6 +1302,7 @@ sub env_max_hosts {
 # Find the hosts that we can run with
 # env_hosts(1) - returns uniq host list
 # env_hosts(2) - returns uniq host list, keeps order of list items
+# env_hosts(3) - returns uniq host list, group by hosts with number of cpu: host1:8,host2:8 and etc
 #
 sub env_hosts {
     my ($want_unique) = @_;
@@ -1341,18 +1342,26 @@ sub env_hosts {
     if ($want_unique) {
         my @h = split(/,/, $ret);
         my %hmap;
-		my @hlist;
+        my @hlist;
         foreach my $h (@h) {
-			push( @hlist, $h ) if (!defined($hmap{$h}));
-            $hmap{$h} = 1;
+            push( @hlist, $h ) if (!defined($hmap{$h}));
+            $hmap{$h} = 0 unless defined($hmap{$h});
+            $hmap{$h} = $hmap{$h} + 1;
         }
 
-		# Do we want to keep order of result?
-		if ( $want_unique == 2 ) {
-			$ret = join(',', @hlist);
-		} else {
-        $ret = join(',', keys(%hmap));
-		}
+        # Do we want to keep order of result?
+        if ( $want_unique == 3 ) {
+            my @hlist_with_cpu;
+            foreach my $h (@hlist) {
+                push ( @hlist_with_cpu, $h.":".$hmap{$h} );
+            }
+            $ret = join(',', @hlist_with_cpu);
+        }
+        elsif ( $want_unique == 2 ) {
+            $ret = join(',', @hlist);
+        } else {
+            $ret = join(',', keys(%hmap));
+        }
     }
 
     Debug("&env_hosts returning: $ret\n");

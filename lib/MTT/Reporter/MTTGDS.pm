@@ -177,7 +177,7 @@ sub Init {
 
     Debug("Collect cluster information...\n");
     my $clusterinfo_module = MTT::Values::Value($ini, "vbench", "clusterinfo_module");
-    $clusterinfo_module = "ClusterInfo" if (!defined($clusterinfo_module) || $clusterinfo_module eq "");
+    $clusterinfo_module = "UnknownCluster" if (!defined($clusterinfo_module) || $clusterinfo_module eq "");
     Debug("Use $clusterinfo_module module to collect information.\n");
     
     $clusterInfo = MTT::Module::Run("MTT::Reporter::Utils::$clusterinfo_module", "get_cluster_info", MTT::Values::Functions::env_hosts(2));
@@ -540,19 +540,29 @@ sub _process_phase_test_run {
     # Special named export environment variables set in mpirun command line
     # should be stored as part of data in GDS datastore
     while ( $phase_form->{cmdline} =~ m/\s+-x\s+(custom_\w+)\=([^\s\"\']+)/g){
-        $phase_form->{$1} = $2;
+        my $value = $2;
+        eval "\$value = \"$value\"";
+        $phase_form->{$1} = $value;
     }
     while ( $phase_form->{cmdline} =~ m/\s+-x\s+(custom_\w+)\=\"([^\"]*)\"/g ){
-        $phase_form->{$1} = $2;
+        my $value = $2;
+        eval "\$value = \"$value\"";
+        $phase_form->{$1} = $value;
     }
     while ( $phase_form->{cmdline} =~ m/\s+-x\s+\"(custom_\w+)\=([^\"]*)\"/g){
-        $phase_form->{$1} = $2;
+        my $value = $2;
+        eval "\$value = \"$value\"";
+        $phase_form->{$1} = $value;
     }
     while ( $phase_form->{cmdline} =~ m/\s+-x\s+(custom_\w+)\=\'([^\']*)\'/g ){
-        $phase_form->{$1} = $2;
+        my $value = $2;
+        eval "\$value = \"$value\"";
+        $phase_form->{$1} = $value;
     }
     while ( $phase_form->{cmdline} =~ m/\s+-x\s+\'(custom_\w+)\=([^\']*)\'/g){
-        $phase_form->{$1} = $2;
+        my $value = $2;
+        eval "\$value = \"$value\"";
+        $phase_form->{$1} = $value;
     }
     
     # filling cached fields with prefix "cached_"
@@ -803,7 +813,7 @@ sub _fill_submit_info {
         $info_form->{hostname} = $hostname;
         $info_form->{local_username} = $local_username;
         $info_form->{http_username} = $username;
-        $info_form->{mtt_version} = "TODO";
+        $info_form->{mtt_version} = $MTT::Version::Combined;
     }
     return $info_form;
 }

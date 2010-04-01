@@ -254,8 +254,8 @@ else
 @label_x=split(/,/,join(',',@opt_label_x)) if (@opt_label_x);
     
 # Split the string into a list of label_y properties
-@label_y=split(/,/,join(',',@opt_label_y)) if (@opt_label_y);   
-
+@label_y=split(/,/,join(',',@opt_label_y)) if (@opt_label_y);
+    
 # Split the string into a list of chart_ex properties
 @chartex=split(/,/,join(',',@opt_chartex)) if (@opt_chartex);
 
@@ -1041,40 +1041,40 @@ sub create_report
             next;
         }
 
-		if ($data)
-		{
-			my($filename, $directory, $suffix) = fileparse("$file", qr/\.[^.]*/);
-		    my $temp_file = "$directory$filename.zip";
+        if ($data)
+        {
+            my($filename, $directory, $suffix) = fileparse("$file", qr/\.[^.]*/);
+            my $temp_file = "$directory$filename.zip";
             $data->{file_name} = $filename;
             $data->{file_path} = $directory;
-		    $data->{raw_data} = (! -e $temp_file) ? 'none' : $temp_file;
+            $data->{raw_data} = (! -e $temp_file) ? 'none' : $temp_file;
 
             my @legend_parameters = ();
 
-	        # Construct legend
+            # Construct legend
             $temp_str = '';
             if (!${$report_conf->{legend}})
-	        {
+            {
                 $temp_str = "$filename";
-	        }
-	        else
-	        {
+            }
+            else
+            {
                 my $legend_template = ${$report_conf->{legend}};
                 my $legend = "";
                 while ($legend_template =~ m/(^[^\$]*)\$(\w+)(.*)$/g) {
                     my $replace_str = '?';
                     if (exists($data->{modules}->{TestRunPhase}->{$2})) 
-	            {
+                    {
                         $replace_str = "$data->{modules}->{TestRunPhase}->{$2}";
-	                }
+                    }
                     elsif ($2 eq 'filename')
-	                {
+                    {
                         $replace_str = "$filename";
-	                }
+                    }                    
                     elsif ($2 eq 'id')
                     {
                         $replace_str = "$i";
-	            }
+                    }
                     push (@legend_parameters, $replace_str);
                     $legend = "$legend$1$replace_str";
                     $legend_template = $3;
@@ -1082,10 +1082,10 @@ sub create_report
                 $legend = "$legend$legend_template";
 
                 $temp_str = $legend;
-	        }   
+            }   
             $data->{legend} = $temp_str;
             $data->{sort_parameters} = \@legend_parameters;
-		}
+        }
         
         # Parse source file and save data in special structure
         push (@a_data_object, $data);

@@ -112,8 +112,16 @@ OMPI_HOSTS=`echo $HOSTS | sed 's/,/ /g'`
 
 OMPI_NHOSTS=`echo $OMPI_HOSTS | wc -w`
 for host in $OMPI_HOSTS ; do
-	CPUS_PER_HOST=`ssh $host cat /proc/cpuinfo | grep processor | wc -l`
-	echo $host $CPUS_PER_HOST >> $WORKDIR/clusterfile
+	HOST_INFO=`echo $host | sed 's/:/ /g'`
+	HOST_ARR=(${HOST_INFO});
+	HOST_ARR_SIZE=${#HOST_ARR[@]}
+	echo $HOST_ARR_SIZE
+	if [ "1" == "$HOST_ARR_SIZE" ]; then
+		CPUS_PER_HOST=`ssh $host cat /proc/cpuinfo | grep processor | wc -l`
+		echo $host $CPUS_PER_HOST >> $WORKDIR/clusterfile
+	else
+		echo $HOST_INFO >> $WORKDIR/clusterfile
+	fi
 done
 echo `hostname` 0 >> $WORKDIR/clusterfile
 

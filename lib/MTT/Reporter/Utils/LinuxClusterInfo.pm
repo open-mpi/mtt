@@ -8,7 +8,7 @@
 # $HEADER$
 #
 
-package MTT::Reporter::Utils::ClusterInfo;
+package MTT::Reporter::Utils::LinuxClusterInfo;
 
 use strict;
 use Data::Dumper;

@@ -110,23 +110,28 @@ print ("dat file : $dat_file\n");
 sub Collect_Hosts_Info
 {
     my ($r_cpu,$r_mem,@hosts)=@_;
-    foreach my $host (@hosts){
-    my $tmp_cpu_info=`ssh $host \"cat /proc/cpuinfo\" | egrep \'processor\\s*:\' |wc -l`;
-    chomp $tmp_cpu_info;
-    push (@$r_cpu,$tmp_cpu_info);
-    my $tmp_mem_info=`ssh $host \"cat /proc/meminfo  |grep MemTotal\"`;
-    chomp $tmp_mem_info;
-    if($tmp_mem_info=~/(\d+)/){
-        $tmp_mem_info=$1;
+    foreach my $host (@hosts) {
+        if ($host =~ /^([^:]+):(\d+)$/) {
+            $host = $1; # for mem info
+            my $ncpu = $2;
+            push (@$r_cpu,$ncpu);
+        } else {
+            my $tmp_cpu_info=`ssh $host \"cat /proc/cpuinfo\" | egrep \'processor\\s*:\' |wc -l`;
+            chomp $tmp_cpu_info;
+            push (@$r_cpu,$tmp_cpu_info);
+        }
+        my $tmp_mem_info=`ssh $host \"cat /proc/meminfo | grep MemTotal\"`;
+        chomp $tmp_mem_info;
+        if($tmp_mem_info=~/(\d+)/) {
+            $tmp_mem_info=$1;
+        }
+        else {
+            print ("Can't get info from $host\n");
+            exit;
+        }
+        push (@$r_mem,$tmp_mem_info);
     }
-    else {
-      print ("Can't get info from $host\n");
-       exit;
-    }
-    push (@$r_mem,$tmp_mem_info);
-}
-    
-    
+
 }
 
 sub Calc_Np_Short
