@@ -277,6 +277,7 @@ function setup_advanced($params) {
 
     $menu = array(
         'compute_cluster' => array(
+            'compute_cluster_id'  => null,
             'os_version'          => array('', $control),
             'platform_type'       => array('', $control),
             'platform_hardware'   => array('', $control),
@@ -284,11 +285,18 @@ function setup_advanced($params) {
             'os_name'             => array('', $control),
         ),
         'submit' => array(
+            'submit_id'           => null,
             'hostname'            => array('', $control),
             'local_username'      => array('', $control),
             'http_username'       => array('', $control),
         ),
         'mpi_install' => array(
+
+            'mpi_get_id'               => null,
+            'mpi_install_compiler_id'  => null,
+            'mpi_install_configure_id' => null,
+            'mpi_install_id'           => null,
+
             'compiler_name'       => array('', $control),
             'compiler_version'    => array('', $control),
             'vpath_mode'          => array('', $control),
@@ -320,6 +328,8 @@ function setup_advanced($params) {
                     $menu,
                     array('test_build' =>
                         array(
+                            'test_build_id' => null,
+                            'test_build_compiler_id' => null,
                             'suite_name' => array('', $control),
                         ))
                 );
@@ -330,13 +340,19 @@ function setup_advanced($params) {
                     $menu,
                     array('test_run' =>
                         array(
-                            'launcher'   => array('', $control),
+                            'test_run_id'         => null,
+                            'test_name_id'        => null,
+                            'test_run_command_id' => null,
+                            'test_suite_id'       => null,
+                            'performance_id'      => null,
+
+                            'launcher'     => array('', $control),
                             'resource_mgr' => array('', $control),
-                            'network'    => array('', $control),
-                            'parameters' => array('', $control),
-                            'test_name'  => array('', $control),
-                            'np'         => array('', $control),
-                            'full_command'   => array('', $control),
+                            'network'      => array('', $control),
+                            'parameters'   => array('', $control),
+                            'test_name'    => array('', $control),
+                            'np'           => array('', $control),
+                            'full_command' => array('', $control),
                         ))
                 );
         }

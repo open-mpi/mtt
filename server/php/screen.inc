@@ -1002,6 +1002,12 @@ function form_popup($elements, $params, $specs) {
         foreach (array_keys($elements[$category]) as $field) {
             $array = $elements[$category][$field];
 
+            # Skip over some fields compeltely (e.g., most
+            # users will have *no* need to see *_id fields)
+            if (is_null($array)) {
+                continue;
+            }
+
             $menu .= $tr . $td . label(label($field));
 
             # Set the colspan based on the number of
@@ -1180,13 +1186,26 @@ function hidden_carryover($params) {
         $col_types = array('text_', 'show_');
 
         $setup_advanced = setup_advanced($_GET);
+
         foreach (array_keys($setup_advanced) as $table) {
             foreach (array_keys($setup_advanced[$table]) as $field) {
+
                 $arr = $setup_advanced[$table][$field];
 
-                foreach (array_keys($arr) as $i) {
-                    $type = $col_types[$i];
+                # If the column is set to null in setup_advanced, it only means
+                # that we didn't want to display it in the web front-end.  Make
+                # it a text_* field so that we can filter it via a WHERE
+                # clause, but it's not something we want to display to the
+                # user.  E.g, it's okay for us to slip it in a query string or
+                # <hidden> form field using find-new-mtt-failures.pl script.
+                if (is_null($arr)) {
+                    $type = $col_types[0];
                     $advanced_fields[] = "$type$field";
+                } else {
+                    foreach (array_keys($arr) as $i) {
+                        $type = $col_types[$i];
+                        $advanced_fields[] = "$type$field";
+                    }
                 }
             }
         }
