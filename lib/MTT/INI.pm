@@ -294,6 +294,12 @@ sub _expand_include_sections {
 
             my $include_section = $ini->val($section, $parameter);
 
+            # Prevent an infinite loop
+            if ($include_section eq $section) {
+                Error("INI section [$section] contains an include_section parameter of the same name ($include_section), " .
+                      "which causes an infinite loop.  Change the include_section parameter to one that is valid");
+            }
+
             # Get CSV of include_sections
             my @include_sections = split(/,/, $include_section);
 
