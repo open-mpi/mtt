@@ -389,34 +389,4 @@ sub is_running_on_windows {
     }
 }
 
-# Recursively merge two hashes
-sub merge_hashes {
-    my ($x, $y) = @_;
-
-    no strict;
-    foreach my $k (keys %$y) {
-
-        # Abort and notify the user if they attempt to have two MTT clients run 
-        # the same INI section out of the same scratch directory (since doing so
-        # would entail overwriting the .dump file of one of the MTT clients)
-        if (($k eq "full_section_name") and 
-            ($x->{$k} eq $y->{$k}) and 
-            ($x->{"start_timestamp"} ne $y->{"start_timestamp"})) {
-            Abort
-                "\nThis MTT client has detected another MTT client attempting to " .
-                "\nrun [$x->{$k}] out of this scratch directory. Two MTT clients can run out of " .
-                "\nthe same scratch directory, but they must not run the same INI section, or the " .
-                "\nmetadata could get corrupted\n";
-        }
-
-        if (!defined($x->{$k})) {
-            $x->{$k} = $y->{$k};
-        } else {
-            $x->{$k} = merge_hashes($x->{$k}, $y->{$k});
-        }
-    }
-    use strict;
-    return $x;
-}
-
 1;

@@ -455,6 +455,33 @@ sub load_dumpfile {
 
 #--------------------------------------------------------------------------
 
+sub load_dumpfiles {
+    my @files = @_;
+
+    my $all;
+    my $i = 1;
+    foreach my $f (@files) {
+        # If the file exists, read it in
+        my $data = undef;
+        Debug("Loading dump file $i: $f\n");
+        ++$i;
+
+        load_dumpfile($f, \$data);
+        my @keys = keys(%{$data->{"VAR1"}});
+        my $k = $keys[0];
+        Debug("Found dump key: $k\n");
+
+        Error("An identical key already exists in memory when MTT tried to read the file $f.  This should not happen.  It likely indicates that multiple MTT clients are incorrectly operating in the same scratch tree.")
+            if (exists($all->{$k}));
+        $all->{$k} = $data->{"VAR1"}->{$k};
+    }
+
+    Debug("Read in dump file keys: " . join(" ", keys(%{$all})) . "\n");
+    $all;
+}
+
+#--------------------------------------------------------------------------
+
 sub save_dumpfile {
     my ($filename) = @_;
     shift;

@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2010 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -57,17 +57,9 @@ my $load_run_file_start_dir;
 sub LoadSources {
     my ($dir) = @_;
 
-    # Explicitly delete anything that was there
-    $MTT::Test::sources = undef;
-
-    my @dumpfiles = glob("$dir/$sources_data_filename-*.$data_filename_extension");
-    foreach my $dumpfile (@dumpfiles) {
-
-        # If the file exists, read it in
-        my $data;
-        MTT::Files::load_dumpfile($dumpfile, \$data);
-        $MTT::Test::sources = MTT::Util::merge_hashes($MTT::Test::sources, $data->{VAR1});
-    }
+    # Explicitly delete/replace anything that was there
+    $MTT::Test::sources = 
+        MTT::Files::load_dumpfiles(glob("$dir/$sources_data_filename-*.$data_filename_extension"));
 
     # Rebuild the refcounts
     foreach my $test_key (keys(%{$MTT::Test::sources})) {
@@ -83,13 +75,15 @@ sub LoadSources {
 sub SaveSources {
     my ($dir, $name) = @_;
 
-    # We write the entire Test::sources hash to file, even
-    # though the filename indicates a single INI section
-    # MTT::Util::hashes_merge will take care of duplicate
-    # hash keys. The reason for splitting up the .dump files
-    # is to keep them read and write safe across INI sections
-    MTT::Files::save_dumpfile("$dir/$sources_data_filename-$name.$data_filename_extension", 
-                              $MTT::Test::sources);
+    # We write individual dump files for each section so that multiple
+    # readers / writers can be active in the scratch tree
+    # simultaneously.  So write *just the desired section* to the dump
+    # file.
+    my $d;
+    $d->{$name} = $MTT::Test::sources->{$name};
+
+    my $file = "$dir/$sources_data_filename-$name.$data_filename_extension";
+    MTT::Files::save_dumpfile($file, $d);
 }
 
 #--------------------------------------------------------------------------
@@ -97,17 +91,9 @@ sub SaveSources {
 sub LoadBuilds {
     my ($dir) = @_;
 
-    # Explicitly delete anything that was there
-    $MTT::Test::builds = undef;
-
-    my @dumpfiles = glob("$dir/$builds_data_filename-*.$data_filename_extension");
-    foreach my $dumpfile (@dumpfiles) {
-
-        # If the file exists, read it in
-        my $data;
-        MTT::Files::load_dumpfile($dumpfile, \$data);
-        $MTT::Test::builds = MTT::Util::merge_hashes($MTT::Test::builds, $data->{VAR1});
-    }
+    # Explicitly delete/replace anything that was there
+    $MTT::Test::builds = 
+        MTT::Files::load_dumpfiles(glob("$dir/$builds_data_filename-*.$data_filename_extension"));
 
     # Rebuild the refcounts
     foreach my $get_key (keys(%{$MTT::Test::builds})) {
@@ -147,13 +133,20 @@ sub LoadBuilds {
 sub SaveBuilds {
     my ($dir, $name) = @_;
 
+    # We write individual dump files for each section so that multiple
+    # readers / writers can be active in the scratch tree
+    # simultaneously.  So write *just the desired section* to the dump
+    # file.
+    my $d;
+    $d->{$name} = $MTT::Test::builds->{$name};
+
     # We write the entire Test::builds hash to file, even
     # though the filename indicates a single INI section
     # MTT::Util::hashes_merge will take care of duplicate
     # hash keys. The reason for splitting up the .dump files
     # is to keep them read and write safe across INI sections
-    MTT::Files::save_dumpfile("$dir/$builds_data_filename-$name.$data_filename_extension", 
-                              $MTT::Test::builds);
+    my $file = "$dir/$builds_data_filename-$name.$data_filename_extension";
+    MTT::Files::save_dumpfile($file, $d);
 }
 
 #--------------------------------------------------------------------------
