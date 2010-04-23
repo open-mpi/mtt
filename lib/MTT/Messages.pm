@@ -18,7 +18,7 @@ use Data::Dumper;
 use Text::Wrap;
 use vars qw(@EXPORT);
 use base qw(Exporter);
-@EXPORT = qw(Messages Error Warning BigWarning Abort Debug Verbose Trace DebugDump FuncName ModuleName);
+@EXPORT = qw(Messages Error Warning BigWarning Abort Debug Verbose Trace DebugDump FuncName ModuleName DebugDumpHead);
 
 # Is debugging enabled?
 my $_debug;
@@ -147,6 +147,30 @@ sub DebugDump {
     my $d = new Data::Dumper([@_]);
     $d->Purity(1)->Indent(1);
     my $s = $d->Dump;
+    print $s;
+    print $LOGFILE $s
+        if (defined($LOGFILE));
+}
+
+# Print out only the first $num_lines lines of a dump.
+sub DebugDumpHead {
+    my $num_lines = shift;
+    my $d = new Data::Dumper([@_]);
+    $d->Purity(1)->Indent(1);
+    my $s = $d->Dump;
+
+    my @lines = split(/\n/, $s);
+    $s = undef;
+    # There's probably a clever regexp way to do this, but just
+    # catenating lines together is simple and easy to read.  :-)
+    while ($num_lines > 0 && $#lines >= 0) {
+        $s .= $lines[0] . "\n";
+        shift @lines;
+        --$num_lines;
+    }
+    my $i = $#lines + 1;
+    $s .= "[...remaining $i snipped...]\n"
+        if ($#lines >= 0);
     print $s;
     print $LOGFILE $s
         if (defined($LOGFILE));
