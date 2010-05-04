@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2010 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -187,7 +187,10 @@ sub _do_get {
             $MTT::MPI::sources->{$simple_section}->{$ret->{version}} = $ret;
 
             # Save the data file recording all the sources
-            MTT::MPI::SaveSources($source_dir, $MTT::Globals::Internals->{mpi_get_name});
+            MTT::MPI::SaveSources($source_dir, 
+                                  $MTT::Globals::Internals->{mpi_get_name},
+                                  $MTT::Globals::Internals->{mpi_get_name} .
+                                  "." . $ret->{version});
         } else {
             Verbose("   No new MPI sources\n");
         }

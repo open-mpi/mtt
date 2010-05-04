@@ -46,7 +46,7 @@ sub LoadSources {
 
     # Explicitly delete/replace anything that was there
     $MTT::MPI::sources = 
-        MTT::Files::load_dumpfiles(glob("$dir/$sources_data_filename-*.$data_filename_extension"));
+        MTT::Files::load_dumpfiles(2, glob("$dir/$sources_data_filename-*.$data_filename_extension"));
 
     # Rebuild the refcounts
     foreach my $get_key (keys(%{$MTT::MPI::sources})) {
@@ -63,14 +63,14 @@ sub LoadSources {
 #--------------------------------------------------------------------------
 
 sub SaveSources {
-    my ($dir, $name) = @_;
+    my ($dir, $key, $name) = @_;
 
     # We write individual dump files for each section so that multiple
     # readers / writers can be active in the scratch tree
     # simultaneously.  So write *just the desired section* to the dump
     # file.
     my $d;
-    $d->{$name} = $MTT::MPI::sources->{$name};
+    $d->{$key} = $MTT::MPI::sources->{$key};
 
     my $file = "$dir/$sources_data_filename-$name.$data_filename_extension";
     MTT::Files::save_dumpfile($file, $d);
@@ -83,7 +83,7 @@ sub LoadInstalls {
 
     # Explicitly delete/replace anything that was there
     $MTT::MPI::installs = 
-        MTT::Files::load_dumpfiles(glob("$dir/$installs_data_filename-*.$data_filename_extension"));
+        MTT::Files::load_dumpfiles(3, glob("$dir/$installs_data_filename-*.$data_filename_extension"));
 
     # Rebuild the refcounts
     foreach my $get_key (keys(%{$MTT::MPI::installs})) {
@@ -110,16 +110,18 @@ sub LoadInstalls {
 #--------------------------------------------------------------------------
 
 sub SaveInstalls {
-    my ($dir, $name) = @_;
+    my ($dir, $mpi_name, $mpi_version, $install_name) = @_;
 
     # We write individual dump files for each section so that multiple
     # readers / writers can be active in the scratch tree
     # simultaneously.  So write *just the desired section* to the dump
     # file.
     my $d;
-    $d->{$name} = $MTT::MPI::installs->{$name};
+    $d->{$mpi_name}->{$mpi_version}->{$install_name} = 
+        $MTT::MPI::installs->{$mpi_name}->{$mpi_version}->{$install_name};
 
-    my $file = "$dir/$installs_data_filename-$name.$data_filename_extension";
+    my $f = "$mpi_name.$mpi_version.$install_name";
+    my $file = "$dir/$installs_data_filename-$f.$data_filename_extension";
     MTT::Files::save_dumpfile($file, $d);
 }
 

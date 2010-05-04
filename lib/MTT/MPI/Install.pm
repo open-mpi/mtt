@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2010 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -795,7 +795,8 @@ sub _do_install {
         }
 
         MTT::MPI::SaveInstalls($install_base,
-            $MTT::Globals::Internals->{mpi_get_name} . "." .
+            $MTT::Globals::Internals->{mpi_get_name},
+            $mpi_get->{version},
             $MTT::Globals::Internals->{mpi_install_name});
 
         # Successful build?

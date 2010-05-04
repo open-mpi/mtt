@@ -59,7 +59,7 @@ sub LoadSources {
 
     # Explicitly delete/replace anything that was there
     $MTT::Test::sources = 
-        MTT::Files::load_dumpfiles(glob("$dir/$sources_data_filename-*.$data_filename_extension"));
+        MTT::Files::load_dumpfiles(1, glob("$dir/$sources_data_filename-*.$data_filename_extension"));
 
     # Rebuild the refcounts
     foreach my $test_key (keys(%{$MTT::Test::sources})) {
@@ -73,14 +73,14 @@ sub LoadSources {
 #--------------------------------------------------------------------------
 
 sub SaveSources {
-    my ($dir, $name) = @_;
+    my ($dir, $key, $name) = @_;
 
     # We write individual dump files for each section so that multiple
     # readers / writers can be active in the scratch tree
     # simultaneously.  So write *just the desired section* to the dump
     # file.
     my $d;
-    $d->{$name} = $MTT::Test::sources->{$name};
+    $d->{$key} = $MTT::Test::sources->{$key};
 
     my $file = "$dir/$sources_data_filename-$name.$data_filename_extension";
     MTT::Files::save_dumpfile($file, $d);
@@ -93,7 +93,7 @@ sub LoadBuilds {
 
     # Explicitly delete/replace anything that was there
     $MTT::Test::builds = 
-        MTT::Files::load_dumpfiles(glob("$dir/$builds_data_filename-*.$data_filename_extension"));
+        MTT::Files::load_dumpfiles(4, glob("$dir/$builds_data_filename-*.$data_filename_extension"));
 
     # Rebuild the refcounts
     foreach my $get_key (keys(%{$MTT::Test::builds})) {
@@ -131,21 +131,18 @@ sub LoadBuilds {
 #--------------------------------------------------------------------------
 
 sub SaveBuilds {
-    my ($dir, $name) = @_;
+    my ($dir, $mpi_name, $mpi_version, $install_name, $test_name) = @_;
 
     # We write individual dump files for each section so that multiple
     # readers / writers can be active in the scratch tree
     # simultaneously.  So write *just the desired section* to the dump
     # file.
     my $d;
-    $d->{$name} = $MTT::Test::builds->{$name};
+    $d->{$mpi_name}->{$mpi_version}->{$install_name}->{$test_name} = 
+        $MTT::Test::builds->{$mpi_name}->{$mpi_version}->{$install_name}->{$test_name};
 
-    # We write the entire Test::builds hash to file, even
-    # though the filename indicates a single INI section
-    # MTT::Util::hashes_merge will take care of duplicate
-    # hash keys. The reason for splitting up the .dump files
-    # is to keep them read and write safe across INI sections
-    my $file = "$dir/$builds_data_filename-$name.$data_filename_extension";
+    my $f = "$mpi_name.$mpi_version.$install_name.$test_name";
+    my $file = "$dir/$builds_data_filename-$f.$data_filename_extension";
     MTT::Files::save_dumpfile($file, $d);
 }
 

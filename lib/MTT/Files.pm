@@ -455,10 +455,13 @@ sub load_dumpfile {
 
 #--------------------------------------------------------------------------
 
+our $local_debug = 0;
+
 sub load_dumpfiles {
+    my $unique_depth = shift;
     my @files = @_;
 
-    my $all;
+    my $all = undef;
     my $i = 1;
     foreach my $f (@files) {
         # If the file exists, read it in
@@ -467,17 +470,94 @@ sub load_dumpfiles {
         ++$i;
 
         load_dumpfile($f, \$data);
-        my @keys = keys(%{$data->{"VAR1"}});
-        my $k = $keys[0];
-        Debug("Found dump key: $k\n");
 
-        Error("An identical key already exists in memory when MTT tried to read the file $f.  This should not happen.  It likely indicates that multiple MTT clients are incorrectly operating in the same scratch tree.")
-            if (exists($all->{$k}));
-        $all->{$k} = $data->{"VAR1"}->{$k};
+        # Skip the "VAR1" key -- all dump files have that at the top.
+        $data = $data->{VAR1}
+            if (exists($data->{VAR1}));
+        if ($local_debug) {
+            Debug("READ IN FILE: ");
+            DebugDump($data);
+        }
+
+        # These dump files are structured to have the "interesting"
+        # data several keys deep.  That is, there will be several
+        # "outer" keys before any real data is stored in a hash.  For
+        # example: $foo->{bar}->{baz}->...real_data...  The "outer"
+        # keys are defines as having exactly one sub key.  The file
+        # that was just read in must have a unique queue in the target
+        # hash at the specific depth $unique_depth.  If we don't have
+        # a unique key there, Badness has happened.  However, keys
+        # above this depth may well be non-unique.
+        if (defined($all)) {
+            _merge_hash($f, $unique_depth - 1, \$all, \$data);
+        } else {
+            $all = $data;
+        }
     }
 
-    Debug("Read in dump file keys: " . join(" ", keys(%{$all})) . "\n");
     $all;
+}
+
+sub _merge_hash {
+    my ($file, $depth, $a, $b) = @_;
+
+    if ($local_debug) {
+        Debug("=========================================\n");
+        Debug("MERGING: depth=$depth\n");
+        Debug("a = ");
+        DebugDump($$a);
+        Debug("-----------------------------------------\n");
+        Debug("b = ");
+        DebugDump($$b);
+        Debug("-----------------------------------------\n");
+    }
+
+    # If our depth is < 0, we don't care about uniqueness, so just copy
+    if ($depth < 0) {
+        $$a = $$b;
+    }
+
+    # Otherwise, we need to examine individual keys.
+    else {
+        # This function is only ever called with 2 hashes, so we know
+        # we can traverse keys of both $a and $b.
+        foreach my $k (keys(%{$$b})) {
+            Debug("Got key: $k\n")
+                if ($local_debug);
+            # Key collision!
+            if (exists(${$a}->{$k})) {
+                Debug("Collision\n")
+                    if ($local_debug);
+
+                # If we're at 0 depth, then this is the level where
+                # uniqueness matters -- so error out because we got a
+                # collision.
+                if (0 == $depth) {
+                    Error("An identical key already exists in memory when MTT tried to read the file $file (key=$k).  This should not happen.  It likely indicates that multiple MTT clients are incorrectly operating in the same scratch tree.");
+                }
+
+                # Otherwise we try to copy.  If both are hashes, recurse.
+                if (ref(${$a}->{$k}) =~ /hash/i && 
+                    ref(${$b}->{$k}) =~ /hash/i) {
+                    _merge_hash($file, $depth - 1, \${$a}->{$k}, \${$b}->{$k});
+                }
+                # Otherwise, $a wins
+            } 
+
+            # No collision, so just copy $b->{$k} over
+            else {
+                Debug("No collision\n")
+                    if ($local_debug);
+                ${$a}->{$k} = ${$b}->{$k};
+            }
+        }
+    }
+
+    if ($local_debug) {
+        Debug("MERGED: depth=$depth\n");
+        DebugDump($a);
+        Debug("-----------------------------------------\n");
+    }
 }
 
 #--------------------------------------------------------------------------

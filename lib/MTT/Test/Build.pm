@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2010 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
 # Copyright (c) 2008      Mellanox Technologies.  All rights reserved.
 # $COPYRIGHT$
@@ -554,12 +554,11 @@ sub _do_build {
 
         # Save it
         $MTT::Test::builds->{$mpi_install->{mpi_get_simple_section_name}}->{$mpi_install->{mpi_version}}->{$mpi_install->{simple_section_name}}->{$simple_section} = $ret;
-        MTT::Test::SaveBuilds($build_base,
-            $MTT::Globals::Internals->{mpi_get_name} . "." .
-            $MTT::Globals::Internals->{mpi_install_name} . "." .
-            $MTT::Globals::Internals->{test_get_name} . "." .
-            $MTT::Globals::Internals->{test_build_name}
-        );
+        MTT::Test::SaveBuilds($build_base, 
+            $mpi_install->{mpi_get_simple_section_name},
+            $mpi_install->{mpi_version},
+            $mpi_install->{simple_section_name},
+            $simple_section);
         
         # Print
         if (MTT::Values::PASS == $ret->{test_result}) {

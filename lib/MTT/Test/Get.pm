@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2010 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -129,7 +129,9 @@ sub _do_get {
             $MTT::Test::sources->{$simple_section} = $ret;
             
             # Save the data file recording all the sources
-            MTT::Test::SaveSources($source_dir, $MTT::Globals::Internals->{test_get_name});
+            MTT::Test::SaveSources($source_dir, 
+                                   $MTT::Globals::Internals->{test_get_name},
+                                   $MTT::Globals::Internals->{test_get_name});
         } else {
             Verbose("   No new test sources\n");
         }
