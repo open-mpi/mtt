@@ -59,13 +59,9 @@ sub Install {
     $config->{compiler_version} =
         Value($ini, $section, "mvapich2_compiler_version");
 
-    # Need to specify an MVAPICH build script
+    # Some versions of MVAPICH need to use an MVAPICH build script
     my $build_script =
         Value($ini, $section, "mvapich2_build_script");
-    if (!defined($build_script)) {
-        Warning("Build script not defined for mvapich2 module; skipping");
-        return undef;
-    }
 
     # Get any environment variables that were specified
     my %ENV_SAVE = %ENV;
@@ -78,22 +74,60 @@ sub Install {
             Debug("Setenv MVAPICH2 env var: $1 = $ENV{$1}\n");
         }
     }
-
+    
     # We know that we need to specify prefix
     $ENV{'PREFIX'} = $config->{installdir};
 
-    my $x = MTT::DoCommand::Cmd(1, "$config->{configdir}/$build_script", -1, $config->{stdout_save_lines}, $config->{stderr_save_lines});
-    %ENV = %ENV_SAVE;
-    
-    if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
-        $ret->{result_message} = "MVAPICH build script failed -- skipping this build";
-        # Put the output of the failure into $ret so that it gets
-        # reported (result_stdout/result_stderr was combined into
-        # just result_stdout)
-        $ret->{result_stdout} = $x->{result_stdout};
-        $ret->{exit_status} = $x->{exit_status};
-        $ret->{fail} = 1;
-        return $ret;
+    # If we have a build script, use it
+    if (defined($build_script)) {
+	my $x = MTT::DoCommand::Cmd(1, "$config->{configdir}/$build_script", 
+                                    -1, $config->{stdout_save_lines},
+                                    $config->{stderr_save_lines});
+        %ENV = %ENV_SAVE;
+        
+        if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
+            $ret->{result_message} = "MVAPICH build script failed -- skipping this build";
+            # Put the output of the failure into $ret so that it gets
+            # reported (result_stdout/result_stderr was combined into
+            # just result_stdout)
+            $ret->{result_stdout} = $x->{result_stdout};
+            $ret->{exit_status} = $x->{exit_status};
+            $ret->{fail} = 1;
+            return $ret;
+        }
+    } 
+
+    # If we don't have a build script, assume a newer-generation
+    # MVAPICH that uses a configure script.
+    else {
+	my $gnu = {
+            configdir => $config->{configdir},
+            configure_arguments => $config->{configure_arguments},
+            compiler_name => $config->{compiler_name},
+            vpath => "no",
+            installdir => $config->{installdir},
+            bindir => $config->{bindir},
+            libdir => $config->{libdir},
+            make_all_arguments => $config->{make_all_arguments},
+            make_check => $config->{make_check},
+            stdout_save_lines => $config->{stdout_save_lines},
+            stderr_save_lines => $config->{stderr_save_lines},
+            merge_stdout_stderr => $config->{merge_stdout_stderr},
+    	};
+
+	my $install;
+        if (MTT::Util::is_running_on_windows() && 
+            $config->{compiler_name} eq "microsoft") {
+            $install = MTT::Common::Cmake::Install($gnu);
+        } else {
+            $install = MTT::Common::GNU_Install::Install($gnu);
+        }
+	
+        foreach my $k (keys(%{$install})) {
+            $ret->{$k} = $install->{$k};
+        }	
+        return $ret
+            if (exists($ret->{fail}));
     }
 
     # Set which bindings were compiled
