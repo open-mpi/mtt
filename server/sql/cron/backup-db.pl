@@ -10,6 +10,13 @@ my $tmp_dir = "/tmp";
 my $resting_place = "/scratch/jjhursey/backup/";
 
 #
+# Make sure the resting place exists
+#
+if( !(-e $resting_place) ) {
+  system("mkdir -p $resting_place");
+}
+
+#
 # Dump and Zip the file
 #
 my $cmd;

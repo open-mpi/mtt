@@ -1619,8 +1619,8 @@ function mtt_send_mail($message) {
 
     $php_auth_user = $_SERVER['PHP_AUTH_USER'];
     $user          = $_POST['email'];
-    $admin1        = 'jjhursey@open-mpi.org';
-    $admin2        = 'ethan.mallove@sun.com';
+    $admin1        = 'ethan.mallove@sun.com';
+    $admin2        = 'mini-llamas@lam-mpi.org';
     $date          = date('r');
     $phpversion    = phpversion();
     $boundary      = md5(time());

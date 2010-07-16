@@ -25,8 +25,10 @@ use Mail::Sendmail;
 my $debug;
 my $debug_no_email;
 
-my $to_email_address     = "FILL THIS IN";
-my $from_email_address   = "FILL THIS IN";
+#my $to_email_address     = "FILL THIS IN";
+#my $from_email_address   = "FILL THIS IN";
+my $to_email_address     = "mini-llamas\@lam-mpi.org";
+my $from_email_address   = "mtt-devel\@open-mpi.org";
 my $current_mail_subject = "MTT Database Maintenance: ";
 my $current_mail_header  = "";
 my $current_mail_body    = "";

@@ -9,7 +9,7 @@ set xtics rotate by 90
 
 set ylabel "Tuples per month (Thousands)"
 set y2label "Tuples per day/week (Thousands)"
-set y2tics 0, 100
+set y2tics 0, 250
 set ytics nomirror
 
 set grid xtics

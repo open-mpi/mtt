@@ -18,8 +18,10 @@ my $verbose;
 my $debug;
 my $debug_no_email;
 
-my $to_email_address     = "FILL THIS IN";
-my $from_email_address   = "FILL THIS IN";
+#my $to_email_address     = "FILL THIS IN";
+#my $from_email_address   = "FILL THIS IN";
+my $to_email_address     = "mini-llamas\@lam-mpi.org";
+my $from_email_address   = "mtt-devel\@open-mpi.org";
 my $current_mail_subject = "MTT Database Maintenance: IC Check";
 my $current_mail_header  = "";
 my $current_mail_body    = "";
@@ -57,9 +59,7 @@ connect_db();
 #
 # Check for misfiled test_suite x test_name combos
 #
-if( 0 == 1 ) {
 check_test_names();
-}
 
 #
 # Check for mismatched test_suite, test_name combos in test_run and test_build
@@ -69,6 +69,9 @@ check_test_names_mismatch();
 disconnect_db();
 
 if( $require_email != 0 ) {
+  send_status_mail();
+} else {
+  print_update("All Checks Passed!");
   send_status_mail();
 }
 
