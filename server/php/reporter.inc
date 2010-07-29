@@ -35,6 +35,8 @@ define('LGREEN',   "#C0FFC0");
 define('DGREEN',   "#C0E0C0");
 define('LYELLOW',  "#FFFFC0");
 define('DYELLOW',  "#E0E0C0");
+define('LORANGE',  "#FFDF7F");
+define('DORANGE',  "#E0C07F");
 define('LBLUE',    "#C0C0FF");
 define('DBLUE',    "#C0C0E0");
 define('WHITE',    "#FFFFFF");

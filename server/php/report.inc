@@ -237,7 +237,7 @@ function detail_table($headers, $resource) {
         elseif ($skip)
             $bgcolor = (($skip > 0) ? stylize_trial_color(LYELLOW, $trial) : "");
         elseif ($time)
-            $bgcolor = (($time > 0) ? stylize_trial_color(LYELLOW, $trial) : "");
+            $bgcolor = (($time > 0) ? stylize_trial_color(LORANGE, $trial) : "");
         elseif ($perf)
             $bgcolor = (($time > 0) ? stylize_trial_color(LBLUE, $trial)   : "");
 
@@ -685,6 +685,8 @@ function stylize_trial_color($color, $trial) {
             return DGREEN;
         elseif ($color == LYELLOW)
             return DYELLOW;
+        elseif ($color == LORANGE)
+            return DORANGE;
         elseif ($color == LBLUE)
             return DBLUE;
     } else
@@ -1616,7 +1618,7 @@ function result_colors($phases) {
         $colors[] = LGREEN;
         $colors[] = LRED;
         $colors[] = LYELLOW;
-        $colors[] = LYELLOW;
+        $colors[] = LORANGE;
         $colors[] = LBLUE;
     }
     return $colors;
