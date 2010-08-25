@@ -265,6 +265,15 @@ sub _do_submit {
     {
         $submit_failed_results = 1;
     }
+
+    my $submit_results = MTT::Values::Value( $ini, "VBench", 'submit_results_to_gds' );
+    # mtt ini flag to control what mtt results to submit to GDS
+    if (!defined($submit_results) || $submit_results eq '' || $submit_results eq '1' || $submit_results eq 'True')
+    {
+        $submit_results = 1;
+    } else {
+        $submit_results = 0;
+    }
     
     #foreach my $phase (keys(%$entries)) {
     foreach my $phase ( "MPI Install", "Test Build", "Test Run" ) {
@@ -332,6 +341,12 @@ sub _do_submit {
                 if ( ($submit_failed_results == 0) && ($report->{test_result} != 1) )
                 {
                     Debug("MTT ini-file has key \'submit_failed_results_to_gds\'=$submit_failed_results and phase: $phase test_result: $report->{test_result}\n");
+                    next;
+                }
+
+                if ( $submit_results == 0 )
+                {
+                    Debug("MTT ini-file has key \'submit_results_to_gds\'=$submit_results\n");
                     next;
                 }
                 
@@ -539,27 +554,27 @@ sub _process_phase_test_run {
 
     # Special named export environment variables set in mpirun command line
     # should be stored as part of data in GDS datastore
-    while ( $phase_form->{cmdline} =~ m/\s+-x\s+(custom_\w+)\=([^\s\"\']+)/g){
+    while ( $phase_form->{cmdline} =~ m/\s+-[x|e]\s+(custom_\w+)\=([^\s\"\']+)/g){
         my $value = $2;
         eval "\$value = \"$value\"";
         $phase_form->{$1} = $value;
     }
-    while ( $phase_form->{cmdline} =~ m/\s+-x\s+(custom_\w+)\=\"([^\"]*)\"/g ){
+    while ( $phase_form->{cmdline} =~ m/\s+-[x|e]\s+(custom_\w+)\=\"([^\"]*)\"/g ){
         my $value = $2;
         eval "\$value = \"$value\"";
         $phase_form->{$1} = $value;
     }
-    while ( $phase_form->{cmdline} =~ m/\s+-x\s+\"(custom_\w+)\=([^\"]*)\"/g){
+    while ( $phase_form->{cmdline} =~ m/\s+-[x|e]\s+\"(custom_\w+)\=([^\"]*)\"/g){
         my $value = $2;
         eval "\$value = \"$value\"";
         $phase_form->{$1} = $value;
     }
-    while ( $phase_form->{cmdline} =~ m/\s+-x\s+(custom_\w+)\=\'([^\']*)\'/g ){
+    while ( $phase_form->{cmdline} =~ m/\s+-[x|e]\s+(custom_\w+)\=\'([^\']*)\'/g ){
         my $value = $2;
         eval "\$value = \"$value\"";
         $phase_form->{$1} = $value;
     }
-    while ( $phase_form->{cmdline} =~ m/\s+-x\s+\'(custom_\w+)\=([^\']*)\'/g){
+    while ( $phase_form->{cmdline} =~ m/\s+-[x|e]\s+\'(custom_\w+)\=([^\']*)\'/g){
         my $value = $2;
         eval "\$value = \"$value\"";
         $phase_form->{$1} = $value;
@@ -725,11 +740,12 @@ sub _fill_mpi_info {
         }
 
         my $error = 0;
-        open(SHELL, $mpi_path . "/bin/mpirun --version 2>&1|") || ($error = 1);
+        my $cmd = "LD_LIBRARY_PATH=" . $mpi_path . "/lib " . $mpi_path . "/bin/mpirun --version";
+        open(SHELL, "$cmd 2>&1|") || ($error = 1);
         $info_form->{oma_version} = "";
         if ($error == 0) {
             while (<SHELL>) {
-                if ( $_ =~ m/OMA\s+([r\d\.]+)\s/) {
+                if ( $_ =~ m/OMA\s+([r\d\.-]+)\s/) {
                     $info_form->{oma_version} = $1;
                     last;
                 }

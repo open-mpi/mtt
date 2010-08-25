@@ -3047,6 +3047,88 @@ sub generate_md5_hash {
     return md5_hex($str);
 }
 
+my %enumerate_ex_context = {};
+
+# enumerate_ex funclet
+# Allow to substitute parameters/variables multiple times.
+#
+# Examples:
+#
+# 1)
+# argv=&enumerate_ex("&val(p1) &val(p1)", "p1"=>[1,2,3])
+# Total results count is 3 (not 3^2=9)
+#
+# 2)
+# argv=&enumerate_ex("&val(p1) &val(p1)", "p1"=>&enumerate(1,2,3))
+# Total results count is 3.
+#
+# 3)
+# argv=&enumerate_ex("-param &val(param1) -param2 &val(param1) &val(param2) &val(param3)", "param1"=>@param1@, "param2"=>"@!param2@", "param3"=>"&eq(&val(param1),&val(param2))" )
+# param1=&enumerate(1,2,3,4,5)
+# param2=&if(&ge(&val(param1),4),&val(param1),10)
+#
+# param1 variable has 5 values and param1 is used twice.
+# param2 is an expression. It is passed via @!param2@ substitution (w/o evaluating)
+# Total results count is 5.
+#                   
+sub enumerate_ex {
+    my $cmd = shift;
+
+    my $key = shift;
+    my $value = shift;
+
+    my @other_params = @_;
+
+    my $key2 = shift @other_params;
+    my $value2 = shift @other_params;
+
+    my @result = ();
+
+    if (ref($value) eq "") {
+        $value = MTT::Values::EvaluateString($value, $MTT::Values::evaluate_string_ini, $MTT::Values::evaluate_string_section);
+        if (ref($value) eq "") {
+            $value = [$value];
+        }
+    }
+    foreach my $cur_value (@$value) {
+        %enumerate_ex_context->{$key} = $cur_value;
+        my $res;
+        if (defined($key2)) {
+            $res = enumerate_ex($cmd, $key2, $value2, @other_params);
+        } else {
+            $res = MTT::Values::EvaluateString($cmd, $MTT::Values::evaluate_string_ini, $MTT::Values::evaluate_string_section);
+        }
+        if (ref($res) eq "") {
+            push(@result, $res);
+        } else {
+            foreach (@$res) {
+                push(@result, $_);
+            }
+        }
+        delete %enumerate_ex_context->{$key}
+    }
+    return [@result];
+}
+
+# get value from enumerate_ex context hash
+sub val {
+    my($param) = @_;
+    if (!exists(%enumerate_ex_context->{$param})) {
+        Warning("val=$param is not exist\n");
+        return undef;
+    }
+    my $value = %enumerate_ex_context->{$param};
+    return $value;
+}
+
+# call Evaluate string for parameter
+sub evaluate {
+    my($param) = @_;
+    my $value = MTT::Values::EvaluateString($param, $MTT::Values::evaluate_string_ini, $MTT::Values::evaluate_string_section);
+    return $value;
+}
+
+
 # Run shell commands as a script, i.e
 #
 # [mtt]

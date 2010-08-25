@@ -101,7 +101,7 @@ sub Analyze {
             }
             $rows++;
 
-        } elsif (1 == $have_some_data) {
+        } elsif ($line =~ m/----------------------------------------------------------------/ && 1 == $have_some_data) {
             last;
         }
     }

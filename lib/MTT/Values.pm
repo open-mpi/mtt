@@ -54,6 +54,10 @@ $result_messages->{MTT::Values::PASS}      = "pass";
 $result_messages->{MTT::Values::TIMED_OUT} = "timeout";
 $result_messages->{MTT::Values::SKIPPED}   = "skipped";
 
+# current $ini and $section parameters (we use it in funclets)
+our $evaluate_string_ini;
+our $evaluate_string_section;
+
 #--------------------------------------------------------------------------
 
 # Returns either a scalar or array ref
@@ -66,6 +70,13 @@ sub EvaluateString {
 
     my ($str, $ini, $section) = @_;
     Debug("Evaluating: $str\n");
+
+    # update current $ini and $section parameters
+    my $evaluate_string_ini_saved = $evaluate_string_ini;
+    $evaluate_string_ini = $ini;
+    my $evaluate_string_section_saved = $evaluate_string_section;
+    $evaluate_string_section = $section;
+
 
     # Loop over the string looking for &functions and @vars@
     my $last = 0;
@@ -134,6 +145,9 @@ sub EvaluateString {
                 }
             }
 
+            $evaluate_string_ini = $evaluate_string_ini_saved;
+            $evaluate_string_section = $evaluate_string_section_saved;
+
             MTT::Messages::Messages($d, $v);
             return \@ret;
         }
@@ -143,6 +157,11 @@ sub EvaluateString {
     Debug("Got final version before escapes: $str\n");
     $str = _replace_escapes($prefix . $str);
     Debug("Returning: $str\n");
+
+    # restore old $ini and $section parameters
+    $evaluate_string_ini = $evaluate_string_ini_saved;
+    $evaluate_string_section = $evaluate_string_section_saved;
+
     MTT::Messages::Messages($d, $v);
     return $str;
 }
@@ -153,18 +172,33 @@ sub _replace_vars {
     # Loop until there are no more @vars@, but only if $ini and
     # $section were provided
     Debug("Replacing vars from section $section: $str\n");
-    while ($str =~ /\@(\w+?)\@/) {
+    while ($str =~ /\@(\!?[\w]+?)\@/) {
         my $var_name = $1;
+        my $prefix = $`;
+        my $suffix = $';
 
         # @foo@ gets evaluated before it gets substituted in
-        my $val = EvaluateString($ini->val($section, $var_name), $ini, $section);
+        my $val;
+        if ($var_name =~ m/^!/) {
+            # don't call EvaluateString for @!var_name@, only "copy-paste" value from section parameter
+            $val = $ini->val($section, substr($var_name,1));
+        } else {
+            $val = EvaluateString($ini->val($section, $var_name), $ini, $section);
+        }
         Debug("Got var_name: $var_name -> $val\n");
         if (!defined($val)) {
             # If we got nothing back, eliminate the token
-            $str =~ s/\@$var_name\@//g;
+            $str = $prefix . $suffix;
         } else {
             # If we got a string back, substitute it in
-            $str =~ s/\@$var_name\@/$val/g;
+            if (ref($val) ne "") {
+                my $val_str = Dumper($val);
+                $val_str =~ s/\$VAR(\d+)\s=\s//;
+                $val_str =~ s/;$//;
+                Debug("value=$val_str\n");
+                $val = $val_str;
+            } 
+            $str = $prefix . $val . $suffix;
         }
     }
 
