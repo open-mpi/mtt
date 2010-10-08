@@ -3,7 +3,8 @@
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
 # Copyright (c) 2007      Cisco, Inc.  All rights reserved.
-# Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2010      Oracle and/or its affiliates.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -63,7 +64,7 @@ sub Messages {
 
 sub SetTextwrap {
     my $textwrap = $MTT::Globals::Values->{textwrap};
-    $Text::Wrap::columns = ($textwrap ? $textwrap : 76);
+    $Text::Wrap::columns = ($textwrap ? $textwrap : 999);
 }
 
 sub open_logfile {
@@ -198,7 +199,7 @@ sub Trace {
     $lev = 0 if (! defined($lev));
     my @called = caller($lev);
 
-    my $s = (join(":", map { &_relative_path($_) } @called[1..2]), @_);
+    my $s = wrap("", "   ", (join(":", map { &_relative_path($_) } @called[1..2]), @_)); 
     print $s;
     print $LOGFILE $s
         if (defined($LOGFILE));
