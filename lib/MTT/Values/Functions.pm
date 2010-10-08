@@ -4,6 +4,7 @@
 #                         All rights reserved.
 # Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2010      Oracle and/or its affiliates.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -190,6 +191,20 @@ sub multiply {
 
     Debug("&multiply returning: $prod\n");
     return $prod;
+}
+
+sub divide {
+    my $array = get_array_ref(\@_);
+    Debug("&divide got: @$array\n");
+    return "0"
+        if (!defined($array));
+
+    my $dividend = shift @$array;
+    my $divisor =  shift @$array;
+    my $quotient = int($dividend / $divisor);
+
+    Debug("&divide returning: $quotient\n");
+    return $quotient;
 }
 
 #--------------------------------------------------------------------------
