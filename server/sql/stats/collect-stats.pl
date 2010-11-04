@@ -321,8 +321,8 @@ sub collect_database_stats() {
     update_stat_tuple($db_submit_update,
                       $loc_update_args,
                       $cur_db_stat_id);
-    print_verbose(5, "****UPDATED**** Current ID <$cur_db_stat_id>\n");
-    print_verbose(5, "*"x60 . "\n");
+    print_verbose(2, "****UPDATED**** Current ID <$cur_db_stat_id>\n");
+    print_verbose(2, "*"x60 . "\n");
   }
   else {
     $cur_db_stat_id = insert_stat_tuple($db_submit_insert,
@@ -334,8 +334,8 @@ sub collect_database_stats() {
     if( 0 > $cur_db_stat_id) {
       $cur_db_stat_id = find_stat_tuple($db_submit_select, "");
     }
-    print_verbose(5, "****INSERTED**** Current ID <$cur_db_stat_id>\n");
-    print_verbose(5, "*"x60 . "\n");
+    print_verbose(2, "****INSERTED**** Current ID <$cur_db_stat_id>\n");
+    print_verbose(2, "*"x60 . "\n");
   }
 
   #
