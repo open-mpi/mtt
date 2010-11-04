@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 
 use strict;
+use Env qw(HOME PATH USER);
 
 #
 # Script requires the following software packages installed:
@@ -10,7 +11,7 @@ use strict;
 #
 
 # Directory containing scripts to execute
-my $working_dir = "/u/jjhursey/work/mtt-stuff/mtt-trunk/server/sql/stats";
+my $working_dir = "$HOME/mtt/trunk/server/sql/stats";
 # Directory to place the contribution graph
 my $output_dir  = "/l/osl/www/www.open-mpi.org/mtt/stats/";
 # Temporary directory to store data files

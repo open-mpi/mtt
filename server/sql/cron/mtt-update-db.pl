@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 
 use strict;
+use Env qw(HOME PATH USER);
 
 # Perform flush after each write to STDOUT
 $| = 1;
@@ -8,7 +9,7 @@ $| = 1;
 #
 # MTT Working Dir to find scripts
 #
-my $mtt_base_dir = "/u/jjhursey/work/mtt-stuff/mtt-trunk/server/sql/";
+my $mtt_base_dir = "$HOME/mtt/trunk/server/sql/";
 
 #
 # DB Conversion script

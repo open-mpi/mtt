@@ -15,12 +15,12 @@ my $mtt_base_dir = "$HOME/mtt/trunk/server/sql/";
 # Stats collection script
 #
 my $stats_script = $mtt_base_dir . "stats/collect-stats.pl";
-my $stats_args   = " -past 2 -v 2 -no-db ";
+my $stats_args   = " -no-contrib -v 2 ";
 
 #
 # Output file to collect debugging output
 #
-my $stats_output = $mtt_base_dir . "output/mtt-update-stats-output.txt";
+my $stats_output = $mtt_base_dir . "output/mtt-update-stats-db-only-output.txt";
 
 #
 # Change to the working directory, and run the command
