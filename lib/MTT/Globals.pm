@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 #
-# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2010 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -53,9 +53,9 @@ my $_defaults = {
     before_any_exec_timeout => 10,
     before_any_exec_pass => "&and(&cmd_wifexited(), &eq(&cmd_wexitstatus(), 0))",
 
-    before_exec_exec => undef,
-    before_exec_exec_timeout => 10,
-    before_exec_exec_pass => "&and(&cmd_wifexited(), &eq(&cmd_wexitstatus(), 0))",
+    before_each_exec => undef,
+    before_each_exec_timeout => 10,
+    before_each_exec_pass => "&and(&cmd_wifexited(), &eq(&cmd_wexitstatus(), 0))",
 
     after_each_exec => undef,
     after_each_exec_timeout => 10,
