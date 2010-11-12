@@ -257,6 +257,7 @@ sub Cmd {
 
         # Child
         if (($pid = fork()) == 0) {
+            close($server_socket);
 
             # Open socket(s) back up to the parent
 
@@ -271,7 +272,6 @@ sub Cmd {
                     || die "connect: $!";
             }
 
-            close(STDERR);
             if ($merge_output) {
                 open STDERR, ">&OUTwrite" ||
                     die "Can't redirect stderr\n";
@@ -282,7 +282,6 @@ sub Cmd {
             select STDERR;
             $| = 1;
 
-            close(STDOUT);
             open STDOUT, ">&OUTwrite" || 
                 die "Can't redirect stdout\n";
             select STDOUT;
