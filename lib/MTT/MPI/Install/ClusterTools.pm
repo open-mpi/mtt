@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
 # Copyright (c) 2008      Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2010      Oracle and/or its affiliates.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -37,7 +38,8 @@ my $full_ct_version_number;
 my $ompi_version_number;
 my $product_version;
 my $compiler_name;
-my $product_name = "ClusterTools";
+my $product_name = "Oracle Message Passing Toolkit";
+my $product_name_without_spaces = "Oracle_Message_Passing_Toolkit";
 my $package_name_prefix;
 my $package_basedir;
 my $configure_prefix;
@@ -130,7 +132,7 @@ sub Install {
     # With this we get a duplicate string, e.g., 1.3-1.3r12345 ...
     # push(@greek_parts, "$ompi_version_number")   if ($ompi_version_number);
     push(@greek_parts, "r$svn_r_number")            if ($svn_r_number);
-    push(@greek_parts, "ct$full_ct_version_number") if ($full_ct_version_number);
+    push(@greek_parts, "ompt$full_ct_version_number") if ($full_ct_version_number);
     push(@greek_parts, "b$build_number")            if ($build_number);
     push(@greek_parts, "r$internal_r_number")       if ($internal_r_number);
     my $greek = join("-", @greek_parts);
@@ -178,9 +180,14 @@ sub Install {
         $wrapper_rpath = $configure_prefix;
     }
 
-    # Run autogen.sh
-    my $autogen_script = "./autogen.sh";
-    if ($do_autogen and -x $autogen_script) {
+    # Run autogen.{sh,pl}
+    my $autogen_script;
+    if (-x "./autogen.sh") {
+        $autogen_script = "./autogen.sh";
+    } elsif (-x "./autogen.pl") {
+        $autogen_script = "./autogen.pl";
+    }
+    if ($do_autogen) {
         $x = MTT::DoCommand::Cmd(1, $autogen_script);
         if (0 != $x->{exit_status}) {
             $ret->{result_message} = "$autogen_script failed.";
@@ -367,24 +374,6 @@ sub Install {
     }
 
     CREATE_PACKAGES:
-
-    # Copy over the libC libraries needed for C++ programs (such as ompi_info)
-    # to dynamically load
-    if ($compiler_name =~ /sun|sos/i) {
-        my $libc_libraries;
-
-        # 32-bit
-        $libc_libraries = _find_sun_studio_libc_libraries();
-        foreach my $lib (@$libc_libraries) {
-            MTT::DoCommand::Cmd(1, "cp $lib $staging_dir/lib");
-        }
-
-        # 64-bit
-        $libc_libraries = _find_sun_studio_libc_libraries("64");
-        foreach my $lib (@$libc_libraries) {
-            MTT::DoCommand::Cmd(1, "cp $lib $staging_dir/lib/64");
-        }
-    }
 
     # Deliver shared BFD libraries
     # (Sun Studio and PGI do not use the BFD library)
@@ -1148,7 +1137,7 @@ sub create_solaris_packages {
     MTT::DoCommand::Popdir();
 }
 
-my $vendor = "Sun Microsystems, Inc.";
+my $vendor = "Oracle, Inc.";
 
 # Prologue the prototype file with the "pkginfo" and "copyright" i (include)
 # lines
@@ -1297,7 +1286,7 @@ VERSION=\"$version,REV=$rev_date_string\"
 BASEDIR=\"$basedir\"
 ARCH=\"$arch\"
 SUNW_PRODVERS=\"$product_version\"
-SUNW_PRODNAME=\"Sun HPC $product_name $full_ct_version_number, based on Open MPI $ompi_version_number\"
+SUNW_PRODNAME=\"Oracle HPC $product_name $full_ct_version_number, based on Open MPI $ompi_version_number\"
 SUNW_PKGVERS=\"$sunw_pkgvers\"
 SUNW_PKGTYPE=\"$sunw_pkgtype\"
 DESC=\"$desc\"
@@ -1440,7 +1429,7 @@ sub create_tarball {
     }
 
     # Name the tarball file similarly to the RPM file name
-    my $tarfile_name = "${product_name}_${compiler_name}-$full_ct_version_number-$build_number.$arch.tar";
+    my $tarfile_name = "${product_name_without_spaces}_${compiler_name}-$full_ct_version_number-$build_number.$arch.tar";
 
     MTT::DoCommand::Cmd(1, "tar cf $tarfile_name $dir_arguments");
     MTT::DoCommand::Cmd(1, "gzip $tarfile_name");
@@ -1483,13 +1472,13 @@ sub _create_binary_rpm_spec_file {
 #
 
 Summary: A powerful implementaion of MPI
-Name: ${product_name}_${compiler_name}
+Name: ${product_name_without_spaces}_${compiler_name}
 Version: $full_ct_version_number
 Release: $build_number
 Vendor: $vendor
 License: BSD
 Group: Development/Libraries
-URL: http://www.sun.com/software/products/clustertools
+URL: http://www.oracle.com/us/products/tools/message-passing-toolkit-070499.html
 AutoReqProv: no
 Distribution: $vendor
 Packager: ompi-clustertools-ext\@sun.com
@@ -1524,7 +1513,7 @@ $files_rpm_macro
 
 ";
 
-    my $ret = "$rpm_top_dir/SPECS/${product_name}_${compiler_name}-$full_ct_version_number-$build_number-binary.spec";
+    my $ret = "$rpm_top_dir/SPECS/${product_name_without_spaces}_${compiler_name}-$full_ct_version_number-$build_number-binary.spec";
 
     MTT::Files::SafeWrite(1, $ret, $contents);
     return $ret;
@@ -1542,7 +1531,7 @@ sub _create_source_rpm_spec_file {
     _setup_rpm_top_dir($rpm_top_dir);
 
     # Grab the source name
-    my $dist_tarball_name = "$product_name-$full_ct_version_number";
+    my $dist_tarball_name = "$product_name_without_spaces-$full_ct_version_number";
     my $dist_tarball = _make_dist_tarball($config->{abs_srcdir}, $dist_tarball_name);
     MTT::DoCommand::Cmd(1, "cp $dist_tarball $rpm_top_dir/SOURCES");
     $dist_tarball = basename($dist_tarball);
@@ -1570,7 +1559,7 @@ sub _create_source_rpm_spec_file {
 #############################################################################
 
 Summary: A powerful implementaion of MPI
-Name: ${product_name}_${compiler_name}
+Name: ${product_name_without_spaces}_${compiler_name}
 Version: $full_ct_version_number
 # Certain characters (e.g., '-') are not allowed for the Release field
 Release: $build_number
@@ -1578,7 +1567,7 @@ Vendor: $vendor
 License: BSD
 Group: Development/Libraries
 Source: $dist_tarball
-URL: http://www.sun.com/software/products/clustertools
+URL: http://www.oracle.com/us/products/tools/message-passing-toolkit-070499.html
 AutoReqProv: no
 Distribution: $vendor
 Packager: ompi-clustertools-ext\@sun.com
@@ -1630,7 +1619,7 @@ $build_section
 # %config etc
 ";
 
-    my $ret = "$rpm_top_dir/SPECS/${product_name}_${compiler_name}-$full_ct_version_number-$build_number-source.spec";
+    my $ret = "$rpm_top_dir/SPECS/${product_name_without_spaces}_${compiler_name}-$full_ct_version_number-$build_number-source.spec";
 
     MTT::Files::SafeWrite(1, $ret, $contents);
     return $ret;
@@ -1772,33 +1761,6 @@ sub _setup_installer {
 
     Debug("_setup_installer returning $ret\n");
     return $ret;
-}
-
-# Return a list of .so files needed for Sun Studio
-# C++ programs (e.g., ompi_info)
-sub _find_sun_studio_libc_libraries {
-    my ($subdir) = @_;
-    my $suncc = FindProgram(qw(suncc));
-    my $dirname_suncc = dirname($suncc);
-
-    # Is there a way we can get these setup to mirror the way
-    # they're actually linked in the Studio directory? E.g.,
-    #
-    #   libCrun.so -> libCrun.so.1
-    #
-    my @libs = ("libCrun*1", "libCstd*1", "libmtsk*1");
-    my @dirs = ("$dirname_suncc/../prod/usr/lib/$subdir",
-                "$dirname_suncc/../rtlibs/$subdir",
-                "$dirname_suncc/../lib/$subdir");
-
-    my @ret;
-    foreach my $dirname (@dirs) {
-        foreach my $lib (@libs) {
-            my ($l) = glob "$dirname/$lib";
-            push(@ret, $l) if (-e $l);
-        }
-    }
-    return \@ret;
 }
 
 1;
