@@ -115,11 +115,19 @@ sub EvaluateString {
 
         # If we got a string back, append the remaining and loop
         # around looking for more &funclets.
-        if (ref($ret) eq "") {
+        
+	
+	# Workaround for SLES with newer perl version:
+	# when using strict refs on sles recived-
+	# *** ERROR: Module aborted: MTT::Test::Specify::Simple:Specify: Can't use
+ 	#   string ("8") as an ARRAY ref while "strict refs" in use at
+	#    /hpc/newhome/mtt/svn/mtt/trunk/lib/MTT/Values.pm line 118.
+	no strict 'refs';
+	
+	if (ref($ret) eq "") {
             $str = $ret . $remaining;
             Debug("--> After eval(string), remaining: $str\n");
         } 
-
         # We may have gotten an *empty* array back, but in this case
         # we still want to insert one empty value (and keep looking
         # for more &funclets).
@@ -151,6 +159,9 @@ sub EvaluateString {
             MTT::Messages::Messages($d, $v);
             return \@ret;
         }
+
+	# Workaround for SLES with newer perl version:
+	use strict 'refs';	
     }
 
     # All done -- no more &functions
