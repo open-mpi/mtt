@@ -764,6 +764,7 @@ sub _create_openmpi_wrapper_data_files {
     # Default to Sun Studio flags
     my $dash_r =  "-R";
     my $dash_m =  "-M";
+    my $dash_i =  "-I";
     my $linker_flags_32;
     my $linker_flags_64;
     my $linker_flags_gfortran_32;
@@ -843,6 +844,11 @@ sub _create_openmpi_wrapper_data_files {
     # For mpif90, point to mpi.mod using the -M flag
     $wrapper_data->{"f90"}->{module_option} = $dash_m;
     $wrapper_data->{"f95"}->{module_option} = $dash_m;
+
+    if ($compiler_name =~ /pgi/i) {
+        $wrapper_data->{"f90"}->{module_option} = $dash_i;
+        $wrapper_data->{"f95"}->{module_option} = $dash_i;
+    }
 
     # We have to either use -m32 or -m64 for Linux
     # (but there's no need to include -m32 in both the compiler_args
