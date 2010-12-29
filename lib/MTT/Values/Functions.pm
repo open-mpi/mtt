@@ -3183,5 +3183,11 @@ sub mtt_switch
     Debug("ERROR: Not found case for $var\n");
 }
 
+sub create_file
+{
+    my ($filename, $body) = @_;
+    MTT::Files::SafeWrite(1, $filename, $body);
+}
+
 
 1;
