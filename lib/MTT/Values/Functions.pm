@@ -3163,4 +3163,25 @@ sub executable {
 	return $x->{result_stdout};
 }
 
+#
+# Poor man switch statement
+# Example: mtt_switch(@np@, 9, "return1", 100, return2", "default", 0);
+#
+
+sub mtt_switch
+{
+    my ($var, %cases) = @_;
+
+    if ($cases{$var}) {
+        return $cases{$var};
+    }
+
+    if ($cases{'default'}) {
+        return $cases{'default'};
+    }
+
+    Debug("ERROR: Not found case for $var\n");
+}
+
+
 1;
