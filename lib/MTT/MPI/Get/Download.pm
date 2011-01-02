@@ -84,6 +84,9 @@ sub Get {
     $ret->{module_data}->{tarball} = "$tarball_dir/$tarball_name";
     $ret->{prepare_for_install} = __PACKAGE__ . "::PrepareForInstall";
 
+    my $post_copy = Value($ini, $section, "post_copy");
+    $ret->{module_data}->{post_copy} = $post_copy if $post_copy;
+
     # All done
     Debug(">> Download complete\n");
     $ret->{test_result} = MTT::Values::PASS;
@@ -101,6 +104,24 @@ sub PrepareForInstall {
 
     MTT::DoCommand::Chdir($build_dir);
     my $ret = MTT::Files::unpack_tarball($source->{module_data}->{tarball}, 1);
+
+    # Post copy
+    my $post_copy = $source->{module_data}->{post_copy};
+    if ($post_copy) {
+
+        # Run the step
+        Debug("Download running post_copy command: $post_copy\n");
+        my $x = MTT::DoCommand::RunStep(1, $post_copy, 3000, undef,
+            undef, "post_copy");
+        if ($x->{timed_out}) {
+            Warning("Post-copy command timed out: $x->{result_stdout}\n");
+            return undef;
+        } elsif (!MTT::DoCommand::wsuccess($x->{exit_status})) {
+            Warning("Post-copy command failed: $x->{result_stdout}\n");
+            return undef;
+        }
+    }
+
     MTT::DoCommand::Chdir($ret);
 
     Debug(">> Download finished extracting tarball\n");
