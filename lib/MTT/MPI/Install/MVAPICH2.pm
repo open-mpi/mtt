@@ -45,6 +45,10 @@ sub Install {
     $config->{make_all_arguments} = $tmp
         if (defined($tmp));
 
+    $tmp = Value($ini, $section, "mvapich2_configure_arguments");
+    $config->{configure_arguments} = $tmp if (defined($tmp));
+
+
     # JMS: compiler name may have come in from "compiler_name"in
     # Install.pm.  So if we didn't define one for this module, use the
     # default from "compiler_name".  Note: to be deleted someday
