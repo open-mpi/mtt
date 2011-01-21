@@ -115,53 +115,45 @@ sub EvaluateString {
 
         # If we got a string back, append the remaining and loop
         # around looking for more &funclets.
-        
-	
-	# Workaround for SLES with newer perl version:
-	# when using strict refs on sles recived-
-	# *** ERROR: Module aborted: MTT::Test::Specify::Simple:Specify: Can't use
- 	#   string ("8") as an ARRAY ref while "strict refs" in use at
-	#    /hpc/newhome/mtt/svn/mtt/trunk/lib/MTT/Values.pm line 118.
-	no strict 'refs';
-	
-	if (ref($ret) eq "") {
+        if (ref($ret) eq "") {
             $str = $ret . $remaining;
             Debug("--> After eval(string), remaining: $str\n");
         } 
         # We may have gotten an *empty* array back, but in this case
         # we still want to insert one empty value (and keep looking
         # for more &funclets).
-        elsif ($#{@$ret} < 0) {
-            $str = $remaining;
-            Debug("--> After eval(empty array), remaining: $str\n");
-        }
-
-        # Otherwise, we need to loop over all the array values and
-        # evaluate all of them.  Note that we are effectively aborting
-        # the loop at this point; we will return straight from here.
-        else {
-            my @ret;
-            foreach my $s (@$ret) {
-                Debug("--> After eval(array string), remaining: $s$remaining\n");
-                my $result = EvaluateString($s . $remaining, $ini, $section);
-                if (ref($result) eq "") {
-                    push(@ret, $prefix . $result);
-                } else {
-                    foreach my $t (@$result) {
-                        push(@ret, $prefix . $t);
+        elsif (ref($ret) eq "ARRAY") {
+            my @ret_array = @$ret;
+            if ($#ret_array < 0) {
+                $str = $remaining;
+                Debug("--> After eval(empty array), remaining: $str\n");
+            }
+            # Otherwise, we need to loop over all the array values and
+            # evaluate all of them.  Note that we are effectively aborting
+            # the loop at this point; we will return straight from here.
+            else {
+                my @ret;
+                foreach my $s (@$ret) {
+                    Debug("--> After eval(array string), remaining: $s$remaining\n");
+                    my $result = EvaluateString($s . $remaining, $ini, $section);
+                    if (ref($result) eq "") {
+                        push(@ret, $prefix . $result);
+                    } else {
+                        foreach my $t (@$result) {
+                            push(@ret, $prefix . $t);
+                        }
                     }
                 }
+
+                $evaluate_string_ini = $evaluate_string_ini_saved;
+                $evaluate_string_section = $evaluate_string_section_saved;
+
+                MTT::Messages::Messages($d, $v);
+                return \@ret;
             }
-
-            $evaluate_string_ini = $evaluate_string_ini_saved;
-            $evaluate_string_section = $evaluate_string_section_saved;
-
-            MTT::Messages::Messages($d, $v);
-            return \@ret;
+        } else {
+            die "Unexpected return type " . ref($ret) . " " . Dumper($ret);
         }
-
-	# Workaround for SLES with newer perl version:
-	use strict 'refs';	
     }
 
     # All done -- no more &functions
@@ -256,8 +248,12 @@ sub _find_func_args {
         # quote, comma, and close parens.
         $str =~ s/^\s*(\S*)\s*$/\1/;
         Debug("--> Loop: trimmed search: $str\n");
+        if (!defined($str)) {
+            $str = "";
+        }
         if ("" eq $str) {
             Debug("--> Loop: now empty; done\n");
+            last;
         }
         
         my $start = 0;
