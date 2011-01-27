@@ -17,6 +17,7 @@ package MTT::Test::RunEngine;
 use strict;
 use File::Basename;
 use Time::Local;
+use Cwd;
 use MTT::Messages;
 use MTT::Values;
 use MTT::Reporter;
@@ -181,6 +182,7 @@ sub RunEngine {
         $run->{full_section_name} = $section;
         $run->{simple_section_name} = GetSimpleSection($section);
         $run->{analyze_module} = $ret->{analyze_module};
+
         
         $run->{test_build_simple_section_name} = $test_build->{simple_section_name};
 
@@ -201,6 +203,10 @@ sub RunEngine {
         $MTT::Test::Run::mpi_details = $run->{mpi_details}
             if (defined($run->{mpi_details}));
         
+        my $wdir = MTT::Values::Value($ini, $section, "wdir");
+        if ($wdir) {
+            $run->{wdir} = $wdir;
+        }
         # Just one np, or an array of np values?
         if (ref($all_np) eq "") {
             $test_results->{$all_np} =
@@ -361,7 +367,15 @@ sub _run_one_test {
     my $start_time = time;
     $run->{start} = timegm(gmtime());
 
+    my $old_dir = cwd();
+
+    if ( $run->{wdir} ) {
+        chdir $run->{wdir};
+    }
     my $x = MTT::DoCommand::Cmd($merge, $cmd, $timeout, $out_lines, $err_lines);
+    if ( $run->{wdir} ) {
+        chdir $old_dir;
+    }
 
     my $stop_time = time;
     $run->{stop} = timegm(gmtime());
