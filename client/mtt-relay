@@ -23,6 +23,7 @@ my $HOST = `hostname`;
 chomp $HOST;
 
 my $PORT = "8008";
+my $daemon = 0;
 my $debug = 0;
 my $quiet = 0;
 my $url = 'https://www.open-mpi.org/mtt/submit/index.php';
@@ -32,6 +33,7 @@ Getopt::Long::Configure("bundling");
 Getopt::Long::GetOptions(
     "port|p=i" => \$PORT,
     "host|h=s" => \$HOST,
+    "daemon"   => \$daemon,
     "debug|d"  => \$debug,
     "url|u=s"  => \$url,
     "help"     => \$help,
@@ -44,6 +46,7 @@ if ($help) {
  --port|-p     Port that $0 listens on (default: $PORT)
  --host|-h     Specify $0's host (default: $HOST)
  --url|-u      MTT results submission URL (default: $url)
+ --daemon      Daemon mode (fork into background)
  --debug|-d    Debug mode
  --help        This message
 EOT
@@ -95,6 +98,16 @@ sub MyAgent::redirect_ok { 0 }
             die "Problem creating an HTTP::Daemon: $!";
     print "Set your proxy to <URL:" . $master->url . ">\n";
     my $slave;
+
+    if ($daemon) {
+        my $pid = fork();
+        if($pid) {
+            print "# Daemon Parent exiting\n";
+            exit 0;
+        } else {
+            print "# Daemon Child process continuing\n";
+        }
+    }
 
     while (1) {
         while ($slave = $master->accept) {
