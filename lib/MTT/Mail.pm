@@ -31,6 +31,10 @@ my $mail_agent;
 # cache a copy of the environment
 my %ENV_original;
 
+# check if we have MIME::Lite.
+my $have_mimelite;
+eval "\$have_mimelite = require MIME::Lite";
+
 #--------------------------------------------------------------------------
 
 sub Init {
@@ -62,7 +66,7 @@ sub Init {
 #--------------------------------------------------------------------------
 
 sub Send {
-    my ($subject, $to, $from, $body) = @_;
+    my ($subject, $to, $from, $body, @attachments) = @_;
 
     Init()
         if (! $initialized);
@@ -72,13 +76,34 @@ sub Send {
     my %ENV_now = %ENV;
     %ENV = %ENV_original;
 
-    # Invoke the mail agent to send the mail
+    # Use MIME::Lite if we have attachments to send
+    if (defined(@attachments) && @attachments ne "" && $have_mimelite) {
+    my $msg = MIME::Lite->new(
+            From     => $from,
+            To       => $to,
+            Subject  => $subject,
+            Data     => $body
+    );
 
-    open MAIL, "|$mail_agent -s \"$subject\" \"$to\"" ||
-        die "Could not open pipe to output e-mail\n";
-    print MAIL "Subject: $subject\n";
-    print MAIL "$body\n";
-    close MAIL;
+	$msg->add('Type'     => 'multipart/mixed');
+        foreach my $at (@attachments) {
+            $msg->attach(
+                Type    => 'AUTO',
+                Path    => $at,
+                Disposition  => "attachment"
+            );
+        }
+
+	$msg->send;
+
+    } else {
+    	# Invoke the mail agent to send the mail
+    	open MAIL, "|$mail_agent -s \"$subject\" \"$to\"" ||
+	        die "Could not open pipe to output e-mail\n";
+    	print MAIL "Subject: $subject\n";
+	    print MAIL "$body\n";
+    	close MAIL;
+    }
 
     # Restore the old environment
 

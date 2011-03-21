@@ -254,6 +254,7 @@ sub _summary_report {
         my $subject_tmpl = Value($ini, $section, "email_subject");
         my $body_footer_tmpl = Value($ini, $section, "email_footer");
         my $from = Value($ini, $section, "email_from");
+        my $detailed_report = Logical($ini, $section, "email_detailed_report");
 
         my $overall_mtt_status = "success";
         if ( $total_fail > 0 ) {
@@ -267,7 +268,14 @@ sub _summary_report {
         Verbose(">> Subject: $subject\n");
 
         # Now send it
-        MTT::Mail::Send($subject, $to, $from, $body . $body_footer);
+        if ( $detailed_report ) {
+            my @reports = _get_report_filenames($results_arr);
+            Verbose(">> Sending detailed reports: @reports\n");
+            MTT::Mail::Send($subject, $to, $from, $body . $body_footer, @reports);
+        } else {
+            MTT::Mail::Send($subject, $to, $from, $body . $body_footer);
+        }
+
         Verbose(">> Reported to e-mail: $to\n");
     }
     return 1;
@@ -489,6 +497,29 @@ sub _output_results {
             if (!exists($written_files->{$file}));
     }
     $written_files->{$file} = 1;
+}
+
+sub _get_report_filenames {
+    my $results_arr = shift;
+    my @files = ();
+
+    foreach my $results (@$results_arr) {
+
+        foreach my $phase (keys %$results) {
+            my $phase_obj = $results->{$phase};
+
+            foreach my $section (keys %{$phase_obj}) {
+                my $section_obj = $phase_obj->{$section};
+
+                foreach my $report (@$section_obj) {
+                    my $rep_file = _get_filename($report, $section);
+                    unshift(@files, $rep_file);
+		        }
+	        }
+	    }
+    }
+
+    return @files;
 }
 
 sub _get_filename {
