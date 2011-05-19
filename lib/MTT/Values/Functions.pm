@@ -963,6 +963,13 @@ sub test_argv {
     return $MTT::Test::Run::test_argv;
 }
 
+sub test_alloc {
+	my $sect = $MTT::Globals::Values->{active_section} ;
+	my $val = get_ini_val($sect, "alloc");
+    Debug("&test_alloc returning $val for $sect\n");
+	return $val;
+}
+
 #--------------------------------------------------------------------------
 
 # Return whether the last test run was terminated by a signal
