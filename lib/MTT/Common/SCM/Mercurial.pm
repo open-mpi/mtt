@@ -13,6 +13,8 @@ package MTT::Common::SCM::Mercurial;
 my ($package) = (__PACKAGE__ =~ m/(\w+)$/);
 
 use strict;
+use URI;
+use URI::Escape;
 use File::Basename;
 use MTT::Messages;
 use MTT::Values;
@@ -43,8 +45,28 @@ sub Checkout {
         if (defined($params->{subcommand_arguments}));
     $cmd .= " -r " . $params->{rev}
         if (defined($params->{rev}));
-    $cmd .= " " . $params->{url} . " " . $params->{dirname};
+    $cmd .= " ";
 
+    my $hg_major = 0;
+    my $hg_minor = 0;
+    my $hg_cmd = (defined($params->{cmd}) ? $params->{cmd} : "hg") . " --version"; 
+
+    my $hg_ver_output = MTT::DoCommand::Cmd(1, $hg_cmd);
+
+    if (MTT::DoCommand::wsuccess($hg_ver_output->{exit_status}) && 
+        $hg_ver_output->{result_stdout} =~ m/version (\d+).(\d+)/) {
+        ($hg_major, $hg_minor) = ($1, $2);
+    } 
+    
+    if (defined($params->{username}) && (($hg_major > 1)||($hg_major == 1 && $hg_minor >= 9))) {
+        my $u = URI->new($params->{url});
+        $u->userinfo($params->{username} . ":" . $params->{password});
+        $cmd .= uri_unescape($u->as_string());
+    } else {
+        $cmd .= $params->{url};
+    }
+    $cmd .= " " . $params->{dirname};
+	
     my $x = MTT::DoCommand::Cmd(1, $cmd);
     if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         Warning("HG clone failure: $x->{result_stdout}\n");
