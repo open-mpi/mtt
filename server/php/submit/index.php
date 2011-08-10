@@ -29,6 +29,7 @@ include_once("$topdir/database.inc");
 include_once("$topdir/reporter.inc");
 include_once("$topdir/common.inc");
 
+
 $GLOBALS['debug']   = isset($_POST['debug'])   ? $_POST['debug']   : 1;
 $GLOBALS['verbose'] = isset($_POST['verbose']) ? $_POST['verbose'] : 1;
 $dbname             = isset($_GET['db'])       ? $_GET['db']       : "mtt";
@@ -60,6 +61,7 @@ $marker = "===";
 # needs a serial.  Exit successfully.
 if (isset($_POST['SERIAL'])) {
     print "\n$marker client_serial = " .  stringify(get_serial()) . " $marker\n";
+    pg_close();
     exit(0);
 }
 
@@ -188,6 +190,9 @@ function process_phase($phase) {
 
 function process_phase_test_run($results_idxs_hash) {
     $n = $_POST['number_of_results'];
+
+    $error_function = "process_phase_test_run()";
+
     # JJH: Once all clients are really submitting test_run_command normalized
     # JJH: data then set this back to false so we warn the users. For now it
     # JJH: is just an annoying warning the user can do nothing about.
@@ -227,6 +232,20 @@ function process_phase_test_run($results_idxs_hash) {
                      "exit_signal",
                      "client_serial");
     $param_set = get_post_values($columns);
+
+    #######
+    # A 'client_serial' is required, so check before moving forward
+    if(!isset($param_set['client_serial']) ||
+       0 == strlen($param_set['client_serial']) ||
+       !preg_match("/^\d+$/", $param_set['client_serial'], $m) ) {
+        $error_output  = ("CRITICAL ERROR: Cannot continue\n".
+                          "-------------------------------\n".
+                          "Invalid client_serial (".$param_set['client_serial'].") given.\n".
+                          "-------------------------------\n");
+        mtt_send_mail($error_output, $error_function);
+        mtt_abort(400, $error_output);
+        exit(1);
+    }
 
     #######
     # Get the Test Build IDs
@@ -458,6 +477,8 @@ function process_phase_test_run($results_idxs_hash) {
 function process_networks($network_full_param) {
     global $interconnect_id_hash;
 
+    $error_function = "process_networks(".$network_full_param.")";
+
     $nl  = "\n";
     $nlt = "\n\t";
 
@@ -522,14 +543,15 @@ function process_networks($network_full_param) {
             $rtn_insert = do_pg_query($insert_stmt, false);
             # JJH: Do we really need to do error checking here? I don't think this will ever fail.
             if( !$rtn_insert ) {
-                mtt_send_mail("process_networks(".$network_full_param."):\n".
-                              "---------------------------------\n".
-                              "Failed to insert the following:\n".
-                              $insert_stmt."\n".
-                              "---------------------------------\n".
-                              "Insert resulted from failed SELECT below:\n".
-                              $select_stmt."\n".
-                              "---------------------------------\n");
+                $error_output = ("WARNING: Failed to insert the network parameters.\n".
+                                 "---------------------------------\n".
+                                 "Failed to insert the following:\n".
+                                 $insert_stmt."\n".
+                                 "---------------------------------\n".
+                                 "Insert resulted from failed SELECT below:\n".
+                                 $select_stmt."\n".
+                                 "---------------------------------\n");
+                mtt_send_mail($error_output, $error_function);
             }
         }
     }
@@ -542,6 +564,8 @@ function process_networks($network_full_param) {
 
 function process_phase_test_build($results_idxs_hash) {
     $n = $_POST['number_of_results'];
+
+    $error_function = "process_phase_test_build()";
 
     #
     # Do this instead of getting all of the columns passed
@@ -564,6 +588,20 @@ function process_phase_test_build($results_idxs_hash) {
                      "exit_signal",
                      "client_serial");
     $param_set = get_post_values($columns);
+
+    #######
+    # A 'client_serial' is required, so check before moving forward
+    if(!isset($param_set['client_serial']) ||
+       0 == strlen($param_set['client_serial']) ||
+       !preg_match("/^\d+$/", $param_set['client_serial'], $m) ) {
+        $error_output  = ("CRITICAL ERROR: Cannot continue\n".
+                          "-------------------------------\n".
+                          "Invalid client_serial (".$param_set['client_serial'].") given.\n".
+                          "-------------------------------\n");
+        mtt_send_mail($error_output, $error_function);
+        mtt_abort(400, $error_output);
+        exit(1);
+    }
 
     #######
     # Get the MPI Install IDs
@@ -714,6 +752,8 @@ function process_phase_test_build($results_idxs_hash) {
 }
 
 function get_test_build_ids($test_build_id) {
+    $error_function = "get_test_build_ids(".$test_build_id.")";
+
     $nl  = "\n";
     $nlt = "\n\t";
     $error_output = "";
@@ -722,36 +762,39 @@ function get_test_build_ids($test_build_id) {
     $orig_test_build_id = $test_build_id;
 
     ###############
-    # First check if this is a valid mpi_install_id
+    # First check if this is a valid test_build_id
+    # If not then we give it '0', and insert it so no data is lost
     if(!isset($test_build_id) ||
        0 == strlen($test_build_id) ||
        !preg_match("/^\d+$/", $test_build_id, $m) ) {
         # We could guess using: $test_build_id = find_test_build_id();
         # But we should probably just pint it to an invalid row for safety.
         $test_build_id = 0;
+
         $error_output .= ("-------------------------------\n".
-                          "Invalid test_build_id ($orig_test_build_id) given. ".
+                          "Invalid test_build_id ($orig_test_build_id) given. (Not provided)\n".
                           "Guessing that it should be $test_build_id \n".
                           "-------------------------------\n");
-        mtt_notice("Invalid test_build_id ($orig_test_build_id) given. " .
-                   "Guessing that it should be $test_build_id");
+        mtt_notice("WARNING:\n".$error_output);
     }
     else {
         $select_stmt = ("SELECT test_build_id $nl" .
                         "FROM test_build $nl".
                         "WHERE $nlt" .
                         "test_build_id = '".$test_build_id."'");
+
         $valid_id = select_scalar($select_stmt);
+
         if( !isset($valid_id) ) {
             # We could guess using: $test_build_id = find_test_build_id();
             # But we should probably just pint it to an invalid row for safety.
             $test_build_id = 0;
+
             $error_output .= ("-------------------------------\n".
-                              "Invalid test_build_id ($orig_test_build_id) given. " .
+                              "Invalid test_build_id ($orig_test_build_id) given. (Does not exist)\n" .
                               "Guessing that it should be $test_build_id \n".
                               "-------------------------------\n");
-            mtt_notice("Invalid test_build_id ($orig_test_build_id) given. " .
-                       "Guessing that it should be $test_build_id");
+            mtt_notice("WARNING:\n".$error_output);
         }
     }
 
@@ -759,7 +802,7 @@ function get_test_build_ids($test_build_id) {
         $error_output .= ("-------------------------------\n".
                           "ERROR: Unable to find a test_build to associate with this test_run.".
                           "-------------------------------\n");
-        mtt_send_mail("get_test_build_ids(".$test_build_id."):\n".$error_output);
+        mtt_send_mail($error_output, $error_function);
         mtt_error("ERROR: Unable to find a test_build to associate with this test_run.\n");
         mtt_abort(400, "\nNo test_build associated with this test_run\n");
         exit(1);
@@ -783,11 +826,16 @@ function get_test_build_ids($test_build_id) {
     $test_build_ids = associative_select($select_stmt);
 
     if( 0 < strlen($error_output) ) {
-        mtt_send_mail("get_test_build_ids(".$test_build_id."):\n".
-                      "-------------------------------\n".
-                      $select_stmt."\n".
-                      "-------------------------------\n".
-                      $error_output);
+        $error_output = ("WARNING: The following Test Build was not able to be added to the database properly.\n".
+                         "         See the below and attached information for more information.\n".
+                         "-------------------------------\n".
+                         $select_stmt."\n".
+                         "-------------------------------\n".
+                         "Resolved to:\n".
+                         var_export($test_build_ids, true)."\n".
+                         "-------------------------------\n".
+                         $error_output);
+        mtt_send_mail($error_output, $error_function);
     }
 
     return $test_build_ids;
@@ -798,6 +846,8 @@ function get_test_build_ids($test_build_id) {
 # be given the limited amount of data the client provides us.
 #
 function find_test_build_id() {
+    $error_function = "find_test_build_id()";
+
     $nl  = "\n";
     $nlt = "\n\t";
 
@@ -870,16 +920,20 @@ function find_test_build_id() {
         return $test_build_id;
     }
     else {
-        mtt_send_mail("find_test_build_id():\n".
-                      "The following SELECT returned -1:\n".
-                      "-------------------------------\n".
-                      $select_stmt."\n".
-                      "-------------------------------\n");
+        $error_output = ("find_test_build_id():\n".
+                         "-------------------------------\n".
+                         "The following SELECT returned -1:\n".
+                         "-------------------------------\n".
+                         $select_stmt."\n".
+                         "-------------------------------\n");
+        mtt_send_mail($error_output, $error_function);
         return -1;
     }
 }
 
 function get_mpi_install_ids($mpi_install_id) {
+    $error_function = "get_mpi_install_ids(".$mpi_install_id.")";
+
     $nl  = "\n";
     $nlt = "\n\t";
     $error_output = "";
@@ -889,18 +943,19 @@ function get_mpi_install_ids($mpi_install_id) {
 
     ###############
     # First check if this is a valid mpi_install_id
+    # If not then we give it '0', and insert it so no data is lost
     if(!isset($mpi_install_id) ||
        0 == strlen($mpi_install_id) ||
        !preg_match("/^\d+$/", $orig_mpi_install_id, $m) ) {
         # We could guess using: $mpi_install_id = find_mpi_install_id();
         # But we should probably just pint it to an invalid row for safety.
         $mpi_install_id = 0;
+
         $error_output .= ("-------------------------------\n".
-                          "Invalid mpi_install_id ($orig_mpi_install_id) given. ".
+                          "Invalid mpi_install_id ($orig_mpi_install_id) given. (Not provided)\n".
                           "Guessing that it should be $mpi_install_id .\n".
                           "-------------------------------\n");
-        mtt_notice("Invalid mpi_install_id ($orig_mpi_install_id) given. " .
-                   "Guessing that it should be $mpi_install_id");
+        mtt_notice("WARNING:\n".$error_output);
     }
     else {
         $select_stmt = ("SELECT mpi_install_id $nl" .
@@ -914,12 +969,12 @@ function get_mpi_install_ids($mpi_install_id) {
             # We could guess using: $mpi_install_id = find_mpi_install_id();
             # But we should probably just pint it to an invalid row for safety.
             $mpi_install_id = 0;
+
             $error_output .= ("-------------------------------\n".
-                              "Invalid mpi_install_id ($orig_mpi_install_id) given. ".
+                              "Invalid mpi_install_id ($orig_mpi_install_id) given. (Does not exist)\n".
                               "Guessing that it should be $mpi_install_id \n".
                               "-------------------------------\n");
-            mtt_notice("Invalid mpi_install_id ($orig_mpi_install_id) given. " .
-                       "Guessing that it should be $mpi_install_id");
+            mtt_notice("WARNING:\n".$error_output);
         }
     }
     
@@ -927,7 +982,7 @@ function get_mpi_install_ids($mpi_install_id) {
         $error_output .= ("-------------------------------\n".
                           "ERROR: Unable to find a mpi_install to associate with this test_build.".
                           "-------------------------------\n");
-        mtt_send_mail("get_mpi_install_ids(".$mpi_install_id."):\n".$error_output);
+        mtt_send_mail($error_output, $error_function);
         mtt_error("ERROR: Unable to find a mpi_install to associate with this test_build.\n");
         mtt_abort(400, "\nNo mpi_install associated with this test_build\n");
         exit(1);
@@ -948,11 +1003,16 @@ function get_mpi_install_ids($mpi_install_id) {
     $mpi_install_ids = associative_select($select_stmt);
 
     if( 0 < strlen($error_output) ) {
-        mtt_send_mail("get_mpi_install_ids(".$mpi_install_id."):\n".
-                      "-------------------------------\n".
-                      $select_stmt."\n".
-                      "-------------------------------\n".
-                      $error_output);
+        $error_output = ("WARNING: The following MPI Install was not able to be added to the database properly.\n".
+                         "         See the below and attached information for more information.\n".
+                         "-------------------------------\n".
+                         $select_stmt."\n".
+                         "-------------------------------\n".
+                         "Resolved to:\n".
+                         var_export($mpi_install_ids, true)."\n".
+                         "-------------------------------\n".
+                         $error_output);
+        mtt_send_mail($error_output, $error_function);
     }
 
     return $mpi_install_ids;
@@ -963,6 +1023,8 @@ function get_mpi_install_ids($mpi_install_id) {
 # be given the limited amount of data the client provides us.
 #
 function find_mpi_install_id() {
+    $error_function = "find_mpi_install_id()";
+
     $nl  = "\n";
     $nlt = "\n\t";
     $error_output = "";
@@ -1050,16 +1112,19 @@ function find_mpi_install_id() {
         return $mpi_install_id;
     }
     else {
-        mtt_send_mail("find_mpi_install_id():\n".
-                      "The following SELECT returned -1:\n".
-                      "-------------------------------\n".
-                      $select_stmt."\n".
-                      "-------------------------------\n");
+        $error_output = ("ERROR:\n".
+                         "---------------------------------\n".
+                         "The following SELECT returned -1:\n".
+                         "-------------------------------\n".
+                         $select_stmt."\n".
+                         "-------------------------------\n");
+        mtt_send_mail($error_output, $error_function);
         return -1;
     }
 }
 
 function process_phase_mpi_install($results_idxs_hash) {
+    $error_function = "process_phase_mpi_install()";
 
     $n = $_POST['number_of_results'];
 
@@ -1093,6 +1158,20 @@ function process_phase_mpi_install($results_idxs_hash) {
                      "exit_signal",
                      "client_serial");
     $param_set = get_post_values($columns);
+
+    #######
+    # A 'client_serial' is required, so check before moving forward
+    if(!isset($param_set['client_serial']) ||
+       0 == strlen($param_set['client_serial']) ||
+       !preg_match("/^\d+$/", $param_set['client_serial'], $m) ) {
+        $error_output .= ("CRITICAL ERROR: Cannot continue\n".
+                          "-------------------------------\n".
+                          "Invalid client_serial (".$param_set['client_serial'].") given.\n".
+                          "-------------------------------\n");
+        mtt_send_mail($error_output, $error_function);
+        mtt_abort(400, $error_output);
+        exit(1);
+    }
 
     for($i = 0; $i < $n; $i++) {
 
@@ -1570,6 +1649,7 @@ function is_null_($var) {
 
 # Fetch an associative hash (column name => value)
 function associative_select($cmd) {
+    $error_function = "associative_select()";
 
     do_pg_connect();
 
@@ -1578,8 +1658,8 @@ function associative_select($cmd) {
         $out = "\nSQL QUERY: " . $cmd .
                "\nSQL ERROR: " . pg_last_error() .
                "\nSQL ERROR: " . pg_result_error();
+        mtt_send_mail($out, $error_function);
         mtt_error($out);
-        mtt_send_mail($out);
     }
     return pg_fetch_array($result);
 }
@@ -1594,10 +1674,11 @@ function mtt_abort($status, $str) {
         print("MTTDatabase abort: (Tried to send HTTP error) $status\n");
     }
     print("MTTDatabase abort: $str\n");
+    pg_close();
     exit(0);
 }
 
-function mtt_send_mail($message) {
+function mtt_send_mail($message, $func) {
 
     # Send only one email per phase to avoid a hurricane of
     # SQL error emails (generally in this case, when it
@@ -1618,9 +1699,11 @@ function mtt_send_mail($message) {
     fclose($fp);
 
     $php_auth_user = $_SERVER['PHP_AUTH_USER'];
-    $user          = $_POST['email'];
-    $admin1        = 'ethan.mallove@sun.com';
-    $admin2        = 'mini-llamas@lam-mpi.org';
+    $user          = "";
+    if( isset($_POST['email']) ) {
+        $user      = $_POST['email'];
+    }
+    $admin         = 'mtt-devel-core@open-mpi.org';
     $date          = date('r');
     $phpversion    = phpversion();
     $boundary      = md5(time());
@@ -1630,8 +1713,8 @@ function mtt_send_mail($message) {
     $attachment = chunk_split(base64_encode(file_get_contents($filename)));
 
     $headers = <<<END
-From: $admin1
-Reply-To: $admin1
+From: $admin
+Reply-To: $admin
 Date: $date
 X-Mailer: PHP v$phpversion
 MIME-Version: 1.0
@@ -1642,6 +1725,13 @@ END;
 --$boundary
 Content-Type: text/plain; charset="iso-9959-1"
 Content-Transfer-Encoding: 7bit
+
+----------------------------
+Date     : $date
+User     : $php_auth_user
+Email    : $user
+Function : $func
+----------------------------
 
 $message
 
@@ -1657,11 +1747,12 @@ $attachment
 END;
 
     # Email the user of the offending MTT client
-    if (preg_match("/\w+@\w+/", $user, $m))
+    if (preg_match("/\w+@\w+/", $user, $m)) {
         mail($user, "MTT server error", $message, $headers);
+    }
 
     # Email the MTT database administrator(s)
-    mail("$admin1, $admin2", "MTT server error (user: $php_auth_user)", $message, $headers);
+    mail("$admin", "MTT server error (user: $php_auth_user)", $message, $headers);
 
     # Whack the temp file
     unlink($filename);
@@ -1873,6 +1964,7 @@ function are_numbered($params) {
 # For returning to the client (so we can keep
 # track of MTT client invocations)
 function get_serial() {
+    $error_function = "get_serial()";
 
     # Works in psql cli, *BROKEN* in php
     # $cmd =  "\n   SELECT relname FROM pg_class WHERE " .
@@ -1887,6 +1979,16 @@ function get_serial() {
 
     $serial_name = 'client_serial';
     $serial      = fetch_single_nextval($serial_name);
+
+    if( NULL == $serial ) {
+        $error_output  = ("CRITICAL ERROR: Cannot continue\n".
+                          "-------------------------------\n".
+                          "Failed to find a ($serial_name) value!\n".
+                          "-------------------------------\n");
+        mtt_send_mail($error_output, $error_function);
+        mtt_abort(400, $error_output);
+        exit(1);
+    }
 
     return $serial;
 }

@@ -148,6 +148,9 @@ function do_pg_query($cmd, $silent) {
 function select_scalar($cmd) {
     $set = array();
     $set = simple_select($cmd);
+    if( $set == NULL ) {
+        return NULL;
+    }
     return array_shift($set);
 }
 
@@ -163,6 +166,7 @@ function simple_select($cmd) {
             "\nSQL ERROR: " . pg_last_error() .
             "\nSQL ERROR: " . pg_result_error();
         mtt_error($out);
+        return NULL;
     }
     $max = pg_num_rows($result);
     for ($i = 0; $i < $max; ++$i) {
@@ -182,6 +186,7 @@ function select($cmd) {
             "\nSQL ERROR: " . pg_last_error() .
             "\nSQL ERROR: " . pg_result_error();
         mtt_error($out);
+        return NULL;
     }
     return pg_fetch_all($result);
 }
