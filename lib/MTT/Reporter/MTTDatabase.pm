@@ -178,6 +178,7 @@ sub Init {
         Warning(">> Error was: " . $response->status_line . "\n" . 
                 $response->content);
         Error(">> Do not want to continue with possible bad submission URL -- aborting\n");
+        # Does not reach here
     }
 
     Debug("MTTDatabase client got response: " . $response->content . "\n");
@@ -185,7 +186,11 @@ sub Init {
         $invocation_serial_value = $1;
         Debug("MTTDatabase client parsed invocation serial: $invocation_serial_value\n");
     } else {
-        Warning("MTTDatabase client did not get a serial\n");
+        Warning(">> MTTDatabase client did not get a serial\n");
+        Warning(">> Error was: " . $response->status_line . "\n" .
+                $response->content);
+        Error(">> Do not want to continue with possible bad submission URL -- aborting\n");
+        # Does not reach here
     }
     
     # If we have a debug filename, make it an absolute filename,
@@ -387,6 +392,18 @@ sub Submit {
             if ($response->content =~ m/===\s+(\S+)\s+=\s+([0-9\,]+)\s+===/) {
                 eval "\$phase_serials->{$1} = $2;";
                 _debug("MTTDatabase client parsed serial: $1 = $2\n");
+            }
+
+            # If we did *NOT* get a serial number, then this is an
+            # error (the server sends a serial for each of MPI
+            # Install, Test Build, and Test Run).  Raise the warning
+            # and abort.
+            else {
+                Warning(">> Did not get a get a phase serial number back");
+                Warning(">> Error was: " . $response->status_line . "\n" . 
+                        $response->content);
+                Error(">> Do not want to continue without a serial number -- aborting\n");
+                # Does not reach here
             }
 
             $num_results += ($count - 1);
