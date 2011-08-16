@@ -2314,7 +2314,8 @@ function compose_sql_select($query) {
         write_to_file($filename, $plan_txt);
 
         # Write plan to browser
-        debug_sql($plan_txt);
+        debug_sql($plan_txt, 0);
+        debug_sql($cmd, 0);
 
         $top = DOCROOT;
 
