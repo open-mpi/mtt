@@ -30,10 +30,7 @@ my @test_run_idx_columns = ("test_result",
                             "test_run_command_id");
 
 my @month_array = ( "01", "02", "03", "04", "05", "06",
-                    "07", "09", "10", "11", "12");
-# JJH don't generate Aug indexes since we still need to dump data here and 
-#     indexes just slow down this process considerably
-#                    "07", "08", "09", "10", "11", "12");
+                    "07", "08", "09", "10", "11", "12");
 
 if ( $argc < 2 ) {
   print "Error: Argument of year and month required\n";
