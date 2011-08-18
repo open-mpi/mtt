@@ -116,7 +116,8 @@ function do_pg_connect() {
 function do_pg_query($cmd, $silent) {
     do_pg_connect();
 
-    $start = time();
+    $start = gettimeofday();
+    $start = $start['sec'] + ($start['usec'] / 1000000.0);
 
     debug("\nSQL: $cmd\n");
     if (! ($db_res = pg_query($cmd))) {
@@ -131,10 +132,12 @@ function do_pg_query($cmd, $silent) {
         }
     }
 
-    $finish = time();
+    $finish = gettimeofday();
+    $finish = $finish['sec'] + ($finish['usec'] / 1000000.0);
     $elapsed = $finish - $start;
 
-    stats("\nExecution time: " . $elapsed . " seconds" .
+    stats("\ndo_pg_query()".
+          "\nExecution time: " . round($elapsed, 5) . " seconds" .
           "\nRows affected: "  . pg_affected_rows($db_res) .
           "\nRows retrieved: " . pg_num_rows($db_res));
 
@@ -160,6 +163,9 @@ function simple_select($cmd) {
 
     $rows = null;
 
+    $start = gettimeofday();
+    $start = $start['sec'] + ($start['usec'] / 1000000.0);
+
     debug("\nSQL: $cmd\n");
     if (! ($result = pg_query($cmd))) {
         $out = "\nSQL QUERY: " . $cmd .
@@ -173,12 +179,32 @@ function simple_select($cmd) {
         $row = pg_fetch_array($result, $i, PGSQL_NUM);
         $rows[] = $row[0];
     }
+
+    $finish = gettimeofday();
+    $finish = $finish['sec'] + ($finish['usec'] / 1000000.0);
+    $elapsed = $finish - $start;
+
+    stats("\nsimple_select()".
+          "\nExecution time: " . round($elapsed, 5) . " seconds" .
+          "\nRows affected: "  . pg_affected_rows($result) .
+          "\nRows retrieved: " . pg_num_rows($result));
+
+    #if( $elapsed > 0.01 ) {
+    #  print "<pre>SQL:$cmd</pre>\n";
+    #}
+
+    global $global_sql_time_elapsed;
+    $global_sql_time_elapsed += $elapsed;
+
     return $rows;
 }
 
 # Fetch 2D array
 function select($cmd) {
     do_pg_connect();
+
+    $start = gettimeofday();
+    $start = $start['sec'] + ($start['usec'] / 1000000.0);
 
     debug("\nSQL: $cmd\n");
     if (! ($result = pg_query($cmd))) {
@@ -188,6 +214,19 @@ function select($cmd) {
         mtt_error($out);
         return NULL;
     }
+
+    $finish = gettimeofday();
+    $finish = $finish['sec'] + ($finish['usec'] / 1000000.0);
+    $elapsed = $finish - $start;
+
+    stats("\nselect()".
+          "\nExecution time: " . round($elapsed, 5) . " seconds" .
+          "\nRows affected: "  . pg_affected_rows($result) .
+          "\nRows retrieved: " . pg_num_rows($result));
+
+    global $global_sql_time_elapsed;
+    $global_sql_time_elapsed += $elapsed;
+
     return pg_fetch_all($result);
 }
 

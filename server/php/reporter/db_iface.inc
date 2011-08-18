@@ -16,7 +16,7 @@ $nltt = "\n\t\t";
 function db_iface_compose_sql_select($query, $report_type) {
     $sql_cmd = "";
 
-    #print "<pre>".print_r($query, true)."</pre>\n";
+    #print "<pre>Type: (".$report_type.")\n".print_r($query, true)."</pre>\n";
 
     #
     # Detail:
@@ -24,6 +24,7 @@ function db_iface_compose_sql_select($query, $report_type) {
     #
     if ($report_type == 'detail') {
         $ret = compose_sql_select($query);
+        $ret['fast'] = false;
     }
     #
     # Performance:
@@ -31,28 +32,40 @@ function db_iface_compose_sql_select($query, $report_type) {
     #
     elseif ($report_type == 'performance') {
         $ret = compose_sql_select($query);
+        $ret['fast'] = false;
     }
     #
     # Summary:
     #
     else {
         #
-        # All Phases
+        # Determine if 'summary' table eligible
         #
-        if( count($query['phases']) > 1 ) {
-            $sql_cmd = INTERNAL_db_iface_compose_sql_summary_all($query);
+        if( INTERNAL_db_iface_is_summary_table_eligible($query) ) {
+            $sql_cmd = INTERNAL_db_iface_compose_sql_summary_all_fast($query);
             $ret['sql_cmd'] = $sql_cmd;
-        }
-        #
-        # Single Phase:
-        # Use the old mechanism
-        #
-        else {
-            $ret = compose_sql_select($query);
+            $ret['fast'] = true;
+        } else {
+            #
+            # All Phases
+            #
+            if( count($query['phases']) > 1 ) {
+                # JJH Turn this off for now, not sure exactly how much of a win
+                #     this is, and it is not quite ready.
+                #$sql_cmd = INTERNAL_db_iface_compose_sql_summary_all($query);
+                #$ret['sql_cmd'] = $sql_cmd;
+                $ret = compose_sql_select($query);
+            }
+            #
+            # Single Phase:
+            # Use the old mechanism
+            #
+            else {
+                $ret = compose_sql_select($query);
+            }
+            $ret['fast'] = false;
         }
     }
-    #print "<pre>\n$sql_cmd\n</pre>";
-    #exit;
 
     return $ret;
 }
@@ -60,6 +73,429 @@ function db_iface_compose_sql_select($query, $report_type) {
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
+function INTERNAL_db_iface_phase_included($phases, $needle) {
+    foreach($phases as $key) {
+        if( 0 == strncmp($key, $needle, strlen($key)) ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function INTERNAL_db_iface_get_aggregation_conv() {
+    return  array(
+                  "_mpi_p" => "_mpi_p > 0",
+                  "_mpi_f" => "_mpi_f > 0",
+                  "_build_p" => "_build_p > 0",
+                  "_build_f" => "_build_f > 0",
+                  "_run_p" => "_run_p > 0",
+                  "_run_f" => "_run_f > 0",
+                  "_run_s" => "_run_s > 0",
+                  "_run_t" => "_run_t > 0",
+                  "_run_l" => "_run_l > 0",
+                  );
+}
+
+function INTERNAL_db_iface_get_summary_columns() {
+    return  array(
+                  "start_timestamp" => "start_timestamp",
+                  "trial" => "trial",
+                  # Table: submit
+                  "http_username" => "submit_http_username",
+                  # Table: compute_cluster
+                  "platform_name" => "compute_cluster_platform_name",
+                  "platform_hardware" => "compute_cluster_platform_hardware",
+                  "os_name" => "compute_cluster_os_name",
+                  # Table: mpi_get
+                  "mpi_name" => "mpi_get_mpi_name",
+                  "mpi_version" => "mpi_get_mpi_version",
+                  # Table: mpi_install_configure_args
+                  "bitness" => "mpi_install_configure_args_bitness",
+                  "endian" => "mpi_install_configure_args_endian",
+                  # Table: compiler
+                  "compiler_name" => "compiler_compiler_name",
+                  "compiler_version" => "compiler_compiler_version",
+                  # Table: test_suites
+                  "suite_name" => "test_suites_suite_name",
+                  # Table: test_run
+                  "np" => "np",
+                  # Aggregations
+                  "_mpi_p" => "_mpi_p",
+                  "_mpi_f" => "_mpi_f",
+                  "_build_p" => "_build_p",
+                  "_build_f" => "_build_f",
+                  "_run_p" => "_run_p",
+                  "_run_f" => "_run_f",
+                  "_run_s" => "_run_s",
+                  "_run_t" => "_run_t",
+                  "_run_l" => "_run_l",
+                  );
+}
+
+function INTERNAL_db_iface_is_summary_table_eligible($query) {
+
+    #
+    # Must be a query within the past 24 hours
+    #
+    $valid_start = select_scalar("SELECT ".
+                                 "date_trunc('hour', timestamp '".($query['absolute_start'][0])."') >= ".
+                                 "date_trunc('hour', now() - interval '24 hours');");
+    if( 0 != strncmp($valid_start, "t", strlen("t")) ) {
+        #print "<pre>Invalid Date Range: (".$query['absolute_start'][0].")</pre>\n";
+        return false;
+    }
+
+    #
+    # Get eligible column set
+    #
+    $eligible_columns = INTERNAL_db_iface_get_summary_columns();
+
+    $selects = array_unique(
+        array_merge(
+            $query['select'],
+            $query['select_more'],
+            $query['performance'],
+            $query['where'],
+            $query['where_not']
+        )
+    );
+    # Skip the 'row number'
+    unset($selects['n']);
+
+    #
+    # Search for outlier columns
+    #
+    foreach (array_keys($selects) as $sel_col ) {
+        $found = false;
+        foreach (array_keys($eligible_columns) as $e_col ) {
+            if( 0 == strncmp($e_col,$sel_col, strlen($e_col)) ) {
+                $found = true;
+                #print "<pre>Found: (".$sel_col.") as (".$e_col.")</pre>\n";
+                break;
+            }
+        }
+        # Stop on first column not found
+        if( !$found ) {
+            #print "<pre>Missing: (".$sel_col.")</pre>\n";
+            return false;
+        }
+    }
+    #print "<pre>Query Eligible...</pre>\n";
+    return true;
+}
+
+function INTERNAL_db_iface_compose_sql_summary_all_fast($query) {
+    global $nlt, $nltt;
+
+    $sql_cmd = "";
+    $sql_cmd_debug = "";
+
+    #
+    # Get eligible column conversions
+    #
+    $eligible_columns = INTERNAL_db_iface_get_summary_columns();
+
+    $selects = array_unique(
+        array_merge(
+            $query['select'],
+            $aggregates,
+            $query['select_more'],
+            $query['performance']
+        )
+    );
+    # Skip the 'row number'
+    unset($query['select']['n']);
+
+    #
+    # Some Debugging Options
+    #
+    $explain      = isset($_GET['explain'])      ? 1 : 0;
+    $analyze      = isset($_GET['analyze'])      ? 1 : 0;
+    if ($explain) {
+        $sql_cmd_debug .= "EXPLAIN\n";
+    }
+    if ($analyze) {
+        $sql_cmd_debug .= "ANALYZE\n";
+    }
+
+    #
+    # SELECT
+    #
+    $sql_cmd .= "SELECT";
+    foreach ($selects as $item ) {
+        if( 0 == strncmp($item, "nextval('row_number')", strlen($item)) ) {
+            $sql_cmd .= $nlt . $item.",";
+        } else {
+            $sql_cmd .= $nlt . $eligible_columns[$item]." as ".$item.",";
+        }
+    }
+    $sql_cmd .= $nlt;
+    $sql_cmd .= join(",$nlt", $query['aggregates']);
+    $sql_cmd .= "\n";
+
+    #
+    # FROM
+    #
+    $sql_cmd .= "FROM ($nlt";
+
+    #
+    # The aggregates need to be in the external where clause
+    #
+    $external_where = array();
+    $agg_conv = INTERNAL_db_iface_get_aggregation_conv();
+    foreach(array_keys($query['where']) as $where) {
+        foreach(array_keys($agg_conv) as $conv) {
+            if(0 == strncmp($where, $conv, strlen($conv)) ) {
+                unset($query['where'][$where]);# = $agg_conv[$conv];
+                $external_where[$conv] = $agg_conv[$conv];
+            }
+        }
+    }
+
+    #
+    # Substitute the column summary names
+    #
+    foreach(array_keys($query['where']) as $where) {
+        foreach(array_keys($eligible_columns) as $col) {
+            if( 0 == strncmp($col, $where, strlen($col)) ) {
+                $query['where'][$where] = preg_replace(("/".$where."/"), $eligible_columns[$col], $query['where'][$where]);
+            }
+        }
+    }
+
+    #
+    # Access the summary sub-tables
+    #
+    $table_mpi_install = NULL;
+    $table_test_build = NULL;
+    $table_test_run = NULL;
+
+    unset($selects['n']);
+    if( INTERNAL_db_iface_phase_included($query['phases'], "mpi_install") ) {
+        $table_mpi_install = INTERNAL_db_iface_compose_sql_summary_fast_mpi_install($query, $selects);
+    }
+    if( INTERNAL_db_iface_phase_included($query['phases'], "test_build") ) {
+        $table_test_build  = INTERNAL_db_iface_compose_sql_summary_fast_test_build($query, $selects);
+    }
+    if( INTERNAL_db_iface_phase_included($query['phases'], "test_run") ) {
+        $table_test_run    = INTERNAL_db_iface_compose_sql_summary_fast_test_run($query, $selects);
+    }
+
+    if( NULL != $table_mpi_install ) {
+        $sql_cmd .= "($nlt";
+        $sql_cmd .= $table_mpi_install;
+        $sql_cmd .= ")".$nlt;
+    }
+
+    if( NULL != $table_mpi_install && NULL != $table_test_build ) {
+        $sql_cmd .= "UNION ALL$nlt";
+    }
+
+    if( NULL != $table_test_build ) {
+        $sql_cmd .= "($nlt";
+        $sql_cmd .= $table_test_build ."$nlt";
+        $sql_cmd .= ")".$nlt;
+    }
+
+    if( NULL != $table_test_build && NULL != $table_test_run ) {
+        $sql_cmd .= "UNION ALL$nlt";
+    }
+
+    if( NULL != $table_test_run ) {
+        $sql_cmd .= "($nlt";
+        $sql_cmd .= $table_test_run ."$nlt";
+        $sql_cmd .= ")".$nlt;
+    }
+
+    $sql_cmd .= ") as summary\n";
+
+    #
+    # External where (mostly aggregation options)
+    #
+    if( count($external_where) > 0 ) {
+        $sql_cmd .= "WHERE ".$nlt;
+        $sql_cmd .= join(" AND $nlt", array_values2($external_where));
+        $sql_cmd .= "\n";
+    }
+
+    #
+    # Group By
+    #
+    $groupbys = array_unique(
+        array_merge(
+            array_keys($query['select']),
+            array_keys($query['select_more']),
+            array_keys($query['performance'])
+        )
+    );
+
+    $sql_cmd .= "\n";
+    if (array_keys($query['select'])) {
+        $sql_cmd .= "GROUP BY " .$nlt;
+        $sql_cmd .= join(",$nlt", $groupbys);
+    }
+
+    #
+    # Order by
+    #
+    $orderbys =  array_unique(
+        array_merge(
+            array_keys($query['select'])
+        )
+    );
+
+    $sql_cmd .= "\n";
+    if (array_keys($query['select'])) {
+        $sql_cmd .= "ORDER BY " .$nlt;
+        $sql_cmd .= join(",$nlt", $orderbys)."\n";;
+    }
+
+    #
+    # Row Numbers and offsets
+    #
+    if (array_keys($query['select'])) {
+        if( isset($_GET['rows'] ) ) {
+            $limit  = LIMIT;
+            $sql_cmd .= "\nLIMIT $limit";
+        }
+
+        $offset = offset($query);
+        $sql_cmd .= "\nOFFSET $offset";
+    }
+
+    $sql_cmd .= ";";
+
+    #
+    # Explain and Analyze if requested
+    #
+    if ($explain || $analyze) {
+        $sql_cmd_debug .= $sql_cmd;
+
+        #
+        # Get analysis
+        #
+        $resource = do_pg_query($sql_cmd_debug);
+        $arr = pg_fetch_all($resource);
+
+        foreach (array_keys($arr) as $i) {
+            foreach ($arr[$i] as $line) {
+                $plan[] = $line;
+            }
+        }
+
+        #
+        # Write plan to a file (for right-click Save)
+        #
+        $filename = 'tmp/' . params2filename($_GET) . '.txt';
+        $plan_txt = join("\n", $plan);
+        write_to_file($filename, $plan_txt);
+
+        #
+        # Write plan to browser with original sql
+        #
+        debug_sql($plan_txt, 0);
+        debug_sql($sql_cmd_debug, 0);
+
+        #
+        # Link to query plan
+        #
+        $top = DOCROOT;
+        print "<br><a href='$top/$filename'>Query plan</a>";
+
+    }
+
+    return $sql_cmd;
+}
+
+function INTERNAL_db_iface_compose_sql_summary_fast_sub_table_base($query, $selects, $table, $agg) {
+    global $nlt, $nltt;
+
+    #
+    # Get eligible column set
+    #
+    $eligible_columns = INTERNAL_db_iface_get_summary_columns();
+
+    #
+    # Build Select
+    #
+    $sql_cmd .= "SELECT$nltt";
+
+    $sql_cmd .= "trial,".$nltt;
+    foreach($selects as $item ) {
+        $sql_cmd .= $eligible_columns[$item].",".$nltt;
+    }
+
+    #
+    # Aggregation fields (for sub-table)
+    #
+    for($i = 0; $i < count($agg); ++$i ) {
+        if( $i == (count($agg)-1) ) {
+            $sql_cmd .= $agg[$i].$nlt;
+        } else {
+            $sql_cmd .= $agg[$i].",".$nltt;
+        }
+    }
+
+    #
+    # FROM
+    #
+    $sql_cmd .= "FROM ".$table . $nlt;
+
+    #
+    # WHERE
+    #
+    $sql_cmd .= "WHERE ".$nltt;
+    $sql_cmd .= join(" AND $nltt", array_values2($query['where']));
+    $sql_cmd .= join(" AND $nltt", array_values2($query['where_not']));
+
+    return $sql_cmd;
+}
+
+function INTERNAL_db_iface_compose_sql_summary_fast_mpi_install($query, $selects) {
+    $agg = array(
+                 "pass as _mpi_p",
+                 "fail as _mpi_f",
+                 "(0)  as _build_p",
+                 "(0)  as _build_f",
+                 "(0)  as _run_p",
+                 "(0)  as _run_f",
+                 "(0)  as _run_s",
+                 "(0)  as _run_t",
+                 "(0)  as _run_l",
+                 );
+    return INTERNAL_db_iface_compose_sql_summary_fast_sub_table_base($query, $selects, "summary_mpi_install", $agg);
+}
+
+function INTERNAL_db_iface_compose_sql_summary_fast_test_build($query, $selects) {
+    $agg = array(
+                 "(0)  as _mpi_p",
+                 "(0)  as _mpi_f",
+                 "pass as _build_p",
+                 "fail as _build_f",
+                 "(0)  as _run_p",
+                 "(0)  as _run_f",
+                 "(0)  as _run_s",
+                 "(0)  as _run_t",
+                 "(0)  as _run_l",
+                 );
+    return INTERNAL_db_iface_compose_sql_summary_fast_sub_table_base($query, $selects, "summary_test_build", $agg);
+}
+
+function INTERNAL_db_iface_compose_sql_summary_fast_test_run($query, $selects) {
+    $agg = array(
+                 "(0)  as _mpi_p",
+                 "(0)  as _mpi_f",
+                 "(0)  as _build_p",
+                 "(0)  as _build_f",
+                 "pass     as _run_p",
+                 "fail     as _run_f",
+                 "skip     as _run_s",
+                 "timeout  as _run_t",
+                 "perf     as _run_l",
+                 );
+    return INTERNAL_db_iface_compose_sql_summary_fast_sub_table_base($query, $selects, "summary_test_run", $agg);
+}
+
 function INTERNAL_db_iface_compose_sql_summary_all($query) {
     global $nlt, $nltt;
 

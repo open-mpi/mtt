@@ -90,7 +90,8 @@ ini_set("memory_limit","64M");
 #
 # Keep track of time
 #
-$start = time();
+$start = gettimeofday();
+$start = $start['sec'] + ($start['usec'] / 1000000.0);
 
 #
 # Track time elapsed for sql
@@ -105,10 +106,10 @@ display_report();
 #
 # Report on script's execution time
 #
-$finish = time();
+$finish = gettimeofday();
+$finish = $finish['sec'] + ($finish['usec'] / 1000000.0);
+
 $elapsed = $finish - $start;
-print("\n<br><p>Total script execution time: " . $elapsed . " second(s)");
-print("\n<br><p>Total SQL execution time: " . $global_sql_time_elapsed . " second(s)</p>");
 
 #
 # Display input parameters
@@ -123,8 +124,13 @@ debug_cgi($_COOKIE, "COOKIE " . __LINE__);
 #
 # Footer
 #
-print hidden_carryover($_GET) .
-      "\n<hr></form>$mtt_body_html_suffix</body></html>";
+print hidden_carryover($_GET) ."\n".
+      "<hr></form>\n".
+      "<p> Time: ".round($elapsed,3)." sec. ".
+      "(PHP: " .round(($elapsed - $global_sql_time_elapsed), 3)." /".
+      " SQL: " .round($global_sql_time_elapsed,3).")<br>\n".
+      "$mtt_body_html_suffix\n".
+      "</body></html>";
 
 exit;
 

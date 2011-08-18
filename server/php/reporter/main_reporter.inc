@@ -28,6 +28,8 @@ $date_fields;
 function display_report() {
     unset($resource);
 
+    $is_fast_lookup = false;
+
     # Create or update cookie, and set
     # definitions accordingly
     process_cookie($_GET, $_COOKIE);
@@ -120,7 +122,8 @@ function display_report() {
         $ret = db_iface_compose_sql_select($query, $report_type);
 
         $sql_cmd = $ret['sql_cmd'];
-        $sql_count_star = $ret['count_star']; # JJH XXXX
+        $sql_count_star = $ret['count_star']; # JJH Needed?
+        $is_fast_lookup = $ret['fast'];
 
         # Execute query
         $resource = do_pg_query($sql_cmd);
@@ -148,7 +151,7 @@ function display_report() {
         return;
 
     # Print some basic, useful info atop each report table
-    report_header($date_fields, $phases, $n);
+    report_header($date_fields, $phases, $n, $is_fast_lookup);
     
     # Do not print an empty table
     if (pg_num_rows($resource) < 1) {
@@ -2126,9 +2129,9 @@ function offset($params) {
 }
 
 # Print some basic, useful info atop each report table
-function report_header($date_fields, $phases, $n) {
+function report_header($date_fields, $phases, $n, $fast) {
 
-    $basic_info = basic_info($date_fields, $phases, $n);
+    $basic_info = basic_info($date_fields, $phases, $n, $fast);
     $permalinks = permalinks($date_fields);
 
     # Print general info/links up top
@@ -2200,7 +2203,7 @@ function handle_absolute_date($date_fields) {
 
 # Print current time, date range, phases, and
 # result filter for the report
-function basic_info($date_fields, $phases, $num_rows) {
+function basic_info($date_fields, $phases, $num_rows, $fast) {
 
     $current = $date_fields["current"];
     $absolute = $date_fields["absolute"];
@@ -2213,10 +2216,15 @@ function basic_info($date_fields, $phases, $num_rows) {
           "<tr><td><b>Current time (" . strtoupper(TIMEZONE) . ")</b>:<td>" . $current . 
           "<tr><td><b>Date range (" . strtoupper(TIMEZONE) . ")</b>: <td>" .  $absolute .
           "<tr><td><b>Phase(s)</b>:<td>" . en_join(array_map('label', $phases));
+    if( $fast ) {
+        $ret .= "&nbsp;&nbsp;<i>(Via Summary)</i>";
+    } else {
+        $ret .= "&nbsp;&nbsp;<i>(Via Direct Access)</i>";
+    }
 
-    if ($_GET["test_result"])
+    if ($_GET["test_result"]) {
         $ret .= "<tr><td><b>Result</b>:<td>" . label(label($_GET["test_result"])) . " only";
-
+    }
     $ret .= "<tr><td><b>Number of rows</b>:<td>" . $num_rows .
             "</table>";
 
