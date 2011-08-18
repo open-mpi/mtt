@@ -1,0 +1,96 @@
+/* for unvisited links */
+a.black_ln:link {
+    color: #000000;
+}
+/* for visited links */
+a.black_ln:visited {
+    color: #555555;
+}
+/* when link is clicked */
+a.black_ln:active {
+    color: #FFFFFF;
+}
+/* when mouse is over link */
+a.black_ln:hover {
+    color: #FFFF40;
+}
+ 
+a.lgray_ln:link {
+    color: #F8F8F8;
+    font-size: 105%;
+    text-decoration:none;
+}
+a.lgray_ln:visited {
+    color: #F8F8F8;
+    font-size: 105%;
+    text-decoration:none;
+}
+a.lgray_ln:active {
+    color: #FFFFFF;
+    font-size: 105%;
+    text-decoration:none;
+}
+a.lgray_ln:hover {
+    color: #FFFF40;
+    font-size: 105%;
+    text-decoration:none;
+}
+ 
+td {
+    font-size: 75%;
+}
+p {
+    font-size: 75%;
+}
+th {
+    font-size: 80%;
+}
+th#result {
+    font-size: 55%;
+}
+img#result {
+    width: 55%; height: 55%;
+}
+
+/* Dashboard */
+#dashboard table {
+    width: 100%;
+    align: center;
+    padding: 1px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: gray;
+}
+#dashboard th {
+    font-size: 80%;
+}
+#dashboard td {
+    background-color: #808080;
+    align: center;
+}
+#dashboard td.side {
+    background-color: #808080;
+    width: 1%;
+}
+
+/* Dashboard - Radio Buttons*/
+#radio table {
+    width: 100%;
+    border-width: 1px;
+}
+
+#radio td {
+    background-color: #C0C0C0;
+    padding: 5px;
+}
+
+/* Dashboard - Radio Buttons*/
+#dashcore table {
+    width: 100%;
+    border-width: 1px;
+}
+
+#dashcore td {
+    background-color: #C0C0C0;
+    padding: 5px;
+}
