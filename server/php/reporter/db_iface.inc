@@ -184,6 +184,61 @@ function INTERNAL_db_iface_is_summary_table_eligible($query) {
     return true;
 }
 
+function setup_bitmapped_fields_fast() {
+
+    static $ret;
+    if ($ret)
+        return $ret;
+    
+    # Map these both ways for both SELECT and WHERE clauses
+    $ret =
+        array(
+            "select" => array(
+                "bitness" => "(CASE
+                     WHEN (mpi_install_configure_args_bitness = B'000000')  THEN 'unknown'
+                     WHEN (mpi_install_configure_args_bitness = B'000001')  THEN '8'
+                     WHEN (mpi_install_configure_args_bitness = B'000010')  THEN '16'
+                     WHEN (mpi_install_configure_args_bitness = B'000100')  THEN '32'
+                     WHEN (mpi_install_configure_args_bitness = B'001000')  THEN '64'
+                     WHEN (mpi_install_configure_args_bitness = B'001100')  THEN '32/64'
+                     WHEN (mpi_install_configure_args_bitness = B'010000')  THEN '128'
+                     ELSE 'unknown' END) as bitness",
+                "endian" => "(CASE
+                     WHEN (mpi_install_configure_args_endian = B'01')       THEN 'little'
+                     WHEN (mpi_install_configure_args_endian = B'10')       THEN 'big'
+                     ELSE 'unknown' END) as endian",
+            ),
+            "where" => array(
+                "bitness" => array(
+                     'unknown'   => "B000000",
+                     '8'         => "B000001",
+                     '16'        => "B000010",
+                     '32'        => "B000100",
+                     '64'        => "B001000",
+                     '32/64'     => "B001100",
+                     '128'       => "B010000",
+                     '^unknown$' => "B000000",
+                     '^8$'       => "B000001",
+                     '^16$'      => "B000010",
+                     '^32$'      => "B000100",
+                     '^64$'      => "B001000",
+                     '^32/64$'   => "B001100",
+                     '^128$'     => "B010000",
+                ),
+                "endian" => array(
+                     'unknown'   => "B00",
+                     'little'    => "B01",
+                     'big'       => "B10",
+                     '^unknown$' => "B00",
+                     '^little$'  => "B01",
+                     '^big$'     => "B10",
+                ),
+            ),
+    );
+
+    return $ret;
+}
+
 function INTERNAL_db_iface_compose_sql_summary_all_fast($query) {
     global $nlt, $nltt;
 
@@ -194,6 +249,31 @@ function INTERNAL_db_iface_compose_sql_summary_all_fast($query) {
     # Get eligible column conversions
     #
     $eligible_columns = INTERNAL_db_iface_get_summary_columns();
+
+    #
+    # Setup Select arguments
+    #
+    # Grab the select for subtables before bitness change, so
+    # we do not have to deal with switch statements at that level
+    $sub_selects = array_unique(
+        array_merge(
+            $query['select'],
+            $aggregates,
+            $query['select_more'],
+            $query['performance']
+        )
+    );
+    unset($sub_selects['n']);
+
+    # Replace bitmap fields
+    $bitmapped_fields = setup_bitmapped_fields_fast();
+    foreach (array_keys($bitmapped_fields['select']) as $field) {
+        if (isset($query['select'][$field]) || 
+            isset($query['select_more'][$field]) || 
+            isset($query['where'][$field])) {
+            $query['select'][$field] = $bitmapped_fields['select'][$field];
+        }
+    }
 
     $selects = array_unique(
         array_merge(
@@ -256,6 +336,9 @@ function INTERNAL_db_iface_compose_sql_summary_all_fast($query) {
     foreach ($selects as $item ) {
         if( 0 == strncmp($item, "nextval('row_number')", strlen($item)) ) {
             $sql_cmd .= $nlt . $item.",";
+        }
+        else if( 0 == strncmp($item, "(CASE", strlen("(CASE")) ) {
+            $sql_cmd .= $nlt . $item.",";
         } else {
             $sql_cmd .= $nlt . $eligible_columns[$item]." as ".$item.",";
         }
@@ -287,15 +370,14 @@ function INTERNAL_db_iface_compose_sql_summary_all_fast($query) {
     $table_test_build = NULL;
     $table_test_run = NULL;
 
-    unset($selects['n']);
     if( INTERNAL_db_iface_phase_included($query['phases'], "mpi_install") ) {
-        $table_mpi_install = INTERNAL_db_iface_compose_sql_summary_fast_mpi_install($query, $selects);
+        $table_mpi_install = INTERNAL_db_iface_compose_sql_summary_fast_mpi_install($query, $sub_selects);
     }
     if( INTERNAL_db_iface_phase_included($query['phases'], "test_build") ) {
-        $table_test_build  = INTERNAL_db_iface_compose_sql_summary_fast_test_build($query, $selects);
+        $table_test_build  = INTERNAL_db_iface_compose_sql_summary_fast_test_build($query, $sub_selects);
     }
     if( INTERNAL_db_iface_phase_included($query['phases'], "test_run") ) {
-        $table_test_run    = INTERNAL_db_iface_compose_sql_summary_fast_test_run($query, $selects);
+        $table_test_run    = INTERNAL_db_iface_compose_sql_summary_fast_test_run($query, $sub_selects);
     }
 
     if( NULL != $table_mpi_install ) {
