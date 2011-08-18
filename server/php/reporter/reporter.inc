@@ -81,71 +81,62 @@ function phase_results_table($start_date) {
     $ret['cases'] = array(
         'mpi_install' =>
             array(
-                "(CASE WHEN
-                  mpi_install.$result_name = 1
-                  THEN '_ip' END) as pass",
-                "(CASE WHEN
-                  mpi_install.$result_name = 0
-                  THEN '_if' END) as fail",
-                "(CASE WHEN
-                  0 = 2
-                  THEN '_is' END) as skipped",
-                "(CASE WHEN
-                  0 = 3
-                  THEN '_is' END) as timed_out",
-                "(CASE WHEN
-                  0 = -38
-                  THEN '_is' END) as latency_bandwidth"
+                "(CASE WHEN mpi_install.$result_name = 1
+                  THEN 1 ELSE 0 END) as _mpi_p",
+                "(CASE WHEN mpi_install.$result_name = 0
+                  THEN 1 ELSE 0 END) as _mpi_f",
+                "(0) as _build_p",
+                "(0) as _build_f",
+                "(0) as _run_p",
+                "(0) as _run_f",
+                "(0) as _run_s",
+                "(0) as _run_t",
+                "(0) as _run_l"
             ),
         "test_build"  =>
             array(
-                "(CASE WHEN
-                  test_build.$result_name = 1
-                  THEN '_bp' END) as pass",
-                "(CASE WHEN
-                  test_build.$result_name = 0
-                  THEN '_bf' END) as fail",
-                "(CASE WHEN
-                  0 = 2
-                  THEN '_bs' END) as skipped",
-                "(CASE WHEN
-                  0 = 3
-                  THEN '_bs' END) as timed_out",
-                "(CASE WHEN
-                  0 = -38
-                  THEN '_bs' END) as latency_bandwidth"
+                "(0) as _mpi_p",
+                "(0) as _mpi_f",
+                "(CASE WHEN test_build.$result_name = 1
+                  THEN 1 ELSE 0 END) as _build_p",
+                "(CASE WHEN test_build.$result_name = 0
+                  THEN 1 ELSE 0 END) as _build_f",
+                "(0) as _run_p",
+                "(0) as _run_f",
+                "(0) as _run_s",
+                "(0) as _run_t",
+                "(0) as _run_l"
             ),
         "test_run"    =>
             array(
-                "(CASE WHEN
-                  test_run.$result_name = 1
-                  THEN '_rp' END) as pass",
-                "(CASE WHEN
-                  test_run.$result_name = 0
-                  THEN '_rf' END) as fail",
-                "(CASE WHEN
-                  test_run.$result_name = 2
-                  THEN '_rs' END) as skipped",
-                "(CASE WHEN
-                  test_run.$result_name = 3
-                  THEN '_rt' END) as timed_out",
-                "(CASE WHEN
-                  latency_bandwidth_id > 0
-                  THEN '_rl' END) as latency_bandwidth"
+                "(0) as _mpi_p",
+                "(0) as _mpi_f",
+                "(0) as _build_p",
+                "(0) as _build_f",
+                "(CASE WHEN test_run.$result_name = 1
+                  THEN 1 ELSE 0 END) as _run_p",
+                "(CASE WHEN test_run.$result_name = 0
+                  THEN 1 ELSE 0 END) as _run_f",
+                "(CASE WHEN test_run.$result_name = 2
+                  THEN 1 ELSE 0 END) as _run_s",
+                "(CASE WHEN test_run.$result_name = 3
+                  THEN 1 ELSE 0 END) as _run_t",
+                "(CASE WHEN test_run.performance_id > 0
+                  THEN 1 ELSE 0 END) as _run_l"
             ),
     );
 
     $ret['where'] = 
         array(
-            "_ip" => "mpi_install.$result_name = 1",
-            "_if" => "mpi_install.$result_name = 0",
-            "_bp" => "test_build.$result_name = 1",
-            "_bf" => "test_build.$result_name = 0",
-            "_rp" => "test_run.$result_name = 1",
-            "_rf" => "test_run.$result_name = 0",
-            "_rs" => "test_run.$result_name = 2",
-            "_rt" => "test_run.$result_name = 3",
-            "_rl" => "latency_bandwidth_id > 0",
+            "_mpi_p" => "mpi_install.$result_name = 1",
+            "_mpi_f" => "mpi_install.$result_name = 0",
+            "_build_p" => "test_build.$result_name = 1",
+            "_build_f" => "test_build.$result_name = 0",
+            "_run_p" => "test_run.$result_name = 1",
+            "_run_f" => "test_run.$result_name = 0",
+            "_run_s" => "test_run.$result_name = 2",
+            "_run_t" => "test_run.$result_name = 3",
+            "_run_l" => "test_run.performance_id > 0",
     );
 
 
@@ -153,11 +144,11 @@ function phase_results_table($start_date) {
     # *temporary* table
     $ret['aggregates'] = array(
         'mpi_install' =>
-            array('_ip', '_if'),
+            array('_mpi_p', '_mpi_f'),
         'test_build'  =>
-            array('_bp', '_bf'),
+            array('_build_p', '_build_f'),
         'test_run'    =>
-            array('_rp', '_rf', '_rs', '_rt', '_rl'),
+            array('_run_p', '_run_f', '_run_s', '_run_t', '_run_l'),
     );
 
     return $ret;
@@ -478,15 +469,15 @@ function label($str) {
             # Result types
 
             # Result string to column name
-            '_ip'               => 'pass',
-            '_if'               => 'fail',
-            '_bp'               => 'pass',
-            '_bf'               => 'fail',
-            '_rp'               => 'pass',
-            '_rf'               => 'fail',
-            '_rs'               => 'skipped',
-            '_rt'               => 'timed_out',
-            '_rl'               => 'latency_bandwidth',
+            '_mpi_p'               => 'pass',
+            '_mpi_f'               => 'fail',
+            '_build_p'             => 'pass',
+            '_build_f'             => 'fail',
+            '_run_p'               => 'pass',
+            '_run_f'               => 'fail',
+            '_run_s'               => 'skipped',
+            '_run_t'               => 'timed_out',
+            '_run_l'               => 'latency_bandwidth',
 
             # Column name to web page label
             "pass"              => "Pass",
@@ -582,8 +573,9 @@ function strip_prefix($str) {
 function setup_mainwin_fields($phases) {
 
     # Arrayify the argument
-    if (! is_array($phases))
+    if (! is_array($phases)) {
         $phases = array($phases);
+    }
 
     $single_phase = (sizeof($phases) == 1) ? true : false;
 
@@ -1091,80 +1083,6 @@ function en_join($list) {
 function capitalize($str) {
     $len = strlen($str);
     return strtoupper(substr($str, 0, 1)) . substr($str, 1, $len);
-}
-
-#########################################
-#                                       #
-#  Developer & User Help Functions      #
-#                                       #
-#########################################
-
-function abort($str) {
-    print("ERROR: " . $str);
-    exit;
-}
-
-function debug($str) {
-    if ((isset($_GET['debug']) and $_GET['debug'] == 'on') or 
-        (isset($_GET['verbose']) and $_GET['verbose'] == 'on')) {
-        print("\n<pre>$str</pre>");
-    }
-}
-
-function stats($str) {
-    if (isset($_GET['stats']) == 'on')
-        print("\n<pre>$str</pre>");
-}
-
-# Actually see the nice identation var_dump provides
-function var_dump_html($desc, $var) {
-    if ($_GET['debug'] == 'on' or
-        $_GET['dev'] == 'on')
-        var_dump("\n<br>" .
-                    "<div align='left'>" .
-                    "<pre>$desc",$var,"</div>");
-}
-
-# Print SQL if they want it
-function debug_sql($cmd, $level) {
-    $trace = $_GET['sql'];
-    if ($trace >= $level)
-        print("\n<pre>SQL: $cmd</pre>");
-}
-
-# Prints an HTML table of _GET and _POST vars
-function debug_cgi($params, $title) {
-
-    if ($_GET['cgi'] == 'on') {
-
-        $cols = 3;
-        print "\n\n<table width='80%' border='1'>";
-        print "\n\n<tr><th bgcolor='" . DGRAY . "' colspan=" . $cols * 2 . ">$title";
-
-        $i = 0;
-        foreach (array_keys($params) as $k) {
-            print "\n" . ((($i++ % $cols) == 0) ? "\n<tr>" : "") .
-                "<td bgcolor='" . LGRAY . "'>" . $k . "<td>$params[$k]";
-        }
-        print "\n\n</table>";
-    }
-}
-
-# Show help text
-function help($str) {
-    if (! ($_GET['no_help'] == 'on'))
-        return $str;
-    else
-        return null;
-}
-
-# Command-line options to CGI options
-function getoptions($argv) {
-    for ($i=1; $i<count($argv); $i++) {
-       $it = split("=",$argv[$i]);
-       $_GET[$it[0]] = $it[1];
-    }
-    return $_GET;
 }
 
 ?>

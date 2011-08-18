@@ -18,22 +18,27 @@
 
 include_once("$topdir/google-analytics.inc");
 
-# Print user dash-board 
-function dump_query_screen($nogo, $sql_cmd, $resource) {
+#
+# Print user dash-board
+#
+function display_dashboard($nogo, $sql_cmd, $resource) {
     global $mtt_body_html_prefix;
 
     $phases   = process_phase_field($_GET);
     $defaults = setup_mainwin_fields($phases);
     $layout   = setup_layout($phases);
 
+    #
     # Fill-in form using last invocation's input
+    #
     $lasttime = form_carryover($defaults);
 
     # Fill menus with universe first-time only
-    if ($nogo)
+    if ($nogo) {
         $entries = get_form_universe($defaults);
-    else 
+    } else {
         list($entries, $disable) = get_form_universe2($sql_cmd, $resource);
+    }
 
     # Generate advanced popup menus
     $links = selection_popups($defaults, $entries);
@@ -70,11 +75,7 @@ function dump_query_screen($nogo, $sql_cmd, $resource) {
     $prefs = hidden_prefs($_GET);
 
     # Print the screen
-    print "<html>" . 
-          html_head("Open MPI Test Reporter") .
-          "\n" .
-          "\n<body>" . $mtt_body_html_prefix . print_ga() .
-          "\n<form method='get' id='report' name='report' action='$self'>" .
+    print "\n<form method='get' id='report' name='report' action='$self'>" .
           "\n$prefs" .
           "\n <div align='left'>" .
           "\n <table width='100%' align='center' border='1' cellspacing='1'>" .
@@ -1227,108 +1228,4 @@ function hidden_carryover($params) {
     $str .= "\n<input type='hidden' name='lastgo' value='$lastgo'>";
 
     return $str;
-}
-
-# Load up some CSS and Javascript
-function html_head($title) {
-    global $mtt_head_html;
-
-    # "Nameless" windows means *more* windows (a new window opens with each click)
-    # "Named" windows means *fewer* windows (the same "named" window gets reused again and again)
-    $javascript = <<<EOT
-
-    function popup_named_window(width,height,title,script,content,style) {
-
-        newwindow2=window.open('','name','height=' + height + ',width=' + width + ',scrollbars=yes');
-        var tmp = newwindow2.document;
-        tmp.write('<html><head>' + script + '<title>' + title + '</title></head>');
-        tmp.write('<body ' + style + '><form id=adv name=adv method=get>' + content + '</form></body></html>');
-        tmp.close();
-    }
-
-    function popup_nameless_html_window(width,height,title,script,content,style) {
-
-        newwindow2=window.open('','','height=' + height + ',width=' + width + ',scrollbars=yes');
-        var tmp = newwindow2.document;
-        tmp.write('<html><head>' + script + '<title>' + title + '</title></head>');
-        tmp.write('<body ' + style + '><form id=adv name=adv method=get>' + content + '</form></body></html>');
-        tmp.close();
-    }
-
-    function popup_nameless_text_window(width,height,content) {
-
-        newwindow2=window.open('','','height=' + height + ',width=' + width + ',scrollbars=yes');
-        var tmp = newwindow2.document;
-        tmp.write(content);
-        tmp.close();
-    }
-
-    function OpenPermalinkConfirmation(date) {
-        var link = location.href;
-
-        link += '&text_start_timestamp=' + date;
-        link += '&make_redir=1';
-
-        open(link, 'Tiny link', 'resizable=yes, toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, width=500, height=150');
-    }
-
-    function OpenWindowForMTTFailureDB() {
-        var link = location.href;
-        link += '&show_failure_db=1';
-        open(link, 'MTT Failures Database', 'resizable=yes, toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, width=500, height=500');
-    }
-
-EOT;
-
-    # Create a JavaScript function to set all the
-    # main window form fields to their defaults
-    $phases = process_phase_field($_GET);
-    $main_window = setup_mainwin_fields($phases);
-
-    $javascript .= <<<EOT
-    function StartOver() {
-EOT;
-
-    foreach (array_keys($main_window) as $field) {
-        $value = $main_window[$field];
-
-        $javascript .= <<<EOT
-        document.report.text_$field.value = '$value';\n
-EOT;
-    }
-
-    $javascript .= <<<EOT
-    }
-EOT;
-
-    $style = <<<EOT
-
-    a.black_ln:link    { color: #000000 } /* for unvisited links */
-    a.black_ln:visited { color: #555555 } /* for visited links */
-    a.black_ln:active  { color: #FFFFFF } /* when link is clicked */
-    a.black_ln:hover   { color: #FFFF40 } /* when mouse is over link */
-
-    a.lgray_ln:link    { color: #F8F8F8; font-size: 105%; text-decoration:none; }
-    a.lgray_ln:visited { color: #F8F8F8; font-size: 105%; text-decoration:none; }
-    a.lgray_ln:active  { color: #FFFFFF; font-size: 105%; text-decoration:none; }
-    a.lgray_ln:hover   { color: #FFFF40; font-size: 105%; text-decoration:none; }
-
-    td { font-size: 75%; } 
-    p  { font-size: 75%; } 
-    th { font-size: 80%; } 
-    th#result { font-size: 55%; } 
-    img#result { width: 55%; height: 55%; } 
-
-EOT;
-
-    # Return html head
-    return "\n<head>" . 
-           "\n<title>$title</title>" .
-           "\n<script language='javascript' type='text/javascript'>" .
-           "\n$javascript" .
-           "\n</script>" .
-           "\n<style type='text/css'>" .
-           "\n$style" .
-           "\n</style>" . $mtt_head_html .
-           "\n</head>";
 }
