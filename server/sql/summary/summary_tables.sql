@@ -8,6 +8,8 @@ CREATE TABLE summary_base (
     start_timestamp   timestamp without time zone NOT NULL DEFAULT now() - interval '24 hours',
     end_timestamp     timestamp without time zone NOT NULL DEFAULT now() - interval '24 hours',
 
+    trial             boolean DEFAULT 'f',
+
     --
     -- Submit
     --
@@ -253,6 +255,7 @@ CREATE OR REPLACE FUNCTION update_summary_table() RETURNS TRIGGER AS $update_sum
                 WHERE
                     start_timestamp = tmp_timestamp AND
                     end_timestamp = tmp_timestamp_end AND
+                    trial = NEW.trial AND
                     submit_http_username = tmp_http_username AND
                     compute_cluster_platform_name = tmp_platform_name AND
                     compute_cluster_platform_hardware = tmp_platform_hardware AND
@@ -270,6 +273,7 @@ CREATE OR REPLACE FUNCTION update_summary_table() RETURNS TRIGGER AS $update_sum
                 WHERE
                     start_timestamp = tmp_timestamp AND
                     end_timestamp = tmp_timestamp_end AND
+                    trial = NEW.trial AND
                     submit_http_username = tmp_http_username AND
                     compute_cluster_platform_name = tmp_platform_name AND
                     compute_cluster_platform_hardware = tmp_platform_hardware AND
@@ -288,6 +292,7 @@ CREATE OR REPLACE FUNCTION update_summary_table() RETURNS TRIGGER AS $update_sum
                 WHERE
                     start_timestamp = tmp_timestamp AND
                     end_timestamp = tmp_timestamp_end AND
+                    trial = NEW.trial AND
                     submit_http_username = tmp_http_username AND
                     compute_cluster_platform_name = tmp_platform_name AND
                     compute_cluster_platform_hardware = tmp_platform_hardware AND
@@ -308,11 +313,12 @@ CREATE OR REPLACE FUNCTION update_summary_table() RETURNS TRIGGER AS $update_sum
         -- Insert (try)
         --
         IF ( tmp_mod_idx IS NULL ) THEN
-            --RAISE NOTICE 'Insert New (%)', tmp_mod_idx;
+            -- RAISE NOTICE 'Summary Table: Insert (%) into (%) (% as % / % / % / % / %)', tmp_mod_idx, TG_TABLE_NAME, NEW.test_result, tmp_pass, tmp_fail, tmp_skip, tmp_timeout, tmp_perf;
             IF( TG_TABLE_NAME ~* '^mpi_install' ) THEN
                 INSERT INTO summary_mpi_install
                     (start_timestamp,
                      end_timestamp,
+                     trial,
                      submit_http_username,
                      compute_cluster_platform_name,
                      compute_cluster_platform_hardware,
@@ -330,6 +336,7 @@ CREATE OR REPLACE FUNCTION update_summary_table() RETURNS TRIGGER AS $update_sum
                     ) VALUES (
                      tmp_timestamp,
                      tmp_timestamp_end,
+                     NEW.trial,
                      tmp_http_username,
                      tmp_platform_name,
                      tmp_platform_hardware,
@@ -349,6 +356,7 @@ CREATE OR REPLACE FUNCTION update_summary_table() RETURNS TRIGGER AS $update_sum
                 INSERT INTO summary_test_build
                     (start_timestamp,
                      end_timestamp,
+                     trial,
                      submit_http_username,
                      compute_cluster_platform_name,
                      compute_cluster_platform_hardware,
@@ -366,6 +374,7 @@ CREATE OR REPLACE FUNCTION update_summary_table() RETURNS TRIGGER AS $update_sum
                     ) VALUES (
                      tmp_timestamp,
                      tmp_timestamp_end,
+                     NEW.trial,
                      tmp_http_username,
                      tmp_platform_name,
                      tmp_platform_hardware,
@@ -385,6 +394,7 @@ CREATE OR REPLACE FUNCTION update_summary_table() RETURNS TRIGGER AS $update_sum
                 INSERT INTO summary_test_run
                     (start_timestamp,
                      end_timestamp,
+                     trial,
                      submit_http_username,
                      compute_cluster_platform_name,
                      compute_cluster_platform_hardware,
@@ -405,6 +415,7 @@ CREATE OR REPLACE FUNCTION update_summary_table() RETURNS TRIGGER AS $update_sum
                     ) VALUES (
                      tmp_timestamp,
                      tmp_timestamp_end,
+                     NEW.trial,
                      tmp_http_username,
                      tmp_platform_name,
                      tmp_platform_hardware,
@@ -425,7 +436,7 @@ CREATE OR REPLACE FUNCTION update_summary_table() RETURNS TRIGGER AS $update_sum
                     );
             END IF;
         ELSE
-            --RAISE NOTICE 'Mod Exist  (%)', tmp_mod_idx;
+            -- RAISE NOTICE 'Summary Table: Update (%) on (%) (% as % / % / % / % / %)', tmp_mod_idx, TG_TABLE_NAME, NEW.test_result, tmp_pass, tmp_fail, tmp_skip, tmp_timeout, tmp_perf;
             IF( TG_TABLE_NAME ~* '^mpi_install') THEN
                 UPDATE summary_mpi_install
                     SET pass = pass + tmp_pass, fail = fail + tmp_fail
@@ -446,14 +457,11 @@ CREATE OR REPLACE FUNCTION update_summary_table() RETURNS TRIGGER AS $update_sum
     END;
 $update_summary_table$ LANGUAGE plpgsql;
 
--- CREATE TRIGGER update_summary_table
--- AFTER INSERT ON mpi_install
+--
+-- Add trigger to each sub-partition table
+-- Will not work if attached to the main-partition table
+--
+-- CREATE TRIGGER update_summary_table_mpi_install_wk3
+-- AFTER INSERT ON mpi_install_y2011_m08_wk3
 --     FOR EACH ROW EXECUTE PROCEDURE update_summary_table();
-
--- CREATE TRIGGER update_summary_table
--- AFTER INSERT ON test_build
---     FOR EACH ROW EXECUTE PROCEDURE update_summary_table();
-
--- CREATE TRIGGER update_summary_table
--- AFTER INSERT ON test_run
---     FOR EACH ROW EXECUTE PROCEDURE update_summary_table();
+--
