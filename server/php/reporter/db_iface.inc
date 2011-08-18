@@ -519,7 +519,6 @@ function INTERNAL_db_iface_compose_sql_summary_fast_sub_table_base($query, $sele
     #
     $sql_cmd .= "SELECT$nltt";
 
-    $sql_cmd .= "trial,".$nltt;
     foreach($selects as $item ) {
         $sql_cmd .= $eligible_columns[$item].",".$nltt;
     }
