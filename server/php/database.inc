@@ -141,6 +141,12 @@ function do_pg_query($cmd, $silent) {
           "\nRows affected: "  . pg_affected_rows($db_res) .
           "\nRows retrieved: " . pg_num_rows($db_res));
 
+    if (isset($_GET['stats']) == 'on') {
+      if( $elapsed >= 0.1 ) {
+        print "<pre>SQL:$cmd</pre>\n";
+      }
+    }
+
     global $global_sql_time_elapsed;
     $global_sql_time_elapsed += $elapsed;
 
@@ -189,9 +195,11 @@ function simple_select($cmd) {
           "\nRows affected: "  . pg_affected_rows($result) .
           "\nRows retrieved: " . pg_num_rows($result));
 
-    #if( $elapsed > 0.01 ) {
-    #  print "<pre>SQL:$cmd</pre>\n";
-    #}
+    if (isset($_GET['stats']) == 'on') {
+      if( $elapsed >= 0.1 ) {
+        print "<pre>SQL:$cmd</pre>\n";
+      }
+    }
 
     global $global_sql_time_elapsed;
     $global_sql_time_elapsed += $elapsed;
@@ -223,6 +231,12 @@ function select($cmd) {
           "\nExecution time: " . round($elapsed, 5) . " seconds" .
           "\nRows affected: "  . pg_affected_rows($result) .
           "\nRows retrieved: " . pg_num_rows($result));
+
+    if (isset($_GET['stats']) == 'on') {
+      if( $elapsed >= 0.1 ) {
+        print "<pre>SQL:$cmd</pre>\n";
+      }
+    }
 
     global $global_sql_time_elapsed;
     $global_sql_time_elapsed += $elapsed;

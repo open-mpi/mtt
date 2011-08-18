@@ -23,7 +23,7 @@ function db_iface_compose_sql_select($query, $report_type) {
     # Use old query mechanism
     #
     if ($report_type == 'detail') {
-        $ret = compose_sql_select($query);
+        $ret = compose_sql_select($query, $report_type);
         $ret['fast'] = false;
     }
     #
@@ -31,7 +31,7 @@ function db_iface_compose_sql_select($query, $report_type) {
     # Use old query mechanism
     #
     elseif ($report_type == 'performance') {
-        $ret = compose_sql_select($query);
+        $ret = compose_sql_select($query, $report_type);
         $ret['fast'] = false;
     }
     #
@@ -54,14 +54,14 @@ function db_iface_compose_sql_select($query, $report_type) {
                 #     this is, and it is not quite ready.
                 #$sql_cmd = INTERNAL_db_iface_compose_sql_summary_all($query);
                 #$ret['sql_cmd'] = $sql_cmd;
-                $ret = compose_sql_select($query);
+                $ret = compose_sql_select($query, $report_type);
             }
             #
             # Single Phase:
             # Use the old mechanism
             #
             else {
-                $ret = compose_sql_select($query);
+                $ret = compose_sql_select($query, $report_type);
             }
             $ret['fast'] = false;
         }
@@ -207,6 +207,37 @@ function INTERNAL_db_iface_compose_sql_summary_all_fast($query) {
     unset($query['select']['n']);
 
     #
+    # The aggregates need to be in the external where clause
+    #
+    $external_where = array();
+    $agg_conv = INTERNAL_db_iface_get_aggregation_conv();
+    foreach(array_keys($query['where']) as $where) {
+        foreach(array_keys($agg_conv) as $conv) {
+            if(0 == strncmp($where, $conv, strlen($conv)) ) {
+                unset($query['where'][$where]);# = $agg_conv[$conv];
+                $external_where[$conv] = $agg_conv[$conv];
+            }
+        }
+    }
+
+    if( count($external_where) > 0 ) {
+        foreach(array_keys($query['aggregates']) as $agg_idx) {
+            $found = false;
+            foreach(array_keys($external_where) as $where_idx ) {
+                if(0 == strncmp($agg_idx, $where_idx, strlen($where_idx)) ) {
+                    $found = true;
+                    break;
+                }
+            }
+            # Replace SUM(_mpi_p) with (0) so that it does not show up in the table
+            # A hack for sure, but the user likes it 
+            if( !$found ) {
+                $query['aggregates'][$agg_idx] = preg_replace("/SUM\($agg_idx\)/", "(0)", $query['aggregates'][$agg_idx]);
+            }
+        }
+    }
+
+    #
     # Some Debugging Options
     #
     $explain      = isset($_GET['explain'])      ? 1 : 0;
@@ -237,20 +268,6 @@ function INTERNAL_db_iface_compose_sql_summary_all_fast($query) {
     # FROM
     #
     $sql_cmd .= "FROM ($nlt";
-
-    #
-    # The aggregates need to be in the external where clause
-    #
-    $external_where = array();
-    $agg_conv = INTERNAL_db_iface_get_aggregation_conv();
-    foreach(array_keys($query['where']) as $where) {
-        foreach(array_keys($agg_conv) as $conv) {
-            if(0 == strncmp($where, $conv, strlen($conv)) ) {
-                unset($query['where'][$where]);# = $agg_conv[$conv];
-                $external_where[$conv] = $agg_conv[$conv];
-            }
-        }
-    }
 
     #
     # Substitute the column summary names
@@ -843,7 +860,7 @@ function INTERNAL_db_iface_compose_sql_summary_test_run($query) {
 # -----------------------------------------------------------------------------
 
 # Compose an SQL SELECT statement
-function compose_sql_select($query) {
+function compose_sql_select($query, $report_type) {
     global $nl;
 
     $selects = array();
@@ -886,27 +903,43 @@ function compose_sql_select($query) {
     #
     # (NOTE: SELECTs MUST BE ORDERED LIKE SO FOR *_table FUNCTIONS)
     #
-    $selects = array_unique(
-        array_merge(
-            $query['select'],
-            $aggregates,
-            $query['select_more'],
-            $query['performance']
-        )
-    );
+    # We never aggregate in the 'detail' view
+    if ($report_type == 'detail') {
+        $selects = array_unique(
+                                array_merge(
+                                            $query['select'],
+                                            $query['select_more'],
+                                            $query['performance']
+                                            )
+                                );
+    } else {
+        $selects = array_unique(
+                                array_merge(
+                                            $query['select'],
+                                            $aggregates,
+                                            $query['select_more'],
+                                            $query['performance']
+                                            )
+                                );
+    }
 
     #
     # Do not GROUP BY or ORDER BY row number
     #
     unset($query['select']['n']);
 
-    $groupbys = array_unique(
-        array_merge(
-            array_keys($query['select']),
-            array_keys($query['select_more']),
-            array_keys($query['performance'])
-        )
-    );
+    # We never group in the 'detail' view
+    if ($report_type == 'detail') {
+        $groupbys = NULL;
+    } else {
+        $groupbys = array_unique(
+                                 array_merge(
+                                             array_keys($query['select']),
+                                             array_keys($query['select_more']),
+                                             array_keys($query['performance'])
+                                             )
+                                 );
+    }
 
     $orderbys =  array_unique(
         array_merge(
@@ -945,12 +978,15 @@ function compose_sql_select($query) {
     $cmd .= " ) as summary\n";
 
     if (array_keys($query['select'])) {
-        $cmd .= "\n GROUP BY " .
-                "$nl" . join(",$nl ", $groupbys);
-
-        $cmd .= "\n ORDER BY " .
-                "$nl" . join(",$nl ", $orderbys) .
-                "$nl $direction";
+        if($groupbys) {
+            $cmd .= "\n GROUP BY " .
+                    "$nl" . join(",$nl ", $groupbys);
+        }
+        if ($orderbys) {
+            $cmd .= "\n ORDER BY " .
+                    "$nl" . join(",$nl ", $orderbys) .
+                    "$nl $direction";
+        }
 
         if( isset($_GET['rows'] ) ) {
             $cmd .= "\nLIMIT $limit";
@@ -1317,17 +1353,62 @@ function array_values2($arr) {
 # Return true if $column exists in any table
 # $column is a CSV of one or more column_name's
 function column_exists_any($column) {
+    $tbls = array('compute_cluster',
+                  'submit',
+                  'compiler',
+                  'mpi_get',
+                  'description',
+                  'result_message',
+                  'environment',
+                  'mpi_install_configure_args',
+                  'test_suites',
+                  'test_names',
+                  'latency_bandwidth',
+                  'performance',
+                  'test_run_command',
+                  'mpi_install',
+                  'test_build',
+                  'test_run'
+                  );
+
     $columns = split(',', $column);
+
+    $select_list = null;
+    foreach($tbls as $t) {
+        if( $select_list != null ) {
+          $select_list .= " OR ";
+        }
+        else {
+          $select_list = " AND ( ";
+        }
+
+        $select_list .= " table_name = '$t' ";
+    }
+    $select_list .= ")";
 
     foreach ($columns as $c) {
         $one = select_scalar("SELECT 1 FROM information_schema.columns " .
-                             " WHERE column_name = '$c' " .
-                             " AND table_name !~* 'view'");
-        if (! $one)
+                             " WHERE column_name = '$column' " .
+                             $select_list);
+        if( !$one) {
             return false;
+        }
     }
 
     return true;
+
+    # We only care about the tables contained here, so don't search all tables
+    # Searching all tables takes 0.5 sec,
+    # while searching just this set takes (0.09 sec)
+//     foreach ($columns as $c) {
+//         $one = select_scalar("SELECT 1 FROM information_schema.columns " .
+//                              " WHERE column_name = '$c' " .
+//                              " AND table_name !~* 'view'");
+//         if (! $one)
+//             return false;
+//     }
+
+//     return true;
 }
 
 # Return true if $column exists in $table.
