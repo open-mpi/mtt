@@ -2678,6 +2678,13 @@ function process_date_field($params) {
     # Globalize the date range
     $date_fields = $date;
 
+    # Check the validity of the time input
+    # This should probably go a bit earlier, but it is unclear where
+    if( 0 == preg_match("/^\d*-\d*-\d*\s\d*:\d*:\d*$/", $date['absolute_start'][0]) ) {
+        abort("Invalid unit ('<i>".$timestamp_param."</i>') used in Date range.</font>" .
+              "Date required to be in the format of YYYY-MM-DD HH:MM:SS.");
+    }
+
     return $date;
 }
 
