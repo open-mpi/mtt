@@ -350,18 +350,51 @@ CREATE OR REPLACE FUNCTION update_summary_table() RETURNS TRIGGER AS $update_sum
         ELSE
             -- RAISE NOTICE 'Summary Table: Update (%) on (%) (% as % / % / % / % / %)', tmp_mod_idx, TG_TABLE_NAME, NEW.test_result, tmp_pass, tmp_fail, tmp_skip, tmp_timeout, tmp_perf;
             IF( TG_TABLE_NAME ~* '^mpi_install') THEN
-                UPDATE summary_mpi_install
-                    SET pass = pass + tmp_pass, fail = fail + tmp_fail
-                    WHERE summary_mpi_install_id = tmp_mod_idx;
+                BEGIN
+                    UPDATE summary_mpi_install
+                        SET pass = pass + tmp_pass, fail = fail + tmp_fail
+                        WHERE summary_mpi_install_id = tmp_mod_idx;
+                EXCEPTION
+                    --
+                    -- Catch for serialization issue
+                    -- ERROR:  could not serialize access due to concurrent update
+                    -- http://www.postgresql.org/docs/8.1/static/errcodes-appendix.html
+                    --
+                    WHEN SERIALIZATION_FAILURE THEN
+                        RAISE NOTICE 'WARNING: Serialization condition (Retry Update): Table (%) (%) (% as % / % / % / % / %)',
+                            TG_TABLE_NAME, tmp_mod_idx, NEW.test_result, tmp_pass, tmp_fail, tmp_skip, tmp_timeout, tmp_perf;
+                        UPDATE summary_mpi_install
+                            SET pass = pass + tmp_pass, fail = fail + tmp_fail
+                            WHERE summary_mpi_install_id = tmp_mod_idx;
+                END;
             ELSIF(  TG_TABLE_NAME ~* '^test_build' ) THEN
-                UPDATE summary_test_build
-                    SET pass = pass + tmp_pass, fail = fail + tmp_fail
-                    WHERE summary_test_build_id = tmp_mod_idx;
+                BEGIN
+                    UPDATE summary_test_build
+                        SET pass = pass + tmp_pass, fail = fail + tmp_fail
+                        WHERE summary_test_build_id = tmp_mod_idx;
+                EXCEPTION
+                    WHEN SERIALIZATION_FAILURE THEN
+                        RAISE NOTICE 'WARNING: Serialization condition (Retry Update): Table (%) (%) (% as % / % / % / % / %)',
+                            TG_TABLE_NAME, tmp_mod_idx, NEW.test_result, tmp_pass, tmp_fail, tmp_skip, tmp_timeout, tmp_perf;
+                    UPDATE summary_test_build
+                        SET pass = pass + tmp_pass, fail = fail + tmp_fail
+                        WHERE summary_test_build_id = tmp_mod_idx;
+                END;
             ELSIF (TG_TABLE_NAME ~* '^test_run' ) THEN
-                UPDATE summary_test_run
-                    SET pass = pass + tmp_pass, fail = fail + tmp_fail,
-                    skip = skip + tmp_skip, timeout = timeout + tmp_timeout, perf = perf + tmp_perf
-                    WHERE summary_test_run_id = tmp_mod_idx;
+                BEGIN
+                    UPDATE summary_test_run
+                        SET pass = pass + tmp_pass, fail = fail + tmp_fail,
+                        skip = skip + tmp_skip, timeout = timeout + tmp_timeout, perf = perf + tmp_perf
+                        WHERE summary_test_run_id = tmp_mod_idx;
+                EXCEPTION
+                    WHEN SERIALIZATION_FAILURE THEN
+                        RAISE NOTICE 'WARNING: Serialization condition (Retry Update): Table (%) (%) (% as % / % / % / % / %)',
+                            TG_TABLE_NAME, tmp_mod_idx, NEW.test_result, tmp_pass, tmp_fail, tmp_skip, tmp_timeout, tmp_perf;
+                    UPDATE summary_test_run
+                        SET pass = pass + tmp_pass, fail = fail + tmp_fail,
+                        skip = skip + tmp_skip, timeout = timeout + tmp_timeout, perf = perf + tmp_perf
+                        WHERE summary_test_run_id = tmp_mod_idx;
+                END;
             END IF;
         END IF;
 
