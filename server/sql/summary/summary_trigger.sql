@@ -184,6 +184,8 @@ CREATE OR REPLACE FUNCTION update_summary_table() RETURNS TRIGGER AS $update_sum
                     mpi_install_configure_args_endian = tmp_endian AND
                     compiler_compiler_name = tmp_compiler_name AND
                     compiler_compiler_version = tmp_compiler_version
+                ORDER BY summary_mpi_install_id ASC
+                LIMIT 1
             ;
         ELSIF (TG_TABLE_NAME ~* '^test_build' ) THEN
             SELECT summary_test_build_id INTO tmp_mod_idx
@@ -203,6 +205,8 @@ CREATE OR REPLACE FUNCTION update_summary_table() RETURNS TRIGGER AS $update_sum
                     compiler_compiler_name = tmp_compiler_name AND
                     compiler_compiler_version = tmp_compiler_version AND
                     test_suites_suite_name = tmp_suite_name
+                ORDER BY summary_test_build_id ASC
+                LIMIT 1
             ;
         ELSIF (TG_TABLE_NAME ~* '^test_run' ) THEN
             SELECT summary_test_run_id INTO tmp_mod_idx
@@ -223,6 +227,8 @@ CREATE OR REPLACE FUNCTION update_summary_table() RETURNS TRIGGER AS $update_sum
                     compiler_compiler_version = tmp_compiler_version AND
                     test_suites_suite_name = tmp_suite_name AND
                     np = tmp_np
+                ORDER BY summary_test_run_id ASC
+                LIMIT 1
             ;
         END IF;
         --RAISE NOTICE 'SELECT (%)', tmp_mod_idx;
@@ -356,16 +362,51 @@ CREATE OR REPLACE FUNCTION update_summary_table() RETURNS TRIGGER AS $update_sum
                         WHERE summary_mpi_install_id = tmp_mod_idx;
                 EXCEPTION
                     --
-                    -- Catch for serialization issue
+                    -- Catch for serialization issue.
+                    -- Instead of trying to 'Update' again, just insert
+                    -- (even through duplicate), and we will sort it out later.
+                    -- Otherwise we would loop here trying to 'update' possibly
+                    -- flooding the logs with error notices.
+                    --
                     -- ERROR:  could not serialize access due to concurrent update
                     -- http://www.postgresql.org/docs/8.1/static/errcodes-appendix.html
                     --
                     WHEN SERIALIZATION_FAILURE THEN
-                        RAISE NOTICE 'WARNING: Serialization condition (Retry Update): Table (%) (%) (% as % / % / % / % / %)',
-                            TG_TABLE_NAME, tmp_mod_idx, NEW.test_result, tmp_pass, tmp_fail, tmp_skip, tmp_timeout, tmp_perf;
-                        UPDATE summary_mpi_install
-                            SET pass = pass + tmp_pass, fail = fail + tmp_fail
-                            WHERE summary_mpi_install_id = tmp_mod_idx;
+                        -- RAISE NOTICE 'WARNING: Serialization condition (Insert Dup): Table (%) (%) (% as % / % / % / % / %)',
+                        --     TG_TABLE_NAME, tmp_mod_idx, NEW.test_result, tmp_pass, tmp_fail, tmp_skip, tmp_timeout, tmp_perf;
+                        INSERT INTO summary_mpi_install
+                            (start_timestamp,
+                             end_timestamp,
+                             trial,
+                             submit_http_username,
+                             compute_cluster_platform_name,
+                             compute_cluster_platform_hardware,
+                             compute_cluster_os_name,
+                             mpi_get_mpi_name,
+                             mpi_get_mpi_version,
+                             mpi_install_configure_args_bitness,
+                             mpi_install_configure_args_endian,
+                             compiler_compiler_name,
+                             compiler_compiler_version,
+                             pass,
+                             fail
+                            ) VALUES (
+                             tmp_timestamp,
+                             tmp_timestamp_end,
+                             NEW.trial,
+                             tmp_http_username,
+                             tmp_platform_name,
+                             tmp_platform_hardware,
+                             tmp_os_name,
+                             tmp_mpi_name,
+                             tmp_mpi_version,
+                             tmp_bitness,
+                             tmp_endian,
+                             tmp_compiler_name,
+                             tmp_compiler_version,
+                             tmp_pass,
+                             tmp_fail
+                            );
                 END;
             ELSIF(  TG_TABLE_NAME ~* '^test_build' ) THEN
                 BEGIN
@@ -374,11 +415,43 @@ CREATE OR REPLACE FUNCTION update_summary_table() RETURNS TRIGGER AS $update_sum
                         WHERE summary_test_build_id = tmp_mod_idx;
                 EXCEPTION
                     WHEN SERIALIZATION_FAILURE THEN
-                        RAISE NOTICE 'WARNING: Serialization condition (Retry Update): Table (%) (%) (% as % / % / % / % / %)',
-                            TG_TABLE_NAME, tmp_mod_idx, NEW.test_result, tmp_pass, tmp_fail, tmp_skip, tmp_timeout, tmp_perf;
-                    UPDATE summary_test_build
-                        SET pass = pass + tmp_pass, fail = fail + tmp_fail
-                        WHERE summary_test_build_id = tmp_mod_idx;
+                        -- RAISE NOTICE 'WARNING: Serialization condition (Insert Dup.): Table (%) (%) (% as % / % / % / % / %)',
+                        --     TG_TABLE_NAME, tmp_mod_idx, NEW.test_result, tmp_pass, tmp_fail, tmp_skip, tmp_timeout, tmp_perf;
+                        INSERT INTO summary_test_build
+                            (start_timestamp,
+                             end_timestamp,
+                             trial,
+                             submit_http_username,
+                             compute_cluster_platform_name,
+                             compute_cluster_platform_hardware,
+                             compute_cluster_os_name,
+                             mpi_get_mpi_name,
+                             mpi_get_mpi_version,
+                             mpi_install_configure_args_bitness,
+                             mpi_install_configure_args_endian,
+                             compiler_compiler_name,
+                             compiler_compiler_version,
+                             test_suites_suite_name,
+                             pass,
+                             fail
+                            ) VALUES (
+                             tmp_timestamp,
+                             tmp_timestamp_end,
+                             NEW.trial,
+                             tmp_http_username,
+                             tmp_platform_name,
+                             tmp_platform_hardware,
+                             tmp_os_name,
+                             tmp_mpi_name,
+                             tmp_mpi_version,
+                             tmp_bitness,
+                             tmp_endian,
+                             tmp_compiler_name,
+                             tmp_compiler_version,
+                             tmp_suite_name,
+                             tmp_pass,
+                             tmp_fail
+                            );
                 END;
             ELSIF (TG_TABLE_NAME ~* '^test_run' ) THEN
                 BEGIN
@@ -388,12 +461,51 @@ CREATE OR REPLACE FUNCTION update_summary_table() RETURNS TRIGGER AS $update_sum
                         WHERE summary_test_run_id = tmp_mod_idx;
                 EXCEPTION
                     WHEN SERIALIZATION_FAILURE THEN
-                        RAISE NOTICE 'WARNING: Serialization condition (Retry Update): Table (%) (%) (% as % / % / % / % / %)',
-                            TG_TABLE_NAME, tmp_mod_idx, NEW.test_result, tmp_pass, tmp_fail, tmp_skip, tmp_timeout, tmp_perf;
-                    UPDATE summary_test_run
-                        SET pass = pass + tmp_pass, fail = fail + tmp_fail,
-                        skip = skip + tmp_skip, timeout = timeout + tmp_timeout, perf = perf + tmp_perf
-                        WHERE summary_test_run_id = tmp_mod_idx;
+                        -- RAISE NOTICE 'WARNING: Serialization condition (Insert Dup.): Table (%) (%) (% as % / % / % / % / %)',
+                        --    TG_TABLE_NAME, tmp_mod_idx, NEW.test_result, tmp_pass, tmp_fail, tmp_skip, tmp_timeout, tmp_perf;
+                        INSERT INTO summary_test_run
+                            (start_timestamp,
+                             end_timestamp,
+                             trial,
+                             submit_http_username,
+                             compute_cluster_platform_name,
+                             compute_cluster_platform_hardware,
+                             compute_cluster_os_name,
+                             mpi_get_mpi_name,
+                             mpi_get_mpi_version,
+                             mpi_install_configure_args_bitness,
+                             mpi_install_configure_args_endian,
+                             compiler_compiler_name,
+                             compiler_compiler_version,
+                             test_suites_suite_name,
+                             np,
+                             pass,
+                             fail,
+                             skip,
+                             timeout,
+                             perf
+                            ) VALUES (
+                             tmp_timestamp,
+                             tmp_timestamp_end,
+                             NEW.trial,
+                             tmp_http_username,
+                             tmp_platform_name,
+                             tmp_platform_hardware,
+                             tmp_os_name,
+                             tmp_mpi_name,
+                             tmp_mpi_version,
+                             tmp_bitness,
+                             tmp_endian,
+                             tmp_compiler_name,
+                             tmp_compiler_version,
+                             tmp_suite_name,
+                             tmp_np,
+                             tmp_pass,
+                             tmp_fail,
+                             tmp_skip,
+                             tmp_timeout,
+                             tmp_perf
+                            );
                 END;
             END IF;
         END IF;
