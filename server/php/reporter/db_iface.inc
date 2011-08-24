@@ -133,13 +133,19 @@ function INTERNAL_db_iface_get_summary_columns() {
 }
 
 function INTERNAL_db_iface_is_summary_table_eligible($query) {
+    #
+    # Database must have summary tables
+    #
+    if( !table_exists("summary_range") ) {
+        return false;
+    }
 
     #
-    # Must be a query within the past 24 hours
+    # Must be a query within the coverage of the summary table
     #
     $valid_start = select_scalar("SELECT ".
                                  "date_trunc('hour', timestamp '".($query['absolute_start'][0])."') >= ".
-                                 "date_trunc('hour', now() - interval '24 hours');");
+                                 "start_timestamp from summary_range");
     if( 0 != strncmp($valid_start, "t", strlen("t")) ) {
         #print "<pre>Invalid Date Range: (".$query['absolute_start'][0].")</pre>\n";
         return false;
@@ -316,6 +322,11 @@ function INTERNAL_db_iface_compose_sql_summary_all_fast($query) {
             }
         }
     }
+
+    #
+    # The summary tables are intervaled on the hour, so fix the timestamp
+    #
+    $query['where']['start_timestamp'] = INTERNAL_db_iface_fix_start_timestamp($query['where']['start_timestamp']);
 
     #
     # Some Debugging Options
@@ -547,6 +558,31 @@ function INTERNAL_db_iface_compose_sql_summary_fast_sub_table_base($query, $sele
     $sql_cmd .= join(" AND $nltt", array_values2($query['where_not']));
 
     return $sql_cmd;
+}
+
+function INTERNAL_db_iface_fix_start_timestamp($timestamp) {
+    #
+    # Find all the matching date strings (should be at most 2)
+    #
+    preg_match_all("/\d*-\d*-\d*\s\d*:\d*:\d*/", $timestamp, $matches);
+
+    #
+    # Truncate the first to the previous hour
+    #
+    $valid_start = select_scalar("SELECT ".
+                                 "date_trunc('hour', timestamp '".$matches[0][0]."')");
+    $timestamp = preg_replace("/".$matches[0][0]."/", $valid_start, $timestamp);
+
+    #
+    # If there is a second, then truncate to the proceeding hour
+    #
+    if(count($matches[0]) > 1 ) {
+        $valid_end = select_scalar("SELECT ".
+                                 "date_trunc('hour', timestamp '".$matches[0][1]."' + interval '1 hour')");
+        $timestamp = preg_replace("/".$matches[0][1]."/", $valid_end, $timestamp);
+    }
+
+    return $timestamp;
 }
 
 function INTERNAL_db_iface_compose_sql_summary_fast_mpi_install($query, $selects) {
@@ -1586,8 +1622,15 @@ function which_tables($selects) {
 
 # Return 1 if the $table exists in the database
 function table_exists($table) {
-    return select_scalar("SELECT 1 FROM information_schema.tables " .
-                            "WHERE table_name = '$table'");
+    $one = select_scalar("\n   SELECT 1 " .
+                         "\n\t FROM information_schema.tables ".
+                         "\n\t WHERE table_name = '$table'");
+    if (! $one) {
+        return false;
+    } else {
+        return true;
+    }
 }
+
 
 ?>
