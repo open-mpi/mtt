@@ -23,7 +23,7 @@ use DBI;
 use Mail::Sendmail;
 
 my $debug;
-my $debug_no_email;
+my $debug_no_email = 1;
 
 #my $to_email_address     = "FILL THIS IN";
 #my $from_email_address   = "FILL THIS IN";
@@ -59,6 +59,10 @@ my @epoch_months = ("11", "12");
 
 my @week_array = ( "1", "2", "3", "4", "5");
 my @part_table_postfix = ();
+
+my @summary_tables = ("summary_mpi_install",
+                      "summary_test_build",
+                      "summary_test_run");
 
 my @main_part_tables = ("mpi_install",
                         "test_build",
@@ -207,6 +211,9 @@ sub do_vacuum() {
     forall_base_tables($vac_cmd);
   }
 
+  # Process the summary tables
+  forall_summary_tables($vac_cmd);
+
   disconnect_db();
 
   return 0;
@@ -318,6 +325,29 @@ sub forall_base_tables() {
 
   push(@all_tables, @main_part_tables);
   push(@all_tables, @main_base_tables);
+
+  foreach $base_table (@all_tables) {
+    periodic_wait();
+    $start_time = time();
+    if( !defined($debug) ) {
+      $stmt = $dbh_mtt->prepare($base_cmd." ".$base_table);
+      $stmt->execute();
+      $stmt->finish;
+    }
+    print_update_time($base_cmd." ".$base_table);
+  }
+
+  return 0;
+}
+
+sub forall_summary_tables() {
+  my $base_cmd = shift(@_);
+  my $cmd;
+  my $stmt;
+  my $base_table;
+  my @all_tables = ();
+
+  push(@all_tables, @summary_tables);
 
   foreach $base_table (@all_tables) {
     periodic_wait();
