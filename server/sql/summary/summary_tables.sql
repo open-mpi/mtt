@@ -27,8 +27,8 @@ CREATE TABLE summary_range (
 
 -- UPDATE summary_range
 --     SET
---         start_timestamp = (SELECT MIN(start_timestamp) FROM summary_mpi_install),
---         end_timestamp = (SELECT MIN(end_timestamp) FROM summary_mpi_install),
+--         start_timestamp = (SELECT MIN(start_timestamp) + interval '1 day' FROM summary_mpi_install),
+--         end_timestamp = (SELECT MIN(end_timestamp) + interval '1 day' FROM summary_mpi_install),
 --         time_interval = (SELECT (MIN(end_timestamp) - MIN(start_timestamp)) FROM summary_mpi_install)
 --     WHERE range_id = 1;
 
