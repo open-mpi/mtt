@@ -126,3 +126,7 @@ CREATE TABLE summary_test_run (
     -- ********** --
     PRIMARY KEY (summary_test_run_id)
 ) INHERITS(summary_base);
+
+CREATE INDEX summary_mpi_install_start_idx on summary_mpi_install (start_timestamp);
+CREATE INDEX summary_test_build_start_idx on summary_test_build (start_timestamp);
+CREATE INDEX summary_test_run_start_idx on summary_test_run (start_timestamp);
