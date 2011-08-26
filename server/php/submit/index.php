@@ -26,7 +26,7 @@ ini_set("memory_limit", "32M");
 
 $topdir = '..';
 include_once("$topdir/database.inc");
-include_once("$topdir/reporter.inc");
+include_once("$topdir/reporter/reporter.inc");
 include_once("$topdir/common.inc");
 
 
