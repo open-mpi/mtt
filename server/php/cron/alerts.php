@@ -25,7 +25,7 @@ else
 $topdir = "..";
 include_once("$topdir/curl_get.inc");
 include_once("$topdir/ini.inc");
-include_once("$topdir/reporter.inc");
+include_once("$topdir/reporter/reporter.inc");
 
 # Parse with sections
 $ini_file = ($options['f'] ? $options['f'] : "alerts.ini");

@@ -20,7 +20,7 @@ if (file_exists("$topdir/config.inc")) {
     include_once("$topdir/config.inc");
 }
 include_once("$topdir/google-analytics.inc");
-include_once("$topdir/reporter.inc");
+include_once("$topdir/reporter/reporter.inc");
 
 if (array_key_exists("db", $_GET) &&
     preg_match("/mtt/i", $_GET['db'])) {

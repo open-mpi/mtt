@@ -165,7 +165,7 @@ function make_redir($params) {
 
     # Print tiny link in a tiny window
     $t = 50;
-    print "<html>\n" . html_head("Tiny link") .
+    print "<html>\n" . display_header("Tiny link") .
 "<body>
 <div align=center>
 <p>The original permalink was " . strlen($url) . " chars long.
