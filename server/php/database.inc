@@ -19,6 +19,8 @@
 
 include_once("$topdir/config.inc");
 include_once("$topdir/common.inc");
+# For debug()
+include_once("$topdir/reporter/util.inc");
 
 # Select a database name
 if (array_key_exists("db", $_GET) &&
