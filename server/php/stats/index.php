@@ -21,6 +21,8 @@ if (file_exists("$topdir/config.inc")) {
 }
 include_once("$topdir/google-analytics.inc");
 include_once("$topdir/reporter/reporter.inc");
+# For debug()
+include_once("$topdir/reporter/util.inc");
 
 if (array_key_exists("db", $_GET) &&
     preg_match("/mtt/i", $_GET['db'])) {
