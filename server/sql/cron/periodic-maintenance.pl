@@ -23,7 +23,7 @@ use DBI;
 use Mail::Sendmail;
 
 my $debug;
-my $debug_no_email = 1;
+my $debug_no_email;
 
 #my $to_email_address     = "FILL THIS IN";
 #my $from_email_address   = "FILL THIS IN";
