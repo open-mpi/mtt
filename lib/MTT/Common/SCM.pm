@@ -190,7 +190,7 @@ sub ProcessInputParameters {
     Debug(">> $package: got url $url\n");
 
     # Process INI file parameters
-    foreach my $k (qw/url r rev username password password_cache export checkout command command_arguments subcommand subcommand_arguments delete_first pre_copy post_copy version/) {
+    foreach my $k (qw/url r rev username password password_cache export checkout command command_arguments subcommand subcommand_arguments delete_first pre_copy post_copy version clone_all/) {
         $ret->{$k} = Value($ini, $section, &_prefix_parameter($k));
     }
 

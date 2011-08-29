@@ -43,8 +43,16 @@ sub Checkout {
         (defined($params->{subcommand}) ? $params->{subcommand} : "clone");
     $cmd .= " " . $params->{subcommand_arguments}
         if (defined($params->{subcommand_arguments}));
-    $cmd .= " -r " . $params->{rev}
-        if (defined($params->{rev}));
+    if (defined($params->{rev})) {
+        if (defined($params->{clone_all}) && $params->{clone_all}) {
+            $cmd .= " -u ";
+        }
+        else {
+            $cmd .= " -r ";
+        }
+
+        $cmd .= $params->{rev};
+    };
     $cmd .= " ";
 
     my $hg_major = 0;
