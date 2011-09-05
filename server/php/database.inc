@@ -104,7 +104,7 @@ function do_pg_connect() {
         $pgsql_conn = 
             pg_connect("host=localhost port=5432 dbname=$mtt_database_name user=$mtt_database_username password=$mtt_database_password");
         if (!$pgsql_conn) {
-            mtt_abort("\nCould not connect to the $dbname database; " .
+            mtt_abort(400, "\nCould not connect to the $mtt_database_name database; " .
                     "submit this run later.");
         } else {
             $connected = true;
