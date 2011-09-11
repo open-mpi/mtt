@@ -1020,25 +1020,14 @@ function compose_sql_select($query, $report_type) {
     #
     # (NOTE: SELECTs MUST BE ORDERED LIKE SO FOR *_table FUNCTIONS)
     #
-    # We never aggregate in the 'detail' view
-    if ($report_type == 'detail') {
-        $selects = array_unique(
-                                array_merge(
-                                            $query['select'],
-                                            $query['select_more'],
-                                            $query['performance']
-                                            )
-                                );
-    } else {
-        $selects = array_unique(
-                                array_merge(
-                                            $query['select'],
-                                            $aggregates,
-                                            $query['select_more'],
-                                            $query['performance']
-                                            )
-                                );
-    }
+    $selects = array_unique(
+                            array_merge(
+                                        $query['select'],
+                                        $aggregates,
+                                        $query['select_more'],
+                                        $query['performance']
+                                        )
+                            );
 
     #
     # Do not GROUP BY or ORDER BY row number

@@ -74,7 +74,7 @@ function display_report() {
         $date_fields     = process_date_field($_GET);
         $large_fields    = process_large_fields($_GET);
         $input_fields    = process_input_fields($_GET);
-        $result_fields   = process_result_fields($phases, $_GET);
+        $result_fields   = process_result_fields($phases, $report_type, $_GET);
         $sort_field      = process_sort_field($_GET);
         $offset_field    = process_offset_field($_GET);
         $rows_field      = process_rows_field($_GET);
@@ -237,9 +237,9 @@ function detail_table($headers, $resource) {
         )
     );
 
+
     # Print data rows
     while ($row = pg_fetch_row($resource)) {
-
         if ($php_row_n >= $lastrow)
             break;
 
@@ -2693,7 +2693,7 @@ function process_date_field($params) {
 #    which will be used to tally the result numbers
 # 2. A result filter (optional)
 # (Reference: postgresql.org/docs/7.3/static/functions-conditional.html)
-function process_result_fields($phases, $params) {
+function process_result_fields($phases, $report_type, $params) {
 
     $test_result = $params['test_result'];
 
@@ -2713,8 +2713,12 @@ function process_result_fields($phases, $params) {
                 $when[$result] = label($result) . " = '" . pg_escape_string($result) . "'";
 
                 # These clauses SELECT from the TABLE
-                $results['aggregates'][$result] =
-                    sprintf($format_agg, $result, $result);
+                if ($report_type == 'detail') {
+                    $results['aggregates'][$result] = $result;
+                } else {
+                    $results['aggregates'][$result] =
+                        sprintf($format_agg, $result, $result);
+                }
             }
         }
     }
@@ -3177,23 +3181,26 @@ function order_columns($columns) {
 function setup_detail_fields($phase) {
 
     static $ret;
-    if ($ret)
+    if ($ret) {
         return $ret;
+    }
 
     # MPI Install
-    if ($phase == 'mpi_install')
+    if ($phase == 'mpi_install') {
         $phase_columns = array(
             'configure_arguments' => 'configure_arguments',
             'compiler_version'    => 'compiler_version',
             'vpath_mode'          => 'vpath_mode',
         );
+    }
 
     # Test Build
-    if ($phase == 'test_build')
+    if ($phase == 'test_build') {
         $phase_columns = null;
+    }
 
     # Test Run
-    if ($phase == 'test_run')
+    if ($phase == 'test_run') {
         $phase_columns = array(
             'full_command' => 'full_command',
             'parameters'   => 'parameters',
@@ -3201,6 +3208,7 @@ function setup_detail_fields($phase) {
             'network'      => 'network',
             'resource_mgr' => 'resource_mgr',
         );
+    }
 
     $results_columns = array(
         'exit_value'      => 'exit_value',
