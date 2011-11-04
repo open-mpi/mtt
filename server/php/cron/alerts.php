@@ -6,29 +6,50 @@
 #
 # Copyright (c) 2006-2007 Sun Microsystems, Inc.
 #                          All rights reserved.
+# Copyright (c) 2011      Oak Ridge National Laboratory. All rights reserved.
 # 
 # Email reporter -
 #   (Set this script up as a cron job)
 #
+# To Run:
+#  ./alerts.php -f evening.ini
 
+#
+# Parse command line options
+#
 $options = getopt("f:dv");
 
 $GLOBALS['verbose'] = isset($options['v']) ? true : false;
 $GLOBALS['debug']   = isset($options['d']) ? true : false;
 
-# Set php trace levels
-if ($GLOBALS['verbose'])
-    error_reporting(E_ALL);
-else
-    error_reporting(E_ERROR | E_WARNING | E_PARSE);
+#
+# Sanity Check: Must supply -f option
+#
+if( !$options['f'] ) {
+    print "Error: Must supply an ini file after the -f option\n";
+    exit;
+}
 
+# Set php trace levels
+if ($GLOBALS['verbose']) {
+    error_reporting(E_ALL);
+} else {
+    error_reporting(E_ERROR | E_WARNING | E_PARSE);
+}
+
+#
+# Includes
+#
 $topdir = "..";
 include_once("$topdir/curl_get.inc");
 include_once("$topdir/ini.inc");
 include_once("$topdir/reporter/reporter.inc");
 
+#
 # Parse with sections
-$ini_file = ($options['f'] ? $options['f'] : "alerts.ini");
+#
+$ini_file = $options['f'];
+
 $ini      = parse_ini_file($ini_file, true);
 
 print "\nCreating reports specified in $ini_file.";
@@ -61,8 +82,9 @@ foreach (array_keys($ini) as $section) {
     #$last_alerted = $ini[$section]['last_alerted'];
 
     $html = "";
-    foreach ($urls as $url)
+    foreach ($urls as $url) {
         $html .= do_curl_get($url);
+    }
 
     print "\nGenerating report for [$section].";
 
@@ -78,11 +100,13 @@ foreach (array_keys($ini) as $section) {
         mail($email, $section, '', $headers . $report);
     }
     # Do not email a blank report
-    else
+    else {
         print "\nNull report for [$section], not mailing.";
+    }
 
-    if ($report)
+    if ($report) {
         $ini[$section]['last_alerted'] = time();
+    }
 }
 
 #write_ini_file($ini_file, $ini);
