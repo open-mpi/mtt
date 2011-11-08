@@ -423,6 +423,8 @@ function INTERNAL_db_iface_compose_sql_summary_all_fast($query) {
     # External where (mostly aggregation options)
     #
     if( count($external_where) > 0 ) {
+        # Filter the array in case there are NULLs
+        $external_where = array_filter($external_where);
         $sql_cmd .= "WHERE ".$nlt;
         $sql_cmd .= join(" AND $nlt", array_values2($external_where));
         $sql_cmd .= "\n";
@@ -554,8 +556,9 @@ function INTERNAL_db_iface_compose_sql_summary_fast_sub_table_base($query, $sele
     # WHERE
     #
     $sql_cmd .= "WHERE ".$nltt;
-    $sql_cmd .= join(" AND $nltt", array_values2($query['where']));
-    $sql_cmd .= join(" AND $nltt", array_values2($query['where_not']));
+    # Filter the array in case there are NULLs
+    $sql_cmd .= join(" AND $nltt", array_filter(array_values2($query['where'])));
+    $sql_cmd .= join(" AND $nltt", array_filter(array_values2($query['where_not'])));
 
     return $sql_cmd;
 }
@@ -1270,13 +1273,17 @@ function compose_sql_select_from($query) {
       }
 
       if ($wheres) {
+          # Filter the array in case there are NULLs
+          $wheres = array_filter($wheres);
           $p_from[$phase] .= "$nl WHERE $nlt" .
-                      $nl . join(" AND $nlt", $wheres);
+                           join(" AND $nlt", $wheres);
       }
 
       if ($where_not) {
+          # Filter the array in case there are NULLs
+          $where_not = array_filter($where_not);
           $p_from[$phase] .= "$nl AND NOT $nlt" .
-                      $nl . join(" AND NOT $nlt", $where_not);
+                          join(" AND NOT $nlt", $where_not);
       }
 
       $p_from[$phase] .= "$nl";
