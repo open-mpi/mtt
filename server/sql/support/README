@@ -21,7 +21,7 @@ How to add new yearly tables to the PostgreSQL database.
          The indexes file will normally produce errors like:
          psql:2010-indexes.sql:10: ERROR:  index "idx_mpi_install_y2010_m01_wk1_test_result" does not exist
          This is because we 'DROP' the index before adding it.
-         The error if from the 'DROP' when it cannot find the index.
+         The error is from the 'DROP' when it cannot find the index.
  -------------------
  shell$ psql mtt -U mtt -f 2010-mpi-install.sql
  shell$ psql mtt -U mtt -f 2010-test-build.sql
