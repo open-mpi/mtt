@@ -9,24 +9,26 @@ How to add new yearly tables to the PostgreSQL database.
 2) Create the SQL using the provided Perl scripts.
    See create-partitions.sh for how we did this in the past
  -------------------
- shell$ ./create-partitions-mpi-install.pl 2010 XX >  2010-mpi-install.sql
- shell$ ./create-partitions-test-build.pl 2010 XX >  2010-test-build.sql
- shell$ ./create-partitions-test-run.pl 2010 XX >  2010-test-run.sql
- shell$ ./create-partition-indexes.pl 2010 XX >  2010-indexes.sql
+ shell$ ./create-partitions-mpi-install.pl 2012 XX >  2012-mpi-install.sql
+ shell$ ./create-partitions-test-build.pl 2012 XX >  2012-test-build.sql
+ shell$ ./create-partitions-test-run.pl 2012 XX >  2012-test-run.sql
+ shell$ ./create-partition-indexes.pl 2012 XX >  2012-indexes.sql
+ shell$ ./summary/create-partition-triggers.pl 2012 XX > 2012-triggers.sql
  -------------------
 
 3) Import the SQL into the psql database using the 'mtt' user.
    Note: The tables must be added in this order.
    Note: Check for 'ERROR' statements after adding each file.
          The indexes file will normally produce errors like:
-         psql:2010-indexes.sql:10: ERROR:  index "idx_mpi_install_y2010_m01_wk1_test_result" does not exist
+         psql:2012-indexes.sql:10: ERROR:  index "idx_mpi_install_y2012_m01_wk1_test_result" does not exist
          This is because we 'DROP' the index before adding it.
          The error is from the 'DROP' when it cannot find the index.
  -------------------
- shell$ psql mtt -U mtt -f 2010-mpi-install.sql
- shell$ psql mtt -U mtt -f 2010-test-build.sql
- shell$ psql mtt -U mtt -f 2010-test-run.sql
- shell$ psql mtt -U mtt -f 2010-indexes.sql
+ shell$ psql mtt -U mtt -f 2012-mpi-install.sql
+ shell$ psql mtt -U mtt -f 2012-test-build.sql
+ shell$ psql mtt -U mtt -f 2012-test-run.sql
+ shell$ psql mtt -U mtt -f 2012-indexes.sql
+ shell$ psql mtt -U mtt -f 2012-triggers.sql
  -------------------
 
 4) Check the database to confirm the tables were added.

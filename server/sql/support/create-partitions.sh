@@ -1,8 +1,11 @@
 #
-# This script just generates the partiion table files for 2006 - 2010
+# This script just generates the partiion table files for 2006 - 2012
 #
 # It should be used as an example for how to run the generation scripts
 # as we don't want to replace the existing partition tables going forward.
+
+#
+# MPI Install
 #
 #./create-partitions-mpi-install.pl 2006 11 >  2006-mpi-install.sql
 #./create-partitions-mpi-install.pl 2006 12 >> 2006-mpi-install.sql
@@ -13,6 +16,9 @@
 #./create-partitions-mpi-install.pl 2011 XX >  2011-mpi-install.sql
 ./create-partitions-mpi-install.pl 2012 XX >  2012-mpi-install.sql
 
+#
+# Test Build
+#
 #./create-partitions-test-build.pl 2006 11 >  2006-test-build.sql
 #./create-partitions-test-build.pl 2006 12 >> 2006-test-build.sql
 #./create-partitions-test-build.pl 2007 XX >  2007-test-build.sql
@@ -22,6 +28,9 @@
 #./create-partitions-test-build.pl 2011 XX >  2011-test-build.sql
 ./create-partitions-test-build.pl 2012 XX >  2012-test-build.sql
 
+#
+# Test Run
+#
 #./create-partitions-test-run.pl 2006 11 >  2006-test-run.sql
 #./create-partitions-test-run.pl 2006 12 >> 2006-test-run.sql
 #./create-partitions-test-run.pl 2007 XX >  2007-test-run.sql
@@ -42,3 +51,8 @@
 #./create-partition-indexes.pl 2010 XX >  2010-indexes.sql
 #./create-partition-indexes.pl 2011 XX >  2011-indexes.sql
 ./create-partition-indexes.pl 2012 XX >  2012-indexes.sql
+
+#
+# Summary Table Triggers
+#
+./summary/create-partition-triggers.pl 2012 XX > 2012-triggers.sql
