@@ -15,6 +15,15 @@ CREATE TABLE summary_range (
     time_interval     interval
 );
 
+--
+-- Reset the Summary Table range
+--
+-- UPDATE summary_range 
+--    SET
+--       start_timestamp = (select date_trunc('hour', timestamp 'now()')),
+--       end_timestamp = (select date_trunc('hour', timestamp 'now()') + interval '1 hour')
+--    WHERE range_id = 1;
+
 -- INSERT INTO summary_range
 --     (SELECT 1, min_start, min_end, (min_end-min_start) as interval
 --      FROM (
