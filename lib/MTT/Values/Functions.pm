@@ -728,7 +728,7 @@ sub preg_replace {
 
     my $ret = $subject;
     $ret =~ s/$pattern/$replacement/;
-    Verbose("&preg_replace returning: $ret\n");
+    Debug("&preg_replace returning: $ret\n");
     return $ret;
 }
 
@@ -1327,7 +1327,7 @@ sub env_max_hosts {
 # env_hosts(3) - returns uniq host list, group by hosts with number of cpu: host1:8,host2:8 and etc
 #
 sub env_hosts {
-    my ($want_unique) = @_;
+    my ($want_unique, $sep) = @_;
     Debug("&env_hosts: want_unique=$want_unique\n");
 
     # Resource managers
@@ -1384,6 +1384,10 @@ sub env_hosts {
         } else {
             $ret = join(',', keys(%hmap));
         }
+    }
+
+    if ($sep) {
+        $ret =~ s/,/$sep/g;
     }
 
     Debug("&env_hosts returning: $ret\n");
@@ -2103,6 +2107,12 @@ sub get_absoft_version {
 }
 
 #--------------------------------------------------------------------------
+
+# Return the source directory
+sub get_mpi_srcdir {
+	    my $srcdir = $MTT::MPI::Install::src_dir;
+		return $srcdir;
+}
 
 # Detect the bitness of the MPI library in this order:
 #   1) User overridden (CSV of 1 or more valid bitnesses)

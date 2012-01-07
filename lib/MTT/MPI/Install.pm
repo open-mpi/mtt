@@ -115,6 +115,9 @@ my $build_base;
 # Where the MPI library is
 our $install_dir;
 
+# Where the MPI Source is
+our $src_dir;
+
 # What we call this phase
 my $phase_name = "MPI Install";
 
@@ -581,6 +584,7 @@ sub _do_install {
 
     # Set install_dir for the global environment
     $install_dir = $config->{installdir};
+    $src_dir = $config->{abs_srcdir};
 
     # Bump the refcount in the MPI get -- even if this install fails,
     # we need the refcount to be accurate.

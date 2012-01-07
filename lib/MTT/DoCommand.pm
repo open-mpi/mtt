@@ -378,7 +378,7 @@ sub Cmd {
                     $#out > $max_stdout_lines) {
                     shift @out;
                 }
-                Debug("OUT:$data");
+                Debug("$data");
             }
         }
 
@@ -575,6 +575,21 @@ sub _do_email_timeout_notification {
     close(TIMEOUT_SENTINEL_FILE);
 }
 
+sub flatten {
+    map{ (ref($_) eq "ARRAY") ? map{flatten($_)}@$_ : $_ } @_;
+}
+
+sub descendant_processes {
+    my ($base) = (@_, $$);
+    my %parentage = (`ps -eo pid,ppid` =~ /\d+/g);
+    my %reverse = map { ($_, [$_]) } %parentage;
+    while (my ($pid,$ppid) = each %parentage){
+        push @{$reverse{$ppid}}, $reverse{$pid};
+    }
+    shift @{$reverse{$base}};
+    flatten($reverse{$base});
+}
+
 sub _get_backtrace {
     my ($program, $pid) = @_;
     Debug("_get_backtrace got: @_\n");
@@ -596,15 +611,20 @@ sub _get_backtrace {
 
             # Use ps -Af output to fetch the child pids,
             # and grab a stack trace from each one
-            my $ps_af = `ps -Af`;
-            foreach (split(/\r|\n/, $ps_af)) {
-                my $l = $_;
-                if ($l =~ /^\w+\s+\b$pid\b\s+(\d+)/) {
-                    $gdb_cmd = "gdb - $1 --command=$gdb_command_filename --batch";
-                    $ret .= "\n $gdb_cmd";
-                    $ret .= "\n" . `$gdb_cmd`;
-                }
+            foreach my $p (descendant_processes($pid)) {
+                $gdb_cmd = "gdb - $p --command=$gdb_command_filename --batch";
+                $ret .= "\n $gdb_cmd";
+                $ret .= "\n" . `$gdb_cmd`;
             }
+            #my $ps_af = `ps -Af`;
+            #foreach (split(/\r|\n/, $ps_af)) {
+            #    my $l = $_;
+            #    if ($l =~ /^\w+\s+\b$pid\b\s+(\d+)/) {
+            #        $gdb_cmd = "gdb - $1 --command=$gdb_command_filename --batch";
+            #        $ret .= "\n $gdb_cmd";
+            #        $ret .= "\n" . `$gdb_cmd`;
+            #    }
+            #}
 
             # Remove the GDB batch command file
             unlink($gdb_command_filename);
@@ -617,7 +637,7 @@ sub _get_backtrace {
 
         if (FindProgram(qw(padb))) {
 
-            my $padb_cmd = "padb --config-option rmgr=mpirun --full-report=$pid";
+            my $padb_cmd = "padb --config-option rmgr=mpirun -X $pid";
             $ret .= "\n $padb_cmd";
             $ret .= "\n" . `$padb_cmd`;
 
@@ -717,7 +737,7 @@ sub Win_Cmd {
 
         while(<OUTread>) {
             push(@out, $_);
-            Debug("OUT:$_");
+            Debug($_);
             chomp($_);
             # clear the EOF flag, so that we can continue reading
             seek(OUTread, 0, 1);
