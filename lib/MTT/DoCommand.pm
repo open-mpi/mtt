@@ -411,10 +411,31 @@ sub Cmd {
                 my $timeout_email_recipient = $MTT::Globals::Values->{docommand_timeout_notify_email};
                 my $timeout_notify_timeout  = $MTT::Globals::Values->{docommand_timeout_notify_timeout};
                 my $timeout_backtrace_program = $MTT::Globals::Values->{docommand_timeout_backtrace_program};
+                my $timeout_before_backtrace_program = $MTT::Globals::Values->{docommand_timeout_before_each_backtrace_program};
+                my $timeout_after_backtrace_program = $MTT::Globals::Values->{docommand_timeout_after_each_backtrace_program};
 
                 # If a backtrace program was specified, use it
                 if (defined($timeout_backtrace_program) and !$got_backtrace) {
-                    $backtrace = _get_backtrace($timeout_backtrace_program, $pid);
+                    $backtrace = "";
+                    if ( $timeout_before_backtrace_program ) {
+                        foreach my $p (descendant_processes($pid)) {
+                            my $c = $timeout_before_backtrace_program;
+                            $c =~ s/%PID%/$p/g;
+                            Debug("_pre_backtrace cmd: $c\n");
+                            $backtrace .= "\n" . `$c` . "\n";
+                        }
+                    }
+
+                    $backtrace .= _get_backtrace($timeout_backtrace_program, $pid);
+
+                    if ( $timeout_after_backtrace_program ) {
+                        foreach my $p (descendant_processes($pid)) {
+                            my $c = $timeout_after_backtrace_program;
+                            $c =~ s/%PID%/$p/g;
+                            Debug("_post_backtrace cmd: $c\n");
+                            $backtrace .= "\n" . `$c` . "\n";
+                        }
+                    }
 
                     # Do not collect a backtrace twice
                     $got_backtrace = 1;
@@ -594,7 +615,7 @@ sub _get_backtrace {
     my ($program, $pid) = @_;
     Debug("_get_backtrace got: @_\n");
 
-    my @valid_backtrace_programs = ("gdb", "padb");
+    my @valid_backtrace_programs = ("gdb", "padb", "gstack");
 
     my $ret;
     if ($program eq "gdb") {
@@ -616,15 +637,6 @@ sub _get_backtrace {
                 $ret .= "\n $gdb_cmd";
                 $ret .= "\n" . `$gdb_cmd`;
             }
-            #my $ps_af = `ps -Af`;
-            #foreach (split(/\r|\n/, $ps_af)) {
-            #    my $l = $_;
-            #    if ($l =~ /^\w+\s+\b$pid\b\s+(\d+)/) {
-            #        $gdb_cmd = "gdb - $1 --command=$gdb_command_filename --batch";
-            #        $ret .= "\n $gdb_cmd";
-            #        $ret .= "\n" . `$gdb_cmd`;
-            #    }
-            #}
 
             # Remove the GDB batch command file
             unlink($gdb_command_filename);
@@ -643,6 +655,16 @@ sub _get_backtrace {
 
         } else {
             Warning("MTT could not locate \"padb\" to gather a backtrace\n");
+        }
+    } elsif ($program eq "gstack") {
+        if (FindProgram(qw(gstack))) {
+            foreach my $p (descendant_processes($pid)) {
+                my $gstack_cmd = "gstack $p";
+                $ret .= "\n $gstack_cmd";
+                $ret .= "\n" . `$gstack_cmd`;
+            }
+        } else {
+            Warning("MTT could not locate \"$program\" to gather a backtrace\n");
         }
 
     } else {
