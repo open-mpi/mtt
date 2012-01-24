@@ -55,13 +55,13 @@ sub Install {
     return $ret if (!MTT::DoCommand::wsuccess($ret->{exit_status}));
 
     # compile the whole solution
-    $x = MTT::Common::Do_step::do_step($config, "devenv.com *.sln /build debug ",
+    $x = MTT::Common::Do_step::do_step($config, "devenv.com OpenMPI.sln /build debug ",
                                         $config->{merge_stdout_stderr});
     %$ret = (%$ret, %$x);
     return $ret if (!MTT::DoCommand::wsuccess($ret->{exit_status}));
 
     # install to the prefix dir
-    $x = MTT::Common::Do_step::do_step($config, "devenv.com *.sln /project INSTALL.vcproj /build ",
+    $x = MTT::Common::Do_step::do_step($config, "devenv.com OpenMPI.sln /project INSTALL /build ",
                                         $config->{merge_stdout_stderr});
     %$ret = (%$ret, %$x);
     return $ret if (!MTT::DoCommand::wsuccess($ret->{exit_status}));

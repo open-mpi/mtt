@@ -733,15 +733,13 @@ sub Win_Cmd {
         return $ret;
     }
 
-    # wait a sec for some initial input
+    # wait for the child processes to finish
 
-    sleep(1);
-
+    waitpid($pid, 0);
+    
     open(OUTread, "<stdout.txt");
     open(ERRread, "<stderr.txt")
         if (!$merge_output);
-
-    # Parent
 
     my (@out, @err);
     my $kid=0;
@@ -755,49 +753,19 @@ sub Win_Cmd {
     }
     my $killed_status = undef;
     my $last_over = 0;
-    while (!$kid) {
 
-        while(<OUTread>) {
+    while(<OUTread>) {
+        if ($_ =~ /: error/) {
             push(@out, $_);
             Debug($_);
-            chomp($_);
-            # clear the EOF flag, so that we can continue reading
-            seek(OUTread, 0, 1);
         }
+    }
     
-        if (!$merge_output) {
-            while(<ERRread>) {
+    if (!$merge_output) {
+        while(<ERRread>) {
+            if ($_ =~ /: error/) {
                 push(@err, $_);
                 Debug("ERR:$_");
-                chomp($_);
-                # clear the EOF flag, so that we can continue reading
-                seek(ERRread, 0, 1);
-            }
-        }
-
-        # check the child process status
-        $kid = waitpid($pid, WNOHANG);
-
-        # If we're running with a timeout, bail if we're past the end
-        # time
-        if (defined($end_time) && time() > $end_time) {
-            my $over = time() - $end_time;
-            if ($over > $last_over) {
-                Verbose("*** Past timeout of $timeout seconds by $over seconds\n");
-                _kill_proc($pid);
-                # We don't care about the exit status if we timed out
-                # -- fill it with a bogus value.
-                $ret->{exit_status} = 0;
-
-                # Set that we timed out.
-                $ret->{timed_out} = 1;
-            }
-            $last_over = $over;
-
-            # See if we've over the drain_timeout
-            if ($over > $MTT::Globals::Values->{drain_timeout}) {
-                Verbose("*** Past drain timeout; quitting\n");
-                last;
             }
         }
     }
@@ -805,8 +773,6 @@ sub Win_Cmd {
     close OUTerr;
     close OUTread
         if (!$merge_output);
-
-    unlink "stdout.txt", "stderr.txt";
 
     # If we didn't timeout, we need to reap the process (timeouts will
     # have already been reaped).
