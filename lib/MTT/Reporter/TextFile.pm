@@ -230,8 +230,13 @@ sub _summary_report {
     my $filename = "All_phase-summary.txt";
     my $file = "$dirname/" . MTT::Files::make_safe_filename("$filename");
 
-    my $body = join("\n", ($summary_header, $table->render, $perf_stat, $summary_footer));
-
+    my $body;
+    if ($MTT::Globals::Internals->{is_stopped_on_break_threshold}){
+        $body = join("\n", ($summary_header, $table->render, $perf_stat, $MTT::Globals::Internals->{stopped_on_break_threshold_message}, $summary_footer));
+    }
+    else{
+        $body = join("\n", ($summary_header, $table->render, $perf_stat, $summary_footer));
+    }   
     print $body;
     _output_results($file, $body);
 

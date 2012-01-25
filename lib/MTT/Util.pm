@@ -205,6 +205,12 @@ sub check_break_threshold {
 
         if (($count->{$result} / $total) > $threshold->{$result}) {
             Verbose("--> Threshold ($per) exceeded for \"$result_label\": $count->{$result} out of $total.\n");
+            $MTT::Globals::Internals->{is_stopped_on_break_threshold} = "true";
+            $MTT::Globals::Internals->{stopped_on_break_threshold_message} = "--> Threshold ($per) exceeded for \"$result_label\": $count->{$result} out of $total.\n";
+            print STDOUT "--> Threshold ($per) exceeded for \"$result_label\": $count->{$result} out of $total.\n";
+            if ($MTT::Globals::Internals->{is_stopped_on_break_threshold}){
+                print STDOUT "0xdeadbeef: it works";
+            }
             return 1;
         }
     }

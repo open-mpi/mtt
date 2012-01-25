@@ -45,6 +45,7 @@ use constant {
     PASS => 1,
     SKIPPED => 2,
     TIMED_OUT => 3,
+    TIMED_OUT_OR_FAIL =>4,
 };
 
 # Map to human-readable English labels
@@ -53,7 +54,7 @@ $result_messages->{MTT::Values::FAIL}      = "fail";
 $result_messages->{MTT::Values::PASS}      = "pass";
 $result_messages->{MTT::Values::TIMED_OUT} = "timeout";
 $result_messages->{MTT::Values::SKIPPED}   = "skipped";
-
+$result_messages->{MTT::Values::TIMED_OUT_OR_FAIL} = "timeout_and_fail";
 # current $ini and $section parameters (we use it in funclets)
 our $evaluate_string_ini;
 our $evaluate_string_section;

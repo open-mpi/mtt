@@ -38,9 +38,13 @@ my $ini;
 my $section;
 my $mpi_details_name;
 my $test_run_full_name;
+my $break_threshold;
 
 # Keep track of how many tests have passed, failed, skipped, and timed out
 my $test_results_count;
+
+#same as test_results_count but global over all envokations of RunEngine
+my $test_results_count_global;
 
 # Submit results after each run or after *all* the runs
 my $report_after_each_result = 0;
@@ -56,7 +60,7 @@ sub RunEngine {
     my ($install_dir, $runs_data_dir, $mpi_details, $test_build, $force, $ret);
 
     # Make sure though, that the $ini remains a global
-    ($ini, $section, $install_dir, $runs_data_dir, $mpi_details, $test_build, $force, $ret) = @_;
+    ($ini, $section, $install_dir, $runs_data_dir, $mpi_details, $test_build, $force, $ret, my $count_total_tests_number) = @_;
 
     my $test_results;
     $group_reports = MTT::Values::Value($ini, "mtt", "submit_group_results");
@@ -81,12 +85,16 @@ sub RunEngine {
     my $variants_count_total =
         $test_count_total * $np_count_total * $argv_count_total * $exec_count_total;
 
+    if ($count_total_tests_number eq "yes"){
+        return $variants_count_total;
+    }
     # Set some thresholds for an early exit
-    my $break_threshold;
+    $break_threshold = undef;
     $break_threshold->{MTT::Values::PASS}      = Value($ini, $section, "break_threshold_pass");
     $break_threshold->{MTT::Values::FAIL}      = Value($ini, $section, "break_threshold_fail");
     $break_threshold->{MTT::Values::TIMED_OUT} = Value($ini, $section, "break_threshold_timeout");
     $break_threshold->{MTT::Values::SKIPPED}   = Value($ini, $section, "break_threshold_skipped");
+    $break_threshold->{MTT::Values::TIMED_OUT_OR_FAIL} = Value($ini, "mtt", "break_threshold_timeout_and_fail");
 
     # This boolean value defaults to 0, and allows the user to submit results
     # after each test to ensure at least *some* results are submitted (in case
@@ -208,25 +216,29 @@ sub RunEngine {
             $run->{wdir} = $wdir;
         }
         # Just one np, or an array of np values?
+
         if (ref($all_np) eq "") {
-            $test_results->{$all_np} =
-                _run_one_np($install_dir, $run, $mpi_details, $all_np, $force);
+            $test_results->{$all_np} = _run_one_np($install_dir, $run, $mpi_details, $all_np, $force);
         } else {
             foreach my $this_np (@$all_np) {
                 # See if we're supposed to terminate.
                 last
-                    if (MTT::Util::time_to_terminate());
+                   if (MTT::Util::time_to_terminate());
 
-                $test_results->{$this_np} =
-                    _run_one_np($install_dir, $run, $mpi_details, $this_np,
-                                $force);
+                $test_results->{$all_np} = _run_one_np($install_dir, $run, $mpi_details, $this_np,$force);
+
+                last
+                   if ($MTT::Globals::Internals->{is_stopped_on_break_threshold});
             }
         }
+
+        last
+           if ($MTT::Globals::Internals->{is_stopped_on_break_threshold});
         ++$test_count;
 
         # Write out the "to be saved" test run results
         MTT::Test::SaveRuns($runs_data_dir);
-        
+
         $MTT::Test::Run::mpi_details = $save_run_mpi_details;
 
         # Output a progress bar
@@ -247,6 +259,7 @@ sub RunEngine {
         
         MTT::Reporter::QueueSubmit();
     }
+
 }
 
 sub _run_one_np {
@@ -290,16 +303,30 @@ sub _run_one_np {
                 foreach my $e (@$execs) {
                     # See if we're supposed to terminate.
                     last
-                        if (MTT::Util::time_to_terminate());
+                    if (MTT::Util::time_to_terminate());
+                    
                     _run_one_test($install_dir, $run, $mpi_details, $e, $name,
-                                  $variant++, $force);
+                        $variant++, $force);
+                    
+                    last
+                    if (MTT::Util::check_break_threshold(
+                            $test_results_count_global,
+                            $break_threshold,
+                            $MTT::Globals::Internals->{total_tests_counter})
+                    );
                 }
             }
-            
+            last
+            if (MTT::Util::check_break_threshold(
+                    $test_results_count_global,
+                    $break_threshold,
+                    $MTT::Globals::Internals->{total_tests_counter})
+            );
+
             $MTT::Test::Run::test_argv = undef;
         }
     }
-    
+
     $MTT::Test::Run::test_np = undef;
 }
 
@@ -456,6 +483,13 @@ sub _run_one_test {
     $ENV{MTT_TEST_RUN_RESULT} = $report->{test_result};
     $test_results_count->{$report->{test_result}}++ 
         if (exists($report->{test_result}));
+
+    $test_results_count_global->{$report->{test_result}}++
+                if (exists($report->{test_result}));
+
+    $test_results_count_global->{MTT::Values::TIMED_OUT_OR_FAIL}++
+                if (exists($report->{test_result}) && 
+                    (MTT::Values::FAIL == $report->{test_result} || MTT::Values::TIMED_OUT == $report->{test_result}));
 
     # If there is an after_each step, run it
     $ENV{MTT_TEST_RUN_RESULT_MESSAGE} =
