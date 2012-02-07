@@ -4,6 +4,8 @@
 #                         All rights reserved.
 # Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2007-2012 High Performance Computing Center Stuttgart, 
+#                         University of Stuttgart.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -755,7 +757,7 @@ sub Win_Cmd {
     my $last_over = 0;
 
     while(<OUTread>) {
-        if ($_ =~ /: error/) {
+        if (($_ =~ /: error/) || ($_ =~ /: fatal error/)) {
             push(@out, $_);
             Debug($_);
         }
@@ -763,7 +765,7 @@ sub Win_Cmd {
     
     if (!$merge_output) {
         while(<ERRread>) {
-            if ($_ =~ /: error/) {
+            if (($_ =~ /: error/) || ($_ =~ /: fatal error/)) {
                 push(@err, $_);
                 Debug("ERR:$_");
             }
