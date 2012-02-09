@@ -534,12 +534,19 @@ sub _get_filename {
     my $date = strftime("%m%d%Y", localtime);
     my $time = strftime("%H%M%S", localtime);
     my $mpi_name = $report->{mpi_name};
+    my $mpi_install_section_name = $report->{mpi_install_section_name};
     my $mpi_version = $report->{mpi_version};
     my $phase = $report->{phase};
+	my $suffix = "";
     my $ret;
 
+
+	if ($mpi_install_section_name) {
+		$suffix = "-$mpi_install_section_name"
+	}
+
     # Hardcoded filename
-    my $basename = MTT::Files::make_safe_filename("$phase-$section-$mpi_name-$mpi_version.txt");
+    my $basename = MTT::Files::make_safe_filename("$phase-$section-$mpi_name-$mpi_version" . $suffix . ".txt");
 
     # Use an absolute path
     $ret = "$dirname/$basename"; 
