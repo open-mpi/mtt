@@ -52,6 +52,7 @@ my $report_results_count = 0;
 my $report_after_n_results;
 my $prev_section_name = undef;
 my $group_reports = 0;
+my $tests_performed = 0;
 
 #--------------------------------------------------------------------------
 
@@ -95,7 +96,7 @@ sub RunEngine {
     $break_threshold->{MTT::Values::TIMED_OUT} = Value($ini, $section, "break_threshold_timeout");
     $break_threshold->{MTT::Values::SKIPPED}   = Value($ini, $section, "break_threshold_skipped");
     $break_threshold->{MTT::Values::TIMED_OUT_OR_FAIL} = Value($ini, "mtt", "break_threshold_timeout_and_fail");
-
+	my $reports_per_job = Value($ini, "mtt", "reports_per_job");
     # This boolean value defaults to 0, and allows the user to submit results
     # after each test to ensure at least *some* results are submitted (in case
     # a single test sets the cluster on fire)
@@ -322,6 +323,7 @@ sub _run_one_np {
                     $break_threshold,
                     $MTT::Globals::Internals->{total_tests_counter})
             );
+            
 
             $MTT::Test::Run::test_argv = undef;
         }
@@ -473,12 +475,15 @@ sub _run_one_test {
         MTT::Reporter::QueueAdd("Test Run", $run->{simple_section_name}, $report);
         if ($report_after_each_result or
             (defined($report_after_n_results) and
-                $report_results_count > $report_after_n_results)) {
+               $report_results_count > $report_after_n_results)) {
             MTT::Reporter::QueueSubmit();
             $report_results_count = 0;
         }
     }
-
+  
+  	if ($MTT::Globals::Values->{save_intermediate_report}){
+		MTT::Reporter::Flush();
+  	}
     # Set the test run result and increment the counter
     $ENV{MTT_TEST_RUN_RESULT} = $report->{test_result};
     $test_results_count->{$report->{test_result}}++ 
@@ -490,7 +495,15 @@ sub _run_one_test {
     $test_results_count_global->{MTT::Values::TIMED_OUT_OR_FAIL}++
                 if (exists($report->{test_result}) && 
                     (MTT::Values::FAIL == $report->{test_result} || MTT::Values::TIMED_OUT == $report->{test_result}));
+                    
+    $tests_performed++;
 
+	#print "\t\t--> Test #",$tests_performed," done\n";
+	
+		
+	#MTT::Reporter::Flush();
+	#MTT::Reporter::TextFile::deSubmit();
+	
     # If there is an after_each step, run it
     $ENV{MTT_TEST_RUN_RESULT_MESSAGE} =
         (MTT::Values::PASS == $report->{test_result} ? "passed" :
@@ -544,5 +557,6 @@ sub _run_step {
         }
     }
 }
+
 
 1;

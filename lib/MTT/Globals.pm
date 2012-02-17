@@ -77,6 +77,10 @@ my $_defaults = {
     docommand_timeout_backtrace_program => undef,
     docommand_timeout_before_each_backtrace_program => undef,
     docommand_timeout_after_each_backtrace_program => undef,
+    
+    save_intermediate_report => 0,
+    ini_value_run_for => undef,
+    ini_value_finish_at => undef,
 };
 
 #--------------------------------------------------------------------------
@@ -169,6 +173,28 @@ sub load {
     _setup_proxy("http");
     _setup_proxy("https");
     _setup_proxy("ftp");
+    
+    $val = MTT::Values::Value($ini, "MTT", "save_intermediate_report");
+    if (defined($val)) {
+        $Values->{save_intermediate_report} = $val;
+    }
+    
+    $val = MTT::Values::Value($ini, "MTT", "finish_at");
+    if (defined($val)) {
+    	my $finish_time = MTT::Util::parse_time_to_seconds($val);
+    	my $current_time = time % (24*3600);
+    	print "val = ",$val,"\n";
+    	print "current time = ",$current_time,"\n";
+    	print "finish_time_secs = ",$finish_time,"\n";
+    	my $secs_left;
+    	if ($current_time < $finish_time){
+    		$secs_left = $finish_time-$current_time;
+    	} else {
+    		$secs_left = $finish_time+24*3600-$current_time;
+    	}
+    	print "minutes left = ", $secs_left/60,"\n";
+        $Values->{ini_value_finish_at} = $val;
+    }
 }
 
 #--------------------------------------------------------------------------

@@ -233,4 +233,8 @@ sub QueueSubmit {
     $queue = undef;
 }
 
+sub Flush{
+	
+	MTT::Module::Run("MTT::Reporter::TextFile", "Flush", $cache, $queue);
+}
 1;

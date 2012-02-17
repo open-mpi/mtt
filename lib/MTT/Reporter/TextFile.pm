@@ -25,6 +25,7 @@ use Data::Dumper;
 use File::Basename;
 use File::Temp;
 use Text::Wrap;
+use File::Copy;
 
 # directory and file to write to
 my $dirname;
@@ -123,13 +124,29 @@ sub Init {
 
 sub Finalize {
 
+	my $flush_mode;
+	if ($MTT::Globals::Values->{save_intermediate_report}){
+		$flush_mode = "yes";
+	}
     # Print a roll-up report
-    _summary_report(\@results)
+    _summary_report(\@results, $flush_mode)
         if (@results);
 
     undef $dirname;
     undef $filename;
     undef $written_files;
+}
+
+#--------------------------------------------------------------------------
+
+sub Flush{
+	my ($info, $entries) = @_;
+	my @results_to_flush = @results;
+	push(@results_to_flush, $entries); 
+	_summary_report(\@results_to_flush, "yes")
+        if (@results_to_flush);	
+        
+    _detail_report($info, $entries, "yes");
 }
 
 #--------------------------------------------------------------------------
@@ -142,6 +159,9 @@ sub Submit {
     # Push entries into the global results array
     push(@results, $entries);
 
+	if ($MTT::Globals::Values->{save_intermediate_report}){
+		return;
+	}
     # TextFile output has its own columns-width
     my $save_columns = $Text::Wrap::columns;
     $Text::Wrap::columns = $textwrap
@@ -154,14 +174,17 @@ sub Submit {
         if ($textwrap);
 }
 
+
+
 # Show counts of section results
 sub _summary_report {
     my $results_arr = shift;
+	my $flush_mode = shift;
 
-    print("\nMTT Results Summary\n");
-
-    print $summary_header;
-
+	if (!$flush_mode){
+    	print("\nMTT Results Summary\n");
+	    print $summary_header;
+	}
     my $table = Text::TabularDisplay->new(("Phase","Section","MPI Version", "Duration","Pass","Fail","Time out","Skip","Detailed report"));
     my ($total_fail, $total_succ, $total_duration, $html_table_content) = (0,0,0,"");
 
@@ -224,8 +247,10 @@ sub _summary_report {
     Total Duration: $total_duration secs. ($total_duration_human)
 
     ";
-    print $table->render . "\n" . $perf_stat . $summary_footer;
-
+    if (!$flush_mode){
+    	print $table->render . "\n" . $perf_stat . $summary_footer;
+    }
+    
     # Write the Summary report to a file
     my $filename = "All_phase-summary.txt";
     my $file = "$dirname/" . MTT::Files::make_safe_filename("$filename");
@@ -236,9 +261,12 @@ sub _summary_report {
     }
     else{
         $body = join("\n", ($summary_header, $table->render, $perf_stat, $summary_footer));
-    }   
-    print $body;
-    _output_results($file, $body);
+    }
+    if (!$flush_mode){   
+    	print $body;
+    }
+    _output_results($file, $body, $flush_mode);
+    
 
 
     # Wrte html report to a file
@@ -250,39 +278,41 @@ sub _summary_report {
     my $html_filename = "All_phase-summary.html";
     my $html_file = "$dirname/" . MTT::Files::make_safe_filename("$html_filename");
 
-    _output_results($html_file, $html_body);
+    _output_results($html_file, $html_body,$flush_mode);
+    
 
-
-    if ( $to ) {
-        # Evaluate the email subject header and from
-        my ($subject, $body_footer);
-        my $subject_tmpl = Value($ini, $section, "email_subject");
-        my $body_footer_tmpl = Value($ini, $section, "email_footer");
-        my $from = Value($ini, $section, "email_from");
-        my $detailed_report = Logical($ini, $section, "email_detailed_report");
-
-        my $overall_mtt_status = "success";
-        if ( $total_fail > 0 ) {
-            $overall_mtt_status = "failed";
-        }
-        my $str = "\$body_footer = \"$body_footer_tmpl\"";
-        eval $str;
-
-        my $str = "\$subject = \"$subject_tmpl\"";
-        eval $str;
-        Verbose(">> Subject: $subject\n");
-
-        # Now send it
-        if ( $detailed_report ) {
-            my @reports = _get_report_filenames($results_arr);
-            Verbose(">> Sending detailed reports: @reports\n");
-            MTT::Mail::Send($subject, $to, $from, $body . $body_footer, @reports);
-        } else {
-            MTT::Mail::Send($subject, $to, $from, $body . $body_footer);
-        }
-
-        Verbose(">> Reported to e-mail: $to\n");
-    }
+	if (!$flush_mode){
+	    if ( $to ) {
+	        # Evaluate the email subject header and from
+	        my ($subject, $body_footer);
+	        my $subject_tmpl = Value($ini, $section, "email_subject");
+	        my $body_footer_tmpl = Value($ini, $section, "email_footer");
+	        my $from = Value($ini, $section, "email_from");
+	        my $detailed_report = Logical($ini, $section, "email_detailed_report");
+	
+	        my $overall_mtt_status = "success";
+	        if ( $total_fail > 0 ) {
+	            $overall_mtt_status = "failed";
+	        }
+	        my $str = "\$body_footer = \"$body_footer_tmpl\"";
+	        eval $str;
+	
+	        my $str = "\$subject = \"$subject_tmpl\"";
+	        eval $str;
+	        Verbose(">> Subject: $subject\n");
+	
+	        # Now send it
+	        if ( $detailed_report ) {
+	            my @reports = _get_report_filenames($results_arr);
+	            Verbose(">> Sending detailed reports: @reports\n");
+	            MTT::Mail::Send($subject, $to, $from, $body . $body_footer, @reports);
+	        } else {
+	            MTT::Mail::Send($subject, $to, $from, $body . $body_footer);
+	        }
+	
+	        Verbose(">> Reported to e-mail: $to\n");
+	    }
+	}
     return 1;
 }
 
@@ -305,8 +335,7 @@ sub _bystatus
 
 # Show individual test outputs
 sub _detail_report {
-    my ($info, $entries) = @_;
-
+    my ($info, $entries, $flush_mode) = @_;
     my $file;
 
     my $table = Text::TabularDisplay->new(("Field", "Value"));
@@ -327,7 +356,7 @@ sub _detail_report {
             my $title = _get_replicated_fields($section_obj);
 
             # Make timestamps human-readable
-            $title = _convert_timestamps($title);
+           	$title = _convert_timestamps($title);
 
             _add_to_tables($table, \$html_table, $title, undef);
             _add_to_table($table, $separator, undef);
@@ -335,7 +364,7 @@ sub _detail_report {
             foreach my $report (sort _bystatus @$section_obj) {
 
                 $file   = _get_filename($report, $section);
-
+	 
                 $report = _convert_timestamps($report);
                 $report = _convert_array_refs($report);
 
@@ -357,16 +386,19 @@ sub _detail_report {
                 Verbose(">> html: not adding report css, already exists: $html_file\n");
             }
             $html_body .= $html_table;
-            _output_results($html_file, $html_body);
+ 
 
-            _output_results($file,
+           	_output_results($html_file, $html_body, $flush_mode);
+
+			_output_results($file,
                 join("\n", ($detail_header, 
                             $table->render,
-                            $detail_footer)));
+                            $detail_footer)), $flush_mode);
+
         }
         foreach my $rep_file (keys %existing_report_file) {
             my $close_report_html = get_html_phase_report_template_stop();
-            _output_results($rep_file, $close_report_html);
+            	_output_results($rep_file, $close_report_html);
         }
     }
 }
@@ -479,14 +511,16 @@ sub _add_to_table {
 
 # Output results to a file or 
 sub _output_results {
-    my ($file, $str) = @_;
+    my ($file, $str, $clear) = @_;
 
     Debug("Writing to text file: $file\n");
 
     # If we have not yet written to the file in this run,
     # then whack the file.
 
-    if (!exists($written_files->{$file})) {
+	if ($clear){
+		unlink($file);
+	} elsif (!exists($written_files->{$file})) {
         unlink($file);
     }
 
@@ -497,7 +531,11 @@ sub _output_results {
         Verbose(">> Reported to stdout\n")
             if (!exists($written_files->{$file}));
     } else {
-        MTT::Files::SafeWrite(1, $file, $str, ">>");
+    	if ($clear){
+    		MTT::Files::SafeWrite(1, $file, $str, ">");
+    	} else {
+        	MTT::Files::SafeWrite(1, $file, $str, ">>");
+    	}
         Verbose(">> Reported to text file $file\n")
             if (!exists($written_files->{$file}));
     }
@@ -574,7 +612,7 @@ sub _convert_timestamps {
     my $report = shift;
 
     foreach my $key (keys(%$report)) {
-        if ($key =~ /timestamp/ && $report->{$key} =~ /\d+/) {
+        if ($key =~ /timestamp/ && $report->{$key} =~ /\d+/ && !($key =~ /human/)) {
             $report->{$key . "_human"} = gmtime($report->{$key});
         }
     }
@@ -751,4 +789,6 @@ sub get_html_phase_report_template_stop
     return $tmpl;
 }
 
+
 1;
+
