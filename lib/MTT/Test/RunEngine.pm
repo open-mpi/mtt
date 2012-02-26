@@ -306,8 +306,10 @@ sub _run_one_np {
                     last
                     if (MTT::Util::time_to_terminate());
                     
+					$ENV{'MTT_VARIANT'} = $variant;
                     _run_one_test($install_dir, $run, $mpi_details, $e, $name,
                         $variant++, $force);
+					$ENV{'MTT_VARIANT'} = 0;
                     
                     last
                     if (MTT::Util::check_break_threshold(
