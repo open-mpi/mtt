@@ -78,9 +78,9 @@ my $_defaults = {
     docommand_timeout_before_each_backtrace_program => undef,
     docommand_timeout_after_each_backtrace_program => undef,
     
-    save_intermediate_report => 0,
+    save_intermediate_report => undef,
+    save_intermediate_report_enable => undef,
     ini_value_run_for => undef,
-    ini_value_finish_at => undef,
 };
 
 #--------------------------------------------------------------------------
@@ -176,25 +176,53 @@ sub load {
     
     $val = MTT::Values::Value($ini, "MTT", "save_intermediate_report");
     if (defined($val)) {
-        $Values->{save_intermediate_report} = $val;
+        $Values->{save_intermediate_report_enable} = $val;
     }
     
-    $val = MTT::Values::Value($ini, "MTT", "finish_at");
-    if (defined($val)) {
-    	my $finish_time = MTT::Util::parse_time_to_seconds($val);
-    	my $current_time = time % (24*3600);
-    	print "val = ",$val,"\n";
-    	print "current time = ",$current_time,"\n";
-    	print "finish_time_secs = ",$finish_time,"\n";
-    	my $secs_left;
-    	if ($current_time < $finish_time){
-    		$secs_left = $finish_time-$current_time;
-    	} else {
-    		$secs_left = $finish_time+24*3600-$current_time;
-    	}
-    	print "minutes left = ", $secs_left/60,"\n";
-        $Values->{ini_value_finish_at} = $val;
-    }
+#    $val = MTT::Values::Value($ini, "MTT", "finish_at");
+#    if (defined($val)) {
+#    	#finish_at format: hh:mm[dd/MM]
+#    	$val =~ m/(\d\d:\d\d)(\[(\d\d)\/(\d\d)\])*/;
+#    	my $stop_time = $1.":00";
+#    	my $stop_day = $3;
+#    	my $stop_month =$4;
+#    	my @timeData = localtime(time);
+#    	#@timedata : [0]secs [1]minutes [2]hours [3]days [4]month-1
+#		my $finish_time = MTT::Util::parse_time_to_seconds($stop_time);
+#				
+#		
+#    	my $local_time=$timeData[2].":".$timeData[1].":".$timeData[0];
+#    	my $current_time = MTT::Util::parse_time_to_seconds($local_time);
+#    	
+#    	
+#    	
+#    	my $secs_left;
+#    	if ($current_time < $finish_time){
+#    		$secs_left = $finish_time-$current_time;
+#    	} else {
+#    		$secs_left = $finish_time+24*3600-$current_time;
+#    	}
+#    	$Values->{ini_value_run_for} = $secs_left;
+#    	
+#    	if (!$stop_month){
+#	    	if ($stop_day){
+#	    		if ($stop_day < $timeData[3]){
+#	    			MTT::Messages::Warning("Stop date is less than start date: disabling stop_at feature");
+#	    			$Values->{ini_value_run_for} = undef;
+#	    		}else if ($stop_day == $timeData[3]){
+#	    			if ($finish_time < $current_time){
+#	    				MTT::Messages::Warning("The stop is less than start time: disabling stop_at feature");
+#	    			}
+#	    		}else{
+#	    			if ($finish_time > $current_time){
+#	    				$secs_left += 24*3600;
+#	    			}
+#	    		}
+#	    	}
+#    	}
+#    	printf "secs_left = ",$secs_left, "hours_left = ",$secs_left/3600,"\n"; 
+#        
+#    }
 }
 
 #--------------------------------------------------------------------------

@@ -124,9 +124,9 @@ sub Init {
 
 sub Finalize {
 
-	my $flush_mode;
+	my $flush_mode = undef;
 	if ($MTT::Globals::Values->{save_intermediate_report}){
-		$flush_mode = "yes";
+		$flush_mode = "finalize";
 	}
     # Print a roll-up report
     _summary_report(\@results, $flush_mode)
@@ -181,7 +181,8 @@ sub _summary_report {
     my $results_arr = shift;
 	my $flush_mode = shift;
 
-	if (!$flush_mode){
+	
+	if ($flush_mode eq "finalize"){
     	print("\nMTT Results Summary\n");
 	    print $summary_header;
 	}
@@ -247,7 +248,7 @@ sub _summary_report {
     Total Duration: $total_duration secs. ($total_duration_human)
 
     ";
-    if (!$flush_mode){
+    if ($flush_mode eq "finalize"){
     	print $table->render . "\n" . $perf_stat . $summary_footer;
     }
     
@@ -281,7 +282,7 @@ sub _summary_report {
     _output_results($html_file, $html_body,$flush_mode);
     
 
-	if (!$flush_mode){
+	if ($flush_mode eq "finalize"){
 	    if ( $to ) {
 	        # Evaluate the email subject header and from
 	        my ($subject, $body_footer);
@@ -362,14 +363,11 @@ sub _detail_report {
             _add_to_table($table, $separator, undef);
 
             foreach my $report (sort _bystatus @$section_obj) {
-
-                $file   = _get_filename($report, $section);
-	 
-                $report = _convert_timestamps($report);
-                $report = _convert_array_refs($report);
-
-                _add_to_tables($table, \$html_table, $report, $title);
-                _add_to_table($table, $separator, undef);
+					$file   = _get_filename($report, $section);
+	                $report = _convert_timestamps($report);
+	                $report = _convert_array_refs($report);
+	                _add_to_tables($table, \$html_table, $report, $title);
+	                _add_to_table($table, $separator, undef);
             }
 
             # Write the report to a file (or stdout)
@@ -450,6 +448,7 @@ sub _add_to_tables {
         "mpi_install_id",
         "test_build_id",
         "test_result",
+        "saved_to",
     );
     my $frivolous = join("|", @frivolous);
 
@@ -465,7 +464,6 @@ sub _add_to_tables {
 
     my $has_result = 0;
     foreach my $key (sort keys %$include_hash) {
-
         # Skip over frivolous data
         next if ($key =~ /$frivolous/);
 
@@ -481,12 +479,18 @@ sub _add_to_tables {
 
                 # can be too big, browser hangs, save it as a href
                 if ($key eq "result_stdout") {
+                	if (!$MTT::Globals::Values->{save_intermediate_report}){
+                		$include_hash->{saved_to}=undef;
+                	}
+                	if (!$include_hash->{saved_to}){
                     my $tmp = new File::Temp(UNLINK => 0, SUFFIX => '.txt', TEMPLATE=>'test_stdout_XXXXXX', DIR=>"$dirname/html");
                     my $fname = $tmp->filename;
-                    my $fname_base = basename($fname);
                     close $tmp;
                     _output_results($fname, $val);
-                    $$htable_ref .= "<tr valign='top' class='$strClass'><td>$key</td><td><a href='html/$fname_base'>$fname_base</a></td></tr>\n";
+                    $include_hash->{saved_to} = $fname;
+                	}
+                	 my $fname_base = basename($include_hash->{saved_to});
+                	$$htable_ref .= "<tr valign='top' class='$strClass'><td>$key</td><td><a href='html/$fname_base'>$fname_base</a></td></tr>\n";
                 } elsif ( $key eq "result_message") {
                     $val =~ s/\n/<br>/g;
                     $val =~ s/[ ]/&nbsp;/g;

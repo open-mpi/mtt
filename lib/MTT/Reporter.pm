@@ -19,7 +19,7 @@ use MTT::Messages;
 use MTT::FindProgram;
 use MTT::Values;
 use Data::Dumper;
-
+use MTT::Reporter::Email;
 #--------------------------------------------------------------------------
 
 # Cache of info about the system
@@ -122,6 +122,10 @@ sub Init {
         }
     }
 
+	if ($MTT::Globals::Values->{save_intermediate_report_enable}){
+		MTT::Reporter::Email::SendStartUpMail($ini);
+	}
+	
     Verbose("*** Reporter initialized\n");
 }
 

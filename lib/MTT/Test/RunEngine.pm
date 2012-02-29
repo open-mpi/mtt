@@ -306,10 +306,8 @@ sub _run_one_np {
                     last
                     if (MTT::Util::time_to_terminate());
                     
-					$ENV{'MTT_VARIANT'} = $variant;
                     _run_one_test($install_dir, $run, $mpi_details, $e, $name,
                         $variant++, $force);
-					$ENV{'MTT_VARIANT'} = 0;
                     
                     last
                     if (MTT::Util::check_break_threshold(
@@ -421,6 +419,7 @@ sub _run_one_test {
     my $report;
     $report = MTT::Module::Run("MTT::Test::Analyze", "Analyze", $run, $mpi_details, $str, $x);
 
+	$report->{already_saved_to} = undef;
     # Save characteristics of the run
     $report->{variant} = $variant;
     $report->{description} = $run->{description};

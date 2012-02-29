@@ -551,6 +551,8 @@ foreach my $hash (@ini_list) {
         &MTT::Timer::stop();
         &MTT::Timer::print("Phase: Test Build", $time_phases, 1);
     }
+    
+    $MTT::Globals::Values->{save_intermediate_report} = $MTT::Globals::Values->{save_intermediate_report_enable};
     if ($test_run && !MTT::Util::time_to_terminate()) {
         &MTT::Timer::start($time_phases);
         MTT::Test::Run::Run($ini, $ini_full, $install_dir, $runs_data_dir,
@@ -570,6 +572,7 @@ foreach my $hash (@ini_list) {
 
     # Shutdown the reporter
 
+	#$MTT::Globals::Values->{save_intermediate_report}=undef;
     if (!$no_reporter_arg) {
         MTT::Reporter::Finalize();
     }
