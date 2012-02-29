@@ -81,6 +81,8 @@ my $_defaults = {
     save_intermediate_report => undef,
     save_intermediate_report_enable => undef,
     ini_value_run_for => undef,
+    start_time => localtime,
+    description => undef,
 };
 
 #--------------------------------------------------------------------------
@@ -130,7 +132,7 @@ sub load {
 
     # Simple parameters
 
-    my @names = qw/max_np textwrap drain_timeout trim_save_successful trim_save_failed trial http_proxy https_proxy ftp_proxy terminate_files pause_files min_disk_free min_disk_free_wait delete_fast_scratch save_fast_scratch_files docommand_timeout_notify_file docommand_timeout_notify_email docommand_timeout_notify_timeout docommand_timeout_backtrace_program docommand_timeout_before_each_backtrace_program docommand_timeout_after_each_backtrace_program/;
+    my @names = qw/max_np textwrap drain_timeout trim_save_successful trim_save_failed trial http_proxy https_proxy ftp_proxy terminate_files pause_files min_disk_free min_disk_free_wait delete_fast_scratch save_fast_scratch_files docommand_timeout_notify_file docommand_timeout_notify_email docommand_timeout_notify_timeout docommand_timeout_backtrace_program docommand_timeout_before_each_backtrace_program docommand_timeout_after_each_backtrace_program start_time description/;
     foreach my $t (qw/before after/) {
         foreach my $a (qw/all each/) {
             push(@names, $t . "_" . $a . "_exec");

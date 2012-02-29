@@ -183,7 +183,7 @@ sub _summary_report {
 
 	
 	if ($flush_mode eq "finalize"){
-    	print("\nMTT Results Summary\n");
+    	print("\nMTT Results Summary" . $MTT::Globals::Values->{description} . ", started at: " . $MTT::Globals::Values->{start_time} . " report generated at: " . localtime . "\n");
 	    print $summary_header;
 	}
     my $table = Text::TabularDisplay->new(("Phase","Section","MPI Version", "Duration","Pass","Fail","Time out","Skip","Detailed report"));
