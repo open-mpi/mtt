@@ -148,8 +148,10 @@ sub SendStartUpMail{
 			$to = Value( $Ini, $Section, "email_to" );
 		}
 	}
-	my $body = $subject."\n".$footer."\n";
-	MTT::Mail::Send($subject, $to, $from, $body );
+	my $body = $footer."\n";
+	if ($to){
+		MTT::Mail::Send($subject, $to, $from, $body );
+	}
 }
 
 1;

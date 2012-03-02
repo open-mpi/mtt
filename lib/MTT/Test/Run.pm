@@ -77,7 +77,12 @@ sub Run {
 
     # Go through all the sections in the ini file looking for section
     # names that begin with "Test run:"
-    foreach my $section ($ini->Sections()) {
+    my @sects = $ini->Sections();
+    if ($MTT::Globals::Values->{shuffle_tests}->{sections}){
+    	MTT::Util::shuffle(\@sects);	
+    }
+    
+    foreach my $section (@sects) {
         # See if we're supposed to terminate.  Only check in the
         # outtermost and innermost loops (even though we *could* check
         # at every loop level); that's good enough.

@@ -39,7 +39,7 @@ my $section;
 my $mpi_details_name;
 my $test_run_full_name;
 my $break_threshold;
-
+my $shuffle;
 # Keep track of how many tests have passed, failed, skipped, and timed out
 my $test_results_count;
 
@@ -52,7 +52,6 @@ my $report_results_count = 0;
 my $report_after_n_results;
 my $prev_section_name = undef;
 my $group_reports = 0;
-my $tests_performed = 0;
 
 #--------------------------------------------------------------------------
 
@@ -96,6 +95,10 @@ sub RunEngine {
     $break_threshold->{MTT::Values::TIMED_OUT} = Value($ini, $section, "break_threshold_timeout");
     $break_threshold->{MTT::Values::SKIPPED}   = Value($ini, $section, "break_threshold_skipped");
     $break_threshold->{MTT::Values::TIMED_OUT_OR_FAIL} = Value($ini, "mtt", "break_threshold_timeout_and_fail");
+    
+   	$shuffle = undef;
+    _register_shuffles($ini,$section);
+    
 	my $reports_per_job = Value($ini, "mtt", "reports_per_job");
     # This boolean value defaults to 0, and allows the user to submit results
     # after each test to ensure at least *some* results are submitted (in case
@@ -167,6 +170,10 @@ sub RunEngine {
     $verbose_out = 0;
     my $test_count = 0;
     my $printed = 0;
+    if ($shuffle->{tests}){
+    	MTT::Util::shuffle(\@{$ret->{tests}});
+    }
+    
     foreach my $run (@{$ret->{tests}}) {
 
         # See if we're supposed to terminate.
@@ -221,6 +228,9 @@ sub RunEngine {
         if (ref($all_np) eq "") {
             $test_results->{$all_np} = _run_one_np($install_dir, $run, $mpi_details, $all_np, $force);
         } else {
+        	if ($shuffle->{nps}){
+    			MTT::Util::shuffle($all_np);
+    		}
             foreach my $this_np (@$all_np) {
                 # See if we're supposed to terminate.
                 last
@@ -288,13 +298,19 @@ sub _run_one_np {
         if (ref($all_argv) eq "") {
             $all_argv = [$all_argv];
         }
-
+		if ($shuffle->{args}){
+   			MTT::Util::shuffle($all_argv);
+		}
         foreach my $this_argv (@$all_argv) {
             $MTT::Test::Run::test_argv = $this_argv;
         
             # Get all the exec's for this one np
             my $execs = MTT::Values::EvaluateString($mpi_details->{exec}, $ini, $mpi_details_name);
-    
+            if (ref($execs) ne "" && $shuffle->{execs}){
+            	MTT::Util::shuffle($execs);	 
+            }
+            
+            
             # If we just got one, run it.  Otherwise, loop over running them.
             if (ref($execs) eq "") {
                 _run_one_test($install_dir, $run, $mpi_details, $execs, $name, 1,
@@ -497,14 +513,7 @@ sub _run_one_test {
                 if (exists($report->{test_result}) && 
                     (MTT::Values::FAIL == $report->{test_result} || MTT::Values::TIMED_OUT == $report->{test_result}));
                     
-    $tests_performed++;
 
-	#print "\t\t--> Test #",$tests_performed," done\n";
-	
-		
-	#MTT::Reporter::Flush();
-	#MTT::Reporter::TextFile::deSubmit();
-	
     # If there is an after_each step, run it
     $ENV{MTT_TEST_RUN_RESULT_MESSAGE} =
         (MTT::Values::PASS == $report->{test_result} ? "passed" :
@@ -558,6 +567,32 @@ sub _run_step {
         }
     }
 }
-
-
+sub _register_shuffles{
+	my ($ini,$section) = @_;
+	
+	my $val = MTT::Values::Value($ini, $section, "shuffle_tests");
+	if (defined($val)) {
+	    my @shuffles = grep length, split(/\s*,\s*/,$val);
+	    my @allowed_shuffles = ('tests', 'execs', 'nps', 'args', 'all', 'none');
+	    my %allowed_map = map { $_ => 1} @allowed_shuffles;
+	    foreach my $sh (@shuffles){
+	    	if (!exists($allowed_map{$sh})){
+	    		MTT::Messages::Error("<$sh> is not allowed section specific shuffle_tests value. Allowed are:", join(',',@allowed_shuffles),".");
+	    	}
+	    	$shuffle->{$sh} = 1;
+	    }
+	    if ($shuffle->{none}){
+	    	$shuffle = undef;
+	    }
+	    if ($shuffle->{all}){
+	    	foreach my $allow (@allowed_shuffles){
+	    		$shuffle->{$allow} = 1;
+	    	}
+	    }
+	    
+	}
+    else{
+    	$shuffle = $MTT::Globals::Values->{shuffle_tests};
+    }
+}
 1;

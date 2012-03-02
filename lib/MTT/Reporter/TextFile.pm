@@ -142,7 +142,7 @@ sub Finalize {
 sub Flush{
 	my ($info, $entries) = @_;
 	my @results_to_flush = @results;
-	push(@results_to_flush, $entries); 
+	push(@results_to_flush, $entries) if $entries;
 	_summary_report(\@results_to_flush, "yes")
         if (@results_to_flush);	
         

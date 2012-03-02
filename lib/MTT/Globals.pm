@@ -80,8 +80,7 @@ my $_defaults = {
     
     save_intermediate_report => undef,
     save_intermediate_report_enable => undef,
-    ini_value_run_for => undef,
-    start_time => localtime,
+	shuffle_tests => undef,
     description => undef,
 };
 
@@ -181,50 +180,24 @@ sub load {
         $Values->{save_intermediate_report_enable} = $val;
     }
     
-#    $val = MTT::Values::Value($ini, "MTT", "finish_at");
-#    if (defined($val)) {
-#    	#finish_at format: hh:mm[dd/MM]
-#    	$val =~ m/(\d\d:\d\d)(\[(\d\d)\/(\d\d)\])*/;
-#    	my $stop_time = $1.":00";
-#    	my $stop_day = $3;
-#    	my $stop_month =$4;
-#    	my @timeData = localtime(time);
-#    	#@timedata : [0]secs [1]minutes [2]hours [3]days [4]month-1
-#		my $finish_time = MTT::Util::parse_time_to_seconds($stop_time);
-#				
-#		
-#    	my $local_time=$timeData[2].":".$timeData[1].":".$timeData[0];
-#    	my $current_time = MTT::Util::parse_time_to_seconds($local_time);
-#    	
-#    	
-#    	
-#    	my $secs_left;
-#    	if ($current_time < $finish_time){
-#    		$secs_left = $finish_time-$current_time;
-#    	} else {
-#    		$secs_left = $finish_time+24*3600-$current_time;
-#    	}
-#    	$Values->{ini_value_run_for} = $secs_left;
-#    	
-#    	if (!$stop_month){
-#	    	if ($stop_day){
-#	    		if ($stop_day < $timeData[3]){
-#	    			MTT::Messages::Warning("Stop date is less than start date: disabling stop_at feature");
-#	    			$Values->{ini_value_run_for} = undef;
-#	    		}else if ($stop_day == $timeData[3]){
-#	    			if ($finish_time < $current_time){
-#	    				MTT::Messages::Warning("The stop is less than start time: disabling stop_at feature");
-#	    			}
-#	    		}else{
-#	    			if ($finish_time > $current_time){
-#	    				$secs_left += 24*3600;
-#	    			}
-#	    		}
-#	    	}
-#    	}
-#    	printf "secs_left = ",$secs_left, "hours_left = ",$secs_left/3600,"\n"; 
-#        
-#    }
+   
+    $val = MTT::Values::Value($ini, "MTT", "shuffle_tests");
+    if (defined($val)) {
+	    my @shuffles = grep length, split(/\s*,\s*/,$val);
+	    my @allowed_shuffles = ('sections', 'tests', 'execs', 'nps', 'args', 'all');
+	    my %allowed_map = map { $_ => 1} @allowed_shuffles;
+	    foreach my $sh (@shuffles){
+	    	if (!exists($allowed_map{$sh})){
+	    		MTT::Messages::Error("<$sh> is not allowed shuffle_tests value. Allowed are:", join(',',@allowed_shuffles),".");
+	    	}
+	    	$Values->{shuffle_tests}->{$sh} = 1;
+	    }
+	    if ($Values->{shuffle_tests}->{all}){
+	    	foreach my $allow (@allowed_shuffles){
+	    		$Values->{shuffle_tests}->{$allow} = 1;
+	    	}
+	    }
+    }
 }
 
 #--------------------------------------------------------------------------

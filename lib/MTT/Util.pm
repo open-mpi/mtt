@@ -208,9 +208,6 @@ sub check_break_threshold {
             $MTT::Globals::Internals->{is_stopped_on_break_threshold} = "true";
             $MTT::Globals::Internals->{stopped_on_break_threshold_message} = "--> Threshold ($per) exceeded for \"$result_label\": $count->{$result} out of $total.\n";
             print STDOUT "--> Threshold ($per) exceeded for \"$result_label\": $count->{$result} out of $total.\n";
-            if ($MTT::Globals::Internals->{is_stopped_on_break_threshold}){
-                print STDOUT "0xdeadbeef: it works";
-            }
             return 1;
         }
     }
@@ -395,4 +392,15 @@ sub is_running_on_windows {
     }
 }
 
+#--------------------------------------------------------------------------
+sub shuffle{
+	# Shuffle an array given via reference randomly
+	my $array = shift;
+    my $i;
+    for ($i = @$array; --$i; ) {
+        my $j = int rand ($i+1);
+        next if $i == $j;
+        @$array[$i,$j] = @$array[$j,$i];
+    }
+}
 1;
