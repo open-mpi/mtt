@@ -15,6 +15,8 @@ use strict;
 use MTT::Values;
 use MTT::Messages;
 use Data::Dumper;
+use File::Temp qw(tempfile);
+
 
 # Global variable to hold [possibly] user-overridden values
 
@@ -104,6 +106,13 @@ sub load {
         foreach my $f (MTT::Util::split_comma_list($val)) {
             require $f;
         }
+    }
+
+    my $val = MTT::Values::Value($ini, "MTT", "funclet_inline");
+    if (defined($val)) {
+        my ($fh, $filename) = tempfile(DIR => $scratch_root, SUFFIX => '.pm', TEMPLATE => 'funXXXXX', UNLINK=>0);
+        MTT::Files::SafeWrite(1, $filename, $val);
+        require $filename;
     }
 
     # Max_np (do before hostfile / hostlist) 
