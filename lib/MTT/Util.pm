@@ -403,4 +403,14 @@ sub shuffle{
         @$array[$i,$j] = @$array[$j,$i];
     }
 }
+
+#--------------------------------------------------------------------------
+# SIG TERM handler
+sub term_handler{
+	print "\n###############################################################################\n";
+	print   "# Received TERM signal. Finishing already started tests and finalizing report #\n";
+	print   "###############################################################################\n";
+	$MTT::Globals::Values->{time_to_terminate} = 1;
+	$MTT::Globals::Values->{extra_subject} = " ***Received SIG TERM***";
+}
 1;

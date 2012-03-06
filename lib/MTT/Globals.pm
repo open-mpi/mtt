@@ -84,6 +84,7 @@ my $_defaults = {
     save_intermediate_report_enable => undef,
 	shuffle_tests => undef,
     description => undef,
+    extra_subject => undef,
 };
 
 #--------------------------------------------------------------------------

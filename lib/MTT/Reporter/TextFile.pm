@@ -182,7 +182,7 @@ sub _summary_report {
 	my $flush_mode = shift;
 
 	
-	if ($flush_mode eq "finalize"){
+	if (!$flush_mode || $flush_mode eq "finalize"){
     	print("\nMTT Results Summary" . $MTT::Globals::Values->{description} . ", started at: " . $MTT::Globals::Values->{start_time} . " report generated at: " . localtime . "\n");
 	    print $summary_header;
 	}
@@ -248,9 +248,6 @@ sub _summary_report {
     Total Duration: $total_duration secs. ($total_duration_human)
 
     ";
-    if ($flush_mode eq "finalize"){
-    	print $table->render . "\n" . $perf_stat . $summary_footer;
-    }
     
     # Write the Summary report to a file
     my $filename = "All_phase-summary.txt";
@@ -263,7 +260,7 @@ sub _summary_report {
     else{
         $body = join("\n", ($summary_header, $table->render, $perf_stat, $summary_footer));
     }
-    if (!$flush_mode){   
+    if (!$flush_mode || $flush_mode eq "finalize"){   
     	print $body;
     }
     _output_results($file, $body, $flush_mode);
@@ -282,12 +279,15 @@ sub _summary_report {
     _output_results($html_file, $html_body,$flush_mode);
     
 
-	if ($flush_mode eq "finalize"){
+	if (!$flush_mode || $flush_mode eq "finalize"){
 	    if ( $to ) {
 	        # Evaluate the email subject header and from
 	        my ($subject, $body_footer);
 	        my $subject_tmpl = Value($ini, $section, "email_subject");
 	        my $body_footer_tmpl = Value($ini, $section, "email_footer");
+	        if ($MTT::Globals::Values->{extra_subject}){
+	        	$subject_tmpl = $subject_tmpl."$MTT::Globals::Values->{extra_subject}";
+	        }
 	        my $from = Value($ini, $section, "email_from");
 	        my $detailed_report = Logical($ini, $section, "email_detailed_report");
 	

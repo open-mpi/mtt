@@ -31,7 +31,8 @@ BEGIN {
     # 2. If $0 is a path, try adding that do @INC and try "require" again.
     # 3. Otherwise, search $ENV[PATH] for mtt, and when you find it, add
     #    that directory to @INC and try again.
-
+	
+	$SIG{TERM} = sub {MTT::Util::term_handler();};
     my $mtt_lib = cwd() . "/lib";
     use lib cwd() . "/lib";
 
@@ -527,6 +528,7 @@ foreach my $hash (@ini_list) {
         MTT::Reporter::Init($ini);
     }
 
+	
     if ($mpi_get && !MTT::Util::time_to_terminate()) {
         &MTT::Timer::start($time_phases);
         MTT::MPI::Get::Get($ini, $source_dir, $force_arg);

@@ -422,6 +422,7 @@ sub _run_one_test {
         chdir $old_dir;
     }
 
+    Verbose($cmd."\n");
     my $stop_time = time;
     $run->{stop} = timegm(gmtime());
     $run->{duration} = $stop_time - $start_time . " seconds";
