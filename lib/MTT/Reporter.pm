@@ -121,8 +121,9 @@ sub Init {
             }
         }
     }
-
-	if ($MTT::Globals::Values->{save_intermediate_report_enable}){
+	
+	my $send_startup_mail = MTT::Values::Value($ini, "mtt", "send_startup_mail");
+	if ($send_startup_mail && $MTT::Globals::Values->{save_intermediate_report_enable}){
 		MTT::Reporter::Email::SendStartUpMail($ini);
 	}
 	

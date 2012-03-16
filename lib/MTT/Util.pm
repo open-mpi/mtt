@@ -412,5 +412,6 @@ sub term_handler{
 	print   "###############################################################################\n";
 	$MTT::Globals::Values->{time_to_terminate} = 1;
 	$MTT::Globals::Values->{extra_subject} = " ***Received SIG TERM***";
+	MTT::DoCommand::_kill_proc($MTT::DoCommand::pid);
 }
 1;

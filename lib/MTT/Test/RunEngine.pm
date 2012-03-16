@@ -85,6 +85,12 @@ sub RunEngine {
     my $variants_count_total =
         $test_count_total * $np_count_total * $argv_count_total * $exec_count_total;
 
+	if (!$variants_count_total){
+		$MTT::Globals::Values->{extra_subject} = " ***MTT stopped. Reason: total tests variants number is zero - check ini settings.";
+		$MTT::Globals::Values->{time_to_terminate} = 1;
+		return;
+	}
+
     if ($count_total_tests_number eq "yes"){
         return $variants_count_total;
     }
@@ -302,6 +308,8 @@ sub _run_one_np {
    			MTT::Util::shuffle($all_argv);
 		}
         foreach my $this_argv (@$all_argv) {
+            last
+                if (MTT::Util::time_to_terminate());
             $MTT::Test::Run::test_argv = $this_argv;
         
             # Get all the exec's for this one np
