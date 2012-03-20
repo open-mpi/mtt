@@ -407,11 +407,32 @@ sub shuffle{
 #--------------------------------------------------------------------------
 # SIG TERM handler
 sub term_handler{
+	my ($ini, $trim, $source_dir, $install_dir, $fast_scratch_arg, $scratch_arg, $no_reporter_arg) = @_;
 	print "\n###############################################################################\n";
 	print   "# Received TERM signal. Finishing already started tests and finalizing report #\n";
 	print   "###############################################################################\n";
-	$MTT::Globals::Values->{time_to_terminate} = 1;
+	#$MTT::Globals::Values->{time_to_terminate} = 1;
 	$MTT::Globals::Values->{extra_subject} = " ***Received SIG TERM***";
 	MTT::DoCommand::_kill_proc($MTT::DoCommand::pid);
+	MTT::Reporter::QueueSubmit();
+	
+	if ($trim) {
+        MTT::Trim::Trim($ini, $source_dir, $install_dir);
+        Verbose("TERM Handler: trimming done\n");
+    }
+    if (!$no_reporter_arg) {
+		MTT::Reporter::Finalize();
+    }
+	MTT::Lock::Finalize($ini);
+	MTT::Messages::close_logfile();
+	# Whack the fast scratch area if it's unique/different than the
+    # main scratch tree
+    if ($fast_scratch_arg &&
+        $MTT::Globals::Values->{delete_fast_scratch} &&
+        $fast_scratch_arg ne $scratch_arg) {
+        Verbose("Deleting fast scratch tree: $fast_scratch_arg\n");
+        MTT::DoCommand::Cmd(1, "rm -rf $fast_scratch_arg");
+    }
+	exit(0);
 }
 1;

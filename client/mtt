@@ -32,7 +32,7 @@ BEGIN {
     # 3. Otherwise, search $ENV[PATH] for mtt, and when you find it, add
     #    that directory to @INC and try again.
 	
-	$SIG{TERM} = sub {MTT::Util::term_handler();};
+	
     my $mtt_lib = cwd() . "/lib";
     use lib cwd() . "/lib";
 
@@ -418,6 +418,7 @@ if (defined($mpi_get_arg) || defined($mpi_install_arg) || defined($mpi_phases_ar
     }
 }
 
+
 ########################################################################
 # Load up all old data
 ########################################################################
@@ -475,6 +476,7 @@ foreach my $hash (@ini_list) {
         next;
     }
 
+	
     # Examine the [MTT] global defaults section.  We've already
     # determined the scratch_root, so pass it in so that it gets set
     # in the Globals hash.
@@ -483,6 +485,7 @@ foreach my $hash (@ini_list) {
     MTT::Messages::Messages($debug, $verbose, cwd());
     MTT::Messages::SetTextwrap();
 
+    $SIG{TERM} = sub {MTT::Util::term_handler($ini, $trim, $source_dir, $install_dir, $fast_scratch_arg, $scratch_arg, $no_reporter_arg);};
     # Make the INI file globally accessible
 
     $MTT::Globals::Internals->{ini} = $ini_full;

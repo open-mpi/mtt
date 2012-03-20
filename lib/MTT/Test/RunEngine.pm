@@ -84,6 +84,12 @@ sub RunEngine {
     my $exec_count_total = scalar @$tmp;
     my $variants_count_total =
         $test_count_total * $np_count_total * $argv_count_total * $exec_count_total;
+        
+    if (!$variants_count_total){
+    	$MTT::Globals::Values->{extra_subject} = " ***MTT stopped. Reason: variants count total is zero - check ini settings.";
+    	$MTT::Globals::Values->{time_to_terminate} = 1;
+    	return;
+    }
 
 	if (!$variants_count_total){
 		$MTT::Globals::Values->{extra_subject} = " ***MTT stopped. Reason: total tests variants number is zero - check ini settings.";
