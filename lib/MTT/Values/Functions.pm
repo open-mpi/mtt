@@ -1135,6 +1135,49 @@ sub find_executables_sub {
 
 #--------------------------------------------------------------------------
 
+# Traverse a tree (or a bunch of trees) and return all the Java
+# executables found (i.e., *.class)
+my @find_java_executables_data;
+sub find_java_executables {
+    my $array = get_array_ref(\@_);
+    Debug("&find_java_executables got @$array\n");
+
+    @find_java_executables_data = ();
+    my @dirs;
+    foreach my $d (@$array) {
+        push(@dirs, $d)
+            if ("" ne $d);
+    }
+    File::Find::find(\&find_java_executables_sub, @dirs);
+
+    Debug("&find_java_exectuables returning: @find_java_executables_data\n");
+    return \@find_java_executables_data;
+}
+
+sub find_java_executables_sub {
+    # Don't process directories and links, and don't recurse down
+    # "special" directories
+    if ( -l $_ ) { return; }
+    if ( -d $_ ) { 
+        if ((/\.svn/) || (/\.deps/) || (/\.libs/) || (/autom4te\.cache/)) {
+            $File::Find::prune = 1;
+        }
+        return;
+    }
+
+    # $File::Find::name is the path relative to the starting point.
+    # $_ contains the file's basename.  The code automatically changes
+    # to the processed directory, so we want to examine $_.
+    if ($_ =~ /.class$/) {
+        my $class = $_;
+        $class =~ s/.class$//;
+        my $classpath = $File::Find::dir;
+        push(@find_java_executables_data, "-classpath $classpath $class");
+    }
+}
+
+#--------------------------------------------------------------------------
+
 # Traverse a tree (or a bunch of trees) and return all the files
 # matching a regexp
 my @find_data;
