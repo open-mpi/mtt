@@ -365,13 +365,22 @@ sub _run_one_np {
 sub _run_one_test {
     my ($install_dir, $run, $mpi_details, $cmd, $name, $variant, $force) = @_;
 
-    my $basename;
+    my $basename = $MTT::Test::Run::test_executable;
     if (-e $MTT::Test::Run::test_executable) {
         $basename = basename($MTT::Test::Run::test_executable);
     }
 
-    my $str = "   Test: " . $basename .
-        ", np=$MTT::Test::Run::test_np, variant=$variant:";
+    my $testname = $basename;
+    if ($MTT::Test::Run::test_argv) {
+        $testname .= " ";
+        if (ref($MTT::Test::Run::test_arg)) {
+            $testname .= join(" ", $MTT::Test::Run::test_argv[0]);
+        } else {
+            $testname .= $MTT::Test::Run::test_argv;
+        }
+    }
+
+    my $str = "   Test: $testname, np=$MTT::Test::Run::test_np, variant=$variant:";
 
     my @keys;
     push(@keys, $mpi_details->{mpi_get_simple_section_name});
