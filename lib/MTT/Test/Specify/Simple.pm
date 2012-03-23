@@ -16,6 +16,7 @@ use strict;
 use MTT::Messages;
 use MTT::Values;
 use MTT::Defaults;
+use MTT::FindProgram;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -122,12 +123,20 @@ sub Specify {
     # Now go through those groups and make the final list of tests to pass
     # upwards
     foreach my $group (keys %$params) {
-
         # Go through the list of tests and create an entry for each
         foreach my $t (@{$params->{$group}->{tests}}) {
+            my $ok = 0;
+            # If we can't find the file, see if it's in the path
+            if ($MTT::DoCommand::no_execute) {
+                $ok = 1;
+            } elsif (! -f $t && FindProgram($t)) {
+                $ok = 1;
+            } elsif (-x $t) {
+                $ok = 1;
+            }
             # If it's good, add a hash with all the values into the
             # list of tests
-            if (-x $t or $MTT::DoCommand::no_execute) {
+            if ($ok) {
                 my $one;
                 # Do a deep copy of the defaults
                 %{$one} = %{$config};
