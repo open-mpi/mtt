@@ -202,6 +202,17 @@ sub Build {
                                         }
                                     }
 
+                                    my $only_mpi_install = 
+                                        MTT::Values::Value($ini, $section, 
+                                                           "mpi_install");
+                                    foreach my $one_mpi_install (MTT::Util::split_comma_list($only_mpi_install)) {
+                                        if ($one_mpi_install &&
+                                                lc($one_mpi_install) ne lc($mpi_install_key)) {
+                                            Verbose("   Skipped build for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] per INI configuration\n");
+                                            $go_next = 1;
+                                        }
+                                    }
+
                                     if ($go_next) {
                                         next;
                                     }
