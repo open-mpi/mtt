@@ -664,6 +664,45 @@ sub enumerate {
 
 #--------------------------------------------------------------------------
 
+# Joint multiple enumerate results and join them together sequentially.  E.g., 
+#
+# a = &enumerate("1", "2", "3")
+# b = &enumerate("4", "5", "6")
+# c = &enumerate_join(@a@, @b@)
+#
+# c will equal "1", "2", "3", "4", "5", "6"
+sub enumerate_join {
+    my @foo;
+    my $str;
+
+    @foo = @_;
+    my $first = 1;
+    while ($#foo >= 0) {
+        $str .= "\n"
+            if (!$first);
+        $first = 0;
+
+        my $bar = get_array_ref(\@foo);
+        $str .= join("\n", @$bar);
+        shift @foo;
+    }
+    Debug("&enumerate_join got: $str\n");
+
+    my @ret;
+    @foo = @_;
+    while ($#foo >= 0) {
+        my $array = get_array_ref(\@foo);
+        foreach my $arg (@$array) {
+            push(@ret, $arg);
+        }
+        shift @foo;
+    }
+
+    return \@ret;
+}
+
+#--------------------------------------------------------------------------
+
 # Return a reference to all the strings passed in as @_
 sub split {
     Debug("&split got: @_\n");
