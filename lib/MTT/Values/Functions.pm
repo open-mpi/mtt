@@ -672,32 +672,29 @@ sub enumerate {
 #
 # c will equal "1", "2", "3", "4", "5", "6"
 sub enumerate_join {
-    my @foo;
     my $str;
 
-    @foo = @_;
     my $first = 1;
-    while ($#foo >= 0) {
+    foreach my $arg (@_) {
         $str .= "\n"
             if (!$first);
         $first = 0;
 
-        my $bar = get_array_ref(\@foo);
+        my $bar = get_array_ref($arg);
         $str .= join("\n", @$bar);
-        shift @foo;
     }
     Debug("&enumerate_join got: $str\n");
 
     my @ret;
-    @foo = @_;
-    while ($#foo >= 0) {
-        my $array = get_array_ref(\@foo);
+    foreach my $arg (@_) {
+        my $array = get_array_ref($arg);
         foreach my $arg (@$array) {
-            push(@ret, $arg);
+            push(@ret, $arg)
+                if (defined($arg));
         }
-        shift @foo;
     }
 
+    Debug("&enumerate_join returning: " . join("\n", @ret) . "\n");
     return \@ret;
 }
 
@@ -1213,6 +1210,29 @@ sub find_java_executables_sub {
         my $classpath = $File::Find::dir;
         push(@find_java_executables_data, "-classpath $classpath $class");
     }
+}
+
+#--------------------------------------------------------------------------
+
+sub java_executable {
+    my $array = get_array_ref(\@_);
+    Debug("&java_executable got @$array\n");
+
+    my @ret;
+    foreach my $name (@$array) {
+        if (-r "$name.class") {
+            my $str;
+            my $d = dirname($name);
+            if ($d ne ".") {
+                $str = "-classpath $d ";
+            }
+            $str .= basename($name);
+            push(@ret, $str);
+        }
+    }
+
+    Debug("&java_exectuable returning: @ret\n");
+    return \@ret;
 }
 
 #--------------------------------------------------------------------------
