@@ -240,9 +240,9 @@ sub RunEngine {
         if (ref($all_np) eq "") {
             $test_results->{$all_np} = _run_one_np($install_dir, $run, $mpi_details, $all_np, $force);
         } else {
-        	if ($shuffle->{nps}){
-    			MTT::Util::shuffle($all_np);
-    		}
+            if ($shuffle->{nps}){
+                MTT::Util::shuffle($all_np);
+            }
             foreach my $this_np (@$all_np) {
                 # See if we're supposed to terminate.
                 last
@@ -310,9 +310,9 @@ sub _run_one_np {
         if (ref($all_argv) eq "") {
             $all_argv = [$all_argv];
         }
-		if ($shuffle->{args}){
-   			MTT::Util::shuffle($all_argv);
-		}
+        if ($shuffle->{args}){
+            MTT::Util::shuffle($all_argv);
+        }
         foreach my $this_argv (@$all_argv) {
             last
                 if (MTT::Util::time_to_terminate());
@@ -445,7 +445,6 @@ sub _run_one_test {
         chdir $old_dir;
     }
 
-    Verbose($cmd."\n");
     my $stop_time = time;
     $run->{stop} = timegm(gmtime());
     $run->{duration} = $stop_time - $start_time . " seconds";
