@@ -238,6 +238,10 @@ sub _split_and_arrayize {
     my @ret;
     
     foreach my $str (@_) {
+        # If there isn't anything, skip this string
+        next
+            if (!defined($str));
+        
         # Evaluate the string to get the full list of values
         my $str = MTT::Values::EvaluateString($str, $ini, $section);
 
@@ -254,7 +258,9 @@ sub _split_and_arrayize {
         }
     }
 
-    return \@ret;
+    # If we got anything, return a ref to the array.  Otherwise,
+    # return undef.
+    return ($#ret >= 0) ? \@ret : undef;
 }
 
 1;
