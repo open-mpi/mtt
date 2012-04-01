@@ -408,11 +408,11 @@ sub shuffle{
 # SIG TERM handler
 sub term_handler{
 	my ($ini, $trim, $source_dir, $install_dir, $fast_scratch_arg, $scratch_arg, $no_reporter_arg) = @_;
-	print "\n###############################################################################\n";
-	print   "# Received TERM signal. Finishing already started tests and finalizing report #\n";
-	print   "###############################################################################\n";
-	#$MTT::Globals::Values->{time_to_terminate} = 1;
+	Verbose("\n###############################################################################\n");
+	Verbose("# Received TERM signal. Finishing already started tests and finalizing report #\n");
+	Verbose("###############################################################################\n");
 	$MTT::Globals::Values->{extra_subject} = " ***Received SIG TERM***";
+
 	MTT::DoCommand::_kill_proc($MTT::DoCommand::pid);
 	MTT::Reporter::QueueSubmit();
 	
@@ -433,6 +433,7 @@ sub term_handler{
         Verbose("Deleting fast scratch tree: $fast_scratch_arg\n");
         MTT::DoCommand::Cmd(1, "rm -rf $fast_scratch_arg");
     }
+	Verbose("All is done, exiting.\n");
 	exit(0);
 }
 1;
