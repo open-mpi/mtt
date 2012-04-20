@@ -198,6 +198,9 @@ sub time_to_terminate {
 # a threshold
 sub check_break_threshold {
     my ($count, $threshold, $total) = @_;
+    if ($total == 0){
+        return 0;
+    }
 
     foreach my $result (keys %$threshold) {
         my $result_label = $MTT::Values::result_messages->{$result};
@@ -406,12 +409,17 @@ sub shuffle{
 
 #--------------------------------------------------------------------------
 # SIG TERM handler
+my $inside_term_handler = 0;
 sub term_handler{
-	my ($ini, $trim, $source_dir, $install_dir, $fast_scratch_arg, $scratch_arg, $no_reporter_arg) = @_;
+	my ($ini, $trim, $source_dir, $install_dir, $fast_scratch_arg, $scratch_arg, $no_reporter_arg, $signame) = @_;
+    if ($inside_term_handler){
+        return;
+    }
+    $inside_term_handler = 1;
 	Verbose("\n###############################################################################\n");
 	Verbose("# Received TERM signal. Finishing already started tests and finalizing report #\n");
 	Verbose("###############################################################################\n");
-	$MTT::Globals::Values->{extra_subject} = " ***Received SIG TERM***";
+	$MTT::Globals::Values->{extra_subject} = " ***Received $signame***";
 
 	MTT::DoCommand::_kill_proc($MTT::DoCommand::pid);
 	MTT::Reporter::QueueSubmit();

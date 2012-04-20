@@ -485,7 +485,10 @@ foreach my $hash (@ini_list) {
     MTT::Messages::Messages($debug, $verbose, cwd());
     MTT::Messages::SetTextwrap();
 
-    $SIG{TERM} = sub {MTT::Util::term_handler($ini, $trim, $source_dir, $install_dir, $fast_scratch_arg, $scratch_arg, $no_reporter_arg);};
+    $SIG{TERM} = sub {MTT::Util::term_handler($ini, $trim, $source_dir, $install_dir, $fast_scratch_arg, $scratch_arg, $no_reporter_arg, "SIGTERM");};
+    $SIG{INT} = sub {MTT::Util::term_handler($ini, $trim, $source_dir, $install_dir, $fast_scratch_arg, $scratch_arg, $no_reporter_arg, "SIGINT");};
+    $SIG{HUP} = sub {MTT::Util::term_handler($ini, $trim, $source_dir, $install_dir, $fast_scratch_arg, $scratch_arg, $no_reporter_arg, "SIGHUP");};
+    $SIG{ABRT} = sub {MTT::Util::term_handler($ini, $trim, $source_dir, $install_dir, $fast_scratch_arg, $scratch_arg, $no_reporter_arg, "SIGABRT");};
     # Make the INI file globally accessible
 
     $MTT::Globals::Internals->{ini} = $ini_full;

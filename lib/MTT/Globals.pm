@@ -85,6 +85,7 @@ my $_defaults = {
 	shuffle_tests => undef,
     description => undef,
     extra_subject => undef,
+    extra_footer => undef,
 };
 
 #--------------------------------------------------------------------------

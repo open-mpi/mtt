@@ -85,21 +85,33 @@ sub RunEngine {
     my $variants_count_total =
         $test_count_total * $np_count_total * $argv_count_total * $exec_count_total;
         
-    if (!$variants_count_total){
-    	$MTT::Globals::Values->{extra_subject} = " ***MTT stopped. Reason: variants count total is zero - check ini settings.";
-    	$MTT::Globals::Values->{time_to_terminate} = 1;
-    	return;
-    }
-
-	if (!$variants_count_total){
-		$MTT::Globals::Values->{extra_subject} = " ***MTT stopped. Reason: total tests variants number is zero - check ini settings.";
-		$MTT::Globals::Values->{time_to_terminate} = 1;
-		return;
-	}
 
     if ($count_total_tests_number eq "yes"){
         return $variants_count_total;
     }
+    Verbose("   ###\n");
+    Verbose("   ### Total tests to run in this section:\n");
+    Verbose("   ###     " . sprintf("%4d", $test_count_total) . " test executable(s)\n");
+    Verbose("   ###     " . sprintf("%4d", $np_count_total) . " np value(s)\n");
+    Verbose("   ###     " . sprintf("%4d", $argv_count_total) . " argv value(s)\n");
+    Verbose("   ###     " . sprintf("%4d", $exec_count_total) . " test variant(s)\n");
+    Verbose("   ###     " . sprintf("%4d", $variants_count_total) . " total mpirun command(s) to run\n");
+    Verbose("   ###\n");
+	if (!$variants_count_total){
+        my $footer = "";
+		$footer = $footer."Warning: [Test run $section] is skipped.\n";
+        $footer = $footer."Reason: total tests variants number is zero - check ini settings.\n";
+        $footer = $footer."Number of total executables found: $test_count_total\n";
+        $footer = $footer."Number of total np values found: $np_count_total\n";
+        $footer = $footer."Number of total argv values found: $argv_count_total\n";
+        $footer = $footer."Number of total exec variants found: $exec_count_total\n";
+        $footer = $footer."-----------------------------------------------------------------\n";
+        $MTT::Globals::Values->{extra_footer} = $footer;
+		return;
+	}
+    
+    
+    
     # Set some thresholds for an early exit
     $break_threshold = undef;
     $break_threshold->{MTT::Values::PASS}      = Value($ini, $section, "break_threshold_pass");
@@ -152,7 +164,8 @@ sub RunEngine {
 
         # Plain integer (count of tests)
         } elsif ($str =~ /^\s*(\d+)\s*$/) {
-            $value = $1 / $variants_count_total;
+            $value = 1;
+            $value = $1 / $variants_count_total unless $variants_count_total=0;
             $break_threshold->{$k} = $value;
 
         # All other eval-able Perl expressions
@@ -171,14 +184,6 @@ sub RunEngine {
     }
 
     # Loop through all the tests
-    Verbose("   ###\n");
-    Verbose("   ### Total tests to run in this section:\n");
-    Verbose("   ###     " . sprintf("%4d", $test_count_total) . " test executable(s)\n");
-    Verbose("   ###     " . sprintf("%4d", $np_count_total) . " np value(s)\n");
-    Verbose("   ###     " . sprintf("%4d", $argv_count_total) . " argv value(s)\n");
-    Verbose("   ###     " . sprintf("%4d", $exec_count_total) . " test variant(s)\n");
-    Verbose("   ###     " . sprintf("%4d", $variants_count_total) . " total mpirun command(s) to run\n");
-    Verbose("   ###\n");
     $verbose_out = 0;
     my $test_count = 0;
     my $printed = 0;

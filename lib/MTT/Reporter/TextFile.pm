@@ -123,7 +123,6 @@ sub Init {
 #--------------------------------------------------------------------------
 
 sub Finalize {
-
 	my $flush_mode = undef;
 	if ($MTT::Globals::Values->{save_intermediate_report}){
 		$flush_mode = "finalize";
@@ -153,7 +152,6 @@ sub Flush{
 
 sub Submit {
     my ($info, $entries) = @_;
-
     Debug("File reporter\n");
 
     # Push entries into the global results array
@@ -181,16 +179,13 @@ sub _summary_report {
     my $results_arr = shift;
 	my $flush_mode = shift;
 
-	
 	if (!$flush_mode || $flush_mode eq "finalize"){
     	print("\nMTT Results Summary" . $MTT::Globals::Values->{description} . ", started at: " . $MTT::Globals::Values->{start_time} . " report generated at: " . localtime . "\n");
 	    print $summary_header;
-	}
+    }
     my $table = Text::TabularDisplay->new(("Phase","Section","MPI Version", "Duration","Pass","Fail","Time out","Skip","Detailed report"));
     my ($total_fail, $total_succ, $total_duration, $html_table_content) = (0,0,0,"");
-
     foreach my $results (@$results_arr) {
-
         foreach my $phase (keys %$results) {
             my $phase_obj = $results->{$phase};
 
@@ -237,7 +232,6 @@ sub _summary_report {
             }
         }
     }
-
     my $total_tests =  $total_fail + $total_succ;
     my $total_duration_human = _convert_duration($total_duration);
     my $perf_stat = "
@@ -263,21 +257,17 @@ sub _summary_report {
     if (!$flush_mode || $flush_mode eq "finalize"){   
     	print $body;
     }
-    _output_results($file, $body, $flush_mode);
-    
 
+    _output_results($file, $body, $flush_mode);
 
     # Wrte html report to a file
     my $html_body = get_html_summary_report_template();
     $html_body =~ s/%TESTS_RESULTS%/$html_table_content/g;
     my $html_totals = "<td>$total_tests</td><td>$total_fail</td><td>$total_succ</td><td>$total_duration_human</td>\n";
     $html_body =~ s/%TOTALS%/$html_totals/g;
-
     my $html_filename = "All_phase-summary.html";
     my $html_file = "$dirname/" . MTT::Files::make_safe_filename("$html_filename");
-
     _output_results($html_file, $html_body,$flush_mode);
-    
 
 	if (!$flush_mode || $flush_mode eq "finalize"){
 	    if ( $to ) {
@@ -288,6 +278,10 @@ sub _summary_report {
 	        if ($MTT::Globals::Values->{extra_subject}){
 	        	$subject_tmpl = $subject_tmpl."$MTT::Globals::Values->{extra_subject}";
 	        }
+
+            if ($MTT::Globals::Values->{extra_footer}){
+                $body_footer_tmpl = $body_footer_tmpl."\n\n$MTT::Globals::Values->{extra_footer}";
+            }
 	        my $from = Value($ini, $section, "email_from");
 	        my $detailed_report = Logical($ini, $section, "email_detailed_report");
 	
