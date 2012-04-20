@@ -55,49 +55,6 @@ sub Specify {
             _split_and_arrayize($ini, $section, $params->{$group}->{argv});
     }
 
-    # For simplicity, explode the params list: expand all test and
-    # argv arrays so that every entry in $params has a test array size
-    # of 1 and an argv array size of 0 or 1.
-    my $newparams;
-    foreach my $g (keys %$params) {
-        # Make a dummy new entry that's a copy of the original one.
-        my $template;
-        %{$template} = %{$params->{$g}};
-        
-        # Zero out the tests and argv array in the template
-        $template->{tests} = ();
-        $template->{argv} = ();
-        
-        # Now explode the tests/argv combinations
-        my $i = 0;
-        my $tests = get_array_ref($params->{$g}->{tests});
-        foreach my $t (@$tests) {
-            my $entry;
-            
-            my $argv = get_array_ref($params->{$g}->{argv});
-            
-            if (defined($argv)) {
-                foreach my $a (@$argv) {
-                    # Make a new copy of the template and replace
-                    # both the test and argv
-                    %{$entry} = %{$template};
-                    @{$entry->{tests}} = ( $t );
-                    $entry->{argv} = $a;
-                    %{$newparams->{"$g-$i"}} = %{$entry};
-                    ++$i;
-                }
-            } else {
-                # Make a new copy of the template and replace the
-                # test (there's no argv)
-                %{$entry} = %{$template};
-                @{$entry->{tests}} = ( $t );
-                %{$newparams->{"$g-$i"}} = %{$entry};
-                ++$i;
-            }
-        }
-    }
-    $params = $newparams;
-
     # Now go through and see if any of the tests are marked as
     # "exclusive".
     my $ex = 0;
@@ -110,15 +67,58 @@ sub Specify {
         }
     }
 
-    # Now go through all exploded list and look for exclusive
-    # duplicates.  A duplicate is when two entries have the same
-    # ($test, $argv) tuple (i.e., the same command line).  Note
-    # that exclusivity is based on priority ordering -- if a test
-    # is in multiple exclusive groups, it will remain in the group
-    # with the highest exclusivity value.  If a test is in
-    # multiple groups with the same highest exclusivity value,
-    # it's undefined which group it ends up in.
+    # If there are exclusive tests, then explode the params list:
+    # expand all test and argv arrays so that every entry in $params
+    # has a test array size of 1 and an argv array size of 0 or 1.
     if ($ex) {
+        my $newparams;
+        foreach my $g (keys %$params) {
+            # Make a dummy new entry that's a copy of the original one.
+            my $template;
+            %{$template} = %{$params->{$g}};
+
+            # Zero out the tests and argv array in the template
+            $template->{tests} = ();
+            $template->{argv} = ();
+
+            # Now explode the tests/argv combinations
+            my $i = 0;
+            my $tests = get_array_ref($params->{$g}->{tests});
+            foreach my $t (@$tests) {
+                my $entry;
+                
+                my $argv = get_array_ref($params->{$g}->{argv});
+
+                if (defined($argv)) {
+                    foreach my $a (@$argv) {
+                        # Make a new copy of the template and replace
+                        # both the test and argv
+                        %{$entry} = %{$template};
+                        @{$entry->{tests}} = ( $t );
+                        $entry->{argv} = $a;
+                        %{$newparams->{"$g-$i"}} = %{$entry};
+                        ++$i;
+                    }
+                } else {
+                    # Make a new copy of the template and replace the
+                    # test (there's no argv)
+                    %{$entry} = %{$template};
+                    @{$entry->{tests}} = ( $t );
+                    %{$newparams->{"$g-$i"}} = %{$entry};
+                    ++$i;
+                }
+            }
+        }
+
+        # Now go through all exploded list and look for exclusive
+        # duplicates.  A duplicate is when two entries have the same
+        # ($test, $argv) tuple (i.e., the same command line).  Note
+        # that exclusivity is based on priority ordering -- if a test
+        # is in multiple exclusive groups, it will remain in the group
+        # with the highest exclusivity value.  If a test is in
+        # multiple groups with the same highest exclusivity value,
+        # it's undefined which group it ends up in.
+        $params = $newparams;
         foreach my $g1 (keys %$params) {
             next
                 if (!exists($params->{$g1}->{exclusive}));
@@ -238,10 +238,6 @@ sub _split_and_arrayize {
     my @ret;
     
     foreach my $str (@_) {
-        # If there isn't anything, skip this string
-        next
-            if (!defined($str));
-        
         # Evaluate the string to get the full list of values
         my $str = MTT::Values::EvaluateString($str, $ini, $section);
 
@@ -258,9 +254,7 @@ sub _split_and_arrayize {
         }
     }
 
-    # If we got anything, return a ref to the array.  Otherwise,
-    # return undef.
-    return ($#ret >= 0) ? \@ret : undef;
+    return \@ret;
 }
 
 1;

@@ -180,7 +180,7 @@ sub _summary_report {
 	my $flush_mode = shift;
 
 	if (!$flush_mode || $flush_mode eq "finalize"){
-    	print("\nMTT Results Summary" . $MTT::Globals::Values->{description} . ", started at: " . $MTT::Globals::Values->{start_time} . " report generated at: " . localtime . "\n");
+    	print("\nMTT Results Summary" . $MTT::Globals::Values->{description} . ", started at: " . $MTT::Globals::Values->{start_time} . " report generated at: " . localtime() . "\n");
 	    print $summary_header;
     }
     my $table = Text::TabularDisplay->new(("Phase","Section","MPI Version", "Duration","Pass","Fail","Time out","Skip","Detailed report"));
@@ -567,8 +567,8 @@ sub _get_filename {
     my ($report, $section) = @_;
 
     # Substitute in the filename
-    my $date = strftime("%m%d%Y", localtime);
-    my $time = strftime("%H%M%S", localtime);
+    my $date = strftime("%m%d%Y", localtime());
+    my $time = strftime("%H%M%S", localtime());
     my $mpi_name = $report->{mpi_name};
     my $mpi_install_section_name = $report->{mpi_install_section_name};
     my $mpi_version = $report->{mpi_version};
