@@ -184,7 +184,7 @@ sub _quote_escape {
 # run a command and save the stdout / stderr
 sub Cmd {
     my ($merge_output, $cmd, $timeout, 
-        $max_stdout_lines, $max_stderr_lines) = @_;
+        $max_stdout_lines, $max_stderr_lines, $print_timestamp) = @_;
 
     # If there are pipes, redirects, shell-bangs, or newlines
     # write them to a file and run it as a script. Otherwise,
@@ -380,7 +380,12 @@ sub Cmd {
                     $#out > $max_stdout_lines) {
                     shift @out;
                 }
-                Debug("$data");
+                if ($print_timestamp) {
+                    my $str = localtime();
+                    Debug("$str $data");
+                } else {
+                    Debug("$data");
+                }
             }
         }
 
@@ -937,6 +942,8 @@ sub Popdir {
 sub RunStep {
     my ($force, $cmd, $timeout, $ini, $section, $step) = @_;
 
+    my $timestamp_stdout = Value($ini, $section, "print_timestamp");
+
     # Prepare a return hash
     my $ret;
     $ret->{exit_status} = 0;
@@ -966,7 +973,7 @@ sub RunStep {
         $cmd = EvaluateString($cmd, $ini, $section);
 
         Debug("Running step: $step: $cmd / timeout $timeout\n");
-        $ret = MTT::DoCommand::Cmd($force, $cmd, $timeout);
+        $ret = MTT::DoCommand::Cmd($force, $cmd, $timeout,undef,undef,$timestamp_stdout);
     }
 
     return $ret;
