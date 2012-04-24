@@ -942,12 +942,12 @@ sub Popdir {
 sub RunStep {
     my ($force, $cmd, $timeout, $ini, $section, $step) = @_;
 
-    my $timestamp_stdout = Value($ini, $section, "print_timestamp");
-    if ($timestamp_stdout and $section and $ini) {
+    my $timestamp_stdout = undef;
+    if ($section and $ini) {
+        $timestamp_stdout = Value($ini, $section, "print_timestamp");
         Debug "  print_timestamp=ON for $section\n";
     } else {
         Debug "  print_timestamp=OFF for $section\n";
-        $timestamp_stdout = undef;
     }
 
 
