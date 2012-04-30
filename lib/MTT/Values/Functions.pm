@@ -1006,6 +1006,15 @@ sub test_alloc {
 	return $val;
 }
 
+# return MPI extra argv which are needed for specific test, example:
+# -x LD_PRELOAD=libhugetlbfs.so -x HUGETLB_MORECORE=yes -x OMPI_MCA_memory_ptmalloc2_disable=1
+sub test_extra_mpi_argv {
+	my $sect = $MTT::Globals::Values->{active_section} ;
+	my $val = get_ini_val($sect, "mpi_extra_argv");
+    Debug("&test_alloc returning $val for $sect\n");
+	return $val;
+}
+
 #--------------------------------------------------------------------------
 
 # Return whether the last test run was terminated by a signal

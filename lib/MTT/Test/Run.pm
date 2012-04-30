@@ -49,6 +49,9 @@ our $test_argv;
 # Exported whether we're running by-node or by-slot
 our $test_alloc;
 
+# Exported whether we're running by-node or by-slot
+our $test_extra_mpi_argv;
+
 # Exported exit_status of the last test run
 our $test_exit_status;
 
