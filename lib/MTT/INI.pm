@@ -250,6 +250,11 @@ sub InsertINIPredefines {
 
 
     foreach my $section ($ini->Sections) {
+        if (! defined($ini->val($section, "INI_BASENAME"))) {
+            $ini->delval($section, "INI_BASENAME");
+            $ini->newval($section, "INI_BASENAME", basename($file,".ini"));
+        }
+
         if (! defined($ini->val($section, "INI_NAME"))) {
             $ini->delval($section, "INI_NAME");
             $ini->newval($section, "INI_NAME", $file);
