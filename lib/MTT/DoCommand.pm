@@ -375,17 +375,16 @@ sub Cmd {
                 vec($rin, fileno(OUTread), 1) = 0;
                 --$done;
             } else {
-                push(@out, $data);
+                my $str = "";
+                if ($print_timestamp) {
+                    $str = localtime();
+                }
+                push(@out, $str . " " . $data);
                 if (defined($max_stdout_lines) && $max_stdout_lines > 0 &&
                     $#out > $max_stdout_lines) {
                     shift @out;
                 }
-                if ($print_timestamp) {
-                    my $str = localtime();
-                    Debug("$str $data");
-                } else {
-                    Debug("$data");
-                }
+                Debug("$data");
             }
         }
 
@@ -401,7 +400,11 @@ sub Cmd {
                     $#err > $max_stderr_lines) {
                     shift @err;
                 }
-                push(@err, $data);
+                my $str = "";
+                if ($print_timestamp) {
+                    $str = localtime();
+                }
+                push(@err, $str . " " . $data);
                 Debug("ERR:$data");
             }
         }
