@@ -17,7 +17,6 @@ use MTT::Messages;
 use MTT::Values;
 use MTT::Defaults;
 use MTT::FindProgram;
-use MTT::Util;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -38,7 +37,7 @@ sub Specify {
         }
     }
 
-    # First, go through and make lists of the executables and argv
+    # First, go through an make lists of the executables
     foreach my $group (keys %$params) {
         # Look up the tests value.  Skip it if we didn't get one for
         # this group.
@@ -49,136 +48,76 @@ sub Specify {
             next;
         }
 
-        $params->{$group}->{tests} = 
-            _split_and_arrayize($ini, $section, $tests);
-        $params->{$group}->{argv} = 
-            MTT::Values::EvaluateString($params->{$group}->{argv}, $ini, $section);
-    }
+        # Evaluate it to get the full list of tests
+        $tests = MTT::Values::EvaluateString($tests, $ini, $section);
 
-    # For simplicity, explode the params list: expand all test and
-    # argv arrays so that every entry in $params has a test array size
-    # of 1 and an argv array size of 0 or 1.
-    my $newparams;
-    foreach my $g (keys %$params) {
-        # Make a dummy new entry that's a copy of the original one.
-        my $template;
-        %{$template} = %{$params->{$g}};
-        
-        # Zero out the tests and argv array in the template
-        $template->{tests} = ();
-        $template->{argv} = ();
-        
-        # Now explode the tests/argv combinations
-        my $i = 0;
-        my $tests = get_array_ref($params->{$g}->{tests});
-        foreach my $t (@$tests) {
-            my $entry;
-            
-            my $argv = get_array_ref($params->{$g}->{argv});
-            
-            if (defined($argv)) {
-                foreach my $a (@$argv) {
-                    # Make a new copy of the template and replace
-                    # both the test and argv
-                    %{$entry} = %{$template};
-                    @{$entry->{tests}} = ( $t );
-                    $entry->{argv} = $a;
-                    %{$newparams->{"$g-$i"}} = %{$entry};
-                    ++$i;
-                }
-            } else {
-                # Make a new copy of the template and replace the
-                # test (there's no argv)
-                %{$entry} = %{$template};
-                @{$entry->{tests}} = ( $t );
-                %{$newparams->{"$g-$i"}} = %{$entry};
-                ++$i;
-            }
+        # Split it up if it's a string
+        if (ref($tests) eq "") {
+            my @tests = split(/(?:\s+,\s+|\s+,|,\s+|,+|\s+)/, $tests);
+            $tests = \@tests;
         }
+        $params->{$group}->{tests} = $tests;
     }
-    $params = $newparams;
 
     # Now go through and see if any of the tests are marked as
-    # "exclusive".
-    my $ex = 0;
+    # "exclusive".  If they are, remove those tests from all other
+    # groups.  Note that exclusivity is based on priority ordering --
+    # if a test is in multiple exclusive groups, it will remain in the
+    # group with the highest exclusivity value.  If a test is in
+    # multiple groups with the same highest exclusivity value, it's
+    # undefined which group it ends up in.
+    my @groups_to_delete;
+    my @exclusive_groups;
     foreach my $group (keys %$params) {
         # If this group is marked as exclusive, remove each of its
         # tests from all other groups
         if ($params->{$group}->{exclusive}) {
-            $ex = 1;
-            last;
-        }
-    }
+            foreach my $t (@{$params->{$group}->{tests}}) {
+                foreach my $g2 (keys %$params) {
+                    # Skip this $g2 if: a) it's me, or b) that group
+                    # has a higher exclusivity value than me (in which
+                    # case, that group will come through and trim any
+                    # overlapping tests from my group at some other
+                    # point in this double loop).  Note that
+                    # transitivity makes this all work.  Say there are
+                    # 3 groups A,exclusive=10, B,exclusive=20,
+                    # C,exclusive=30, and all of them contain the
+                    # "foo" test. No matter which order the groups are
+                    # checked, only C will end up with the "foo" test.
+                    next 
+                        if ($g2 eq $group ||
+                            ($params->{$group}->{exclusive} < $params->{$g2}->{exclusive}));
 
-    # Now go through all exploded list and look for exclusive
-    # duplicates.  A duplicate is when two entries have the same
-    # ($test, $argv) tuple (i.e., the same command line).  Note
-    # that exclusivity is based on priority ordering -- if a test
-    # is in multiple exclusive groups, it will remain in the group
-    # with the highest exclusivity value.  If a test is in
-    # multiple groups with the same highest exclusivity value,
-    # it's undefined which group it ends up in.
-    if ($ex) {
-        foreach my $g1 (keys %$params) {
-            next
-                if (!exists($params->{$g1}->{exclusive}));
-
-            my $e1 = MTT::Values::EvaluateString($params->{$g1}->{exclusive},
-                                                $ini, $section);
-
-            my @to_delete;
-            foreach my $g2 (keys %$params) {
-                # If $g1 and $g2 are the same, skip
-                next
-                    if ($g1 eq $g2);
-
-                # Check the exclusivity value
-                if (exists($params->{$g2}->{exclusive})) {
-                    my $e2 = MTT::Values::EvaluateString($params->{$g2}->{exclusive},
-                                                         $ini, $section);
-                    next
-                        if ($e2 > $e1);
+                    my @to_delete;
+                    my $i = 0;
+                    foreach my $t2 (@{$params->{$g2}->{tests}}) {
+                        if ($t eq $t2) {
+                            push(@to_delete, $i);
+                        }
+                        ++$i;
+                    }
+                    foreach my $t2 (@to_delete) {
+                        delete $params->{$g2}->{tests}[$t2];
+                    }
                 }
-
-                # If we get here, then $g1 has precedence over $g2.
-                # See if the ($test, $argv) matches between $g1 and
-                # $g2.
-                my $t1 = get_array_ref($params->{$g1}->{tests});
-                my $a1 = get_array_ref($params->{$g1}->{argv});
-                my $t2 = get_array_ref($params->{$g2}->{tests});
-                my $a2 = get_array_ref($params->{$g2}->{argv});
-
-                next
-                    if (${$t1}[0] ne ${$t2}[0]);
-                next
-                    if (${$a1}[0] ne ${$a2}[0]);
-
-                # Mark $g2 for deletion (we can't delete it while
-                # we're looping $g2 over the keys in %$params)
-                push(@to_delete, $g2);
-            }
-
-            # Did we find anything to delete?
-            foreach my $d (@to_delete) {
-                delete($params->{$d});
             }
         }
-    }
 
-    # After we've performed the exclusivity filter, if the tests
-    # are marked as "do_not_run", then delete this group (it's a
-    # way of specifying tests to *not* run).
-    my @to_delete;
-    foreach my $g (keys %$params) {
-        if (defined($params->{$g}->{do_not_run})) {
-            my $e = MTT::Values::EvaluateString($params->{$g}->{do_not_run},
+        # After we've performed the exclusivity filter, if the tests
+        # are marked as "do_not_run", then delete this group (it's a
+        # way of specifying tests to *not* run).  Don't delete them
+        # now, it may (will?) screw up the outter loop's "foreach".
+        if (defined($params->{$group}->{do_not_run})) {
+            my $e = MTT::Values::EvaluateString($params->{$group}->{do_not_run},
                                                 $ini, $section);
-            push(@to_delete, $g)
+            push(@groups_to_delete, $group)
                 if ($e);
         }
     }
-    foreach my $d (@to_delete) {
-        delete($params->{$d});
+
+    # Delete all the groups that were marked
+    foreach my $t (@groups_to_delete) {
+        delete $params->{$t};
     }
 
     # Now go through those groups and make the final list of tests to pass
@@ -229,38 +168,5 @@ sub Specify {
     $ret->{test_result} = 1;
     return $ret;
 } 
-
-sub _split_and_arrayize {
-    my ($ini, $section) = @_;
-    shift;
-    shift;
-
-    my @ret;
-    
-    foreach my $str (@_) {
-        # If there isn't anything, skip this string
-        next
-            if (!defined($str));
-        
-        # Evaluate the string to get the full list of values
-        my $str = MTT::Values::EvaluateString($str, $ini, $section);
-
-        # Split it up if it's a string
-        if (ref($str) eq "") {
-            my @arr = split(/(?:\s+,\s+|\s+,|,\s+|,+|\s+)/, $str);
-            foreach my $a (@arr) {
-                push(@ret, $a);
-            }
-        } else {
-            foreach my $s (@$str) {
-                push(@ret, $s);
-            }
-        }
-    }
-
-    # If we got anything, return a ref to the array.  Otherwise,
-    # return undef.
-    return ($#ret >= 0) ? \@ret : undef;
-}
 
 1;
