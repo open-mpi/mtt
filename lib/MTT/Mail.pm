@@ -77,7 +77,7 @@ sub Send {
     %ENV = %ENV_original;
 
     # Use MIME::Lite if we have attachments to send
-    if (defined(@attachments) && @attachments ne "" && $have_mimelite) {
+    if (@attachments && $have_mimelite) {
     my $msg = MIME::Lite->new(
             From     => $from,
             To       => $to,
