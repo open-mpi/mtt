@@ -3190,7 +3190,7 @@ sub generate_md5_hash {
     return md5_hex($str);
 }
 
-my %enumerate_ex_context = {};
+my $enumerate_ex_context = {};
 
 # enumerate_ex funclet
 # Allow to substitute parameters/variables multiple times.
@@ -3234,7 +3234,7 @@ sub enumerate_ex {
         }
     }
     foreach my $cur_value (@$value) {
-        %enumerate_ex_context->{$key} = $cur_value;
+        $enumerate_ex_context->{$key} = $cur_value;
         my $res;
         if (defined($key2)) {
             $res = enumerate_ex($cmd, $key2, $value2, @other_params);
@@ -3248,7 +3248,7 @@ sub enumerate_ex {
                 push(@result, $_);
             }
         }
-        delete %enumerate_ex_context->{$key}
+        delete $enumerate_ex_context->{$key}
     }
     return [@result];
 }
@@ -3256,11 +3256,11 @@ sub enumerate_ex {
 # get value from enumerate_ex context hash
 sub val {
     my($param) = @_;
-    if (!exists(%enumerate_ex_context->{$param})) {
+    if (!exists($enumerate_ex_context->{$param})) {
         Warning("val=$param is not exist\n");
         return undef;
     }
-    my $value = %enumerate_ex_context->{$param};
+    my $value = $enumerate_ex_context->{$param};
     return $value;
 }
 
