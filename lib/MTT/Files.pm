@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2012 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -237,7 +237,7 @@ sub md5sum {
 
     _find_md5sum()
         if (!$md5sum_searched);
-    # If we already searched and didn't find then, then just return undef
+    # If we already searched and didn't find it, then just return undef
     return undef
         if (!$md5sum_path && $md5sum_searched);
     return undef
@@ -248,7 +248,7 @@ sub md5sum {
         Warning("md5sum unable to run properly\n");
         return undef;
     }
-    $x->{result_stdout} =~ m/^(\w{32})/;
+    $x->{result_stdout} =~ m/^\s*(\w{32})/;
     return $1;
 }
 
@@ -262,7 +262,7 @@ sub sha1sum {
 
     # Setup if we haven't already
     if (!$sha1sum_path) {
-        # If we already searched and didn't find then, then just return undef
+        # If we already searched and didn't find it, then just return undef
         return undef
             if ($sha1sum_searched);
 
@@ -280,7 +280,7 @@ sub sha1sum {
         Warning("sha1sum unable to run properly\n");
         return undef;
     }
-    $x->{result_stdout} =~ m/^(\w{40})/;
+    $x->{result_stdout} =~ m/^\s*(\w{40})/;
     return $1;
 }
 
