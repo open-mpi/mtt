@@ -474,32 +474,39 @@ sub _do_request {
     delete $ENV{HTTP_PROXY};
     delete $ENV{HTTPS_PROXY};
 
-    # Go through each ua and try to get a good connection.  If we get
-    # connection refused from any of them, try another.
+    # Go through each ua and try to get a good connection.
+    # If we get connection refused from any of them, try another.
     my $response;
-    foreach my $ua (@lwps) {
-        _debug("MTTDatabase client trying proxy: $ua->{proxy} / $ua->{source}\n");
-        $ENV{https_proxy} = $ua->{proxy}
-            if ("https" eq $ua->{scheme});
+    my $num_retries = 0;
+    while ( $num_retries <= 16 ) {
+        foreach my $ua (@lwps) {
+            _debug("MTTDatabase client trying proxy: $ua->{proxy} / $ua->{source}\n");
+            $ENV{https_proxy} = $ua->{proxy}
+                if ("https" eq $ua->{scheme});
 
-        # Do the HTTP request
-        $response = $ua->{agent}->request($req);
+            # Do the HTTP request
+            $response = $ua->{agent}->request($req);
 
-        # If it succeeded, or if it failed with something other than
-        # code 500, return (code 500 = can't connect)
-        if ($response->is_success() ||
-            $response->code() != 500) {
-            _debug("MTTDatabase proxy successful / not 500\n");
-            %ENV = %ENV_SAVE;
-            return $response;
+            # If it succeeded, or if it failed with something other than
+            # code 500, return (code 500 = can't connect)
+            if ($response->is_success() ||
+                $response->code() != 500) {
+                _debug("MTTDatabase proxy successful / not 500\n");
+                %ENV = %ENV_SAVE;
+                return $response;
+            }
+            _debug("MTTDatabase proxy unsuccessful -- trying next\n");
+
+            # Otherwise, loop around and try again
+            Debug("Proxy $ua->{proxy} failed code: " .
+                  $response->status_line . "\n");
         }
-        _debug("MTTDatabase proxy unsuccessful -- trying next\n");
-
-        # Otherwise, loop around and try again
-        Debug("Proxy $ua->{proxy} failed code: " .
-              $response->status_line . "\n");
+        # If all failed, retry them all a few times with increasing sleep
+        # before giving up for good.
+        Warning(">> Failed to submit results... retrying...");
+        $num_retries++;
+        sleep (4 * $num_retries);
     }
-
     # Sorry -- nothing got through...
     _debug("MTTDatabase proxy totally unsuccessful\n");
     %ENV = %ENV_SAVE;
