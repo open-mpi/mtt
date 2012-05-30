@@ -70,7 +70,7 @@ define('TIMEZONE', 'GMT');
 # skipped, perf). Adding these four (boolean) bytes per test result might be a
 # good space-for-performance trade-off, and would also probably simplify the
 # code.
-function phase_results_table($start_date) {
+function phase_results_table() {
 
     # NOTE: WE CAN'T MAKE $ret STATIC, SINCE IT GETS USED
     # FOR COMPOSING THE QUERY (CLEVER USE), BUT ALSO FOR
@@ -601,6 +601,7 @@ function setup_mainwin_fields($phases) {
     );
 
     # Phase-specific
+    $specific = array(); # Must pass valid array to array_merge
     if ($single_phase) {
         if (array_search('mpi_install', $phases) !== false)
             $specific = array(
@@ -942,7 +943,7 @@ function tokenize_quoted($q) {
 
     # Check parameters
     if (!isset($q) or false === $q or !is_string($q)) {
-        return false;
+        return array();
     }
 
     # Get the tokens from the query.

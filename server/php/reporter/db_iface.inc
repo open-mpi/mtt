@@ -158,11 +158,11 @@ function INTERNAL_db_iface_is_summary_table_eligible($query) {
 
     $selects = array_unique(
         array_merge(
-            $query['select'],
-            $query['select_more'],
-            $query['performance'],
-            $query['where'],
-            $query['where_not']
+	     (array)$query['select'],
+	     (array)$query['select_more'],
+	     (array)$query['performance'],
+	     (array)$query['where'],
+	     (array)$query['where_not']
         )
     );
     # Skip the 'row number'
@@ -263,10 +263,10 @@ function INTERNAL_db_iface_compose_sql_summary_all_fast($query) {
     # we do not have to deal with switch statements at that level
     $sub_selects = array_unique(
         array_merge(
-            $query['select'],
-            $aggregates,
-            $query['select_more'],
-            $query['performance']
+	     (array)$query['select'],
+	     (array)$aggregates,
+	     (array)$query['select_more'],
+	     (array)$query['performance']
         )
     );
     unset($sub_selects['n']);
@@ -283,10 +283,10 @@ function INTERNAL_db_iface_compose_sql_summary_all_fast($query) {
 
     $selects = array_unique(
         array_merge(
-            $query['select'],
-            $aggregates,
-            $query['select_more'],
-            $query['performance']
+	     (array)$query['select'],
+	     (array)$aggregates,
+	     (array)$query['select_more'],
+	     (array)$query['performance']
         )
     );
     # Skip the 'row number'
@@ -435,9 +435,9 @@ function INTERNAL_db_iface_compose_sql_summary_all_fast($query) {
     #
     $groupbys = array_unique(
         array_merge(
-            array_keys($query['select']),
-            array_keys($query['select_more']),
-            array_keys($query['performance'])
+	     (array)array_keys($query['select']),
+	     (array)array_keys($query['select_more']),
+	     (array)array_keys($query['performance'])
         )
     );
 
@@ -641,10 +641,10 @@ function INTERNAL_db_iface_compose_sql_summary_all($query) {
 
     $selects = array_unique(
         array_merge(
-            $query['select'],
-            $aggregates,
-            $query['select_more'],
-            $query['performance']
+	     (array)$query['select'],
+	     (array)$aggregates,
+	     (array)$query['select_more'],
+	     (array)$query['performance']
         )
     );
     # Skip the 'row number'
@@ -808,10 +808,10 @@ function INTERNAL_db_iface_compose_sql_summary_mpi_install($query) {
     #
     $selects = array_unique(
         array_merge(
-            $query['select'],
-            $aggregates,
-            $query['select_more'],
-            $query['performance']
+	     (array)$query['select'],
+	     (array)$aggregates,
+	     (array)$query['select_more'],
+	     (array)$query['performance']
         )
     );
     # Skip the 'row number'
@@ -867,10 +867,10 @@ function INTERNAL_db_iface_compose_sql_summary_test_build($query) {
     #
     $selects = array_unique(
         array_merge(
-            $query['select'],
-            $aggregates,
-            $query['select_more'],
-            $query['performance']
+	     (array)$query['select'],
+	     (array)$aggregates,
+	     (array)$query['select_more'],
+	     (array)$query['performance']
         )
     );
     # Skip the 'row number'
@@ -926,10 +926,10 @@ function INTERNAL_db_iface_compose_sql_summary_test_run($query) {
     #
     $selects = array_unique(
         array_merge(
-            $query['select'],
-            $aggregates,
-            $query['select_more'],
-            $query['performance']
+	     (array)$query['select'],
+	     (array)$aggregates,
+	     (array)$query['select_more'],
+	     (array)$query['performance']
         )
     );
     # Skip the 'row number'
@@ -1025,10 +1025,10 @@ function compose_sql_select($query, $report_type) {
     #
     $selects = array_unique(
                             array_merge(
-                                        $query['select'],
-                                        $aggregates,
-                                        $query['select_more'],
-                                        $query['performance']
+                                 (array)$query['select'],
+				 (array)$aggregates,
+				 (array)$query['select_more'],
+				 (array)$query['performance']
                                         )
                             );
 
@@ -1043,9 +1043,9 @@ function compose_sql_select($query, $report_type) {
     } else {
         $groupbys = array_unique(
                                  array_merge(
-                                             array_keys($query['select']),
-                                             array_keys($query['select_more']),
-                                             array_keys($query['performance'])
+                                      array_keys((array)$query['select']),
+				      array_keys((array)$query['select_more']),
+				      array_keys((array)$query['performance'])
                                              )
                                  );
     }
@@ -1137,8 +1137,8 @@ function compose_sql_select($query, $report_type) {
 
 function compose_sql_select_from_select($query) {
     $where_items = array_unique( array_merge (
-            $query['where'],
-            $query['where_not']
+				      (array)$query['where'],
+				      (array)$query['where_not']
             ) );
 
     $accum = array();
@@ -1171,9 +1171,9 @@ function compose_sql_select_from_select($query) {
     }
 
     $propose = array_unique( array_merge(
-            $query['select'],
-            $query['select_more'],
-            $query['performance']
+				  (array)$query['select'],
+				  (array)$query['select_more'],
+				  (array)$query['performance']
             ) );
 
     $add_rtn = array();
@@ -1191,8 +1191,8 @@ function compose_sql_select_from_select($query) {
     }
 
     return array_unique( array_merge(
-            $add_rtn,
-            $propose
+	    (array)$add_rtn,
+            (array)$propose
             ) );
 }
 
@@ -1239,8 +1239,8 @@ function compose_sql_select_from($query) {
       $selects = array_unique(
           array_merge(
               array_values($select_items),
-              $query['select_bm'],
-              $aggregates
+              (array)$query['select_bm'],
+              (array)$aggregates
           )
       );
 

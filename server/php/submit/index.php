@@ -1503,9 +1503,9 @@ function gather_indexes($parent, $child, $idxs, $prune_list) {
             $t = gather_indexes(get_idx_root($idx), $parent, $idxs, $prune_list);
 
             $idxs = array_merge(
-                                $self,
-                                $t,
-                                $idxs
+                                (array)$self,
+                                (array)$t,
+                                (array)$idxs
                     );
         }
     }

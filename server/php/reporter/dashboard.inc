@@ -31,7 +31,7 @@ function display_dashboard($nogo, $sql_cmd, $resource) {
     #
     # Fill-in form using last invocation's input
     #
-    $lasttime = form_carryover($defaults);
+    $lasttime = form_carryover($defaults, "");
 
     # Fill menus with universe first-time only
     if ($nogo) {
@@ -178,6 +178,7 @@ function get_form_universe($columns_arg) {
     elseif ($phase == 'test_run')
         $phase_tables = 
             array('mpi_install', 'test_build', 'test_run');
+    else $phase_tables = array();
 
     $tables = array_merge($tables, $phase_tables);
 
@@ -828,21 +829,23 @@ function selection_popups($defaults, $entries) {
 
         # Each column keys to an array of arrays (one array of which is
         # normally the available entries in the database) 
-        foreach (array_keys($entries[$field]) as $k) {
+        if (array_key_exists($field, $entries)) {
+	    foreach (array_keys($entries[$field]) as $k) {
 
-            $linkto = true;
+		$linkto = true;
 
-            $menu .= "\n$td" .
+		$menu .= "\n$td" .
                      "\n<select name='_".$i++."' $multiple size='10'>";
 
-            foreach ($entries[$field][$k] as $entry) {
-                $menu .= 
-                    sprintf("\n<option style='width: 300px;' " .
-                                       "name='%s' value='%s'>%s", 
-                                       $entry, $entry, $entry);
-            }
-            $menu .= "\n</select>";
-        }
+		foreach ($entries[$field][$k] as $entry) {
+		    $menu .= 
+			sprintf("\n<option style='width: 300px;' " .
+				"name='%s' value='%s'>%s", 
+				$entry, $entry, $entry);
+		}
+		$menu .= "\n</select>";
+	    }
+	}
 
         $menu .=
             "\n<tr>$td2" .
@@ -1029,7 +1032,7 @@ function form_popup($elements, $params, $specs) {
                     $arr["$type$field"] = $entries;
 
                     # Fill-in field for default or last selection
-                    $value = auto_fill($entries, $params["$type$field"]);
+		    $value = auto_fill($entries, $params["$type$field"], "");
                 }
                 else {
                     $arr[$field] = $entries;

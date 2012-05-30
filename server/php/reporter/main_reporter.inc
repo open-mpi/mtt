@@ -87,6 +87,8 @@ function display_report() {
 
         # Print either a summary or detail report,
         # depending on whether a 'select_more' parameter is set
+        $detail_fields = array();
+	$performance_fields = array();
         if ($report_type == 'detail') {
             $do_detailed = true;
             $detail_fields = setup_detail_fields(get_scalar($phases));
@@ -99,16 +101,16 @@ function display_report() {
 
         # Prepare query components
         $query = array_merge_recursive(
-            $row_number_fields,
-            $date_fields,
-            $input_fields,
-            $large_fields,
-            $result_fields,
-            $detail_fields,
-            $performance_fields,
-            $sort_field,
-            $offset_field,
-            $trial_field
+	    (array)$row_number_fields,
+	    (array)$date_fields,
+	    (array)$input_fields,
+	    (array)$large_fields,
+	    (array)$result_fields,
+	    (array)$detail_fields,
+	    (array)$performance_fields,
+	    (array)$sort_field,
+	    (array)$offset_field,
+	    (array)$trial_field
         );
 
         # Order columns left-to-right
@@ -126,7 +128,7 @@ function display_report() {
         $is_fast_lookup = $ret['fast'];
 
         # Execute query
-        $resource = do_pg_query($sql_cmd);
+	$resource = do_pg_query($sql_cmd, FALSE);
 
         # Number of rows in this report
         $n = row_count(pg_num_rows($resource), $_GET);
@@ -232,8 +234,8 @@ function detail_table($headers, $resource) {
     # Remove duplicated headers
     $headers = array_unique(
         array_merge(
-            $headers['params'],
-            $headers['details']
+		    (array)$headers['params'],
+		    (array)$headers['details']
         )
     );
 
@@ -280,8 +282,8 @@ function detail_table($headers, $resource) {
 
         $values =
             array_merge(
-                $row,
-                $details
+		 (array)$row,
+		 (array)$details
             );
 
         $i = 1;
@@ -509,7 +511,7 @@ function summary_table($headers, $resource, $filter) {
 
     $pound_sign = array_shift($headers['params']);
     printf($format, label($pound_sign));
-    foreach (sorting_links($headers['params']) as $header)
+    foreach (sorting_links($headers['params'], null, null) as $header)
         printf($format, $header);
 
     # Setup sequence of result colors
@@ -1175,7 +1177,7 @@ function collect_graph_data($data, $type) {
             # Create a unified X axis that represents the union of
             # all lines' X values.
             $unified_xdata = 
-                array_merge($unified_xdata, $plots[$i]['message_size']);
+		 array_merge((array)$unified_xdata, (array)$plots[$i]['message_size']);
 
             $color = $colors[$j++];
 
@@ -1820,8 +1822,8 @@ function drilldown_links() {
         # combine them with phase-dependent defaults
         $defaults = setup_mainwin_fields($phase);
         $qstring_arr = array_merge(
-                            form_carryover($defaults),
-                            advanced_carryover($_GET)
+			   (array)form_carryover($defaults, ""),
+			   (array)advanced_carryover($_GET)
         );
         $qstring_arr['phase'] = $phase;
 
@@ -1922,8 +1924,8 @@ function drilldown_links() {
             # combine them with phase-dependent defaults
             $defaults = setup_mainwin_fields($phase);
             $qstring_arr = array_merge(
-                                form_carryover($defaults),
-                                advanced_carryover($_GET)
+				(array)form_carryover($defaults, ""),
+				(array)advanced_carryover($_GET)
             );
 
 
@@ -2761,10 +2763,11 @@ function process_sort_field($params) {
         if (! is_null($field))
             return array($orderby => $field);
     }
+    return array();
 }
 
 function process_row_number_fields() {
-    do_pg_query("CREATE TEMPORARY SEQUENCE row_number;");
+    do_pg_query("CREATE TEMPORARY SEQUENCE row_number;", FALSE);
     $query['select']['n'] = "nextval('row_number')";
     return $query;
 }
@@ -2828,7 +2831,7 @@ function process_explain_field($params) {
 # Set Postgres options for this session
 function process_postgres_options($params) {
     # Always set constraint_exclusion = on; JJH XXX VERIFY THIS
-    do_pg_query("set constraint_exclusion = on;");
+    do_pg_query("set constraint_exclusion = on;", FALSE);
 
     # Also called 'work_mem' this values determines the amount
     # of memory available to the query executor when doing sorting.
@@ -2851,7 +2854,7 @@ function process_postgres_options($params) {
     # Total runtime:  121745.668 ms (256 MB)
     # Total runtime:  128246.327 ms (512 MB)
     #
-    do_pg_query("set sort_mem = '256MB';");
+    do_pg_query("set sort_mem = '256MB';", FALSE);
 
     # The following options may also help speed up queries, but must be set
     # at server start time.
@@ -2863,7 +2866,7 @@ function process_postgres_options($params) {
         if (preg_match("/^pg_(.*)$/i", $k, $m)) {
             $pg_param = $m[1];
             $value = $params[$k];
-            do_pg_query("set $pg_param to $value;");
+            do_pg_query("set $pg_param to $value;", FALSE);
         }
     }
 }
@@ -2973,6 +2976,7 @@ function process_large_fields($params) {
     if ($query)
         return $query;
 
+    $query = array(); /* Never want to return undefined value */
     $type = strtolower(process_report_type($_GET));
 
     $fields = setup_large_fields();
@@ -3225,8 +3229,8 @@ function setup_detail_fields($phase) {
     $ret =
         array('select_more' =>
             array_merge(
-                $phase_columns,
-                $results_columns
+		 (array)$phase_columns,
+		 $results_columns
             )
         );
 
@@ -3235,8 +3239,8 @@ function setup_detail_fields($phase) {
     $input_fields = process_input_fields($_GET);
 
     $query = array_merge_recursive(
-        $large_fields,
-        $input_fields
+				   (array)$large_fields,
+				   (array)$input_fields
     );
 
     foreach (array_keys($ret['select_more']) as $k)
@@ -3329,14 +3333,6 @@ function csv2arr($str) {
     return $arr;
 }
 
-# PHP5 has this function built-in
-function array_combine($keys, $values) {
-    $arr = array();
-    for ($i = 0; $i < sizeof($keys); $i++)
-        $arr[$keys[$i]] = $values[$i];
-
-    return $arr;
-}
 
 # Take keys and values and mutate hash
 # like so: list[keys][values] = 1
