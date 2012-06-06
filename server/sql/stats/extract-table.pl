@@ -20,7 +20,7 @@ my $dbh_mtt;
 
 my $sql_select = 
   "SELECT ".$v_nlt.
-  "  collection_date as date, size_db as size, date(date_trunc('week',collection_date)) as week ".$v_nl.
+  "  collection_date as date, size_db as size, num_tuples as tuples, date(date_trunc('week',collection_date)) as week ".$v_nl.
   "FROM ".$v_nlt.
   "  mtt_stats_database ".$v_nl.
   "ORDER BY ".$v_nlt.
@@ -69,6 +69,9 @@ sub dump_data($) {
   my $size_start;
   my $size_end;
   my $size_last;
+  my $tuples_start;
+  my $tuples_end;
+  my $tuples_last;
 
   if( $verbose > 0 ) {
     print($sql_select . "\n");
@@ -83,14 +86,19 @@ sub dump_data($) {
     if( !defined($cur_date) ) {
       $cur_date = $row_ref->[$stmt->{NAME_lc_hash}{week}];
       $size_start = int($row_ref->[$stmt->{NAME_lc_hash}{size}]);
+      $tuples_start = int($row_ref->[$stmt->{NAME_lc_hash}{tuples}]);
     }
 
     if( ! ($cur_date eq $row_ref->[$stmt->{NAME_lc_hash}{week}]) ) {
       $size_end = $size_last;
+      $tuples_end = $tuples_last;
 
-      printf("Week: %10s \t %7d MB\n", $date_last, (($size_end - $size_start)/(1024*1024)) );
+      printf("Week: %10s \t %7d MB \t %7d K\n", $date_last,
+             (($size_end - $size_start)/(1024*1024)),
+             (($tuples_end - $tuples_start)/(1000)) );
 
       $size_start = $size_end;
+      $tuples_start = $tuples_end;
       $cur_date = $row_ref->[$stmt->{NAME_lc_hash}{week}];
     }
 
@@ -99,11 +107,15 @@ sub dump_data($) {
     #       $row_ref->[$stmt->{NAME_lc_hash}{week}] . "\n");
 
     $size_last = int($row_ref->[$stmt->{NAME_lc_hash}{size}]);
+    $tuples_last = int($row_ref->[$stmt->{NAME_lc_hash}{tuples}]);
     $date_last = $row_ref->[$stmt->{NAME_lc_hash}{week}];
   }
 
   $size_end = $size_last;
-  printf("Week: %10s \t %7d MB\n", $date_last, (($size_end - $size_start)/(1024*1024)) );
+  $tuples_end = $tuples_last;
+      printf("Week: %10s \t %7d MB \t %7d K\n", $date_last,
+             (($size_end - $size_start)/(1024*1024)),
+             (($tuples_end - $tuples_start)/(1000)) );
 
   disconnect_db();
 }
