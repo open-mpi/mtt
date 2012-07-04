@@ -3300,7 +3300,7 @@ sub mtt_switch
 {
     my ($var, %cases) = @_;
 
-    if ($cases{$var}) {
+    if (defined($cases{$var})) {
         Debug("mtt_switch: $var case " . $cases{$var});
         return $cases{$var};
     }
