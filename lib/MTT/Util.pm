@@ -412,9 +412,22 @@ sub shuffle{
 my $inside_term_handler = 0;
 sub term_handler{
 	my ($ini, $trim, $source_dir, $install_dir, $fast_scratch_arg, $scratch_arg, $no_reporter_arg, $signame) = @_;
-    if ($inside_term_handler){
+    print "\n\n\n\n\n\nqwqwqww\n\n\n\n\n\n";
+	if ($inside_term_handler){
         return;
     }
+
+	#Verbose("\n\nexucting on_kill\n\n");
+	my $cmd = $ini->val("mtt", "on_kill");
+	if ( defined $cmd ) 
+	{
+		my $x = MTT::DoCommand::RunStep(1, $cmd, -1, $ini, "mtt", "on_kill");
+		#Verbose("  Output: $x->{result_stdout}\n")
+	}else
+	{
+		#Verbose("\n\nError exucting on_kill\n\n")
+	}
+
     $inside_term_handler = 1;
 	Verbose("\n###############################################################################\n");
 	Verbose("# Received TERM signal. Finishing already started tests and finalizing report #\n");
@@ -423,7 +436,7 @@ sub term_handler{
 
 	MTT::DoCommand::_kill_proc($MTT::DoCommand::pid);
 	MTT::Reporter::QueueSubmit();
-	
+
 	if ($trim) {
         MTT::Trim::Trim($ini, $source_dir, $install_dir);
         Verbose("TERM Handler: trimming done\n");
