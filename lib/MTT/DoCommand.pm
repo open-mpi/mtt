@@ -186,6 +186,18 @@ sub Cmd {
     my ($merge_output, $cmd, $timeout, 
         $max_stdout_lines, $max_stderr_lines, $print_timestamp) = @_;
 
+	if($print_timestamp eq "y" || $print_timestamp eq "Y" || $print_timestamp eq "1")
+		{
+			$print_timestamp = 1;
+		}else
+		{
+			$print_timestamp = 0;
+		}
+	my $ini = $MTT::Globals::Internals->{ini};
+	my $pause_file = MTT::Values::Value( $ini, "MTT", 'docommand_pause_file' );
+	my @pause_array = split(',', $pause_file);
+
+
     # If there are pipes, redirects, shell-bangs, or newlines
     # write them to a file and run it as a script. Otherwise,
     # use exec() for improved performance.
@@ -363,6 +375,21 @@ sub Cmd {
     my $killed_status = undef;
     my $last_over = 0;
     while ($done > 0) {
+
+		if($pause_file)
+		{
+			my $paused_time = localtime();
+			foreach my $item_pause_array (@pause_array)
+			{
+				while(-e $item_pause_array)
+				{
+					print "found pause file: $item_pause_array\n";
+					print "paused since $paused_time\n";
+					sleep 2;
+				}
+			}
+		}
+
         my $nfound = select($rout = $rin, undef, undef, $t);
         if (vec($rout, fileno(OUTread), 1) == 1) {
             # Cannot use normal <OUTread> here, per

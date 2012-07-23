@@ -445,7 +445,8 @@ sub _run_one_test {
     if ( $run->{wdir} ) {
         chdir $run->{wdir};
     }
-    my $x = MTT::DoCommand::Cmd($merge, $cmd, $timeout, $out_lines, $err_lines);
+	my $print_timestamp = MTT::Values::Value( $ini, "Test run: $run->{simple_section_name}", 'timestamp' );
+    my $x = MTT::DoCommand::Cmd($merge, $cmd, $timeout, $out_lines, $err_lines,$print_timestamp);
     if ( $run->{wdir} ) {
         chdir $old_dir;
     }
