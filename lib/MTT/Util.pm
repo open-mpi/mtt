@@ -412,20 +412,19 @@ sub shuffle{
 my $inside_term_handler = 0;
 sub term_handler{
 	my ($ini, $trim, $source_dir, $install_dir, $fast_scratch_arg, $scratch_arg, $no_reporter_arg, $signame) = @_;
-    print "\n\n\n\n\n\nqwqwqww\n\n\n\n\n\n";
 	if ($inside_term_handler){
         return;
     }
 
-	#Verbose("\n\nexucting on_kill\n\n");
+	Verbose("\n\nexucting on_kill\n\n");
 	my $cmd = $ini->val("mtt", "on_kill");
 	if ( defined $cmd ) 
 	{
 		my $x = MTT::DoCommand::RunStep(1, $cmd, -1, $ini, "mtt", "on_kill");
-		#Verbose("  Output: $x->{result_stdout}\n")
+		Verbose("  Output: $x->{result_stdout}\n")
 	}else
 	{
-		#Verbose("\n\nError exucting on_kill\n\n")
+		Verbose("\n\nError exucting on_kill\n\n")
 	}
 
     $inside_term_handler = 1;
