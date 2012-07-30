@@ -118,6 +118,9 @@ our $install_dir;
 # Where the MPI Source is
 our $src_dir;
 
+# Where the MPI is built
+our $build_directory;
+
 # What we call this phase
 my $phase_name = "MPI Install";
 
@@ -768,6 +771,8 @@ sub _do_install {
         $ret->{source_dir} = $config->{srcdir};
         $ret->{build_dir} = $config->{builddir};
         $ret->{refcount} = 0;
+
+		$MTT::MPI::Install::build_directory = $config->{builddir};
 
         # Delete keys with empty values
         foreach my $k (keys(%$report)) {

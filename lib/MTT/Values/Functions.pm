@@ -1147,7 +1147,7 @@ my @find_executables_data;
 sub find_executables {
     my $array = get_array_ref(\@_);
     Debug("&find_executables got @$array\n");
-
+	
     @find_executables_data = ();
     my @dirs;
     foreach my $d (@$array) {
@@ -2223,6 +2223,12 @@ sub get_absoft_version {
 sub get_mpi_srcdir {
 	    my $srcdir = $MTT::MPI::Install::src_dir;
 		return $srcdir;
+}
+
+# Return the build directory
+sub get_mpi_builddir {
+	my $builddir = $MTT::MPI::Install::build_directory;
+	return $builddir;
 }
 
 # Detect the bitness of the MPI library in this order:
