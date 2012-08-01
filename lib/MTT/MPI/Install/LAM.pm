@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2012 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -140,9 +140,13 @@ sub Install {
     Debug("Have C++ bindings: $ret->{cxx_bindings}\n"); 
     $ret->{f77_bindings} = _find_bindings($ret->{bindir},
                                           $ret->{libdir}, "f77");
-    Debug("Have F77 bindings: $ret->{f77_bindings}\n"); 
+    $ret->{mpifh_bindings} = $ret->{f77_bindings}
+    Debug("Have mpif.h bindings: $ret->{mpifh_bindings}\n"); 
     $ret->{f90_bindings} = "0";
-    Debug("Have F90 bindings: $ret->{f90_bindings}\n"); 
+    $ret->{usempi_bindings} = $ret->{f90_bindings}
+    Debug("Have \"use mpi\" bindings: $ret->{usempi_bindings}\n");
+    $ret->{usempi_f08_bindings} = "0";
+    Debug("Have \"use mpi_f08\" bindings: $ret->{usempif08_bindings}\n");
 
     # Calculate bitness (must be processed *after* installation)
 

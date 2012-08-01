@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2012 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -101,13 +101,24 @@ sub Install {
 
     $ret->{c_bindings} = 1;
     Debug("Have C bindings: 1\n");
+
     my $func = \&MTT::Values::Functions::MPI::MPICH2::find_bindings;
     $ret->{cxx_bindings} = &{$func}($ret->{bindir}, "CXX:");
     Debug("Have C++ bindings: $ret->{cxx_bindings}\n"); 
-    $ret->{f77_bindings} = &{$func}($ret->{bindir}, "F77:");
-    Debug("Have F77 bindings: $ret->{f77_bindings}\n"); 
-    $ret->{f90_bindings} = &{$func}($ret->{bindir}, "F90:");
-    Debug("Have F90 bindings: $ret->{f90_bindings}\n"); 
+
+    $ret->{mpifh_bindings} =
+        $ret->{f77_bindings} = &{$func}($ret->{bindir}, "F77:");
+    Debug("Have mpif.h bindings: $ret->{mpifh_bindings}\n"); 
+
+    # Newer versions of MPICH2 use "FC" instead of "F90"
+    my $tmp = &{$func}($ret->{bindir}, "F90:");
+    $tmp = &{$func}($ret->{bindir}, "FC:")
+        if (!$tmp);
+    $ret->{usempi_bindings} = $ret->{f90_bindings} = $tmp;
+    Debug("Have \"use mpi\" bindings: $ret->{usempi_bindings}\n"); 
+
+    # So far (July 2012), MPICH2 does not have the mpi_f08 module
+    $ret->{usempif08_bindings} = "0";
 
     # Are we adjusting the wrapper compilers?
 

@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2012 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -229,25 +229,25 @@ int main(int argc, char *argv[])
     }
 
     #
-    # Fortran 77
+    # Fortran mpif.h interface
     #
 
-    $x = MTT::Files::SafeWrite($force, "hello.f", "C
-C This program is automatically generated via the \"Trivial\" Test::Get
-C module of the MPI Testing Tool (MTT).  Any changes you make here may
-C get lost!
-C
-C Copyrights and licenses of this file are the same as for the MTT.
-C
+    $x = MTT::Files::SafeWrite($force, "hello_mpifh.f90", "!
+! This program is automatically generated via the \"Trivial\" Test::Get
+! module of the MPI Testing Tool (MTT).  Any changes you make here may
+! get lost!
+!
+! Copyrights and licenses of this file are the same as for the MTT.
+!
 
-        program main
+        program hello_mpifh
         implicit none
         include 'mpif.h'
         integer rank, size, ierr
         call MPI_INIT(ierr)
         call MPI_COMM_RANK(MPI_COMM_WORLD, rank, ierr)
         call MPI_COMM_SIZE(MPI_COMM_WORLD, size, ierr)
-        print *, 'Hello, Fortran 77 world, I am ', rank, ' of ', size
+        print *, 'Hello, Fortran mpif.h world, I am ', rank, ' of ', size
         call MPI_FINALIZE(ierr)
         end\n");
     if (! $x->{success}) {
@@ -255,15 +255,16 @@ C
         return $ret;
     }
 
-    $x = MTT::Files::SafeWrite($force, "ring.f", "C
-C This program is automatically generated via the \"Trivial\" Test::Get
-C module of the MPI Testing Tool (MTT).  Any changes you make here may
-C get lost!
-C
-C Copyrights and licenses of this file are the same as for the MTT.
-C
+    $x = MTT::Files::SafeWrite($force, "ring_mpifh.f90", "!
+! This program is automatically generated via the \"Trivial\" Test::Get
+! module of the MPI Testing Tool (MTT).  Any changes you make here may
+! get lost!
+!
+! Copyrights and licenses of this file are the same as for the MTT.
+!
 
-      program ring_f77
+      program ring_mpifh
+      implicit none
       include 'mpif.h'
       integer rank, size, tag, next, from, ierr
       integer done
@@ -284,17 +285,14 @@ C
       from = mod((rank + size - 1), size)
       if (rank .eq. 0) then
          num(pos) = 30
-         call mpi_send(num, length, MPI_INTEGER, next, tag, 
-     &        MPI_COMM_WORLD, ierr)
+         call mpi_send(num, length, MPI_INTEGER, next, tag, MPI_COMM_WORLD, ierr)
       endif
 
- 10   call mpi_recv(num, length, MPI_INTEGER, from, tag, 
-     &     MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
+ 10   call mpi_recv(num, length, MPI_INTEGER, from, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
       if (rank .eq. 0) then
          num(pos) = num(pos) - 1
       endif
-      call mpi_send(num, length, MPI_INTEGER, next, tag, 
-     &     MPI_COMM_WORLD, ierr)
+      call mpi_send(num, length, MPI_INTEGER, next, tag, MPI_COMM_WORLD, ierr)
       
       if (num(pos) .eq. 0) then
          goto 20
@@ -302,8 +300,7 @@ C
       goto 10
 
  20   if (rank .eq. 0) then
-         call mpi_recv(num, length, MPI_INTEGER, from, tag, 
-     &        MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
+         call mpi_recv(num, length, MPI_INTEGER, from, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
       endif
 
       call mpi_barrier(MPI_COMM_WORLD, ierr)
@@ -315,10 +312,10 @@ C
     }
 
     #
-    # Fortran 90
+    # Fortran "use mpi" interface
     #
 
-    $x = MTT::Files::SafeWrite($force, "hello.f90", "!
+    $x = MTT::Files::SafeWrite($force, "hello_usempi.f90", "!
 ! This program is automatically generated via the \"Trivial\" Test::Get
 ! module of the MPI Testing Tool (MTT).  Any changes you make here may
 ! get lost!
@@ -326,21 +323,22 @@ C
 ! Copyrights and licenses of this file are the same as for the MTT.
 !
 
-program main
+program hello_mpi
     use mpi
+    implicit none
     integer rank, size, ierr
     call MPI_INIT(ierr)
     call MPI_COMM_RANK(MPI_COMM_WORLD, rank, ierr)
     call MPI_COMM_SIZE(MPI_COMM_WORLD, size, ierr)
-    print *, 'Hello, Fortran 90 world, I am ', rank, ' of ', size
+    print *, 'Hello, Fortran mpi world, I am ', rank, ' of ', size
     call MPI_FINALIZE(ierr)
-end\n");
+end program hello_mpi\n");
     if (! $x->{success}) {
         $ret->{result_message} = $x->{result_message};
         return $ret;
     }
 
-    $x = MTT::Files::SafeWrite($force, "ring.f90", "!
+    $x = MTT::Files::SafeWrite($force, "ring_usempi.f90", "!
 ! This program is automatically generated via the \"Trivial\" Test::Get
 ! module of the MPI Testing Tool (MTT).  Any changes you make here may
 ! get lost!
@@ -348,48 +346,132 @@ end\n");
 ! Copyrights and licenses of this file are the same as for the MTT.
 !
 
-program ring_f90
-  use mpi
-  integer rank, size, tag, next, from, ierr
-  integer done
-  integer length, pos
-  integer num(20)
-  integer initial_value
+program ring_mpi
+    use mpi
+    implicit none
+    integer rank, size, tag, next, from, ierr
+    integer done
+    integer length, pos
+    integer num(20)
+    integer initial_value
   
-  tag = 201
-  length = 20
-  pos = length - 10
-  initial_value = 10
+    tag = 201
+    length = 20
+    pos = length - 10
+    initial_value = 10
 
-  call mpi_init(ierr)
-  call mpi_comm_rank(MPI_COMM_WORLD, rank, ierr)
-  call mpi_comm_size(MPI_COMM_WORLD, size, ierr)
+    call mpi_init(ierr)
+    call mpi_comm_rank(MPI_COMM_WORLD, rank, ierr)
+    call mpi_comm_size(MPI_COMM_WORLD, size, ierr)
 
-  next = mod((rank + 1), size)
-  from = mod((rank + size - 1), size)
-  if (rank .eq. 0) then
-     num(pos) = 30
-     call mpi_send(num, length, MPI_INTEGER, next, tag, MPI_COMM_WORLD, ierr)
-  endif
+    next = mod((rank + 1), size)
+    from = mod((rank + size - 1), size)
+    if (rank .eq. 0) then
+       num(pos) = 30
+       call mpi_send(num, length, MPI_INTEGER, next, tag, MPI_COMM_WORLD, ierr)
+    endif
   
-10 call mpi_recv(num, length, MPI_INTEGER, from, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
-  if (rank .eq. 0) then
-     num(pos) = num(pos) - 1
-  endif
-  call mpi_send(num, length, MPI_INTEGER, next, tag, MPI_COMM_WORLD, ierr)
+10  call mpi_recv(num, length, MPI_INTEGER, from, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
+    if (rank .eq. 0) then
+        num(pos) = num(pos) - 1
+    endif
+    call mpi_send(num, length, MPI_INTEGER, next, tag, MPI_COMM_WORLD, ierr)
   
-  if (num(pos) .eq. 0) then
-     goto 20
-  endif
-  goto 10
+    if (num(pos) .eq. 0) then
+        goto 20
+    endif
+    goto 10
   
-20 if (rank .eq. 0) then
-     call mpi_recv(num, length, MPI_INTEGER, from, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
-  endif
+20  if (rank .eq. 0) then
+        call mpi_recv(num, length, MPI_INTEGER, from, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
+    endif
   
-  call mpi_barrier(MPI_COMM_WORLD, ierr)
-  call mpi_finalize(ierr)
-end\n");
+    call mpi_barrier(MPI_COMM_WORLD, ierr)
+    call mpi_finalize(ierr)
+end program ring_mpi\n");
+    if (! $x->{success}) {
+        $ret->{result_message} = $x->{result_message};
+        return $ret;
+    }
+
+    #
+    # Fortran "use mpi_f08" interface
+    #
+
+    $x = MTT::Files::SafeWrite($force, "hello_usempif08.f90", "!
+! This program is automatically generated via the \"Trivial\" Test::Get
+! module of the MPI Testing Tool (MTT).  Any changes you make here may
+! get lost!
+!
+! Copyrights and licenses of this file are the same as for the MTT.
+!
+
+program hello_mpif08
+    use mpi_f08
+    implicit none
+    integer rank, size
+    call MPI_INIT()
+    call MPI_COMM_RANK(MPI_COMM_WORLD, rank)
+    call MPI_COMM_SIZE(MPI_COMM_WORLD, size)
+    print *, 'Hello, Fortran mpi_f08 world, I am ', rank, ' of ', size
+    call MPI_FINALIZE()
+end program hello_mpif08\n");
+    if (! $x->{success}) {
+        $ret->{result_message} = $x->{result_message};
+        return $ret;
+    }
+
+    $x = MTT::Files::SafeWrite($force, "ring_usempif08.f90", "!
+! This program is automatically generated via the \"Trivial\" Test::Get
+! module of the MPI Testing Tool (MTT).  Any changes you make here may
+! get lost!
+!
+! Copyrights and licenses of this file are the same as for the MTT.
+!
+
+program ring_mpif08
+    use mpi_f08
+    implicit none
+    integer rank, size, tag, next, from
+    integer done
+    integer length, pos
+    integer num(20)
+    integer initial_value
+  
+    tag = 201
+    length = 20
+    pos = length - 10
+    initial_value = 10
+
+    call mpi_init()
+    call mpi_comm_rank(MPI_COMM_WORLD, rank)
+    call mpi_comm_size(MPI_COMM_WORLD, size)
+
+    next = mod((rank + 1), size)
+    from = mod((rank + size - 1), size)
+    if (rank .eq. 0) then
+       num(pos) = 30
+       call mpi_send(num, length, MPI_INTEGER, next, tag, MPI_COMM_WORLD)
+    endif
+  
+10  call mpi_recv(num, length, MPI_INTEGER, from, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE)
+    if (rank .eq. 0) then
+        num(pos) = num(pos) - 1
+    endif
+    call mpi_send(num, length, MPI_INTEGER, next, tag, MPI_COMM_WORLD)
+  
+    if (num(pos) .eq. 0) then
+        goto 20
+    endif
+    goto 10
+  
+20  if (rank .eq. 0) then
+        call mpi_recv(num, length, MPI_INTEGER, from, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE)
+    endif
+  
+    call mpi_barrier(MPI_COMM_WORLD)
+    call mpi_finalize()
+end program ring_mpif08\n");
     if (! $x->{success}) {
         $ret->{result_message} = $x->{result_message};
         return $ret;

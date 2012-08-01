@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2010 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2012 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -63,13 +63,22 @@ package MTT::MPI::Install;
 # c_bindings (OUT) => logical, whether the C MPI bindings are available
 # cxx_bindings (OUT) => logical, whether the C++ MPI bindings are available
 # f77_bindings (OUT) => logical, whether the F77 MPI bindings are available
+#                       DEPRECATED; see mpifh_bindings, below
 # f90_bindings (OUT) => logical, whether the F90 MPI bindings are available
-
+#                       DEPRECATED; see usempi_bindings, below
+# mpifh_bindings (OUT) => logical, whether the mpif.h MPI bindings are
+#                         available
+# usempi_bindings (OUT) => logical, whether the "use mpi" MPI bindings are
+#                          available
+# usempif08_bindings (OUT) => logical, whether the "use mpi_f08" MPI bindings
+#                             are available
+#
 # If a build is successful, the MPI will be installed and the source
 # and build trees will be deleted.  A number of trivial MPI test
 # programs are compiled and linked against the installation to verify
 # that the build was good (hello world kinds of MPI programs in C,
-# C++, F77, and F90 if each of the language bindings are present).
+# C++, mpif.h, use mpi, and use mpi_f08 if each of the language
+# bindings are present).
 
 # This module calls BuildMPI/*.pm sub-modules to actually
 # build/install the MPI.  The sub-module's "Build" method is invoked
@@ -395,8 +404,11 @@ sub _do_install {
     $config->{result_message} = "to be filled in by module";
     $config->{c_bindings} = 0;
     $config->{cxx_bindings} = 0;
-    $config->{f77_bindings} = 0;
-    $config->{f90_bindings} = 0;
+    $config->{f77_bindings} = 0; # Deprecated (but not yet removed)
+    $config->{f90_bindings} = 0; # Deprecated (but not yet removed)
+    $config->{mpifh_bindings} = 0;
+    $config->{usempi_bindings} = 0;
+    $config->{usempif08_bindings} = 0;
 
     $config->{full_section_name} = $section;
     $config->{simple_section_name} = $simple_section;
