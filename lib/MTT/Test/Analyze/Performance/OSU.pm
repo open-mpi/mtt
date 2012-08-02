@@ -74,7 +74,7 @@ sub Analyze {
     }
 
     while (defined($line = shift(@lines))) {
-        if ($line =~ m/^(\d+) \s+ ([\d\.]+)/x) {
+        if ($line =~ m/(\d+) \s+ ([\d\.]+)/x) {
             push(@bytes, $1);
             push(@usec, $2)
                 if ($latency);
