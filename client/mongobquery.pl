@@ -210,7 +210,7 @@ elsif ($opt_query)
 			die "\nparametr \"regression-step\" has invalid format. YYYY-MM-DD\nexample --regression-step=\'0000-01-03\'";
 		}
 	
-		if($gql =~ m/TestRunPhase\.start_time/)
+		if($gql =~ m/TestRunPhase\.(start|end)_time(>|>=)/)
 		{
 			$str_start_time = $';
 			if($str_start_time =~ m/\d{4}-\d{2}-\d{2}#\d{2}:\d{2}:\d{2}/)
@@ -222,10 +222,11 @@ elsif ($opt_query)
 			}
 		}else
 		{
-			die "syntax error";
+			#die "syntax error";
+			$str_start_time = "qqq";
 		}
 	
-		if($gql =~ m/TestRunPhase\.end_time/)
+		if($gql =~ m/TestRunPhase\.(start|end)_time(<|<=)/)
 		{
 			$str_end_time = $';
 			if($str_end_time =~ m/\d{4}-\d{2}-\d{2}#\d{2}:\d{2}:\d{2}/)
@@ -237,22 +238,38 @@ elsif ($opt_query)
 			}
 		}else
 		{
-			die "syntax error";
+			#die "syntax error";
+			$str_end_time="qqq";
 		}
 	
-		#print "start_time $str_start_time end_time $str_end_time \n";
-	
+		print "start_time $str_start_time end_time $str_end_time \n";
+		#exit;
 		my $timezone = DateTime->now;
 
-		@numbers = split(/:|-|#/,$str_start_time);
-		#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-		my %hash_start_time = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> $timezone->time_zone());
-		my $DateTime_start_time = DateTime->new(%hash_start_time);
-
-		@numbers = split(/:|-|#/,$str_end_time);
-		#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-		my %hash_end_time = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> $timezone->time_zone());
-		my $DateTime_end_time = DateTime->new(%hash_end_time);
+		my $DateTime_start_time;
+		my $DateTime_end_time;
+		if($str_start_time ne "qqq")
+		{
+			@numbers = split(/:|-|#/,$str_start_time);
+			#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
+			my %hash_start_time = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> $timezone->time_zone());
+			$DateTime_start_time = DateTime->new(%hash_start_time);
+		}else
+		{
+			my %hash_start_time = (year => 2000,month => 01,day => 01,hour => 01,minute => 01,second => 01,nanosecond => 0,time_zone=> $timezone->time_zone());
+			$DateTime_start_time = DateTime->new(%hash_start_time);
+			
+		}
+        if($str_end_time ne "qqq")
+		{
+			@numbers = split(/:|-|#/,$str_end_time);
+			#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
+			my %hash_end_time = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> $timezone->time_zone());
+			$DateTime_end_time = DateTime->new(%hash_end_time);
+		}else
+		{
+			$DateTime_end_time = DateTime->now;
+		}
 
 
 		print "\n\nacceptable dates:\n";
