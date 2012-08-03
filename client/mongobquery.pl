@@ -326,7 +326,7 @@ elsif ($opt_query)
 			{
 				if ($& ~~ @date_array)
 				{
-					open F, '>', "$i.yaml";
+					open F, '>', "$&.yaml";
 					print F YAML::Syck::Dump( $doc );
 					close F;
 					$i++;
