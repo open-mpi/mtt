@@ -10,6 +10,25 @@
 
 BEGIN {
 
+	my @needed_libs = (
+			'Spreadsheet::WriteExcel', 
+	       	'Spreadsheet::WriteExcel::Format', 
+			'Spreadsheet::WriteExcel::Utility', 
+			'GD::Graph::lines', 
+			'GD::Graph::bars', 
+				        );
+								    
+			
+	foreach (@needed_libs)
+	{
+	   	eval "require $_";
+	    if ($@)
+	    {
+	    	print ("Unable to find libraries $_\n");
+			exit(1);
+		};
+	}
+
     use strict;
 
     use Data::Dumper;
@@ -91,6 +110,7 @@ use strict;
 use warnings;
 use Spreadsheet::WriteExcel;
 use Spreadsheet::WriteExcel::Format;
+use Spreadsheet::WriteExcel::Utility;
 use GD::Graph::lines;
 use GD::Graph::bars;
 use File::Temp;
@@ -826,75 +846,124 @@ sub create_sheet_view
         # Create graph
         if ($a_data_view_ref->[$i]->{view_type} != Type_External)
         {
-	        #create graph object for canvas 800 X 500 pixels by default
-	        my $img_width = 800;
-	        $img_width += (scalar(@{$a_data_ref->[0]}) - 30) * 10 if (scalar(@{$a_data_ref->[0]}) > 30);
-	        my $img_height = 500;
-	        $img_height += (scalar(@{$a_legend_ref}) - 50) * 10 if (scalar(@{$a_legend_ref}) > 50);
-	        if ($a_data_view_ref->[$i]->{view_type} == Type_Column)
-	        {
-	            $img= GD::Graph::bars->new($img_width, $img_height) or die GD::Graph->error;
-	        }
-	        elsif ($a_data_view_ref->[$i]->{view_type} == Type_Line)
-	        {
-	            $img= GD::Graph::lines->new($img_width, $img_height) or die GD::Graph->error;
-	        }
-		    else
-		    {
-		        printf("Error: Invalid data view - %s\n", $a_data_view_ref->[$i]->{view_type});
-		        return ;
-		    }
-	
-	        #set graph options required 
-	        $img->set(
-	                    # graph title 
-	                    title       => $a_data_view_ref->[$i]->{title},
-	                    x_label     => $a_label_ref->[0],
-	                    y_label     => $a_label_ref->[1],
-	                    # position of both X axis labels
-	                    x_label_position => 1,
-	                    # position of both Y axis labels
-	                    y_label_position => 1,
-	#                    y_min_value => min_2D($a_data_ref, 1) - (max_2D($a_data_ref, 1) - min_2D($a_data_ref, 1)) / 100,
-	#                    y_max_value => max_2D($a_data_ref, 1) + (max_2D($a_data_ref, 1) - min_2D($a_data_ref, 1)) / 100,
-	                    # use transparent background
-	                    transparent   => 0,
-	                    # background colour
-	                    bgclr         => '#e6e6e6',
-	                    # draw border around graph
-	                    box_axis => 0,
-	                    # put legend to the centre right of chart 
-	                    legend_placement =>'BC',
-	                    # width of lines
-	                    line_width => 2,
-	                    # Show the grid
-	                    long_ticks  => 0,
-	                    # Set the length for the 'short' ticks on the axes.
-	                    x_tick_length => 4,
-	                    y_tick_length => 4,
-	                    # vertical printing of x labels in case 1 - there are a lot of data
-	                    x_labels_vertical   => ((max_len_2D($a_data_ref, 0, 1) < 10) && (scalar(@{$a_data_ref->[0]}) > 20)? 1 : 0),
-	                    # Show values on top of each bar
-	                    show_values => ($a_data_view_ref->[$i]->{view_type} == Type_Column ? 1 : 0),
-	                    values_vertical => ($a_data_view_ref->[$i]->{view_type} == Type_Column ? 1 : 0),
-	                    dclrs  => [GD::Graph::colour::colour_list]
-	                ) or warn $img->error and return;
-	                
-	        # Number of pixels to leave between groups of bars when multiple datasets are being displayed
-	        $img->set(bargroup_spacing   => 30) if $img->_has_default('bargroup_spacing');
-	                
-	        # set legend
-	        $img->set_legend(@$a_legend_ref);
-	           
-	        # plot graph with table data
-	        my $gd = $img->plot($a_data_ref) or warn $img->error and return;
-	        $temp_image = new File::Temp();
-	        open(fh_temp, ">$temp_image") or warn ("Failed to write file: $!") and return;
-	        binmode fh_temp;
-	        print fh_temp $gd->png;
-	        close fh_temp;
-	    
-	        $sheet->insert_image( 21, $fcol, $temp_image);
+	       if  (Spreadsheet::WriteExcel->VERSION() < 2.37)
+			{		
+				#create graph object for canvas 800 X 500 pixels by default
+				my $img_width = 800;
+				$img_width += (scalar(@{$a_data_ref->[0]}) - 30) * 10 if (scalar(@{$a_data_ref->[0]}) > 30);
+				my $img_height = 500;
+				$img_height += (scalar(@{$a_legend_ref}) - 50) * 10 if (scalar(@{$a_legend_ref}) > 50);
+				if ($a_data_view_ref->[$i]->{view_type} == Type_Column)
+				{
+					$img= GD::Graph::bars->new($img_width, $img_height) or die GD::Graph->error;
+				}
+				elsif ($a_data_view_ref->[$i]->{view_type} == Type_Line)
+				{
+					$img= GD::Graph::lines->new($img_width, $img_height) or die GD::Graph->error;
+				}
+				else
+				{
+					printf("Error: Invalid data view - %s\n", $a_data_view_ref->[$i]->{view_type});
+					return ;
+				}
+
+				#set graph options required 
+				$img->set(
+							# graph title 
+							title       => $a_data_view_ref->[$i]->{title},
+							x_label     => $a_label_ref->[0],
+							y_label     => $a_label_ref->[1],
+							# position of both X axis labels
+							x_label_position => 1,
+							# position of both Y axis labels
+							y_label_position => 1,
+			#                    y_min_value => min_2D($a_data_ref, 1) - (max_2D($a_data_ref, 1) - min_2D($a_data_ref, 1)) / 100,
+			#                    y_max_value => max_2D($a_data_ref, 1) + (max_2D($a_data_ref, 1) - min_2D($a_data_ref, 1)) / 100,
+							# use transparent background
+							transparent   => 0,
+							# background colour
+							bgclr         => '#e6e6e6',
+							# draw border around graph
+							box_axis => 0,
+							# put legend to the centre right of chart 
+							legend_placement =>'BC',
+							# width of lines
+							line_width => 2,
+							# Show the grid
+							long_ticks  => 0,
+							# Set the length for the 'short' ticks on the axes.
+							x_tick_length => 4,
+							y_tick_length => 4,
+							# vertical printing of x labels in case 1 - there are a lot of data
+							x_labels_vertical   => ((max_len_2D($a_data_ref, 0, 1) < 10) && (scalar(@{$a_data_ref->[0]}) > 20)? 1 : 0),
+							# Show values on top of each bar
+							show_values => ($a_data_view_ref->[$i]->{view_type} == Type_Column ? 1 : 0),
+							values_vertical => ($a_data_view_ref->[$i]->{view_type} == Type_Column ? 1 : 0),
+							dclrs  => [GD::Graph::colour::colour_list]
+						) or warn $img->error and return;
+						
+				# Number of pixels to leave between groups of bars when multiple datasets are being displayed
+				$img->set(bargroup_spacing   => 30) if $img->_has_default('bargroup_spacing');
+						
+				# set legend
+				$img->set_legend(@$a_legend_ref);
+				   
+				# plot graph with table data
+				my $gd = $img->plot($a_data_ref) or warn $img->error and return;
+				$temp_image = new File::Temp();
+				open(fh_temp, ">$temp_image") or warn ("Failed to write file: $!") and return;
+				binmode fh_temp;
+				print fh_temp $gd->png;
+				close fh_temp;
+
+				$sheet->insert_image( 21, $fcol, $temp_image);
+			}
+			else
+			{
+				my $chart = ();
+				
+				#create graph object for canvas 600 X 300 pixels by default
+				my $chart_width = 1000;
+				my $chart_height = 400;
+				if ($a_data_view_ref->[$i]->{view_type} == Type_Column)
+				{
+					$chart = $workbook->add_chart( embedded => 1, type => 'column' );
+				}
+				elsif ($a_data_view_ref->[$i]->{view_type} == Type_Line)
+				{
+					$chart = $workbook->add_chart( embedded => 1, type => 'line' );
+				}
+				else
+				{
+					printf("Error: Invalid data view - %s\n", $a_data_view_ref->[$i]->{view_type});
+					return ;
+				}
+				
+				# Fill the table with values
+				for($j=0; $j < @{$a_legend_ref}; $j++)
+				{               
+					my $name = $a_legend_ref->[$j];
+					my $categories = sprintf("=%s!%s:%s",
+								$sheet->get_name(),
+								xl_rowcol_to_cell($frow - 1, $fcol + (0 * $wcol) + 1),
+								xl_rowcol_to_cell($frow - 1, $fcol + (scalar(@{$a_data_ref->[0]}) * $wcol) + 1));
+					my $values = sprintf("=%s!%s:%s",
+								$sheet->get_name(),
+								xl_rowcol_to_cell($frow + ($j * $hrow), $fcol + (0 * $wcol) + 1),
+								xl_rowcol_to_cell($frow + ($j * $hrow), $fcol + (scalar(@{$a_data_ref->[0]}) * $wcol) + 1));
+					# Configure the chart.
+					$chart->add_series(
+						 name    => $name,
+						 categories => $categories,
+						 values     => $values,
+					);
+					$chart->set_x_axis(name =>  $a_label_ref->[0]);
+					$chart->set_y_axis(name =>  $a_label_ref->[1]);
+					$chart->set_title(name =>$a_data_view_ref->[$i]->{title});
+				}
+				
+				$sheet->insert_chart( 21 + $i * 20, $fcol, $chart);
+			}
         }
         else
         {
