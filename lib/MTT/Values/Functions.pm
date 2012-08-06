@@ -1287,6 +1287,13 @@ sub find_sub {
 
 #--------------------------------------------------------------------------
 
+sub pwd_mtt
+{
+	my $t_var = $0;
+	$t_var =~ s/\/[^\/]+$//;
+	return $t_var;
+}
+
 # return File::Basename::dirname()
 sub dirname {
     my($str) = @_;
