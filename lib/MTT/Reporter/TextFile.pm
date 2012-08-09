@@ -26,6 +26,9 @@ use File::Basename;
 use File::Temp;
 use Text::Wrap;
 use File::Copy;
+use XML::Writer;
+use XML::Hash;
+use IO::File;
 
 # directory and file to write to
 my $dirname;
@@ -130,10 +133,123 @@ sub Finalize {
     # Print a roll-up report
     _summary_report(\@results, $flush_mode)
         if (@results);
+	my $i=0;
+	my $to_xml;
+	my $xml_converter = XML::Hash->new();
+    my $ini = $MTT::Globals::Internals->{ini};
+	my $path = MTT::Values::Value( $ini, "MTT", 'xml_dir');
+	unless(-d $path)
+ 	{
+		     mkdir $path or die;
+	}
+	if(defined($path))
+	{
+		foreach my $item (@results)
+		{
+			print Dumper($item);
+			if(defined($item->{"Test Run"}))
+			{
+				$item = $item->{"Test Run"};
+				my @keys_from_item = keys %$item;
+				print "keys @keys_from_item[0]\n";
+				$item = $item->{@keys_from_item[0]};
+				print "@$item\n";
+				foreach my $inner_item (@$item)
+				{
+				
+					$i++;
+					print "$path\n";
+					$to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"report_date"} = $inner_item->{"start_timestamp_human"};
 
-    undef $dirname;
-    undef $filename;
-    undef $written_files;
+
+					$inner_item->{"duration"} =~ m/\d+/;
+					if(!defined($to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"duration"}))
+					 {
+						 $to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"duration"} = 0;
+					 }
+					 ($to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"duration"}) += $&;
+					
+					if(!defined($to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"total_tests"}))
+					{
+						$to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"total_tests"} = 0;
+					}
+					($to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"total_tests"})++;
+					
+					if($inner_item->{"result_message"} eq "Passed" || $inner_item->{"result_message"} eq "Success" || $inner_item->{"result_message"} eq "1")
+					{
+						if(!defined($to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"passed_tests"}))
+						{
+							$to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"passed_tests"} = 0;
+						}
+						($to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"passed_tests"})++;
+
+						push(@{$to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"tests_executed_status"}},"success");
+
+					}
+
+				}
+			}
+
+		}
+
+		my $i=0;
+		my @keys_mpis = keys %$to_xml;
+		foreach my $item (@keys_mpis)
+		{
+			my @keys_versions = keys %{$to_xml->{$item}};
+			foreach my $inner_item (@keys_versions)
+			{
+				$i++;
+				my $output = IO::File->new(">$path/output_$i.xml");
+				my $writer = XML::Writer->new(OUTPUT => $output);
+					
+				$writer->xmlDecl( 'UTF-8' );
+
+				$writer->startTag("report");
+			
+				$writer->startTag("product_name");	
+				$writer->characters($item);
+				$writer->endTag("product_name");
+				
+				$writer->startTag("product_version");
+				$writer->characters($inner_item);
+				$writer->endTag("product_version");
+
+
+				$writer->startTag("report_date");
+				$writer->characters($to_xml->{$item}->{$inner_item}->{"report_date"});
+				$writer->endTag("report_date");
+
+
+				$writer->startTag("total_duration");
+				$writer->characters(_convert_duration($to_xml->{$item}->{$inner_item}->{"duration"}));
+				$writer->endTag("total_duration");
+
+
+				$writer->startTag("total_tests");
+				$writer->characters($to_xml->{$item}->{$inner_item}->{"total_tests"});
+				$writer->endTag("total_tests");
+
+				$writer->startTag("failed_tests");
+				$writer->characters($to_xml->{$item}->{$inner_item}->{"total_tests"}-$to_xml->{$item}->{$inner_item}->{"passed_tests"});
+				$writer->endTag("failed_tests");
+
+
+
+				$writer->startTag("quality");
+				my $procen = int(($to_xml->{$item}->{$inner_item}->{"passed_tests"})/($to_xml->{$item}->{$inner_item}->{"total_tests"})*100);
+				$writer->characters("$procen\%");
+				$writer->endTag("quality");
+				$writer->endTag("report");
+				$writer->end();
+				$output->close();
+
+			}			
+		}
+	}
+	undef $dirname;
+	undef $filename;
+	undef $written_files;
 }
 
 #--------------------------------------------------------------------------
