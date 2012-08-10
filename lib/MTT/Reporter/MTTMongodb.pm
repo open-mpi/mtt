@@ -889,13 +889,6 @@ sub _fill_cluster_info {
             push( @sections, "MTT");
             push( @sections, "VBench");
 
-			#$info_form->{cluster_name} = $platform;
-			my $clust_name = `hostname`;
-			$clust_name =~ m/\D+/;
-			$info_form->{cluster_name} = $&;
-			
-
-
             my $node_count =
                 _get_value( "vbench:cluster_node_count", @sections );
 
@@ -906,6 +899,11 @@ sub _fill_cluster_info {
             if (defined($node_count) && $node_count ne "") {
                 $info_form->{node_count} = $node_count;     
             }       
+
+			my $clust_name = `hostname`;
+			$clust_name =~ m/\D+/;
+			$info_form->{cluster_name} = $&;
+
 			open FILE, '/proc/cpuinfo';
 			my $cache;
 			my $ncpu=0;	
