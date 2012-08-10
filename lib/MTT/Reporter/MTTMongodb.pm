@@ -889,7 +889,12 @@ sub _fill_cluster_info {
             push( @sections, "MTT");
             push( @sections, "VBench");
 
-            $info_form->{cluster_name} = $platform;
+			#$info_form->{cluster_name} = $platform;
+			my $clust_name = `hostname`;
+			$clust_name =~ m/\D+/;
+			$info_form->{cluster_name} = $&;
+			
+
 
             my $node_count =
                 _get_value( "vbench:cluster_node_count", @sections );
@@ -901,6 +906,62 @@ sub _fill_cluster_info {
             if (defined($node_count) && $node_count ne "") {
                 $info_form->{node_count} = $node_count;     
             }       
+			open FILE, '/proc/cpuinfo';
+			my $cache;
+			my $ncpu=0;	
+			my $mhz;
+			while (<FILE>) 
+			{	
+				if ($_ =~ m/processor/)
+				{
+					$ncpu++;
+				}
+				if($_ =~m/cpu MHz\s*:/)
+				{
+					$_ =~ m/\d+[\.\,]*\d*\D*/;
+					$mhz = $&;
+				}
+				if($_ =~m/cache size\s*: /)
+				{
+					$_ =~ m/\d+[\.\,]*\d*\D*/;
+					$cache = $&;
+				}
+			}
+			close FILE;
+			
+			open FILE, '/proc/meminfo';
+			my $mem;
+			while (<FILE>) 
+			{	
+				if($_ =~m/MemTotal/)
+				{
+					$_ =~ m/\d+[\.\,]*\d*\D*/;
+					$mem = $&;
+				}
+			}
+			close FILE;
+			
+			open FILE, '/proc/net/sockstat';
+			my $nsocket;
+			while (<FILE>) 
+			{	
+				if($_ =~m/sockets: used \d+/)
+				{
+					$_ =~ m/\d+[\.\,]*\d*\D*/;
+					$nsocket = $&;
+				}
+			}
+			close FILE;
+			
+			$info_form->{node_os_vendor} = `cat /proc/version`;
+			$info_form->{node_nsocket} = $nsocket; 
+			$info_form->{node_mem} = $mem;
+			$info_form->{node_ncpu} = $ncpu;
+			$info_form->{node_cache} = $cache;
+			$info_form->{node_mhz} = $mhz;
+			$info_form->{node_os_kernel} = `uname -s`;
+			$info_form->{node_os_release} = `uname -r -v`;
+			$info_form->{node_arch} = `uname -p`;
     }
 
     return $info_form;
