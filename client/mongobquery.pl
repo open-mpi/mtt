@@ -252,7 +252,7 @@ elsif ($opt_query)
 		{
 			@numbers = split(/:|-|#/,$str_start_time);
 			#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-			my %hash_start_time = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> $timezone->time_zone());
+			my %hash_start_time = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => 0 ,minute => 0,second => 0,nanosecond => 0,time_zone=> $timezone->time_zone());
 			$DateTime_start_time = DateTime->new(%hash_start_time);
 		}else
 		{
@@ -264,7 +264,7 @@ elsif ($opt_query)
 		{
 			@numbers = split(/:|-|#/,$str_end_time);
 			#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-			my %hash_end_time = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> $timezone->time_zone());
+			my %hash_end_time = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => 23,minute => 59,second => 59,nanosecond => 0,time_zone=> $timezone->time_zone());
 			$DateTime_end_time = DateTime->new(%hash_end_time);
 		}else
 		{
