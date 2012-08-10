@@ -138,12 +138,13 @@ sub Finalize {
 	my $xml_converter = XML::Hash->new();
     my $ini = $MTT::Globals::Internals->{ini};
 	my $path = MTT::Values::Value( $ini, "MTT", 'xml_dir');
-	unless(-d $path)
- 	{
-		     mkdir $path or die;
-	}
 	if(defined($path))
 	{
+
+		unless(-d $path)
+ 		{
+			     mkdir $path or die;
+		}
 		foreach my $item (@results)
 		{
 			print Dumper($item);
