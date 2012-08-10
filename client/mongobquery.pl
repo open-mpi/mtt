@@ -271,6 +271,7 @@ elsif ($opt_query)
 			$DateTime_end_time = DateTime->now;
 		}
 
+		#print "hash start_time ", $DateTime_start_time,  " hash end_time ", $DateTime_end_time, "\n";
 
 		print "\n\nacceptable dates:\n";
 		my $count = 1;
@@ -279,7 +280,6 @@ elsif ($opt_query)
 		while(DateTime->compare( $DateTime_start_time, $DateTime_end_time )!=1)
 		{
 
-			$DateTime_end_time->subtract(years=> @arg_to_subtract[0],months=>@arg_to_subtract[1],days =>@arg_to_subtract[2]);
 			my $month = $DateTime_end_time->month();
 			my $day = $DateTime_end_time->day();
 			if(!($day =~ m/\d{2}/))
@@ -298,11 +298,11 @@ elsif ($opt_query)
 				print"\n";
 			}
 			$count++;
+			$DateTime_end_time->subtract(years=> @arg_to_subtract[0],months=>@arg_to_subtract[1],days =>@arg_to_subtract[2]);
 
 		}
 		#print"\n\n @date_array\n\n";
 	}
-	#print "hash start_time ", $DateTime_start_time,  " hash end_time ", $DateTime_end_time, "\n";
 	#print "time zone ",$timezone,"\n";
 
 	my $query_to_mongo = string2query($gql);
