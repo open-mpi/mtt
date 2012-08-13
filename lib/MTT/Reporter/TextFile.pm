@@ -124,30 +124,35 @@ sub Init {
 }
 
 #--------------------------------------------------------------------------
-
-sub Finalize {
-	my $flush_mode = undef;
-	if ($MTT::Globals::Values->{save_intermediate_report}){
-		$flush_mode = "finalize";
+sub resolve_template
+{
+	my ($template,@arg) = @_;
+	my $i2=($#arg+1)/2;
+	for(my $i=0;$i<($#arg+1)/2;$i++)
+	{
+		print @arg[$i]," ", @arg[$i2],"\n";
+		$template =~ s/\%@arg[$i]\%/@arg[$i2]/g;
+		$i2++;
 	}
-    # Print a roll-up report
-    _summary_report(\@results, $flush_mode)
-        if (@results);
+	return $template;
+}
+
+sub get_xml
+{
+	my $xml_template = "<report><product_name>%product_name%</product_name><product_version>%product_version%</product_version><total_duration>%duration%</total_duration><total_tests>%total_tests%</total_tests><failed_tests>%failed_tests%</failed_tests><quality>%quality%</quality></report>";
 	my $i=0;
 	my $to_xml;
-	my $xml_converter = XML::Hash->new();
     my $ini = $MTT::Globals::Internals->{ini};
 	my $path = MTT::Values::Value( $ini, "MTT", 'xml_dir');
 	if(defined($path))
 	{
-
+		my (@results) = @_;
 		unless(-d $path)
  		{
-			     mkdir $path or die;
+			mkdir $path or die "can't create dir for xml output $!";
 		}
 		foreach my $item (@results)
 		{
-			print Dumper($item);
 			if(defined($item->{"Test Run"}))
 			{
 				$item = $item->{"Test Run"};
@@ -157,12 +162,10 @@ sub Finalize {
 				print "@$item\n";
 				foreach my $inner_item (@$item)
 				{
-				
-					$i++;
 					print "$path\n";
 					$to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"report_date"} = $inner_item->{"start_timestamp_human"};
-
-
+					$to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"product_name"} = $inner_item->{"mpi_name"};
+					$to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"product_version"} = $inner_item->{"mpi_version"};
 					$inner_item->{"duration"} =~ m/\d+/;
 					if(!defined($to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"duration"}))
 					 {
@@ -176,78 +179,47 @@ sub Finalize {
 					}
 					($to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"total_tests"})++;
 					
-					if($inner_item->{"result_message"} eq "Passed" || $inner_item->{"result_message"} eq "Success" || $inner_item->{"result_message"} eq "1")
+					if(!defined($to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"failed_tests"}))
 					{
-						if(!defined($to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"passed_tests"}))
-						{
-							$to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"passed_tests"} = 0;
-						}
-						($to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"passed_tests"})++;
-
-						push(@{$to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"tests_executed_status"}},"success");
-
+						$to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"failed_tests"} = 0;
 					}
-
+					
+					if($inner_item->{"result_message"} ne "Passed" && $inner_item->{"result_message"} ne "Success" && $inner_item->{"result_message"} ne "1")
+					{
+						($to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"failed_tests"})++;
+					}
+					
+					$to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"quality"} = int (100 - ($to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"failed_tests"})/($to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"total_tests"})*100);
 				}
 			}
-
 		}
-
 		my $i=0;
+		print "quququ\n";
+		print "dumper\n",Dumper($to_xml),"\n";
 		my @keys_mpis = keys %$to_xml;
 		foreach my $item (@keys_mpis)
 		{
 			my @keys_versions = keys %{$to_xml->{$item}};
 			foreach my $inner_item (@keys_versions)
-			{
+			{	
+				open FILE, ">$path/output_$i.xml";
+				print FILE resolve_template($xml_template, keys %{$to_xml->{$item}->{$inner_item}}, values %{$to_xml->{$item}->{$inner_item}});
+				close(FILE);
+				#print "qqqkeys ",keys %{$to_xml->{$item}->{$inner_item}}," qqqvalues", values %{$to_xml->{$item}->{$inner_item}},"\n";
 				$i++;
-				my $output = IO::File->new(">$path/output_$i.xml");
-				my $writer = XML::Writer->new(OUTPUT => $output);
-					
-				$writer->xmlDecl( 'UTF-8' );
-
-				$writer->startTag("report");
-			
-				$writer->startTag("product_name");	
-				$writer->characters($item);
-				$writer->endTag("product_name");
-				
-				$writer->startTag("product_version");
-				$writer->characters($inner_item);
-				$writer->endTag("product_version");
-
-
-				$writer->startTag("report_date");
-				$writer->characters($to_xml->{$item}->{$inner_item}->{"report_date"});
-				$writer->endTag("report_date");
-
-
-				$writer->startTag("total_duration");
-				$writer->characters(_convert_duration($to_xml->{$item}->{$inner_item}->{"duration"}));
-				$writer->endTag("total_duration");
-
-
-				$writer->startTag("total_tests");
-				$writer->characters($to_xml->{$item}->{$inner_item}->{"total_tests"});
-				$writer->endTag("total_tests");
-
-				$writer->startTag("failed_tests");
-				$writer->characters($to_xml->{$item}->{$inner_item}->{"total_tests"}-$to_xml->{$item}->{$inner_item}->{"passed_tests"});
-				$writer->endTag("failed_tests");
-
-
-
-				$writer->startTag("quality");
-				my $procen = int(($to_xml->{$item}->{$inner_item}->{"passed_tests"})/($to_xml->{$item}->{$inner_item}->{"total_tests"})*100);
-				$writer->characters("$procen\%");
-				$writer->endTag("quality");
-				$writer->endTag("report");
-				$writer->end();
-				$output->close();
-
-			}			
+			}
 		}
 	}
+}
+sub Finalize {
+	my $flush_mode = undef;
+	if ($MTT::Globals::Values->{save_intermediate_report}){
+		$flush_mode = "finalize";
+	}
+    # Print a roll-up report
+    _summary_report(\@results, $flush_mode)
+        if (@results);
+	get_xml(@results);
 	undef $dirname;
 	undef $filename;
 	undef $written_files;
