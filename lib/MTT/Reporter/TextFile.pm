@@ -26,8 +26,6 @@ use File::Basename;
 use File::Temp;
 use Text::Wrap;
 use File::Copy;
-use XML::Writer;
-use XML::Hash;
 use IO::File;
 
 # directory and file to write to
