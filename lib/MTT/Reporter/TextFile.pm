@@ -139,7 +139,7 @@ sub resolve_template
 
 sub get_xml
 {
-	my $xml_template = "<report><product_name>%product_name%</product_name><product_version>%product_version%</product_version><total_duration>%duration%</total_duration><total_tests>%total_tests%</total_tests><failed_tests>%failed_tests%</failed_tests><quality>%quality%</quality></report>";
+	my $xml_template = "<report><scratch_root>%scratch_root%</scratch_root><product_name>%product_name%</product_name><product_version>%product_version%</product_version><total_duration>%duration%</total_duration><total_tests>%total_tests%</total_tests><failed_tests>%failed_tests%</failed_tests><quality>%quality%</quality></report>";
 	my $i=0;
 	my $to_xml;
     my $ini = $MTT::Globals::Internals->{ini};
@@ -162,7 +162,10 @@ sub get_xml
 				print "@$item\n";
 				foreach my $inner_item (@$item)
 				{
-					print "$path\n";
+					if(!defined($to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"scratch_root"}))
+					 {
+						 $to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"scratch_root"} =MTT::Values::Functions::scratch_root();
+					 }
 					$to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"report_date"} = $inner_item->{"start_timestamp_human"};
 					$to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"product_name"} = $inner_item->{"mpi_name"};
 					$to_xml->{$inner_item->{"mpi_name"}}->{$inner_item->{"mpi_version"}}->{"product_version"} = $inner_item->{"mpi_version"};
@@ -194,8 +197,6 @@ sub get_xml
 			}
 		}
 		my $i=0;
-		print "quququ\n";
-		print "dumper\n",Dumper($to_xml),"\n";
 		my @keys_mpis = keys %$to_xml;
 		foreach my $item (@keys_mpis)
 		{
