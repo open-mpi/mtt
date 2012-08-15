@@ -35,6 +35,112 @@ use Data::Dumper;
 # through other "use" statements.
 
 #--------------------------------------------------------------------------
+sub get_codecov_xml
+{
+	my($product_name) = @_;
+    my $ini = $MTT::Globals::Internals->{ini};
+	my $path = MTT::Values::Value( $ini, "MTT", 'codecov_dir');
+	if(!defined($path))
+	{
+		return "";
+	}
+	my $big_string = 'my $path = \'%path%\';
+my $product_name = \'%product_name%\';
+open FILE, $path . \'/CodeCoverage/__CODE_COVERAGE.HTML\'  or die "$!";
+my $str;
+my @val;
+while (<FILE>) 
+{	
+	$str = $_;
+	if ($str =~ m/<TD ALIGN=\"center\"( STYLE=\"font-weight:bold\"){0,1}>\s*\d+[\.\,]*\d*<\/TD>/)
+	{
+		if($str =~ m/\d+[\.\,]*\d*/)
+		{
+			my $t_val = $&;
+			$t_val =~ s/\,//g; 
+			push(@val,$t_val);
+		}
+	}
+}
+close FILE;
+
+open FILE, ">$path/codecov_output.xml";
+print FILE "<codecov_report>";
+
+print FILE "<product_name>";
+print FILE $product_name;
+print FILE "</product_name>";
+
+print FILE "<Files>";
+
+print FILE "<total>";
+print FILE @val[0];
+print FILE "</total>";
+
+print FILE "<cvrd>";
+print FILE @val[1];
+print FILE "</cvrd>";
+
+print FILE "<uncvrd>";
+print FILE @val[2];
+print FILE "</uncvrd>";
+
+print FILE "<percent>";
+print FILE (int(@val[3]))."%";
+print FILE "</percent>";
+
+print FILE "</Files>";
+
+print FILE "<Functions>";
+
+print FILE "<total>";
+print FILE @val[4];
+print FILE "</total>";
+
+print FILE "<cvrd>";
+print FILE @val[5];
+print FILE "</cvrd>";
+
+print FILE "<uncvrd>";
+print FILE @val[6];
+print FILE "</uncvrd>";
+
+print FILE "<percent>";
+print FILE (int(@val[7]))."%";
+print FILE "</percent>";
+
+print FILE "</Functions>";
+
+print FILE "<Blocks>";
+
+print FILE "<total>";
+print FILE @val[8];
+print FILE "</total>";
+
+print FILE "<cvrd>";
+print FILE @val[9];
+print FILE "</cvrd>";
+
+print FILE "<uncvrd>";
+print FILE @val[10];
+print FILE "</uncvrd>";
+
+print FILE "<percent>";
+print FILE (int(@val[11]))."%";
+print FILE "</percent>";
+
+print FILE "</Blocks>";
+print FILE "</codecov_report>";
+close(FILE);';
+
+
+$big_string =~ s/%path%/$path/g;
+$big_string =~ s/%product_name%/$product_name/g;
+open FILE, ">$path/get_xml_script.pl";
+print FILE $big_string;
+close (FILE);
+return 'perl '. $path . '/get_xml_script.pl';
+}
 
 # Returns the result value (array or scalar) of a perl eval
 sub perl {
