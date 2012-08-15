@@ -960,6 +960,42 @@ sub _fill_cluster_info {
 			$info_form->{node_os_kernel} = `uname -s`;
 			$info_form->{node_os_release} = `uname -r -v`;
 			$info_form->{node_arch} = `uname -p`;
+			$info_form->{ofed_info} = `ofed_info | head -1`;
+			
+			my $cap_output = `ibv_devinfo | head -3`;
+			if($cap_output =~m/fw_ver:\s+\d+([\.\,]\d+)*/)
+			{	
+				$cap_output = $&;
+				$cap_output =~ m/\d+([\.\,]\d+)*/;
+			    $info_form->{ib_card_firmware_version}=$&;
+			}
+			my $cap_output = `ibv_devinfo -v`;
+			if($cap_output =~m/active_width:\s+\d+X/)
+			{
+				$cap_output = $&;
+				$cap_output =~ m/\d+/;
+			    if($& eq "1")
+				{
+					$info_form->{card_type} = 'sdr';
+				}elsif($& eq "2")
+				{
+					$info_form->{card_type} = 'ddr';
+							
+				}elsif($& eq "4")
+				{
+					$info_form->{card_type} = 'qdr';
+
+							
+				}elsif($& eq "14")
+				{
+					$info_form->{card_type} = 'fdr';
+				}else
+				{
+					$info_form->{card_type} = 'unknow';
+				}
+
+			}
+
     }
 
     return $info_form;
