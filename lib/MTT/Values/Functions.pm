@@ -37,7 +37,8 @@ use Data::Dumper;
 #--------------------------------------------------------------------------
 sub get_codecov_xml
 {
-	my($product_name) = @_;
+	my($product_name,$report_url) = @_;
+	$report_url = $report_url . "\/";
     my $ini = $MTT::Globals::Internals->{ini};
 	my $path = MTT::Values::Value( $ini, "MTT", 'codecov_dir');
 	if(!defined($path))
@@ -46,6 +47,8 @@ sub get_codecov_xml
 	}
 	my $big_string = 'my $path = \'%path%\';
 my $product_name = \'%product_name%\';
+my $report_url= \'%report_url%\';
+my $date = `date`;
 open FILE, $path . \'/CodeCoverage/__CODE_COVERAGE.HTML\'  or die "$!";
 my $str;
 my @val;
@@ -65,11 +68,22 @@ while (<FILE>)
 close FILE;
 
 open FILE, ">$path/codecov_output.xml";
+print FILE "<?xml version=\"1.0\"?>";
 print FILE "<codecov_report>";
 
 print FILE "<product_name>";
 print FILE $product_name;
 print FILE "</product_name>";
+
+
+print FILE "<report_url>";
+print FILE $report_url;
+print FILE "</report_url>";
+
+
+print FILE "<report_date>";
+print FILE $date;
+print FILE "</report_date>";
 
 print FILE "<Files>";
 
@@ -136,6 +150,7 @@ close(FILE);';
 
 $big_string =~ s/%path%/$path/g;
 $big_string =~ s/%product_name%/$product_name/g;
+$big_string =~ s/%report_url%/$report_url/g;
 open FILE, ">$path/get_xml_script.pl";
 print FILE $big_string;
 close (FILE);

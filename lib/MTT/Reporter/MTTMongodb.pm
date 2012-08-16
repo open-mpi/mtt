@@ -158,19 +158,6 @@ sub Init {
         PING => 1,
         Description => 'Pinging a server'
     };
-	#DINARDINARDINARDINAR
-	#my $req = POST ($url, $form);
-    #$req->authorization_basic($username, $password);
-	#my $response = _do_request($req);
-	#if (! $response->is_success()) {
-	#    Warning(">> Failed test ping to MTTGDS URL: $url\n");
-	#    Warning(">> Error was: " . $response->status_line . "\n" . 
-	#            $response->content);
-	#    Error(">> Do not want to continue with possible bad submission URL -- aborting\n");
-	#}
-	#DINARDINARDINARDINAR
-	#Debug("MTTGDS reporter initialized ($realm, $username, XXXXXX, $url, $platform)\n");
-	#Debug("MTTGDS reporter respond content ($response->content)\n");
 
     # Extract data from the ini fields
 
@@ -255,6 +242,19 @@ sub Finalize {
 
 #--------------------------------------------------------------------------
 
+sub resolve_template
+{
+	my ($template,@arg) = @_;
+	my $i2=($#arg+1)/2;
+	for(my $i=0;$i<($#arg+1)/2;$i++)
+	{
+		print @arg[$i]," ", @arg[$i2],"\n";
+		$template =~ s/\%@arg[$i]\%/@arg[$i2]/g;
+		$i2++;
+	}
+	return $template;
+}
+
 sub _do_submit {
 	#DinarDinarDinarDinar
 	use MongoDB;
@@ -268,11 +268,24 @@ sub _do_submit {
 	my $TestRunPhase = $db->TestRunPhase;
 	my $MPIInstallPhase = $db->MPIInstallPhase;
 	my $TestBuildPhase = $db->TestBuildPhase;
+	my $summary_reports = $db->Summary_reports;
+	my $codecov_reports = $db->Codecov_reports;
 	my $doc;
 	my @numbers;
 	my $inserted_id;
 	my $old_date;
 	my %new_date;
+	my $xml_template = "<report><report_date>%report_date%</report_date><scratch_url>%scratch_url%</scratch_url><scratch_root>%scratch_root%</scratch_root><product_name>%product_name%</product_name><product_version>%product_version%</product_version><total_duration>%duration%</total_duration><total_tests>%total_tests%</total_tests><failed_tests>%failed_tests%</failed_tests><quality>%quality%</quality></report>";
+	my $i=0;
+	my $to_xml;
+    my $ini = $MTT::Globals::Internals->{ini};
+	my $path = MTT::Values::Value( $ini, "MTT", 'xml_dir');
+	my $scratch_url = MTT::Values::Value( $ini, "MTT", 'scratch_url');
+	my $codecovdir = MTT::Values::Value( $ini, "MTT", 'codecov_dir');
+	my $module = MTT::Values::Value( $ini, "MTT", 'intel_env_module');
+	my $product_name;
+	my $report_url= MTT::Values::Value( $ini, "MTT", 'scratch_url');
+	my $date = `date`;
 	#DinarDinarDinarDinar
 	
     # Make a default form that will be used to seed all the forms that
@@ -384,185 +397,226 @@ sub _do_submit {
                     next;
                 }
 				
-				#DinarDinarDinar
                 if ( $phase eq "Test Run" )
 				{
-					
-					#$old_date = $form->{'modules'}->{'TestRunPhase'}->{'start_time'};
-					#@numbers = split(/:|-|\s/,$old_date);
-					#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-					#%new_date = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> 'America/Chicago');
-					#$form->{'TestRun_start_time'} = DateTime->new(%new_date);
-
-
-					#$old_date = $form->{'modules'}->{'TestBuildPhase'}->{'start_time'};
-					#@numbers = split(/:|-|\s/,$old_date);
-					#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-					#%new_date = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> 'America/Chicago');
-					#$form->{'TestBuild_start_time'} = DateTime->new(%new_date);
-
-					
-					#$old_date = $form->{'modules'}->{'MpiInstallPhase'}->{'start_time'};
-					#@numbers = split(/:|-|\s/,$old_date);
-					#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-					#%new_date = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> 'America/Chicago');
-					#$form->{'MpiInstall_start_time'} = DateTime->new(%new_date);
-					
-						
-					#$old_date = $form->{'modules'}->{'TestRunPhase'}->{'end_time'};
-					#@numbers = split(/:|-|\s/,$old_date);
-					#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-					
-					#%new_date = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> 'America/Chicago');
-					#$form->{'TestRun_end_time'} = DateTime->new(%new_date);
-
-
-					#$old_date = $form->{'modules'}->{'TestBuildPhase'}->{'end_time'};
-					#@numbers = split(/:|-|\s/,$old_date);
-					#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-					#%new_date = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> 'America/Chicago');
-					#$form->{'TestBuild_end_time'} = DateTime->new(%new_date);
-
-					
-					#$old_date = $form->{'modules'}->{'MpiInstallPhase'}->{'end_time'};
-					#@numbers = split(/:|-|\s/,$old_date);
-					#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-					#%new_date = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> 'America/Chicago');
-					#$form->{'MpiInstall_end_time'} = DateTime->new(%new_date);
-
-
 		  	 		my $inserted_id = $TestRunPhase->insert($form);
-					
-					
-					
-					#$doc = ($TestRunPhase->find({'_id'=>$inserted_id}))->next;
-
-					#TestRun
-					#$old_date = $doc->{'modules'}->{'TestRunPhase'}->{'start_time'};
-					#@numbers = split(/:|-|\s/,$old_date);
-					#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-					#%new_date = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> 'America/Chicago');
-					#$TestRunPhase->update({'_id'=>$inserted_id},{'$set'=>{'modules.TestRunPhase.start_time'=>DateTime->new(%new_date)}});
-					
-					#$old_date = $doc->{'modules'}->{'TestRunPhase'}->{'end_time'};
-					#@numbers = split(/:|-|\s/,$old_date);
-					#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-					#%new_date = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> 'America/Chicago');
-					#$TestRunPhase->update({'_id'=>$inserted_id},{'$set'=>{'modules.TestRunPhase.end_time'=>DateTime->new(%new_date)}});
-					
-					#MPIInstall
-					#$old_date = $doc->{'modules'}->{'MpiInstallPhase'}->{'start_time'};
-					#@numbers = split(/:|-|\s/,$old_date);
-					#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-					#%new_date = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> 'America/Chicago');
-					#$TestRunPhase->update({'_id'=>$inserted_id},{'$set'=>{'modules.MpiInstallPhase.start_time'=>DateTime->new(%new_date)}});
-					
-					#$old_date = $doc->{'modules'}->{'MpiInstallPhase'}->{'end_time'};
-					#@numbers = split(/:|-|\s/,$old_date);
-					#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-					#%new_date = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> 'America/Chicago');
-					#$TestRunPhase->update({'_id'=>$inserted_id},{'$set'=>{'modules.MpiInstallPhase.end_time'=>DateTime->new(%new_date)}});
-
-
-					#TestBuild
-					#$old_date = $doc->{'modules'}->{'TestBuildPhase'}->{'start_time'};
-					#@numbers = split(/:|-|\s/,$old_date);
-					#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-					#%new_date = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> 'America/Chicago');
-					#$TestRunPhase->update({'_id'=>$inserted_id},{'$set'=>{'modules.TestBuildPhase.start_time'=>DateTime->new(%new_date)}});
-					
-					#$old_date = $doc->{'modules'}->{'TestBuildPhase'}->{'end_time'};
-					#@numbers = split(/:|-|\s/,$old_date);
-					#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-					#%new_date = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> 'America/Chicago');
-					#$TestRunPhase->update({'_id'=>$inserted_id},{'$set'=>{'modules.TestBuildPhase.end_time'=>DateTime->new(%new_date)}});
-
-
-
+	
 				}
 				if ( $phase eq "MPI Install" )
-				{
-				   	
-					#$old_date = $form->{'modules'}->{'MpiInstallPhase'}->{'start_time'};
-					#@numbers = split(/:|-|\s/,$old_date);
-					#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-					#%new_date = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> 'America/Chicago');
-					#$form->{'MpiInstall_start_time'} = DateTime->new(%new_date);
-
-
-					#$old_date = $form->{'modules'}->{'MpiInstallPhase'}->{'end_time'};
-					#@numbers = split(/:|-|\s/,$old_date);
-					#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-					#%new_date = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> 'America/Chicago');
-					#$form->{'MpiInstall_end_time'} = DateTime->new(%new_date);
-					
+				{	
 					$inserted_id =  $MPIInstallPhase->insert($form);
-					
-					
-					
-					
-					#$doc = ($MPIInstallPhase->find({'_id'=>$inserted_id}))->next;
-					
-					#MPIInstall
-					#$old_date = $doc->{'modules'}->{'MpiInstallPhase'}->{'start_time'};
-					#@numbers = split(/:|-|\s/,$old_date);
-					#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-					#%new_date = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> 'America/Chicago');
-					#$MPIInstallPhase->update({'_id'=>$inserted_id},{'$set'=>{'modules.MpiInstallPhase.start_time'=>DateTime->new(%new_date)}});
-					
-					#$old_date = $doc->{'modules'}->{'MpiInstallPhase'}->{'end_time'};
-					#@numbers = split(/:|-|\s/,$old_date);
-					#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-					#%new_date = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> 'America/Chicago');
-					#$MPIInstallPhase->update({'_id'=>$inserted_id},{'$set'=>{'modules.MpiInstallPhase.end_time'=>DateTime->new(%new_date)}});
-
 				}
 				if ( $phase eq "Test Build")
 				{
 
-
-
-					#$old_date = $form->{'modules'}->{'TestBuildPhase'}->{'start_time'};
-					#@numbers = split(/:|-|\s/,$old_date);
-					#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-					#%new_date = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> 'America/Chicago');
-					#$form->{'TestBuild_start_time'} = DateTime->new(%new_date);
-
-
-					#$old_date = $form->{'modules'}->{'TestBuildPhase'}->{'end_time'};
-					#@numbers = split(/:|-|\s/,$old_date);
-					#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-					#%new_date = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> 'America/Chicago');
-
-					#$form->{'TestBuild_end_time'} = DateTime->new(%new_date);
-
 					my $inserted_id =  $TestBuildPhase->insert($form);
-					
-
-
-					#$doc = ($TestBuildPhase->find({'_id'=>$inserted_id}))->next;
-
-					#TestBuild
-					#$old_date = $doc->{'modules'}->{'TestBuildPhase'}->{'start_time'};
-					#@numbers = split(/:|-|\s/,$old_date);
-					#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-					#%new_date = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> 'America/Chicago');
-					#$TestBuildPhase->update({'_id'=>$inserted_id},{'$set'=>{'modules.TestBuildPhase.start_time'=>DateTime->new(%new_date)}});
-					
-					#$old_date = $doc->{'modules'}->{'TestBuildPhase'}->{'end_time'};
-					#@numbers = split(/:|-|\s/,$old_date);
-					#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
-					#%new_date = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => @numbers[3],minute => @numbers[4],second => @numbers[5],nanosecond => 0,time_zone=> 'America/Chicago');
-					#$TestBuildPhase->update({'_id'=>$inserted_id},{'$set'=>{'modules.TestBuildPhase.end_time'=>DateTime->new(%new_date)}});
 				}
-				#DinarDinarDinar
                 
+				$product_name = $form->{'modules'}->{'MpiInfo'}->{'mpi_name'};
+				
+				if(defined($path) && $phase eq "Test Run")
+				{
+					my (@results) = @_;
+					unless(-d $path)
+					{
+						mkdir $path or die "can't create dir for xml output $!";
+					}
+					if(!defined($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"scratch_root"}))
+					{
+						 $to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"scratch_root"} =MTT::Values::Functions::scratch_root();
+					}
+					
+					if(!defined($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"report_date"}))
+					{
+						$to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"report_date"} = $form->{'modules'}->{'TestRunPhase'}->{'start_time'};
+					}
+					
+					if(!defined($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"scratch_url"}))
+					{
+						$to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"scratch_url"} = $scratch_url . '/';
+					}
+					
+					$to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"report_date"} = $form->{'modules'}->{'TestRunPhase'}->{'start_time'};
+					$to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"product_name"} = $form->{'modules'}->{'MpiInfo'}->{'mpi_name'};
+					$to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"product_version"} = $form->{'modules'}->{'MpiInfo'}->{'mpi_version'};
+					$form->{'modules'}->{'TestRunPhase'}->{'duration'} =~ m/\d+/;
+					if(!defined($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"duration"}))
+					 {
+						 $to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"duration"} = 0;
+					 }
+					 ($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"duration"}) += $&;
+					
+					if(!defined($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"total_tests"}))
+					{
+						$to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"total_tests"} = 0;
+					}
+					($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"total_tests"})++;
+					
+					if(!defined($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"failed_tests"}))
+					{
+						$to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"failed_tests"} = 0;
+					}
+					
+					if($form->{'modules'}->{'TestRunPhase'}->{'status'} ne "Passed" && $form->{'modules'}->{'TestRunPhase'}->{'status'} ne "Success" && $form->{'modules'}->{'TestRunPhase'}->{'status'} ne "1")
+					{
+						($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"failed_tests"})++;
+					}
+					
+					$to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"quality"} = int (100 - ($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"failed_tests"})/($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"total_tests"})*100);
+				}					
                 $submitted = 1;
             }
         }
         Verbose(">> Submitted $phase to MongoDB\n")
             if ($submitted);
     }
+	
+	my $i=0;
+	my @keys_mpis = keys %$to_xml;
+	foreach my $item (@keys_mpis)
+	{
+		my @keys_versions = keys %{$to_xml->{$item}};
+		foreach my $inner_item (@keys_versions)
+		{	
+			open FILE, ">$path/output_$i.xml";
+			print FILE resolve_template($xml_template, keys %{$to_xml->{$item}->{$inner_item}}, values %{$to_xml->{$item}->{$inner_item}});
+			close(FILE);
+			$i++;
+		}
+	}
+	if(defined($summary_reports))
+	{
+		foreach my $item (@keys_mpis)
+		{
+			my @keys_versions = keys %{$to_xml->{$item}};
+			foreach my $inner_item (@keys_versions)
+			{	
+				$summary_reports->insert($to_xml->{$item}->{$inner_item});
+			}
+		}
+	}else
+	{
+		Verbose("cann't submit summary_report to mongodb\n");
+	}
+	
+	if(MTT::Values::Value( $ini, "MTT", 'mode') eq "codecov")
+	{
+		opendir(DIR,$codecovdir);
+		my @FILES= readdir(DIR);
+		foreach my $item (@FILES)
+		{
+			$item = $codecovdir. '/'. $item;
+			if((-s $item) == 0)
+			{
+				print "$item\n";
+				unlink ($item);
+				
+			}
+		}
+		closedir(DIR);
+		print `module load $module  && cd $codecovdir && profmerge`;
+		print `module load $module  && cd $codecovdir && echo "oshmem/">tocodecov.txt && echo "~_f.c">>tocodecov.txt && codecov -counts -comp tocodecov.txt`;
+		
+		open FILE, $codecovdir . '/CodeCoverage/__CODE_COVERAGE.HTML'  or die "$!";
+		my $str;
+		my @val;
+		while (<FILE>) 
+		{	
+			$str = $_;
+			if ($str =~ m/<TD ALIGN=\"center\"( STYLE=\"font-weight:bold\"){0,1}>\s*\d+[\.\,]*\d*<\/TD>/)
+			{
+				if($str =~ m/\d+[\.\,]*\d*/)
+				{
+					my $t_val = $&;
+					$t_val =~ s/\,//g; 
+					push(@val,$t_val);
+				}
+			}
+		}
+		close FILE;
+
+		open FILE, ">$codecovdir/codecov_output.xml";
+		print FILE "<?xml version=\"1.0\"?>";
+		print FILE "<codecov_report>";
+
+		print FILE "<product_name>";
+		print FILE $product_name;
+		print FILE "</product_name>";
+
+
+		print FILE "<report_url>";
+		print FILE $report_url;
+		print FILE "</report_url>";
+
+
+		print FILE "<report_date>";
+		print FILE $date;
+		print FILE "</report_date>";
+
+		print FILE "<Files>";
+
+		print FILE "<total>";
+		print FILE @val[0];
+		print FILE "</total>";
+
+		print FILE "<cvrd>";
+		print FILE @val[1];
+		print FILE "</cvrd>";
+
+		print FILE "<uncvrd>";
+		print FILE @val[2];
+		print FILE "</uncvrd>";
+
+		print FILE "<percent>";
+		print FILE (int(@val[3]))."%";
+		print FILE "</percent>";
+
+		print FILE "</Files>";
+
+		print FILE "<Functions>";
+
+		print FILE "<total>";
+		print FILE @val[4];
+		print FILE "</total>";
+
+		print FILE "<cvrd>";
+		print FILE @val[5];
+		print FILE "</cvrd>";
+
+		print FILE "<uncvrd>";
+		print FILE @val[6];
+		print FILE "</uncvrd>";
+
+		print FILE "<percent>";
+		print FILE (int(@val[7]))."%";
+		print FILE "</percent>";
+
+		print FILE "</Functions>";
+
+		print FILE "<Blocks>";
+
+		print FILE "<total>";
+		print FILE @val[8];
+		print FILE "</total>";
+
+		print FILE "<cvrd>";
+		print FILE @val[9];
+		print FILE "</cvrd>";
+
+		print FILE "<uncvrd>";
+		print FILE @val[10];
+		print FILE "</uncvrd>";
+
+		print FILE "<percent>";
+		print FILE (int(@val[11]))."%";
+		print FILE "</percent>";
+
+		print FILE "</Blocks>";
+		print FILE "</codecov_report>";
+		close(FILE);
+		
+	}
+	
 }
 
 #--------------------------------------------------------------------------

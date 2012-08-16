@@ -218,7 +218,7 @@ sub Finalize {
     # Print a roll-up report
     _summary_report(\@results, $flush_mode)
         if (@results);
-	get_xml(@results);
+	#get_xml(@results);
 	undef $dirname;
 	undef $filename;
 	undef $written_files;
