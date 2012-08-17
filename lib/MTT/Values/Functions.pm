@@ -1265,10 +1265,11 @@ sub cat {
 # Traverse a tree (or a bunch of trees) and return all the executables
 # found
 my @find_executables_data;
+my $find_executables_template;
 sub find_executables {
     my $array = get_array_ref(\@_);
     Debug("&find_executables got @$array\n");
-	
+
     @find_executables_data = ();
     my @dirs;
     foreach my $d (@$array) {
@@ -1298,6 +1299,42 @@ sub find_executables_sub {
     push(@find_executables_data, $File::Find::name)
         if (-x $_);
 }
+
+sub find_executables_regexp {
+    $find_executables_template = shift(@_);
+    my $array = get_array_ref(\@_);
+    Debug("&find_executables_regexp got $find_executables_template, @$array\n");
+
+    @find_executables_data = ();
+    my @dirs;
+    foreach my $d (@$array) {
+        push(@dirs, $d)
+            if ("" ne $d);
+    }
+    File::Find::find(\&find_executables_sub_regexp, @dirs);
+
+    Debug("&find_exectuables_regexp returning: @find_executables_data\n");
+    return \@find_executables_data;
+}
+
+sub find_executables_sub_regexp {
+    # Don't process directories and links, and don't recurse down
+    # "special" directories
+    if ( -l $_ ) { return; }
+    if ( -d $_ ) {
+        if ((/\.svn/) || (/\.deps/) || (/\.libs/) || (/autom4te\.cache/)) {
+            $File::Find::prune = 1;
+        }
+        return;
+    }
+
+    # $File::Find::name is the path relative to the starting point.
+    # $_ contains the file's basename.  The code automatically changes
+    # to the processed directory, so we want to examine $_.
+    push(@find_executables_data, $File::Find::name)
+        if ( (-x $File::Find::name) && ($File::Find::name =~ /$find_executables_template/));
+}
+
 
 #--------------------------------------------------------------------------
 
