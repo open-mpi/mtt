@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+vn !/usr/bin/env perl
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
@@ -1268,7 +1268,7 @@ my @find_executables_data;
 my $find_executables_template;
 sub find_executables {
     my $array = get_array_ref(\@_);
-    Debug("&find_executables got @$array\n");
+    Debug("&find_executables got @$array\n"); 
 
     @find_executables_data = ();
     my @dirs;
@@ -1332,7 +1332,7 @@ sub find_executables_sub_regexp {
     # $_ contains the file's basename.  The code automatically changes
     # to the processed directory, so we want to examine $_.
     push(@find_executables_data, $File::Find::name)
-        if ( (-x $File::Find::name) && ($File::Find::name =~ /$find_executables_template/));
+        if ( (-x $_) and ($_ =~ /$find_executables_template/));
 }
 
 
