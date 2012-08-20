@@ -1,4 +1,4 @@
-vn !/usr/bin/env perl
+!/usr/bin/env perl
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
