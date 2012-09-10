@@ -23,8 +23,6 @@ use HTTP::Request::Common qw(POST);
 use Data::Dumper;
 use File::Basename;
 use File::Temp qw(tempfile tempdir);
-use YAML::XS;
-use YAML;
 use POSIX qw(strftime);
 use File::stat;
 
@@ -32,7 +30,8 @@ my $enable_mongo = 1;
 my @needed_libs = (
 		'MongoDB', 
        	'MongoDB::OID', 
-
+		'YAML::XS',
+		'YAML',
 				);
 								    
 			
@@ -51,6 +50,8 @@ if($enable_mongo == 1)
 {
 	use MongoDB;
 	use MongoDB::OID;
+	use YAML::XS;
+	use YAML;
 }
 
 # http credentials
@@ -435,7 +436,7 @@ sub _do_submit {
 					}
 					if ( $phase eq "MPI Install" )
 					{	
-						A
+						
 						$inserted_id =  $MPIInstallPhase->insert($form);
 					}
 					if ( $phase eq "Test Build")
