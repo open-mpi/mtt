@@ -23,15 +23,16 @@ use HTTP::Request::Common qw(POST);
 use Data::Dumper;
 use File::Basename;
 use File::Temp qw(tempfile tempdir);
-
+use YAML::XS;
+use YAML;
 use POSIX qw(strftime);
 use File::stat;
-	
+
+my $enable_mongo = 1;
 my @needed_libs = (
 		'MongoDB', 
        	'MongoDB::OID', 
-		'YAML::XS', 
-		'YAML',
+
 				);
 								    
 			
@@ -41,16 +42,16 @@ foreach (@needed_libs)
     if ($@)
     {
 		Verbose("--> Not found library: $_\n");
-		Verbose("exiting...\n");
-		exit(0);
+		Verbose("can't submit to mongo\n");
+		$enable_mongo = 0;
 
 	};
 }
-
-use MongoDB;
-use MongoDB::OID;
-use YAML::XS;
-use YAML;
+if($enable_mongo == 1)
+{
+	use MongoDB;
+	use MongoDB::OID;
+}
 
 # http credentials
 my $username;
@@ -280,14 +281,22 @@ sub resolve_template
 }
 
 sub _do_submit {
-	$url =~ s/http:\/\///;
-	my $conn = MongoDB::Connection->new(host => $url);
-	my $db = $conn->mtt;
-	my $TestRunPhase = $db->TestRunPhase;
-	my $MPIInstallPhase = $db->MPIInstallPhase;
-	my $TestBuildPhase = $db->TestBuildPhase;
-	my $summary_reports = $db->Summary_reports;
-	my $codecov_reports = $db->Codecov_reports;
+	my $TestRunPhase;
+	my $MPIInstallPhase;
+	my $TestBuildPhase; 
+	my $summary_reports;
+	my $codecov_reports;
+	if($enable_mongo == 1)
+	{
+		$url =~ s/http:\/\///;
+		my $conn = MongoDB::Connection->new(host => $url);
+		my $db = $conn->mtt;
+		my $TestRunPhase = $db->TestRunPhase;
+		my $MPIInstallPhase = $db->MPIInstallPhase;
+		my $TestBuildPhase = $db->TestBuildPhase;
+		my $summary_reports = $db->Summary_reports;
+		my $codecov_reports = $db->Codecov_reports;
+	}
 	my $doc;
 	my @numbers;
 	my $inserted_id;
@@ -415,21 +424,24 @@ sub _do_submit {
                     next;
                 }
 				
-                if ( $phase eq "Test Run" )
+				if($enable_mongo == 1)
 				{
-		  	 		my $inserted_id = $TestRunPhase->insert($form);
+               		if ( $phase eq "Test Run" )
+					{
+			  	 		 $inserted_id = $TestRunPhase->insert($form);
+		
+					}
+					if ( $phase eq "MPI Install" )
+					{	
+						A
+						$inserted_id =  $MPIInstallPhase->insert($form);
+					}
+					if ( $phase eq "Test Build")
+					{
 	
+						 $inserted_id =  $TestBuildPhase->insert($form);
+					}
 				}
-				if ( $phase eq "MPI Install" )
-				{	
-					$inserted_id =  $MPIInstallPhase->insert($form);
-				}
-				if ( $phase eq "Test Build")
-				{
-
-					my $inserted_id =  $TestBuildPhase->insert($form);
-				}
-                
 				$product_name = $form->{'modules'}->{'MpiInfo'}->{'mpi_name'};
 				
 				if(defined($path) && $phase eq "Test Run")
@@ -502,7 +514,7 @@ sub _do_submit {
 			$i++;
 		}
 	}
-	if(defined($summary_reports))
+	if(defined($summary_reports) && $enable_mongo ==1)
 	{
 		foreach my $item (@keys_mpis)
 		{
@@ -632,6 +644,27 @@ sub _do_submit {
 		print FILE "</Blocks>";
 		print FILE "</codecov_report>";
 		close(FILE);
+		if($enable_mongo == 1)
+		{
+			my $hash_to_insert = {};
+			my $report_date = `date +%F` ." ". `date +%k:%M:%S`;
+			$hash_to_insert->{"codecov_report"}->{"report_date"} = $report_date;
+			$hash_to_insert->{"codecov_report"}->{"report_url"} = $report_url;
+			$hash_to_insert->{"codecov_report"}->{"product_name"} = $product_name;
+			$hash_to_insert->{"codecov_report"}->{"files"}->{"total"} = @val[0];
+			$hash_to_insert->{"codecov_report"}->{"files"}->{"cvrd"} = @val[1];
+			$hash_to_insert->{"codecov_report"}->{"files"}->{"uncvrd"} = @val[2];
+			$hash_to_insert->{"codecov_report"}->{"files"}->{"percent"} = (int(@val[3]))."%";
+			$hash_to_insert->{"codecov_report"}->{"functions"}->{"total"} = @val[4];
+			$hash_to_insert->{"codecov_report"}->{"functions"}->{"cvrd"} = @val[5];
+			$hash_to_insert->{"codecov_report"}->{"functions"}->{"uncvrd"} = @val[6];
+			$hash_to_insert->{"codecov_report"}->{"functions"}->{"percent"} = (int(@val[7]))."%";
+			$hash_to_insert->{"codecov_report"}->{"blocks"}->{"total"} = @val[8];
+			$hash_to_insert->{"codecov_report"}->{"blocks"}->{"cvrd"} = @val[9];
+			$hash_to_insert->{"codecov_report"}->{"blocks"}->{"uncvrd"} = @val[10];
+			$hash_to_insert->{"codecov_report"}->{"blocks"}->{"percent"} = (int(@val[11]))."%";
+			$codecov_reports->insert($hash_to_insert);
+		}
 		
 	}
 	
