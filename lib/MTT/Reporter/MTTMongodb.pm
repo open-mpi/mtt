@@ -23,10 +23,34 @@ use HTTP::Request::Common qw(POST);
 use Data::Dumper;
 use File::Basename;
 use File::Temp qw(tempfile tempdir);
-use YAML::XS;
 
 use POSIX qw(strftime);
 use File::stat;
+	
+my @needed_libs = (
+		'MongoDB', 
+       	'MongoDB::OID', 
+		'YAML::XS', 
+		'YAML',
+				);
+								    
+			
+foreach (@needed_libs)
+{
+   	eval "require $_";
+    if ($@)
+    {
+		Verbose("--> Not found library: $_\n");
+		Verbose("exiting...\n");
+		exit(0);
+
+	};
+}
+
+use MongoDB;
+use MongoDB::OID;
+use YAML::XS;
+use YAML;
 
 # http credentials
 my $username;
@@ -256,12 +280,6 @@ sub resolve_template
 }
 
 sub _do_submit {
-	#DinarDinarDinarDinar
-	use MongoDB;
-	use MongoDB::OID;
-	use YAML;
-	use Data::Dumper;
-	use YAML::XS;
 	$url =~ s/http:\/\///;
 	my $conn = MongoDB::Connection->new(host => $url);
 	my $db = $conn->mtt;
