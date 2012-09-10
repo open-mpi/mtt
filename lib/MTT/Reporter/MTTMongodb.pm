@@ -286,16 +286,18 @@ sub _do_submit {
 	my $TestBuildPhase; 
 	my $summary_reports;
 	my $codecov_reports;
+	my $conn;
+	my $db;
 	if($enable_mongo == 1)
 	{
 		$url =~ s/http:\/\///;
-		my $conn = MongoDB::Connection->new(host => $url);
-		my $db = $conn->mtt;
-		my $TestRunPhase = $db->TestRunPhase;
-		my $MPIInstallPhase = $db->MPIInstallPhase;
-		my $TestBuildPhase = $db->TestBuildPhase;
-		my $summary_reports = $db->Summary_reports;
-		my $codecov_reports = $db->Codecov_reports;
+		$conn = MongoDB::Connection->new(host => $url);
+		$db = $conn->mtt;
+		$TestRunPhase = $db->TestRunPhase;
+		$MPIInstallPhase = $db->MPIInstallPhase;
+		$TestBuildPhase = $db->TestBuildPhase;
+		$summary_reports = $db->Summary_reports;
+		$codecov_reports = $db->Codecov_reports;
 	}
 	my $doc;
 	my @numbers;
