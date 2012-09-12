@@ -26,33 +26,6 @@ use File::Temp qw(tempfile tempdir);
 use POSIX qw(strftime);
 use File::stat;
 
-my $enable_mongo = 1;
-my @needed_libs = (
-		'MongoDB', 
-       	'MongoDB::OID', 
-		'YAML::XS',
-		'YAML',
-				);
-								    
-			
-foreach (@needed_libs)
-{
-   	eval "require $_";
-    if ($@)
-    {
-		Verbose("--> Not found library: $_\n");
-		Verbose("can't submit to mongo\n");
-		$enable_mongo = 0;
-
-	};
-}
-if($enable_mongo == 1)
-{
-	use MongoDB;
-	use MongoDB::OID;
-	use YAML::XS;
-	use YAML;
-}
 
 # http credentials
 my $username;
@@ -282,6 +255,34 @@ sub resolve_template
 }
 
 sub _do_submit {
+	my $enable_mongo = 1;
+	my $ret_value;
+	my @needed_libs = (
+		'MongoDB', 
+       	'MongoDB::OID', 
+		'YAML::XS',
+		'YAML',
+				);
+								    
+			
+	foreach (@needed_libs)
+	{
+	   	$ret_value = eval "require $_";
+   	 	if ($@ || !defined($ret_value))
+	    {
+			Error("--> Not found library: $_\n");
+			Error("can't submit to mongo\n");
+			$enable_mongo = 0;
+
+		};
+	}
+	if($enable_mongo == 1)
+	{
+		require MongoDB;
+		require MongoDB::OID;
+		require YAML::XS;
+		require YAML;
+	}
 	my $TestRunPhase;
 	my $MPIInstallPhase;
 	my $TestBuildPhase; 
@@ -308,16 +309,12 @@ sub _do_submit {
 	my $xml_template = "<report><report_date>%report_date%</report_date><scratch_url>%scratch_url%</scratch_url><scratch_root>%scratch_root%</scratch_root><product_name>%product_name%</product_name><product_version>%product_version%</product_version><total_duration>%duration%</total_duration><total_tests>%total_tests%</total_tests><failed_tests>%failed_tests%</failed_tests><quality>%quality%</quality></report>";
 	my $i=0;
 	my $to_xml;
-    my $ini = $MTT::Globals::Internals->{ini};
-	my $path = MTT::Values::Value( $ini, "MTT", 'xml_dir');
-	my $scratch_url = MTT::Values::Value( $ini, "MTT", 'scratch_url');
-	my $codecovdir = MTT::Values::Value( $ini, "MTT", 'codecov_dir');
-	my $module = MTT::Values::Value( $ini, "MTT", 'intel_env_module');
-	my $product_name;
-	my $report_url= MTT::Values::Value( $ini, "MTT", 'scratch_url');
-	my $date = `date`;
-	#DinarDinarDinarDinar
+    my $ini = $MTT::Globals::Internals->{ini};	
+	print "qazqaz\n",MTT::Values::Value($ini, "MTT", 'INI_BASENAME');
+	my $path = MTT::Values::Value($ini, "MTT", 'xml_dir');
+	my $scratch_url = MTT::Values::Value($ini, "MTT", 'scratch_url');
 	
+
     # Make a default form that will be used to seed all the forms that
     # will be sent
     my $default_form = {
@@ -427,7 +424,7 @@ sub _do_submit {
                     next;
                 }
 				
-				if($enable_mongo == 1)
+				if($enable_mongo == 1 && MTT::Values::Value( $ini, "MTT", 'mode') ne "codecov")
 				{
                		if ( $phase eq "Test Run" )
 					{
@@ -444,10 +441,8 @@ sub _do_submit {
 	
 						 $inserted_id =  $TestBuildPhase->insert($form);
 					}
-				}
-				$product_name = $form->{'modules'}->{'MpiInfo'}->{'mpi_name'};
-				
-				if(defined($path) && $phase eq "Test Run")
+				}				
+				if(defined($path) && $phase eq "Test Run" && MTT::Values::Value( $ini, "MTT", 'mode') ne "codecov")
 				{
 					my (@results) = @_;
 					unless(-d $path)
@@ -531,146 +526,6 @@ sub _do_submit {
 	{
 		Verbose("cann't submit summary_report to mongodb\n");
 	}
-	
-	if(MTT::Values::Value( $ini, "MTT", 'mode') eq "codecov")
-	{
-		opendir(DIR,$codecovdir);
-		my @FILES= readdir(DIR);
-		foreach my $item (@FILES)
-		{
-			$item = $codecovdir. '/'. $item;
-			if((-s $item) == 0)
-			{
-				print "$item\n";
-				unlink ($item);
-				
-			}
-		}
-		closedir(DIR);
-		print `module load $module  && cd $codecovdir && profmerge`;
-		print `module load $module  && cd $codecovdir && echo "oshmem/">tocodecov.txt && echo "~_f.c">>tocodecov.txt && codecov -counts -comp tocodecov.txt`;
-		
-		open FILE, $codecovdir . '/CodeCoverage/__CODE_COVERAGE.HTML'  or die "$!";
-		my $str;
-		my @val;
-		while (<FILE>) 
-		{	
-			$str = $_;
-			if ($str =~ m/<TD ALIGN=\"center\"( STYLE=\"font-weight:bold\"){0,1}>\s*\d+[\.\,]*\d*<\/TD>/)
-			{
-				if($str =~ m/\d+[\.\,]*\d*/)
-				{
-					my $t_val = $&;
-					$t_val =~ s/\,//g; 
-					push(@val,$t_val);
-				}
-			}
-		}
-		close FILE;
-
-		open FILE, ">$codecovdir/codecov_output.xml";
-		print FILE "<?xml version=\"1.0\"?>";
-		print FILE "<codecov_report>";
-
-		print FILE "<product_name>";
-		print FILE $product_name;
-		print FILE "</product_name>";
-
-
-		print FILE "<report_url>";
-		print FILE $report_url;
-		print FILE "</report_url>";
-
-
-		print FILE "<report_date>";
-		print FILE $date;
-		print FILE "</report_date>";
-
-		print FILE "<Files>";
-
-		print FILE "<total>";
-		print FILE @val[0];
-		print FILE "</total>";
-
-		print FILE "<cvrd>";
-		print FILE @val[1];
-		print FILE "</cvrd>";
-
-		print FILE "<uncvrd>";
-		print FILE @val[2];
-		print FILE "</uncvrd>";
-
-		print FILE "<percent>";
-		print FILE (int(@val[3]))."%";
-		print FILE "</percent>";
-
-		print FILE "</Files>";
-
-		print FILE "<Functions>";
-
-		print FILE "<total>";
-		print FILE @val[4];
-		print FILE "</total>";
-
-		print FILE "<cvrd>";
-		print FILE @val[5];
-		print FILE "</cvrd>";
-
-		print FILE "<uncvrd>";
-		print FILE @val[6];
-		print FILE "</uncvrd>";
-
-		print FILE "<percent>";
-		print FILE (int(@val[7]))."%";
-		print FILE "</percent>";
-
-		print FILE "</Functions>";
-
-		print FILE "<Blocks>";
-
-		print FILE "<total>";
-		print FILE @val[8];
-		print FILE "</total>";
-
-		print FILE "<cvrd>";
-		print FILE @val[9];
-		print FILE "</cvrd>";
-
-		print FILE "<uncvrd>";
-		print FILE @val[10];
-		print FILE "</uncvrd>";
-
-		print FILE "<percent>";
-		print FILE (int(@val[11]))."%";
-		print FILE "</percent>";
-
-		print FILE "</Blocks>";
-		print FILE "</codecov_report>";
-		close(FILE);
-		if($enable_mongo == 1)
-		{
-			my $hash_to_insert = {};
-			my $report_date = `date +%F` ." ". `date +%k:%M:%S`;
-			$hash_to_insert->{"codecov_report"}->{"report_date"} = $report_date;
-			$hash_to_insert->{"codecov_report"}->{"report_url"} = $report_url;
-			$hash_to_insert->{"codecov_report"}->{"product_name"} = $product_name;
-			$hash_to_insert->{"codecov_report"}->{"files"}->{"total"} = @val[0];
-			$hash_to_insert->{"codecov_report"}->{"files"}->{"cvrd"} = @val[1];
-			$hash_to_insert->{"codecov_report"}->{"files"}->{"uncvrd"} = @val[2];
-			$hash_to_insert->{"codecov_report"}->{"files"}->{"percent"} = (int(@val[3]))."%";
-			$hash_to_insert->{"codecov_report"}->{"functions"}->{"total"} = @val[4];
-			$hash_to_insert->{"codecov_report"}->{"functions"}->{"cvrd"} = @val[5];
-			$hash_to_insert->{"codecov_report"}->{"functions"}->{"uncvrd"} = @val[6];
-			$hash_to_insert->{"codecov_report"}->{"functions"}->{"percent"} = (int(@val[7]))."%";
-			$hash_to_insert->{"codecov_report"}->{"blocks"}->{"total"} = @val[8];
-			$hash_to_insert->{"codecov_report"}->{"blocks"}->{"cvrd"} = @val[9];
-			$hash_to_insert->{"codecov_report"}->{"blocks"}->{"uncvrd"} = @val[10];
-			$hash_to_insert->{"codecov_report"}->{"blocks"}->{"percent"} = (int(@val[11]))."%";
-			$codecov_reports->insert($hash_to_insert);
-		}
-		
-	}
-	
 }
 
 #--------------------------------------------------------------------------

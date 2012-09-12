@@ -28,133 +28,16 @@ use MTT::Util;
 use MTT::INI;
 use MTT::Values;
 use Data::Dumper;
-
+use MTT::Values::Functions::Icc_codecov;
 # Do NOT use MTT::Test::Run here, even though we use some
 # MTT::Test::Run values below.  This will create a "use loop".  Be
 # confident that we'll get the values as appropriate when we need them
 # through other "use" statements.
 
 #--------------------------------------------------------------------------
-sub get_codecov_xml
+sub get_codecov
 {
-	my($product_name,$report_url) = @_;
-	$report_url = $report_url . "\/";
-    my $ini = $MTT::Globals::Internals->{ini};
-	my $path = MTT::Values::Value( $ini, "MTT", 'codecov_dir');
-	if(!defined($path))
-	{
-		return "";
-	}
-	my $big_string = 'my $path = \'%path%\';
-my $product_name = \'%product_name%\';
-my $report_url= \'%report_url%\';
-my $date = `date`;
-open FILE, $path . \'/CodeCoverage/__CODE_COVERAGE.HTML\'  or die "$!";
-my $str;
-my @val;
-while (<FILE>) 
-{	
-	$str = $_;
-	if ($str =~ m/<TD ALIGN=\"center\"( STYLE=\"font-weight:bold\"){0,1}>\s*\d+[\.\,]*\d*<\/TD>/)
-	{
-		if($str =~ m/\d+[\.\,]*\d*/)
-		{
-			my $t_val = $&;
-			$t_val =~ s/\,//g; 
-			push(@val,$t_val);
-		}
-	}
-}
-close FILE;
-
-open FILE, ">$path/codecov_output.xml";
-print FILE "<?xml version=\"1.0\"?>";
-print FILE "<codecov_report>";
-
-print FILE "<product_name>";
-print FILE $product_name;
-print FILE "</product_name>";
-
-
-print FILE "<report_url>";
-print FILE $report_url;
-print FILE "</report_url>";
-
-
-print FILE "<report_date>";
-print FILE $date;
-print FILE "</report_date>";
-
-print FILE "<Files>";
-
-print FILE "<total>";
-print FILE @val[0];
-print FILE "</total>";
-
-print FILE "<cvrd>";
-print FILE @val[1];
-print FILE "</cvrd>";
-
-print FILE "<uncvrd>";
-print FILE @val[2];
-print FILE "</uncvrd>";
-
-print FILE "<percent>";
-print FILE (int(@val[3]))."%";
-print FILE "</percent>";
-
-print FILE "</Files>";
-
-print FILE "<Functions>";
-
-print FILE "<total>";
-print FILE @val[4];
-print FILE "</total>";
-
-print FILE "<cvrd>";
-print FILE @val[5];
-print FILE "</cvrd>";
-
-print FILE "<uncvrd>";
-print FILE @val[6];
-print FILE "</uncvrd>";
-
-print FILE "<percent>";
-print FILE (int(@val[7]))."%";
-print FILE "</percent>";
-
-print FILE "</Functions>";
-
-print FILE "<Blocks>";
-
-print FILE "<total>";
-print FILE @val[8];
-print FILE "</total>";
-
-print FILE "<cvrd>";
-print FILE @val[9];
-print FILE "</cvrd>";
-
-print FILE "<uncvrd>";
-print FILE @val[10];
-print FILE "</uncvrd>";
-
-print FILE "<percent>";
-print FILE (int(@val[11]))."%";
-print FILE "</percent>";
-
-print FILE "</Blocks>";
-print FILE "</codecov_report>";
-close(FILE);';
-
-
-$big_string =~ s/%path%/$path/g;
-$big_string =~ s/%product_name%/$product_name/g;
-$big_string =~ s/%report_url%/$report_url/g;
-open FILE, ">$path/get_xml_script.pl";
-print FILE $big_string;
-close (FILE);
-return 'perl '. $path . '/get_xml_script.pl';
+	MTT::Values::Functions::Icc_codecov::get_codecov_result();
 }
 
 # Returns the result value (array or scalar) of a perl eval
