@@ -310,7 +310,6 @@ sub _do_submit {
 	my $i=0;
 	my $to_xml;
     my $ini = $MTT::Globals::Internals->{ini};	
-	print "qazqaz\n",MTT::Values::Value($ini, "MTT", 'INI_BASENAME');
 	my $path = MTT::Values::Value($ini, "MTT", 'xml_dir');
 	my $scratch_url = MTT::Values::Value($ini, "MTT", 'scratch_url');
 	
@@ -449,48 +448,55 @@ sub _do_submit {
 					{
 						mkdir $path or die "can't create dir for xml output $!";
 					}
-					if(!defined($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"scratch_root"}))
+					if(!defined($to_xml->{"scratch_root"}))
 					{
-						 $to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"scratch_root"} =MTT::Values::Functions::scratch_root();
+						 $to_xml->{"scratch_root"} =MTT::Values::Functions::scratch_root();
 					}
 					
-					if(!defined($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"report_date"}))
+					if(!defined($to_xml->{"report_date"}))
 					{
-						$to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"report_date"} = $form->{'modules'}->{'TestRunPhase'}->{'start_time'};
+						$to_xml->{"report_date"} = $form->{'modules'}->{'TestRunPhase'}->{'start_time'};
 					}
 					
-					if(!defined($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"scratch_url"}))
+					if(!defined($to_xml->{"scratch_url"}))
 					{
-						$to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"scratch_url"} = $scratch_url . '/';
+						$to_xml->{"scratch_url"} = $scratch_url . '/';
+					}
+					if(!defined($to_xml->{"product_name"} ))
+					{
+						$to_xml->{"product_name"} = MTT::Values::Value($ini, "MTT", 'INI_BASENAME');
 					}
 					
-					$to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"report_date"} = $form->{'modules'}->{'TestRunPhase'}->{'start_time'};
-					$to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"product_name"} = $form->{'modules'}->{'MpiInfo'}->{'mpi_name'};
-					$to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"product_version"} = $form->{'modules'}->{'MpiInfo'}->{'mpi_version'};
+					if(!defined($to_xml->{"product_version"}))
+					{
+						$to_xml->{"product_version"} = $form->{'modules'}->{'MpiInfo'}->{'mpi_version'};
+					}
+					
+					
 					$form->{'modules'}->{'TestRunPhase'}->{'duration'} =~ m/\d+/;
-					if(!defined($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"duration"}))
+					if(!defined($to_xml->{"duration"}))
 					 {
-						 $to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"duration"} = 0;
+						 $to_xml->{"duration"} = 0;
 					 }
-					 ($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"duration"}) += $&;
+					 ($to_xml->{"duration"}) += $&;
 					
-					if(!defined($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"total_tests"}))
+					if(!defined($to_xml->{"total_tests"}))
 					{
-						$to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"total_tests"} = 0;
+						$to_xml->{"total_tests"} = 0;
 					}
-					($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"total_tests"})++;
+					($to_xml->{"total_tests"})++;
 					
-					if(!defined($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"failed_tests"}))
+					if(!defined($to_xml->{"failed_tests"}))
 					{
-						$to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"failed_tests"} = 0;
+						$to_xml->{"failed_tests"} = 0;
 					}
 					
 					if($form->{'modules'}->{'TestRunPhase'}->{'status'} ne "Passed" && $form->{'modules'}->{'TestRunPhase'}->{'status'} ne "Success" && $form->{'modules'}->{'TestRunPhase'}->{'status'} ne "1")
 					{
-						($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"failed_tests"})++;
+						($to_xml->{"failed_tests"})++;
 					}
 					
-					$to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"quality"} = int (100 - ($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"failed_tests"})/($to_xml->{$form->{'modules'}->{'MpiInfo'}->{'mpi_name'}}->{$form->{'modules'}->{'MpiInfo'}->{'mpi_version'}}->{"total_tests"})*100);
+					$to_xml->{"quality"} = int (100 - ($to_xml->{"failed_tests"})/($to_xml->{"total_tests"})*100);
 				}					
                 $submitted = 1;
             }
@@ -499,29 +505,13 @@ sub _do_submit {
             if ($submitted);
     }
 	
-	my $i=0;
-	my @keys_mpis = keys %$to_xml;
-	foreach my $item (@keys_mpis)
-	{
-		my @keys_versions = keys %{$to_xml->{$item}};
-		foreach my $inner_item (@keys_versions)
-		{	
-			open FILE, ">$path/output_$i.xml";
-			print FILE resolve_template($xml_template, keys %{$to_xml->{$item}->{$inner_item}}, values %{$to_xml->{$item}->{$inner_item}});
-			close(FILE);
-			$i++;
-		}
-	}
+	open FILE, ">$path/output.xml";
+	print FILE resolve_template($xml_template, keys %{$to_xml}, values %{$to_xml});
+	close(FILE);
+	
 	if(defined($summary_reports) && $enable_mongo ==1)
 	{
-		foreach my $item (@keys_mpis)
-		{
-			my @keys_versions = keys %{$to_xml->{$item}};
-			foreach my $inner_item (@keys_versions)
-			{	
-				$summary_reports->insert($to_xml->{$item}->{$inner_item});
-			}
-		}
+		$summary_reports->insert($to_xml);
 	}else
 	{
 		Verbose("cann't submit summary_report to mongodb\n");
