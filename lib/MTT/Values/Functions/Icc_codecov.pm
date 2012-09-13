@@ -21,6 +21,7 @@ use Data::Dumper;
 use MTT::Values::Functions;
 sub get_codecov_result
 {
+	my $ini = $MTT::Globals::Internals->{ini};
 	my $enable_mongo = 1;
 	my $ret_value;
 	my @needed_libs = (
@@ -31,15 +32,13 @@ sub get_codecov_result
 	foreach (@needed_libs)
 	{
 		$ret_value = eval "require $_";
-		print "qqq $ret_value\n";
 		if ($@ || !defined($ret_value))
 		{
-			Verbose("--> Not found library: $_\n");
-			Verbose("cannot submit to mongo\n");
+			Error("--> Not found library: $_\n");
+			Error("cannot submit to mongo\n");
 			$enable_mongo = 0;
 		};
 	}
-	print "\nqqq\n";
 	if($enable_mongo == 1)
 	{
 		require MongoDB;
@@ -50,44 +49,37 @@ sub get_codecov_result
 	my $dbase_url = MTT::Values::Value( $ini, 'MTT', 'dbase_url' );
 	if(!defined($dbase_url))
 	{
-		Error("Parametr dbase_url not defined in ini file!\n");
-		#exit(0);
-		#return 0;
+		Error("\nParametr dbase_url not defined in ini file!\n");
 		$enable_mongo = 0;
 	}
 	my $codecov_filtr = MTT::Values::Value( $ini, 'MTT', 'codecov_filtr');
 	if(!defined($codecov_filtr))
 	{
-		Error("Parametr codecov_filtr not defined in ini file!\n");
-		exit(0);
+		Error("\nParametr codecov_filtr not defined in ini file!\n");
 		return 0;
 	}
 	my $codecov_dir = MTT::Values::Value( $ini, 'MTT', 'codecov_dir');
 	if(!defined($codecov_dir))
 	{
-		Error("Parametr codecov_dir not defined in ini file!\n");
-		exit(0);
+		Error("\nParametr codecov_dir not defined in ini file!\n");
 		return 0;
 	}
 	my $ini_basename = MTT::Values::Value( $ini, 'MTT', 'INI_BASENAME');
 	if(!defined($ini_basename))
 	{
-		Error("Parametr ini_basename not defined in ini file!\n");
-		exit(0);
+		Error("\nParametr ini_basename not defined in ini file!\n");
 		return 0;
 	}
 	my $codecov_url = MTT::Values::Value( $ini, 'MTT', 'codecov_url');
 	if(!defined($codecov_url))
 	{
-		Error("Parametr codecov_url not defined in ini file!\n");
-		exit(0);
+		Error("\nParametr codecov_url not defined in ini file!\n");
 		return 0;
 	}
 	my $intel_env_module = MTT::Values::Value( $ini, 'MTT', 'intel_env_module');
 	if(!defined($intel_env_module))
 	{
-		Error("Parametr intel_env_module not defined in ini file!\n");
-		exit(0);
+		Error("\nParametr intel_env_module not defined in ini file!\n");
 		return 0;
 	}
 	#my $dbase_url = "@dbase_url@";
@@ -108,21 +100,21 @@ sub get_codecov_result
 		$codecov_reports = $db->Codecov_reports;
 	}
 	my $hash_to_insert = {};
-	opendir(DIR,"$codecov_dir");
+	opendir DIR,"$codecov_dir" or (Error("cannot open codeocdir: $codecov_dir\n") and return 0);
 		my @FILES= readdir(DIR);
 		foreach my $item (@FILES)
 		{
 			$item = "$codecov_dir" . "/" . $item;
 			if((-s $item) == 0)
 			{
-				print "ydalil $item\n";
+				print "delete $item\n";
 				unlink ($item);
 				
 			}
 		}
 		closedir(DIR);
 		
-		open FILE, ">$codecov_dir/tocodecov.txt";
+		open FILE, ">$codecov_dir/tocodecov.txt" or (Error("cannot open file: $codecov_dir/tocodecov.txt\n") and return 0);
 		print FILE $codecov_filtr;
 		close(FILE);
 		
@@ -130,7 +122,7 @@ sub get_codecov_result
 		#print `cd $codecov_dir && echo "$codecov_filtr">>tocodecov.txt`;
 		print `cd $codecov_dir && echo "$codecov_filtr">>tocodecov1.txt`;
 		print `cd $codecov_dir && module load $intel_env_module && codecov -counts -comp tocodecov.txt`;		
-		open FILE, "$codecov_dir" . "/CodeCoverage/__CODE_COVERAGE.HTML"  or die "$!";
+		open FILE, "$codecov_dir" . "/CodeCoverage/__CODE_COVERAGE.HTML"  or (Error("cannot open codeocdir: $codecov_dir/CodeCoverage/__CODE_COVERAGE.HTML\n") and return 0);
 		my $str;
 		my @val;
 		while (<FILE>) 
