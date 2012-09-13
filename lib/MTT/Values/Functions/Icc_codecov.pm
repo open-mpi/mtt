@@ -21,6 +21,7 @@ use Data::Dumper;
 use MTT::Values::Functions;
 sub get_codecov_result
 {
+	print "DinarDinarDebug\n";
 	my $ini = $MTT::Globals::Internals->{ini};
 	my $enable_mongo = 1;
 	my $ret_value;
@@ -34,8 +35,8 @@ sub get_codecov_result
 		$ret_value = eval "require $_";
 		if ($@ || !defined($ret_value))
 		{
-			Error("--> Not found library: $_\n");
-			Error("cannot submit to mongo\n");
+			Warning("--> Not found library: $_\n");
+			Warning("cannot submit to mongo\n");
 			$enable_mongo = 0;
 		};
 	}
@@ -49,7 +50,7 @@ sub get_codecov_result
 	my $dbase_url = MTT::Values::Value( $ini, 'MTT', 'dbase_url' );
 	if(!defined($dbase_url))
 	{
-		Error("\nParametr dbase_url not defined in ini file!\n");
+		Warning("\nParametr dbase_url not defined in ini file!\n");
 		$enable_mongo = 0;
 	}
 	my $codecov_filtr = MTT::Values::Value( $ini, 'MTT', 'codecov_filtr');

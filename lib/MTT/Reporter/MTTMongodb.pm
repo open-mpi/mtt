@@ -270,8 +270,8 @@ sub _do_submit {
 	   	$ret_value = eval "require $_";
    	 	if ($@ || !defined($ret_value))
 	    {
-			Error("--> Not found library: $_\n");
-			Error("can't submit to mongo\n");
+			Warning("--> Not found library: $_\n");
+			Warning("can't submit to mongo\n");
 			$enable_mongo = 0;
 
 		};
