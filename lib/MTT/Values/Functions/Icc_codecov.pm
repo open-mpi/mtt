@@ -56,31 +56,31 @@ sub get_codecov_result
 	my $codecov_filtr = MTT::Values::Value( $ini, 'MTT', 'codecov_filtr');
 	if(!defined($codecov_filtr))
 	{
-		Error("\nParametr codecov_filtr not defined in ini file!\n");
+		Warning("\nParametr codecov_filtr not defined in ini file!\n");
 		return 0;
 	}
 	my $codecov_dir = MTT::Values::Value( $ini, 'MTT', 'codecov_dir');
 	if(!defined($codecov_dir))
 	{
-		Error("\nParametr codecov_dir not defined in ini file!\n");
+		Warning("\nParametr codecov_dir not defined in ini file!\n");
 		return 0;
 	}
 	my $ini_basename = MTT::Values::Value( $ini, 'MTT', 'INI_BASENAME');
 	if(!defined($ini_basename))
 	{
-		Error("\nParametr ini_basename not defined in ini file!\n");
+		Warning("\nParametr ini_basename not defined in ini file!\n");
 		return 0;
 	}
 	my $codecov_url = MTT::Values::Value( $ini, 'MTT', 'codecov_url');
 	if(!defined($codecov_url))
 	{
-		Error("\nParametr codecov_url not defined in ini file!\n");
+		Warning("\nParametr codecov_url not defined in ini file!\n");
 		return 0;
 	}
 	my $intel_env_module = MTT::Values::Value( $ini, 'MTT', 'intel_env_module');
 	if(!defined($intel_env_module))
 	{
-		Error("\nParametr intel_env_module not defined in ini file!\n");
+		Warning("\nParametr intel_env_module not defined in ini file!\n");
 		return 0;
 	}
 	#my $dbase_url = "@dbase_url@";
@@ -101,7 +101,7 @@ sub get_codecov_result
 		$codecov_reports = $db->Codecov_reports;
 	}
 	my $hash_to_insert = {};
-	opendir DIR,"$codecov_dir" or (Error("cannot open codeocdir: $codecov_dir\n") and return 0);
+	opendir DIR,"$codecov_dir" or (Warning("cannot open codeocdir: $codecov_dir\n") and return 0);
 		my @FILES= readdir(DIR);
 		foreach my $item (@FILES)
 		{
@@ -115,7 +115,7 @@ sub get_codecov_result
 		}
 		closedir(DIR);
 		
-		open FILE, ">$codecov_dir/tocodecov.txt" or (Error("cannot open file: $codecov_dir/tocodecov.txt\n") and return 0);
+		open FILE, ">$codecov_dir/tocodecov.txt" or (Warning("cannot open file: $codecov_dir/tocodecov.txt\n") and return 0);
 		print FILE $codecov_filtr;
 		close(FILE);
 		
@@ -123,7 +123,7 @@ sub get_codecov_result
 		#print `cd $codecov_dir && echo "$codecov_filtr">>tocodecov.txt`;
 		print `cd $codecov_dir && echo "$codecov_filtr">>tocodecov1.txt`;
 		print `cd $codecov_dir && module load $intel_env_module && codecov -counts -comp tocodecov.txt`;		
-		open FILE, "$codecov_dir" . "/CodeCoverage/__CODE_COVERAGE.HTML"  or (Error("cannot open codeocdir: $codecov_dir/CodeCoverage/__CODE_COVERAGE.HTML\n") and return 0);
+		open FILE, "$codecov_dir" . "/CodeCoverage/__CODE_COVERAGE.HTML"  or (Warning("cannot open codeocdir: $codecov_dir/CodeCoverage/__CODE_COVERAGE.HTML\n") and return 0);
 		my $str;
 		my @val;
 		while (<FILE>) 

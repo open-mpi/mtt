@@ -514,7 +514,7 @@ sub _do_submit {
 		$summary_reports->insert($to_xml);
 	}else
 	{
-		Verbose("cann't submit summary_report to mongodb\n");
+		Warning("cann't submit summary_report to mongodb\n");
 	}
 }
 
