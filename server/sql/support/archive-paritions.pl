@@ -13,7 +13,8 @@
 #  archive-paritions.pl 2007 XX | tee output-archive-2006.txt
 #
 # May want to watch:
-#  SELECT pg_size_pretty(pg_database_size('mtt')), pg_database_size('mtt')
+#  SELECT pg_size_pretty(pg_database_size('mtt')), pg_database_size('mtt');
+#  SELECT collection_date, size_db, pg_size_pretty(size_db) from mtt_stats_database;
 #
 use strict;
 use DBI;
@@ -71,6 +72,18 @@ if ( $month ne "XX" ) {
     push(@month_array, $month);
   }
 }
+
+#
+# Display date
+#
+my $date_str_start;
+my $date_str_end;
+
+$date_str_start = `date`;
+chomp($date_str_start);
+print "--\n";
+print "-- Start: $date_str_start\n";
+print "--\n";
 
 #
 # Connect to the DB
@@ -151,8 +164,13 @@ foreach $parent_table (@table_cat) {
 #
 disconnect_db();
 
+$date_str_end = `date`;
+chomp($date_str_end);
+
 printf("-- \n");
 printf("-- Summary:\n");
+printf("-- \t Start: %s\n", $date_str_start);
+printf("-- \t End  : %s\n", $date_str_end);
 printf("-- \t Total Size Reduced by : %20d Bytes (%s)\n", $total_size, bytes_to_human($total_size));
 printf("-- \n");
 
