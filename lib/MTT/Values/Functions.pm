@@ -33,8 +33,68 @@ use MTT::Values::Functions::Icc_codecov;
 # MTT::Test::Run values below.  This will create a "use loop".  Be
 # confident that we'll get the values as appropriate when we need them
 # through other "use" statements.
-
+my @check_ib_errors;
 #--------------------------------------------------------------------------
+sub check_ib_errors
+{
+	my $parametr = $_[0];
+	if($parametr eq "save")
+	{
+		print "qwerty save\n";
+		my $str = `ibcheckerrors -N`;
+		my @local_array = split("\n",$str);
+		pop(@local_array);
+		pop(@local_array);
+		pop(@local_array);	
+		$str = join("\nq",@local_array);
+		@local_array = split("q",$str);
+		push @check_ib_errors, [@local_array];
+	}
+	elsif($parametr eq "compare")
+	{
+		print "qwerty compare\n";
+		my $str = `ibcheckerrors -N`;
+		my @local_array = split("\n",$str);
+		pop(@local_array);
+		pop(@local_array);
+		pop(@local_array);	
+		$str = join("\n%%%",@local_array);
+		@local_array = split("%%%",$str);
+		push @check_ib_errors, [@local_array];
+		my $all_report_string;
+		my $flag;
+		for(my $q=2;$q<=$#check_ib_errors+1;$q++)
+		{
+			my @array1 = @{$check_ib_errors[0]};
+			my @array2 = @{$check_ib_errors[$q-1]};
+			my $report_string = "-->errors appears after mtt start:\n";
+			for(my $i=0;$i<=$#array2;$i++)
+			{
+				$flag = 0;
+				for(my $j=0;$j<=$#array1;$j++)
+				{
+					if($array2[$i] eq $array1[$j])
+					{
+						$flag = 1;
+						$array1[$j] = "";
+						last;
+					}
+				}
+				if($flag == 0)
+				{
+					$report_string .= $array2[$i];
+				}
+			}
+			$report_string .= "-->errors no longer observed after mtt:\n" . join("",@array1);
+			$all_report_string .= "\ncompare 1 call  and $q  call \n$report_string\n";
+		}
+		print "qwerty\n $all_report_string\n";
+		return $all_report_string;
+	}else
+	{
+		Warning("get_ib_errors: unknow parametr $parametr\n");
+	}
+}
 sub get_codecov
 {
 	MTT::Values::Functions::Icc_codecov::get_codecov_result();
