@@ -143,6 +143,9 @@ sub get_codecov_result
 		open FILE, ">$codecov_dir/codecov_output.xml";
 		print FILE "<?xml version=\"1.0\"?>";
 		print FILE "<codecov_report>";
+		print FILE "<mofed_version>";
+		print FILE `ofed_info | grep MLNX_OFED_LINUX`;
+		print FILE "</mofed_version>";
 		print FILE "<product_name>";
 		print FILE "$ini_basename";
 		print FILE "</product_name>";
@@ -215,7 +218,7 @@ sub get_codecov_result
 			$hash_to_insert->{"codecov_report"}->{"blocks"}->{"uncvrd"} = @val[10];
 			$hash_to_insert->{"codecov_report"}->{"blocks"}->{"percent"} = (int(@val[11]))."%";		
 			$hash_to_insert->{"codecov_report"}->{"report_date"} = $report_date;			
-			
+			$hash_to_insert->{"codecov_report"}->{"mofed_version"} = `ofed_info | grep MLNX_OFED_LINUX`;
 			$codecov_reports->insert($hash_to_insert);
 		}
 		return 0;

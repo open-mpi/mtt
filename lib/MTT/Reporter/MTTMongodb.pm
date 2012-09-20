@@ -306,7 +306,7 @@ sub _do_submit {
 	my $inserted_id;
 	my $old_date;
 	my %new_date;
-	my $xml_template = "<report><report_date>%report_date%</report_date><scratch_url>%scratch_url%</scratch_url><scratch_root>%scratch_root%</scratch_root><product_name>%product_name%</product_name><product_version>%product_version%</product_version><total_duration>%duration%</total_duration><total_tests>%total_tests%</total_tests><failed_tests>%failed_tests%</failed_tests><quality>%quality%</quality></report>";
+	my $xml_template = "<report><mofed_version>%mofed_version%</mofed_version><report_date>%report_date%</report_date><scratch_url>%scratch_url%</scratch_url><scratch_root>%scratch_root%</scratch_root><product_name>%product_name%</product_name><product_version>%product_version%</product_version><total_duration>%duration%</total_duration><total_tests>%total_tests%</total_tests><failed_tests>%failed_tests%</failed_tests><quality>%quality%</quality></report>";
 	my $i=0;
 	my $to_xml;
     my $ini = $MTT::Globals::Internals->{ini};	
@@ -440,6 +440,7 @@ sub _do_submit {
 	
 						 $inserted_id =  $TestBuildPhase->insert($form);
 					}
+                	$submitted = 1;
 				}				
 				if(defined($path) && $phase eq "Test Run" && MTT::Values::Value( $ini, "MTT", 'mode') ne "codecov")
 				{
@@ -497,8 +498,8 @@ sub _do_submit {
 					}
 					
 					$to_xml->{"quality"} = int (100 - ($to_xml->{"failed_tests"})/($to_xml->{"total_tests"})*100);
+					$to_xml->{"mofed_version"} = `ofed_info | grep MLNX_OFED_LINUX`;
 				}					
-                $submitted = 1;
             }
         }
         Verbose(">> Submitted $phase to MongoDB\n")
