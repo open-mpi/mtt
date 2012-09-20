@@ -693,14 +693,37 @@ sub _get_backtrace {
         } else {
             Warning("MTT could not locate \"padb\" to gather a backtrace\n");
         }
-    } elsif ($program eq "gstack") {
-        if (FindProgram(qw(gstack))) {
-            foreach my $p (descendant_processes($pid)) {
-                my $gstack_cmd = "gstack $p";
-                $ret .= "\n $gstack_cmd";
-                $ret .= "\n" . `$gstack_cmd`;
-            }
-        } else {
+    } elsif ($program eq "gstack") 
+	{
+        if (FindProgram(qw(gstack))) 
+		{
+			my $return_slurm_max = MTT::Values::Functions::env_hosts();
+			my $return_basename = $MTT::Test::Run::test_executable_basename;
+			my @return_slurm_max = split("\,",$return_slurm_max);
+			my $post_proc_slurm_max ={};
+			my $return_ssh_command;
+			foreach my $item (@return_slurm_max)
+			{
+				$post_proc_slurm_max->{$item} = 1;
+			}
+			foreach my $item (keys %{$post_proc_slurm_max})
+			{
+				$return_ssh_command = `ssh $item pidof $return_basename`;
+				foreach my $low_item  (split(' ',$return_ssh_command))
+				{
+					$ret .= "\n node=$item, pid=$low_item:\n" . `ssh $item gstack $low_item`;
+				}
+			}
+			Debug("Stacktrace: slurm $return_slurm_max\n");
+			Debug("Stacktrace: base name $return_basename\n");
+			#foreach my $p (descendant_processes($pid)) 
+			#{
+			#    my $gstack_cmd = "gstack $p";
+			#    $ret .= "\n $gstack_cmd";
+			#    $ret .= "\n" . `$gstack_cmd`;
+			#}
+        } else 
+		{
             Warning("MTT could not locate \"$program\" to gather a backtrace\n");
         }
 
