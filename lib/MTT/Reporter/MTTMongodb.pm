@@ -441,14 +441,10 @@ sub _do_submit {
 						 $inserted_id =  $TestBuildPhase->insert($form);
 					}
                 	$submitted = 1;
-				}				
-				if(defined($path) && $phase eq "Test Run" && MTT::Values::Value( $ini, "MTT", 'mode') ne "codecov")
+				}
+				if($phase eq "Test Run" && MTT::Values::Value( $ini, "MTT", 'mode') ne "codecov" &&  MTT::Values::Value( $ini, "MTT", 'pkg') ne "codecov") 
 				{
 					my (@results) = @_;
-					unless(-d $path)
-					{
-						mkdir $path or die "can't create dir for xml output $!";
-					}
 					if(!defined($to_xml->{"scratch_root"}))
 					{
 						 $to_xml->{"scratch_root"} =MTT::Values::Functions::scratch_root();
@@ -467,12 +463,6 @@ sub _do_submit {
 					{
 						$to_xml->{"product_name"} = MTT::Values::Value($ini, "MTT", 'INI_BASENAME');
 					}
-					
-					if(!defined($to_xml->{"product_version"}))
-					{
-						$to_xml->{"product_version"} = $form->{'modules'}->{'MpiInfo'}->{'mpi_version'};
-					}
-					
 					
 					$form->{'modules'}->{'TestRunPhase'}->{'duration'} =~ m/\d+/;
 					if(!defined($to_xml->{"duration"}))
@@ -499,17 +489,40 @@ sub _do_submit {
 					
 					$to_xml->{"quality"} = int (100 - ($to_xml->{"failed_tests"})/($to_xml->{"total_tests"})*100);
 					$to_xml->{"mofed_version"} = `ofed_info | grep MLNX_OFED_LINUX`;
+					
+					my $sim_sec_name = $form->{'modules'}->{'MpiInfo'}->{'mpi_name'};
+					Debug("MongoDB reporter: simple section name = $sim_sec_name\n");
+					
+					my $product_version =  MTT::Values::Value($ini, "mpi install: $sim_sec_name", 'product_version');
+					$product_version =~ m/(\d+\.)+\d+/;
+					Debug("MongoDB reporter: product version = $&\n");
+					if(!defined($to_xml->{"product_version"}))
+					{
+						$to_xml->{"product_version"} = $&;
+					}
+					
+					my $product_install_dir = MTT::Values::Value($ini, "mpi install: $sim_sec_name", 'product_install_dir');
+					Debug("MongoDB reporter: product install dir $product_install_dir\n");
+					
 				}					
             }
         }
         Verbose(">> Submitted $phase to MongoDB\n")
             if ($submitted);
     }
-	
-	open FILE, ">$path/output.xml";
-	print FILE resolve_template($xml_template, keys %{$to_xml}, values %{$to_xml});
-	close(FILE);
-	
+	if(defined($path))
+	{
+		unless(-d $path)
+		{
+			mkdir $path or die "can't create dir for xml output $!";
+		}
+		open FILE, ">$path/output.xml";
+		print FILE resolve_template($xml_template, keys %{$to_xml}, values %{$to_xml});
+		close(FILE);
+	}else
+	{
+		Warning("xml_dir not defined, summary xml file did not generate\n");
+	}
 	if(defined($summary_reports) && $enable_mongo ==1)
 	{
 		$summary_reports->insert($to_xml);

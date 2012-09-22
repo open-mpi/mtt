@@ -19,9 +19,9 @@ use MTT::DoCommand;
 use MTT::FindProgram;
 use Data::Dumper;
 use MTT::Values::Functions;
+use MTT::INI;
 sub get_codecov_result
 {
-	print "DinarDinarDebug\n";
 	my $ini = $MTT::Globals::Internals->{ini};
 	my $enable_mongo = 1;
 	my $ret_value;
@@ -140,6 +140,30 @@ sub get_codecov_result
 			}
 		}
 		close FILE;
+		my @sects = $ini->Sections();
+		my $product_version;
+		Debug("Icc codecov: sections before @sects\n");
+		if ($MTT::Globals::Values->{shuffle_tests}->{sections})
+		{
+			MTT::Util::shuffle(\@sects);	
+		}
+		Debug("Icc codecov: sections after @sects\n");
+		foreach my $section (@sects) 
+		{
+			Debug("Icc codecov: section  $section\n");
+			if ($section =~ /^\s*mpi install:/) 
+			{
+				if($section =~ /codecov/)
+				{
+					my $sim_sec_name = GetSimpleSection($section);
+					Debug("Icc codecov: simple_section  $sim_sec_name\n");
+					$product_version =  MTT::Values::Value($ini, "mpi install: $sim_sec_name",'product_version');
+					$product_version =~ m/(\d+\.)+\d+/;
+					$product_version = $&;
+					Debug("Icc codecov: product version: $product_version\n");
+				}
+			}
+		}
 		open FILE, ">$codecov_dir/codecov_output.xml";
 		print FILE "<?xml version=\"1.0\"?>";
 		print FILE "<codecov_report>";
@@ -219,6 +243,7 @@ sub get_codecov_result
 			$hash_to_insert->{"codecov_report"}->{"blocks"}->{"percent"} = (int(@val[11]))."%";		
 			$hash_to_insert->{"codecov_report"}->{"report_date"} = $report_date;			
 			$hash_to_insert->{"codecov_report"}->{"mofed_version"} = `ofed_info | grep MLNX_OFED_LINUX`;
+			$hash_to_insert->{"codecov_report"}->{"mofed_version"} = $product_version;
 			$codecov_reports->insert($hash_to_insert);
 		}
 		return 0;

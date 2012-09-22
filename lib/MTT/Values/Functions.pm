@@ -2339,6 +2339,11 @@ sub get_mpi_builddir {
 	return $builddir;
 }
 
+sub get_mpi_install_dir 
+{
+	my $builddir = $MTT::MPI::Install::install_dir;
+	return $builddir;
+}
 # Detect the bitness of the MPI library in this order:
 #   1) User overridden (CSV of 1 or more valid bitnesses)
 #   2) Small test C program (using void*)
