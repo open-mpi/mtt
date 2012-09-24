@@ -705,13 +705,6 @@ sub _process_scratch_param {
         $scratch_arg = Value($ini, "MTT", $name);
     }
 
-	$scratch_arg = Value($ini, "MTT", $name);
-	print "dinardebug scratch_arg $scratch_arg\n";
-
-	if (!defined($scratch_arg))
-	{
-        $scratch_arg = $scratch_option;
-    }
     
 	# See if we got a scratch root
     if (! $scratch_arg) {
