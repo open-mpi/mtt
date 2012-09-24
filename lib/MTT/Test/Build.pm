@@ -167,12 +167,9 @@ sub Build {
                                     # incrementally so that it doesn't
                                     # create each intermediate key.
 
-                                    if (!$force &&
-                                        defined(MTT::Util::does_hash_key_exist($MTT::Test::builds, 
-                                                                                qw/$mpi_get_key 
-                                                                                   $mpi_version_key 
-                                                                                   $mpi_install_key 
-                                                                                   $simple_section/))) {
+									#if (!$force &&  defined(MTT::Util::does_hash_key_exist($MTT::Test::builds, qw/$mpi_get_key $mpi_version_key $mpi_install_key $simple_section/))) 
+									if (!$force &&  defined(MTT::Util::does_hash_key_exist($MTT::Test::builds, $mpi_get_key, $mpi_version_key, $mpi_install_key, $simple_section))) 
+									{
                                         Verbose("   Already have a build for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section]\n");
                                         next;
                                     }

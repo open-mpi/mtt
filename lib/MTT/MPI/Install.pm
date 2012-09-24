@@ -268,7 +268,8 @@ sub Install {
 
                             Debug("Checking for [$mpi_get_key] / [$mpi_version_key] / [$simple_section]\n");
                             if (!$force &&
-                                defined(MTT::Util::does_hash_key_exist($MTT::MPI::installs, qw/$mpi_get_key $mpi_version_key $simple_section/))) {
+								#defined(MTT::Util::does_hash_key_exist($MTT::MPI::installs, qw($mpi_get_key $mpi_version_key $simple_section)))) {
+                                defined(MTT::Util::does_hash_key_exist($MTT::MPI::installs, $mpi_get_key, $mpi_version_key, $simple_section))) {
                                 Verbose("   Already have an install for [$mpi_get_key] / [$mpi_version_key] / [$simple_section]\n");
                             } else {
                                 Verbose("   Installing MPI: [$mpi_get_key] / [$mpi_version_key] / [$simple_section]...\n");

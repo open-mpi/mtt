@@ -429,7 +429,8 @@ my $runs_data_dir = "$scratch_arg/$MTT::Defaults::System_config->{runs_data_subd
 my $mpi_install_dir = "$scratch_arg/$MTT::Defaults::System_config->{mpi_install_subdir}";
 
 # If requested, do a clean start
-if ($clean_start_arg) {
+if ($clean_start_arg) 
+{
     MTT::DoCommand::Cmd(1, "rm -rf $source_dir");
     MTT::DoCommand::Cmd(1, "rm -rf $install_dir");
     MTT::DoCommand::Cmd(1, "rm -rf $runs_data_dir");
@@ -704,7 +705,15 @@ sub _process_scratch_param {
         $scratch_arg = Value($ini, "MTT", $name);
     }
 
-    # See if we got a scratch root
+	$scratch_arg = Value($ini, "MTT", $name);
+	print "dinardebug scratch_arg $scratch_arg\n";
+
+	if (!defined($scratch_arg))
+	{
+        $scratch_arg = $scratch_option;
+    }
+    
+	# See if we got a scratch root
     if (! $scratch_arg) {
         $scratch_arg = $def_dir;
     }
