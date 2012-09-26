@@ -27,6 +27,7 @@ use File::Temp;
 use Text::Wrap;
 use File::Copy;
 use IO::File;
+use MTT::INI;
 
 # directory and file to write to
 my $dirname;
@@ -809,11 +810,46 @@ sub get_css_template
 sub get_html_summary_report_template
 {
     my $css = get_css_template();
+	my $values_replace = {};
+	$values_replace->{'REPORT_DATE'} =  `date +%F` ." ". `date +%k:%M:%S`;
+	$values_replace->{'OFED_VERSION'} = `ofed_info | head -n 1`;
+	my $clust_name = `hostname`;
+	$clust_name =~ m/\D+/;
+	$values_replace->{'CLUSTER_NAME'} = $&;
+	
+	my $helpper_hash = {};
+	
+	my $ini = $MTT::Globals::Internals->{ini};
+	my @sects = $ini->Sections();
+	my $product_version;
+	if ($MTT::Globals::Values->{shuffle_tests}->{sections})
+	{
+		MTT::Util::shuffle(\@sects);	
+	}
+	foreach my $section (@sects) 
+	{
+		print("text reporter: section  $section\n");
+		if ($section =~ /^\s*mpi install:/) 
+		{
+			my $sim_sec_name = GetSimpleSection($section);
+			$product_version =  MTT::Values::Value($ini, "mpi install: $sim_sec_name",'product_version');
+			if(!defined($helpper_hash->{$product_version}))
+			{
+				$values_replace->{'PRODUCT'} .= $product_version . " ";
+				$helpper_hash->{$product_version} = 1;
+			}
+		}
+	}
+	
     my $tmpl = '
     <title>MTT Results: Summary</title>
     <h1>MTT Results</h1>
     <hr size="1">
     <h2>Summary</h2>
+	<h4>report date: %REPORT_DATE%</h4>
+	<h4>product: %PRODUCT%</h4>
+	<h4>ofed version: %OFED_VERSION%</h4>
+	<h4>cluster name: %CLUSTER_NAME%</h4>
     <table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
     <tr valign="top">
     <th>Phase</th><th>Section</th><th>MPI Version</th><th>Duration</th><th>Pass</th><th>Fail</th><th>Time Out</th><th>Skip</th>
@@ -833,6 +869,12 @@ sub get_html_summary_report_template
     </body>
     </html>
     ';
+	my $tmp2;
+	foreach my $key (keys %{$values_replace})
+	{
+		$tmp2 = $values_replace->{$key};
+		$tmpl =~ s/%$key%/"$tmp2"/;
+	}
     return $css . $tmpl;
 }
 
