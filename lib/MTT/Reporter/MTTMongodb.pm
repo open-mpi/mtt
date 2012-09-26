@@ -247,7 +247,7 @@ sub resolve_template
 	my $i2=($#arg+1)/2;
 	for(my $i=0;$i<($#arg+1)/2;$i++)
 	{
-		print @arg[$i]," ", @arg[$i2],"\n";
+		#print @arg[$i]," ", @arg[$i2],"\n";
 		$template =~ s/\%@arg[$i]\%/@arg[$i2]/g;
 		$i2++;
 	}
@@ -270,8 +270,8 @@ sub _do_submit {
 	   	$ret_value = eval "require $_";
    	 	if ($@ || !defined($ret_value))
 	    {
-			Warning("--> Not found library: $_\n");
-			Warning("can't submit to mongo\n");
+			Warning("MongoDB reporter: Not found library: $_\n");
+			Warning("MongoDB reporter: Can't submit to mongo\n");
 			$enable_mongo = 0;
 
 		};
@@ -488,7 +488,7 @@ sub _do_submit {
 					}
 					
 					$to_xml->{"quality"} = int (100 - ($to_xml->{"failed_tests"})/($to_xml->{"total_tests"})*100);
-					$to_xml->{"mofed_version"} = `ofed_info | grep MLNX_OFED_LINUX`;
+					$to_xml->{"mofed_version"} = `ofed_info | head -n 1`;
 					
 					my $sim_sec_name = $form->{'modules'}->{'MpiInfo'}->{'mpi_name'};
 					Debug("MongoDB reporter: simple section name = $sim_sec_name\n");
@@ -510,7 +510,7 @@ sub _do_submit {
         Verbose(">> Submitted $phase to MongoDB\n")
             if ($submitted);
     }
-	if(defined($path))
+	if(defined($path) && defined($to_xml))
 	{
 		unless(-d $path)
 		{
@@ -521,14 +521,20 @@ sub _do_submit {
 		close(FILE);
 	}else
 	{
-		Warning("xml_dir not defined, summary xml file did not generate\n");
+		Warning("MongoDB reporter: xml_dir not defined, summary xml file did not generate\n");
 	}
-	if(defined($summary_reports) && $enable_mongo ==1)
+	if(defined($to_xml))
 	{
-		$summary_reports->insert($to_xml);
+		if(defined($summary_reports) && $enable_mongo ==1)
+		{
+			$summary_reports->insert($to_xml);
+		}else
+		{
+			Warning("MongoDB reporter: Cann't submit summary_report to mongodb\n");
+		}
 	}else
 	{
-		Warning("cann't submit summary_report to mongodb\n");
+		Verbose("MongoDB reporter: Nothing to submit to mongo\n");
 	}
 }
 
