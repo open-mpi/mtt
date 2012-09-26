@@ -121,7 +121,6 @@ sub get_codecov_result
 		close(FILE);
 		
 		print `module load $intel_env_module  && cd $codecov_dir && profmerge`;
-		print `cd $codecov_dir && echo "$codecov_filtr">>tocodecov.txt`;
 		print `cd $codecov_dir && module load $intel_env_module && codecov -counts -comp tocodecov.txt`;		
 		open FILE, "$codecov_dir" . "/CodeCoverage/__CODE_COVERAGE.HTML"  or (Warning("Icc codecov: Cannot open codeocdir: $codecov_dir/CodeCoverage/__CODE_COVERAGE.HTML\n") and return 0);
 		my $str;
