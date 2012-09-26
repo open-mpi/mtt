@@ -846,10 +846,16 @@ sub get_html_summary_report_template
     <h1>MTT Results</h1>
     <hr size="1">
     <h2>Summary</h2>
-	<h4>report date: %REPORT_DATE%</h4>
-	<h4>product: %PRODUCT%</h4>
-	<h4>ofed version: %OFED_VERSION%</h4>
-	<h4>cluster name: %CLUSTER_NAME%</h4>
+	</tbody></table>
+    <h2>additional info</h2>
+    <table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
+    <tbody><tr valign="top">
+    <th>report date</th><th>product</th><th>ofed version</th><th nowrap="">cluster name</th>
+    </tr>
+    <tr valign="top" class="Pass">
+    <td>%REPORT_DATE%</td><td>%PRODUCT%</td><td>%OFED_VERSION%</td><td>%CLUSTER_NAME%</td>
+    </tr>
+    </tbody></table>
     <table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
     <tr valign="top">
     <th>Phase</th><th>Section</th><th>MPI Version</th><th>Duration</th><th>Pass</th><th>Fail</th><th>Time Out</th><th>Skip</th>
