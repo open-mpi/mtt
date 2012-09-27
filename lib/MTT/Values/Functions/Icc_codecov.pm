@@ -84,6 +84,7 @@ sub get_codecov_result
 		Warning("Icc codecov: Parametr intel_env_module not defined in ini file!\n");
 		return 0;
 	}
+	$codecov_url .= '/CODE_COVERAGE.HTML';
 	#my $dbase_url = "@dbase_url@";
 	#my $codecov_filtr = "@codecov_filtr@";
 	#my $codecov_dir = "@codecov_dir@";

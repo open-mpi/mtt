@@ -822,6 +822,7 @@ sub get_html_summary_report_template
 	my $ini = $MTT::Globals::Internals->{ini};
 	my @sects = $ini->Sections();
 	my $product_version;
+	my $skip_section;
 	if ($MTT::Globals::Values->{shuffle_tests}->{sections})
 	{
 		MTT::Util::shuffle(\@sects);	
@@ -833,7 +834,8 @@ sub get_html_summary_report_template
 		{
 			my $sim_sec_name = GetSimpleSection($section);
 			$product_version =  MTT::Values::Value($ini, "mpi install: $sim_sec_name",'product_version');
-			if(!defined($helpper_hash->{$product_version}))
+			$skip_section = MTT::Values::Value($ini, "mpi install: $sim_sec_name",'skip_section');
+			if(!defined($helpper_hash->{$product_version}) && $skip_section == 0)
 			{
 				$values_replace->{'PRODUCT'} .= $product_version . " ";
 				$helpper_hash->{$product_version} = 1;
@@ -845,9 +847,8 @@ sub get_html_summary_report_template
     <title>MTT Results: Summary</title>
     <h1>MTT Results</h1>
     <hr size="1">
-    <h2>Summary</h2>
 	</tbody></table>
-    <h2>additional info</h2>
+    <h2>Additional info</h2>
     <table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
     <tbody><tr valign="top">
     <th>report date</th><th>product</th><th>ofed version</th><th nowrap="">cluster name</th>
@@ -856,6 +857,7 @@ sub get_html_summary_report_template
     <td>%REPORT_DATE%</td><td>%PRODUCT%</td><td>%OFED_VERSION%</td><td>%CLUSTER_NAME%</td>
     </tr>
     </tbody></table>
+    <h2>Summary</h2>
     <table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
     <tr valign="top">
     <th>Phase</th><th>Section</th><th>MPI Version</th><th>Duration</th><th>Pass</th><th>Fail</th><th>Time Out</th><th>Skip</th>
@@ -879,7 +881,7 @@ sub get_html_summary_report_template
 	foreach my $key (keys %{$values_replace})
 	{
 		$tmp2 = $values_replace->{$key};
-		$tmpl =~ s/%$key%/"$tmp2"/;
+		$tmpl =~ s/%$key%/$tmp2/;
 	}
     return $css . $tmpl;
 }
