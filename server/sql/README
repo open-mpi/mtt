@@ -1,0 +1,35 @@
+Notes for setting up and maintaining the MTT database:
+----------------------------------------------------
+
+
+How to setup the MTT database:
+----------------------------------------------------
+ See server/sql/INSTALL
+
+
+How to check on the size of the MTT database:
+----------------------------------------------------
+- Use the stats page:
+  http://my-server/mtt/stats
+
+- SQL query
+shell$ psql -U mtt mtt
+mtt=> SELECT pg_size_pretty(pg_database_size('mtt')), pg_database_size('mtt');
+ pg_size_pretty | pg_database_size 
+----------------+------------------
+ 28 MB          |         29030160
+(1 row)
+
+
+How to backup the database
+----------------------------------------------------
+ http://www.postgresql.org/docs/8.2/static/backup-dump.html
+
+shell$ date ; pg_dump -U mtt mtt | gzip > mtt-db-2012-09-28.gz ; date
+
+
+How to restore the database from a backup
+----------------------------------------------------
+ http://www.postgresql.org/docs/8.2/static/backup-dump.html
+
+shell$ gunzip -c mtt-db-2012-09-28.gz | psql -U mtt mtt
