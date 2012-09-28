@@ -30,6 +30,8 @@ if (array_key_exists("db", $_GET) &&
 }
 $pgsql_conn = null;
 
+date_default_timezone_set('America/New_York');
+
 $start_collection_date = "DATE '".date("Y-m-01")."'";
 $end_collection_date   = "DATE '".date("Y-m-01")."' + interval '1 month'";
 $given_dates = array_key_exists("dates", $_GET) ? $_GET['dates'] : date("Y-m-01 - Y-m-d");
@@ -901,6 +903,10 @@ function select_all_distinct($field) {
                           $basic_from.
                           "WHERE ".$field." != '' AND ".
                           $basic_where);
+    if( null == $vals ) {
+        return array();
+    }
+
     $accum = array();
     foreach($vals as $v) {
         $accum[] = preg_replace("/\s*$/", "", $v);
