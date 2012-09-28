@@ -9,7 +9,7 @@ $| = 1;
 #
 # MTT Working Dir to find scripts
 #
-my $mtt_base_dir = "$HOME/mtt/trunk/server/sql/";
+my $mtt_base_dir = "/l/osl/www/mtt.open-mpi.org/cron/";
 
 #
 # Stats collection script
@@ -20,7 +20,7 @@ my $stats_args   = " -past 2 -v 2 -no-db ";
 #
 # Output file to collect debugging output
 #
-my $stats_output = $mtt_base_dir . "output/mtt-update-stats-output.txt";
+my $stats_output = $mtt_base_dir . "mtt-update-stats-output.txt";
 
 #
 # Change to the working directory, and run the command

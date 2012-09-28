@@ -11,9 +11,9 @@ use Env qw(HOME PATH USER);
 #
 
 # Directory containing scripts to execute
-my $working_dir = "$HOME/mtt/trunk/server/sql/stats";
+my $working_dir = "/l/osl/www/mtt.open-mpi.org/cron/stats";
 # Directory to place the contribution graph
-my $output_dir  = "/l/osl/www/www.open-mpi.org/mtt/stats/";
+my $output_dir  = "/l/osl/www/mtt.open-mpi.org/cron/stats/";
 # Temporary directory to store data files
 my $tmp_dir = "/tmp/";
 
