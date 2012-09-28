@@ -1,0 +1,183 @@
+How to setup the MTT Crontab
+-----------------------------
+
+
+1) Statistics [Database]
+----------------------------------------------------
+We collect some database statistics everyday.
+This way we can look back on how the database has been growing over time.
+#########################
+# Update MTT Statistics [Database]
+#  - everyday at 11:00
+#  - runs in about 25 - 30  min
+#########################
+0 23 * * *  /l/osl/www/mtt.open-mpi.org/cron/mtt-update-stats-db-only.pl
+
+
+2) Statistics [Contribution]
+----------------------------------------------------
+We collect some contribution statistics everyday.
+This way we can look back to see some basic coverage stats.
+#########################
+# Update MTT Statistics [Contribution]
+#  - everyday at 1 am
+#  - runs in about 2 hours
+#########################
+0 1 * * *  /l/osl/www/mtt.open-mpi.org/cron/mtt-update-stats.pl
+
+
+3) Contribution Graph
+----------------------------------------------------
+We generate a contribution graph every day from the stats information.
+This graph is displayed at the bottom of the reporter
+#########################
+# Update Contrib Graph
+# - 3 am Everyday
+# - Runs in < 1 min
+#########################
+0 3 * * * /l/osl/www/mtt.open-mpi.org/cron/create-contrib-graph.pl
+
+
+4) Periodic Maintenance
+----------------------------------------------------
+Daily, Weekly, Monthly, and Yearly Maintenance script.
+It is suggested that you run at least the Weekly and Yearly Maintenance scripts.
+#########################
+# Daily
+#########################
+0 4 * * 1-5  /l/osl/www/mtt.open-mpi.org/cron/periodic-maintenance.pl -day 1> /dev/null 2> /dev/null
+
+#########################
+# Weekly
+#########################
+0 4 * * 0  if [ `date +\%d` -ge 8 ]; then /l/osl/www/mtt.open-mpi.org/cron/periodic-maintenance.pl -week 1> /dev/null 2> /dev/null; fi
+
+#########################
+# Monthly
+#########################
+0 4 * * 0  if [ `date +\%d` -lt 8 ]; then /l/osl/www/mtt.open-mpi.org/cron/periodic-maintenance.pl -month 1> /dev/null 2> /dev/null; fi
+
+#########################
+# Yearly
+#########################
+0 4 29 12 *  /l/osl/www/mtt.open-mpi.org/cron/periodic-maintenance.pl -year 1> /dev/null 2> /dev/null
+
+
+5) Email Alerts
+----------------------------------------------------
+#########################
+# Email Reports
+#  - Tues - Thursday at 9 am (Past 12 hours)
+#  - Tues - Thursday at 9 pm (Past 24 hours)
+#  - Monday at 9 am (Past 60 hours)
+#########################
+0 9 * * 2-4  /l/osl/www/mtt.open-mpi.org/cron/alerts.php -f /l/osl/www/mtt.open-mpi.org/cron/morning.ini 1> /dev/null 2> /dev/null
+0 21 * * 2-4 /l/osl/www/mtt.open-mpi.org/cron/alerts.php -f /l/osl/www/mtt.open-mpi.org/cron/evening.ini 1> /dev/null 2> /dev/null
+0 9 * * 1    /l/osl/www/mtt.open-mpi.org/cron/alerts.php -f /l/osl/www/mtt.open-mpi.org/cron/monday.ini  1> /dev/null 2> /dev/null
+
+
+
+X) Example Crontab
+----------------------------------------------------
+#########################
+# Update the MTT Repository
+#
+# Everyday @ 9:00 pm
+#
+0 21 * * * (cd $HOME/mtt/trunk && svn up ) 1> /dev/null 2> /dev/null
+#########################
+
+
+#########################
+# MPI Testing Tool (MTT)
+#
+# Everyday
+#  - 23:00 -  1:00  Update MTT Statistics [Database]
+#  -  1:00 -  3:00  Update MTT Statistics [Contribution]
+#  -  3:00 -  3:05  Update Contrib Graph
+#  -  4:00 -  4:30  Maintain internal PostgreSQL stats (Day)
+#  -  4:30 -  8:30  Update Static MTT Visualization Extension (Disabled due to heavy load)
+#
+# Saturday
+#  -  1:00 - 12:00  Backup the MTT database
+#  - 14:30 - 18:30  Update Static MTT Visualization Extension
+#
+# Sunday
+#  -  4:00 -  4:30  Maintain internal PostgreSQL stats (Week)
+#  -  4:00 -  4:30  Maintain internal PostgreSQL stats (Month) [1st sunday only]
+#  -  5:00 -  5:30  Check for Integrity Violations (week)
+#
+#########################
+
+#
+# Update MTT Statistics [Database]
+#  - everyday at 11:00
+#  - runs in about 25 - 30  min
+#
+0 23 * * *  /l/osl/www/mtt.open-mpi.org/cron/mtt-update-stats-db-only.pl
+
+#
+# Update MTT Statistics [Contribution]
+#  - everyday at 1 am
+#  - runs in about 2 hours
+#
+0 1 * * *  /l/osl/www/mtt.open-mpi.org/cron/mtt-update-stats.pl
+
+#
+# Update Contrib Graph
+# - 3 am Everyday
+# - Runs in < 1 min
+#
+0 3 * * * /l/osl/www/mtt.open-mpi.org/cron/create-contrib-graph.pl
+
+#
+# Maintain internal PostgreSQL stats (Day)
+#  - every weekday at 4 am
+#  - runs in about 10 - 20 min
+#
+# JJH: 12/20/2011 Disable this to try to help with memory issues in the db
+#
+#0 4 * * 1-5  /l/osl/www/mtt.open-mpi.org/cron/periodic-maintenance.pl -day 1> /dev/null 2> /dev/null
+
+#
+# Maintain internal PostgreSQL stats (Week)
+#  - Sunday at 4 am (except when Monthly is running)
+#  - runs in about 30 min
+# JJH: 11/7/2011 - Since Monthly disabled, run every week
+#
+#0 4 * * 0  if [ `date +\%d` -ge 8 ]; then /l/osl/www/mtt.open-mpi.org/cron/periodic-maintenance.pl -week 1> /dev/null 2> /dev/null; fi
+0 4 * * 0  /l/osl/www/mtt.open-mpi.org/cron/periodic-maintenance.pl -week 1> /dev/null 2> /dev/null
+
+#
+# Maintain internal PostgreSQL stats (Month)
+#  - 1st Sunday of the Month at 4 am
+#  - runs in about 21 hours (not 20 min)
+# JJH: 11/7/2011 - Disabled due to long runtime causing submission errors
+#
+#0 4 * * 0  if [ `date +\%d` -lt 8 ]; then /l/osl/www/mtt.open-mpi.org/cron/periodic-maintenance.pl -month 1> /dev/null 2> /dev/null; fi
+
+#
+# Maintain internal PostgreSQL stats (Year)
+#  - Dec. 29 at 4 am
+#  - runs in about 6 hours (?? Verify)
+#
+0 4 29 12 *  /l/osl/www/mtt.open-mpi.org/cron/periodic-maintenance.pl -year 1> /dev/null 2> /dev/null
+
+#
+# Check for Integrity Violations (week)
+#  - Sunday at 5 am
+#  - runs in about 10 min
+#
+# JJH: 9/28/2012 : No longer needed, but good to keep around
+#0 5 * * 0  /l/osl/www/mtt.open-mpi.org/cron/ic-check.pl 1> /dev/null 2> /dev/null
+
+#
+# Email Reports
+#  - Tues - Thursday at 9 am (Past 12 hours)
+#  - Tues - Thursday at 9 pm (Past 24 hours)
+#  - Monday at 9 am (Past 60 hours)
+#
+0 9 * * 2-4  /l/osl/www/mtt.open-mpi.org/cron/alerts.php -f /l/osl/www/mtt.open-mpi.org/cron/morning.ini 1> /dev/null 2> /dev/null
+0 21 * * 2-4 /l/osl/www/mtt.open-mpi.org/cron/alerts.php -f /l/osl/www/mtt.open-mpi.org/cron/evening.ini 1> /dev/null 2> /dev/null
+0 9 * * 1    /l/osl/www/mtt.open-mpi.org/cron/alerts.php -f /l/osl/www/mtt.open-mpi.org/cron/monday.ini  1> /dev/null 2> /dev/null
+

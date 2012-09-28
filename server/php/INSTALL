@@ -1,0 +1,34 @@
+How to setup the MTT Reporter
+-----------------------------
+
+1) Copy to www location
+----------------------------------------------------
+shell$ cp -R $MTT_TRUNK/server/php $WWW_ROOT/
+
+
+2) Create a tmp directory for the reporter
+----------------------------------------------------
+shell$ cd $WWW_ROOT/
+shell$ mkdir tmp
+
+Note: The 'tmp' directory should be readable and writable by the Apache user
+      since this is where graphs are temporarily stored.
+
+
+3) Edit the config.inc file
+----------------------------------------------------
+shell$ $EDITOR config.inc
+ - You can add your Google Analytics account information to the $mtt_google_analytics_account
+ - Edit the other fields if you chose different names for the database, users, ...
+
+
+4) All done!
+----------------------------------------------------
+- MTT Reporter:
+  http://my-server/mtt
+
+- MTT Database Stats:
+  http://my-server/mtt/stats
+
+- MTT Reporter Submission site
+  http://my-server/mtt/submit

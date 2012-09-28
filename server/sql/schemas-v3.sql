@@ -700,16 +700,16 @@ INSERT INTO test_run_networks VALUES(0, 0, 0);
 --
 -- Add the partition tables
 --
-\i 2006-mpi-install.sql
-\i 2006-test-build.sql
-\i 2006-test-run.sql
+--\i 2006-mpi-install.sql
+--\i 2006-test-build.sql
+--\i 2006-test-run.sql
 
-\i 2007-mpi-install.sql
-\i 2007-test-build.sql
-\i 2007-test-run.sql
+--\i 2007-mpi-install.sql
+--\i 2007-test-build.sql
+--\i 2007-test-run.sql
 
 --
 -- Add the partition table indexes
 --
-\i 2006-indexes.sql
-\i 2007-indexes.sql
+--\i 2006-indexes.sql
+--\i 2007-indexes.sql

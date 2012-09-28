@@ -1,0 +1,93 @@
+How to setup the MTT database
+-----------------------------
+
+
+1) Create a database named 'mtt' and some user roles
+----------------------------------------------------
+- Login to the postgres instance as the 'postgres' user
+shell$ psql -U postgres
+
+- Create the 'mtt' user - for creating tables
+postgres=# CREATE USER mtt WITH LOGIN PASSWORD '******' CREATEDB CREATEROLE;
+
+- Create the 'mtt_viewer' user - for the reporter
+postgres=# CREATE USER mtt_viewer WITH LOGIN PASSWORD '*****'
+
+- Create the database 'mtt' and assign the owner to 'mtt'
+postgres=# CREATE DATABASE mtt WITH OWNER mtt;
+
+- Exit the postgres prompt
+postgres=# \q
+
+
+
+2) Import the base schema structure
+----------------------------------------------------
+- cd $MTT_TRUNK/server/sql/
+
+- As the 'mtt' user, import the schemas-v3.sql file
+shell$ psql -U mtt mtt -f schemas-v3.sql
+
+- Note that some Error messages like the below are normal and expected
+ERROR:  table "interconnects" does not exist
+
+
+
+3) Setup the Summary Tables - Used by the Reporter for common queries
+----------------------------------------------------
+- cd summary
+
+- Create the summary tables
+shell$ psql -U mtt mtt -f summary_tables.sql
+
+- Add the summary triggers
+shell$ psql -U mtt mtt -f summary_trigger.sql 
+
+- cd ..
+
+
+4) Create and import the partition tables
+----------------------------------------------------
+- cd support
+
+- Create the SQL using the provided Perl scripts.
+  See create-partitions.sh for historial partition creations
+
+shell$ ./create-partitions-mpi-install.pl 2012 XX >  2012-mpi-install.sql
+shell$ ./create-partitions-test-build.pl 2012 XX >  2012-test-build.sql
+shell$ ./create-partitions-test-run.pl 2012 XX >  2012-test-run.sql
+shell$ ./create-partition-indexes.pl 2012 XX >  2012-indexes.sql
+shell$ ../summary/create-partition-triggers.pl 2012 XX > 2012-triggers.sql
+
+- Import the SQL into the psql database using the 'mtt' user
+  Note: Order is critical!
+
+shell$ psql mtt -U mtt -f 2012-mpi-install.sql
+shell$ psql mtt -U mtt -f 2012-test-build.sql
+shell$ psql mtt -U mtt -f 2012-test-run.sql
+shell$ psql mtt -U mtt -f 2012-indexes.sql
+shell$ psql mtt -U mtt -f 2012-triggers.sql
+
+- cd ..
+
+
+5) Setup the 'stats' tables
+----------------------------------------------------
+- Create the stats tables
+shell$ psql -U mtt mtt -f schemas-stats.sql
+
+
+6) Setup the cache tables for the Reporter
+----------------------------------------------------
+- Create the table
+shell$ psql -U mtt mtt -f schemas-reporter.sql
+
+
+7) Setup some other indexes
+----------------------------------------------------
+- Create indexes
+shell$ psql -U mtt mtt -f schemas-indexes.sql
+
+
+8) All done!
+----------------------------------------------------
