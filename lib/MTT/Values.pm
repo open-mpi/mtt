@@ -185,9 +185,9 @@ sub _replace_vars {
         my $val;
         if ($var_name =~ m/^!/) {
             # don't call EvaluateString for @!var_name@, only "copy-paste" value from section parameter
-            $val = $ini->val($section, substr($var_name,1));
+            $val = join("\n",$ini->val($section, substr($var_name,1)));
         } else {
-            $val = EvaluateString($ini->val($section, $var_name), $ini, $section);
+            $val = EvaluateString(join("\n", $ini->val($section, $var_name), $ini, $section));
         }
         Debug("Got var_name: $var_name -> $val\n");
         if (!defined($val)) {
