@@ -162,6 +162,11 @@ elsif ($opt_upload)
 elsif ($opt_query)
 {
     my $gql = ();
+	my $slurm_file_name;				
+	my $outfile;
+	my $file;
+	my $file_helper_return;
+	my $output_file_name;
     if ($opt_gqls) 
     {
         $gql = $opt_gqls;
@@ -316,6 +321,8 @@ elsif ($opt_query)
 	my $conn = MongoDB::Connection->new(host => $url);
 	my $db = $conn->mtt;
 	my $mtt_result = $db->TestRunPhase;
+	my $grid = $db->get_gridfs;
+	my $file_helper = $db->file_helper;
 	my $all_result = $mtt_result->find(eval $query_to_mongo);	
 	my $i = 0;
 	if($opt_regression_step)
@@ -347,6 +354,27 @@ elsif ($opt_query)
 			print F YAML::Syck::Dump( $doc );
 			close F;
 			$i++;
+			if(defined($doc->{"slurm_file_name"}))
+			{
+				$slurm_file_name = $doc->{"slurm_file_name"};				
+				
+				$file_helper_return = $file_helper->find({"_id"=>$slurm_file_name});
+				if(defined($file_helper_return))
+				{
+
+					my $file_helper_hash = $file_helper_return->next;
+					if(defined($file_helper_hash))
+					{
+						#print Dumper($file_helper_hash),"\n";
+						$output_file_name = $file_helper_hash->{"product_name"} . "-" .$file_helper_hash->{"slurm_id"} . '.out.zip';
+						print "$output_file_name\n";
+						$outfile = IO::File->new("$output_file_name", "w");
+						$file = $grid->find_one({"filename" => $slurm_file_name});
+						$file->print($outfile);
+					}
+				}
+						
+			}
 		}
 
 	}

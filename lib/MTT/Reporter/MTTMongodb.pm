@@ -262,6 +262,7 @@ sub _do_submit {
        	'MongoDB::OID', 
 		'YAML::XS',
 		'YAML',
+		'MongoDB::GridFS'
 				);
 								    
 			
@@ -288,6 +289,7 @@ sub _do_submit {
 	my $TestBuildPhase; 
 	my $summary_reports;
 	my $codecov_reports;
+	my $file_helper;
 	my $conn;
 	my $db;
 	if($enable_mongo == 1)
@@ -300,6 +302,7 @@ sub _do_submit {
 		$TestBuildPhase = $db->TestBuildPhase;
 		$summary_reports = $db->Summary_reports;
 		$codecov_reports = $db->Codecov_reports;
+		$file_helper = $db->file_helper;
 	}
 	my $doc;
 	my @numbers;
@@ -312,7 +315,7 @@ sub _do_submit {
     my $ini = $MTT::Globals::Internals->{ini};	
 	my $path = MTT::Values::Value($ini, "MTT", 'xml_dir');
 	my $scratch_url = MTT::Values::Value($ini, "MTT", 'scratch_url');
-	
+	my $file_name_mongo;
 
     # Make a default form that will be used to seed all the forms that
     # will be sent
@@ -425,6 +428,12 @@ sub _do_submit {
 				
 				if($enable_mongo == 1 && MTT::Values::Value( $ini, "MTT", 'mode') ne "codecov")
 				{
+					if(!defined($file_name_mongo))
+					{
+						$file_name_mongo = $file_helper->insert({product_name=>MTT::Values::Value($ini, "MTT", 'INI_BASENAME'),slurm_id=>MTT::Values::Functions::getenv('SLURM_JOBID')});
+					}
+					print "MongoDB reporter: file_name=$file_name_mongo\n";
+					$form->{"slurm_file_name"} = $file_name_mongo;
                		if ( $phase eq "Test Run" )
 					{
 			  	 		 $inserted_id = $TestRunPhase->insert($form);
@@ -441,6 +450,7 @@ sub _do_submit {
 						 $inserted_id =  $TestBuildPhase->insert($form);
 					}
                 	$submitted = 1;
+					
 				}
 				if($phase eq "Test Run" && MTT::Values::Value( $ini, "MTT", 'mode') ne "codecov" &&  MTT::Values::Value( $ini, "MTT", 'pkg') ne "codecov") 
 				{
@@ -535,6 +545,18 @@ sub _do_submit {
 	}else
 	{
 		Verbose("MongoDB reporter: Nothing to submit to mongo\n");
+	}
+	if($enable_mongo == 1)
+	{
+		my $grid = $db->get_gridfs;
+		my $act_file_name = MTT::Values::Functions::scratch_root();
+		print "MongoDB reporter: ";
+		print `cd $act_file_name && zip data *`;
+		$act_file_name .= '/data.zip';
+		print "MongoDB reporter: act_file_name=$act_file_name\n";
+		my $fh = IO::File->new("$act_file_name", "r");
+		$grid->insert($fh, {"filename" => $file_name_mongo});
+		
 	}
 }
 
