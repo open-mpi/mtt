@@ -431,10 +431,13 @@ sub get_part_table_postfix_append_week() {
 }
 
 sub set_mail_header() {
+  my $host = `hostname`;
+  chomp($host);
   my $cur_date = `date`;
   chomp($cur_date);
 
   $current_mail_header .= "-"x40 . "\n";
+  $current_mail_header .= "Hostname  : ". $host."\n";
   $current_mail_header .= "Start Time: ".$cur_date."\n";
 
   if( $MAIN_DAY == $cur_main ) {
