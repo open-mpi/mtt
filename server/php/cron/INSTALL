@@ -1,3 +1,9 @@
+Requirements
+------------
+ - gnuplot
+ - Perl Mail/Sendmail.pm module
+
+
 How to setup the MTT Crontab
 -----------------------------
 
