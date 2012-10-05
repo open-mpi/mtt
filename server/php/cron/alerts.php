@@ -40,10 +40,12 @@ if ($GLOBALS['verbose']) {
 #
 # Includes
 #
-$topdir = "..";
+$topdir = "/l/osl/www/mtt.open-mpi.org";
 include_once("$topdir/curl_get.inc");
 include_once("$topdir/ini.inc");
 include_once("$topdir/reporter/reporter.inc");
+
+date_default_timezone_set('America/New_York');
 
 #
 # Parse with sections
