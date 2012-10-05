@@ -30,6 +30,8 @@ include_once("$topdir/reporter/reporter.inc");
 include_once("$topdir/reporter/util.inc");
 include_once("$topdir/common.inc");
 
+date_default_timezone_set('America/New_York');
+
 $GLOBALS['debug']   = isset($_POST['debug'])   ? $_POST['debug']   : 1;
 $GLOBALS['verbose'] = isset($_POST['verbose']) ? $_POST['verbose'] : 1;
 $dbname             = isset($_GET['db'])       ? $_GET['db']       : "mtt";
