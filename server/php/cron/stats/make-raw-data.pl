@@ -35,19 +35,19 @@ my $sql_select_base =
 my $sql_select_group_by =
   "GROUP BY foo_date ".$v_nl.
   "ORDER BY foo_date ";
-my $sql_select_all_day   = ("SELECT to_date( date_trunc('day',   collection_date), 'YYYY-MM-DD') as foo_date, " .$v_nl.
+my $sql_select_all_day   = ("SELECT to_date( date_trunc('day',   collection_date)::text, 'YYYY-MM-DD') as foo_date, " .$v_nl.
                             $sql_select_base . $v_nl.
                             " AND date_trunc('day', collection_date) < date_trunc('day', now()) ".$v_nl.
                             $sql_select_group_by);
-my $sql_select_all_week  = ("SELECT to_date( date_trunc('week',  collection_date), 'YYYY-MM-DD') as foo_date, " .$v_nl.
+my $sql_select_all_week  = ("SELECT to_date( date_trunc('week',  collection_date)::text, 'YYYY-MM-DD') as foo_date, " .$v_nl.
                             $sql_select_base . $v_nl.
                             " AND date_trunc('week', collection_date) < date_trunc('week', now()) ".$v_nl.
                             $sql_select_group_by);
-my $sql_select_all_month = ("SELECT to_date( date_trunc('month', collection_date), 'YYYY-MM-DD') as foo_date, " .$v_nl.
+my $sql_select_all_month = ("SELECT to_date( date_trunc('month', collection_date)::text, 'YYYY-MM-DD') as foo_date, " .$v_nl.
                             $sql_select_base . $v_nl.
                             " AND date_trunc('month', collection_date) < date_trunc('month', now()) ".$v_nl.
                             $sql_select_group_by);
-my $sql_select_all_year  = ("SELECT to_date( date_trunc('year',  collection_date), 'YYYY-MM-DD') as foo_date, " .$v_nl.
+my $sql_select_all_year  = ("SELECT to_date( date_trunc('year',  collection_date)::text, 'YYYY-MM-DD') as foo_date, " .$v_nl.
                             $sql_select_base . $v_nl.
                             " AND date_trunc('year', collection_date) <= date_trunc('year', now()) ".$v_nl.
                             $sql_select_group_by);
