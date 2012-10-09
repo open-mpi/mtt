@@ -49,6 +49,7 @@ sub get_codecov_result
 	#################################################################
 	my $ini = $MTT::Globals::Internals->{ini};
 	my $dbase_url = MTT::Values::Value( $ini, 'MTT', 'dbase_url' );
+	my $scratch_url = MTT::Values::Value($ini, "MTT", 'scratch_url') . '/';
 	if(!defined($dbase_url))
 	{
 		Warning("Icc codecov: Parametr dbase_url not defined in ini file!\n");
@@ -99,8 +100,8 @@ sub get_codecov_result
 	if($enable_mongo == 1)
 	{
 		$conn = MongoDB::Connection->new(host => $dbase_url);
-		$db = $conn->mtt;
-		$codecov_reports = $db->Codecov_reports;
+		$db = $conn->mlnx_mtt;
+		$codecov_reports = $db->Coverage;
 	}
 	my $hash_to_insert = {};
 	opendir DIR,"$codecov_dir" or (Warning("Icc codecov: Cannot open codeocdir: $codecov_dir\n") and return 0);
@@ -225,11 +226,18 @@ sub get_codecov_result
 		print FILE "</codecov_report>";
 		close(FILE);
 		
-		if($enable_mongo == 1)
+		if($enable_mongo == 1 )
 		{
+			if(!defined($MTT::Globals::Values->{'group_id'}))
+			{
+				print "Icc codecov: group_id not defined\n";
+				print "Icc codecov: prohibit to submit to mongodb.\n";
+				return 0;
+			}
 			$hash_to_insert->{"codecov_report"}->{"product_name"} = $ini_basename;
 			$hash_to_insert->{"codecov_report"}->{"product_version"} = $product_version;
-			$hash_to_insert->{"codecov_report"}->{"report_url"} = "$codecov_url";
+			$hash_to_insert->{"codecov_report"}->{"report_url_cov"} = $codecov_url;
+			$hash_to_insert->{"codecov_report"}->{"report_url_sam"} = $scratch_url;
 			$hash_to_insert->{"codecov_report"}->{"files"}->{"total"} = @val[0];
 			$hash_to_insert->{"codecov_report"}->{"files"}->{"cvrd"} = @val[1];
 			$hash_to_insert->{"codecov_report"}->{"files"}->{"uncvrd"} = @val[2];
@@ -244,6 +252,7 @@ sub get_codecov_result
 			$hash_to_insert->{"codecov_report"}->{"blocks"}->{"percent"} = (int(@val[11]))."%";		
 			$hash_to_insert->{"codecov_report"}->{"report_date"} = $report_date;			
 			$hash_to_insert->{"codecov_report"}->{"mofed_version"} = `ofed_info | head -n 1`;
+			$hash_to_insert->{'group_id'} = $MTT::Globals::Values->{'group_id'};
 			$codecov_reports->insert($hash_to_insert);
 		}
 		return 0;

@@ -69,6 +69,8 @@ my $opt_regression_from;
 my $opt_regression_to;
 my $opt_regression_step;
 
+my $prefix;
+
 my @opt_newuser;
 
 GetOptions ("help|h" => \$opt_help,
@@ -99,7 +101,11 @@ GetOptions ("help|h" => \$opt_help,
 
 			"regression-from=s" => \$opt_regression_from,
 			"regression-to=s" => \$opt_regression_to,
-			"regression-step=s" => \$opt_regression_step
+			"regression-step=s" => \$opt_regression_step,
+			
+			"dbase-name=s" => \$opt_dbase,
+			"operation=s" => \$opt_operation,
+			
             );
 
 
@@ -161,8 +167,7 @@ elsif ($opt_upload)
 }
 elsif ($opt_query)
 {
-    my $gql = ();
-	my $slurm_file_name;				
+    my $gql = ();				
 	my $outfile;
 	my $file;
 	my $file_helper_return;
@@ -175,7 +180,6 @@ elsif ($opt_query)
     {
         help('query');
     }
-	#print $gql, " before\n";
 	$gql =~ s/\s+/ /g;
 	$gql =~ s/ /#/g;
 	$gql =~ s/And/AND/g;
@@ -188,15 +192,12 @@ elsif ($opt_query)
 	$gql =~ s/not/NOT/g;
 	$gql =~ s/#AND#/ AND /g;
 	$gql =~ s/#OR#/ \| /g;
-	#$gql =~ s/#IN#/IN/g;
 	$gql =~ s/#NOT/NOT/g;
 	$gql =~ s/#=#/=/g;
 	$gql =~ s/#>#/>/g;
 	$gql =~ s/#>=#/>=/g;
 	$gql =~ s/#<#/</g;
 	$gql =~ s/#<=#/<=/g;
-	#print $gql," after\n";
-	#exit;
 
 	my @date_array;
 	if($gql =~ m/=>|=</)
@@ -207,10 +208,7 @@ elsif ($opt_query)
 
 	if($opt_regression_step)
 	{
-		if($opt_regression_step =~ m/^\d{4}-\d{2}-\d{2}$/)
-		{
-			#print "ok $opt_regression_step \n";
-		}else
+		if(!($opt_regression_step =~ m/^\d{4}-\d{2}-\d{2}$/))
 		{
 			die "\nparametr \"regression-step\" has invalid format. YYYY-MM-DD\nexample --regression-step=\'0000-01-03\'";
 		}
@@ -227,7 +225,6 @@ elsif ($opt_query)
 			}
 		}else
 		{
-			#die "syntax error";
 			$str_start_time = "qqq";
 		}
 	
@@ -243,12 +240,10 @@ elsif ($opt_query)
 			}
 		}else
 		{
-			#die "syntax error";
 			$str_end_time="qqq";
 		}
 	
 		print "start_time $str_start_time end_time $str_end_time \n";
-		#exit;
 		my $timezone = DateTime->now;
 
 		my $DateTime_start_time;
@@ -256,19 +251,16 @@ elsif ($opt_query)
 		if($str_start_time ne "qqq")
 		{
 			@numbers = split(/:|-|#/,$str_start_time);
-			#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
 			my %hash_start_time = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => 0 ,minute => 0,second => 0,nanosecond => 0,time_zone=> $timezone->time_zone());
 			$DateTime_start_time = DateTime->new(%hash_start_time);
 		}else
 		{
 			my %hash_start_time = (year => 2000,month => 01,day => 01,hour => 01,minute => 01,second => 01,nanosecond => 0,time_zone=> $timezone->time_zone());
 			$DateTime_start_time = DateTime->new(%hash_start_time);
-			
 		}
         if($str_end_time ne "qqq")
 		{
 			@numbers = split(/:|-|#/,$str_end_time);
-			#print @numbers[0],"-year " , @numbers[1], "-month ",  @numbers[2], "-day ",  @numbers[3],"-hour " ,  @numbers[4] ,"-min ",   @numbers[5],"-sec\n";
 			my %hash_end_time = (year => @numbers[0],month => @numbers[1],day => @numbers[2],hour => 23,minute => 59,second => 59,nanosecond => 0,time_zone=> $timezone->time_zone());
 			$DateTime_end_time = DateTime->new(%hash_end_time);
 		}else
@@ -276,12 +268,9 @@ elsif ($opt_query)
 			$DateTime_end_time = DateTime->now;
 		}
 
-		#print "hash start_time ", $DateTime_start_time,  " hash end_time ", $DateTime_end_time, "\n";
-
 		print "\n\nacceptable dates:\n";
 		my $count = 1;
 		my @arg_to_subtract = split(/-/,$opt_regression_step);
-		#print "\n\n@arg_to_subtract\n\n";
 		while(DateTime->compare( $DateTime_start_time, $DateTime_end_time )!=1)
 		{
 
@@ -306,83 +295,98 @@ elsif ($opt_query)
 			$DateTime_end_time->subtract(years=> @arg_to_subtract[0],months=>@arg_to_subtract[1],days =>@arg_to_subtract[2]);
 
 		}
-		#print"\n\n @date_array\n\n";
 	}
-	#print "time zone ",$timezone,"\n";
 
+	######################################################################
+	#mongo
+	######################################################################
+	my $conn = MongoDB::Connection->new(host => $url);
+	my $db = $conn->mlnx_mtt;
+	my $grid = $db->get_gridfs;
+	my $mtt_act_dbase;
+	if($opt_dbase eq "codecov")
+	{
+		$mtt_act_dbase = $db->Coverage;
+		print "Using code coverage data base: \"Codecov_reports\"\n";
+		
+	}else
+	{
+		$mtt_act_dbase = $db->Basis;
+		print "Using primary data base: \"TestRunPhase\"\n";
+		$prefix ="modules."
+	}
+	
 	my $query_to_mongo = string2query($gql);
 	$query_to_mongo .= ";";
+	
 	print "\n\n**********************************************************************query to mongo*************************************************************************";
 	print "\n",$query_to_mongo,"\n";
 	print "*************************************************************************************************************************************************************\n";
-	######################################################################
-	#mongo
-	#######################################################################
-	my $conn = MongoDB::Connection->new(host => $url);
-	my $db = $conn->mtt;
-	my $mtt_result = $db->TestRunPhase;
-	my $grid = $db->get_gridfs;
-	my $file_helper = $db->file_helper;
-	my $all_result = $mtt_result->find(eval $query_to_mongo);	
-	my $i = 0;
-	if($opt_regression_step)
+	
+	if($opt_operation eq "delete")
 	{
-		while (my $doc = $all_result->next)
+		my $returned_hash = $mtt_act_dbase->remove(eval $query_to_mongo, {safe => 1});
+		print "returned hash: ", Dumper($returned_hash), "\n";
+		if($returned_hash->{'ok'} != 1)
 		{
-			if($doc->{"modules"}->{"TestRunPhase"}->{"start_time"} =~ m/\d{4}-\d{2}-\d{2}/)
-			{
-				if ($& ~~ @date_array)
-				{
-					open F, '>', "$&_$i.yaml";
-					print F YAML::Syck::Dump( $doc );
-					close F;
-					$i++;
-				}
-			}
-			else
-			{
-				die "something strange happened";
-			}
-
+			print "error: ",$returned_hash->{'err'},"\n";
+		}else
+		{
+			print "deleted ", $returned_hash->{'n'}, " items from db\n"; 
 		}
 	}else
 	{
-		while (my $doc = $all_result->next)
+		my $all_result = $mtt_act_dbase->find(eval $query_to_mongo);	
+		my $i = 0;
+		if($opt_regression_step)
 		{
-	
-			open F, '>', "$i.yaml";
-			print F YAML::Syck::Dump( $doc );
-			close F;
-			$i++;
-			if(defined($doc->{"slurm_file_name"}))
+			while (my $doc = $all_result->next)
 			{
-				$slurm_file_name = $doc->{"slurm_file_name"};				
-				
-				$file_helper_return = $file_helper->find({"_id"=>$slurm_file_name});
-				if(defined($file_helper_return))
+				if($doc->{"modules"}->{"TestRunPhase"}->{"start_time"} =~ m/\d{4}-\d{2}-\d{2}/)
 				{
-
-					my $file_helper_hash = $file_helper_return->next;
-					if(defined($file_helper_hash))
+					if ($& ~~ @date_array)
 					{
-						#print Dumper($file_helper_hash),"\n";
-						$output_file_name = $file_helper_hash->{"product_name"} . "-" .$file_helper_hash->{"slurm_id"} . '.out.zip';
-						print "$output_file_name\n";
-						$outfile = IO::File->new("$output_file_name", "w");
-						$file = $grid->find_one({"filename" => $slurm_file_name});
-						$file->print($outfile);
+						open F, '>', "$&_$i.yaml";
+						print F YAML::Syck::Dump( $doc );
+						close F;
+						$i++;
 					}
 				}
-						
+				else
+				{
+					die "something strange happened";
+				}
+
 			}
+		}else
+		{
+			while (my $doc = $all_result->next)
+			{
+		
+				open F, '>', "$i.yaml";
+				print F YAML::Syck::Dump( $doc );
+				close F;
+				$i++;
+				if(defined($doc->{"group_id"}))
+				{
+					$slurm_file_name = $doc->{"group_id"};	
+					
+					$output_file_name = $doc->{"modules"}->{"product"}->{"name"} . "-" .$doc->{"slurm_id"} . '.out.zip';
+					print "$output_file_name\n";
+					$outfile = IO::File->new("$output_file_name", "w");
+					$file = $grid->find_one({"filename" => $slurm_file_name});
+					$file->print($outfile);
+					
+							
+				}
+			}
+
 		}
-
+		print "found $i documents\n";
+		######################################################################
+		#mongo
+		######################################################################
 	}
-	print "found $i documents\n";
-	######################################################################
-	#mongo
-	######################################################################
-
 }
 elsif ($opt_view)
 {
@@ -589,7 +593,7 @@ sub string2query_lowest
 	my $after;
 	my $match_case;
 	#my $prefix = "modules.TestRunPhase.";
-	my $prefix = "modules.";
+	#my $prefix = "modules.";
 	if($input_string =~ m/AND/ && $input_string =~ m/\|/)
 	{
 		print "error: bquery lowest level\n";

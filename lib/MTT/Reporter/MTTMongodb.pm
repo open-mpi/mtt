@@ -59,121 +59,46 @@ our $clusterInfo = undef;
 
 sub Init {
     my ($ini, $section) = @_;
+    Debug("MTTMongoDB Init\n");
 
-    Debug("[MTTGDS reporter] Init\n");
-
-    # Have we been initialized already?  If so, error -- per #261,
-    # this module can currently only handle submitting to one database
-    # in a given run.
-
-    if (defined($username)) {
-        Error("The MTTGDS plugin can only be used once in an INI file.\n");
+    if (defined($username)) 
+	{
+        Error("MTTMongoDB reporter: The MTTMongoDB plugin can only be used once in an INI file.\n");
     }
 
-    # Extract data from the ini fields
+    $username = Value($ini, $section, 'username');
+    $password = Value($ini, $section, 'password');
+    $url = Value($ini, $section, 'dbase_url');
+    $local_username = Value($ini, "mtt", 'local_username');
 
-    $username = Value($ini, $section, "mttdatabase_username");
-    $password = Value($ini, $section, "mttdatabase_password");
-    $url = Value($ini, $section, "mttdatabase_url");
-	#$url = Value($ini, $section, "mttdatabase_url").'client';
-    $realm = Value($ini, $section, "mttdatabase_realm");
-    $hostname = Value($ini, $section, "mttdatabase_hostname");
-    $local_username = Value($ini, "mtt", "local_username");
-
-    if (!$url) {
-        Warning("Need URL in MTTGDS Reporter section [$section]\n");
+    if (!$url)
+	{
+        Warning("MTTMongoDB reporter: dbase_url not defined\n");
         return undef;
     }
-    my $count = 0;
-    ++$count if ($username);
-    ++$count if ($password);
-    ++$count if ($realm);
-    if ($count > 0 && $count != 3) {
-        Warning("MTTGDS Reporter section [$section]: if password, username, or realm is specified, they all must be specified.\n");
-        return undef;
-    }
-    $platform = Value($ini, $section, "mttdatabase_platform");
 
-    # Extract the host and port from the URL.  Needed for the
-    # credentials section.
-
-    my $dir;
-    my $host = $url;
-    if ($host =~ /(http:\/\/[-a-zA-Z0-9.]+):(\d+)\/?(.*)?$/) {
-        $host = $1;
-        $port = $2;
-        $dir = $3;
-    } elsif ($host =~ /(http:\/\/[-a-zA-Z0-9.]+)\/?(.*)?$/) {
-        $host = $1;
-        $dir = $2;
-        $port = 80;
-    } elsif ($host =~ /(https:\/\/[-a-zA-Z0-9.]+)\/?(.*)?$/) {
-        $host = $1;
-        $dir = $2;
-        $port = 443;
-    } elsif  ($host =~ /(https:\/\/[-a-zA-Z0-9.]+):(\d+)\/?(.*)?$/) {
-        $host = $1;
-        $port = $2;
-        $dir = $3;
-    } else {
-        Warning("MTTGDS Reporter did not get a valid url: $url .\n");
-        return undef;
-    }
-    $url = "$host:$port";
-    # Setup proxies
-    my $scheme = (80 == $port) ? "http" : "https";
-
-    # Create the Perl LWP stuff to setup for HTTP requests later.
-    # Make one for each proxy (we'll always have at least one proxy
-    # entry, even if it's empty).
-    my $proxies = \@{$MTT::Globals::Values->{proxies}->{$scheme}};
-    foreach my $p (@{$proxies}) {
-        my %params = { env_proxy => 0 };
-        my $ua = LWP::UserAgent->new(%params);
-        
-        # @#$@!$# LWP proxying for https *does not work*.  So
-        # don't set $ua->proxy() for it.  Instead, we'll set
-        # $ENV{https_proxy} whenever we process requests that
-        # require SSL proxying, because that is obeyed deep down
-        # in the innards underneath LWP.
-        $ua->proxy([$scheme], $p->{proxy})
-            if ($p->{proxy} ne "" && $scheme ne "https");
-        $ua->agent("MPI Test MTTGDS Reporter");
-        push(@lwps, {
-            scheme => $scheme,
-            agent => $ua,
-            proxy => $p->{proxy},
-            source => $p->{source},
-        });
-    }
-    if ($realm && $username && $password) {
-        Verbose("   Set HTTP credentials for realm \"$realm\"\n");
-    }
-
-    # Do a test ping to ensure that we can reach this URL.
-
-    Debug("MTTGDS client pinging a server...\n");
-    my $form = {
-        PING => 1,
-        Description => 'Pinging a server'
-    };
-
-    # Extract data from the ini fields
-
+	$url =~ s/http:\/\///;
+	
     $dirname = MTT::DoCommand::cwd();
 
-    Debug("Collect cluster information...\n");
+    Debug("MTTMongoDB reporter: Collect cluster information...\n");
+	
     my $clusterinfo_module = MTT::Values::Value($ini, "vbench", "clusterinfo_module");
+	
     $clusterinfo_module = "UnknownCluster" if (!defined($clusterinfo_module) || $clusterinfo_module eq "");
+	
     Debug("Use $clusterinfo_module module to collect information.\n");
     
     $clusterInfo = MTT::Module::Run("MTT::Reporter::Utils::$clusterinfo_module", "get_cluster_info", MTT::Values::Functions::env_hosts(2));
-    if (!defined($clusterInfo)) {
+    
+	if (!defined($clusterInfo))
+	{
         Error("Fatal: Can't collect cluster information\n");
     }
-    Debug("Collect cluster information Finished\n");
     
-    Debug("File reporter initialized ($dirname)\n");
+	Debug("MTTMongoDB reporter: Collect cluster information Finished\n");
+    
+    Debug("MTTMongoDB reporter: File reporter initialized ($dirname)\n");
 
     return 1;
 }
@@ -187,14 +112,15 @@ sub Submit {
 
     my ( $info, $newentries ) = @_;
 
-    Debug("[MTTGDS reporter] Submit\n");
+    Debug("MTTMongoDB reporter: Submit\n");
 
     if (!defined($newentries)) {
-        Warning("[MTTGDS reporter]: Submit parameter is undef. Skip.\n");
+        Warning("MTTMongoDB reporter: Submit parameter is undef. Skip.\n");
         return;
     }
     
-    if ( !defined($entries) ) {
+    if ( !defined($entries) )
+	{
         %$entries = ();
     }
 
@@ -212,7 +138,7 @@ sub Submit {
 
            foreach my $report (@$new_section_obj) 
 		   {
-               Debug("  add report\n");
+               Debug("MTTMongoDB reporter: add report\n");
                push(@$section_obj, $report);
            }
 
@@ -221,22 +147,18 @@ sub Submit {
        }
     }
 
-    Verbose(">> Reporter MTTGDS: cached for later submit\n");
-    Debug("[MTTGDS reporter] Exit from Submit\n");
+    Verbose("MTTMongoDB reporter: cached for later submit\n");
+    Debug("MTTMongoDB reporter: Exit from Submit\n");
 }
 
 sub Finalize {
-    Debug("[MTTGDS reporter] Finalize\n");
+    Debug("MTTMongoDB reporter: Finalize\n");
     
     _do_submit();
     undef $entries;
-	
     undef $username;
     undef $password;
-    undef $realm;
-    undef $url;
-    undef $platform;
-    undef @lwps;    
+    undef $url;    
 }
 
 #--------------------------------------------------------------------------
@@ -247,14 +169,14 @@ sub resolve_template
 	my $i2=($#arg+1)/2;
 	for(my $i=0;$i<($#arg+1)/2;$i++)
 	{
-		#print @arg[$i]," ", @arg[$i2],"\n";
 		$template =~ s/\%@arg[$i]\%/@arg[$i2]/g;
 		$i2++;
 	}
 	return $template;
 }
 
-sub _do_submit {
+sub _do_submit 
+{
 	my $enable_mongo = 1;
 	my $ret_value;
 	my @needed_libs = (
@@ -284,67 +206,43 @@ sub _do_submit {
 		require YAML::XS;
 		require YAML;
 	}
-	my $TestRunPhase;
+	my $basis_db;
 	my $MPIInstallPhase;
 	my $TestBuildPhase; 
 	my $summary_reports;
-	my $codecov_reports;
-	my $file_helper;
 	my $conn;
 	my $db;
 	if($enable_mongo == 1)
 	{
-		$url =~ s/http:\/\///;
 		$conn = MongoDB::Connection->new(host => $url);
-		$db = $conn->mtt;
-		$TestRunPhase = $db->TestRunPhase;
-		$MPIInstallPhase = $db->MPIInstallPhase;
-		$TestBuildPhase = $db->TestBuildPhase;
-		$summary_reports = $db->Summary_reports;
-		$codecov_reports = $db->Codecov_reports;
-		$file_helper = $db->file_helper;
+		$db = $conn->mlnx_mtt;
+		$basis_db = $db->Basis;
 	}
-	my $doc;
-	my @numbers;
-	my $inserted_id;
-	my $old_date;
-	my %new_date;
 	my $xml_template = "<report><mofed_version>%mofed_version%</mofed_version><report_date>%report_date%</report_date><scratch_url>%scratch_url%</scratch_url><scratch_root>%scratch_root%</scratch_root><product_name>%product_name%</product_name><product_version>%product_version%</product_version><total_duration>%duration%</total_duration><total_tests>%total_tests%</total_tests><failed_tests>%failed_tests%</failed_tests><quality>%quality%</quality></report>";
 	my $i=0;
 	my $to_xml;
     my $ini = $MTT::Globals::Internals->{ini};	
 	my $path = MTT::Values::Value($ini, "MTT", 'xml_dir');
 	my $scratch_url = MTT::Values::Value($ini, "MTT", 'scratch_url');
-	my $file_name_mongo;
 
-    # Make a default form that will be used to seed all the forms that
-    # will be sent
-    my $default_form = {
-        product => 'mtt-gds',
-        version => "0.1",
-        app_id  => 'submit',
-    };
+    my $default_form = { product => 'mttmongodb', version => '2.0'};
 
     my $ini = $MTT::Globals::Internals->{ini};
-    my $submit_failed_results = MTT::Values::Value( $ini, "VBench", 'submit_failed_results_to_gds' );
 
-    # mtt ini flag to control what mtt results to submit to GDS
-    if (!defined($submit_failed_results) || $submit_failed_results eq '')
+    my $submit_results = MTT::Values::Value( $ini, "Reporter: mongo data base", 'submit_all_results' );
+	my $submit_failed_results = MTT::Values::Value( $ini, "Reporter: mongo data base", 'submit_failed_results' );
+    
+    if (($submit_results eq '1' || $submit_results eq 'True' || $submit_results eq 'true') && $enable_mongo == 1)
     {
-        $submit_failed_results = 1;
-    }
-
-    my $submit_results = MTT::Values::Value( $ini, "VBench", 'submit_results_to_gds' );
-    # mtt ini flag to control what mtt results to submit to GDS
-    if (!defined($submit_results) || $submit_results eq '' || $submit_results eq '1' || $submit_results eq 'True')
-    {
-        $submit_results = 1;
-    } else {
-        $submit_results = 0;
+        $enable_mongo = 1;
+    } else 
+	{
+        $enable_mongo = 0;
     }
     
-    #foreach my $phase (keys(%$entries)) {
-    foreach my $phase ( "MPI Install", "Test Build", "Test Run" ) 
+	
+    #foreach my $phase ( "MPI Install", "Test Build", "Test Run" )
+	foreach my $phase ( "Test Run" ) 
 	{
         my $submitted = 0;
         my $phase_obj = $entries->{$phase};
@@ -355,17 +253,10 @@ sub _do_submit {
 
             foreach my $report_original (@$section_obj) 
 			{
-
-                # Each section of a phase gets its own report to the
-                # database.  Make a deep copy of the default form to start
-                # with.
                 my $form;
                 %$form = %{$default_form};
                 $form->{modules} = {};
- 
-                # Ensure to do a deep copy of the report (vs. just
-                # copying the reference) because we want to locally
-                # change some values
+
                 my $report;
                 %$report = %{$report_original};
                 %$report->{files_to_copy} = {} if (!exists($report->{files_to_copy}));
@@ -403,148 +294,80 @@ sub _do_submit {
                 }
                 else 
 				{
-                    Debug("Phase: $phase Section: $section SKIPPED\n");
+                    Debug("MTTMongoDB reporter: Phase: $phase Section: $section SKIPPED\n");
                     next;
                 }
                 
                 $MTT::Values::Functions::current_report = undef;
-
-                Debug("Submitting to MongoDB...\n");
-	            
-                my ($req, $file) = _prepare_request($phase, $report, $form, $attachment);
                 
-                # do not submit result with non PASS status in case 'submit_failed_results_to_gds' key is set as '0'
                 if ( ($submit_failed_results == 0) && ($report->{test_result} != 1) )
                 {
-                    Debug("MTT ini-file has key \'submit_failed_results_to_gds\'=$submit_failed_results and phase: $phase test_result: $report->{test_result}\n");
+					Warning("MTTMongoDB reporter: test result skipped. Reason: submit_failed_results=$submit_failed_results\n");
                     next;
                 }
 
-                if ( $submit_results == 0 )
-                {
-                    Debug("MTT ini-file has key \'submit_results_to_gds\'=$submit_results\n");
-                    next;
-                }
-				
-				if($enable_mongo == 1 && MTT::Values::Value( $ini, "MTT", 'mode') ne "codecov")
+				if($enable_mongo == 1)
 				{
-					if(!defined($file_name_mongo))
-					{
-						$file_name_mongo = $file_helper->insert({product_name=>MTT::Values::Value($ini, "MTT", 'INI_BASENAME'),slurm_id=>MTT::Values::Functions::getenv('SLURM_JOBID')});
-					}
-					print "MongoDB reporter: file_name=$file_name_mongo\n";
-					$form->{"slurm_file_name"} = $file_name_mongo;
                		if ( $phase eq "Test Run" )
 					{
-			  	 		 $inserted_id = $TestRunPhase->insert($form);
-		
-					}
-					if ( $phase eq "MPI Install" )
-					{	
+						my $sim_sec_name = $form->{'modules'}->{'MpiInfo'}->{'mpi_name'};
+						my $product_version =  MTT::Values::Value($ini, "mpi install: $sim_sec_name", 'product_version');
+						$product_version =~ m/(\d+\.)+\d+/;
+						Debug("MongoDB reporter: product version = $&\n");
+						Debug("MongoDB reporter: simple section name = $sim_sec_name\n");
+						$form->{'modules'}->{'product'}->{'version'} = $&;
+						$form->{'modules'}->{'product'}->{'name'} = MTT::Values::Value($ini, "MTT", 'INI_BASENAME');
+						$form->{'modules'}->{'scratch'}->{'url'} = MTT::Values::Value($ini, "MTT", 'scratch_url') . '/';
+						$form->{'modules'}->{'scratch'}->{'root'} = MTT::Values::Functions::scratch_root();
+						$form->{'slurm_id'} = MTT::Values::Functions::getenv('SLURM_JOBID');
+						if(MTT::Values::Value( $ini, "MTT", 'mode') eq 'codecov' ||  MTT::Values::Value( $ini, "MTT", 'pkg') eq 'codecov') 
+						{
+							$form->{'codecov'}=1;
+						}
 						
-						$inserted_id =  $MPIInstallPhase->insert($form);
-					}
-					if ( $phase eq "Test Build")
-					{
-	
-						 $inserted_id =  $TestBuildPhase->insert($form);
+						if(!defined($MTT::Globals::Values->{'group_id'}))
+						{
+							$MTT::Globals::Values->{'group_id'} = $basis_db->insert($form);
+							my $collection = $basis_db->find( { _id => $MTT::Globals::Values->{'group_id'} } );
+							$form = $collection->next;
+							$form->{'group_id'} = $MTT::Globals::Values->{'group_id'};
+							if($basis_db->update({ _id => $MTT::Globals::Values->{'group_id'} },$form) != 1)
+							{
+								print "MongoDB reporter: something strange happens. It seems to be an error.\n";
+								print "MongoDB reporter: prohibit to submit to mongodb.\n";
+								$enable_mongo = 0;
+							}
+						}else
+						{
+							$form->{'group_id'} = $MTT::Globals::Values->{'group_id'};
+							if(!defined($basis_db->insert($form)))
+							{
+								print "MongoDB reporter: cannot insert to mongo.\n";
+								print "MongoDB reporter: prohibit to submit to mongodb.\n";
+								$enable_mongo = 0;
+							}
+						}
 					}
                 	$submitted = 1;
 					
-				}
-				if($phase eq "Test Run" && MTT::Values::Value( $ini, "MTT", 'mode') ne "codecov" &&  MTT::Values::Value( $ini, "MTT", 'pkg') ne "codecov") 
-				{
-					my (@results) = @_;
-					if(!defined($to_xml->{"scratch_root"}))
-					{
-						 $to_xml->{"scratch_root"} =MTT::Values::Functions::scratch_root();
-					}
-					
-					if(!defined($to_xml->{"report_date"}))
-					{
-						$to_xml->{"report_date"} = $form->{'modules'}->{'TestRunPhase'}->{'start_time'};
-					}
-					
-					if(!defined($to_xml->{"scratch_url"}))
-					{
-						$to_xml->{"scratch_url"} = $scratch_url . '/';
-					}
-					if(!defined($to_xml->{"product_name"} ))
-					{
-						$to_xml->{"product_name"} = MTT::Values::Value($ini, "MTT", 'INI_BASENAME');
-					}
-					
-					$form->{'modules'}->{'TestRunPhase'}->{'duration'} =~ m/\d+/;
-					if(!defined($to_xml->{"duration"}))
-					 {
-						 $to_xml->{"duration"} = 0;
-					 }
-					 ($to_xml->{"duration"}) += $&;
-					
-					if(!defined($to_xml->{"total_tests"}))
-					{
-						$to_xml->{"total_tests"} = 0;
-					}
-					($to_xml->{"total_tests"})++;
-					
-					if(!defined($to_xml->{"failed_tests"}))
-					{
-						$to_xml->{"failed_tests"} = 0;
-					}
-					
-					if($form->{'modules'}->{'TestRunPhase'}->{'status'} ne "Passed" && $form->{'modules'}->{'TestRunPhase'}->{'status'} ne "Success" && $form->{'modules'}->{'TestRunPhase'}->{'status'} ne "1")
-					{
-						($to_xml->{"failed_tests"})++;
-					}
-					
-					$to_xml->{"quality"} = int (100 - ($to_xml->{"failed_tests"})/($to_xml->{"total_tests"})*100);
-					$to_xml->{"mofed_version"} = `ofed_info | head -n 1`;
-					
-					my $sim_sec_name = $form->{'modules'}->{'MpiInfo'}->{'mpi_name'};
-					Debug("MongoDB reporter: simple section name = $sim_sec_name\n");
-					
-					my $product_version =  MTT::Values::Value($ini, "mpi install: $sim_sec_name", 'product_version');
-					$product_version =~ m/(\d+\.)+\d+/;
-					Debug("MongoDB reporter: product version = $&\n");
-					if(!defined($to_xml->{"product_version"}))
-					{
-						$to_xml->{"product_version"} = $&;
-					}
-					
-					my $product_install_dir = MTT::Values::Value($ini, "mpi install: $sim_sec_name", 'product_install_dir');
-					Debug("MongoDB reporter: product install dir $product_install_dir\n");
-					
-				}					
+				}			
             }
         }
-        Verbose(">> Submitted $phase to MongoDB\n")
+        Verbose("MTTMongoDB reporter: submitted $phase to MongoDB\n")
             if ($submitted);
     }
 	if(defined($path) && defined($to_xml))
 	{
 		unless(-d $path)
 		{
-			mkdir $path or die "can't create dir for xml output $!";
+			mkdir $path or Warning("MongoDB reporter: cannot create dir: $path.\nSummary xml file did not generate.\n");
 		}
-		open FILE, ">$path/output.xml";
+		open FILE, ">$path/output.xml" or Warning("MongoDB reporter: cannot create file: $path/output.xml.\nSummary xml file did not generate.\n");
 		print FILE resolve_template($xml_template, keys %{$to_xml}, values %{$to_xml});
 		close(FILE);
 	}else
 	{
 		Warning("MongoDB reporter: xml_dir not defined, summary xml file did not generate\n");
-	}
-	if(defined($to_xml))
-	{
-		if(defined($summary_reports) && $enable_mongo ==1)
-		{
-			$summary_reports->insert($to_xml);
-		}else
-		{
-			Warning("MongoDB reporter: Cann't submit summary_report to mongodb\n");
-		}
-	}else
-	{
-		Verbose("MongoDB reporter: Nothing to submit to mongo\n");
 	}
 	if($enable_mongo == 1)
 	{
@@ -555,8 +378,7 @@ sub _do_submit {
 		$act_file_name .= '/data.zip';
 		print "MongoDB reporter: act_file_name=$act_file_name\n";
 		my $fh = IO::File->new("$act_file_name", "r");
-		$grid->insert($fh, {"filename" => $file_name_mongo});
-		
+		$grid->insert($fh, {"filename" => $MTT::Globals::Values->{'group_id'}});
 	}
 }
 
@@ -781,7 +603,7 @@ sub _process_phase_test_run {
     }
     
     # filling cached fields with prefix "cached_"
-    _fill_cached_info( $form );
+	#_fill_cached_info( $form );
                            
     return 0;                      
 }
@@ -1147,139 +969,4 @@ sub _fill_compiler_info {
    }
     return $info_form;
 }
-
-#--------------------------------------------------------------------------
-
-sub _do_request {
-    my $req = shift;
-
-    # Ensure that the environment is clean so that nothing happens
-    # that we're unaware of.
-    my %ENV_SAVE = %ENV;
-    delete $ENV{http_proxy};
-    delete $ENV{https_proxy};
-    delete $ENV{HTTP_PROXY};
-    delete $ENV{HTTPS_PROXY};
-
-    # Go through each ua and try to get a good connection.  If we get
-    # connection refused from any of them, try another.
-    my $response;
-    foreach my $ua (@lwps) {
-        Debug("MTTGDS client trying proxy: $ua->{proxy} / $ua->{source}\n");
-        $ENV{https_proxy} = $ua->{proxy}
-            if ("https" eq $ua->{scheme});
-
-        # Do the HTTP request
-        $response = $ua->{agent}->request($req);
-
-        # If it succeeded, or if it failed with something other than
-        # code 500, return (code 500 = can't connect)
-        if ($response->is_success() ||
-            $response->code() != 500) {
-            Debug("MTTGDS proxy successful / not 500\n");
-            %ENV = %ENV_SAVE;
-            return $response;
-        }
-        Debug("MTTGDS proxy unsuccessful -- trying next\n");
-
-        # Otherwise, loop around and try again
-        Debug("Proxy $ua->{proxy} failed code: " .
-              $response->status_line . "\n" . $response->content . "\n");
-    }
-
-    # Sorry -- nothing got through...
-    Debug("MTTGDS proxy totally unsuccessful\n");
-    %ENV = %ENV_SAVE;
-    return $response;
-}
-
-#--------------------------------------------------------------------------
-
-# Create test file results, and prepare the HTTP file upload
-# request
-
-my $request_count = 0;
-
-sub _prepare_request {
-    my ($phase, $report, $form, $attachment )=@_;
-
-    my $ini = $MTT::Globals::Internals->{ini};
-    my $repository_path = MTT::Values::Value( $ini, "VBench", 'repository_tempdir' );
-    my $repository_name = MTT::Values::Value( $ini, "VBench", 'repository_dirname_prefix' );
-    my ($fh, $filename);
-    my $tmpdir;
-
-    # Find a temporary directory for files
-    if (!defined($repository_path) || $repository_path eq '')
-    {
-        $tmpdir = tempdir( CLEANUP => 1);
-        ($fh, $filename) = tempfile( DIR => $tmpdir, SUFFIX => '.yaml' );
-    }
-    elsif  (!defined($repository_name) || $repository_name eq '')
-    {
-    	MTT::Files::mkdir($repository_path) if (! -d $repository_path);
-    	$tmpdir = tempdir( DIR => "$repository_path", CLEANUP => 0);
-        ($fh, $filename) = tempfile( DIR => $tmpdir, SUFFIX => '.yaml' );
-    }
-    else
-    {
-        $request_count++;
-        MTT::Files::mkdir($repository_path) if (! -d $repository_path);
-        $tmpdir = "${repository_path}/${repository_name}_${request_count}";    
-        $filename = "$tmpdir/${repository_name}_${request_count}.yaml";    
-    }
-        
-    my $raw_filename = ();
-
-    MTT::Files::mkdir($tmpdir);
-    
-    if ( keys %$attachment ) {
-        foreach my $file (keys %$attachment) {
-            Debug ("    Attachment: $file\n");
-            MTT::Values::Functions::shell("cp -r $file $tmpdir/$attachment->{$file}");
-            }
-        $raw_filename = "$tmpdir/data_file.zip";
-    }
-
-    # Generate YAML file contents
-    YAML::XS::DumpFile("$filename", $form);
-    
-    if ( $raw_filename ne '')
-    {
-        MTT::Values::Functions::shell(
-                   "cd $tmpdir; zip -9 -r $raw_filename *");
-    }
-       
-    # Chech Google Datastore put entity limitation
-    $raw_filename = '' if  1048576 <= ((-s "$raw_filename") + (-s "$filename"));
-
-    my $req;
-    # Create the "upload" POST request
-    if (-e $raw_filename)
-    {
-	    $req = POST $url,
-	        Content_Type => 'form-data',
-	        Content => [
-	            SUBMIT      => 1,
-	            data        => ["$filename"],
-	            raw         => ["$raw_filename"],
-	            description => "Submit data and raw on the phase <$phase>"
-	         ];
-    }
-    else
-    {
-        $req = POST $url,
-            Content_Type => 'form-data',
-            Content => [
-                SUBMIT      => 1,
-                data        => ["$filename"],
-                description => "Submit data only on the phase <$phase>"
-             ];
-    }
-
-    $req->authorization_basic($username, $password);
-
-    return (\$req, $filename);
-}
-
 1;
