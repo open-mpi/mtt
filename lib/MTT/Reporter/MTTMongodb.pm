@@ -52,6 +52,7 @@ my $dirname;
 my $testrun_files_count    = 0;
 my $testbuild_files_count  = 0;
 my $mpiinstall_files_count = 0;
+my $enable_mongo = 1;
 
 our $clusterInfo = undef;
 
@@ -65,15 +66,14 @@ sub Init {
 	{
         Error("MTTMongoDB reporter: The MTTMongoDB plugin can only be used once in an INI file.\n");
     }
-
-    $username = Value($ini, $section, 'username');
-    $password = Value($ini, $section, 'password');
+	
     $url = Value($ini, $section, 'dbase_url');
     $local_username = Value($ini, "mtt", 'local_username');
 
     if (!$url)
 	{
         Warning("MTTMongoDB reporter: dbase_url not defined\n");
+		$enable_mongo = 0;
         return undef;
     }
 
@@ -177,7 +177,6 @@ sub resolve_template
 
 sub _do_submit 
 {
-	my $enable_mongo = 1;
 	my $ret_value;
 	my @needed_libs = (
 		'MongoDB', 
@@ -333,8 +332,8 @@ sub _do_submit
 							$form->{'group_id'} = $MTT::Globals::Values->{'group_id'};
 							if($basis_db->update({ _id => $MTT::Globals::Values->{'group_id'} },$form) != 1)
 							{
-								print "MongoDB reporter: something strange happens. It seems to be an error.\n";
-								print "MongoDB reporter: prohibit to submit to mongodb.\n";
+								Warning("MongoDB reporter: something strange happens. It seems to be an error.\n");
+								Warning("MongoDB reporter: prohibit to submit to mongodb.\n");
 								$enable_mongo = 0;
 							}
 						}else
@@ -342,8 +341,8 @@ sub _do_submit
 							$form->{'group_id'} = $MTT::Globals::Values->{'group_id'};
 							if(!defined($basis_db->insert($form)))
 							{
-								print "MongoDB reporter: cannot insert to mongo.\n";
-								print "MongoDB reporter: prohibit to submit to mongodb.\n";
+								Warning("MongoDB reporter: cannot insert to mongo.\n");
+								Warning("MongoDB reporter: prohibit to submit to mongodb.\n");
 								$enable_mongo = 0;
 							}
 						}
@@ -356,19 +355,19 @@ sub _do_submit
         Verbose("MTTMongoDB reporter: submitted $phase to MongoDB\n")
             if ($submitted);
     }
-	if(defined($path) && defined($to_xml))
-	{
-		unless(-d $path)
-		{
-			mkdir $path or Warning("MongoDB reporter: cannot create dir: $path.\nSummary xml file did not generate.\n");
-		}
-		open FILE, ">$path/output.xml" or Warning("MongoDB reporter: cannot create file: $path/output.xml.\nSummary xml file did not generate.\n");
-		print FILE resolve_template($xml_template, keys %{$to_xml}, values %{$to_xml});
-		close(FILE);
-	}else
-	{
-		Warning("MongoDB reporter: xml_dir not defined, summary xml file did not generate\n");
-	}
+	#if(defined($path) && defined($to_xml))
+	#{
+	#	unless(-d $path)
+	#	{
+	#		mkdir $path or Warning("MongoDB reporter: cannot create dir: $path.\nSummary xml file did not generate.\n");
+	#	}
+	#	open FILE, ">$path/output.xml" or Warning("MongoDB reporter: cannot create file: $path/output.xml.\nSummary xml file did not generate.\n");
+	#	print FILE resolve_template($xml_template, keys %{$to_xml}, values %{$to_xml});
+	#	close(FILE);
+	#}else
+	#{
+	#	Warning("MongoDB reporter: xml_dir not defined, summary xml file did not generate\n");
+	#}
 	if($enable_mongo == 1)
 	{
 		my $grid = $db->get_gridfs;
