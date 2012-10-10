@@ -371,11 +371,14 @@ elsif ($opt_query)
 				{
 					$slurm_file_name = $doc->{"group_id"};	
 					
-					$output_file_name = $doc->{"modules"}->{"product"}->{"name"} . "-" .$doc->{"slurm_id"} . '.out.zip';
-					print "$output_file_name\n";
-					$outfile = IO::File->new("$output_file_name", "w");
-					$file = $grid->find_one({"filename" => $slurm_file_name});
-					$file->print($outfile);
+					$output_file_name = $doc->{"modules"}->{"ClusterInfo"}->{"cluster_name"} ."-" . $doc->{"modules"}->{"product"}->{"name"} . "-" .$doc->{"slurm_id"} . '.out.zip';
+					if(!(-e $output_file_name))
+					{
+						print "$output_file_name\n";
+						$outfile = IO::File->new("$output_file_name", "w");
+						$file = $grid->find_one({"filename" => $slurm_file_name});
+						$file->print($outfile);
+					}
 					
 							
 				}

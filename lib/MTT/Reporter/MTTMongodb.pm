@@ -299,7 +299,7 @@ sub _do_submit
                 
                 $MTT::Values::Functions::current_report = undef;
                 
-                if ( ($submit_failed_results == 0) && ($report->{test_result} != 1) )
+                if ( ($submit_failed_results != 0) && ($report->{test_result} != 1) )
                 {
 					Warning("MTTMongoDB reporter: test result skipped. Reason: submit_failed_results=$submit_failed_results\n");
                     next;
