@@ -72,7 +72,7 @@ sub Init {
 
     if (!$url)
 	{
-        Warning("MTTMongoDB reporter: dbase_url not defined\n");
+        Warning("MTTMongoDB reporter: prohibit to submit to mongodb. Reason: dbase_url not defined\n");
 		$enable_mongo = 0;
         return undef;
     }
@@ -147,8 +147,8 @@ sub Submit {
        }
     }
 
-    Verbose("MTTMongoDB reporter: cached for later submit\n");
-    Debug("MTTMongoDB reporter: Exit from Submit\n");
+    Verbose("MongoDB reporter: cached for later submit\n");
+    Debug("MongoDB reporter: Exit from Submit\n");
 }
 
 sub Finalize {
@@ -181,8 +181,6 @@ sub _do_submit
 	my @needed_libs = (
 		'MongoDB', 
        	'MongoDB::OID', 
-		'YAML::XS',
-		'YAML',
 		'MongoDB::GridFS'
 				);
 								    
@@ -194,6 +192,7 @@ sub _do_submit
 	    {
 			Warning("MongoDB reporter: Not found library: $_\n");
 			Warning("MongoDB reporter: Can't submit to mongo\n");
+			Warning("MongoDB reporter: prohibit to submit to mongodb.\n");
 			$enable_mongo = 0;
 
 		};
@@ -202,8 +201,6 @@ sub _do_submit
 	{
 		require MongoDB;
 		require MongoDB::OID;
-		require YAML::XS;
-		require YAML;
 	}
 	my $basis_db;
 	my $MPIInstallPhase;
@@ -237,6 +234,8 @@ sub _do_submit
     } else 
 	{
         $enable_mongo = 0;
+		Warning("MongoDB reporter: test result skipped. Reason: submit_results=$submit_results\n");
+		Warning("MongoDB reporter: prohibit to submit to mongodb.")
     }
     
 	
@@ -293,15 +292,15 @@ sub _do_submit
                 }
                 else 
 				{
-                    Debug("MTTMongoDB reporter: Phase: $phase Section: $section SKIPPED\n");
+                    Debug("MongoDB reporter: Phase: $phase Section: $section SKIPPED\n");
                     next;
                 }
                 
                 $MTT::Values::Functions::current_report = undef;
                 
-                if ( ($submit_failed_results != 0) && ($report->{test_result} != 1) )
+                if ( (lc($submit_failed_results) eq "false" || $submit_failed_results == 0) && ($report->{test_result} != 1) )
                 {
-					Warning("MTTMongoDB reporter: test result skipped. Reason: submit_failed_results=$submit_failed_results\n");
+					Warning("MongoDB reporter: test result skipped. Reason: submit_failed_results=$submit_failed_results\n");
                     next;
                 }
 
@@ -318,7 +317,7 @@ sub _do_submit
 						$form->{'modules'}->{'product'}->{'name'} = MTT::Values::Value($ini, "MTT", 'INI_BASENAME');
 						$form->{'modules'}->{'scratch'}->{'url'} = MTT::Values::Value($ini, "MTT", 'scratch_url') . '/';
 						$form->{'modules'}->{'scratch'}->{'root'} = MTT::Values::Functions::scratch_root();
-						$form->{'slurm_id'} = MTT::Values::Functions::getenv('SLURM_JOBID');
+						$form->{'modules'}->{'slurm_id'} = MTT::Values::Functions::getenv('SLURM_JOBID');
 						if(MTT::Values::Value( $ini, "MTT", 'mode') eq 'codecov' ||  MTT::Values::Value( $ini, "MTT", 'pkg') eq 'codecov') 
 						{
 							$form->{'codecov'}=1;
@@ -378,6 +377,9 @@ sub _do_submit
 		print "MongoDB reporter: act_file_name=$act_file_name\n";
 		my $fh = IO::File->new("$act_file_name", "r");
 		$grid->insert($fh, {"filename" => $MTT::Globals::Values->{'group_id'}});
+	}else
+	{
+		Warning( "MongoDB reporter: archive didn\'t send to mongo. Reason: enable_mongo=$enable_mongo\n");
 	}
 }
 
