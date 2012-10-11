@@ -64,7 +64,7 @@ sub Init {
 
     if (defined($username)) 
 	{
-        Error("MTTMongoDB reporter: The MTTMongoDB plugin can only be used once in an INI file.\n");
+        Error("MongoDB reporter: The MTTMongoDB plugin can only be used once in an INI file.\n");
     }
 	
     $url = Value($ini, $section, 'dbase_url');
@@ -72,7 +72,7 @@ sub Init {
 
     if (!$url)
 	{
-        Warning("MTTMongoDB reporter: prohibit to submit to mongodb. Reason: dbase_url not defined\n");
+        Warning("MongoDB reporter: prohibit to submit to mongodb. Reason: dbase_url not defined\n");
 		$enable_mongo = 0;
         return undef;
     }
@@ -81,7 +81,7 @@ sub Init {
 	
     $dirname = MTT::DoCommand::cwd();
 
-    Debug("MTTMongoDB reporter: Collect cluster information...\n");
+    Debug("MongoDB reporter: Collect cluster information...\n");
 	
     my $clusterinfo_module = MTT::Values::Value($ini, "vbench", "clusterinfo_module");
 	
@@ -96,9 +96,9 @@ sub Init {
         Error("Fatal: Can't collect cluster information\n");
     }
     
-	Debug("MTTMongoDB reporter: Collect cluster information Finished\n");
+	Debug("MongoDB reporter: Collect cluster information Finished\n");
     
-    Debug("MTTMongoDB reporter: File reporter initialized ($dirname)\n");
+    Debug("MongoDB reporter: File reporter initialized ($dirname)\n");
 
     return 1;
 }
@@ -112,10 +112,10 @@ sub Submit {
 
     my ( $info, $newentries ) = @_;
 
-    Debug("MTTMongoDB reporter: Submit\n");
+    Debug("MongoDB reporter: Submit\n");
 
     if (!defined($newentries)) {
-        Warning("MTTMongoDB reporter: Submit parameter is undef. Skip.\n");
+        Warning("MongoDB reporter: Submit parameter is undef. Skip.\n");
         return;
     }
     
@@ -138,7 +138,7 @@ sub Submit {
 
            foreach my $report (@$new_section_obj) 
 		   {
-               Debug("MTTMongoDB reporter: add report\n");
+               Debug("MongoDB reporter: add report\n");
                push(@$section_obj, $report);
            }
 
@@ -152,7 +152,7 @@ sub Submit {
 }
 
 sub Finalize {
-    Debug("MTTMongoDB reporter: Finalize\n");
+    Debug("MongoDB reporter: Finalize\n");
     
     _do_submit();
     undef $entries;
@@ -298,7 +298,7 @@ sub _do_submit
                 
                 $MTT::Values::Functions::current_report = undef;
                 
-                if ( (lc($submit_failed_results) eq "false" || $submit_failed_results == 0) && ($report->{test_result} != 1) )
+                if ( (lc($submit_failed_results) eq "false" || $submit_failed_results eq "0") && ($report->{test_result} != 1) )
                 {
 					Warning("MongoDB reporter: test result skipped. Reason: submit_failed_results=$submit_failed_results\n");
                     next;
@@ -351,7 +351,7 @@ sub _do_submit
 				}			
             }
         }
-        Verbose("MTTMongoDB reporter: submitted $phase to MongoDB\n")
+        Verbose("MongoDB reporter: submitted $phase to MongoDB\n")
             if ($submitted);
     }
 	#if(defined($path) && defined($to_xml))
@@ -506,9 +506,10 @@ sub _process_phase_test_run {
     $phase_form->{mpi_nproc}    = int($report->{np});
     $phase_form->{mpi_hlist} = MTT::Values::Functions::env_hosts(2);
 
-    $phase_form->{net_note} = _get_value( "vbench:net_note", @sections );
+    #$phase_form->{net_note} = _get_value( "vbench:net_note", @sections );
+	my $ini = $MTT::Globals::Internals->{ini};
+	$phase_form->{net_note} = MTT::Values::Value( $ini, "VBench", "vbench:net_note" );
 
-    my $ini = $MTT::Globals::Internals->{ini};
     my @taglist = ();
     my @tagsections = (@sections);
     foreach my $tagsection (@tagsections) {
@@ -707,9 +708,11 @@ sub _fill_cluster_info {
             push( @sections, "MTT");
             push( @sections, "VBench");
 
-            my $node_count =
-                _get_value( "vbench:cluster_node_count", @sections );
-
+            #my $node_count = _get_value( "vbench:cluster_node_count", @sections );
+			my $ini = $MTT::Globals::Internals->{ini};
+			my $node_count = MTT::Values::Value( $ini, "VBench", "vbench:cluster_node_count" );
+			print "MongoDB reporter: after get value\n";
+			sleep(10);
             %$info_form = (%$info_form, %$clusterInfo);
 
             delete $info_form->{total_mhz};
@@ -815,7 +818,7 @@ sub _fill_cluster_info {
 			}
 
     }
-
+	print "MongoDB reporter: exiting from _fill_cluster_info\n";
     return $info_form;
 }
 
