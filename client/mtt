@@ -207,6 +207,49 @@ foreach my $arg (@ARGV) {
     $ARGV_JOINED =~ s/$token_pattern//;
 }
 
+my $over_section_name;
+my $over_field_name;
+my $over_value;
+my @templates = ('test_run_','test_build_','test_get_','mpi_get_','mpi_install_','mpi_details_');
+foreach my $key (keys(%ENV)) 
+{
+	if($key =~ /MTT_OPT/)
+	{
+		$over_value = $ENV{$key};
+		if($key =~/__/)
+		{
+			$over_field_name=$';	
+			$key = $`;
+		}else
+		{
+			Warning("Syntax error in $key sipped\n");
+			next;
+		}
+		if($key =~ /MTT_OPT_/)
+		{
+			$over_section_name=$';
+			$over_section_name = lc($over_section_name);
+			foreach (@templates)
+			{
+				if($over_section_name =~ /$_/)
+				{
+					my $new_template=$_;
+					$new_template =~ s/_/ /g;
+					chop($new_template);
+					$new_template .=': ';
+					$over_section_name =~ s/$_/$new_template/g;
+				}
+			}
+			$ini_args->{$over_field_name}->{value} = $over_value;
+			$ini_args->{$over_field_name}->{match} = $over_section_name;
+	
+		}else
+		{
+			Warning("Syntax error in $key sipped\n");
+		}
+	}
+}
+
 if (! @file_arg and ! $stdin_arg) {
     print "Must specify at least one --file argument or '-' for stdin.\n";
     $ok = 0;
