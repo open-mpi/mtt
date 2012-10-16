@@ -27,7 +27,6 @@ sub get_codecov_result
 	my $enable_mongo = 1;
 	my $ret_value;
 	my @needed_libs = (
-			"YAML", 
 			"MongoDB", 
 			"MongoDB::OID", 
 				);

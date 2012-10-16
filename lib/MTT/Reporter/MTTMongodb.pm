@@ -235,7 +235,7 @@ sub _do_submit
 	{
         $enable_mongo = 0;
 		Warning("MongoDB reporter: test result skipped. Reason: submit_results=$submit_results\n");
-		Warning("MongoDB reporter: prohibit to submit to mongodb.")
+		Warning("MongoDB reporter: prohibit to submit to mongodb\n.")
     }
     
 	
@@ -712,7 +712,7 @@ sub _fill_cluster_info {
 			my $ini = $MTT::Globals::Internals->{ini};
 			my $node_count = MTT::Values::Value( $ini, "VBench", "vbench:cluster_node_count" );
 			print "MongoDB reporter: after get value\n";
-			sleep(10);
+			#sleep(10);
             %$info_form = (%$info_form, %$clusterInfo);
 
             delete $info_form->{total_mhz};
