@@ -58,7 +58,7 @@ sub get_codecov_result
 	if(!defined($codecov_filtr))
 	{
 		Warning("Icc codecov: Parametr codecov_filtr not defined in ini file!\n");
-		return 0;
+		#return 0;
 	}
 	my $codecov_dir = MTT::Values::Value( $ini, 'MTT', 'codecov_dir');
 	if(!defined($codecov_dir))
@@ -117,12 +117,18 @@ sub get_codecov_result
 		}
 		closedir(DIR);
 		
-		open FILE, ">$codecov_dir/tocodecov.txt" or (Warning("Icc codecov: Cannot open file: $codecov_dir/tocodecov.txt\n") and return 0);
-		print FILE $codecov_filtr;
-		close(FILE);
 		
 		print `module load $intel_env_module  && cd $codecov_dir && profmerge`;
-		print `cd $codecov_dir && module load $intel_env_module && codecov -counts -comp tocodecov.txt`;		
+		if(!defined($codecov_filtr))
+		{
+			print `cd $codecov_dir && module load $intel_env_module && codecov -counts`;		
+		}else
+		{
+			open FILE, ">$codecov_dir/tocodecov.txt" or (Warning("Icc codecov: Cannot open file: $codecov_dir/tocodecov.txt\n") and return 0);
+			print FILE $codecov_filtr;
+			close(FILE);
+			print `cd $codecov_dir && module load $intel_env_module && codecov -counts -comp tocodecov.txt`;		
+		}
 		open FILE, "$codecov_dir" . "/CodeCoverage/__CODE_COVERAGE.HTML"  or (Warning("Icc codecov: Cannot open codeocdir: $codecov_dir/CodeCoverage/__CODE_COVERAGE.HTML\n") and return 0);
 		my $str;
 		my @val;
