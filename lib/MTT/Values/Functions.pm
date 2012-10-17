@@ -715,6 +715,24 @@ sub if {
 #--------------------------------------------------------------------------
 
 # Return a reference to all the strings passed in as @_
+# skip empty elements
+sub enumerate_notempty {
+    my $array = get_array_ref(\@_);
+    Debug("&enumerate_notempty got: @$array\n");
+
+    my @ret;
+    foreach my $arg (@$array) {
+        if (length($arg) > 0) {
+            push(@ret, $arg);
+        } else {
+            Debug("&enumerate_notempty: skip empty");
+        }
+    }
+    return \@ret;
+}
+#--------------------------------------------------------------------------
+
+# Return a reference to all the strings passed in as @_
 sub enumerate {
     my $array = get_array_ref(\@_);
     Debug("&enumerate got: @$array\n");
