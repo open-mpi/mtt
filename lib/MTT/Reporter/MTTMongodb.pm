@@ -37,9 +37,6 @@ my $port;
 # platform common name
 my $platform;
 
-# LWP user agents (one per proxy)
-my @lwps;
-
 # Hostname string to report
 my $hostname;
 
@@ -56,10 +53,29 @@ my $enable_mongo = 1;
 
 our $clusterInfo = undef;
 
+##############MongoDB####################
+my $basis_db;
+my $conn;
+my $db;
+my $ini;
+my $path;
+my $scratch_url;
+my $default_form;
+my $submit_results;
+my $submit_failed_results;
+my $ini_basename;
+my $scratch_root;
+my $slurm_job_id;
+my $value_mode;
+my $value_pkg;
+#########################################
+
 #--------------------------------------------------------------------------
 
 sub Init {
-    my ($ini, $section) = @_;
+	$ini = $MTT::Globals::Internals->{ini};	
+    my ($ini_out, $section) = @_;
+	my $ret_value;
     Debug("MTTMongoDB Init\n");
 
     if (defined($username)) 
@@ -69,8 +85,28 @@ sub Init {
 	
     $url = Value($ini, $section, 'dbase_url');
     $local_username = Value($ini, "mtt", 'local_username');
+	
+	my @needed_libs = ('MongoDB', 'MongoDB::OID');
+	foreach (@needed_libs)
+	{
+	   	$ret_value = eval "require $_";
+   	 	if ($@ || !defined($ret_value))
+	    {
+			Warning("MongoDB reporter: Not found library: $_\n");
+			Warning("MongoDB reporter: Can't submit to mongo\n");
+			Warning("MongoDB reporter: prohibit to submit to mongodb.\n");
+			$enable_mongo = 0;
 
-    if (!$url)
+		}
+	}
+	
+	if($enable_mongo == 1)
+	{
+		require MongoDB;
+		require MongoDB::OID;
+	}
+	
+	if (!$url)
 	{
         Warning("MongoDB reporter: prohibit to submit to mongodb. Reason: dbase_url not defined\n");
 		$enable_mongo = 0;
@@ -78,6 +114,57 @@ sub Init {
     }
 
 	$url =~ s/http:\/\///;
+	
+	if($enable_mongo == 1)
+	{
+		$conn = MongoDB::Connection->new(host => $url);
+		if(defined($conn))
+		{
+			$db = $conn->mlnx_mtt;
+			if(defined($db))
+			{
+				$basis_db = $db->Basis;
+				if(!defined($basis_db))
+				{
+					Warning("MongoDB reporter: cannot connect to \"Basis\" collection\n");
+					Warning("MongoDB reporter: prohibit to submit to mongodb.\n");
+					$enable_mongo = 0;
+				}
+			}else
+			{
+				Warning("MongoDB reporter: cannot connect to mlnx_mtt db\n");
+				Warning("MongoDB reporter: prohibit to submit to mongodb.\n");
+				$enable_mongo = 0;
+			}
+		}else
+		{
+			Warning("MongoDB reporter: cannot connect to mongo using url=$url\n");
+			Warning("MongoDB reporter: prohibit to submit to mongodb.\n");
+			$enable_mongo = 0;
+		}
+	}
+	
+	
+	$path = MTT::Values::Value($ini, "MTT", 'xml_dir');
+	$scratch_url = MTT::Values::Value($ini, "MTT", 'scratch_url');
+	$default_form = { product => 'mttmongodb', version => '2.1'};
+	$submit_results = MTT::Values::Value( $ini, "Reporter: mongo data base", 'submit_all_results' );
+	$submit_failed_results = MTT::Values::Value( $ini, "Reporter: mongo data base", 'submit_failed_results' );
+	$ini_basename = MTT::Values::Value($ini, "MTT", 'INI_BASENAME');
+	$scratch_root = MTT::Values::Functions::scratch_root();
+	$slurm_job_id = MTT::Values::Functions::getenv('SLURM_JOBID');
+	$value_mode = MTT::Values::Value( $ini, "MTT", 'mode');
+	$value_pkg = MTT::Values::Value( $ini, "MTT", 'pkg');
+	
+	if (($submit_results eq '1' || $submit_results eq 'True' || $submit_results eq 'true') && $enable_mongo == 1)
+    {
+        $enable_mongo = 1;
+    } else 
+	{
+        $enable_mongo = 0;
+		Warning("MongoDB reporter: test result skipped. Reason: submit_results=$submit_results\n");
+		Warning("MongoDB reporter: prohibit to submit to mongodb\n.")
+    }
 	
     $dirname = MTT::DoCommand::cwd();
 
@@ -114,8 +201,14 @@ sub Submit {
 
     Debug("MongoDB reporter: Submit\n");
 
-    if (!defined($newentries)) {
+    if (!defined($newentries)) 
+	{
         Warning("MongoDB reporter: Submit parameter is undef. Skip.\n");
+        return;
+    }
+	if ($enable_mongo == 0) 
+	{
+        Warning("MongoDB reporter: enable_mongo=$enable_mongo. Nothing to do\n");
         return;
     }
     
@@ -136,14 +229,91 @@ sub Submit {
 
            my $section_obj = $entries->{$phase}->{$section};
 
-           foreach my $report (@$new_section_obj) 
+           foreach my $report_original (@$new_section_obj) 
 		   {
-               Debug("MongoDB reporter: add report\n");
-               push(@$section_obj, $report);
-           }
+				Debug("MongoDB reporter: add report to database\n");
+				push(@$section_obj, $report_original);
+				if($phase eq "Test Run")
+				{
+					my $form;
+					%$form = %{$default_form};
+					$form->{modules} = {};
 
+					my $report;
+					%$report = %{$report_original};
+					if ( (lc($submit_failed_results) eq "false" || $submit_failed_results eq "0") && ($report->{test_result} != 1) )
+					{
+						Warning("MongoDB reporter: test result skipped. Reason: submit_failed_results=$submit_failed_results\n");
+						next;
+					}
+					my $mpi_install = $entries->{"MPI Install"}->{$report->{mpi_install_section_name}};
+                    my $mpi_report = @$mpi_install[0];
+					_process_phase_mpi_install("MPI Install", $report->{mpi_install_section_name}, $mpi_report, $form->{modules});
+
+                    my $test_build = $entries->{"Test Build"}->{$report->{test_build_section_name}};
+                    my $build_report = @$test_build[0];
+					
+					_process_phase_test_build("Test Build", $report->{test_build_section_name}, $build_report, $form->{modules});
+					
+					_process_phase_test_run($phase, $section, $report, $form->{modules});
+
+					my $sim_sec_name = $form->{'modules'}->{'MpiInfo'}->{'mpi_name'};
+
+					my $product_version =  MTT::Values::Value($ini, "mpi install: $sim_sec_name", 'product_version');
+					$product_version =~ m/(\d+\.)+\d+/;
+					Debug("MongoDB reporter: product version = $&\n");
+					Debug("MongoDB reporter: simple section name = $sim_sec_name\n");
+					$form->{'modules'}->{'product'}->{'version'} = $&;
+					$form->{'modules'}->{'product'}->{'name'} = $ini_basename;
+					$form->{'modules'}->{'scratch'}->{'url'} = $scratch_url . '/';
+					$form->{'modules'}->{'scratch'}->{'root'} = $scratch_root;
+					$form->{'modules'}->{'slurm_id'} = $slurm_job_id;
+					if( $value_mode eq 'codecov' || $value_pkg eq 'codecov') 
+					{
+						$form->{'codecov'}=1;
+					}
+					
+					if(!defined($MTT::Globals::Values->{'group_id'}))
+					{
+						$MTT::Globals::Values->{'group_id'} = $basis_db->insert($form);
+						if(!defined($MTT::Globals::Values->{'group_id'}))
+						{
+							Warning("MongoDB reporter: cannot insert to mongo.\n");
+							Warning("MongoDB reporter: prohibit to submit to mongodb.\n");
+							$enable_mongo = 0;
+							return;
+						}
+						my $collection = $basis_db->find( { _id => $MTT::Globals::Values->{'group_id'} } );
+						if(!defined($MTT::Globals::Values->{'group_id'}))
+						{
+							Warning("MongoDB reporter: something strange happens. It seems to be an error. #1\n");
+							Warning("MongoDB reporter: prohibit to submit to mongodb.\n");
+							$enable_mongo = 0;
+							return;
+						}
+						$form = $collection->next;
+						$form->{'group_id'} = $MTT::Globals::Values->{'group_id'};
+						if($basis_db->update({ _id => $MTT::Globals::Values->{'group_id'} },$form) != 1)
+						{
+							Warning("MongoDB reporter: something strange happens. It seems to be an error. #2\n");
+							Warning("MongoDB reporter: prohibit to submit to mongodb.\n");
+							$enable_mongo = 0;
+							return;
+						}
+					}else
+					{
+						$form->{'group_id'} = $MTT::Globals::Values->{'group_id'};
+						if(!defined($basis_db->insert($form)))
+						{
+							Warning("MongoDB reporter: cannot insert to mongo.\n");
+							Warning("MongoDB reporter: prohibit to submit to mongodb.\n");
+							$enable_mongo = 0;
+							return;
+						}
+					}
+				}
+           }
            $entries->{$phase}->{$section} = $section_obj;
-		   
        }
     }
 
@@ -177,200 +347,10 @@ sub resolve_template
 
 sub _do_submit 
 {
-	my $ret_value;
-	my @needed_libs = (
-		'MongoDB', 
-       	'MongoDB::OID', 
-		'MongoDB::GridFS'
-				);
-								    
-			
-	foreach (@needed_libs)
-	{
-	   	$ret_value = eval "require $_";
-   	 	if ($@ || !defined($ret_value))
-	    {
-			Warning("MongoDB reporter: Not found library: $_\n");
-			Warning("MongoDB reporter: Can't submit to mongo\n");
-			Warning("MongoDB reporter: prohibit to submit to mongodb.\n");
-			$enable_mongo = 0;
-
-		};
-	}
-	if($enable_mongo == 1)
-	{
-		require MongoDB;
-		require MongoDB::OID;
-	}
-	my $basis_db;
-	my $MPIInstallPhase;
-	my $TestBuildPhase; 
-	my $summary_reports;
-	my $conn;
-	my $db;
-	if($enable_mongo == 1)
-	{
-		$conn = MongoDB::Connection->new(host => $url);
-		$db = $conn->mlnx_mtt;
-		$basis_db = $db->Basis;
-	}
-	my $xml_template = "<report><mofed_version>%mofed_version%</mofed_version><report_date>%report_date%</report_date><scratch_url>%scratch_url%</scratch_url><scratch_root>%scratch_root%</scratch_root><product_name>%product_name%</product_name><product_version>%product_version%</product_version><total_duration>%duration%</total_duration><total_tests>%total_tests%</total_tests><failed_tests>%failed_tests%</failed_tests><quality>%quality%</quality></report>";
-	my $i=0;
-	my $to_xml;
-    my $ini = $MTT::Globals::Internals->{ini};	
-	my $path = MTT::Values::Value($ini, "MTT", 'xml_dir');
-	my $scratch_url = MTT::Values::Value($ini, "MTT", 'scratch_url');
-
-    my $default_form = { product => 'mttmongodb', version => '2.0'};
-
-    my $ini = $MTT::Globals::Internals->{ini};
-
-    my $submit_results = MTT::Values::Value( $ini, "Reporter: mongo data base", 'submit_all_results' );
-	my $submit_failed_results = MTT::Values::Value( $ini, "Reporter: mongo data base", 'submit_failed_results' );
-    
-    if (($submit_results eq '1' || $submit_results eq 'True' || $submit_results eq 'true') && $enable_mongo == 1)
-    {
-        $enable_mongo = 1;
-    } else 
-	{
-        $enable_mongo = 0;
-		Warning("MongoDB reporter: test result skipped. Reason: submit_results=$submit_results\n");
-		Warning("MongoDB reporter: prohibit to submit to mongodb\n.")
-    }
-    
-	
-    #foreach my $phase ( "MPI Install", "Test Build", "Test Run" )
-	foreach my $phase ( "Test Run" ) 
-	{
-        my $submitted = 0;
-        my $phase_obj = $entries->{$phase};
-
-        foreach my $section ( keys(%$phase_obj) ) 
-		{
-            my $section_obj = $phase_obj->{$section};
-
-            foreach my $report_original (@$section_obj) 
-			{
-                my $form;
-                %$form = %{$default_form};
-                $form->{modules} = {};
-
-                my $report;
-                %$report = %{$report_original};
-                %$report->{files_to_copy} = {} if (!exists($report->{files_to_copy}));
-
-                $MTT::Values::Functions::current_report = $report;
-                
-                my $attachment = {};
-                
-                if ( $phase eq "Test Run" ) 
-				{
-
-                    my $mpi_install = $entries->{"MPI Install"}->{$report->{mpi_install_section_name}};
-                    my $mpi_report = @$mpi_install[0];
-                    
-                    _process_phase_mpi_install("MPI Install", $report->{mpi_install_section_name}, $mpi_report, $form->{modules});
-
-                    my $test_build = $entries->{"Test Build"}->{$report->{test_build_section_name}};
-                    my $build_report = @$test_build[0];
-                    _process_phase_test_build("Test Build", $report->{test_build_section_name}, $build_report, $form->{modules});
-
-                    _process_phase_test_run($phase, $section, $report, $form->{modules});
-                    $attachment = $report->{files_to_copy};
-                }
-                elsif ( $phase eq "Test Build" ) 
-				{
-                    my $mpi_install = $entries->{"MPI Install"}->{$report->{mpi_install_section_name}};
-                    my $mpi_report = @$mpi_install[0];
-                    _process_phase_mpi_install("MPI Install", $report->{mpi_install_section_name}, $mpi_report, $form->{modules});
-
-                    _process_phase_test_build($phase, $section, $report, $form->{modules});
-                }
-                elsif ( $phase eq "MPI Install" ) 
-				{
-                    _process_phase_mpi_install($phase, $section, $report, $form->{modules});
-                }
-                else 
-				{
-                    Debug("MongoDB reporter: Phase: $phase Section: $section SKIPPED\n");
-                    next;
-                }
-                
-                $MTT::Values::Functions::current_report = undef;
-                
-                if ( (lc($submit_failed_results) eq "false" || $submit_failed_results eq "0") && ($report->{test_result} != 1) )
-                {
-					Warning("MongoDB reporter: test result skipped. Reason: submit_failed_results=$submit_failed_results\n");
-                    next;
-                }
-
-				if($enable_mongo == 1)
-				{
-               		if ( $phase eq "Test Run" )
-					{
-						my $sim_sec_name = $form->{'modules'}->{'MpiInfo'}->{'mpi_name'};
-						my $product_version =  MTT::Values::Value($ini, "mpi install: $sim_sec_name", 'product_version');
-						$product_version =~ m/(\d+\.)+\d+/;
-						Debug("MongoDB reporter: product version = $&\n");
-						Debug("MongoDB reporter: simple section name = $sim_sec_name\n");
-						$form->{'modules'}->{'product'}->{'version'} = $&;
-						$form->{'modules'}->{'product'}->{'name'} = MTT::Values::Value($ini, "MTT", 'INI_BASENAME');
-						$form->{'modules'}->{'scratch'}->{'url'} = MTT::Values::Value($ini, "MTT", 'scratch_url') . '/';
-						$form->{'modules'}->{'scratch'}->{'root'} = MTT::Values::Functions::scratch_root();
-						$form->{'modules'}->{'slurm_id'} = MTT::Values::Functions::getenv('SLURM_JOBID');
-						if(MTT::Values::Value( $ini, "MTT", 'mode') eq 'codecov' ||  MTT::Values::Value( $ini, "MTT", 'pkg') eq 'codecov') 
-						{
-							$form->{'codecov'}=1;
-						}
-						
-						if(!defined($MTT::Globals::Values->{'group_id'}))
-						{
-							$MTT::Globals::Values->{'group_id'} = $basis_db->insert($form);
-							my $collection = $basis_db->find( { _id => $MTT::Globals::Values->{'group_id'} } );
-							$form = $collection->next;
-							$form->{'group_id'} = $MTT::Globals::Values->{'group_id'};
-							if($basis_db->update({ _id => $MTT::Globals::Values->{'group_id'} },$form) != 1)
-							{
-								Warning("MongoDB reporter: something strange happens. It seems to be an error.\n");
-								Warning("MongoDB reporter: prohibit to submit to mongodb.\n");
-								$enable_mongo = 0;
-							}
-						}else
-						{
-							$form->{'group_id'} = $MTT::Globals::Values->{'group_id'};
-							if(!defined($basis_db->insert($form)))
-							{
-								Warning("MongoDB reporter: cannot insert to mongo.\n");
-								Warning("MongoDB reporter: prohibit to submit to mongodb.\n");
-								$enable_mongo = 0;
-							}
-						}
-					}
-                	$submitted = 1;
-					
-				}			
-            }
-        }
-        Verbose("MongoDB reporter: submitted $phase to MongoDB\n")
-            if ($submitted);
-    }
-	#if(defined($path) && defined($to_xml))
-	#{
-	#	unless(-d $path)
-	#	{
-	#		mkdir $path or Warning("MongoDB reporter: cannot create dir: $path.\nSummary xml file did not generate.\n");
-	#	}
-	#	open FILE, ">$path/output.xml" or Warning("MongoDB reporter: cannot create file: $path/output.xml.\nSummary xml file did not generate.\n");
-	#	print FILE resolve_template($xml_template, keys %{$to_xml}, values %{$to_xml});
-	#	close(FILE);
-	#}else
-	#{
-	#	Warning("MongoDB reporter: xml_dir not defined, summary xml file did not generate\n");
-	#}
 	if($enable_mongo == 1)
 	{
 		my $grid = $db->get_gridfs;
-		my $act_file_name = MTT::Values::Functions::scratch_root();
+		my $act_file_name = $scratch_root;
 		print "MongoDB reporter: ";
 		print `cd $act_file_name && zip data *`;
 		$act_file_name .= '/data.zip';
@@ -385,16 +365,15 @@ sub _do_submit
 
 #--------------------------------------------------------------------------
 
-sub _process_phase_mpi_install {
+sub _process_phase_mpi_install 
+{
     my ( $phase, $section, $report, $form )=@_;
     $form->{MpiInstallPhase} = {};
     my $phase_form = $form->{MpiInstallPhase};
-    
     _fill_submit_info( $phase, $section, $report, $form );
     _fill_compiler_info( $phase, $section, $report, $form );
     _fill_cluster_info( $phase, $section, $report, $form );
     _fill_mpi_info( $phase, $section, $report, $form );
-    
     $phase_form->{start_time} = strftime( "%Y-%m-%d %H:%M:%S",
                         localtime $report->{start_timestamp} );
 
@@ -403,8 +382,7 @@ sub _process_phase_mpi_install {
     $duration = $1;
     $phase_form->{duration} = $duration;
 
-    $phase_form->{end_time} = strftime( "%Y-%m-%d %H:%M:%S",
-                        localtime ($report->{start_timestamp} + $phase_form->{duration}) );
+    $phase_form->{end_time} = strftime( "%Y-%m-%d %H:%M:%S", localtime ($report->{start_timestamp} + $phase_form->{duration}) );
 
     $phase_form->{description} = $report->{description};
     $phase_form->{stdout} = $report->{result_stdout};
@@ -432,7 +410,8 @@ sub _process_phase_mpi_install {
 
 #--------------------------------------------------------------------------
 
-sub _process_phase_test_build {
+sub _process_phase_test_build 
+{
     my ( $phase, $section, $report, $form )=@_;
     $form->{TestBuildPhase} = {};
     my $phase_form = $form->{TestBuildPhase};
@@ -464,7 +443,8 @@ sub _process_phase_test_build {
 
 #--------------------------------------------------------------------------
 
-sub _process_phase_test_run {
+sub _process_phase_test_run 
+{
     my ( $phase, $section, $report, $form )=@_;
     $form->{TestRunPhase} = {};
 
@@ -506,8 +486,6 @@ sub _process_phase_test_run {
     $phase_form->{mpi_nproc}    = int($report->{np});
     $phase_form->{mpi_hlist} = MTT::Values::Functions::env_hosts(2);
 
-    #$phase_form->{net_note} = _get_value( "vbench:net_note", @sections );
-	my $ini = $MTT::Globals::Internals->{ini};
 	$phase_form->{net_note} = MTT::Values::Value( $ini, "VBench", "vbench:net_note" );
 
     my @taglist = ();
@@ -707,12 +685,8 @@ sub _fill_cluster_info {
             push( @sections, "test run: " . $section );
             push( @sections, "MTT");
             push( @sections, "VBench");
-
-            #my $node_count = _get_value( "vbench:cluster_node_count", @sections );
-			my $ini = $MTT::Globals::Internals->{ini};
+			
 			my $node_count = MTT::Values::Value( $ini, "VBench", "vbench:cluster_node_count" );
-			print "MongoDB reporter: after get value\n";
-			#sleep(10);
             %$info_form = (%$info_form, %$clusterInfo);
 
             delete $info_form->{total_mhz};
