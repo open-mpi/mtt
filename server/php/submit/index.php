@@ -22,7 +22,11 @@ if (file_exists("$topdir/config.inc")) {
 
 # A large test run submission could overload the PHP 16MB limit
 # (The following line increases the limit for this script only)
-ini_set("memory_limit", "32M");
+#ini_set("memory_limit", "32M");
+# We were breaking even 32MB, so try 48 MB
+#ini_set("memory_limit", "48M");
+# We were breaking even 48MB, so try 64 MB
+ini_set("memory_limit", "64M");
 
 $topdir = '..';
 include_once("$topdir/database.inc");
