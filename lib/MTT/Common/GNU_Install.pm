@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2012 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
 # Copyright (c) 2009      High Performance Computing Center Stuttgart, 
 #                         University of Stuttgart.  All rights reserved.
@@ -24,6 +24,7 @@ use MTT::Common::Do_step;
 #--------------------------------------------------------------------------
 
 # Do the following steps:
+#   [?] autogen.[sh|pl]
 #   [ ] configure
 #   [?] make clean
 #   [ ] make all
@@ -58,6 +59,26 @@ sub Install {
         $config->{skip_make_check} = 1;
     }
 
+    # Run autogen (optional).  Older OMPI's had autogen.sh; newer
+    # OMPI's have autogen.pl.
+    if ($config->{autogen}) {
+        my $autogen_cmd;
+        $autogen_cmd = "./autogen.sh"
+            if (-x "autogen.sh");
+        $autogen_cmd = "./autogen.pl"
+            if (-x "autogen.pl");
+        if ($autogen_cmd) {
+            $x = MTT::Common::Do_step::do_step($config, $autogen_cmd, 1);
+            %$ret = (%$ret, %$x);
+            return $ret if (!MTT::DoCommand::wsuccess($ret->{exit_status}));
+        } else {
+            $ret->{test_result} = MTT::Values::FAIL;
+            $ret->{result_message} = "Could not find autogen.sh or autogen.pl";
+            return $ret;
+        }
+    }
+
+    # Run the configure script
     $x = MTT::Common::Do_step::do_step($config, "configure",
                   $config->{merge_stdout_stderr},  $config->{configdir});
 

@@ -74,6 +74,10 @@ sub Install {
     $config->{make_check} = $tmp
         if (defined($tmp));
 
+    $tmp = Logical($ini, $section, "ompi_autogen");
+    $config->{autogen} = $tmp
+        if (defined($tmp));
+
     # Run configure / make all / make check / make install
 
     my $gnu = {
@@ -84,6 +88,7 @@ sub Install {
         installdir => $config->{installdir},
         bindir => $config->{bindir},
         libdir => $config->{libdir},
+        autogen => $config->{autogen},
         make_all_arguments => $config->{make_all_arguments},
         make_check => $config->{make_check},
         stdout_save_lines => $config->{stdout_save_lines},
