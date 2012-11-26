@@ -78,6 +78,10 @@ sub Install {
     $config->{autogen} = $tmp
         if (defined($tmp));
 
+    $tmp = Value($ini, $section, "ompi_before_make_all");
+    $config->{before_make_all} = $tmp
+        if (defined($tmp));
+        
     # Run configure / make all / make check / make install
 
     my $gnu = {
@@ -94,6 +98,7 @@ sub Install {
         stdout_save_lines => $config->{stdout_save_lines},
         stderr_save_lines => $config->{stderr_save_lines},
         merge_stdout_stderr => $config->{merge_stdout_stderr},
+        before_make_all => config->{before_make_all},
     };
 
     my $install;
