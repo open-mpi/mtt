@@ -416,7 +416,7 @@ sub term_handler{
         return;
     }
 
-	Verbose("\n\nexucting on_kill\n\n");
+	Verbose("\n\nexecuting on_kill\n\n");
 	my $cmd = $ini->val("mtt", "on_kill");
 	if ( defined $cmd ) 
 	{
@@ -424,7 +424,7 @@ sub term_handler{
 		Verbose("  Output: $x->{result_stdout}\n")
 	}else
 	{
-		Verbose("\n\nError exucting on_kill\n\n")
+		Verbose("\n\nError executing on_kill\n\n")
 	}
 
     $inside_term_handler = 1;
