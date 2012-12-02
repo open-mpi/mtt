@@ -744,6 +744,28 @@ sub enumerate {
     return \@ret;
 }
 
+# Calc np from ppn array, example:
+# number of hosts is 4
+# desired ppn=1,4,8
+# calc_np_from_ppn(4,1,4,8) will generate array of desired NP values, i.e.
+# 4,16,32
+#
+sub calc_np_from_ppn {
+    my $array = get_array_ref(\@_);
+    Debug("&calc_np_from_ppn got: @$array\n");
+
+    my @ret;
+    my $nhosts = 0;
+    foreach my $arg (@$array) {
+        if (!$nhosts) {
+            $nhosts = $arg;
+            next;
+        }
+        push(@ret, $arg * $nhosts);
+    }
+    return \@ret;
+}
+
 #--------------------------------------------------------------------------
 
 # Joint multiple enumerate results and join them together sequentially.  E.g., 
