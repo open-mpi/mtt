@@ -106,6 +106,8 @@ sub Get {
 
     # Make a best attempt to get a version number
     # 1. Try looking for a field in the INI file
+    $ret->{version} = $params->{version}
+    	if (defined($params->{version}));
     my $ver;
     if (!defined($ret->{version})) {
         # 2. Try looking for name-<number> in the directory basename
