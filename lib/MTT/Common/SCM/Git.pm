@@ -43,6 +43,12 @@ sub Checkout {
         (defined($params->{subcommand}) ? $params->{subcommand} : "clone");
     $cmd .= " " . $params->{subcommand_arguments}
         if (defined($params->{subcommand_arguments}));
+    
+    if (defined($params->{rev})) {
+    	$cmd .= " -b ";    
+    	$cmd .= $params->{rev};
+    }
+    
     $cmd .= " ";
 
     my $git_major = 0;
