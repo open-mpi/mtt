@@ -3478,5 +3478,17 @@ sub create_file
     MTT::Files::SafeWrite(1, $filename, $body);
 }
 
+sub cluster_name
+{
+    my $clust_name;
+
+    if (if slurm_job()) {
+        $clust_name = `squeue -h -j $ENV{SLURM_JOB_ID} -o %P`;
+    } else {
+        $clust_name = `hostname`;
+        $clust_name =~ m/\D+/;
+    }
+    return $clust_name;
+}
 
 1;

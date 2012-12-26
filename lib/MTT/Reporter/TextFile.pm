@@ -812,10 +812,8 @@ sub get_html_summary_report_template
     my $css = get_css_template();
 	my $values_replace = {};
 	$values_replace->{'REPORT_DATE'} =  `date +%F` ." ". `date +%k:%M:%S`;
-	$values_replace->{'OFED_VERSION'} = `ofed_info | head -n 1`;
-	my $clust_name = `hostname`;
-	$clust_name =~ m/\D+/;
-	$values_replace->{'CLUSTER_NAME'} = $&;
+	$values_replace->{'OFED_VERSION'} = `ofed_info -s`;
+	$values_replace->{'CLUSTER_NAME'} = MTT::Values::Functions::cluster_name();
 	
 	my $helpper_hash = {};
 	
