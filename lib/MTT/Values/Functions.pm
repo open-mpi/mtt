@@ -3488,6 +3488,7 @@ sub cluster_name
         $clust_name = `hostname`;
         $clust_name =~ m/\D+/;
     }
+    chomp($clust_name);
     return $clust_name;
 }
 
