@@ -330,20 +330,25 @@ sub _run_one_np {
             }
             
             
-            # If we just got one, run it.  Otherwise, loop over running them.
+            no strict 'refs';
+            # If we just got one, make it as array and reuse code below
             if (ref($execs) eq "") {
-                _run_one_test($install_dir, $run, $mpi_details, $execs, $name, 1,
-                              $force);
-            } else {
-                my $variant = 1;
-                foreach my $e (@$execs) {
+                @$execs = ($execs);
+            }
+
+            my $variant = 1;
+            my $rep_cnt = MTT::Values::Value( $ini, "Test run: $run->{simple_section_name}", 'repeat');
+            $rep_cnt = 1 if (not defined $rep_cnt);
+
+            foreach my $e (@$execs) {
+                for(my $i=0; $i < $rep_cnt; $i++) {
                     # See if we're supposed to terminate.
                     last
                     if (MTT::Util::time_to_terminate());
-                    
+
                     _run_one_test($install_dir, $run, $mpi_details, $e, $name,
                         $variant++, $force);
-                    
+
                     last
                     if (MTT::Util::check_break_threshold(
                             $test_results_count_global,
@@ -352,6 +357,7 @@ sub _run_one_np {
                     );
                 }
             }
+            use strict 'refs';
             last
             if (MTT::Util::check_break_threshold(
                     $test_results_count_global,
