@@ -26,6 +26,7 @@ use base qw(Exporter);
              delete_duplicates_from_array
              delete_matches_from_array
              parse_time_to_seconds
+             convert_time_to_human
              get_array_ref
              merge_hashes
 );
@@ -340,6 +341,35 @@ sub parse_time_to_seconds {
         return undef;
     }
 }
+
+sub convert_time_to_human
+{
+    use integer;
+    my ($str_rtime)= @_;
+
+    my $rtime = parse_time_to_seconds($str_rtime);
+
+    my $min   = $rtime / 60;
+    my $sec   = $rtime % 60;
+    my $hour  = $min   / 60;
+    my $min   = $min   % 60;
+    my $day   = $hour  / 24;
+    my $hour  = $hour  % 24;
+    my @times;
+
+    if ($day) {
+        @times = ($day, $hour, $min, $sec);
+    } elsif ($hour) {
+        @times = ($hour, $min, $sec);
+    } else {
+        @times = ($min, $sec);
+    }
+
+    my $res = join(':', @times);
+    $res =~ s/\b(\d)\b/0$1/g;
+    return $res;
+}
+
 
 # Utility subroutine to handle unpredictable types
 # (the only type of argument that would be non-sensical here

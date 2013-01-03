@@ -86,7 +86,7 @@ sub Analyze {
         $want_output = 1;
         if ($results->{timed_out}) {
             $report->{result_message} = "Failed; timeout expired (" .
-                MTT::Values::EvaluateString($run->{timeout}) . " seconds) )";
+                MTT::Util::convert_to_human(MTT::Values::EvaluateString($run->{timeout})) . " DD:HH:MM:SS) )";
         } else {
             $report->{result_message} = "Failed; ";
             if (MTT::DoCommand::wifexited($results->{exit_status})) {
