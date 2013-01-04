@@ -450,6 +450,7 @@ sub Cmd {
                 my $timeout_backtrace_program = $MTT::Globals::Values->{docommand_timeout_backtrace_program};
                 my $timeout_before_backtrace_program = $MTT::Globals::Values->{docommand_timeout_before_each_backtrace_program};
                 my $timeout_after_backtrace_program = $MTT::Globals::Values->{docommand_timeout_after_each_backtrace_program};
+                my $pre_pernode = MTT::Values::Value($ini, "MTT", 'docommand_timeout_pernode_before_each_backtrace_program');
 
                 # If a backtrace program was specified, use it
                 if (defined($timeout_backtrace_program) and !$got_backtrace) {
@@ -463,7 +464,7 @@ sub Cmd {
                         }
                     }
 
-                    $backtrace .= _get_backtrace($timeout_backtrace_program, $pid);
+                    $backtrace .= _get_backtrace($timeout_backtrace_program, $pid, $pre_pernode);
 
                     if ( $timeout_after_backtrace_program ) {
                         foreach my $p (descendant_processes($pid)) {
@@ -649,7 +650,7 @@ sub descendant_processes {
 }
 
 sub _get_backtrace {
-    my ($program, $pid) = @_;
+    my ($program, $pid, $pre_pernode) = @_;
     Debug("_get_backtrace got: @_\n");
 
     my @valid_backtrace_programs = ("gdb", "padb", "gstack");
@@ -697,24 +698,19 @@ sub _get_backtrace {
 	{
         if (FindProgram(qw(gstack))) 
 		{
-			my $return_slurm_max = MTT::Values::Functions::env_hosts();
+			my @hosts = MTT::Values::Functions::env_hosts(2);
 			my $return_basename = $MTT::Test::Run::test_executable_basename;
-			my @return_slurm_max = split("\,",$return_slurm_max);
-			my $post_proc_slurm_max ={};
-			my $return_ssh_command;
-			foreach my $item (@return_slurm_max)
-			{
-				$post_proc_slurm_max->{$item} = 1;
-			}
-			foreach my $item (keys %{$post_proc_slurm_max})
-			{
-				$return_ssh_command = `ssh $item pidof $return_basename`;
-				foreach my $low_item  (split(' ',$return_ssh_command))
-				{
-					$ret .= "\n node=$item, pid=$low_item:\n" . `ssh $item gstack $low_item`;
+			foreach my $host (@hosts) {
+				my $pids = `ssh $host pidof $return_basename`;
+                if ( defined $pre_pernode ) {
+                    $ret .= "\nnode=$host:\n";
+                    $ret .= `ssh $host $pre_pernode`;
+                }
+				foreach my $pid  (split(' ',$pids)) {
+					$ret .= "\nnode=$host, pid=$pid:\n";
+                    $ret .= `ssh $host gstack $pid`;
 				}
 			}
-			Debug("Stacktrace: slurm $return_slurm_max\n");
 			Debug("Stacktrace: base name $return_basename\n");
 			#foreach my $p (descendant_processes($pid)) 
 			#{
