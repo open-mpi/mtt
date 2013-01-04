@@ -340,6 +340,10 @@ sub _run_one_np {
             my $rep_cnt = MTT::Values::Value( $ini, "Test run: $run->{simple_section_name}", 'repeat');
             $rep_cnt = 1 if (not defined $rep_cnt);
 
+            if ($rep_cnt>1) {
+                $force = 1;
+            }
+
             foreach my $e (@$execs) {
                 for(my $i=0; $i < $rep_cnt; $i++) {
                     # See if we're supposed to terminate.
