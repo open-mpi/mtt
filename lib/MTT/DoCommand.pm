@@ -698,7 +698,7 @@ sub _get_backtrace {
 	{
         if (FindProgram(qw(gstack))) 
 		{
-			my @hosts = MTT::Values::Functions::env_hosts(2);
+			my @hosts = split(/,/,MTT::Values::Functions::env_hosts(2));
 			my $return_basename = $MTT::Test::Run::test_executable_basename;
 			foreach my $host (@hosts) {
 				my $pids = `ssh $host pidof $return_basename`;
