@@ -451,6 +451,10 @@ sub Cmd {
                 my $timeout_before_backtrace_program = $MTT::Globals::Values->{docommand_timeout_before_each_backtrace_program};
                 my $timeout_after_backtrace_program = $MTT::Globals::Values->{docommand_timeout_after_each_backtrace_program};
                 my $pre_pernode = MTT::Values::Value($ini, "MTT", 'docommand_timeout_pernode_before_each_backtrace_program');
+                my $sleep_time = MTT::Values::Value( $ini, "MTT", 'docommand_sleep' );
+                if (!$sleep_time) {
+                    $sleep_time = 120;
+                }
 
                 # If a backtrace program was specified, use it
                 if (defined($timeout_backtrace_program) and !$got_backtrace) {
@@ -490,6 +494,7 @@ sub Cmd {
                         $timeout_email_recipient,
                         $timeout_notify_timeout,
                         $backtrace,
+                        $sleep_time
                     );
 
 
@@ -577,7 +582,7 @@ sub Cmd {
 
 # Send an email to notify of a hanging test
 sub _do_email_timeout_notification {
-    my ($cmd, $pid, $over, $timeout_sentinel_file, $timeout_email_recipient, $timeout_notify_timeout, $backtrace) = @_;
+    my ($cmd, $pid, $over, $timeout_sentinel_file, $timeout_email_recipient, $timeout_notify_timeout, $backtrace, $sleep_time) = @_;
     Debug("_do_email_timeout_notification got @_\n");
 
     my $timeout;
@@ -617,17 +622,27 @@ sub _do_email_timeout_notification {
     open(TIMEOUT_SENTINEL_FILE, ">$timeout_sentinel_file");
     while (-e $timeout_sentinel_file) {
         Verbose("--> A timeout sentinel file was specified: $timeout_sentinel_file\n");
-        Verbose("--> MTT will wait $duration seconds for the file to be removed.\n")
+        Verbose("--> MTT will wait $duration seconds for the file to be removed or pid $pid to complete.\n")
             if ($duration > 0);
 
+        my $pid_exists = kill 0, $pid;
+        my $resume_tests = 0;
+
+        if (!$pid_exists) {
+            Verbose("--> Process completed somehow at " . time() . ", proceeding with tests\n");
+            $resume_tests++;
+        }
         # Remove the timeout sentinel file, if a timeout notify timeout value is set
         if (defined($end_time) and time() > $end_time) {
+            $resume_tests++;
+        }
+
+        if ($resume_tests) {
             unlink($timeout_sentinel_file);
+            next;
         }
 
         my $now = localtime;
-        # CHANGE THIS TO 30!
-        my $sleep_time = 3;
         Verbose("--> Sleeping for $sleep_time seconds ($now)...\n");
         sleep($sleep_time);
     }
