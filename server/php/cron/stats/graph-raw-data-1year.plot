@@ -1,4 +1,4 @@
-set title "Submissions per day/week/month (All Time)"
+set title "Submissions per day/week/month (1 Year Window)"
 set key left
 
 set xdata time
@@ -19,12 +19,12 @@ show grid
 
 #set terminal aqua
 set terminal postscript color lw 3
-set output "/tmp/mtt-contrib.ps"
+set output "/tmp/mtt-contrib-1year.ps"
 
 plot \
-     "/tmp/mtt-raw-month.data" using 1:($2/1000) title "Total (per month)"  axis x1y1 with lines lt 1 lw 3, \
-     "/tmp/mtt-raw-week.data"  using 1:($2/1000) title "Total (per week)"   axis x1y2 with lines lt 2 lw 2, \
-     "/tmp/mtt-raw-day.data"   using 1:($2/1000) title "Total (per day)"    axis x1y2 with lines lt 3 lw 1
+     "/tmp/mtt-raw-month.data-1year" using 1:($2/1000) title "Total (per month)"  axis x1y1 with lines lt 1 lw 3, \
+     "/tmp/mtt-raw-week.data-1year"  using 1:($2/1000) title "Total (per week)"   axis x1y2 with lines lt 2 lw 2, \
+     "/tmp/mtt-raw-day.data-1year"   using 1:($2/1000) title "Total (per day)"    axis x1y2 with lines lt 3 lw 1
 
 #plot "raw-day.data" using 1:2 title "Total"       with lines lt 1 lw 3, \
 #     "raw-day.data" using 1:3 title "MPI Install" with lines lt 2 lw 3, \

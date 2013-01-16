@@ -20,8 +20,21 @@ my $is_day   = "f";
 my $is_week  = "f";
 my $is_month = "t";
 my $is_year  = "f";
+my $is_limited_to_one_year = "f";
 my $dbh_mtt;
 
+
+#
+# Parse any command line arguments
+#
+if( 0 != parse_cmd_line() ) {
+  print_usage();
+  exit -1;
+}
+
+#
+# Setup queries
+#
 my $sql_select_base =
   "  sum(num_mpi_install_pass + num_mpi_install_fail + ".$v_nl.
   "      num_test_build_pass  + num_test_build_fail  + ".$v_nl.
@@ -35,31 +48,43 @@ my $sql_select_base =
 my $sql_select_group_by =
   "GROUP BY foo_date ".$v_nl.
   "ORDER BY foo_date ";
+
 my $sql_select_all_day   = ("SELECT to_date( date_trunc('day',   collection_date)::text, 'YYYY-MM-DD') as foo_date, " .$v_nl.
                             $sql_select_base . $v_nl.
-                            " AND date_trunc('day', collection_date) < date_trunc('day', now()) ".$v_nl.
-                            $sql_select_group_by);
+                            " AND date_trunc('day', collection_date) < date_trunc('day', now()) ".$v_nl);
+if( $is_limited_to_one_year eq "t" ) {
+    $sql_select_all_day .= (" AND date_trunc('day', collection_date) >= date_trunc('day', now() - interval '1 year') ".$v_nl);
+}
+$sql_select_all_day     .= ($sql_select_group_by);
+
 my $sql_select_all_week  = ("SELECT to_date( date_trunc('week',  collection_date)::text, 'YYYY-MM-DD') as foo_date, " .$v_nl.
                             $sql_select_base . $v_nl.
-                            " AND date_trunc('week', collection_date) < date_trunc('week', now()) ".$v_nl.
-                            $sql_select_group_by);
+                            " AND date_trunc('week', collection_date) < date_trunc('week', now()) ".$v_nl);
+if( $is_limited_to_one_year eq "t" ) {
+    $sql_select_all_week .= (" AND date_trunc('week', collection_date) >= date_trunc('week', now() - interval '1 year') ".$v_nl);
+}
+$sql_select_all_week     .= ($sql_select_group_by);
+
 my $sql_select_all_month = ("SELECT to_date( date_trunc('month', collection_date)::text, 'YYYY-MM-DD') as foo_date, " .$v_nl.
                             $sql_select_base . $v_nl.
-                            " AND date_trunc('month', collection_date) < date_trunc('month', now()) ".$v_nl.
-                            $sql_select_group_by);
+                            " AND date_trunc('month', collection_date) < date_trunc('month', now()) ".$v_nl);
+if( $is_limited_to_one_year eq "t" ) {
+    $sql_select_all_month .= (" AND date_trunc('month', collection_date) >= date_trunc('month', now() - interval '1 year') ".$v_nl);
+}
+$sql_select_all_month     .= ($sql_select_group_by);
+
 my $sql_select_all_year  = ("SELECT to_date( date_trunc('year',  collection_date)::text, 'YYYY-MM-DD') as foo_date, " .$v_nl.
                             $sql_select_base . $v_nl.
-                            " AND date_trunc('year', collection_date) <= date_trunc('year', now()) ".$v_nl.
-                            $sql_select_group_by);
-
-#
-# Parse any command line arguments
-#
-if( 0 != parse_cmd_line() ) {
-  print_usage();
-  exit -1;
+                            " AND date_trunc('year', collection_date) <= date_trunc('year', now()) ".$v_nl);
+if( $is_limited_to_one_year eq "t" ) {
+    $sql_select_all_year .= (" AND date_trunc('year', collection_date) >= date_trunc('year', now() - interval '1 year') ".$v_nl);
 }
+$sql_select_all_year     .= ($sql_select_group_by);
 
+
+#
+# Process option
+#
 if( $is_day   eq "t" ) {
   dump_data($sql_select_all_day);
 }
@@ -127,6 +152,9 @@ sub parse_cmd_line() {
       ++$i;
       $verbose = $ARGV[$i];
     }
+    elsif( $ARGV[$i] eq "-l" ) {
+      $is_limited_to_one_year = "t";
+    }
     #
     # Invalid options produce a usage message
     #
@@ -148,7 +176,7 @@ sub parse_cmd_line() {
 
 sub print_usage() {
   print "="x50 . "\n";
-  print "Usage: ./make_raw_data.pl [-day] [-month] [-year] [-v LEVEL]\n";
+  print "Usage: ./make_raw_data.pl [-day] [-month] [-year] [-v LEVEL] [-h] [-l]\n";
   print "  Default: -month -v 0\n";
   print "="x50 . "\n";
 
