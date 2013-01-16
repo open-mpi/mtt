@@ -37,11 +37,12 @@ This way we can look back to see some basic coverage stats.
 We generate a contribution graph every day from the stats information.
 This graph is displayed at the bottom of the reporter
 #########################
-# Update Contrib Graph
+# Update Contrib Graphs
 # - 3 am Everyday
 # - Runs in < 1 min
 #########################
 0 3 * * * /l/osl/www/mtt.open-mpi.org/cron/create-contrib-graph.pl
+30 3 * * * /l/osl/www/mtt.open-mpi.org/cron/create-contrib-graph.pl -l
 
 
 4) Periodic Maintenance
@@ -130,11 +131,12 @@ X) Example Crontab
 0 1 * * *  /l/osl/www/mtt.open-mpi.org/cron/mtt-update-stats.pl
 
 #
-# Update Contrib Graph
+# Update Contrib Graphs
 # - 3 am Everyday
 # - Runs in < 1 min
 #
 0 3 * * * /l/osl/www/mtt.open-mpi.org/cron/create-contrib-graph.pl
+30 3 * * * /l/osl/www/mtt.open-mpi.org/cron/create-contrib-graph.pl -l
 
 #
 # Maintain internal PostgreSQL stats (Day)
