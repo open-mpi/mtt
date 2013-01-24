@@ -107,6 +107,7 @@ sub _hg_identify_n {
         return undef;
     } else {
         $ret = $x->{result_stdout};
+        $ret =~ s/\s+(\S*)\s+/\1/;
     }
 
     # Remove the newline
