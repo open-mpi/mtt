@@ -141,24 +141,33 @@ sub Init {
     # Make one for each proxy (we'll always have at least one proxy
     # entry, even if it's empty).
     my $proxies = \@{$MTT::Globals::Values->{proxies}->{$scheme}};
-    foreach my $p (@{$proxies}) {
+    if (defined($proxies)) {
+        foreach my $p (@{$proxies}) {
+            my %params = { env_proxy => 0 };
+            my $ua = LWP::UserAgent->new(%params);
+            
+            # @#$@!$# LWP proxying for https *does not work*.  So
+            # don't set $ua->proxy() for it.  Instead, we'll set
+            # $ENV{https_proxy} whenever we process requests that
+            # require SSL proxying, because that is obeyed deep down
+            # in the innards underneath LWP.
+            $ua->proxy([$scheme], $p->{proxy})
+                if ($p->{proxy} ne "" && $scheme ne "https");
+            $ua->agent("MPI Test MTTDatabase Reporter");
+            push(@lwps, {
+                scheme => $scheme,
+                agent => $ua,
+                proxy => $p->{proxy},
+                source => $p->{source},
+                 });
+        }
+    } else {
         my %params = { env_proxy => 0 };
         my $ua = LWP::UserAgent->new(%params);
-        
-        # @#$@!$# LWP proxying for https *does not work*.  So
-        # don't set $ua->proxy() for it.  Instead, we'll set
-        # $ENV{https_proxy} whenever we process requests that
-        # require SSL proxying, because that is obeyed deep down
-        # in the innards underneath LWP.
-        $ua->proxy([$scheme], $p->{proxy})
-            if ($p->{proxy} ne "" && $scheme ne "https");
-        $ua->agent("MPI Test MTTDatabase Reporter");
         push(@lwps, {
             scheme => $scheme,
             agent => $ua,
-            proxy => $p->{proxy},
-            source => $p->{source},
-        });
+             });
     }
     if ($realm && $username && $password) {
         Verbose("   Set HTTP credentials for realm \"$realm\"\n");
