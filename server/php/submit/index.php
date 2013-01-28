@@ -28,7 +28,9 @@ if (file_exists("$topdir/config.inc")) {
 # We were breaking even 48MB, so try 64 MB
 #ini_set("memory_limit", "64M");
 # We were breaking even 64MB, so try 128 MB - Wow we are pretty good at this
-ini_set("memory_limit", "128M");
+#ini_set("memory_limit", "128M");
+# We were breaking even 128MB, so try 256 MB - There has got to be a better way...
+ini_set("memory_limit", "256M");
 
 $topdir = '..';
 include_once("$topdir/database.inc");
