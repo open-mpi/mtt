@@ -130,7 +130,7 @@ sub Build {
     }
 
     # Build the test suite.
-    $cmd = "make $make_arguments compile FILE=$buildfile";
+    $cmd = "make $make_arguments jcompile FILE=$buildfile";
     $cmd .= " \"CFLAGS=$cflags\""
         if ($cflags);
     $cmd .= " \"FFLAGS=$fflags\""
