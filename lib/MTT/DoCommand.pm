@@ -26,6 +26,7 @@ use MTT::Values::Functions;
 use MTT::Timer;
 use MTT::Mail;
 use MTT::FindProgram;
+use MTT::Files;
 use Data::Dumper;
 use File::Spec;
 use Cwd;
@@ -56,8 +57,9 @@ sub DoCommand {
     ($time_arg, $no_execute) = @_;
 }
 
-sub _kill_proc {
+sub _kill_proc_one {
     my ($pid) = @_;
+
 
     # See if the proc is alive first
     my $kid;
@@ -102,6 +104,16 @@ sub _kill_proc {
         Verbose("** Kill KILL didn't work!\n");
         sleep(1);
     }
+}
+
+
+sub _kill_proc {
+    my ($pid) = @_;
+    # kill the group, take the names later
+    foreach my $p (descendant_processes($pid)) {
+        _kill_proc_one($p);
+    }
+    _kill_proc_one($pid);
 }
 
 #--------------------------------------------------------------------------
@@ -597,6 +609,9 @@ sub _do_email_timeout_notification {
     my $username = getpwuid($<);
     my $hostname = MTT::Values::Functions::hostname();
 
+    my $cmd_content = "";
+    $cmd_content = Slurp($cmd) if (-f $cmd);
+
     if (defined($timeout_email_recipient)) {
 
         my $from = "$username\@$hostname";
@@ -608,6 +623,7 @@ sub _do_email_timeout_notification {
             "The following MTT command (pid $pid) is past the timeout of $timeout seconds by " .
                "$over seconds:" .
                "\n\t$cmd\n\n" .
+               "\n\t$cmd_content\n\n" .
 
                "Here is a stack trace(s) from the forked a.out processes: " .
                "\n\t$backtrace\n\n" .
@@ -621,7 +637,7 @@ sub _do_email_timeout_notification {
     my $duration = $end_time - time();
     open(TIMEOUT_SENTINEL_FILE, ">$timeout_sentinel_file");
     while (-e $timeout_sentinel_file) {
-        Verbose("--> A timeout sentinel file was specified: $timeout_sentinel_file\n");
+        Verbose("--> A timeout sentinel file was specified: $timeout_sentinel_file pid=$pid\n");
         Verbose("--> MTT will wait $duration seconds for the file to be removed or pid $pid to complete.\n")
             if ($duration > 0);
 
