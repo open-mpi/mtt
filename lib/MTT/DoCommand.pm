@@ -610,7 +610,7 @@ sub _do_email_timeout_notification {
     my $hostname = MTT::Values::Functions::hostname();
 
     my $cmd_content = "";
-    $cmd_content = Slurp($cmd) if (-f $cmd);
+    $cmd_content = MTT::Files::Slurp($cmd) if (-f $cmd);
 
     if (defined($timeout_email_recipient)) {
 
