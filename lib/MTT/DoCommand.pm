@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2013 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
 # Copyright (c) 2007-2012 High Performance Computing Center Stuttgart, 
 #                         University of Stuttgart.  All rights reserved.
@@ -198,16 +198,14 @@ sub Cmd {
     my ($merge_output, $cmd, $timeout, 
         $max_stdout_lines, $max_stderr_lines, $print_timestamp) = @_;
 
-	if($print_timestamp eq "y" || $print_timestamp eq "Y" || $print_timestamp eq "1")
-		{
-			$print_timestamp = 1;
-		}else
-		{
-			$print_timestamp = 0;
-		}
-	my $ini = $MTT::Globals::Internals->{ini};
-	my $pause_file = MTT::Values::Value( $ini, "MTT", 'docommand_pause_file' );
-	my @pause_array = split(',', $pause_file);
+    if($print_timestamp eq "y" || $print_timestamp eq "Y" || $print_timestamp eq "1") {
+        $print_timestamp = 1;
+    } else {
+        $print_timestamp = 0;
+    }
+    my $ini = $MTT::Globals::Internals->{ini};
+    my $pause_file = MTT::Values::Value( $ini, "MTT", 'docommand_pause_file' );
+    my @pause_array = split(',', $pause_file);
 
 
     # If there are pipes, redirects, shell-bangs, or newlines
@@ -721,35 +719,32 @@ sub _get_backtrace {
         } else {
             Warning("MTT could not locate \"padb\" to gather a backtrace\n");
         }
-    } elsif ($program eq "gstack") 
-	{
-        if (FindProgram(qw(gstack))) 
-		{
-			my @hosts = split(/,/,MTT::Values::Functions::env_hosts(2));
-			my $return_basename = $MTT::Test::Run::test_executable_basename;
-			foreach my $host (@hosts) {
-				my $pids = `ssh $host pidof $return_basename`;
+    } elsif ($program eq "gstack") {
+        if (FindProgram(qw(gstack))) {
+            my @hosts = split(/,/,MTT::Values::Functions::env_hosts(2));
+            my $return_basename = $MTT::Test::Run::test_executable_basename;
+            foreach my $host (@hosts) {
+                my $pids = `ssh $host pidof $return_basename`;
                 if ( defined $pre_pernode ) {
                     $ret .= "\nnode=$host:\n";
                     $ret .= `ssh $host $pre_pernode`;
                 }
-				foreach my $pid  (split(' ',$pids)) {
-					$ret .= "\nnode=$host, pid=$pid:\n";
+                foreach my $pid  (split(' ',$pids)) {
+                    $ret .= "\nnode=$host, pid=$pid:\n";
                     $ret .= `ssh $host gstack $pid`;
-				}
-			}
-			Debug("Stacktrace: base name $return_basename\n");
-			#foreach my $p (descendant_processes($pid)) 
-			#{
-			#    my $gstack_cmd = "gstack $p";
-			#    $ret .= "\n $gstack_cmd";
-			#    $ret .= "\n" . `$gstack_cmd`;
-			#}
-        } else 
-		{
+                }
+            }
+            Debug("Stacktrace: base name $return_basename\n");
+            #foreach my $p (descendant_processes($pid)) 
+            #{
+            #    my $gstack_cmd = "gstack $p";
+            #    $ret .= "\n $gstack_cmd";
+            #    $ret .= "\n" . `$gstack_cmd`;
+            #}
+        } else {
             Warning("MTT could not locate \"$program\" to gather a backtrace\n");
         }
-
+        
     } else {
         Warning("MTT does not recognize \"$program\" as a backtrace program. " .
                 "Please use one of the following: @valid_backtrace_programs");
