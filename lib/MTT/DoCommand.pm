@@ -387,20 +387,16 @@ sub Cmd {
     my $killed_status = undef;
     my $last_over = 0;
     while ($done > 0) {
-
-		if($pause_file)
-		{
-			my $paused_time = localtime();
-			foreach my $item_pause_array (@pause_array)
-			{
-				while(-e $item_pause_array)
-				{
-					print "found pause file: $item_pause_array\n";
-					print "paused since $paused_time\n";
-					sleep 2;
-				}
-			}
-		}
+        if($pause_file) {
+            my $paused_time = localtime();
+            foreach my $item_pause_array (@pause_array) {
+                while(-e $item_pause_array) {
+                    print "found pause file: $item_pause_array\n";
+                    print "paused since $paused_time\n";
+                    sleep 2;
+                }
+            }
+        }
 
         my $nfound = select($rout = $rin, undef, undef, $t);
         if (vec($rout, fileno(OUTread), 1) == 1) {
