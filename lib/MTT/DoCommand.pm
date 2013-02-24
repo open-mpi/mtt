@@ -641,6 +641,12 @@ sub _do_email_timeout_notification {
         if (!$pid_exists) {
             Verbose("--> Process completed somehow at " . time() . ", proceeding with tests\n");
             $resume_tests++;
+        } else {
+            my $matches = MTT::Files::Grep("zombie", "/proc/$pid/status");
+            if (@$matches) {
+                Verbose("--> Process become Zombie at " . time() . ", proceeding with tests\n");
+                $resume_tests++;
+            }
         }
         # Remove the timeout sentinel file, if a timeout notify timeout value is set
         if (defined($end_time) and time() > $end_time) {
