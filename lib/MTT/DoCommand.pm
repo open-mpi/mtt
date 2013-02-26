@@ -639,12 +639,12 @@ sub _do_email_timeout_notification {
         my $resume_tests = 0;
 
         if (!$pid_exists) {
-            Verbose("--> Process completed somehow at " . time() . ", proceeding with tests\n");
+            Verbose("--> Process completed somehow at " . localtime . ", proceeding with tests\n");
             $resume_tests++;
         } else {
             my $matches = MTT::Files::Grep("zombie", "/proc/$pid/status");
             if (@$matches) {
-                Verbose("--> Process become Zombie at " . time() . ", proceeding with tests\n");
+                Verbose("--> Process become Zombie at " . localtime . ", proceeding with tests\n");
                 $resume_tests++;
             }
         }
