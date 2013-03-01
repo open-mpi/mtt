@@ -69,9 +69,7 @@ my $phase_name = "Test Run";
 sub Run {
     my ($ini, $ini_full, $install_dir, $runs_data_dir, $force, $count_total_tests_number) = @_;
 
-    if ($count_total_tests_number ne "yes"){
-        Run($ini, $ini_full, $install_dir, $runs_data_dir, $force,"yes");
-    }
+    $count_total_tests_number = "yes";
     # Save the environment
     my %ENV_SAVE = %ENV;
 
