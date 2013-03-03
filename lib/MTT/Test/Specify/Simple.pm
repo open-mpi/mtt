@@ -134,19 +134,9 @@ sub Specify {
             } elsif (-x $t) {
                 $ok = 1;
             }
-            # If it's not good, print it out, because that's
-            # *probably* unexpected.  It might not be unexpected, and
-            # the user might want it to silently delete the not-found
-            # test, but experience has shown that it is significantly
-            # more confusing to have something silently deleted when
-            # you *weren't* expecting it, and you don't know why...
-            if (!$ok) {
-                Verbose("Test not found/not executable (deleted): $t\n");
-            }
-
             # If it's good, add a hash with all the values into the
             # list of tests
-            else {
+            if ($ok) {
                 my $one;
                 # Do a deep copy of the defaults
                 %{$one} = %{$config};

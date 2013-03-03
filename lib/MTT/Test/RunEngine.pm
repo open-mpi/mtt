@@ -85,6 +85,10 @@ sub RunEngine {
     my $variants_count_total =
         $test_count_total * $np_count_total * $argv_count_total * $exec_count_total;
         
+
+    if ($count_total_tests_number eq "yes"){
+        return $variants_count_total;
+    }
     Verbose("   ###\n");
     Verbose("   ### Total tests to run in this section:\n");
     Verbose("   ###     " . sprintf("%4d", $test_count_total) . " test executable(s)\n");
@@ -103,8 +107,10 @@ sub RunEngine {
         $footer = $footer."Number of total exec variants found: $exec_count_total\n";
         $footer = $footer."-----------------------------------------------------------------\n";
         $MTT::Globals::Values->{extra_footer} = $footer;
-        return 0;
+		return;
 	}
+    
+    
     
     # Set some thresholds for an early exit
     $break_threshold = undef;
@@ -282,8 +288,6 @@ sub RunEngine {
         MTT::Reporter::QueueSubmit();
     }
 
-    # Return the number of variants that could have been run
-    return $variants_count_total;
 }
 
 sub _run_one_np {

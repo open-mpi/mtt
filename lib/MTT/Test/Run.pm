@@ -69,6 +69,9 @@ my $phase_name = "Test Run";
 sub Run {
     my ($ini, $ini_full, $install_dir, $runs_data_dir, $force, $count_total_tests_number) = @_;
 
+    if ($count_total_tests_number ne "yes"){
+        Run($ini, $ini_full, $install_dir, $runs_data_dir, $force,"yes");
+    }
     # Save the environment
     my %ENV_SAVE = %ENV;
 
@@ -195,7 +198,8 @@ sub Run {
                                         $section;
                                     _do_run($ini, $section, $test_build, 
                                             $mpi_get, $mpi_install,
-                                            $install_dir, $runs_data_dir);
+                                            $install_dir, $runs_data_dir, 
+                                            $force,$count_total_tests_number);
                                     delete $MTT::Globals::Internals->{mpi_get_name};
                                     delete $MTT::Globals::Internals->{mpi_install_name};
                                     delete $MTT::Globals::Internals->{test_get_name};
@@ -230,7 +234,7 @@ sub Run {
 
 sub _do_run {
     my ($ini, $section, $test_build, $mpi_get, $mpi_install, $install_dir, 
-        $runs_data_dir, $force) = @_;
+        $runs_data_dir, $force, $count_total_tests_number) = @_;
 
     # Simple section name
     my $simple_section = GetSimpleSection($section);
@@ -547,10 +551,13 @@ sub _do_run {
     # If we got a list of tests to run, invoke the run engine to
     # actually run them.
     if ($ret && $ret->{test_result}) {
-        $MTT::Globals::Internals->{total_tests_counter} +=
-            MTT::Test::RunEngine::RunEngine($ini, $section, $install_dir, 
-                                            $runs_data_dir, $mpi_details,
-                                            $test_build, $force, $ret);
+        my $return_value;
+        $return_value = MTT::Test::RunEngine::RunEngine($ini, $section, $install_dir, 
+                                        $runs_data_dir, $mpi_details,
+                                        $test_build, $force, $ret, $count_total_tests_number);
+        if ($count_total_tests_number eq "yes"){
+            $MTT::Globals::Internals->{total_tests_counter} += $return_value;
+        }
     }
 
     # Unload any loaded environment modules

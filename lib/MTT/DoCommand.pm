@@ -193,59 +193,6 @@ sub _quote_escape {
 
 #--------------------------------------------------------------------------
 
-# Add complete, \n-terminated lines to the output array.  If there's
-# an incomplete last line (i.e., not \n-terminated), add it to the
-# partial string.
-#
-# Then trim the array to be, at most, $max_lines long (as if one
-# included the last, incomplete line).
-sub _append {
-    my ($data, $prefix, $max_lines, $array, $partial) = @_;
-
-    # If there's no newline, add this line to the partial; we're done
-    if ($data !~ /\n/) {
-        $$partial .= $data;
-        return;
-    }
-
-    # Prefix the data with the partial
-    if (defined($$partial)) {
-        $data = "$$partial$data";
-        $$partial = undef;
-    }
-
-    # Grab the tail after the last \n in $data (for use with
-    # comparisons, below)
-    $data =~ m/\n(.*?)$/;
-    my $tail = $1;
-
-    # Split into individual lines
-    my @lines = split(/\n/, $data);
-
-    # Is the last line the same as the tail?  If so, remove it from
-    # @lines (because it was an incomplete line).
-    pop(@lines)
-        if ($lines[$#lines] eq $tail);
-
-    # Now add all the (prefixed) @lines to the output array
-    while (@lines) {
-        my $l = shift(@lines);
-        push(@{$array}, "$prefix$l\n");
-    }
-
-    # Now trim the output array to be, at most, $max_lines.  If we
-    # have a partial last line/tail, then decrement $max_lines by 1 to
-    # make it seem like we have 1 more line.
-    if ($max_lines > 0) {
-        --$max_lines
-            if (length($tail) > 0);
-        shift(@{$array})
-            while ($#{$array} >= $max_lines);
-    }
-}
-
-#--------------------------------------------------------------------------
-
 # run a command and save the stdout / stderr
 sub Cmd {
     my ($merge_output, $cmd, $timeout, 
@@ -437,8 +384,6 @@ sub Cmd {
     }
     my $killed_status = undef;
     my $last_over = 0;
-    my $partial_out;
-    my $partial_err;
     while ($done > 0) {
         if($pause_file) {
             my $paused_time = localtime();
@@ -463,8 +408,15 @@ sub Cmd {
                 vec($rin, fileno(OUTread), 1) = 0;
                 --$done;
             } else {
-                _append($data, $print_timestamp ? localtime() : "",
-                        $max_stdout_lines, \@out, \$partial_out);
+                my $str = "";
+                if ($print_timestamp) {
+                    $str = localtime();
+                }
+                push(@out, $str . " " . $data);
+                if (defined($max_stdout_lines) && $max_stdout_lines > 0 &&
+                    $#out > $max_stdout_lines) {
+                    shift @out;
+                }
                 Debug("$data");
             }
         }
@@ -477,8 +429,15 @@ sub Cmd {
                 vec($rin, fileno(ERRread), 1) = 0;
                 --$done;
             } else {
-                _append($data, $print_timestamp ? localtime() : "",
-                        $max_stderr_lines, \@err, \$partial_err);
+                if (defined($max_stderr_lines) && $max_stderr_lines > 0 &&
+                    $#err > $max_stderr_lines) {
+                    shift @err;
+                }
+                my $str = "";
+                if ($print_timestamp) {
+                    $str = localtime();
+                }
+                push(@err, $str . " " . $data);
                 Debug("ERR:$data");
             }
         }
@@ -570,14 +529,6 @@ sub Cmd {
     close OUTerr;
     close OUTread
         if (!$merge_output);
-
-    # Process the last partial lines, if necessary
-    if (defined($partial_out) && length($partial_out) > 0) {
-        push(@out, $partial_out);
-    }
-    if (defined($partial_err) && length($partial_err) > 0) {
-        push(@err, $partial_err);
-    }
 
     # If we didn't timeout, we need to reap the process (timeouts will
     # have already been reaped).
@@ -688,12 +639,12 @@ sub _do_email_timeout_notification {
         my $resume_tests = 0;
 
         if (!$pid_exists) {
-            Verbose("--> Process completed somehow at " . localtime() . ", proceeding with tests\n");
+            Verbose("--> Process completed somehow at " . localtime . ", proceeding with tests\n");
             $resume_tests++;
         } else {
             my $matches = MTT::Files::Grep("zombie", "/proc/$pid/status");
             if (@$matches) {
-                Verbose("--> Process become Zombie at " . localtime() . ", proceeding with tests\n");
+                Verbose("--> Process become Zombie at " . localtime . ", proceeding with tests\n");
                 $resume_tests++;
             }
         }
