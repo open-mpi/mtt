@@ -67,7 +67,7 @@ sub EvaluateString {
     # Output can get pretty volumnious in this sub.
     # Someday there will be a slicker way to silence debug messages:
     #   https://svn.open-mpi.org/trac/mtt/ticket/284
-    my ($d, $v) = MTT::Messages::Messages(0, 1);
+    my ($d, $v, $c, $w) = MTT::Messages::Messages(0, 1, 0, 1);
 
     my ($str, $ini, $section) = @_;
     Debug("Evaluating: $str\n");
@@ -149,7 +149,7 @@ sub EvaluateString {
                 $evaluate_string_ini = $evaluate_string_ini_saved;
                 $evaluate_string_section = $evaluate_string_section_saved;
 
-                MTT::Messages::Messages($d, $v);
+                MTT::Messages::Messages($d, $v, $c, $w);
                 return \@ret;
             }
         } else {
@@ -166,7 +166,7 @@ sub EvaluateString {
     $evaluate_string_ini = $evaluate_string_ini_saved;
     $evaluate_string_section = $evaluate_string_section_saved;
 
-    MTT::Messages::Messages($d, $v);
+    MTT::Messages::Messages($d, $v, $c, $w);
     return $str;
 }
 

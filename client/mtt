@@ -373,10 +373,11 @@ if ($time_arg) {
 
 my $debug = ($debug_arg ? 1 : 0);
 my $verbose = ($verbose_arg ? 1 : $debug);
+my $warning = 1;
 my $time_cmd = ($time_cmd_arg ? 1 : 0);
 my $time_phases = ($time_phases_arg ? 1 : 0);
 my $no_execute = ($no_execute_arg ? 1 : 0);
-MTT::Messages::Messages($debug, $verbose, cwd());
+MTT::Messages::Messages($debug, $verbose, cwd(), $warning);
 MTT::Messages::SetTextwrap();
 MTT::Messages::Debug("Debug is $debug, Verbose is $verbose\n");
 MTT::Messages::Verbose("*** MTT: $0 @SAVE_ARGV\n");
@@ -526,7 +527,7 @@ foreach my $hash (@ini_list) {
     # in the Globals hash.
 
     MTT::Globals::load($scratch_arg, $fast_scratch_arg, $ini_full);
-    MTT::Messages::Messages($debug, $verbose, cwd());
+    MTT::Messages::Messages($debug, $verbose, cwd(), $warning);
     MTT::Messages::SetTextwrap();
 
     $SIG{TERM} = sub {MTT::Util::term_handler($ini, $trim, $source_dir, $install_dir, $fast_scratch_arg, $scratch_arg, $no_reporter_arg, "SIGTERM");};
