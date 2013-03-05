@@ -30,10 +30,14 @@ my $_verbose;
 # Path where mtt was invoked
 my $_cwd;
 
+# Is warning enabled?
+my $_warning;
+
 # For resetting message back to a previous level
 my $debug_save;
 my $verbose_save;
 my $cwd_save;
+my $warning_save;
 
 # Max length of string to pass to wrap() (it seems that at least some
 # versions of wrap() handles Very Large strings and/or strings with
@@ -50,16 +54,18 @@ sub Messages {
     $debug_save = $_debug;
     $verbose_save = $_verbose;
     $cwd_save = $_cwd;
+    $warning_save = $_warning;
 
     $_debug = shift;
     $_verbose = shift;
     $_cwd = shift;
+    $_warning = shift;
 
     # Set autoflush
     select STDOUT;
     $| = 1;
 
-    return ($debug_save, $verbose_save, $cwd_save);
+    return ($debug_save, $verbose_save, $cwd_save, $warning_save);
 }
 
 sub SetTextwrap {
@@ -86,17 +92,20 @@ sub Error {
 }
 
 sub Warning {
-    my $str = "@_";
-    if (length($str) < $_max_wrap_len) {
-        my $s = wrap("", "    ", "*** WARNING: $str");
-        print $s;
-        print $LOGFILE $s
-            if (defined($LOGFILE));
-    } else {
-        my $s = "*** WARNING: $str";
-        print $s;
-        print $LOGFILE $s
-            if (defined($LOGFILE));
+    if ($_warning)
+    {
+        my $str = "@_";
+        if (length($str) < $_max_wrap_len) {
+            my $s = wrap("", "    ", "*** WARNING: $str");
+            print $s;
+            print $LOGFILE $s
+                if (defined($LOGFILE));
+        } else {
+            my $s = "*** WARNING: $str";
+            print $s;
+            print $LOGFILE $s
+                if (defined($LOGFILE));
+        }
     }
 }
 

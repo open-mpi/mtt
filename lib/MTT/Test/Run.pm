@@ -70,7 +70,9 @@ sub Run {
     my ($ini, $ini_full, $install_dir, $runs_data_dir, $force, $count_total_tests_number) = @_;
 
     if ($count_total_tests_number ne "yes"){
+        my ($debug_save, $verbose_save, $cwd_save, $message_save) = MTT::Messages::Messages(0,0,0,0);
         Run($ini, $ini_full, $install_dir, $runs_data_dir, $force,"yes");
+        MTT::Messages::Messages($debug_save, $verbose_save, $cwd_save, $message_save);
     }
     # Save the environment
     my %ENV_SAVE = %ENV;
