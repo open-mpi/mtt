@@ -125,6 +125,11 @@ sub Specify {
     foreach my $group (keys %$params) {
         # Go through the list of tests and create an entry for each
         foreach my $t (@{$params->{$group}->{tests}}) {
+            # The test can be undefined if it was deleted by
+            # exclusivity+do_no_run, above.  In this case, skip it.
+            next
+                if (!defined($t));
+
             my $ok = 0;
             # If we can't find the file, see if it's in the path
             if ($MTT::DoCommand::no_execute) {
