@@ -31,6 +31,7 @@ sub Run {
 
     my $str = "require $module";
     Debug("Evaluating: $str\n");
+	print "qqqqq $module\n";
     my $check = eval $str;
     if ($@) {
         if (!$check) {
