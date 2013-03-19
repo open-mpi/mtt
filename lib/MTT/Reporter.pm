@@ -240,6 +240,12 @@ sub QueueSubmit {
 
 sub Flush{
 	
-	MTT::Module::Run("MTT::Reporter::TextFile", "Flush", $cache, $queue);
+    foreach my $m (keys %$modules) 
+	{
+		if($m eq 'TextFile' || $m eq 'HTMLReport')
+		{
+	        MTT::Module::Run("MTT::Reporter::$m", "Flush", $cache, $queue);
+		}
+    }
 }
 1;
