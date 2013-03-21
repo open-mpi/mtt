@@ -55,23 +55,11 @@ my ($ini, $section);
 # send summary by email if requested
 my $to;
 
-# Do we have Text::TabularDisplay?
-my $have_tabulardisplay;
-eval "\$have_tabulardisplay = require Text::TabularDisplay";
-
 #--------------------------------------------------------------------------
 
 sub Init 
 {
     ($ini, $section) = @_;
-
-    # Sanity check
-    if (!$have_tabulardisplay) 
-	{
-        Error("Summary table requested via the TextFile reporter, but the perl module Text::TabularDisplay cannot be found/loaded.  Please install Text::TabularDisplay and try again.\n");
-    }
-
-    # Grab TextFile INI params
 
     $summary_header = Value($ini, $section, "textfile_summary_header") . "\n"; 
     $summary_footer = Value($ini, $section, "textfile_summary_footer") . "\n"; 
@@ -91,12 +79,12 @@ sub Init
 		{
             $dirname = MTT::DoCommand::cwd();
             $filename = "$filename";
-        } else {
+        } else 
+		{
             $dirname = dirname($filename) if (! defined($dirname));
             $filename = basename($filename);
         }
 
-        # Make sure we have a directory to write to
         MTT::Files::safe_mkdir($dirname);
         MTT::Files::safe_mkdir("$dirname/html");
 
@@ -106,13 +94,9 @@ sub Init
         Debug("File reporter initialized (<stdout>)\n");
     }
 
-
-    # Initialize nail notification for summary 
-
     $to = Value($ini, $section, "email_to");
     if ($to) 
 	{
-        # Setup the mailer
         my $agent = Value($ini, $section, "email_agent");
         if (!MTT::Mail::Init($agent)) 
 		{
@@ -161,23 +145,15 @@ sub Submit
     my ($info, $entries) = @_;
     Debug("File reporter\n");
 
-    # Push entries into the global results array
     push(@results, $entries);
 
 	if ($MTT::Globals::Values->{save_intermediate_report})
 	{
 		return;
 	}
-    # TextFile output has its own columns-width
-    my $save_columns = $Text::Wrap::columns;
-    $Text::Wrap::columns = $textwrap
-        if ($textwrap);
 
     # Do a detail report
     _detail_report($info, $entries);
-
-    $Text::Wrap::columns = $save_columns
-        if ($textwrap);
 }
 
 
@@ -193,7 +169,6 @@ sub _summary_report
     	print("\nMTT Results Summary" . $MTT::Globals::Values->{description} . ", started at: " . $MTT::Globals::Values->{start_time} . " report generated at: " . localtime() . "\n");
 	    print $summary_header;
     }
-    my $table = Text::TabularDisplay->new(("Phase","Section","MPI Version", "Duration","Pass","Fail","Time out","Skip","Detailed report"));
     my ($total_fail, $total_succ, $total_duration, $html_table_content) = (0,0,0,"");
     foreach my $results (@$results_arr) 
 	{
@@ -245,10 +220,8 @@ sub _summary_report
                     $rep_file           =~ s/\.txt/\.html/g;
 
                     my $duration_human  = _convert_duration($mpi_stat->{duration});
-                    $table->add($phase, $section, $mpi_version, $duration_human, $mpi_stat->{pass}, $mpi_stat->{fail}, 
-                        $mpi_stat->{timed}, $mpi_stat->{skipped}, $rep_file);
                     $html_table_content .= add_tr($phase, $section, $mpi_version, $duration_human, $mpi_stat->{pass}, $mpi_stat->{fail},
-                        $mpi_stat->{timed}, $mpi_stat->{skipped}, $rep_file);
+                        $mpi_stat->{timed}, $mpi_stat->{skipped}, $rep_file, $dirname);
                 }
             }
         }
@@ -264,37 +237,22 @@ sub _summary_report
 
     ";
 
-    my $body;
-    if ($MTT::Globals::Internals->{is_stopped_on_break_threshold})
-	{
-        $body = join("\n", ($summary_header, $table->render, $perf_stat, $MTT::Globals::Internals->{stopped_on_break_threshold_message}, $summary_footer));
-    }
-    else
-	{
-        $body = join("\n", ($summary_header, $table->render, $perf_stat, $summary_footer));
-    }
-    if (!$flush_mode || $flush_mode eq "finalize")
-	{   
-    	print $body;
-    }
-
-    #_output_results($file, $body, $flush_mode);
-
     # Wrte html report to a file
     my $html_body = get_html_summary_report_template();
     $html_body =~ s/%TESTS_RESULTS%/$html_table_content/g;
-    my $html_totals = "<td>$total_tests</td><td>$total_fail</td><td>$total_succ</td><td>$total_duration_human</td>\n";
+    my $html_totals = "<td style=\"background:#eeeee0;\"  >$total_tests</td><td style=\"background:#eeeee0;\"  >$total_fail</td><td style=\"background:#eeeee0;\"  >$total_succ</td><td style=\"background:#eeeee0;\"  >$total_duration_human</td>\n";
     $html_body =~ s/%TOTALS%/$html_totals/g;
     my $html_filename = "All_phase-summary.html";
     my $html_file = "$dirname/" . MTT::Files::make_safe_filename("$html_filename");
-    _output_results($html_file, $html_body,$flush_mode);
+    
+	_output_results($html_file, $html_body,$flush_mode);
 
 	if (!$flush_mode || $flush_mode eq "finalize")
 	{
 	    if ( $to ) 
 		{
 	        # Evaluate the email subject header and from
-	        my ($subject, $body_footer);
+			my ($subject, $body_footer);
 	        my $subject_tmpl = Value($ini, $section, "email_subject");
 	        my $body_footer_tmpl = Value($ini, $section, "email_footer");
 	        if ($MTT::Globals::Values->{extra_subject})
@@ -317,20 +275,16 @@ sub _summary_report
 	        my $str = "\$body_footer = \"$body_footer_tmpl\"";
 	        eval $str;
 	
-	        my $str = "\$subject = \"$subject_tmpl\"";
-	        eval $str;
-	        Verbose(">> Subject: $subject\n");
-	
-	        # Now send it
-	        if ( $detailed_report ) 
-			{
-	            my @reports = _get_report_filenames($results_arr);
-	            Verbose(">> Sending detailed reports: @reports\n");
-	            MTT::Mail::Send($subject, $to, $from, $body . $body_footer, @reports);
-	        } else 
-			{
-	            MTT::Mail::Send($subject, $to, $from, $body . $body_footer);
-	        }
+			my $str = "\$subject = \"$subject_tmpl\"";
+			eval $str;
+			#Verbose(">> Subject: $subject\n");
+
+			open MAIL, "|mutt -e \"set content_type=text/html\"  -s \"$subject\" --  $to" || die "Could not open pipe to output e-mail\n";
+			print MAIL $html_body;
+			close MAIL;
+
+
+			#}
 	
 	        Verbose(">> Reported to e-mail: $to\n");
 	    }
@@ -362,8 +316,6 @@ sub _detail_report
     my ($info, $entries, $flush_mode) = @_;
     my $file;
 
-    my $table = Text::TabularDisplay->new(("Field", "Value"));
-
     my $separator = { " " => " " };
     my %existing_report_file = ();
 
@@ -384,16 +336,14 @@ sub _detail_report
             # Make timestamps human-readable
            	$title = _convert_timestamps($title);
 
-            _add_to_tables($table, \$html_table, $title, undef);
-            _add_to_table($table, $separator, undef);
+			_add_to_tables(\$html_table, $title, undef);
 
             foreach my $report (sort _bystatus @$section_obj) 
 			{
 				$file   = _get_filename($report, $section);
 				$report = _convert_timestamps($report);
 				$report = _convert_array_refs($report);
-				_add_to_tables($table, \$html_table, $report, $title);
-				_add_to_table($table, $separator, undef);
+				_add_to_tables(\$html_table, $report, $title);
             }
 
             # Write the report to a file (or stdout)
@@ -413,10 +363,7 @@ sub _detail_report
             }
             $html_body .= $html_table;
  
-
            	_output_results($html_file, $html_body, $flush_mode);
-
-			#_output_results($file, join("\n", ($detail_header, $table->render, $detail_footer)), $flush_mode);
 
         }
         foreach my $rep_file (keys %existing_report_file) 
@@ -469,7 +416,7 @@ sub _get_replicated_fields {
 # (exclude_hash items will not be added)
 sub _add_to_tables 
 {
-    my($table, $htable_ref, $include_hash, $exclude_hash) = @_;
+    my($htable_ref, $include_hash, $exclude_hash) = @_;
 
     # Skip over database fields that will have
     # *no* meaning to the MTT operator
@@ -498,8 +445,6 @@ sub _add_to_tables
 
         if (! defined($exclude_hash->{$key})) 
 		{
-			#$table->add($key, wrap('', '', $include_hash->{$key}));
-            $table->add($key, $include_hash->{$key});
             if (defined $htable_ref) 
 			{
                 if (!$has_result ) 
@@ -544,12 +489,6 @@ sub _add_to_tables
 	{
         $$htable_ref .= get_html_phase_report_table_stop_template();
     }
-}
-
-sub _add_to_table 
-{
-    my($table, $include_hash, $exclude_hash) = @_;
-    return _add_to_tables($table, undef, $include_hash, $exclude_hash);
 }
 
 # Output results to a file or 
@@ -706,14 +645,14 @@ sub _convert_duration
 
 sub add_tr
 {
-    my ($phase, $section, $mpi_version, $duration_human, $pass, $fail, $timed, $skipped, $rep_file_url) = @_;
-    my $trClass = "Passed";
+    my ($phase, $section, $mpi_version, $duration_human, $pass, $fail, $timed, $skipped, $rep_file_url, $dir) = @_;
+    my $trClass;
     if ($fail or $timed) {
-        $trClass = "Error";
+        $trClass = 'font-weight:bold; color:red;';
     } 
 
-    my $tr = "<tr valign='top' class='$trClass'>\n";
-    $tr .= "<td><a href='$rep_file_url'>$phase</a></td><td>$section</td><td>$mpi_version</td><td>$duration_human</td><td>$pass</td><td>$fail</td><td>$timed</td><td>$skipped</td>\n</tr>\n";
+    my $tr = "<tr style=\"background:\#eeeee0; $trClass\"  valign='top'>\n";
+    $tr .= "<td ><a href='http://bgate.mellanox.com/$dir/$rep_file_url'>$phase</a></td><td>$section</td><td>$mpi_version</td><td >$duration_human</td><td>$pass</td><td>$fail</td><td>$timed</td><td>$skipped</td>\n</tr>\n";
 
     return $tr;
 }
@@ -726,11 +665,11 @@ sub get_css_template
     <head>
     <style type="text/css" media=screen>
     body {
-    font:normal 68% verdana,arial,helvetica;
+    font:normal 100% verdana,arial,helvetica;
     color:#000000;
     }
     table tr td, table tr th {
-    font-size: 68%;
+    font-size: 73%;
     }
     table.details tr th{
     font-weight: bold;
@@ -779,7 +718,6 @@ sub get_css_template
 
 sub get_html_summary_report_template
 {
-    my $css = get_css_template();
 	my $values_replace = {};
 	$values_replace->{'REPORT_DATE'} =  `date +%F` ." ". `date +%k:%M:%S`;
 	$values_replace->{'OFED_VERSION'} = `ofed_info -s`;
@@ -817,27 +755,27 @@ sub get_html_summary_report_template
     <hr size="1">
 	</tbody></table>
     <h2>Additional info</h2>
-    <table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
-    <tbody><tr valign="top">
+    <table border="0" cellpadding="5" cellspacing="2" width="95%">
+    <tbody><tr style="font-weight: bold; text-align:left; background:#a6caf0;"  valign="top">
     <th>report date</th><th>product</th><th>ofed version</th><th nowrap="">cluster name</th>
     </tr>
-    <tr valign="top" class="Pass">
-    <td>%REPORT_DATE%</td><td>%PRODUCT%</td><td>%OFED_VERSION%</td><td>%CLUSTER_NAME%</td>
+    <tr style="font-weight: bold; text-align:left; background:#a6caf0;"  valign="top" class="Pass">
+    <td style="background:#eeeee0;"  >%REPORT_DATE%</td><td style="background:#eeeee0;"  >%PRODUCT%</td><td style="background:#eeeee0;"  >%OFED_VERSION%</td><td style="background:#eeeee0;"  >%CLUSTER_NAME%</td>
     </tr>
     </tbody></table>
     <h2>Summary</h2>
-    <table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
-    <tr valign="top">
+    <table border="0" cellpadding="5" cellspacing="2" width="95%">
+    <tr style="font-weight: bold; text-align:left; background:#a6caf0;"  valign="top">
     <th>Phase</th><th>Section</th><th>MPI Version</th><th>Duration</th><th>Pass</th><th>Fail</th><th>Time Out</th><th>Skip</th>
     </tr>
     %TESTS_RESULTS%
     </table>
     <h2>Totals</h2>
-    <table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
-    <tr valign="top">
+    <table border="0" cellpadding="5" cellspacing="2" width="95%">
+    <tr style="font-weight: bold; text-align:left; background:#a6caf0;"  valign="top">
     <th>Tests</th><th>Failed</th><th>Passed</th><th nowrap>Duration</th>
     </tr>
-    <tr valign="top" class="Pass">
+    <tr valign="top">
     %TOTALS%
     </tr>
     </table>
@@ -851,15 +789,15 @@ sub get_html_summary_report_template
 		$tmp2 = $values_replace->{$key};
 		$tmpl =~ s/%$key%/$tmp2/;
 	}
-    return $css . $tmpl;
+    return $tmpl;
 }
 
 
 sub get_html_phase_report_table_start_template
 {
     my $tmpl = '
-    <table class="details" border="0" cellpadding="5" cellspacing="2" width="95%">
-    <tr valign="top">
+    <table border="0" cellpadding="5" cellspacing="2" width="95%">
+    <tr style="font-weight: bold; text-align:left; background:#a6caf0;"  valign="top">
     <th width="20%">Field</th><th>Value</th>
     </tr>
     ';
@@ -874,14 +812,14 @@ sub get_html_phase_report_table_stop_template
 }
 sub get_html_phase_report_template_start
 {
-    my $css = get_css_template();
+	my $css = get_css_template();
     my $tmpl = '
     <title>Phase report</title>
     <h1>MTT Report for single phase execution</h1>
     <hr size="1">
     <h2>Report</h2>
     ';
-    return $css . $tmpl;
+    return $css .  $tmpl;
 }
 
 sub get_html_phase_report_template_stop
