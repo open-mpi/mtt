@@ -117,7 +117,8 @@ sub Init {
 	
 	if($enable_mongo == 1)
 	{
-		$conn = MongoDB::Connection->new(host => $url);
+		eval "\$conn = MongoDB::Connection->new(host => \$url);";
+		
 		if(defined($conn))
 		{
 			$db = $conn->mlnx_mtt;
