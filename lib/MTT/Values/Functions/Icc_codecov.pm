@@ -98,7 +98,8 @@ sub get_codecov_result
 	my $codecov_reports;
 	if($enable_mongo == 1)
 	{
-		$conn = MongoDB::Connection->new(host => $dbase_url);
+		#$conn = MongoDB::Connection->new(host => $dbase_url);
+		eval "\$conn = MongoDB::Connection->new(host => \$dbase_url);";
 		$db = $conn->mlnx_mtt;
 		$codecov_reports = $db->Coverage;
 	}
