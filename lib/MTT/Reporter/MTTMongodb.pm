@@ -117,7 +117,16 @@ sub Init {
 	
 	if($enable_mongo == 1)
 	{
-		eval "\$conn = MongoDB::Connection->new(host => \$url);";
+		my $flag;
+		eval "\$conn = MongoDB::Connection->new(host => \$url);
+			 \$flag=1";
+		if(defined($flag))
+		{
+			$conn = MongoDB::Connection->new(host => $url);
+		}else
+		{
+			$conn = undef;
+		}
 		
 		if(defined($conn))
 		{

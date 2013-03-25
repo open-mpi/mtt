@@ -99,9 +99,19 @@ sub get_codecov_result
 	if($enable_mongo == 1)
 	{
 		#$conn = MongoDB::Connection->new(host => $dbase_url);
-		eval "\$conn = MongoDB::Connection->new(host => \$dbase_url);";
-		$db = $conn->mlnx_mtt;
-		$codecov_reports = $db->Coverage;
+		my $flag;
+		eval "\$conn = MongoDB::Connection->new(host => \$dbase_url);
+			 \$flag=1";
+		if(defined($flag))
+		{
+			$conn = MongoDB::Connection->new(host => $url);
+			$db = $conn->mlnx_mtt;
+			$codecov_reports = $db->Coverage;
+		}else
+		{
+			$enable_mongo = 0;
+			$conn = undef;
+		}
 	}
 	my $hash_to_insert = {};
 	opendir DIR,"$codecov_dir" or (Warning("Icc codecov: Cannot open codeocdir: $codecov_dir\n") and return 0);
