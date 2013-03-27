@@ -104,7 +104,7 @@ sub get_codecov_result
 			 \$flag=1";
 		if(defined($flag))
 		{
-			$conn = MongoDB::Connection->new(host => $url);
+			$conn = MongoDB::Connection->new(host => $dbase_url);
 			$db = $conn->mlnx_mtt;
 			$codecov_reports = $db->Coverage;
 		}else
