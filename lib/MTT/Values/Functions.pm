@@ -2257,6 +2257,29 @@ sub get_gcc_version {
 
 #--------------------------------------------------------------------------
 
+# Return the version of the Clang compiler
+sub get_clang_version {
+    Debug("&get_clang_version\n");
+    my $clang = shift;
+    my $ret = "unknown";
+
+    $clang = "clang"
+        if (!defined($clang));
+    if (open CLANG, "$clang --version|") {
+        my $str = <CLANG>;
+        close(CLANG);
+        chomp($str);
+
+        my @vals = split(" ", $str);
+        $ret = $vals[2];
+    }
+    
+    Debug("&get_clang_version returning: $ret\n");
+    return $ret;
+}
+
+#--------------------------------------------------------------------------
+
 # Return the version of the Intel C compiler
 sub get_icc_version {
     Debug("&get_icc_version\n");
