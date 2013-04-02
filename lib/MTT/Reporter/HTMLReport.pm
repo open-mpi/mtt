@@ -40,13 +40,10 @@ my $written_files;
 my @results;
 
 # user specified headers and footers
-my $summary_header;
-my $summary_footer;
-my $detail_header;
-my $detail_footer;
+my $header;
+my $footer;
 
 # wordwrap pref for reports
-my $textwrap;
 
 # global ini variables
 my ($ini, $section);
@@ -63,11 +60,8 @@ sub Init
 {
     ($ini, $section) = @_;
 
-    $summary_header = Value($ini, $section, "textfile_summary_header") . "\n"; 
-    $summary_footer = Value($ini, $section, "textfile_summary_footer") . "\n"; 
-    $detail_header  = Value($ini, $section, "textfile_detail_header ") . "\n"; 
-    $detail_footer  = Value($ini, $section, "textfile_detail_footer ") . "\n"; 
-    $textwrap       = Value($ini, $section, "textfile_textwrap"); 
+    $header = Value($ini, $section, "header") . "\n"; 
+    $footer = Value($ini, $section, "footer") . "\n"; 
     $filename       = Value($ini, $section, "textfile_filename"); 
     $dirname        = Value($ini, $section, "textfile_dirname"); 
 	$domain         = Value($ini, "mtt", "web_url");
@@ -178,7 +172,7 @@ sub _summary_report
 	if (!$flush_mode || $flush_mode eq "finalize")
 	{
     	print("\nMTT Results Summary" . $MTT::Globals::Values->{description} . ", started at: " . $MTT::Globals::Values->{start_time} . " report generated at: " . localtime() . "\n");
-	    print $summary_header;
+	    print $header;
     }
     my ($total_fail, $total_succ, $total_duration, $html_table_content) = (0,0,0,"");
     foreach my $results (@$results_arr) 
@@ -253,6 +247,7 @@ sub _summary_report
     $html_body =~ s/%TESTS_RESULTS%/$html_table_content/g;
     my $html_totals = "<td style=\"background:#eeeee0;\"  >$total_tests</td><td style=\"background:#eeeee0;\"  >$total_fail</td><td style=\"background:#eeeee0;\"  >$total_succ</td><td style=\"background:#eeeee0;\"  >$total_duration_human</td>\n";
     $html_body =~ s/%TOTALS%/$html_totals/g;
+	$html_body .= $footer;
     my $html_filename = "All_phase-summary.html";
     my $html_file = "$dirname/" . MTT::Files::make_safe_filename("$html_filename");
     
@@ -794,6 +789,7 @@ sub get_html_summary_report_template
     </body>
     </html>
     ';
+	$tmpl = $header . $tmpl;
 	my $tmp2;
 	foreach my $key (keys %{$values_replace})
 	{
