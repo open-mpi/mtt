@@ -373,10 +373,12 @@ sub _summary_report {
             }
 	        my $from = Value($ini, $section, "email_from");
 	        my $detailed_report = Logical($ini, $section, "email_detailed_report");
+	        my $detailed_report_onfail = 0;
 	
 	        my $overall_mtt_status = "success";
 	        if ( $total_fail > 0 ) {
 	            $overall_mtt_status = "failed";
+	            $detailed_report_onfail = Logical($ini, $section, "email_detailed_report_onfail");
 	        }
 	        my $str = "\$body_footer = \"$body_footer_tmpl\"";
 	        eval $str;
@@ -386,7 +388,7 @@ sub _summary_report {
 	        Verbose(">> Subject: $subject\n");
 	
 	        # Now send it
-	        if ( $detailed_report ) {
+	        if ( $detailed_report || $detailed_report_onfail ) {
 	            my @reports = _get_report_filenames($results_arr);
 	            Verbose(">> Sending detailed reports: @reports\n");
 	            MTT::Mail::Send($subject, $to, $from, $body . $body_footer, @reports);
