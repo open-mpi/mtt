@@ -158,7 +158,7 @@ sub Init {
 	$path = MTT::Values::Value($ini, "MTT", 'xml_dir');
 	$scratch_url = MTT::Values::Value($ini, "MTT", 'scratch_url');
 	$default_form = { product => 'mttmongodb', version => '2.1'};
-	$submit_results = MTT::Values::Value( $ini, "Reporter: mongo data base", 'submit_all_results' );
+	$submit_results = MTT::Values::Value( $ini, $section, 'submit_all_results' );
 	$submit_failed_results = MTT::Values::Value( $ini, "Reporter: mongo data base", 'submit_failed_results' );
 	$ini_basename = MTT::Values::Value($ini, "MTT", 'INI_BASENAME');
 	$scratch_root = MTT::Values::Functions::scratch_root();
