@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 #
 # Copyright (c) 2012 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2013 Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -11,6 +12,9 @@
 package MTT::MPI::Install::Noop;
 
 use strict;
+
+use MTT::FindProgram;
+use MTT::Messages;
 
 #--------------------------------------------------------------------------
 
@@ -41,10 +45,11 @@ sub Install {
 
         # OMPI 1.7 (and higher) refer to "bindings:mpif.h".  Prior
         # versions refer to "bindings:f77".
+        my $tmp;
         $tmp = &{$func}($ret->{bindir}, $ret->{libdir}, "f77");
         $tmp = &{$func}($ret->{bindir}, $ret->{libdir}, "mpif.h")
             if (!$tmp);
-        $ret->{mpifh_bindings} = $ret->{f77_bindings} = $tmp
+        $ret->{mpifh_bindings} = $ret->{f77_bindings} = $tmp;
         Debug("Have mpif.h bindings: $ret->{mpifh_bindings}\n"); 
 
         # OMPI 1.7 (and higher) refer to "bindings:use_mpi".  Prior
