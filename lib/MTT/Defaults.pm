@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2013 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2009      High Performance Computing Center Stuttgart, 
 #                         University of Stuttgart.  All rights reserved.
 # $COPYRIGHT$
@@ -45,7 +45,7 @@ our $System_config = {
     known_resource_manager_names => [ "slurm", "tm", "loadleveler", "sge",
                                       "alps", "none", "unknown" ],
     known_network_names => [ "tcp", "udp", "ethernet", "gm", "mx", "verbs",
-                             "udapl", "psm", "elan", "portals", "shmem",
+                             "udapl", "psm", "elan", "portals", "shmem", "usnic",
                              "loopback", "unknown" ],
 };
 
