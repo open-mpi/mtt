@@ -20,7 +20,7 @@ use MTT::DoCommand;
 
 sub Get {
     my $ret;
-    $ret->{version} = MTT::Values::RandomString(10);
+    $ret->{version} = "noop-" . MTT::Values::RandomString(10);
     $ret->{test_result} = MTT::Values::PASS;
     $ret->{have_new} = 1;
     $ret->{result_message} = "Success";
