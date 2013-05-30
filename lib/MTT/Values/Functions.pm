@@ -1717,7 +1717,9 @@ sub hostfile_hosts {
 
 # Return "1" if we have a hostfile; "0" otherwise
 sub have_hostlist {
-    my $ret = (defined $MTT::Globals::Values->{hostlist}) ? "1" : "0";
+    my $ret = 
+        (defined $MTT::Globals::Values->{hostlist} &&
+         $MTT::Globals::Values->{hostlist} ne "") ? "1" : "0";
     Debug("&have_hostlist: returning $ret\n");
     return $ret;
 }
@@ -1783,6 +1785,7 @@ sub have_ini_max_procs {
     Debug("&have_ini_max_procs\n");
 
     return (defined($MTT::Globals::Values->{max_np}) &&
+            int($MTT::Globals::Values->{max_np}) > 0 &&
             exists($MTT::Globals::Values->{max_np})) ? "1" : "0";
 }
 
