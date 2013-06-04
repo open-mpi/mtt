@@ -60,12 +60,11 @@ sub DoCommand {
 sub _kill_proc_one {
     my ($pid) = @_;
 
-
     # See if the proc is alive first
     my $kid;
     kill(0, $pid);
     $kid = waitpid($pid, WNOHANG);
-    return if (-1 == $kid);
+    return "mpirun died right at end of timeout" if (-1 == $kid);
 
     # Try an easy kill
     kill("TERM", $pid);
@@ -75,19 +74,19 @@ sub _kill_proc_one {
     # what the return status is -- just return if a) the process no
     # longer exists (i.e., we get -1 back from waitpid), or we
     # successfully killed it (i.e., we got the PID back from waitpid).
-    return if (0 != $kid);
+    return "MTT killed mpirun via SIGTERM (1)" if (0 != $kid);
     Verbose("** Kill TERM didn't work!\n");
 
     # Nope, that didn't work.  Sleep a few seconds and try again.
     sleep(1);
     $kid = waitpid($pid, WNOHANG);
-    return if (0 != $kid);
+    return "MTT killed mpirun via SIGTERM (2)" if (0 != $kid);
     Verbose("** Kill TERM (more waiting) didn't work!\n");
 
     # That didn't work either.  Try SIGINT;
     kill("INT", $pid);
     $kid = waitpid($pid, WNOHANG);
-    return if (0 != $kid);
+    return "MTT killed mpirun via SIGINT" if (0 != $kid);
     Verbose("** Kill INT didn't work!\n");
 
     # Nope, that didn't work.  Sleep a few seconds and try again.
@@ -97,10 +96,12 @@ sub _kill_proc_one {
     Verbose("** Kill INT (more waiting) didn't work!\n");
 
     # Ok, now we're mad.  Be violent.
+    my $count = 0;
     while (1) {
         kill("KILL", $pid);
+        ++$count;
         $kid = waitpid($pid, WNOHANG);
-        return if (0 != $kid);
+        return "MTT killed mpirun via $count SIGKILLs" if (0 != $kid);
         Verbose("** Kill KILL didn't work!\n");
         sleep(1);
     }
@@ -113,7 +114,7 @@ sub _kill_proc {
     foreach my $p (descendant_processes($pid)) {
         _kill_proc_one($p);
     }
-    _kill_proc_one($pid);
+    return _kill_proc_one($pid);
 }
 
 #--------------------------------------------------------------------------
@@ -439,6 +440,7 @@ sub Cmd {
     my $last_over = 0;
     my $partial_out;
     my $partial_err;
+    my $timeout_message;
     while ($done > 0) {
         if($pause_file) {
             my $paused_time = localtime();
@@ -544,11 +546,10 @@ sub Cmd {
                         $sleep_time
                     );
 
-
                     $done = 0;
-                    _kill_proc($pid);
+                    $timeout_message = _kill_proc($pid);
                 } else {
-                    _kill_proc($pid);
+                    $timeout_message = _kill_proc($pid);
                 }
 
                 # We don't care about the exit status if we timed out
@@ -589,6 +590,8 @@ sub Cmd {
     } else {
         $ret->{exit_status} = 0;
         $msg .= "timed out";
+        $msg .= " $timeout_message"
+            if (defined($timeout_message));
     }
     $MTT::DoCommand::last_exit_status = $ret->{exit_status};
 
@@ -628,7 +631,11 @@ sub Cmd {
         if (!$merge_output);
 
     # Tack on a backtrace, if we got one
-    $ret->{result_stdout} .= $backtrace;
+    $ret->{result_stdout} .= $backtrace
+        if ($got_backtrace);
+    # Tack on timeout message, if we got one
+    $ret->{result_stdout} .= $timeout_message
+        if (defined($timeout_message));
 
     return $ret;
 }
