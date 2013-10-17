@@ -124,12 +124,16 @@ sub find_network {
     # Look for a btl
     my @networks;
     if ($find_btl && $str =~ m/-mca\s+btl\s+(\S+)\s/) {
-        @networks = split(/,/, $1);
+        # Only take it if it's not negated.
+        @networks = split(/,/, $1)
+            if ($1 !~ /^\^/);
     }
 
     # Look for an mtl
     elsif ($find_mtl && $str =~ m/-mca\s+mtl\s+(\S+)\s/) {
-        push(@networks, $1);
+        # Only take it if it's not negated.
+        push(@networks, $1)
+            if ($1 !~ /^\^/);
     }
 
     # Translate to the MTT-neutral names
