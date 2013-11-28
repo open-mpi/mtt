@@ -270,11 +270,9 @@ sub Submit {
 					my $sim_sec_name = $form->{'modules'}->{'MpiInfo'}->{'mpi_name'};
 
 					my $product_version =  MTT::Values::Value($ini, "mpi install: $sim_sec_name", 'product_version');
-					$product_version =~ m/(\d+\.)+\d+/;
-					Debug("MongoDB reporter: product version = $&\n");
-					Debug("MongoDB reporter: simple section name = $sim_sec_name\n");
-					$form->{'modules'}->{'product'}->{'version'} = $&;
-					$form->{'modules'}->{'product'}->{'name'} = $ini_basename;
+					$form->{'modules'}->{'product'}->{'version'} = $product_version;
+					$form->{'modules'}->{'product'}->{'name'} = $sim_sec_name;
+					$form->{'modules'}->{'product'}->{'ini'} = $ini_basename;
 					$form->{'modules'}->{'scratch'}->{'url'} = $scratch_url . '/';
 					$form->{'modules'}->{'scratch'}->{'root'} = $scratch_root;
 					$form->{'modules'}->{'slurm_id'} = $slurm_job_id;
@@ -451,6 +449,7 @@ sub _process_phase_test_build
     return 0;                      
 }
 
+
 #--------------------------------------------------------------------------
 
 sub _process_phase_test_run 
@@ -560,7 +559,7 @@ sub _process_phase_test_run
     $phase_form->{data_latency_max} = $report->{latency_max} if (exists( $report->{latency_max} ));
     $phase_form->{data_bandwidth_min} = $report->{bandwidth_min} if (exists( $report->{bandwidth_min} ));
     $phase_form->{data_bandwidth_avg} = $report->{bandwidth_avg} if (exists( $report->{bandwidth_avg} ));
-    $phase_form->{data_bandwidth_min} = $report->{bandwidth_min} if (exists( $report->{bandwidth_min} ));            
+    $phase_form->{data_bandwidth_max} = $report->{bandwidth_max} if (exists( $report->{bandwidth_max} ));            
 
     # filling dynamic fields with prefix "custom_"
 
@@ -569,27 +568,27 @@ sub _process_phase_test_run
     while ( $phase_form->{cmdline} =~ m/\s+-[x|e]\s+(custom_\w+)\=([^\s\"\']+)/g){
         my $value = $2;
         eval "\$value = \"$value\"";
-        $phase_form->{$1} = $value;
+        $phase_form->{$1} = trim($value);
     }
     while ( $phase_form->{cmdline} =~ m/\s+-[x|e]\s+(custom_\w+)\=\"([^\"]*)\"/g ){
         my $value = $2;
         eval "\$value = \"$value\"";
-        $phase_form->{$1} = $value;
+        $phase_form->{$1} = trim($value);
     }
     while ( $phase_form->{cmdline} =~ m/\s+-[x|e]\s+\"(custom_\w+)\=([^\"]*)\"/g){
         my $value = $2;
         eval "\$value = \"$value\"";
-        $phase_form->{$1} = $value;
+        $phase_form->{$1} = trim($value);
     }
     while ( $phase_form->{cmdline} =~ m/\s+-[x|e]\s+(custom_\w+)\=\'([^\']*)\'/g ){
         my $value = $2;
         eval "\$value = \"$value\"";
-        $phase_form->{$1} = $value;
+        $phase_form->{$1} = trim($value);
     }
     while ( $phase_form->{cmdline} =~ m/\s+-[x|e]\s+\'(custom_\w+)\=([^\']*)\'/g){
         my $value = $2;
         eval "\$value = \"$value\"";
-        $phase_form->{$1} = $value;
+        $phase_form->{$1} = trim($value);
     }
     
     # filling cached fields with prefix "cached_"
@@ -705,14 +704,14 @@ sub _fill_cluster_info {
                 $info_form->{node_count} = $node_count;     
             }       
 
-			my $clust_name = `hostname`;
-			$clust_name =~ m/\D+/;
-			$info_form->{cluster_name} = $&;
+			$info_form->{cluster_name} = `hostname -s`;
+			$info_form->{cluster_name} =~ s/\d+//g;
 
 			open FILE, '/proc/cpuinfo';
 			my $cache;
 			my $ncpu=0;	
 			my $mhz;
+            my $model;
 			while (<FILE>) 
 			{	
 				if ($_ =~ m/processor/)
@@ -728,6 +727,10 @@ sub _fill_cluster_info {
 				{
 					$_ =~ m/\d+[\.\,]*\d*\D*/;
 					$cache = $&;
+				}
+				if($_ =~m/model name\s*: /)
+				{
+					$model = $_;
 				}
 			}
 			close FILE;
@@ -762,44 +765,20 @@ sub _fill_cluster_info {
 			$info_form->{node_ncpu} = $ncpu;
 			$info_form->{node_cache} = $cache;
 			$info_form->{node_mhz} = $mhz;
+			$info_form->{node_cpu_model} = $model;
 			$info_form->{node_os_kernel} = `uname -s`;
 			$info_form->{node_os_release} = `uname -r -v`;
 			$info_form->{node_arch} = `uname -p`;
-			$info_form->{ofed_info} = `ofed_info | head -1`;
-			
-			my $cap_output = `ibv_devinfo | head -3`;
-			if($cap_output =~m/fw_ver:\s+\d+([\.\,]\d+)*/)
-			{	
-				$cap_output = $&;
-				$cap_output =~ m/\d+([\.\,]\d+)*/;
-			    $info_form->{ib_card_firmware_version}=$&;
-			}
-			my $cap_output = `ibv_devinfo -v`;
-			if($cap_output =~m/active_width:\s+\d+X/)
-			{
-				$cap_output = $&;
-				$cap_output =~ m/\d+/;
-			    if($& eq "1")
-				{
-					$info_form->{card_type} = 'sdr';
-				}elsif($& eq "2")
-				{
-					$info_form->{card_type} = 'ddr';
-							
-				}elsif($& eq "4")
-				{
-					$info_form->{card_type} = 'qdr';
+			$info_form->{ofed_info} = `ofed_info -s`;
+            $info_form->{ibv_devinfo} = `ibv_devinfo -v`;
+            $info_form->{ibv_devinfo_list} = `ibv_devinfo -l`;
+            $info_form->{lsb_release} = `lsb_release -d`;
 
-							
-				}elsif($& eq "14")
-				{
-					$info_form->{card_type} = 'fdr';
-				}else
-				{
-					$info_form->{card_type} = 'unknow';
-				}
-
-			}
+            # support dynamic fields
+            foreach my $tag_param ($ini->Parameters("ClusterInfo")) {
+                my $tag_value = MTT::Values::Value( $ini, "ClusterInfo", $tag_param);
+                $info_form->{$tag_param} = $tag_value;
+            }
 
     }
 	print "MongoDB reporter: exiting from _fill_cluster_info\n";
@@ -842,23 +821,6 @@ sub _fill_mpi_info {
         } else {
             my $mpi_install = $MTT::MPI::installs->{$mpiget_section}->{$report->{mpi_version}}->{$mpi_section};
             $mpi_path = $mpi_install->{installdir}; 
-        }
-
-        my $error = 0;
-        my $cmd = "LD_LIBRARY_PATH=" . $mpi_path . "/lib " . $mpi_path . "/bin/mpirun --version";
-        open(SHELL, "$cmd 2>&1|") || ($error = 1);
-        $info_form->{oma_version} = "";
-        if ($error == 0) {
-            while (<SHELL>) {
-                if ( $_ =~ m/OMA\s+([r\d\.-]+)\s/) {
-                    $info_form->{oma_version} = $1;
-                    last;
-                }
-            }
-            close SHELL;
-        } # $error = 0
-        else {
-            $error = 0;
         }
 
         # Add host file to "copy list"
@@ -956,5 +918,13 @@ sub _fill_compiler_info {
         $info_form->{compiler_version} = $report->{compiler_version} if (defined($report->{compiler_version}));
    }
     return $info_form;
+}
+
+sub  trim 
+{ 
+    my $s = shift; 
+    $s =~ s/^\s+|\s+$//g; 
+    $s =~ s/['"]+//g; 
+    return $s 
 }
 1;
