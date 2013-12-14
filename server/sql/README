@@ -1,6 +1,10 @@
 Notes for setting up and maintaining the MTT database:
 ----------------------------------------------------
 
+Yearly Tables Update Instructions:
+----------------------------------
+server/sql/support/README
+
 
 How to setup the MTT database:
 ----------------------------------------------------

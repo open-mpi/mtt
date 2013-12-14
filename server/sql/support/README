@@ -8,6 +8,9 @@ How to add new yearly tables to the PostgreSQL database.
 
 2) Create the SQL using the provided Perl scripts.
    See create-partitions.sh for how we did this in the past
+
+   ---NOTE---: use the yearly-table-update.pl script to help you with this step.
+
  -------------------
  shell$ ./create-partitions-mpi-install.pl 2012 XX >  2012-mpi-install.sql
  shell$ ./create-partitions-test-build.pl 2012 XX >  2012-test-build.sql
