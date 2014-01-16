@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2004 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -84,7 +84,7 @@ sub Get {
         if ($ret->{version} eq $ver && !$force) {
             $ret->{test_result} = MTT::Values::PASS;
             $ret->{have_new} = 0;
-            $ret->{result_message} = "Last version tested was the same (did not re-download)";
+            $ret->{result_message} = "Last version tested was the same";
             return $ret;
         }
     }
