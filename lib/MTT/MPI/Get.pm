@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2010 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2014 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -192,7 +192,11 @@ sub _do_get {
                                   $MTT::Globals::Internals->{mpi_get_name} .
                                   "." . $ret->{version});
         } else {
-            Verbose("   No new MPI sources\n");
+            if (defined($ret->{result_message})) {
+                Verbose("   No new MPI sources (use --force to re-download): $ret->{result_message}\n");
+            } else {
+                Verbose("   No new MPI sources (use --force to re-download)\n");
+            }
         }
     } else {
         Verbose("   Failed to get new MPI sources: $ret->{result_message}\n");

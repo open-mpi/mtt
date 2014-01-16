@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2014 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
 # Copyright (c) 2008      Mellanox Technologies.  All rights reserved.
 # $COPYRIGHT$
@@ -96,6 +96,7 @@ sub RunEngine {
     Verbose("   ###     " . sprintf("%4d", $argv_count_total) . " argv value(s)\n");
     Verbose("   ###     " . sprintf("%4d", $exec_count_total) . " test variant(s)\n");
     Verbose("   ###     " . sprintf("%4d", $variants_count_total) . " total mpirun command(s) to run\n");
+    Verbose("   ### Use --force to re-run any \"Skipped (already ran)\" tests\n");
     Verbose("   ###\n");
 	if (!$variants_count_total){
         my $footer = "";

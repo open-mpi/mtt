@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2010 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2014 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
 # 
@@ -133,7 +133,7 @@ sub _do_get {
                                    $MTT::Globals::Internals->{test_get_name},
                                    $MTT::Globals::Internals->{test_get_name});
         } else {
-            Verbose("   No new test sources\n");
+            Verbose("   No new test sources (use --force to re-get)\n");
         }
     } else {
         Verbose("   Failed to get new test sources: $ret->{result_message}\n");

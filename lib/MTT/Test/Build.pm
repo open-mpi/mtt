@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2010 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2014 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
 # Copyright (c) 2008      Mellanox Technologies.  All rights reserved.
 # $COPYRIGHT$
@@ -170,7 +170,7 @@ sub Build {
 									#if (!$force &&  defined(MTT::Util::does_hash_key_exist($MTT::Test::builds, qw/$mpi_get_key $mpi_version_key $mpi_install_key $simple_section/))) 
 									if (!$force &&  defined(MTT::Util::does_hash_key_exist($MTT::Test::builds, $mpi_get_key, $mpi_version_key, $mpi_install_key, $simple_section))) 
 									{
-                                        Verbose("   Already have a build for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section]\n");
+                                        Verbose("   Already have a build for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] (use --force to re-build)\n");
                                         next;
                                     }
 
