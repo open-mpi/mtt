@@ -33,6 +33,17 @@ sub Get {
 
     $ret->{have_new} = 0;
 
+    # If we already have these files, return
+    # success-but-have-no-new-sources.
+    if (-r "hello.c" && -r "ring.c" && 
+        -r "hello.cc" && -r "ring.cc" &&
+        -r "hello_mpifh.f90" && -r "ring_mpifh.f90" &&
+        -r "hello_usempi.f90" && -r "ring_usempi.f90" &&
+        -r "hello_usempif08.f90" && -r "ring_usempif08.f90") {
+        $ret->{test_result} = MTT::Values::PASS;
+        return $ret;
+    }
+
     #
     # C
     #
