@@ -1056,7 +1056,6 @@ sub test_prefix_pretty {
             my @tokens = split(" ", $item);
             my $res = $tokens[10] . "/$up1_name";
             if ( -d $res ) {
-                Verbose("Found link: $item\n");
                 Debug("&test_prefix_pretty returning: $res\n");
                 return $res;
             }
