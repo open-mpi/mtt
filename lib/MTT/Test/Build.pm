@@ -166,10 +166,7 @@ sub Build {
                                     # MPI installation.  Test
                                     # incrementally so that it doesn't
                                     # create each intermediate key.
-
-									#if (!$force &&  defined(MTT::Util::does_hash_key_exist($MTT::Test::builds, qw/$mpi_get_key $mpi_version_key $mpi_install_key $simple_section/))) 
-									if (!$force &&  defined(MTT::Util::does_hash_key_exist($MTT::Test::builds, $mpi_get_key, $mpi_version_key, $mpi_install_key, $simple_section))) 
-									{
+                                    if (!$force &&  defined(MTT::Util::does_hash_key_exist($MTT::Test::builds, $mpi_get_key, $mpi_version_key, $mpi_install_key, $simple_section))) {
                                         Verbose("   Already have a build for [$mpi_get_key] / [$mpi_version_key] / [$mpi_install_key] / [$simple_section] (use --force to re-build)\n");
                                         next;
                                     }
@@ -320,7 +317,10 @@ sub _do_build {
     $config->{bitness} = Value($ini, $section, "test_bitness", "bitness");
 
     # Unpack the source and find out the subdirectory name it created
+    my $prepare_source_passed = 1;
     $config->{srcdir} = _prepare_source($test_get);
+    $prepare_source_passed = 0
+        if (!$config->{srcdir} || !defined($config->{srcdir}));
 
     # We'll check for failure of this step later
     $config->{srcdir} = MTT::DoCommand::cwd();
@@ -410,12 +410,15 @@ sub _do_build {
     my $start = timegm(gmtime());
     my $start_time = time();
     my $ret;
-    if ($config->{srcdir}) {
+    if (!$prepare_source_passed) {
+        $ret->{test_result} = MTT::Values::FAIL;
+        $ret->{result_message} = "Preparing the test source failed -- see MTT client output for details";
+    } elsif ($config->{srcdir}) {
         $ret = MTT::Module::Run("MTT::Test::Build::$config->{build_module}",
                                 "Build", $ini, $mpi_install, $config);
     } else {
         $ret->{test_result} = MTT::Values::FAIL;
-        $ret->{test_result_message} = "Preparing the test source failed -- see MTT client output for details";
+        $ret->{result_message} = "Current working directory could not be found -- see MTT client output for details";
     }
     my $duration = time() - $start_time . " seconds";
             

@@ -570,7 +570,10 @@ sub _do_install {
 
     # Unpack the source and find out the subdirectory
     # name it created
+    my $prepare_source_passed = 1;
     $config->{srcdir} = _prepare_source($mpi_get);
+    $prepare_source_passed = 0
+        if (!$config->{srcdir} || !defined($config->{srcdir}));
     $config->{abs_srcdir} = MTT::DoCommand::cwd();
 
     # vpath mode (error checking was already done above)
@@ -609,8 +612,14 @@ sub _do_install {
     # Run the module
     my $start = timegm(gmtime());
     my $start_time = time;
-    my $ret = MTT::Module::Run("MTT::MPI::Install::$config->{module}",
-                               "Install", $ini, $section, $config);
+    my $ret;
+    if (!$prepare_source_passed) {
+        $ret->{test_result} = MTT::Values::FAIL;
+        $ret->{result_message} = "Preparing the test source failed -- see MTT client output for details";
+    } else {
+        $ret = MTT::Module::Run("MTT::MPI::Install::$config->{module}",
+                                "Install", $ini, $section, $config);
+    }
 
     my $duration = time - $start_time . " seconds";
 
