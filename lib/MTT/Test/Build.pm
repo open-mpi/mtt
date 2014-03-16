@@ -320,7 +320,7 @@ sub _do_build {
     my $prepare_source_passed = 1;
     $config->{srcdir} = _prepare_source($test_get);
     $prepare_source_passed = 0
-        if (!$config->{srcdir} || !defined($config->{srcdir}));
+        if (($config->{module} and ($config->{module} ne "Noop")) && (!$config->{srcdir} || !defined($config->{srcdir})));
 
     # We'll check for failure of this step later
     $config->{srcdir} = MTT::DoCommand::cwd();
