@@ -331,7 +331,7 @@ sub find_mca_params {
 
     # Check the environment for OMPI_MCA_* values
     foreach my $e (keys(%ENV)) {
-        Debug("Functions::MPI::OMPI: Checking env key: $e\n");
+        #Debug("Functions::MPI::OMPI: Checking env key: $e\n");
         if ($e =~ m/^OMPI_MCA_(\S+)/) {
             my $v = $ENV{"OMPI_MCA_$1"};
             push(@params, "--env-mca $1 $v");
@@ -339,7 +339,7 @@ sub find_mca_params {
     }
 
     $str = join(' ', @params);
-    Debug("Functions::MPI::OMPI: Returning MCA params $str\n");
+    #Debug("Functions::MPI::OMPI: Returning MCA params $str\n");
     $str;
 }
 
