@@ -573,7 +573,7 @@ sub _do_install {
     my $prepare_source_passed = 1;
     $config->{srcdir} = _prepare_source($mpi_get);
     $prepare_source_passed = 0
-        if (!$config->{srcdir} || !defined($config->{srcdir}));
+        if (!defined($config->{srcdir}) || !$config->{srcdir});
     $config->{abs_srcdir} = MTT::DoCommand::cwd();
 
     # vpath mode (error checking was already done above)
