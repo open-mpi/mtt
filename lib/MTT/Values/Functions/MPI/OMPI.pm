@@ -139,7 +139,7 @@ sub find_network {
     # Translate to the MTT-neutral names
     my @ret;
     foreach my $n (@networks) {
-        if ($n eq "sm") {
+        if ($n eq "sm" || $n eq "vader") {
             push(@ret, "shmem");
         } elsif ($n eq "openib" || $n eq "ofud" || $n eq "mvapi") {
             push(@ret, "verbs");
