@@ -37,67 +37,67 @@ my @check_ib_errors;
 #--------------------------------------------------------------------------
 sub check_ib_errors
 {
-	my $parametr = $_[0];
-	if($parametr eq "save")
-	{
-		print "qwerty save\n";
-		my $str = `ibcheckerrors -N`;
-		my @local_array = split("\n",$str);
-		pop(@local_array);
-		pop(@local_array);
-		pop(@local_array);	
-		$str = join("\nq",@local_array);
-		@local_array = split("q",$str);
-		push @check_ib_errors, [@local_array];
-	}
-	elsif($parametr eq "compare")
-	{
-		print "qwerty compare\n";
-		my $str = `ibcheckerrors -N`;
-		my @local_array = split("\n",$str);
-		pop(@local_array);
-		pop(@local_array);
-		pop(@local_array);	
-		$str = join("\n%%%",@local_array);
-		@local_array = split("%%%",$str);
-		push @check_ib_errors, [@local_array];
-		my $all_report_string;
-		my $flag;
-		for(my $q=2;$q<=$#check_ib_errors+1;$q++)
-		{
-			my @array1 = @{$check_ib_errors[0]};
-			my @array2 = @{$check_ib_errors[$q-1]};
-			my $report_string = "-->errors appears after mtt start:\n";
-			for(my $i=0;$i<=$#array2;$i++)
-			{
-				$flag = 0;
-				for(my $j=0;$j<=$#array1;$j++)
-				{
-					if($array2[$i] eq $array1[$j])
-					{
-						$flag = 1;
-						$array1[$j] = "";
-						last;
-					}
-				}
-				if($flag == 0)
-				{
-					$report_string .= $array2[$i];
-				}
-			}
-			$report_string .= "-->errors no longer observed after mtt:\n" . join("",@array1);
-			$all_report_string .= "\ncompare 1 call  and $q  call \n$report_string\n";
-		}
-		print "qwerty\n $all_report_string\n";
-		return $all_report_string;
-	}else
-	{
-		Warning("get_ib_errors: unknow parametr $parametr\n");
-	}
+    my $parametr = $_[0];
+    if($parametr eq "save")
+    {
+        print "qwerty save\n";
+        my $str = `ibcheckerrors -N`;
+        my @local_array = split("\n",$str);
+        pop(@local_array);
+        pop(@local_array);
+        pop(@local_array);
+        $str = join("\nq",@local_array);
+        @local_array = split("q",$str);
+        push @check_ib_errors, [@local_array];
+    }
+    elsif($parametr eq "compare")
+    {
+        print "qwerty compare\n";
+        my $str = `ibcheckerrors -N`;
+        my @local_array = split("\n",$str);
+        pop(@local_array);
+        pop(@local_array);
+        pop(@local_array);
+        $str = join("\n%%%",@local_array);
+        @local_array = split("%%%",$str);
+        push @check_ib_errors, [@local_array];
+        my $all_report_string;
+        my $flag;
+        for(my $q=2;$q<=$#check_ib_errors+1;$q++)
+        {
+            my @array1 = @{$check_ib_errors[0]};
+            my @array2 = @{$check_ib_errors[$q-1]};
+            my $report_string = "-->errors appears after mtt start:\n";
+            for(my $i=0;$i<=$#array2;$i++)
+            {
+                $flag = 0;
+                for(my $j=0;$j<=$#array1;$j++)
+                {
+                    if($array2[$i] eq $array1[$j])
+                    {
+                        $flag = 1;
+                        $array1[$j] = "";
+                        last;
+                    }
+                }
+                if($flag == 0)
+                {
+                    $report_string .= $array2[$i];
+                }
+            }
+            $report_string .= "-->errors no longer observed after mtt:\n" . join("",@array1);
+            $all_report_string .= "\ncompare 1 call  and $q  call \n$report_string\n";
+        }
+        print "qwerty\n $all_report_string\n";
+        return $all_report_string;
+    }else
+    {
+        Warning("get_ib_errors: unknow parametr $parametr\n");
+    }
 }
 sub get_codecov
 {
-	MTT::Values::Functions::Icc_codecov::get_codecov_result();
+    MTT::Values::Functions::Icc_codecov::get_codecov_result();
 }
 
 # Returns the result value (array or scalar) of a perl eval
@@ -1103,19 +1103,19 @@ sub test_argv {
 }
 
 sub test_alloc {
-	my $sect = $MTT::Globals::Values->{active_section} ;
-	my $val = get_ini_val($sect, "alloc");
+    my $sect = $MTT::Globals::Values->{active_section} ;
+    my $val = get_ini_val($sect, "alloc");
     Debug("&test_alloc returning $val for $sect\n");
-	return $val;
+    return $val;
 }
 
 # return MPI extra argv which are needed for specific test, example:
 # -x LD_PRELOAD=libhugetlbfs.so -x HUGETLB_MORECORE=yes -x OMPI_MCA_memory_ptmalloc2_disable=1
 sub test_extra_mpi_argv {
-	my $sect = $MTT::Globals::Values->{active_section} ;
-	my $val = get_ini_val($sect, "mpi_extra_argv");
+    my $sect = $MTT::Globals::Values->{active_section} ;
+    my $val = get_ini_val($sect, "mpi_extra_argv");
     Debug("&test_alloc returning $val for $sect\n");
-	return $val;
+    return $val;
 }
 
 #--------------------------------------------------------------------------
@@ -1429,9 +1429,9 @@ sub find_sub {
 
 sub pwd_mtt
 {
-	my $t_var = $0;
-	$t_var =~ s/\/[^\/]+$//;
-	return $t_var;
+    my $t_var = $0;
+    $t_var =~ s/\/[^\/]+$//;
+    return $t_var;
 }
 
 # return File::Basename::dirname()
@@ -2196,7 +2196,7 @@ sub loadleveler_max_procs {
 
     my $ret = 2;
     if (exists($ENV{LOADL_PROCESSOR_LIST}) && 
-	$ENV{LOADL_PROCESSOR_LIST} ne "") {
+        $ENV{LOADL_PROCESSOR_LIST} ne "") {
       my @hosts = split(/ /, $ENV{LOADL_PROCESSOR_LIST});
       $ret = $#hosts + 1;
     }
@@ -2394,20 +2394,20 @@ sub get_absoft_version {
 
 # Return the source directory
 sub get_mpi_srcdir {
-	    my $srcdir = $MTT::MPI::Install::src_dir;
-		return $srcdir;
+    my $srcdir = $MTT::MPI::Install::src_dir;
+    return $srcdir;
 }
 
 # Return the build directory
 sub get_mpi_builddir {
-	my $builddir = $MTT::MPI::Install::build_directory;
-	return $builddir;
+    my $builddir = $MTT::MPI::Install::build_directory;
+    return $builddir;
 }
 
 sub get_mpi_install_dir 
 {
-	my $builddir = $MTT::MPI::Install::install_dir;
-	return $builddir;
+    my $builddir = $MTT::MPI::Install::install_dir;
+    return $builddir;
 }
 # Detect the bitness of the MPI library in this order:
 #   1) User overridden (CSV of 1 or more valid bitnesses)
@@ -3305,24 +3305,24 @@ choke me
 }
 
 sub get_ini_val {
-	my($section,$param) = @_;
-	my $ini = $MTT::Globals::Internals->{ini};
+    my($section,$param) = @_;
+    my $ini = $MTT::Globals::Internals->{ini};
     if (!defined($ini)) {
        die "MTT::Globals::Internals->{ini} undefined";
     }
-	return MTT::Values::Value($ini, $section, $param);
+    return MTT::Values::Value($ini, $section, $param);
 }
 
 our $current_report;
 
 # returns a value from report object
 sub get_report_data {
-	my($param) = @_;
-       if (!defined($current_report)) {
-           return undef;
-       }
-	my $val = $current_report->{$param};
-	return $val;
+    my($param) = @_;
+    if (!defined($current_report)) {
+        return undef;
+    }
+    my $val = $current_report->{$param};
+    return $val;
 }
 
 # generates hostlist for mtt
@@ -3330,26 +3330,25 @@ sub get_report_data {
 # Result: node1:16 node2:16 node3:16 node7:16
 
 sub create_hostlist {
-	my ($host_list, $cpu_per_node) = @_;
+    my ($host_list, $cpu_per_node) = @_;
 
-	my @hosts = split(/,/,$host_list);
+    my @hosts = split(/,/,$host_list);
 
-	my @expanded_hosts = ();
-	for (my $x=0; $x < $#hosts + 1; $x++) {
-		my $h = $hosts[$x];
-		$h=~s/[\[\]]//g;
-		if ($h =~ /^([^\d]+)(\d+)-(\d+)$/) {
-			my $n = $1;
-			for (my $i=$2; $i<=$3;$i++) {
-				push @expanded_hosts, $n . $i . ":" . $cpu_per_node;
-			}
-		} else {
-			push @expanded_hosts, $h . ":" . $cpu_per_node;
-		}
-	}
-	my $ret = join(" ", @expanded_hosts);
-	$ret;
-
+    my @expanded_hosts = ();
+    for (my $x=0; $x < $#hosts + 1; $x++) {
+        my $h = $hosts[$x];
+        $h=~s/[\[\]]//g;
+        if ($h =~ /^([^\d]+)(\d+)-(\d+)$/) {
+            my $n = $1;
+            for (my $i=$2; $i<=$3;$i++) {
+                push @expanded_hosts, $n . $i . ":" . $cpu_per_node;
+            }
+        } else {
+            push @expanded_hosts, $h . ":" . $cpu_per_node;
+        }
+    }
+    my $ret = join(" ", @expanded_hosts);
+    $ret;
 }
 
 # Generate a hash value from function parameters
@@ -3469,10 +3468,10 @@ sub evaluate {
 #
 
 sub executable {
-	my ($cmd_section, $cmd_param) = @_;
-	my $cmd = &get_ini_val($cmd_section, $cmd_param);
-	my $x = MTT::DoCommand::CmdScript(1, $cmd);
-	return $x->{result_stdout};
+    my ($cmd_section, $cmd_param) = @_;
+    my $cmd = &get_ini_val($cmd_section, $cmd_param);
+    my $x = MTT::DoCommand::CmdScript(1, $cmd);
+    return $x->{result_stdout};
 }
 
 #
