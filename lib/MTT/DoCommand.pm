@@ -60,49 +60,58 @@ sub DoCommand {
 sub _kill_proc_one {
     my ($pid) = @_;
 
+    # How long to wait after each kill()
+    my $wait_time = 5;
+
     # See if the proc is alive first
     my $kid;
     kill(0, $pid);
     $kid = waitpid($pid, WNOHANG);
-    return "mpirun died right at end of timeout" if (-1 == $kid);
+    return "mpirun died right at end of timeout (MTT did not have to kill it)"
+        if (-1 == $kid);
 
     # Try an easy kill
     kill("TERM", $pid);
-    $kid = waitpid($pid, WNOHANG);
-    # This sub is only invoked to forcibly kill the process (i.e.,
-    # it's over its timeout, so gotta kill it).  Hence, we don't care
-    # what the return status is -- just return if a) the process no
-    # longer exists (i.e., we get -1 back from waitpid), or we
-    # successfully killed it (i.e., we got the PID back from waitpid).
-    return "MTT killed mpirun via SIGTERM (1)" if (0 != $kid);
-    Verbose("** Kill TERM didn't work!\n");
+    Verbose("*** Killing mpirun with SIGTERM\n");
+    # Give mpirun some time to cleanup before we try to reap it.
+    my $i = $wait_time;
+    while ($i > 0) {
+        sleep(1);
+        $kid = waitpid($pid, WNOHANG);
 
-    # Nope, that didn't work.  Sleep a few seconds and try again.
-    sleep(1);
-    $kid = waitpid($pid, WNOHANG);
-    return "MTT killed mpirun via SIGTERM (2)" if (0 != $kid);
-    Verbose("** Kill TERM (more waiting) didn't work!\n");
+        # This sub is only invoked to forcibly kill the process (i.e.,
+        # it's over its timeout, so gotta kill it).  Hence, we don't
+        # care what the return status is -- just return if a) the
+        # process no longer exists (i.e., we get -1 back from
+        # waitpid), or we successfully killed it (i.e., we got the PID
+        # back from waitpid).
+        return "MTT killed mpirun via SIGTERM" if (0 != $kid);
+
+        --$i;
+    }
+    Verbose("** Kill TERM (after $wait_time seconds) didn't work!\n");
 
     # That didn't work either.  Try SIGINT;
+    Verbose("*** Killing mpirun with SIGINT\n");
     kill("INT", $pid);
-    $kid = waitpid($pid, WNOHANG);
-    return "MTT killed mpirun via SIGINT" if (0 != $kid);
-    Verbose("** Kill INT didn't work!\n");
-
-    # Nope, that didn't work.  Sleep a few seconds and try again.
-    sleep(1);
-    $kid = waitpid($pid, WNOHANG);
-    return if (0 != $kid);
-    Verbose("** Kill INT (more waiting) didn't work!\n");
+    my $i = $wait_time;
+    while ($i > 0) {
+        sleep(1);
+        $kid = waitpid($pid, WNOHANG);
+        return "MTT killed mpirun via SIGINT" if (0 != $kid);
+        --$i;
+    }
+    Verbose("** Kill INT (after $wait_time seconds) didn't work!\n");
 
     # Ok, now we're mad.  Be violent.
+    Verbose("*** Now I'm mad.  Killing mpirun with SIGKILL\n");
     my $count = 0;
     while (1) {
         kill("KILL", $pid);
         ++$count;
         $kid = waitpid($pid, WNOHANG);
         return "MTT killed mpirun via $count SIGKILLs" if (0 != $kid);
-        Verbose("** Kill KILL didn't work!\n");
+        Verbose("** Kill KILL didn't work!  Sleeping and trying again...\n");
         sleep(1);
     }
 }
