@@ -120,8 +120,8 @@ sub _kill_proc_one {
 sub _kill_proc {
     my ($pid) = @_;
     # kill the group, take the names later
-    foreach my $p (descendant_processes($pid)) {
-        _kill_proc_one($p);
+    foreach my $process (descendant_processes($pid)) {
+        _kill_proc_one($process->{pid});
     }
     return _kill_proc_one($pid);
 }
@@ -527,7 +527,8 @@ sub Cmd {
                 if (defined($timeout_backtrace_program) and !$got_backtrace) {
                     $backtrace = "";
                     if ( $timeout_before_backtrace_program ) {
-                        foreach my $p (descendant_processes($pid)) {
+                        foreach my $process (descendant_processes($pid)) {
+                            my $p = $process->{pid};
                             my $c = $timeout_before_backtrace_program;
                             $c =~ s/%PID%/$p/g;
                             Debug("_pre_backtrace cmd: $c\n");
@@ -538,7 +539,8 @@ sub Cmd {
                     $backtrace .= _get_backtrace($timeout_backtrace_program, $pid, $pre_pernode);
 
                     if ( $timeout_after_backtrace_program ) {
-                        foreach my $p (descendant_processes($pid)) {
+                        foreach my $process (descendant_processes($pid)) {
+                            my $p = $process->{pid};
                             my $c = $timeout_after_backtrace_program;
                             $c =~ s/%PID%/$p/g;
                             Debug("_post_backtrace cmd: $c\n");
@@ -738,19 +740,50 @@ sub _do_email_timeout_notification {
     close(TIMEOUT_SENTINEL_FILE);
 }
 
-sub flatten {
-    map{ (ref($_) eq "ARRAY") ? map{flatten($_)}@$_ : $_ } @_;
+sub find_children {
+    my ($pids, $start) = @_;
+
+    my @ret;
+    # Scan the PID list and see if any other PIDs list $start as their
+    # PPID.  If so, save that PID and then recursively look for *that*
+    # PID's children.
+    foreach my $pid (sort(keys(%{$pids}))) {
+        if ($pids->{$pid}->{ppid} == $start) {
+            push(@ret, {
+                pid => $pid,
+                argv0 => $pids->{$pid}->{argv0},
+                 });
+
+            # Add this PID's descendants to the return array
+            push(@ret, find_children($pids, $pid));
+        }
+    }
+
+    return @ret;
 }
 
 sub descendant_processes {
     my ($base) = (@_, $$);
-    my %parentage = (`ps -eo pid,ppid` =~ /\d+/g);
-    my %reverse = map { ($_, [$_]) } %parentage;
-    while (my ($pid,$ppid) = each %parentage){
-        push @{$reverse{$ppid}}, $reverse{$pid};
+    open(PS, "ps -eo pid,ppid,cmd|") || die "Can't open ps";
+
+    # Skip the title line
+    <PS>;
+
+    # Read all the data lines
+    my $pids;
+    while (<PS>) {
+        # Grab the PID, PPID, and first token of the command
+        $_ =~ m/(\d+)\s+(\d+)\s+(\S+)/;
+        $pids->{$1} = {
+            pid => $1,
+            ppid => $2,
+            argv0 => $3,
+        };
     }
-    shift @{$reverse{$base}};
-    flatten($reverse{$base});
+    close(PS);
+
+    # Find all the descendants of the $base PID
+    return find_children($pids, $base);
 }
 
 sub _get_backtrace {
@@ -774,7 +807,8 @@ sub _get_backtrace {
 
             # Use ps -Af output to fetch the child pids,
             # and grab a stack trace from each one
-            foreach my $p (descendant_processes($pid)) {
+            foreach my $process (descendant_processes($pid)) {
+                my $p = $process->{pid};
                 $gdb_cmd = "gdb - $p --command=$gdb_command_filename --batch";
                 $ret .= "\n $gdb_cmd";
                 $ret .= "\n" . `$gdb_cmd`;
@@ -814,8 +848,9 @@ sub _get_backtrace {
                 }
             }
             Debug("Stacktrace: base name $return_basename\n");
-            #foreach my $p (descendant_processes($pid)) 
+            #foreach my $process (descendant_processes($pid))
             #{
+            #    my $p = $process->{pid};
             #    my $gstack_cmd = "gstack $p";
             #    $ret .= "\n $gstack_cmd";
             #    $ret .= "\n" . `$gstack_cmd`;
