@@ -471,6 +471,7 @@ sub Cmd {
             my $len = sysread(OUTread, $data, 99999);
             if (0 == $len) {
                 vec($rin, fileno(OUTread), 1) = 0;
+                Debug("*** Child process stdout closed\n");
                 --$done;
             } else {
                 _append($data, $print_timestamp ? localtime() : "",
@@ -485,6 +486,7 @@ sub Cmd {
             my $len = sysread(ERRread, $data, 99999);
             if (0 == $len) {
                 vec($rin, fileno(ERRread), 1) = 0;
+                Debug("*** Child process stderr closed\n");
                 --$done;
             } else {
                 _append($data, $print_timestamp ? localtime() : "",
@@ -493,11 +495,19 @@ sub Cmd {
             }
         }
 
-        # If we're running with a timeout, bail if we're past the end
-        # time
-        if (defined($end_time) && time() > $end_time) {
+        # If we're running with a timeout, check to see if a) the
+        # process is still running (i.e., stdout/stderr is still
+        # open), and b) we're past the end time.
+        if ($done > 0 && defined($end_time) && time() > $end_time) {
             my $over = time() - $end_time;
-            if ($over > $last_over) {
+
+            # Note that we only want to backtrace/kill the process
+            # *once*.  Consider: it is possible that we kill the
+            # process tree, but then stdout/stderr are still draining,
+            # and therefore we loop around here again *even though the
+            # process tree is already dead*.  So put a little
+            # do-this-only-once protection in here.
+            if (!defined($timeout_message) && $over > $last_over) {
                 Verbose("*** Past timeout of $timeout seconds by $over seconds\n");
 
                 # Handle timeout file
@@ -555,10 +565,8 @@ sub Cmd {
                     );
 
                     $done = 0;
-                    $timeout_message = _kill_proc($pid);
-                } else {
-                    $timeout_message = _kill_proc($pid);
                 }
+                $timeout_message = _kill_proc($pid);
 
                 # We don't care about the exit status if we timed out
                 # -- fill it with a bogus value.
@@ -576,6 +584,7 @@ sub Cmd {
             }
         }
     }
+    Debug("*** Child process now dead\n");
     close OUTerr;
     close OUTread
         if (!$merge_output);
