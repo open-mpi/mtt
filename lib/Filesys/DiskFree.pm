@@ -124,8 +124,9 @@ sub df(){
     $cmd=$self->command() or
     	croak "No df command known for format ".$self->{'FORMAT'};
     open(HANDLE,"$cmd|") or croak("Cannot fork \"$cmd\": $!");
-    return $self->load(\*HANDLE);
+    my $ret = $self->load(\*HANDLE);
     close(HANDLE) or croak("Cannot df $!");
+    return $ret;
 }
 
 sub load()  {
