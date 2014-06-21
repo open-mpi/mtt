@@ -445,7 +445,6 @@ sub Cmd {
         $end_time = time() + $timeout;
         Debug("Timeout: $timeout - $end_time (vs. now: " . time() . ")\n");
     }
-    my $killed_status = undef;
     my $last_over = 0;
     my $partial_out;
     my $partial_err;
@@ -900,7 +899,6 @@ sub Win_Cmd {
         $end_time = time() + $timeout;
         Debug("Timeout: $timeout - $end_time (vs. now: " . time() . ")\n");
     }
-    my $killed_status = undef;
     my $last_over = 0;
 
     while(<OUTread>) {
