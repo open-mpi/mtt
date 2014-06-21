@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2013 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2014 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
 # Copyright (c) 2007-2012 High Performance Computing Center Stuttgart, 
 #                         University of Stuttgart.  All rights reserved.
@@ -57,23 +57,27 @@ sub DoCommand {
     ($time_arg, $no_execute) = @_;
 }
 
+# This function is called for killing both mpirun and each of its
+# descendants.  We really only want to see verbose output for when we
+# kill mpirun itself, so only show output when the caller provides us
+# with a $argv0 value.
 sub _kill_proc_one {
-    my ($pid) = @_;
+    my ($pid, $argv0) = @_;
 
     # How long to wait after each kill()
     my $wait_time = 5;
 
     # See if the proc is alive first
-    my $kid;
-    kill(0, $pid);
-    $kid = waitpid($pid, WNOHANG);
-    return "mpirun died right at end of timeout (MTT did not have to kill it)"
-        if (-1 == $kid);
+    my $num_alive = kill(0, $pid);
+    return "$argv0 died right at end of timeout (MTT did not have to kill it)"
+        if (0 == $num_alive);
 
     # Try an easy kill
     kill("TERM", $pid);
-    Verbose("*** Killing mpirun with SIGTERM\n");
+    Verbose("*** Killing $argv0 with SIGTERM\n")
+        if (defined($argv0));
     # Give mpirun some time to cleanup before we try to reap it.
+    my $kid;
     my $i = $wait_time;
     while ($i > 0) {
         sleep(1);
@@ -85,45 +89,74 @@ sub _kill_proc_one {
         # process no longer exists (i.e., we get -1 back from
         # waitpid), or we successfully killed it (i.e., we got the PID
         # back from waitpid).
-        return "MTT killed mpirun via SIGTERM" if (0 != $kid);
+        return "MTT killed $argv0 via SIGTERM" if (0 != $kid);
 
         --$i;
     }
-    Verbose("** Kill TERM (after $wait_time seconds) didn't work!\n");
+    Verbose("** Kill TERM (after $wait_time seconds) didn't work!\n")
+        if (defined($argv0));
 
     # That didn't work either.  Try SIGINT;
-    Verbose("*** Killing mpirun with SIGINT\n");
+    Verbose("*** Killing $argv0 with SIGINT\n")
+        if (defined($argv0));
     kill("INT", $pid);
     my $i = $wait_time;
     while ($i > 0) {
         sleep(1);
         $kid = waitpid($pid, WNOHANG);
-        return "MTT killed mpirun via SIGINT" if (0 != $kid);
+        return "MTT killed $argv0 via SIGINT" if (0 != $kid);
         --$i;
     }
-    Verbose("** Kill INT (after $wait_time seconds) didn't work!\n");
+    Verbose("** Kill INT (after $wait_time seconds) didn't work!\n")
+        if (defined($argv0));
 
     # Ok, now we're mad.  Be violent.
-    Verbose("*** Now I'm mad.  Killing mpirun with SIGKILL\n");
+    Verbose("*** Now I'm mad.  Killing $argv0 with SIGKILL\n")
+        if (defined($argv0));
     my $count = 0;
     while (1) {
         kill("KILL", $pid);
         ++$count;
         $kid = waitpid($pid, WNOHANG);
-        return "MTT killed mpirun via $count SIGKILLs" if (0 != $kid);
-        Verbose("** Kill KILL didn't work!  Sleeping and trying again...\n");
+        return "MTT killed $argv0 via $count SIGKILLs" if (0 != $kid);
+        Verbose("** Kill KILL didn't work!  Sleeping and trying again...\n")
+            if (defined($argv0));
         sleep(1);
     }
 }
 
 
-sub _kill_proc {
-    my ($pid) = @_;
-    # kill the group, take the names later
-    foreach my $process (descendant_processes($pid)) {
+sub _kill_proc_tree {
+    my ($pid, $argv0) = @_;
+
+    # Find all descendent processes of the main PID
+    my @children = descendant_processes($pid);
+
+    # Kill the main PID.  Note that _kill_proc_one() will give the
+    # process time to react/cleanup, so there's no need for an
+    # additional delay after it returns.
+    my $ret = _kill_proc_one($pid, $argv0);
+
+    # Now kill all the processes that descended from the base PID.
+    #
+    # Note: when mpirun is working properly (which is one of the
+    # biggest use cases for DoCommand), this is redundant -- all the
+    # children will already be dead (because killing mpirun will
+    # ensure that all descendant processes are also killed).
+    #
+    # That being said, a) DoCommand() is used to launch more than just
+    # mpirun, b) mpirun breaks sometimes and doesn't clean up its
+    # descendants, and c) it's safe to call _kill_proc_one() on a PID
+    # that is already dead.
+    foreach my $process (@children) {
+        Debug("=== killing child proc: $process->{pid}, $process->{argv0}\n");
+
+        # Ignore the return.  For example, we don't care if the child
+        # is already dead
         _kill_proc_one($process->{pid});
     }
-    return _kill_proc_one($pid);
+
+    return $ret;
 }
 
 #--------------------------------------------------------------------------
@@ -337,7 +370,6 @@ sub Cmd {
     # Turn shell-quoted words ("foo bar baz") into individual tokens
 
     my $tokens = _quote_escape($cmd);
-
 
     my $pid;
     if (! $no_execute) {
@@ -568,7 +600,7 @@ sub Cmd {
 
                     $done = 0;
                 }
-                $timeout_message = _kill_proc($pid);
+                $timeout_message = _kill_proc_tree($pid, ${$tokens}[0]);
 
                 # We don't care about the exit status if we timed out
                 # -- fill it with a bogus value.
