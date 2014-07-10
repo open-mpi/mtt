@@ -54,6 +54,11 @@ sub Install {
     $ret->{f90_bindings} = &{$func}($ret->{bindir}, $ret->{libdir}, "f90");
     Debug("Have F90 bindings: $ret->{f90_bindings}\n"); 
 
+    $func = \&MTT::Values::Functions::MPI::OMPI::find_bitness;
+    $config->{bitness} = &{$func}($ret->{bindir}, $ret->{libdir})
+        if (!defined($config->{bitness}));
+
+
     return $ret;
 }
 
