@@ -463,7 +463,7 @@ sub term_handler{
 	Verbose("###############################################################################\n");
 	$MTT::Globals::Values->{extra_subject} = " ***Received $signame***";
 
-	MTT::DoCommand::_kill_proc($MTT::DoCommand::pid);
+	MTT::DoCommand::_kill_proc_tree($MTT::DoCommand::pid);
 	MTT::Reporter::QueueSubmit();
 
 	if ($trim) {
