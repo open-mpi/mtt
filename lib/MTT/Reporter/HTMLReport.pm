@@ -169,11 +169,11 @@ sub _summary_report
     my $results_arr = shift;
 	my $flush_mode = shift;
 
-	if (!$flush_mode || $flush_mode eq "finalize")
-	{
-    	print("\nMTT Results Summary" . $MTT::Globals::Values->{description} . ", started at: " . $MTT::Globals::Values->{start_time} . " report generated at: " . localtime() . "\n");
-	    print $header;
-    }
+#	if (!$flush_mode || $flush_mode eq "finalize")
+#	{
+#    	print("\nMTT Results Summary" . $MTT::Globals::Values->{description} . ", started at: " . $MTT::Globals::Values->{start_time} . " report generated at: " . localtime() . "\n");
+#	    print $header;
+#    }
     my ($total_fail, $total_succ, $total_duration, $html_table_content) = (0,0,0,"");
     foreach my $results (@$results_arr) 
 	{
@@ -245,9 +245,10 @@ sub _summary_report
     # Wrte html report to a file
     my $html_body = get_html_summary_report_template();
     $html_body =~ s/%TESTS_RESULTS%/$html_table_content/g;
+    $html_body =~ s/%FOOTER%/$footer/g;
+    $html_body =~ s/%HEADER%/$header/g;
     my $html_totals = "<td style=\"background:#eeeee0;\"  >$total_tests</td><td style=\"background:#eeeee0;\"  >$total_fail</td><td style=\"background:#eeeee0;\"  >$total_succ</td><td style=\"background:#eeeee0;\"  >$total_duration_human</td>\n";
     $html_body =~ s/%TOTALS%/$html_totals/g;
-	$html_body .= $footer;
     my $html_filename = "All_phase-summary.html";
     my $html_file = "$dirname/" . MTT::Files::make_safe_filename("$html_filename");
     
@@ -285,6 +286,7 @@ sub _summary_report
 			eval $str;
 			#Verbose(">> Subject: $subject\n");
 
+            # todo: Use Mail.pm, need to fix it first to accept "type"
 			open MAIL, "|mutt -e \"set content_type=text/html\"  -s \"$subject\" --  $to" || die "Could not open pipe to output e-mail\n";
 			print MAIL $html_body;
 			close MAIL;
@@ -758,6 +760,7 @@ sub get_html_summary_report_template
     my $tmpl = '
     <title>MTT Results: Summary</title>
     <h1>MTT Results</h1>
+    %HEADER%
     <hr size="1">
 	</tbody></table>
     <h2>Additional info</h2>
@@ -787,9 +790,9 @@ sub get_html_summary_report_template
     </table>
 
     </body>
+    %FOOTER%
     </html>
     ';
-	$tmpl = $header . $tmpl;
 	my $tmp2;
 	foreach my $key (keys %{$values_replace})
 	{
