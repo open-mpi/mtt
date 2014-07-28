@@ -758,11 +758,12 @@ sub get_html_summary_report_template
 	}
 	
     my $tmpl = '
+    <html>
     <title>MTT Results: Summary</title>
+    <body>
     <h1>MTT Results</h1>
     %HEADER%
     <hr size="1">
-	</tbody></table>
     <h2>Additional info</h2>
     <table border="0" cellpadding="5" cellspacing="2" width="95%">
     <tbody><tr style="font-weight: bold; text-align:left; background:#a6caf0;"  valign="top">
@@ -789,8 +790,8 @@ sub get_html_summary_report_template
     </tr>
     </table>
 
-    </body>
     %FOOTER%
+    </body>
     </html>
     ';
 	my $tmp2;
