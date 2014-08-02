@@ -284,7 +284,11 @@ sub _summary_report
 	
 			my $str = "\$subject = \"$subject_tmpl\"";
 			eval $str;
-			#Verbose(">> Subject: $subject\n");
+
+            $subject =~ s/[\n\r]//g;
+			Verbose(">> Subject: $subject\n");
+			Verbose(">> To: $to\n");
+			Verbose(">> Body: $html_body\n");
 
             # todo: Use Mail.pm, need to fix it first to accept "type"
 			open MAIL, "|mutt -e \"set content_type=text/html\"  -s \"$subject\" --  $to" || die "Could not open pipe to output e-mail\n";
