@@ -1980,6 +1980,37 @@ sub slurm_hosts {
     return $ret;
 }
 
+
+# Extract PPN from slurm allocation
+#
+sub slurm_ppn {
+
+    my @tpn = split(/,/, $ENV{SLURM_TASKS_PER_NODE});
+    foreach my $t (@tpn) {
+        my $tasks;
+        my $nodes;
+        if ($t =~ m/(\d+)\(x(\d+)\)/) {
+            $tasks = $1;
+            $nodes = $2;
+        } elsif ($t =~ m/(\d+)/) {
+            $tasks = $1;
+            $nodes = 1;
+        } else {
+            Warning("Unparsable SLURM_TASKS_PER_NODE: $ENV{SLURM_TASKS_PER_NODE}\n");
+            return "";
+        }
+        return $tasks;
+    }
+    Warning("Unable extract ppn\n");
+    return "";
+}
+
+sub slurm_np_from_nnodes {
+    my ($nnodes) = @_;
+
+    return slurm_ppn() * $nnodes;
+}
+
 #--------------------------------------------------------------------------
 
 # Return "1" if we're running in an ALPS job; "0" otherwise.
