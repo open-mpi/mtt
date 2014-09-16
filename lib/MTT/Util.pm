@@ -327,6 +327,10 @@ sub parse_time_to_seconds {
         my $ret = $1;
         Debug("Time $str = $ret seconds\n");
         return $ret;
+    } elsif ($str =~ m/^\s*(\d+)\s*m$/) {
+        my $ret = $1 * 60;
+        Debug("Time $str = $ret seconds\n");
+        return $ret;
     } elsif (!defined($str) || $str > 0) {
         Debug("Time $str seconds\n");
         return $str;
