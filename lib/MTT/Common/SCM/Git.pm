@@ -53,7 +53,7 @@ sub Checkout {
 
     my $git_major = 0;
     my $git_minor = 0;
-    my $git_cmd = (defined($params->{cmd}) ? $params->{cmd} : "git") . " --version"; 
+    my $git_cmd = (defined($params->{cmd}) ? $params->{cmd} : "git") . " --version";
 
     my $git_ver_output = MTT::DoCommand::Cmd(1, $git_cmd);
 
@@ -80,13 +80,65 @@ sub Checkout {
     return _git_identify_n($params->{dirname});
 }
 
+# Assume that we have a nice tag to reference
 sub _git_identify_n {
-    # TODO
-    my $ret = 0;
-    return $ret;
+    my $dirname = shift;
+
+    my $start = MTT::DoCommand::cwd();
+    chdir($dirname);
+    my $msg = `git describe --tags --always`;
+    chdir($start);
+
+    chomp($msg);
+    $msg =~ m/-(\d+)-\S+$/;
+    my $r = $1;
+
+    # If we didn't find a tag, just give up
+    $r = 0
+        if (!defined($r) || $r eq "");
+
+    return $r;
 }
 
-# TODO
-#sub check_previous_revision 
+sub check_previous_revision {
+    my ($previous_r, $url) = @_;
+
+    my $function = '&' . FuncName((caller(0))[3]);
+    Debug("$function: got @_\n");
+
+    my $ret = 1;
+
+    if ($previous_r) {
+
+        # If the first character of the git URL is a /, we can just
+        # use "git -C <dir> describe ..." to get the current r.
+        if ($url =~ /^\//) {
+            my $n = _git_identify_n($url);
+            if ($n > $1) {
+                Debug("Got new git tag number ($n) -- need new export\n");
+                $ret = 1;
+            } else {
+                Debug("Got old git tag number ($n) -- no need for a new export\n");
+                $ret = 0;
+            }
+        }
+
+        # Otherwise, there does not seem to be an easy way to query
+        # the tag of a remote repo without cloning it first, which
+        # kinda defeats the point of checking to see if there's
+        # anything new before cloning. :-( So just return that there
+        # are new sources to test.  Someone could write a better
+        # method here someday.
+        else {
+            Debug("Git repo is remote; cannot check if there is anything new, so we simply assume that there is something new!\n");
+            $ret = 1;
+        }
+    } else {
+        Debug("$function no previous revision to check against.\n");
+    }
+
+    Debug("$function returning $ret\n");
+    return $ret;
+}
 
 1;

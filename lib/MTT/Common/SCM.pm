@@ -138,6 +138,9 @@ sub Get {
     $data->{directory}          = $params->{dirname};
     $data->{r}                  = $params->{rev};
 
+    $data->{directory} .= "/$params->{scm_subdir}"
+        if (defined($params->{scm_subdir}));
+
     $ret->{module_data} = $data;
 
     # All done
@@ -198,6 +201,7 @@ sub ProcessInputParameters {
 
     $ret->{module} = Value($ini, $section, "module");
     $ret->{scm_module} = Value($ini, $section, "scm_module");
+    $ret->{scm_subdir} = Value($ini, $section, "scm_subdir");
 
     if (defined($ret->{r})) {
         Warning("SCM param 'r' is deprecated.  Use 'rev' instead\n");
