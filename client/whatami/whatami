@@ -295,6 +295,11 @@ get_linux_type()
                 elif [ -n "`egrep 'Tao Linux release 1 ' /etc/issue`" ]; then
                         distro=tao_1.0
 
+                elif [ -n "`egrep 'Fedora ' /etc/issue`" ]; then
+                        distro_brand=fc
+                        distro_version=`grep 'Fedora ' /etc/issue | sed -e 's/Fedora release \([0-9]*\).*/\1/' `
+                        distro=${distro_brand}${distro_version}
+
                 elif [ -n "`egrep 'Fedora Core ' /etc/issue`" ]; then
                         distro_brand=fc
                         distro_version=`grep 'Fedora Core ' /etc/issue | sed -e 's/Fedora Core release \([0-9]*\).*/\1/' `
