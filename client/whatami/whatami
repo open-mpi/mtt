@@ -342,7 +342,7 @@ get_darwin_info()
                 hardware=ppc64
         elif [ -n "`system_profiler SPHardwareDataType|egrep 'Processor Name: Intel Core Duo'`" ]; then
                 hardware=ia32
-        elif [ -n "`system_profiler SPHardwareDataType|egrep 'Processor Name: (Dual-Core Intel Xeon|Intel Core 2 Duo)'`" ]; then
+        elif [ -n "`system_profiler SPHardwareDataType|egrep 'Processor Name: (Dual-Core Intel Xeon|Intel Core 2 Duo|Intel Core i\d)'`" ]; then
                 hardware=x86_64
         else
                 hardware=unknown_darwin_hardware_please_send_us_a_patch
