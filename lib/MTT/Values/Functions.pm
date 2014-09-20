@@ -3547,4 +3547,39 @@ sub cluster_name
     return $clust_name;
 }
 
+# Round-up and find next power of two
+sub next_pwr {
+    my ($x,$p) = (@_,2);  # default to next_pwr(X,2)
+    my $log = log($x)/log($p);
+    $log = int($log+1) if $log != int($log);
+    return $p**$log;
+}
+
+# Calculate available memory can specify percentage out of total and for how many cores
+#
+sub calc_free_memory
+{
+    my ($percent, $nproc) = @_;
+
+    open MEMINFO, '<', '/proc/meminfo' or die "Unable to open /proc/meminfo to find available memory\n";
+    my $mem = <MEMINFO>;
+
+    if ( $mem =~ /^MemTotal:\s+(\d+)\s.*$/ )  {
+        $mem = $1;
+    } else {
+        die "Unable to find the available memory\n";
+    }
+
+    if ($percent) {
+        $mem = ( $mem / 100 ) * $percent;
+    }
+
+    if ($nproc) {
+        $mem = ($mem/$nproc);
+    }
+
+    my $mb = int($mem / 1024);
+    return $mb;
+}
+
 1;
