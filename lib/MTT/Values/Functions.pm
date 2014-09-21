@@ -3582,4 +3582,13 @@ sub calc_free_memory
     return $mb;
 }
 
+sub test_ini_param {
+    my ($param) = @_;
+    my $sect = $MTT::Globals::Values->{active_section} ;
+    my $val = get_ini_val($sect, $param);
+    Debug("&test_param returning $val for $sect\n");
+    return $val;
+}
+
+
 1;
