@@ -86,7 +86,7 @@ sub EvaluateString {
         # If we got an $ini and $section, replace all @vars@
         $str = _replace_vars($str, $ini, $section)
             if (defined($ini) && defined($section));
-        
+
         my $start_pos = index($str, '&', $last);
         # If we didn't find a &, bail
         last
@@ -179,17 +179,24 @@ sub _replace_vars {
     while ($str =~ /\@(\!?[\w]+?)\@/) {
         my $var_name = $1;
         my $prefix = $`;
-        my $suffix = $';
+        my $suffix = $'; # Dumb emacs highlighting: '
 
         # @foo@ gets evaluated before it gets substituted in
         my $val;
         if ($var_name =~ m/^!/) {
-            # don't call EvaluateString for @!var_name@, only "copy-paste" value from section parameter
+            # don't call EvaluateString for @!var_name@, only
+            # "copy-paste" value from section parameter
             $val = $ini->val($section, substr($var_name,1));
         } else {
-            $val = EvaluateString($ini->val($section, $var_name), $ini, $section);
+            # If we don't have the value defined in this section, then
+            # don't EvaluateString on it, because we'll get a
+            # stringified hash back (which is fairly useless!).
+            $val = $ini->val($section, $var_name);
+            $val = EvaluateString($val, $ini, $section)
+                if (defined($val));
         }
         Debug("Got var_name: $var_name -> $val\n");
+
         if (!defined($val)) {
             # If we got nothing back, eliminate the token
             $str = $prefix . $suffix;
