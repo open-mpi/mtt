@@ -678,7 +678,7 @@ sub Cmd {
     # Return an anonymous hash containing the relevant data
 
     $ret->{result_stdout} = join('', @out);
-    $ret->{result_stderr} = join('', @err),
+    $ret->{result_stderr} = join('', @err)
         if (!$merge_output);
 
     # Tack on a backtrace, if we got one
