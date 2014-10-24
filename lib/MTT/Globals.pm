@@ -82,10 +82,13 @@ my $_defaults = {
     
     save_intermediate_report => undef,
     save_intermediate_report_enable => undef,
-	shuffle_tests => undef,
+    shuffle_tests => undef,
     description => undef,
     extra_subject => undef,
     extra_footer => undef,
+
+    last_cmd_stdout => undef,
+    last_cmd_stderr => undef,
 };
 
 #--------------------------------------------------------------------------

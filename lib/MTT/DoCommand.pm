@@ -27,6 +27,7 @@ use MTT::Timer;
 use MTT::Mail;
 use MTT::FindProgram;
 use MTT::Files;
+use MTT::Globals;
 use Data::Dumper;
 use File::Spec;
 use Cwd;
@@ -303,6 +304,8 @@ sub Cmd {
     my $pause_file = MTT::Values::Value( $ini, "MTT", 'docommand_pause_file' );
     my @pause_array = split(',', $pause_file);
 
+    $MTT::Globals::Values->{last_cmd_stdout} = undef;
+    $MTT::Globals::Values->{last_cmd_stderr} = undef;
 
     # If there are pipes, redirects, shell-bangs, or newlines
     # write them to a file and run it as a script. Otherwise,
@@ -687,6 +690,9 @@ sub Cmd {
     # Tack on timeout message, if we got one
     $ret->{result_stdout} .= $timeout_message
         if (defined($timeout_message));
+
+    $MTT::Globals::Values->{last_cmd_stdout} = $ret->{result_stdout};
+    $MTT::Globals::Values->{last_cmd_stderr} = $ret->{result_stderr};
 
     return $ret;
 }
