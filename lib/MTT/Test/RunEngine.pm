@@ -475,7 +475,7 @@ sub _run_one_test {
     my $report;
     $report = MTT::Module::Run("MTT::Test::Analyze", "Analyze", $run, $mpi_details, $str, $x);
 
-	$report->{already_saved_to} = undef;
+    $report->{already_saved_to} = undef;
     # Save characteristics of the run
     $report->{variant} = $variant;
     $report->{description} = $run->{description};
@@ -538,9 +538,9 @@ sub _run_one_test {
         }
     }
   
-  	if ($MTT::Globals::Values->{save_intermediate_report}){
-		MTT::Reporter::Flush();
-  	}
+    if ($MTT::Globals::Values->{save_intermediate_report}){
+        MTT::Reporter::Flush();
+    }
     # Set the test run result and increment the counter
     $ENV{MTT_TEST_RUN_RESULT} = $report->{test_result};
     $test_results_count->{$report->{test_result}}++ 

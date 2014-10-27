@@ -628,7 +628,7 @@ sub regexp {
     my $string = shift;
     my $pattern = shift;
 
-    if ($string =~ /$pattern/) {
+    if ($string =~ /$pattern/m) {
         Debug("$funclet: returning 1\n");
         return "1";
     }
@@ -1216,6 +1216,22 @@ sub cmd_wtermsig {
 sub cmd_pid {
     my $ret = $MTT::DoCommand::pid;
     Debug("&cmd_pid returning: $ret\n");
+    return "$ret";
+}
+
+#--------------------------------------------------------------------------
+
+# Return stdout from last DoCommand::Cmd
+sub cmd_stdout {
+    my $ret = $MTT::Globals::Values->{last_cmd_stdout};
+    Debug("&cmd_stdout returning: $ret\n");
+    return "$ret";
+}
+
+# Return stderr from last DoCommand::Cmd
+sub cmd_stderr {
+    my $ret = $MTT::Globals::Values->{last_cmd_stderr};
+    Debug("&cmd_stderr returning: $ret\n");
     return "$ret";
 }
 

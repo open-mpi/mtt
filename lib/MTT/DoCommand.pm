@@ -27,6 +27,7 @@ use MTT::Timer;
 use MTT::Mail;
 use MTT::FindProgram;
 use MTT::Files;
+use MTT::Globals;
 use Data::Dumper;
 use File::Spec;
 use Cwd;
@@ -257,18 +258,18 @@ sub _append {
         $$partial = undef;
     }
 
-    # Grab the tail after the last \n in $data (for use with
+    # Grab the partial after the last \n in $data (for use with
     # comparisons, below)
     $data =~ m/\n(.*?)$/;
-    my $tail = $1;
+    $$partial = $1;
 
     # Split into individual lines
     my @lines = split(/\n/, $data);
 
-    # Is the last line the same as the tail?  If so, remove it from
+    # Is the last line the same as the partial?  If so, remove it from
     # @lines (because it was an incomplete line).
     pop(@lines)
-        if ($lines[$#lines] eq $tail);
+        if ($lines[$#lines] eq $$partial);
 
     # Now add all the (prefixed) @lines to the output array
     while (@lines) {
@@ -277,11 +278,11 @@ sub _append {
     }
 
     # Now trim the output array to be, at most, $max_lines.  If we
-    # have a partial last line/tail, then decrement $max_lines by 1 to
+    # have a partial last line, then decrement $max_lines by 1 to
     # make it seem like we have 1 more line.
     if ($max_lines > 0) {
         --$max_lines
-            if (length($tail) > 0);
+            if (length($$partial) > 0);
         shift(@{$array})
             while ($#{$array} >= $max_lines);
     }
@@ -303,6 +304,8 @@ sub Cmd {
     my $pause_file = MTT::Values::Value( $ini, "MTT", 'docommand_pause_file' );
     my @pause_array = split(',', $pause_file);
 
+    $MTT::Globals::Values->{last_cmd_stdout} = undef;
+    $MTT::Globals::Values->{last_cmd_stderr} = undef;
 
     # If there are pipes, redirects, shell-bangs, or newlines
     # write them to a file and run it as a script. Otherwise,
@@ -678,7 +681,7 @@ sub Cmd {
     # Return an anonymous hash containing the relevant data
 
     $ret->{result_stdout} = join('', @out);
-    $ret->{result_stderr} = join('', @err),
+    $ret->{result_stderr} = join('', @err)
         if (!$merge_output);
 
     # Tack on a backtrace, if we got one
@@ -687,6 +690,9 @@ sub Cmd {
     # Tack on timeout message, if we got one
     $ret->{result_stdout} .= $timeout_message
         if (defined($timeout_message));
+
+    $MTT::Globals::Values->{last_cmd_stdout} = $ret->{result_stdout};
+    $MTT::Globals::Values->{last_cmd_stderr} = $ret->{result_stderr};
 
     return $ret;
 }
