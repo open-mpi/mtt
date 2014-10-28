@@ -323,27 +323,26 @@ sub _parse_hostlist {
 
     # Made a hostlist suitable for mpiexec and count the max procs
 
-    my @vals = split(/\s+/, $str);
+    my @vals = split(/[\s,]+/, $str);
     my $hostlist;
     my $max_np;
-    foreach (@vals) {
-        my ($name, $count) = split(/:/);
-        $count = 1
-            if (! $count);
+    my @tmp;
+    foreach my $one (@vals) {
+        my ($name, $count) = split(/:/, $one);
+        $count = 1 if (! $count);
         $max_np += $count;
         while ($count > 0) {
-            $hostlist .= ","
-                if ($hostlist);
-            $hostlist .= $name;
+            push @tmp,$name;
             --$count;
         }
     }
+    $hostlist = join(",",@tmp);
     
     # Save the final values
     
     $Values->{hostlist} = $hostlist;
     $Values->{hostlist_max_np} = $max_np;
-    Debug(">> Got default hostlist: $hostlist, max_np: $max_np\n");
+    Debug(">> Got default hostlist: $hostlist max_np: $max_np\n");
 }
 
 #--------------------------------------------------------------------------
