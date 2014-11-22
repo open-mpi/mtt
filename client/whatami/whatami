@@ -236,8 +236,9 @@ get_linux_type()
                 elif [ -n "`egrep 'SGI ProPack 3' /etc/issue`" ]; then
                         distro=rhel3
                 
-                elif [ -n "`egrep 'CentOS release 4.[0-9]' /etc/issue`" ]; then
-                        distro=rhel4
+                elif [ -n "`egrep 'CentOS release [0-9].[0-9]' /etc/issue`" ]; then
+                        distro_ver="`grep 'CentOS' /etc/issue | sed -e 's/.*release \([0-9]*\.[0-9]*\).*/\1/'`"
+                        distro=rhel$distro_ver
 
                 elif [ -n "`egrep 'SuSE SLES 8' /etc/issue`" ]; then
                         distro=sles8
