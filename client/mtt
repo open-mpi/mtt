@@ -106,6 +106,7 @@ use MTT::INI;
 use MTT::Reporter;
 use MTT::Defaults;
 use MTT::Globals;
+use MTT::Hooks;
 use MTT::FindProgram;
 use MTT::Trim;
 use MTT::DoCommand;
@@ -521,7 +522,10 @@ foreach my $hash (@ini_list) {
         next;
     }
 
-	
+    # Run the init hook, if it exists
+    MTT::Hooks::init($ini);
+    MTT::Hooks::invoke("mtt_hook_init");
+
     # Examine the [MTT] global defaults section.  We've already
     # determined the scratch_root, so pass it in so that it gets set
     # in the Globals hash.
@@ -649,6 +653,10 @@ foreach my $hash (@ini_list) {
         Verbose("Deleting fast scratch tree: $fast_scratch_arg\n");
         MTT::DoCommand::Cmd(1, "rm -rf $fast_scratch_arg");
     }
+
+    # Run the finalize hook, if it exists
+    MTT::Hooks::invoke("mtt_hook_finalize");
+    MTT::Hooks::finalize();
 }
 
 # That's it!
