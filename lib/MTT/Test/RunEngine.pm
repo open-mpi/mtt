@@ -52,6 +52,7 @@ my $report_results_count = 0;
 my $report_after_n_results;
 my $prev_section_name = undef;
 my $group_reports = 0;
+my $test_sid = 1;
 
 #--------------------------------------------------------------------------
 
@@ -397,6 +398,7 @@ sub _run_one_test {
     }
 
     my $str = "   Test: $testname, np=$MTT::Test::Run::test_np, variant=$variant:";
+    $ENV{MTT_TEST_SID} = $test_sid++;
 
     my @keys;
     push(@keys, $mpi_details->{mpi_get_simple_section_name});
