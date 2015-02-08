@@ -389,7 +389,11 @@ sub _expand_include_files {
             # If an absolute path is not used, then the file is assumed to be
             # relative to the main --file|f option
             if ($file !~ /^\s*\//) {
-                $file = "$dirname/" . basename($file);
+                if (-f "$dirname/$file") {
+                    $file = "$dirname/$file";
+                } else {
+                    $file = "$dirname/" . basename($file);
+                }
             }
 
             if (! -r $file) {
