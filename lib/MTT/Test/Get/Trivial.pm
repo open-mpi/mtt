@@ -155,8 +155,9 @@ int main(int argc, char *argv[])
 // Copyrights and licenses of this file are the same as for the MTT.
 //
 
-#include <iostream>
 #include <mpi.h>
+#include <iostream>
+
 using namespace std;
 int main(int argc, char* argv[]) {
     int rank, size;
