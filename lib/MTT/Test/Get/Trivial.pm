@@ -37,7 +37,7 @@ sub Get {
     # success-but-have-no-new-sources.
     if (-r "hello.c" && -r "ring.c" && 
         -r "hello.cc" && -r "ring.cc" &&
-        -r "hello_mpifh.f90" && -r "ring_mpifh.f90" &&
+        -r "hello_mpifh.f" && -r "ring_mpifh.f" &&
         -r "hello_usempi.f90" && -r "ring_usempi.f90" &&
         -r "hello_usempif08.f90" && -r "ring_usempif08.f90") {
         $ret->{test_result} = MTT::Values::PASS;
@@ -244,13 +244,13 @@ int main(int argc, char *argv[])
     # Fortran mpif.h interface
     #
 
-    $x = MTT::Files::SafeWrite($force, "hello_mpifh.f90", "!
-! This program is automatically generated via the \"Trivial\" Test::Get
-! module of the MPI Testing Tool (MTT).  Any changes you make here may
-! get lost!
-!
-! Copyrights and licenses of this file are the same as for the MTT.
-!
+    $x = MTT::Files::SafeWrite($force, "hello_mpifh.f", "C
+C This program is automatically generated via the \"Trivial\" Test::Get
+C module of the MPI Testing Tool (MTT).  Any changes you make here may
+C get lost!
+C
+C Copyrights and licenses of this file are the same as for the MTT.
+C
 
         program hello_mpifh
         implicit none
@@ -267,57 +267,61 @@ int main(int argc, char *argv[])
         return $ret;
     }
 
-    $x = MTT::Files::SafeWrite($force, "ring_mpifh.f90", "!
-! This program is automatically generated via the \"Trivial\" Test::Get
-! module of the MPI Testing Tool (MTT).  Any changes you make here may
-! get lost!
-!
-! Copyrights and licenses of this file are the same as for the MTT.
-!
+    $x = MTT::Files::SafeWrite($force, "ring_mpifh.f", "C
+C This program is automatically generated via the \"Trivial\" Test::Get
+C module of the MPI Testing Tool (MTT).  Any changes you make here may
+C get lost!
+C
+C Copyrights and licenses of this file are the same as for the MTT.
+C
 
-      program ring_mpifh
-      implicit none
-      include 'mpif.h'
-      integer rank, size, tag, next, from, ierr
-      integer done
-      integer length, pos
-      integer num(20)
-      integer initial_value
+        program ring_mpifh
+        implicit none
+        include 'mpif.h'
+        integer rank, size, tag, next, from, ierr
+        integer done
+        integer length, pos
+        integer num(20)
+        integer initial_value
 
-      tag = 201
-      length = 20
-      pos = length - 10
-      initial_value = 10
+        tag = 201
+        length = 20
+        pos = length - 10
+        initial_value = 10
 
-      call mpi_init(ierr)
-      call mpi_comm_rank(MPI_COMM_WORLD, rank, ierr)
-      call mpi_comm_size(MPI_COMM_WORLD, size, ierr)
+        call mpi_init(ierr)
+        call mpi_comm_rank(MPI_COMM_WORLD, rank, ierr)
+        call mpi_comm_size(MPI_COMM_WORLD, size, ierr)
 
-      next = mod((rank + 1), size)
-      from = mod((rank + size - 1), size)
-      if (rank .eq. 0) then
-         num(pos) = 30
-         call mpi_send(num, length, MPI_INTEGER, next, tag, MPI_COMM_WORLD, ierr)
-      endif
+        next = mod((rank + 1), size)
+        from = mod((rank + size - 1), size)
+        if (rank .eq. 0) then
+           num(pos) = 30
+           call mpi_send(num, length, MPI_INTEGER, next, tag,
+     &        MPI_COMM_WORLD, ierr)
+        endif
 
- 10   call mpi_recv(num, length, MPI_INTEGER, from, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
-      if (rank .eq. 0) then
-         num(pos) = num(pos) - 1
-      endif
-      call mpi_send(num, length, MPI_INTEGER, next, tag, MPI_COMM_WORLD, ierr)
-      
-      if (num(pos) .eq. 0) then
-         goto 20
-      endif
-      goto 10
+ 10     call mpi_recv(num, length, MPI_INTEGER, from, tag,
+     &        MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
+        if (rank .eq. 0) then
+           num(pos) = num(pos) - 1
+        endif
+        call mpi_send(num, length, MPI_INTEGER, next, tag,
+     &        MPI_COMM_WORLD, ierr)
 
- 20   if (rank .eq. 0) then
-         call mpi_recv(num, length, MPI_INTEGER, from, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
-      endif
+        if (num(pos) .eq. 0) then
+           goto 20
+        endif
+        goto 10
 
-      call mpi_barrier(MPI_COMM_WORLD, ierr)
-      call mpi_finalize(ierr)
-      end\n");
+ 20     if (rank .eq. 0) then
+           call mpi_recv(num, length, MPI_INTEGER, from, tag,
+       &        MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
+        endif
+
+        call mpi_barrier(MPI_COMM_WORLD, ierr)
+        call mpi_finalize(ierr)
+        end\n");
     if (! $x->{success}) {
         $ret->{result_message} = $x->{result_message};
         return $ret;

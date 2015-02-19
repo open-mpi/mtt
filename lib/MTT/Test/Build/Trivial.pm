@@ -132,10 +132,10 @@ sub Build {
 
     if ($mpi_install->{mpifh_bindings} and $languages_hash->{"mpifh"}) {
         Debug("Test compile/link sample mpif.h MPI application\n");
-        $x = _do_compile("$mpif77 $fflags", "hello_mpifh.f90", "hello_mpifh");
+        $x = _do_compile("$mpif77 $fflags", "hello_mpifh.f", "hello_mpifh");
         return $x
             if (defined($x));
-        $x = _do_compile("$mpif77 $fflags", "ring_mpifh.f90", "ring_mpifh");
+        $x = _do_compile("$mpif77 $fflags", "ring_mpifh.f", "ring_mpifh");
         return $x
             if (defined($x));
     } else {
