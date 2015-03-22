@@ -115,9 +115,10 @@ use MTT::Timer;
 use MTT::Util;
 use Filesys::DiskFree;
 
-my @file_arg;
-my $stdin_arg;
-my $scratch_arg;
+my $has_hooks = eval "require MTTHooks;";
+our @file_arg;
+our $stdin_arg;
+our $scratch_arg;
 my $help_arg;
 my $debug_arg;
 my $verbose_arg;
@@ -136,7 +137,7 @@ my @no_section_arg;
 my $no_reporter_arg;
 my $trim_arg;
 my $version_arg;
-my $ini_args;
+our $ini_args;
 my $time_arg;
 my $time_phases_arg;
 my $time_cmd_arg;
@@ -391,10 +392,10 @@ MTT::FindProgram::FindZeroDir();
 ########################################################################
 
 # Convert INI files (or STDIN) to data structure(s)
-my @ini_list = _process_ini_param(\@file_arg, $stdin_arg, \@section_arg, \@no_section_arg);
+our @ini_list = _process_ini_param(\@file_arg, $stdin_arg, \@section_arg, \@no_section_arg);
 
 # Determine scratch from command-line or INI param
-my $scratch_arg = _process_scratch_param("scratch", $scratch_arg, $ini_list[0]->{unfiltered}, ".");
+our $scratch_arg = _process_scratch_param("scratch", $scratch_arg, $ini_list[0]->{unfiltered}, ".");
 $MTT::Globals::Values->{scratch_root} = $scratch_arg;
 MTT::DoCommand::Chdir($scratch_arg);
 
@@ -467,10 +468,14 @@ if (defined($mpi_get_arg) || defined($mpi_install_arg) || defined($mpi_phases_ar
 # Load up all old data
 ########################################################################
 
-my $source_dir = "$scratch_arg/$MTT::Defaults::System_config->{source_subdir}";
-my $install_dir = "$scratch_arg/$MTT::Defaults::System_config->{install_subdir}";
-my $runs_data_dir = "$scratch_arg/$MTT::Defaults::System_config->{runs_data_subdir}";
-my $mpi_install_dir = "$scratch_arg/$MTT::Defaults::System_config->{mpi_install_subdir}";
+our $source_dir = "$scratch_arg/$MTT::Defaults::System_config->{source_subdir}";
+our $install_dir = "$scratch_arg/$MTT::Defaults::System_config->{install_subdir}";
+our $runs_data_dir = "$scratch_arg/$MTT::Defaults::System_config->{runs_data_subdir}";
+our $mpi_install_dir = "$scratch_arg/$MTT::Defaults::System_config->{mpi_install_subdir}";
+
+if ($has_hooks) {
+    MTTHooks::on_start();
+}
 
 # If requested, do a clean start
 if ($clean_start_arg) 
@@ -652,6 +657,10 @@ foreach my $hash (@ini_list) {
 }
 
 # That's it!
+
+if ($has_hooks) {
+    MTTHooks::on_stop();
+}
 
 exit(0);
 
