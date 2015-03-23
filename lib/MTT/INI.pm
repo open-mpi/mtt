@@ -284,7 +284,9 @@ sub InsertINIPredefines {
 sub ExpandIncludeSections {
     my($ini) = @_;
 
+    Debug("Expanding include_section(s) parameters in $ini\n");
     foreach my $section ($ini->Sections) {
+        Debug("Expanding include_section(s) parameters in $ini : $section\n");
         _expand_include_sections($ini, $section);
     }
     return $ini;
@@ -324,12 +326,22 @@ sub _expand_include_sections {
 
                 # Add in all of the include_section params into the section
                 foreach my $p ($ini->Parameters($include_section)) {
+                    my @exception_array = qw/setenv unsetenv/;
                     my $v = $ini->val($include_section, $p);
 
                     # Parent INI sections take precendence in a
                     # name collision
+                    # There are parameters having array type
+                    # that can accept values from base section and
+                    # include_section (see @exception_array)
+                    # Probably it can be a default behaviour in future
                     if (! defined($ini->val($section, $p))) {
                         $ini->newval($section, $p, $v);
+                    }
+                    elsif (grep { $_ eq $p } @exception_array) {
+                        my $v1 = $ini->val($section, $p);
+                        Warning("Value $p exists in sections ($section and $include_section)\n");
+                        $ini->newval($section, $p, $v1, $v);
                     }
                 }
             }
