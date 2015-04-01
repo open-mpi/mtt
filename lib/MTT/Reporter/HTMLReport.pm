@@ -52,7 +52,6 @@ my ($ini, $section);
 # send summary by email if requested
 my $to;
 
-my $domain;
 
 #--------------------------------------------------------------------------
 
@@ -64,15 +63,6 @@ sub Init
     $footer = Value($ini, $section, "footer") . "\n"; 
     $filename       = Value($ini, $section, "textfile_filename"); 
     $dirname        = Value($ini, $section, "textfile_dirname"); 
-	$domain         = Value($ini, "mtt", "web_url");
-	if(!defined($domain))
-	{
-		$domain  = Value($ini, $section, "web_url");
-		if(!defined($domain))
-		{
-			$domain = 'http://hpcweb.lab.mtl.com';
-		}
-	}
 
     # Make it an absolute filename, because there's oodles of
     # chdir()'s within the testing.  Whack the file if it's already
@@ -664,7 +654,7 @@ sub add_tr
     } 
 
     my $tr = "<tr style=\"background:\#eeeee0; $trClass\"  valign='top'>\n";
-    $tr .= "<td ><a href='$domain/$dir/$rep_file_url'>$phase</a></td><td>$section</td><td>$mpi_version</td><td >$duration_human</td><td>$pass</td><td>$fail</td><td>$timed</td><td>$skipped</td>\n</tr>\n";
+    $tr .= "<td ><a href='$dir/$rep_file_url'>$phase</a></td><td>$section</td><td>$mpi_version</td><td >$duration_human</td><td>$pass</td><td>$fail</td><td>$timed</td><td>$skipped</td>\n</tr>\n";
 
     return $tr;
 }
