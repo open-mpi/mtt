@@ -316,7 +316,7 @@ C
 
  20     if (rank .eq. 0) then
            call mpi_recv(num, length, MPI_INTEGER, from, tag,
-       &        MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
+     &        MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
         endif
 
         call mpi_barrier(MPI_COMM_WORLD, ierr)
