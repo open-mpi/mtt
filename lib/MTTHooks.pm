@@ -24,29 +24,29 @@ sub run_ext_hooks()
     foreach my $hook (@hooks_dirs) {
         my $hfile="$hook/$hook_file";
 
-        MTT::Messages::Verbose("Checking $hfile\n");
+        MTT::Messages::Debug("Checking hook: $hfile\n");
 
         if ( -f $hfile) {
-            MTT::Messages::Verbose("Loading hook $hfile\n");
+            MTT::Messages::Debug("Loading hook: $hfile\n");
             my $cmd = `cat $hfile`;
-            MTT::Messages::Verbose("hook: $cmd\n");
+            MTT::Messages::Verbose("*** Running hook: $cmd\n");
             eval($cmd);
         } else {
-            MTT::Messages::Verbose("no hook in $hfile\n");
+            MTT::Messages::Debug("No hook in $hfile\n");
         }
     }
 }
 
 # access global MTT vars defined with 'our' keyword by $main::var
-sub on_start  
+sub on_start
 {
-    MTT::Messages::Verbose("Hook on start\n");
+    MTT::Messages::Debug("Hook on start\n");
     &run_ext_hooks(".mtt_on_start");
 }
 
 sub on_stop
 {
-    MTT::Messages::Verbose("Hook on stop\n");
+    MTT::Messages::Debug("Hook on stop\n");
     &run_ext_hooks(".mtt_on_stop");
 }
 
