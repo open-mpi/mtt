@@ -113,9 +113,9 @@ use MTT::Lock;
 use MTT::Values;
 use MTT::Timer;
 use MTT::Util;
+use MTT::Hooks;
 use Filesys::DiskFree;
 
-my $has_hooks = eval "require MTTHooks;";
 our @file_arg;
 our $stdin_arg;
 our $scratch_arg;
@@ -473,9 +473,7 @@ our $install_dir = "$scratch_arg/$MTT::Defaults::System_config->{install_subdir}
 our $runs_data_dir = "$scratch_arg/$MTT::Defaults::System_config->{runs_data_subdir}";
 our $mpi_install_dir = "$scratch_arg/$MTT::Defaults::System_config->{mpi_install_subdir}";
 
-if ($has_hooks) {
-    MTTHooks::on_start();
-}
+MTT::Hooks::on_start();
 
 # If requested, do a clean start
 if ($clean_start_arg) 
@@ -658,9 +656,7 @@ foreach my $hash (@ini_list) {
 
 # That's it!
 
-if ($has_hooks) {
-    MTTHooks::on_stop();
-}
+MTT::Hooks::on_stop();
 
 exit(0);
 

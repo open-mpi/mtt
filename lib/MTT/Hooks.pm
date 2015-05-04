@@ -8,7 +8,7 @@
 # $HEADER$
 #
 #
-package MTTHooks;
+package MTT::Hooks;
 
 use MTT::Messages;
 

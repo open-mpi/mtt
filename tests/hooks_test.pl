@@ -20,9 +20,9 @@ my $test_var="hello";
 
 MTT::Messages::Messages(1, 1, cwd(), 1);
 
-if(eval "require MTTHooks;") {
+if (eval "require MTT::Hooks;") {
     print "Using Hooks\n";
-    MTTHooks::on_start();
+    MTT::Hooks::on_start();
 } else {
     print "No hooks for you\n";
 }
