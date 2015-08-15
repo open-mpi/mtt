@@ -4,6 +4,8 @@
 #                         All rights reserved.
 # Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2015      Research Organization for Information Science
+#                         and Technology (RIST). All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -204,7 +206,7 @@ sub find_bindings {
     my ($bindir, $libdir, $lang) = @_;
 
     my $file = _run_ompi_info($bindir, $libdir, "^bindings:$lang:");
-    return ($file->[0] =~ /^bindings:${lang}:yes/) ? "1" : "0";
+    return ($file->[0] =~ /^bindings:${lang}:(")?yes/) ? "1" : "0";
 }
 
 #--------------------------------------------------------------------------
