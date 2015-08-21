@@ -5,9 +5,9 @@
 # Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2006-2008 Sun Microsystems, Inc. All rights reserved.
 # $COPYRIGHT$
-# 
+#
 # Additional copyrights may follow
-# 
+#
 # $HEADER$
 #
 
@@ -31,8 +31,8 @@ BEGIN {
     # 2. If $0 is a path, try adding that do @INC and try "require" again.
     # 3. Otherwise, search $ENV[PATH] for mtt, and when you find it, add
     #    that directory to @INC and try again.
-	
-	
+
+
     my $mtt_lib = cwd() . "/lib";
     use lib cwd() . "/lib";
 
@@ -182,7 +182,7 @@ if ($version_arg) {
 }
 
 foreach my $file (@ARGV) {
-    push(@file_arg, $file) 
+    push(@file_arg, $file)
         if (-T $file and $file =~ /\.ini\s*$/);
 }
 
@@ -194,15 +194,15 @@ my @ARGV = &quotewords('\s+', 0, $ARGV_JOINED);
 foreach my $arg (@ARGV) {
 
     if ($arg =~ /$key_val_regexp$/) {
-        $ini_args->{$1}->{value} = $2; 
-        $ini_args->{$1}->{match} = '.'; 
+        $ini_args->{$1}->{value} = $2;
+        $ini_args->{$1}->{match} = '.';
     }
 
     # Check if an INI section was specified for the override
     # (See client/mtt --help for rundown of how INI param overriding
     # syntax works)
     if ($arg =~ /^([^=:]+):([^=]+)=/) {
-        $ini_args->{$2}->{match} = $1; 
+        $ini_args->{$2}->{match} = $1;
     }
 
     $ARGV_JOINED =~ s/$token_pattern//;
@@ -212,43 +212,37 @@ my $over_section_name;
 my $over_field_name;
 my $over_value;
 my @templates = ('test_run_','test_build_','test_get_','mpi_get_','mpi_install_','mpi_details_');
-foreach my $key (keys(%ENV)) 
+foreach my $key (keys(%ENV))
 {
-	if($key =~ /MTT_OPT/)
-	{
-		$over_value = $ENV{$key};
-		if($key =~/__/)
-		{
-			$over_field_name=$';	
-			$key = $`;
-		}else
-		{
-			Warning("Syntax error in $key sipped\n");
-			next;
-		}
-		if($key =~ /MTT_OPT_/)
-		{
-			$over_section_name=$';
-			$over_section_name = lc($over_section_name);
-			foreach (@templates)
-			{
-				if($over_section_name =~ /$_/)
-				{
-					my $new_template=$_;
-					$new_template =~ s/_/ /g;
-					chop($new_template);
-					$new_template .=': ';
-					$over_section_name =~ s/$_/$new_template/g;
-				}
-			}
-			$ini_args->{$over_field_name}->{value} = $over_value;
-			$ini_args->{$over_field_name}->{match} = $over_section_name;
-	
-		}else
-		{
-			Warning("Syntax error in $key sipped\n");
-		}
-	}
+    if($key =~ /MTT_OPT/) {
+        $over_value = $ENV{$key};
+        if($key =~/__/) {
+            $over_field_name=$';
+            # emacs mode: ';
+            $key = $`;
+        } else {
+            Warning("Syntax error in $key sipped\n");
+            next;
+        }
+        if($key =~ /MTT_OPT_/) {
+            $over_section_name=$';
+            # emacs mode: ';
+            $over_section_name = lc($over_section_name);
+            foreach (@templates) {
+                if($over_section_name =~ /$_/) {
+                    my $new_template=$_;
+                    $new_template =~ s/_/ /g;
+                    chop($new_template);
+                    $new_template .=': ';
+                    $over_section_name =~ s/$_/$new_template/g;
+                }
+            }
+            $ini_args->{$over_field_name}->{value} = $over_value;
+            $ini_args->{$over_field_name}->{match} = $over_section_name;
+        } else {
+            Warning("Syntax error in $key sipped\n");
+        }
+    }
 }
 
 if (! @file_arg and ! $stdin_arg) {
@@ -269,10 +263,10 @@ if (!$ok || $help_arg) {
     print "Options:
 --file|-f <config_file>         Specify the configuration file
 --scratch|-s <dir_name>         Scratch directory (global filsysyem)
-                                Global filesystem where most MTT work is 
+                                Global filesystem where most MTT work is
                                 performed
 --fast-scratch <dir_name>       Fast scratch dir (e.g., a local filesystem)
-                                This should be on a fast/local filesystem; 
+                                This should be on a fast/local filesystem;
                                 some portions of MTT may choose to use this
                                 filesystem for IO-intensive operations
                                 that are not persistent across
@@ -289,7 +283,7 @@ if (!$ok || $help_arg) {
                                 be executed
 --clean-start                   Clean the scratch directory from
                                 past MTT invocations before running
---[no-]trial                    Use when testing your MTT client setup; 
+--[no-]trial                    Use when testing your MTT client setup;
                                 results that are generated and submitted
                                 to the database are marked as \"trials\"
                                 and are not included in normal
@@ -306,7 +300,7 @@ if (!$ok || $help_arg) {
 --[no-]test-phases              Alias for --test-get --test-build --test-run
 --[no-]trim                     Do the \"Trim\" phase
 --[no-]section                  Do a specific section(s)
---get-value <section>,<param>   Print the value of the specified INI paramter 
+--get-value <section>,<param>   Print the value of the specified INI paramter
                                 and exit
 --no-reporter                   Do not invoke any MTT Reporter modules
 field=value                     Replace parameter \"foo\" from the INI file
@@ -324,7 +318,7 @@ section (note the shell quoting to include the spaces in the value):
 
 If no options other than --file, -f, or '-' are specified, MTT will
 default to trying to make as much progress as possible (i.e., running
-each of the phases as necessary).  
+each of the phases as necessary).
 
 The phases can be specified in positive or negative form.  You can
 only specify positive or negative phases in a run; you cannot mix both
@@ -334,7 +328,7 @@ positive and negative phases in a single MTT run.
   phases will be run (e.g., \"--mpi-get --mpi-install\").
 * If negative phases are specified, then thoses phases will *not* be
   run.
-  
+
 Use --section to run sections matching a pattern.  For example, the
 following command will perform any section matching the
 case-insensitive patttern \"intel\":
@@ -432,7 +426,7 @@ if (defined($mpi_get_arg) || defined($mpi_install_arg) || defined($mpi_phases_ar
         $mpi_get = $mpi_install = $test_get = $test_build = $test_run = $trim = 0;
 
         $mpi_get = 1 if (defined($mpi_get_arg) && $mpi_get_arg) or
-                        (defined($mpi_phases_arg) && $mpi_phases_arg); 
+                        (defined($mpi_phases_arg) && $mpi_phases_arg);
         $mpi_install = 1 if (defined($mpi_install_arg) && $mpi_install_arg) or
                             (defined($mpi_phases_arg) && $mpi_phases_arg);
         $test_get = 1 if (defined($test_get_arg) && $test_get_arg) or
@@ -443,7 +437,7 @@ if (defined($mpi_get_arg) || defined($mpi_install_arg) || defined($mpi_phases_ar
                          (defined($test_phases_arg) && $test_phases_arg);
 
         $trim = 1 if defined($trim_arg) && $trim_arg;
-    } 
+    }
 
     # Otherwise, just negate whatever option was negated
 
@@ -476,7 +470,7 @@ our $mpi_install_dir = "$scratch_arg/$MTT::Defaults::System_config->{mpi_install
 MTT::Hooks::on_start();
 
 # If requested, do a clean start
-if ($clean_start_arg) 
+if ($clean_start_arg)
 {
     MTT::DoCommand::Cmd(1, "rm -rf $source_dir");
     MTT::DoCommand::Cmd(1, "rm -rf $install_dir");
@@ -524,7 +518,7 @@ foreach my $hash (@ini_list) {
         next;
     }
 
-	
+
     # Examine the [MTT] global defaults section.  We've already
     # determined the scratch_root, so pass it in so that it gets set
     # in the Globals hash.
@@ -551,7 +545,7 @@ foreach my $hash (@ini_list) {
     MTT::Lock::Init($ini);
 
     # execute on_start callback if exists
-	_do_step($ini, "mtt", "before_mtt_start_exec");
+    _do_step($ini, "mtt", "before_mtt_start_exec");
 
     # Process setenv, unsetenv, prepend_path, and append_path
 
@@ -569,7 +563,7 @@ foreach my $hash (@ini_list) {
     if (defined($logfile)) {
         MTT::Messages::open_logfile($logfile);
     }
-    
+
     # If "--trial" was specified, then set the "trail" flag to 1
 
     if (defined($trial_arg)) {
@@ -582,7 +576,7 @@ foreach my $hash (@ini_list) {
         MTT::Reporter::Init($ini);
     }
 
-	
+
     if ($mpi_get && !MTT::Util::time_to_terminate()) {
         &MTT::Timer::start($time_phases);
         MTT::MPI::Get::Get($ini, $source_dir, $force_arg);
@@ -607,7 +601,7 @@ foreach my $hash (@ini_list) {
         &MTT::Timer::stop();
         &MTT::Timer::print("Phase: Test Build", $time_phases, 1);
     }
-    
+
     $MTT::Globals::Values->{save_intermediate_report} = $MTT::Globals::Values->{save_intermediate_report_enable};
     if ($test_run && !MTT::Util::time_to_terminate()) {
         &MTT::Timer::start($time_phases);
@@ -628,13 +622,13 @@ foreach my $hash (@ini_list) {
 
     # Shutdown the reporter
 
-	#$MTT::Globals::Values->{save_intermediate_report}=undef;
+    #$MTT::Globals::Values->{save_intermediate_report}=undef;
     if (!$no_reporter_arg) {
         MTT::Reporter::Finalize();
     }
 
     # execute on_stop callback if exists
-	_do_step($ini, "mtt", "after_mtt_start_exec");
+    _do_step($ini, "mtt", "after_mtt_start_exec");
 
     # Shut down locks
 
@@ -667,7 +661,7 @@ exit(0);
 # Return a list of INI objects built off of the given INI
 # files (or STDIN)
 sub _process_ini_param {
-    
+
     my $file_arg       = shift;
     my $stdin_arg      = shift;
     my $section_arg    = shift;
@@ -754,8 +748,8 @@ sub _process_scratch_param {
         $scratch_arg = Value($ini, "MTT", $name);
     }
 
-    
-	# See if we got a scratch root
+
+    # See if we got a scratch root
     if (! $scratch_arg) {
         $scratch_arg = $def_dir;
     }
@@ -812,10 +806,10 @@ sub _print_value {
 
 # Run cmd, specified in the non Test* sections
 sub _do_step {
-	my ($ini, $section,$param) = @_;
-	my $cmd = $ini->val($section, $param);
-	if ( defined $cmd ) {
-		my $x = MTT::DoCommand::RunStep(1, $cmd, -1, $ini, $section, $param);
-		Verbose("  Output: $x->{result_stdout}\n")
-	}
+    my ($ini, $section,$param) = @_;
+    my $cmd = $ini->val($section, $param);
+    if (defined($cmd)) {
+        my $x = MTT::DoCommand::RunStep(1, $cmd, -1, $ini, $section, $param);
+        Verbose("  Output: $x->{result_stdout}\n")
+    }
 }
