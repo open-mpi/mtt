@@ -78,10 +78,12 @@ sub open_logfile {
     open LOG, ">$filename" ||
         Abort("Cannot open logfile \"$filename\" -- aborting\n");
     $LOGFILE = \*LOG;
+    print $LOGFILE "Opened logfile: " . localtime() . "\n";
 }
 
 sub close_logfile {
     if (defined($LOGFILE)) {
+        print $LOGFILE "Closing logfile: " . localtime() . "\n";
         close(*$LOGFILE);
         $LOGFILE = undef;
     }
