@@ -640,10 +640,6 @@ foreach my $hash (@ini_list) {
 
     MTT::Lock::Finalize($ini);
 
-    # Close the log
-
-    MTT::Messages::close_logfile();
-
     # Whack the fast scratch area if it's unique/different than the
     # main scratch tree
     if ($fast_scratch_arg &&
@@ -652,6 +648,10 @@ foreach my $hash (@ini_list) {
         Verbose("Deleting fast scratch tree: $fast_scratch_arg\n");
         MTT::DoCommand::Cmd(1, "rm -rf $fast_scratch_arg");
     }
+
+    # Close the log
+
+    MTT::Messages::close_logfile();
 }
 
 # That's it!
