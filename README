@@ -132,7 +132,7 @@ Project.
 Open MPI members should visit the MTT wiki for instructions on how to
 setup for nightly regression testing:
 
-    https://svn.open-mpi.org/trac/mtt/wiki/OMPITesting
+    https://github.com/open-mpi/mtt/wiki/OMPITesting
 
 The MTT client requires a few perl packages to be installed locally,
 such as LWP::UserAgent.  Currently, the best way to determine if you
