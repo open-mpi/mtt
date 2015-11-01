@@ -3606,5 +3606,23 @@ sub test_ini_param {
     return $val;
 }
 
+# Return random number from specified range:
+#
+sub random_range {
+    my ($from, $to) = @_;
+    $to++;
+    my $x = $from + int(rand($to - $from));
+    $x;
+}
+
+# Return random array element
+#
+sub random_array_element {
+    my (@array) = @_;
+
+    my $randomelement = $array[rand @array];
+    $randomelement;
+}
+
 
 1;
