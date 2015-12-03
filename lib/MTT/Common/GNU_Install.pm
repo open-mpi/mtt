@@ -6,6 +6,8 @@
 # Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
 # Copyright (c) 2009      High Performance Computing Center Stuttgart, 
 #                         University of Stuttgart.  All rights reserved.
+# Copyright (c) 2015      Research Organization for Information Science
+#                         and Technology (RIST). All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -68,6 +70,8 @@ sub Install {
         $autogen_cmd = "./autogen.pl"
             if (-x "autogen.pl");
         if ($autogen_cmd) {
+            $autogen_cmd .= " $config->{autogen_arguments}"
+                if ($config->{autogen_arguments});
             $x = MTT::Common::Do_step::do_step($config, $autogen_cmd, 1);
             %$ret = (%$ret, %$x);
             return $ret if (!MTT::DoCommand::wsuccess($ret->{exit_status}));
