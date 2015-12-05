@@ -1,0 +1,18 @@
+#
+# Copyright (c) 2015      Intel, Inc. All rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
+
+[Core]
+Name = Warewulf
+Module = Warewulf
+
+[Documentation]
+Author = Ralph Castain
+Version = 0.1
+Website = http://warewulf.lbl.gov/trac
+Description = Plugin for provisioning nodes using the Warewulf image manager

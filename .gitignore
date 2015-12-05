@@ -4,3 +4,4 @@ server/php/stats/mtt-contrib.pdf
 server/php/tmp/*.csv
 server/php/tmp/*.png
 *.pyc
+.DS_Store

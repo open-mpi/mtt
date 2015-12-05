@@ -1,0 +1,18 @@
+#
+# Copyright (c) 2015      Intel, Inc. All rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
+
+[Core]
+Name = gcc Plugin
+Module = gcc
+
+[Documentation]
+Author = Ralph Castain
+Version = 0.1
+Website = N/A
+Description = GCC build plugin
