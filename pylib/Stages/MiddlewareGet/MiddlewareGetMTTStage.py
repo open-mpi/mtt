@@ -10,12 +10,12 @@
 
 from yapsy.IPlugin import IPlugin
 
-class TestBuildMTTStage(IPlugin):
+class MiddlewareGetMTTStage(IPlugin):
     def __init__(self):
         # initialise parent class
         IPlugin.__init__(self)
     def print_name(self):
-        print "Stage for building tests"
+        print "Stage for getting middleware source code"
 
     def ordering(self):
-        return 400
+        return 300

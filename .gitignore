@@ -5,3 +5,5 @@ server/php/tmp/*.csv
 server/php/tmp/*.png
 *.pyc
 .DS_Store
+db.sqlite3
+
