@@ -1,0 +1,18 @@
+#
+# Copyright (c) 2015      Intel, Inc. All rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
+
+[Core]
+Name = ExecuteCmd
+Module = ExecuteCmd
+
+[Documentation]
+Author = Ralph Castain
+Version = 0.1
+Website = N/A
+Description = Execute a command and capture its stdout and stderr

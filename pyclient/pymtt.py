@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2015      Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -43,19 +43,28 @@ infoGroup.add_option("--list-tools",
 infoGroup.add_option("--list-tool-modules",
                      action="store", dest="listtoolmodules", metavar="TYPE",
                      help="List available modules for TYPE (* => all)")
+infoGroup.add_option("--list-utilities",
+                     action="store_true", dest="listutils", default=False,
+                     help="List utilities available to this client")
+infoGroup.add_option("--list-utility-modules",
+                     action="store", dest="listutilmodules", metavar="TYPE",
+                     help="List available modules for TYPE (* => all)")
+infoGroup.add_option("--getvalue",
+                     action="store", dest="getvalue", metavar="<section>,<param>",
+                     help="Print the value of the specified INI parameter and exit")
 parser.add_option_group(infoGroup)
 
 execGroup = OptionGroup(parser, "Execution Options")
-execGroup.add_option("-e", "--executor", dest="executor",
+execGroup.add_option("--description", dest="description",
+                     help="Provide a brief title/description to be included in the log for this test")
+execGroup.add_option("-e", "--executor", dest="executor", default="sequential",
                      help="Use the specified execution STRATEGY module", metavar="STRATEGY")
 
-execGroup.add_option("-f", "--file", dest="filename",
-                     help="Specify the test configuration FILE (or comma-delimited list of FILEs)", metavar="FILE")
 execGroup.add_option("--base-dir", dest="basedir",
                      help="Specify the DIRECTORY where we can find the TestDef class (checks DIRECTORY, DIRECTORY/Utilities, and DIRECTORY/pylib/Utilities locations) - also serves as default plugin-dir", metavar="DIRECTORY")
 execGroup.add_option("--plugin-dir", dest="plugindir",
                      help="Specify the DIRECTORY where additional plugins can be found (or comma-delimited list of DIRECTORYs)", metavar="DIRECTORY")
-execGroup.add_option("--scratch-dir", dest="scratchdir",
+execGroup.add_option("--scratch-dir", dest="scratchdir", default="./mttscratch",
                      help="Specify the DIRECTORY under which scratch files are to be stored", metavar="DIRECTORY")
 execGroup.add_option("--print-section-time", dest="sectime",
                       action="store_true", default=False,
@@ -78,6 +87,10 @@ execGroup.add_option("--no-reporter", dest="reporter",
                       help="Do not invoke any MTT Reporter modules")
 execGroup.add_option("-l", "--log", dest="logfile",
                      help="Log all output to FILE (defaults to stdout)", metavar="FILE")
+execGroup.add_option("--group-results", dest="submit_group_results", default=True,
+                     help="Report results from each test section as it is completed")
+execGroup.add_option("--default-make-options", dest="default_make_options", default="-j 10",
+                     help="Default options when running the \"make\" command")
 parser.add_option_group(execGroup)
 
 debugGroup = OptionGroup(parser, "Debug Options")
@@ -93,9 +106,6 @@ debugGroup.add_option("--dryrun",
 debugGroup.add_option("--trial",
                       action="store_true", dest="trial", default=False,
                       help="Use when testing your MTT client setup; results that are generated and submitted to the database are marked as \"trials\" and are not included in normal reporting.")
-debugGroup.add_option("--getvalue",
-                      action="store", dest="getvalue", metavar="<section>,<param>",
-                      help="Print the value of the specified INI parameter and exit")
 parser.add_option_group(debugGroup)
 (options, args) = parser.parse_args()
 
@@ -114,48 +124,47 @@ if options.basedir:
     if not os.path.exists(basedir) or not os.path.isdir(basedir):
         print "The specified base directory",basedir,"doesn't exist"
         sys.exit(1)
-    if not os.path.exists(os.path.join(basedir, "TestDefMTTUtility.py")):
+    if not os.path.exists(os.path.join(basedir, "TestDef.py")):
         # try adding std path to it
-        chkdir = os.path.join(options.basedir, "Utilities")
+        chkdir = os.path.join(options.basedir, "System")
         if not os.path.exists(chkdir) or not os.path.isdir(chkdir):
-            # see if the pylib/Utilities location exists
-            basedir = os.path.join(options.basedir, "pylib", "Utilities")
+            # see if the pylib/System location exists
+            basedir = os.path.join(options.basedir, "pylib", "System")
             if not os.path.exists(basedir) or not os.path.isdir(basedir):
-                print "The TestDefMTTUtility.py file was not found in the specified base directory,"
+                print "The TestDef.py file was not found in the specified base directory,"
                 print "and no standard location under the specified base directory",basedir,"exists"
                 sys.exit(1)
             else:
-                if not os.path.exists(os.path.join(basedir, "TestDefMTTUtility.py")):
-                    print "The TestDefMTTUtility.py file was not found in the specified base directory,"
+                if not os.path.exists(os.path.join(basedir, "TestDef.py")):
+                    print "The TestDef.py file was not found in the specified base directory,"
                     print "or any standard location under the specified base directory",basedir
                     sys.exit(1)
         else:
-            if os.path.exists(os.path.join(chkdir, "TestDefMTTUtility.py")):
+            if os.path.exists(os.path.join(chkdir, "TestDef.py")):
                 basedir = chkdir
             else:
-                print "The TestDefMTTUtility.py file was not found in the standard location"
+                print "The TestDef.py file was not found in the standard location"
                 print "under the specified base directory at",chkdir
                 sys.exit(1)
-elif os.path.exists("TestDefMTTUtility.py"):
+elif os.path.exists("TestDef.py"):
     # the class file is local to us, so use it
     basedir = "./"
     topdir = basedir
 elif os.path.exists("pylib"):
     # we appear to be in the MTT home directory
-    basedir = os.path.join("./", "pylib", "Utilities")
+    basedir = os.path.join("./", "pylib", "System")
     topdir = os.path.join("./", "pylib")
     if not os.path.exists(basedir) or not os.path.isdir(basedir):
         print "The local directory",basedir,"doesn't exist"
         sys.exit(1)
-    if not os.path.exists(os.path.join(basedir, "TestDefMTTUtility.py")):
-        print "The TestDefMTTUtility.py file was not found in the standard location"
+    if not os.path.exists(os.path.join(basedir, "TestDef.py")):
+        print "The TestDef.py file was not found in the standard location"
         print "under the specified base directory at",basedir
         sys.exit(1)
 else:
     try:
-        os.environ['MTT_HOME']
         # try that location
-        basedir = os.path.join(os.environ['MTT_HOME'], "pylib", "Utilities")
+        basedir = os.path.join(os.environ['MTT_HOME'], "pylib", "System")
         if not os.path.exists(basedir) or not os.path.isdir(basedir):
             print "MTT_HOME points to an invalid location - please correct"
             sys.exit(1)
@@ -166,7 +175,7 @@ else:
         if os.path.isabs(sys.argv[0]):
             # try that location
             path = os.path.dirname(sys.argv[0])
-            basedir = os.path.join(path, "pylib", "Utilities")
+            basedir = os.path.join(path, "pylib", "System")
             topdir = os.path.join(path, "pylib")
             if not os.path.exists(basedir) or not os.path.isdir(basedir):
                 print "A base directory for MTT was not specified, we do not appear"
@@ -188,11 +197,11 @@ if (options.debug):
 # load the "testdef" Test Definition class so we can
 # begin building this test
 try:
-    m = imp.load_source("TestDefMTTUtility", os.path.join(basedir, "TestDefMTTUtility.py"));
+    m = imp.load_source("TestDef", os.path.join(basedir, "TestDef.py"));
 except ImportError:
-    print "ERROR: unable to load TestDefMTTUtility that must contain the Test Definition object"
+    print "ERROR: unable to load TestDef that must contain the Test Definition object"
     exit(1)
-cls = getattr(m, "TestDefMTTUtility")
+cls = getattr(m, "TestDef")
 a = cls()
 
 # create the Test Definition object and set the

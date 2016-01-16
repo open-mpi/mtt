@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2015      Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -13,11 +13,14 @@ import imp
 import sys
 import datetime
 
-class LoadClassesMTTUtility:
+class LoadClasses:
     def __init__(self):
         self.stages = {};
         self.tools = {};
         self.utilities = {};
+
+    def print_name(self):
+        return "LoadClasses"
 
     def load(self, directory):
         oldcwd = os.getcwd()

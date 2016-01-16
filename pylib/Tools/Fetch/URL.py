@@ -1,6 +1,6 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
-# Copyright (c) 2015      Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -9,16 +9,16 @@
 #
 
 
-from TestBuildMTTStage import *
+from FetchMTTTool import *
 
-class File(TestBuildMTTStage):
+class URL(FetchMTTTool):
 
     def __init__(self):
         """
         init
         """
         # initialise parent class
-        TestBuildMTTStage.__init__(self)
+        FetchMTTTool.__init__(self)
 
 
     def activate(self):
@@ -38,4 +38,8 @@ class File(TestBuildMTTStage):
         return
 
     def print_name(self):
-        return "GCC"
+        return "URL"
+
+    def execute(self, keyvals, testDef):
+        print "URL"
+        return

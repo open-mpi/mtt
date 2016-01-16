@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015      Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -8,11 +8,11 @@
 #
 
 [Core]
-Name = URL Plugin
-Module = url
+Name = Git Plugin
+Module = Git
 
 [Documentation]
 Author = Ralph Castain
 Version = 0.1
 Website = N/A
-Description = Plugin for getting tests via URL
+Description = Plugin for getting software via Git
