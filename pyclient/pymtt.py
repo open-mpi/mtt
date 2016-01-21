@@ -21,8 +21,8 @@ from optparse import OptionParser, OptionGroup
 # First check for bozo error - we need to be given
 # at least a cmd line option, so no params at all
 # sounds like a plea for "help"
-if 1 == len(sys.argv):
-    sys.exit('MTT usage error: add -h for help')
+#if 1 == len(sys.argv):
+#    sys.exit('MTT usage error: add -h for help')
 
 # define the cmd line options
 parser = OptionParser("usage: %prog [options] testfile1 testfile2 ...")
@@ -108,6 +108,7 @@ debugGroup.add_option("--trial",
                       help="Use when testing your MTT client setup; results that are generated and submitted to the database are marked as \"trials\" and are not included in normal reporting.")
 parser.add_option_group(debugGroup)
 (options, args) = parser.parse_args()
+
 
 # Try to find the MTT TestDef class. Try several methods:
 

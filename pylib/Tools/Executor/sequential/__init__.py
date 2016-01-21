@@ -66,44 +66,57 @@ class SequentialEx(ExecutorMTTTool):
             for kv in testDef.config.items(title):
                 keyvals[kv[0].strip()] = kv[1].strip()
             # extract the name of the plugin to use
-            module = keyvals['plugin']
-            if module is None:
-                # they forgot to specify the plugin to use
-                print "Missing plugin name for stage",stage
-                return
-            # see if this plugin exists
-            plugin = None
-            for pluginInfo in testDef.stages.getPluginsOfCategory(stage):
-                if module == pluginInfo.plugin_object.print_name():
-                    plugin = pluginInfo.plugin_object
-                    break
-            if plugin is None:
-                # this plugin doesn't exist, or it may not be a stage as
-                # sometimes a stage consists of executing a tool.
-                # so let's check the tools too, noting that those
-                # are not stage-specific.
-                availTools = testDef.loader.tools.keys()
-                for tool in availTools:
-                    for pluginInfo in testDef.tools.getPluginsOfCategory(tool):
-                        if module == pluginInfo.plugin_object.print_name():
-                            plugin = pluginInfo.plugin_object
-                            break
-                    if plugin is not None:
-                        break;
+            try:
+                module = keyvals['plugin']
+                # see if this plugin exists
+                plugin = None
+                for pluginInfo in testDef.stages.getPluginsOfCategory(stage):
+                    if module == pluginInfo.plugin_object.print_name():
+                        plugin = pluginInfo.plugin_object
+                        break
                 if plugin is None:
-                    print "Specified plugin",module,"does not exist in stage",stage,"or in the available tools"
-                    return
+                    # this plugin doesn't exist, or it may not be a stage as
+                    # sometimes a stage consists of executing a tool.
+                    # so let's check the tools too, noting that those
+                    # are not stage-specific.
+                    availTools = testDef.loader.tools.keys()
+                    for tool in availTools:
+                        for pluginInfo in testDef.tools.getPluginsOfCategory(tool):
+                            if module == pluginInfo.plugin_object.print_name():
+                                plugin = pluginInfo.plugin_object
+                                break
+                        if plugin is not None:
+                            break;
+                    if plugin is None:
+                        print "Specified plugin",module,"does not exist in stage",stage,"or in the available tools"
+                        return
+                    else:
+                        # activate the specified plugin
+                        testDef.tools.activatePluginByName(module, tool)
                 else:
                     # activate the specified plugin
-                    testDef.tools.activatePluginByName(module, tool)
-            else:
-                # activate the specified plugin
-                testDef.stages.activatePluginByName(module, stage)
+                    testDef.stages.activatePluginByName(module, stage)
+            except KeyError:
+                # if they didn't specify a plugin, use the default if one
+                # is available and so designated
+                default = "Default{0}".format(stage)
+                for pluginInfo in testDef.stages.getPluginsOfCategory(stage):
+                    if default == pluginInfo.plugin_object.print_name():
+                        plugin = pluginInfo.plugin_object
+                        break
+                if plugin is None:
+                    # we really have to way of executing this
+                    print "Plugin",module,"for stage",stage,"was not specified, and no default is available"
+                    stageLog = {'stage':title}
+                    stageLog["parameters"] = testDef.config.items(title)
+                    stageLog['status'] = 1
+                    return
+
             # execute the provided test description and capture the result
             stageLog = {'stage':title}
             stageLog["parameters"] = testDef.config.items(title)
             plugin.execute(stageLog, keyvals, testDef)
-            testDef.logger.logResults(stageLog)
+            testDef.logger.logResults(title, stageLog)
             # if this step failed, then we don't want to continue
             try:
                 if 0 != stageLog['status']:
@@ -111,6 +124,6 @@ class SequentialEx(ExecutorMTTTool):
                     print "Stage ",stage," failed with status ",str(stageLog['status'])
                     return
             except KeyError:
-                print "Stage ",stage," plugin ",module," ailed to return a status"
+                print "Stage ",stage," plugin ",module," failed to return a status"
                 return
         return

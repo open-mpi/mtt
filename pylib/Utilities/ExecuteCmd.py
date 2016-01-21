@@ -9,6 +9,7 @@
 #
 
 import sys
+import re
 import select
 import subprocess
 from BaseMTTUtility import *
@@ -22,10 +23,16 @@ class ExecuteCmd(BaseMTTUtility):
         return "ExecuteCmd"
 
     def execute(self, cmdargs, testDef):
+        mycmdargs = []
+        # if any cmd arg has quotes around it, remove
+        # them here
+        for arg in cmdargs:
+            mycmdargs.append(arg.replace('\"',''))
+        print mycmdargs
         # open a subprocess with stdout and stderr
         # as distinct pipes so we can capture their
         # output as the process runs
-        p = subprocess.Popen(cmdargs,
+        p = subprocess.Popen(mycmdargs,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         # define storage to catch the output
         stdout = []
@@ -40,11 +47,13 @@ class ExecuteCmd(BaseMTTUtility):
                 # if the data
                 if fd == p.stdout.fileno():
                     read = p.stdout.readline().rstrip()
-                    testDef.logger.verbose_print(testDef.options, 'stdout: ' + read)
+                    print "STDOUT:",read
+                #    testDef.logger.verbose_print(testDef.options, 'stdout: ' + read)
                     stdout.append(read)
                 elif fd == p.stderr.fileno():
                     read = p.stderr.readline().rstrip()
-                    testDef.logger.verbose_print(testDef.options, 'stderr: ' + read)
+                    print "STDERR:",read
+                #    testDef.logger.verbose_print(testDef.options, 'stderr: ' + read)
                     stderr.append(read)
 
             if p.poll() != None:

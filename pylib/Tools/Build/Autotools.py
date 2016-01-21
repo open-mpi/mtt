@@ -78,7 +78,12 @@ class Autotools(BuildMTTTool):
         # see if they want us to execute autogen
         try:
             if keyvals['autogen_cmd'] is not None:
-                status, stdout, stderr = testDef.execmd.execute([keyvals['autogen_cmd']], testDef)
+                print "LOCATION",location,"CMD",keyvals['autogen_cmd']
+                agargs = []
+                args = keyvals['autogen_cmd'].split()
+                for arg in args:
+                    agargs.append(arg.strip())
+                status, stdout, stderr = testDef.execmd.execute(agargs, testDef)
             if 0 != status:
                 log['status'] = status
                 log['stdout'] = stdout

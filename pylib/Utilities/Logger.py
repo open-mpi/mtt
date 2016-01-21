@@ -16,7 +16,7 @@ class Logger(BaseMTTUtility):
     def __init__(self):
         BaseMTTUtility.__init__(self)
         self.fh = sys.stdout
-        self.results = []
+        self.results = {}
 
     def print_name(self):
         return "Logger"
@@ -41,15 +41,16 @@ class Logger(BaseMTTUtility):
             self.fh.close()
         return
 
-    def logResults(self, result):
-        self.results.append(result)
+    def logResults(self, title, result):
+        self.results[title] = result
         return
 
     def outputLog(self):
         # cycle across the logged results and output
         # them to the logging file
-        for result in self.results:
+        for stage in self.results.keys():
             try:
+                result = self.results[stage]
                 if result['status'] is not None:
                     print >> self.fh, "Stage " + result['stage'] + ": Status " + str(result['status'])
             except KeyError:
@@ -59,14 +60,9 @@ class Logger(BaseMTTUtility):
     def getLog(self, key):
         # we have been passed the name of a stage, so
         # see if we have its log in the results
-        for lg in self.results:
-            # each entry is a dictionary, and the name
-            # of the stage is tied to the 'stage' key
-            try:
-                if key == lg['stage']:
-                    return lg
-            except KeyError:
-                return None
-        # if we get here, then we don't have a log entry
-        # for this stage
+        try:
+            if self.results[key] is not None:
+                return self.results[key]
+        except KeyError:
+            pass
         return None

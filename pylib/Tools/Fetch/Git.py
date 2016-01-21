@@ -21,7 +21,7 @@ class Git(FetchMTTTool):
         self.activated = False
         # track the repos we have processed so we
         # don't do them multiple times
-        self.done = []
+        self.done = {}
         return
 
     def activate(self):
@@ -46,6 +46,17 @@ class Git(FetchMTTTool):
             log['status'] = 1
             log['stderr'] = "No repository URL was provided"
             return
+        # the path component of the parser output contains
+        # the name of the repo
+        repo = os.path.basename(urlparse(url).path)
+        # check to see if we have already processed this repo
+        try:
+            if self.done[repo] is not None:
+                log['status'] = self.done[repo][0]
+                log['location'] = self.done[repo][1]
+                return
+        except KeyError:
+            pass
         # check to see if they specified a module to use
         # where git can be found
         usedModule = False
@@ -67,9 +78,6 @@ class Git(FetchMTTTool):
                 # unload the modules before returning
                 testDef.modcmd.unloadModules(log, keyvals['modules'], testDef)
             return
-        # the path component of the parser output contains
-        # the name of the repo
-        repo = os.path.basename(urlparse(url).path)
         # see if they asked for a specific branch
         branch = None
         try:
@@ -124,8 +132,15 @@ class Git(FetchMTTTool):
         log['stderr'] = stderr
         # log our absolute location so others can find it
         log['location'] = os.getcwd()
+        # if they indicated that a specific subdirectory was
+        # the target, then modify the location accordingly
+        try:
+            if keyvals['subdir'] is not None:
+                log['location'] = os.path.join(log['location'], keyvals['subdir'])
+        except KeyError:
+            pass
         # track that we serviced this one
-        self.done.append((repo, status))
+        self.done[repo] = (status, log['location'])
         # change back to the original directory
         os.chdir(cwd)
         if usedModule:
