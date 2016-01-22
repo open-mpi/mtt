@@ -16,6 +16,16 @@ class MTTDatabase(ReporterMTTStage):
     def __init__(self):
         # initialise parent class
         ReporterMTTStage.__init__(self)
+        self.options = {}
+        self.options['realm'] = (None, "Database name")
+        self.options['username'] = (None, "Username to be used for submitting data")
+        self.options['password'] = (None, "Password for that username")
+        self.options['platform'] = (None, "Name of the platform (cluster) upon which the tests were run")
+        self.options['hostname'] = (None, "Name of the hosts involved in the tests (may be regular expression)")
+        self.options['url'] = (None, "URL of the database server")
+        self.options['debug_filename'] = (None, "Debug output file for server interaction information")
+        self.options['keep_debug_files'] = (False, "Retain reporter debug output after execution")
+        self.options['debug_server'] = (False, "Ask the server to return its debug output as well")
 
 
     def activate(self):
@@ -32,7 +42,9 @@ class MTTDatabase(ReporterMTTStage):
         return "MTTDatabase"
 
     def print_options(self, testDef, prefix):
-        print prefix + "None"
+        lines = testDef.printOptions(self.options)
+        for line in lines:
+            print prefix + line
         return
 
     def execute(self, log, keyvals, testDef):

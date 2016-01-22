@@ -152,6 +152,8 @@ class TestDef:
                     self.execmd = pluginInfo.plugin_object
                 elif "ModuleCmd" == pluginInfo.plugin_object.print_name():
                     self.modcmd = pluginInfo.plugin_object
+                    # initialize this module
+                    self.modcmd.setCommand(self.options)
                 if self.execmd is not None and self.modcmd is not None:
                     break
         if self.execmd is None:
@@ -167,6 +169,9 @@ class TestDef:
         if self.options.listsections:
             print "Supported MTT stages:"
             stages = self.loader.stages.keys()
+            # always include the "defaults" stage as it isn't
+            # a plugin
+            stages.append("MTTDefaults")
             for stage in stages:
                 print "    " + stage
             exit(0)
@@ -176,6 +181,8 @@ class TestDef:
             # if the list is '*', print the plugins for every stage
             if self.options.listplugins == "*":
                 sections = self.loader.stages.keys()
+                # include the "defaults" stage with no plugin
+                sections.append("MTTDefaults")
             else:
                 sections = self.options.listplugins.split(',')
             print
@@ -185,7 +192,10 @@ class TestDef:
                     for pluginInfo in self.stages.getPluginsOfCategory(section):
                         print "    " + pluginInfo.plugin_object.print_name()
                 except KeyError:
-                  print "    Invalid stage name " + section
+                    if section == "MTTDefaults":
+                        pass
+                    else:
+                        print "    Invalid stage name " + section
                 print
             exit(1)
 
@@ -194,6 +204,8 @@ class TestDef:
             # if the list is '*', print the options for every stage/plugin
             if self.options.liststageoptions == "*":
                 sections = self.loader.stages.keys()
+                # include the "defaults" stage with no plugin
+                sections.append("MTTDefaults")
             else:
                 sections = self.options.liststageoptions.split(',')
             print
@@ -204,7 +216,18 @@ class TestDef:
                         print "    " + pluginInfo.plugin_object.print_name() + ":"
                         pluginInfo.plugin_object.print_options(self, "        ")
                 except KeyError:
-                  print "    Invalid stage name " + section
+                    if section == "MTTDefaults":
+                        myopts = {}
+                        myopts['trial_run'] = (False, "Use when testing your MTT client setup; results that are generated and submitted to the database are marked as \"trials\" and are not included in normal reporting.")
+                        myopts['scratch'] = ("./mttscratch", "Specify the DIRECTORY under which scratch files are to be stored")
+                        myopts['logfile'] = (None, "Log all output to FILE (defaults to stdout)")
+                        myopts['description'] = (None, "Provide a brief title/description to be included in the log for this test")
+                        myopts['submit_group_results'] = (True, "Report results from each test section as it is completed")
+                        lines = self.printOptions(myopts)
+                        for line in lines:
+                            print "        " + line
+                    else:
+                        print "    Invalid stage name " + section
                 print
             exit(1)
 
@@ -377,6 +400,10 @@ class TestDef:
         return
 
     def printOptions(self, options):
+        # if the options are empty, report that
+        if not options:
+            lines = ["None"]
+            return lines
         # create the list of options
         opts = []
         vals = options.keys()
@@ -415,6 +442,30 @@ class TestDef:
         for i in xrange(0,len(opts),3):
             line = opts[i] + (max1-len(opts[i]))*sp
             line = line + opts[i+1] + (max2-len(opts[i+1]))*sp
-            line = line + opts[i+2]
-            lines.append(line)
+            # to make this more readable, we will wrap the line at
+            # 130 characters. First, see if the line is going to be
+            # too long
+            if 130 < (len(line) + len(opts[i+2])):
+                # split the remaining column into individual words
+                words = opts[i+2].split()
+                first = True
+                for word in words:
+                    if (len(line) + len(word)) < 130:
+                        if first:
+                            line = line + word
+                            first = False
+                        else:
+                            line = line + " " + word
+                    else:
+                        lines.append(line)
+                        line = (max1 + max2)*sp + word
+                if 0 < len(line):
+                    lines.append(line)
+            else:
+                # the line is fine - so just add the last piece
+                line = line + opts[i+2]
+                # append the result
+                lines.append(line)
+        # add one blank line
+        lines.append("")
         return lines

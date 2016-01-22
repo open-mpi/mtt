@@ -15,7 +15,7 @@ class WarewulfPlugin(ProvisionMTTStage):
     def __init__(self):
         # initialise parent class
         ProvisionMTTStage.__init__(self)
-
+        self.options = {}
 
     def activate(self):
         # use the automatic procedure from IPlugin
@@ -31,5 +31,7 @@ class WarewulfPlugin(ProvisionMTTStage):
         return "Warewulf"
 
     def print_options(self, testDef, prefix):
-        print prefix + "None"
+        lines = testDef.printOptions(self.options)
+        for line in lines:
+            print prefix + line
         return

@@ -16,7 +16,7 @@ class FooFlash(FirmwareMTTStage):
     def __init__(self):
         # initialise parent class
         FirmwareMTTStage.__init__(self)
-
+        self.options = {}
 
     def activate(self):
         # get the automatic procedure from IPlugin
@@ -32,4 +32,6 @@ class FooFlash(FirmwareMTTStage):
         return "FooFlash"
 
     def print_options(self, testDef, prefix):
-        print prefix + "None"
+        lines = testDef.printOptions(self.options)
+        for line in lines:
+            print prefix + line

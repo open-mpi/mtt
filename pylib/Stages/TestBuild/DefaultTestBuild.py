@@ -16,7 +16,8 @@ class DefaultTestBuild(TestBuildMTTStage):
     def __init__(self):
         # initialise parent class
         TestBuildMTTStage.__init__(self)
-
+        self.options = {}
+        self.options['middleware'] = (None, "Middleware stage that these tests are to be built against")
 
     def activate(self):
         # get the automatic procedure from IPlugin
@@ -32,7 +33,9 @@ class DefaultTestBuild(TestBuildMTTStage):
         return "DefaultTestBuild"
 
     def print_options(self, testDef, prefix):
-        print prefix + "None"
+        lines = testDef.printOptions(self.options)
+        for line in lines:
+            print prefix + line
         return
 
     def execute(self, log, keyvals, testDef):

@@ -17,7 +17,10 @@ class AlreadyInstalled(FetchMTTTool):
     def __init__(self):
         # initialise parent class
         FetchMTTTool.__init__(self)
-
+        self.options = {}
+        self.options['exec'] = (None, "Executable that should be in path")
+        self.options['module'] = (None, "Modules (or lmod modules) to be loaded for accessing this package")
+        return
 
     def activate(self):
         # get the automatic procedure from IPlugin
@@ -33,7 +36,9 @@ class AlreadyInstalled(FetchMTTTool):
         return "AlreadyInstalled"
 
     def print_options(self, testDef, prefix):
-        print prefix + "None"
+        lines = testDef.printOptions(self.options)
+        for line in lines:
+            print prefix + line
         return
 
     def execute(self, log, keyvals, testDef):

@@ -17,12 +17,15 @@ class Logger(BaseMTTUtility):
         BaseMTTUtility.__init__(self)
         self.fh = sys.stdout
         self.results = []
+        self.options = {}
 
     def print_name(self):
         return "Logger"
 
     def print_options(self, testDef, prefix):
-        print prefix + "None"
+        lines = testDef.printOptions(self.options)
+        for line in lines:
+            print prefix + line
         return
 
     def open(self, options):

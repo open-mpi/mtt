@@ -15,7 +15,7 @@ class CombinatorialEx(ExecutorMTTTool):
     def __init__(self):
         # initialise parent class
         ExecutorMTTTool.__init__(self)
-
+        self.options = {}
 
     def activate(self):
         # use the automatic procedure from IPlugin
@@ -31,5 +31,7 @@ class CombinatorialEx(ExecutorMTTTool):
         return "Combinatorial executor"
 
     def print_options(self, testDef, prefix):
-        print prefix + "None"
+        lines = testDef.printOptions(self.options)
+        for line in lines:
+            print prefix + line
         return

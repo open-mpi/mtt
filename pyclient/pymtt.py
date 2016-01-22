@@ -34,7 +34,7 @@ infoGroup.add_option("-v", "--version",
 infoGroup.add_option("--list-stages",
                      action="store_true", dest="listsections", default=False,
                      help="List section names understood by this client")
-infoGroup.add_option("--list-stage-modules",
+infoGroup.add_option("--list-stage-plugins",
                      action="store", dest="listplugins", metavar="STAGE",
                      help="List available plugins for SECTION (* => all)")
 infoGroup.add_option("--list-stage-options",
@@ -43,7 +43,7 @@ infoGroup.add_option("--list-stage-options",
 infoGroup.add_option("--list-tools",
                      action="store_true", dest="listtools", default=False,
                      help="List tools available to this client")
-infoGroup.add_option("--list-tool-modules",
+infoGroup.add_option("--list-tool-plugins",
                      action="store", dest="listtoolmodules", metavar="TYPE",
                      help="List available modules for TYPE (* => all)")
 infoGroup.add_option("--list-tool-options",
@@ -52,15 +52,12 @@ infoGroup.add_option("--list-tool-options",
 infoGroup.add_option("--list-utilities",
                      action="store_true", dest="listutils", default=False,
                      help="List utilities available to this client")
-infoGroup.add_option("--list-utility-modules",
+infoGroup.add_option("--list-utility-plugins",
                      action="store", dest="listutilmodules", metavar="TYPE",
                      help="List available modules for TYPE (* => all)")
 infoGroup.add_option("--list-utility-options",
                      action="store", dest="listutiloptions", metavar="UTILITY",
                      help="List available options for UTILITY (* => all)")
-infoGroup.add_option("--getvalue",
-                     action="store", dest="getvalue", metavar="<section>,<param>",
-                     help="Print the value of the specified INI parameter and exit")
 parser.add_option_group(infoGroup)
 
 execGroup = OptionGroup(parser, "Execution Options")
@@ -98,8 +95,10 @@ execGroup.add_option("-l", "--log", dest="logfile",
                      help="Log all output to FILE (defaults to stdout)", metavar="FILE")
 execGroup.add_option("--group-results", dest="submit_group_results", default=True,
                      help="Report results from each test section as it is completed")
-execGroup.add_option("--default-make-options", dest="default_make_options", default="-j 10",
+execGroup.add_option("--default-make-options", dest="default_make_options", default="-j10",
                      help="Default options when running the \"make\" command")
+execGroup.add_option("--module-cmd", dest="module_cmd", default="module",
+                     help="Command used to load/unload a module")
 parser.add_option_group(execGroup)
 
 debugGroup = OptionGroup(parser, "Debug Options")

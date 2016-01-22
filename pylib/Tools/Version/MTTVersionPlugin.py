@@ -30,6 +30,7 @@ class MTTVersionPlugin(VersionMTTTool):
     def __init__(self):
         # initialise parent class
         VersionMTTTool.__init__(self)
+        self.options = {}
 
 
     def activate(self):
@@ -46,7 +47,9 @@ class MTTVersionPlugin(VersionMTTTool):
         return "MTTVersion"
 
     def print_options(self, testDef, prefix):
-        print prefix + "None"
+        lines = testDef.printOptions(self.options)
+        for line in lines:
+            print prefix + line
         return
 
     def getVersion(self):

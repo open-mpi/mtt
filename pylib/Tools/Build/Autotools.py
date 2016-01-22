@@ -16,6 +16,10 @@ class Autotools(BuildMTTTool):
     def __init__(self):
         BuildMTTTool.__init__(self)
         self.activated = False
+        self.options = {}
+        self.options['autogen_cmd'] = (None, "Command to be executed to setup the configure script, usually called autogen.sh or autogen.pl")
+        self.options['configure_options'] = (None, "Options to be passed to configure. Note that the prefix will be automatically set and need not be provided here")
+        self.options['make_options'] = (None, "Options to be passed to the make command")
         return
 
     def activate(self):
@@ -35,7 +39,9 @@ class Autotools(BuildMTTTool):
         return "Autotools"
 
     def print_options(self, testDef, prefix):
-        print prefix + "None"
+        lines = testDef.printOptions(self.options)
+        for line in lines:
+            print prefix + line
         return
 
     def execute(self, log, keyvals, testDef):

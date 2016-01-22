@@ -16,13 +16,16 @@ from BaseMTTUtility import *
 class ExecuteCmd(BaseMTTUtility):
     def __init__(self):
         BaseMTTUtility.__init__(self)
+        self.options = {}
         return
 
     def print_name(self):
         return "ExecuteCmd"
 
     def print_options(self, testDef, prefix):
-        print prefix + "None"
+        lines = testDef.printOptions(self.options)
+        for line in lines:
+            print prefix + line
         return
 
     def execute(self, cmdargs, testDef):

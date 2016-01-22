@@ -22,6 +22,13 @@ class Git(FetchMTTTool):
         # track the repos we have processed so we
         # don't do them multiple times
         self.done = {}
+        self.options = {}
+        self.options['module'] = (None, "Modules (or lmod modules) to be loaded for accessing this package")
+        self.options['url'] = (None, "URL to access the repository")
+        self.options['username'] = (None, "Username required for accessing the repository")
+        self.options['password'] = (None, "Password required for that user to access the repository")
+        self.options['branch'] = (None, "Branch (if not master) to be downloaded")
+        self.options['pr'] = (None, "Pull request to be downloaded")
         return
 
     def activate(self):
@@ -38,7 +45,9 @@ class Git(FetchMTTTool):
         return "Git"
 
     def print_options(self, testDef, prefix):
-        print prefix + "None"
+        lines = testDef.printOptions(self.options)
+        for line in lines:
+            print prefix + line
         return
 
     def execute(self, log, keyvals, testDef):
