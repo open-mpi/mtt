@@ -14,31 +14,26 @@ from FetchMTTTool import *
 class URL(FetchMTTTool):
 
     def __init__(self):
-        """
-        init
-        """
         # initialise parent class
         FetchMTTTool.__init__(self)
 
 
     def activate(self):
-        """
-        Report success on activation as there is nothing to do
-        """
         # get the automatic procedure from IPlugin
         IPlugin.activate(self)
         return
 
 
     def deactivate(self):
-        """
-        Deactivate if activated
-        """
         IPlugin.deactivate(self)
         return
 
     def print_name(self):
         return "URL"
+
+    def print_options(self, testDef, prefix):
+        print prefix + "None"
+        return
 
     def execute(self, keyvals, testDef):
         print "URL"

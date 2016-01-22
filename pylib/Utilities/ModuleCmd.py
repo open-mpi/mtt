@@ -21,6 +21,10 @@ class ModuleCmd(BaseMTTUtility):
     def print_name(self):
         return "Module"
 
+    def print_options(self, testDef, prefix):
+        print prefix + "None"
+        return
+
     def loadModules(self, log, modules, testDef):
         if testDef.modcmd is None:
             # cannot perform this operation

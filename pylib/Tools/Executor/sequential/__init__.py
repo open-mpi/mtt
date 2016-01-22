@@ -47,6 +47,10 @@ class SequentialEx(ExecutorMTTTool):
     def print_name(self):
         return "Sequential executor"
 
+    def print_options(self, testDef, prefix):
+        print prefix + "None"
+        return
+
     def execute(self, testDef):
         for title in testDef.config.sections():
             print title
@@ -70,15 +74,35 @@ class SequentialEx(ExecutorMTTTool):
                 module = keyvals['plugin']
                 # see if this plugin exists
                 plugin = None
-                for pluginInfo in testDef.stages.getPluginsOfCategory(stage):
-                    if module == pluginInfo.plugin_object.print_name():
-                        plugin = pluginInfo.plugin_object
-                        break
-                if plugin is None:
-                    # this plugin doesn't exist, or it may not be a stage as
-                    # sometimes a stage consists of executing a tool.
-                    # so let's check the tools too, noting that those
-                    # are not stage-specific.
+                try:
+                    for pluginInfo in testDef.stages.getPluginsOfCategory(stage):
+                        if module == pluginInfo.plugin_object.print_name():
+                            plugin = pluginInfo.plugin_object
+                            break
+                    if plugin is None:
+                        # this plugin doesn't exist, or it may not be a stage as
+                        # sometimes a stage consists of executing a tool.
+                        # so let's check the tools too, noting that those
+                        # are not stage-specific.
+                        availTools = testDef.loader.tools.keys()
+                        for tool in availTools:
+                            for pluginInfo in testDef.tools.getPluginsOfCategory(tool):
+                                if module == pluginInfo.plugin_object.print_name():
+                                    plugin = pluginInfo.plugin_object
+                                    break
+                            if plugin is not None:
+                                break;
+                        if plugin is None:
+                            print "Specified plugin",module,"does not exist in stage",stage,"or in the available tools"
+                            return
+                        else:
+                            # activate the specified plugin
+                            testDef.tools.activatePluginByName(module, tool)
+                    else:
+                        # activate the specified plugin
+                        testDef.stages.activatePluginByName(module, stage)
+                except KeyError:
+                    # check the tools
                     availTools = testDef.loader.tools.keys()
                     for tool in availTools:
                         for pluginInfo in testDef.tools.getPluginsOfCategory(tool):
@@ -93,9 +117,6 @@ class SequentialEx(ExecutorMTTTool):
                     else:
                         # activate the specified plugin
                         testDef.tools.activatePluginByName(module, tool)
-                else:
-                    # activate the specified plugin
-                    testDef.stages.activatePluginByName(module, stage)
             except KeyError:
                 # if they didn't specify a plugin, use the default if one
                 # is available and so designated

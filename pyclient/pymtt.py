@@ -31,24 +31,33 @@ infoGroup = OptionGroup(parser, "Informational Options")
 infoGroup.add_option("-v", "--version",
                      action="store_true", dest="version", default=False,
                      help="Print version")
-infoGroup.add_option("--list-sections",
+infoGroup.add_option("--list-stages",
                      action="store_true", dest="listsections", default=False,
                      help="List section names understood by this client")
-infoGroup.add_option("--list-plugins",
-                     action="store", dest="listplugins", metavar="SECTION",
+infoGroup.add_option("--list-stage-modules",
+                     action="store", dest="listplugins", metavar="STAGE",
                      help="List available plugins for SECTION (* => all)")
+infoGroup.add_option("--list-stage-options",
+                     action="store", dest="liststageoptions", metavar="STAGE",
+                     help="List available options for STAGE (* => all)")
 infoGroup.add_option("--list-tools",
                      action="store_true", dest="listtools", default=False,
                      help="List tools available to this client")
 infoGroup.add_option("--list-tool-modules",
                      action="store", dest="listtoolmodules", metavar="TYPE",
                      help="List available modules for TYPE (* => all)")
+infoGroup.add_option("--list-tool-options",
+                     action="store", dest="listtooloptions", metavar="TOOL",
+                     help="List available options for TOOL (* => all)")
 infoGroup.add_option("--list-utilities",
                      action="store_true", dest="listutils", default=False,
                      help="List utilities available to this client")
 infoGroup.add_option("--list-utility-modules",
                      action="store", dest="listutilmodules", metavar="TYPE",
                      help="List available modules for TYPE (* => all)")
+infoGroup.add_option("--list-utility-options",
+                     action="store", dest="listutiloptions", metavar="UTILITY",
+                     help="List available options for UTILITY (* => all)")
 infoGroup.add_option("--getvalue",
                      action="store", dest="getvalue", metavar="<section>,<param>",
                      help="Print the value of the specified INI parameter and exit")
@@ -231,8 +240,5 @@ testDef.configTest()
 
 # Now execute the strategy
 testDef.executeTest()
-
-# Report the results
-testDef.report()
 
 # All done!

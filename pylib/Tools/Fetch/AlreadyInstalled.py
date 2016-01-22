@@ -32,6 +32,10 @@ class AlreadyInstalled(FetchMTTTool):
     def print_name(self):
         return "AlreadyInstalled"
 
+    def print_options(self, testDef, prefix):
+        print prefix + "None"
+        return
+
     def execute(self, log, keyvals, testDef):
         # if we were given an executable to check for,
         # see if we can find it

@@ -9,7 +9,6 @@
 #
 
 import sys
-import re
 import select
 import subprocess
 from BaseMTTUtility import *
@@ -21,6 +20,10 @@ class ExecuteCmd(BaseMTTUtility):
 
     def print_name(self):
         return "ExecuteCmd"
+
+    def print_options(self, testDef, prefix):
+        print prefix + "None"
+        return
 
     def execute(self, cmdargs, testDef):
         mycmdargs = []
@@ -47,13 +50,11 @@ class ExecuteCmd(BaseMTTUtility):
                 # if the data
                 if fd == p.stdout.fileno():
                     read = p.stdout.readline().rstrip()
-                    print "STDOUT:",read
-                #    testDef.logger.verbose_print(testDef.options, 'stdout: ' + read)
+                    testDef.logger.verbose_print(testDef.options, 'stdout: ' + read)
                     stdout.append(read)
                 elif fd == p.stderr.fileno():
                     read = p.stderr.readline().rstrip()
-                    print "STDERR:",read
-                #    testDef.logger.verbose_print(testDef.options, 'stderr: ' + read)
+                    testDef.logger.verbose_print(testDef.options, 'stderr: ' + read)
                     stderr.append(read)
 
             if p.poll() != None:

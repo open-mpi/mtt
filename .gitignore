@@ -6,4 +6,5 @@ server/php/tmp/*.png
 *.pyc
 .DS_Store
 db.sqlite3
+*/mttscratch
 

@@ -9,13 +9,13 @@
 #
 
 
-from BuildMTTTool import *
+from ReporterMTTStage import *
 
-class GCC(BuildMTTTool):
+class TextFile(ReporterMTTStage):
 
     def __init__(self):
         # initialise parent class
-        BuildMTTTool.__init__(self)
+        ReporterMTTStage.__init__(self)
 
 
     def activate(self):
@@ -29,8 +29,13 @@ class GCC(BuildMTTTool):
         return
 
     def print_name(self):
-        return "GCC"
+        return "TextFile"
 
-    def execute(self, keyvals, testDef):
-        print "GCC"
+    def print_options(self, testDef, prefix):
+        print prefix + "None"
+        return
+
+    def execute(self, log, keyvals, testDef):
+        testDef.logger.outputLog()
+        log['status'] = 0
         return

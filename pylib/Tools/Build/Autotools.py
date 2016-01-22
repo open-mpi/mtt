@@ -34,6 +34,10 @@ class Autotools(BuildMTTTool):
     def print_name(self):
         return "Autotools"
 
+    def print_options(self, testDef, prefix):
+        print prefix + "None"
+        return
+
     def execute(self, log, keyvals, testDef):
         # get the location of the software we are to build
         try:
@@ -78,7 +82,6 @@ class Autotools(BuildMTTTool):
         # see if they want us to execute autogen
         try:
             if keyvals['autogen_cmd'] is not None:
-                print "LOCATION",location,"CMD",keyvals['autogen_cmd']
                 agargs = []
                 args = keyvals['autogen_cmd'].split()
                 for arg in args:

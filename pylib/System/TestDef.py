@@ -171,9 +171,9 @@ class TestDef:
                 print "    " + stage
             exit(0)
 
-        # Print the detected plugins for a given section
+        # Print the detected plugins for a given stage
         if self.options.listplugins:
-            # if the list is '*', print the plugins for every section
+            # if the list is '*', print the plugins for every stage
             if self.options.listplugins == "*":
                 sections = self.loader.stages.keys()
             else:
@@ -185,7 +185,26 @@ class TestDef:
                     for pluginInfo in self.stages.getPluginsOfCategory(section):
                         print "    " + pluginInfo.plugin_object.print_name()
                 except KeyError:
-                  print "    Invalid section name " + section
+                  print "    Invalid stage name " + section
+                print
+            exit(1)
+
+        # Print the options for a given plugin
+        if self.options.liststageoptions:
+            # if the list is '*', print the options for every stage/plugin
+            if self.options.liststageoptions == "*":
+                sections = self.loader.stages.keys()
+            else:
+                sections = self.options.liststageoptions.split(',')
+            print
+            for section in sections:
+                print section + ":"
+                try:
+                    for pluginInfo in self.stages.getPluginsOfCategory(section):
+                        print "    " + pluginInfo.plugin_object.print_name() + ":"
+                        pluginInfo.plugin_object.print_options(self, "        ")
+                except KeyError:
+                  print "    Invalid stage name " + section
                 print
             exit(1)
 
@@ -212,10 +231,28 @@ class TestDef:
                     for pluginInfo in self.tools.getPluginsOfCategory(tool):
                         print "    " + pluginInfo.plugin_object.print_name()
                 except KeyError:
-                    print "    Invalid tool type name"
+                    print "    Invalid tool type name",tool
                 print
             exit(1)
 
+        # Print the options for a given plugin
+        if self.options.listtooloptions:
+            # if the list is '*', print the options for every stage/plugin
+            if self.options.listtooloptions == "*":
+                availTools = self.loader.tools.keys()
+            else:
+                availTools = self.options.listtooloptions.split(',')
+            print
+            for tool in availTools:
+                print tool + ":"
+                try:
+                    for pluginInfo in self.tools.getPluginsOfCategory(tool):
+                        print "    " + pluginInfo.plugin_object.print_name() + ":"
+                        pluginInfo.plugin_object.print_options(self, "        ")
+                except KeyError:
+                  print "    Invalid tool type name " + tool
+                print
+            exit(1)
 
         # Print the available MTT utilities out, if requested
         if self.options.listutils:
@@ -241,6 +278,25 @@ class TestDef:
                         print "    " + pluginInfo.plugin_object.print_name()
                 except KeyError:
                     print "    Invalid utility type name"
+                print
+            exit(1)
+
+        # Print the options for a given plugin
+        if self.options.listutiloptions:
+            # if the list is '*', print the options for every stage/plugin
+            if self.options.listutiloptions == "*":
+                availUtils = self.loader.utilities.keys()
+            else:
+                availTools = self.options.listutiloptions.split(',')
+            print
+            for util in availUtils:
+                print util + ":"
+                try:
+                    for pluginInfo in self.utilities.getPluginsOfCategory(util):
+                        print "    " + pluginInfo.plugin_object.print_name() + ":"
+                        pluginInfo.plugin_object.print_options(self, "        ")
+                except KeyError:
+                  print "    Invalid utility type name " + util
                 print
             exit(1)
 
@@ -306,11 +362,6 @@ class TestDef:
         executor.plugin_object.execute(self)
         return
 
-    def report(self):
-        if self.logger is not None:
-            self.logger.outputLog()
-        return
-
     def setDefaults(self, defaults=[]):
         for default in defaults:
             if "trial_run" in default[0]:
@@ -325,15 +376,45 @@ class TestDef:
                 self.options.submit_group_results = default[1]
         return
 
-# Activate the specified execution strategy module
-#toolPluginManager.activatePluginByName(options.executor, "Executor")
-# Pass it the list of test files for execution
-#executor = toolPluginManager.getPluginByName(options.executor, "Executor")
-#print "Executing: " + executor.plugin_object.print_name()
-#executor.plugin_object.execute(options, mttPluginManager, toolPluginManager)
-
-# Activate all loaded plugins
-#for pluginInfo in mttPluginManager.getAllPlugins():
-#   mttPluginManager.activatePluginByName(pluginInfo.name)
-
-
+    def printOptions(self, options):
+        # create the list of options
+        opts = []
+        vals = options.keys()
+        for val in vals:
+            opts.append(val)
+            if options[val][0] is None:
+                opts.append("None")
+            elif isinstance(options[val][0], bool):
+                if options[val][0]:
+                    opts.append("True")
+                else:
+                    opts.append("False")
+            else:
+                opts.append(options[val][0])
+            opts.append(options[val][1])
+        # print the options, their default value, and
+        # the help description in 3 column format
+        max1 = 0
+        max2 = 0
+        for i in xrange(0,len(opts),3):
+            # we want all the columns to line up
+            # and left-justify, so first find out
+            # the max len of each of the first two
+            # column entries
+            if len(opts[i]) > max1:
+                max1 = len(opts[i])
+            if len(opts[i+1]) > max2:
+                max2 = len(opts[i+1])
+        # provide some spacing
+        max1 = max1 + 4
+        max2 = max2 + 4
+        # cycle thru again, padding each entry to
+        # align the columns
+        lines = []
+        sp = " "
+        for i in xrange(0,len(opts),3):
+            line = opts[i] + (max1-len(opts[i]))*sp
+            line = line + opts[i+1] + (max2-len(opts[i+1]))*sp
+            line = line + opts[i+2]
+            lines.append(line)
+        return lines

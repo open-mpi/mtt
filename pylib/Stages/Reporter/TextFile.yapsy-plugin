@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015      Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -8,11 +8,11 @@
 #
 
 [Core]
-Name = gcc Plugin
-Module = gcc
+Name = TextFile Plugin
+Module = TextFile
 
 [Documentation]
 Author = Ralph Castain
 Version = 0.1
 Website = N/A
-Description = GCC build plugin
+Description = File reporter plugin

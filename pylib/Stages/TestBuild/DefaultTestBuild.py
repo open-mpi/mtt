@@ -31,6 +31,10 @@ class DefaultTestBuild(TestBuildMTTStage):
     def print_name(self):
         return "DefaultTestBuild"
 
+    def print_options(self, testDef, prefix):
+        print prefix + "None"
+        return
+
     def execute(self, log, keyvals, testDef):
         # if this test requires middleware, the user
         # should have told us so by specifying the

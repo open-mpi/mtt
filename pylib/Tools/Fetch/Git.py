@@ -37,6 +37,10 @@ class Git(FetchMTTTool):
     def print_name(self):
         return "Git"
 
+    def print_options(self, testDef, prefix):
+        print prefix + "None"
+        return
+
     def execute(self, log, keyvals, testDef):
         # check that they gave us a URL
         try:
