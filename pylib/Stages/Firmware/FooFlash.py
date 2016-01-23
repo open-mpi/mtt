@@ -35,3 +35,10 @@ class FooFlash(FirmwareMTTStage):
         lines = testDef.printOptions(self.options)
         for line in lines:
             print prefix + line
+
+    def execute(self, log, keyvals, testDef):
+        # execute whatever commands are provided, recording
+        # the results in the log
+        log['status'] = 1
+        log['stderr'] = "Not implemented"
+        return

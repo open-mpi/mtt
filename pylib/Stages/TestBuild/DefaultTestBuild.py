@@ -48,6 +48,8 @@ class DefaultTestBuild(TestBuildMTTStage):
         midpath = False
         try:
             if keyvals['middleware'] is not None:
+                # pass it down
+                log['middleware'] = keyvals['middleware']
                 # get the log entry of its location
                 midlog = testDef.logger.getLog(keyvals['middleware'])
                 if midlog is not None:

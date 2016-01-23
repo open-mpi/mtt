@@ -67,6 +67,8 @@ class Autotools(BuildMTTTool):
             log['status'] = 1
             log['stderr'] = "Location of package to build was not specified in parent stage"
             return
+        # save the location for anyone following this stage
+        log['location'] = location
         # check to see if they specified a module to use
         # where the autotools can be found
         usedModule = False
