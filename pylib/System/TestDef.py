@@ -50,6 +50,7 @@ class TestDef:
         self.stages = None
         self.tools = None
         self.utilities = None
+        self.log = {}
 
     def setOptions(self, options, args):
         self.options = options
@@ -69,41 +70,34 @@ class TestDef:
             found = False
             for kvkey in kvkeys:
                 if kvkey == key:
-                    print "SOURCE",key,source[key]
                     # they provided us with an update, so
                     # pass this value into the target - expand
                     # any provided lists
-                    if keyvals[kvkey][0] == "[":
+                    if type(keyvals[kvkey][0]) is basestring and keyvals[kvkey][0] == "[":
                         # remove the brackets
                         val = keyvals[kvkey].replace('[','')
                         val = val.replace(']','')
                         # split the input to pickup sets of options
-                        target[key] = (val.split(','), source[key][1])
+                        target[key] = val.split(',')
                     else:
-                        target[key] = (keyvals[kvkey], source[key][1])
+                        target[key] = keyvals[kvkey]
                     found = True
                     break
             if not found:
                 # they didn't provide this one, so
                 # transfer it across
-                target[key] = source[key]
+                target[key] = source[key][0]
         # now go thru in the reverse direction to see
         # if any keyvals they provided aren't supported
         # as this would be an error
         for kvkey in kvkeys:
-            found = False
-            for key in keys:
-                if kvkey == key:
-                    found = True
-                    break
-            if not found:
-                # this is an error
-                log['status'] = 1
-                log['stderr'] = "Unknown option: " + kvkey + " = " + keyvals[kvkey]
-                return
-        # don't return a log entry for this operation - the caller will
-        # check for the existence of a log['status'] to see if we hit
-        # an error
+            try:
+                if target['kvkey'] is not None:
+                    pass
+            except KeyError:
+                # carry it across
+                target[kvkey] = keyvals[kvkey]
+        # don't return a log entry for this operation
         return
 
     def loadPlugins(self, basedir, topdir):

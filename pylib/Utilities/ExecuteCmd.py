@@ -29,12 +29,15 @@ class ExecuteCmd(BaseMTTUtility):
         return
 
     def execute(self, cmdargs, testDef):
+        testDef.logger.verbose_print(testDef.options, "ExecuteCmd")
+        # if this is a dryrun, just declare success
+        if testDef.options.dryrun:
+            return (0, None, None)
         mycmdargs = []
         # if any cmd arg has quotes around it, remove
         # them here
         for arg in cmdargs:
             mycmdargs.append(arg.replace('\"',''))
-        print mycmdargs
         # open a subprocess with stdout and stderr
         # as distinct pipes so we can capture their
         # output as the process runs

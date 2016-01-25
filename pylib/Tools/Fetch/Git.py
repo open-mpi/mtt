@@ -51,6 +51,7 @@ class Git(FetchMTTTool):
         return
 
     def execute(self, log, keyvals, testDef):
+        testDef.logger.verbose_print(testDef.options, "Git Execute")
         # check that they gave us a URL
         try:
             if keyvals['url'] is not None:
@@ -59,6 +60,7 @@ class Git(FetchMTTTool):
             log['status'] = 1
             log['stderr'] = "No repository URL was provided"
             return
+        testDef.logger.verbose_print(testDef.options, "Working repo " + url)
         # the path component of the parser output contains
         # the name of the repo
         repo = os.path.basename(urlparse(url).path)
@@ -131,9 +133,17 @@ class Git(FetchMTTTool):
                     # unload the modules before returning
                     testDef.modcmd.unloadModules(log, keyvals['modules'], testDef)
                 return
-            # since it already exists, let's just update it
+            # move to that location
             os.chdir(repo)
-            status, stdout, stderr = testDef.execmd.execute(["git", "pull"], testDef)
+            # if they want us to leave it as-is, then we are done
+            try:
+                if keyvals['asis']:
+                    status = 0
+                    stdout = None
+                    stderr = None
+            except KeyError:
+                # since it already exists, let's just update it
+                status, stdout, stderr = testDef.execmd.execute(["git", "pull"], testDef)
         else:
             # clone it
             status, stdout, stderr = testDef.execmd.execute(["git", "clone", url], testDef)

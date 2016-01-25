@@ -43,6 +43,8 @@ class TextFile(ReporterMTTStage):
         return
 
     def execute(self, log, keyvals, testDef):
+        print log
+        testDef.logger.verbose_print(testDef.options, "TestFile Reporter")
         testDef.logger.outputLog()
         log['status'] = 0
         return

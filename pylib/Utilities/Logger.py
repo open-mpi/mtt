@@ -58,17 +58,22 @@ class Logger(BaseMTTUtility):
         for result in self.results:
             try:
                 if result['status'] is not None:
-                    print >> self.fh, "Stage " + result['stage'] + ": Status " + str(result['status'])
+                    print >> self.fh, "Section " + result['section'] + ": Status " + str(result['status'])
+                    if 0 != result['status']:
+                        try:
+                            print >> self.fh,"    " + result['stderr']
+                        except KeyError:
+                            pass
             except KeyError:
-                print >> self.fh, "Stage " + result['stage'] + " did not return a status"
+                print >> self.fh, "Section " + result['section'] + " did not return a status"
         return
 
     def getLog(self, key):
-        # we have been passed the name of a stage, so
+        # we have been passed the name of a section, so
         # see if we have its log in the results
         for result in self.results:
             try:
-                if key == result['stage']:
+                if key == result['section']:
                     return result
             except KeyError:
                 pass

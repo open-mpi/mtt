@@ -17,6 +17,7 @@ class Autotools(BuildMTTTool):
         BuildMTTTool.__init__(self)
         self.activated = False
         self.options = {}
+        self.options['parent'] = (None, "Section that precedes this one in the dependency tree")
         self.options['autogen_cmd'] = (None, "Command to be executed to setup the configure script, usually called autogen.sh or autogen.pl")
         self.options['configure_options'] = (None, "Options to be passed to configure. Note that the prefix will be automatically set and need not be provided here")
         self.options['make_options'] = (None, "Options to be passed to the make command")
@@ -45,18 +46,27 @@ class Autotools(BuildMTTTool):
         return
 
     def execute(self, log, keyvals, testDef):
+        testDef.logger.verbose_print(testDef.options, "Autotools Execute")
+        # parse any provided options - these will override the defaults
+        cmds = {}
+        testDef.parseOptions(log, self.options, keyvals, cmds)
         # get the location of the software we are to build
         try:
-            if keyvals['parent'] is not None:
+            if cmds['parent'] is not None:
                 # we have to retrieve the log entry from
                 # the parent section so we can get the
                 # location of the package. The logger
                 # can provide it for us
-                parentlog = testDef.logger.getLog(keyvals['parent'])
+                parentlog = testDef.logger.getLog(cmds['parent'])
                 if parentlog is None:
                     log['status'] = 1
                     log['stderr'] = "Parent log not found"
                     return
+            else:
+                log['status'] = 1
+                log['stderr'] = "Parent " + " log not recorded"
+                return
+
         except KeyError:
             log['status'] = 1
             log['stderr'] = "Parent not specified"
@@ -67,8 +77,38 @@ class Autotools(BuildMTTTool):
             log['status'] = 1
             log['stderr'] = "Location of package to build was not specified in parent stage"
             return
-        # save the location for anyone following this stage
-        log['location'] = location
+        try:
+            if cmds['build_in_place']:
+                prefix = None
+                log['location'] = location
+            else:
+                # create the prefix path where this build result will be placed
+                pfx = os.path.join(testDef.options.scratchdir, "build", cmds['section'])
+                # need to remove any illegal characters like ':'
+                pfx = re.sub('[^A-Za-z0-9]+:;', '', pfx)
+                # convert it to an absolute path
+                pfx = os.path.abspath(pfx)
+                # record this location for any follow-on steps
+                log['location'] = pfx
+                prefix = "--prefix={0}".format(pfx)
+        except KeyError:
+            pass
+        # check to see if we are to leave things "as-is"
+        try:
+            if keyvals['asis']:
+                # see if the build already exists - if
+                # it does, then we are done
+                if os.path.exists(location) and os.path.isdir(location):
+                    # nothing further to do
+                    log['status'] = 0
+                    return
+        except KeyError:
+            pass
+        # check to see if this is a dryrun
+        if testDef.options.dryrun:
+            # just log success and return
+            log['status'] = 0
+            return
         # check to see if they specified a module to use
         # where the autotools can be found
         usedModule = False
@@ -116,15 +156,8 @@ class Autotools(BuildMTTTool):
         # need to build a target prefix directory option based
         # on the scratch directory and section name
         cfgargs = ["./configure"]
-        location = os.path.join(testDef.options.scratchdir, "build", keyvals['section'])
-        # need to remove any illegal characters like ':'
-        location = re.sub('[^A-Za-z0-9]+:;', '', location)
-        # convert it to an absolute path
-        location = os.path.abspath(location)
-        # record this location for any follow-on steps
-        log['location'] = location
-        prefix = "--prefix={0}".format(location)
-        cfgargs.append(prefix)
+        if prefix is not None:
+            cfgargs.append(prefix)
         # if they gave us any configure args, add them
         try:
             if keyvals['configure_options'] is not None:
@@ -178,7 +211,7 @@ class Autotools(BuildMTTTool):
         else:
             # this is a multistep operation, and so we need to
             # retain the output from each step in the log
-            log['clean'] = (stdout, stderr)
+            log['make_clean'] = (stdout, stderr)
         # now execute "make all"
         bldargs = bldargs[0:-1]
         bldargs.append("all")
@@ -196,11 +229,12 @@ class Autotools(BuildMTTTool):
         else:
             # this is a multistep operation, and so we need to
             # retain the output from each step in the log
-            log['all'] = (stdout, stderr)
-        # and finally, execute "make install"
-        bldargs = bldargs[0:-1]
-        bldargs.append("install")
-        status, stdout, stderr = testDef.execmd.execute(bldargs, testDef)
+            log['make_all'] = (stdout, stderr)
+        # and finally, execute "make install" if we have a prefix
+        if prefix is not None:
+            bldargs = bldargs[0:-1]
+            bldargs.append("install")
+            status, stdout, stderr = testDef.execmd.execute(bldargs, testDef)
         # this is the end of the operation, so the status is our
         # overall status
         log['status'] = status

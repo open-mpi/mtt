@@ -20,11 +20,20 @@ class OpenMPI(LauncherMTTTool):
         self.options['hostfile'] = (None, "The hostfile for OpenMPI to use")
         self.options['command'] = ("mpirun", "Command for executing the application")
         self.options['np'] = (None, "Number of processes to run")
-        self.options['save_output_on_pass'] = (False, "Whether or not to save stdout/stderr on passed tests")
-        self.options['num_lines_to_save'] = (None, "Number of lines of output to save")
+        self.options['save_stdout_on_pass'] = (False, "Whether or not to save stdout on passed tests")
         self.options['report_after_n_results'] = (None, "Number of tests to run before updating the reporter")
         self.options['timeout'] = (None, "Maximum execution time - terminate a test if it exceeds this time")
         self.options['options'] = (None, "Comma-delimited sets of command line options that shall be used on each test")
+        self.options['skipped'] = ("77", "Exit status of a test that declares it was skipped")
+        self.options['merge_stdout_stderr'] = (False, "Merge stdout and stderr into one output stream")
+        self.options['stdout_save_lines'] = (None, "Number of lines of stdout to save")
+        self.options['stderr_save_lines'] = (None, "Number of lines of stderr to save")
+        self.options['test_dir'] = (None, "Names of directories to be scanned for tests")
+        self.options['fail_tests'] = (None, "Names of tests that are expected to fail")
+        self.options['fail_timeout'] = (None, "Maximum execution time for tests expected to fail")
+        self.options['skip_tests'] = (None, "Names of tests to be skipped")
+        return
+
 
     def activate(self):
         # use the automatic procedure from IPlugin
@@ -46,27 +55,32 @@ class OpenMPI(LauncherMTTTool):
         return
 
     def execute(self, log, keyvals, testDef):
+        testDef.logger.verbose_print(testDef.options, "OpenMPI Launcher")
         # check the log for the title so we can
         # see if this is setting our default behavior
         try:
-            if log['stage'] is not None:
-                if "Default" in log['stage']:
-                    # this stage contains default settings
+            if log['section'] is not None:
+                if "Default" in log['section']:
+                    # this section contains default settings
                     # for this launcher
-                    testDef.parseOptions(log, self.options, keyvals, self.options)
-                    try:
-                        if log['status'] is not None:
-                            return
-                    except KeyError:
-                        pass
-                # we captured the default settings, so we can
-                # now return with success
-                log['status'] = 0
-                return
+                    myopts = {}
+                    testDef.parseOptions(log, self.options, keyvals, myopts)
+                    print myopts
+                    # transfer the findings into our local storage
+                    keys = self.options.keys()
+                    optkeys = myopts.keys()
+                    for optkey in optkeys:
+                        for key in keys:
+                            if key == optkey:
+                                self.options[key] = (myopts[optkey],self.options[key][1])
+                    # we captured the default settings, so we can
+                    # now return with success
+                    log['status'] = 0
+                    return
         except KeyError:
-            # error - the stage should have been there
+            # error - the section should have been there
             log['status'] = 1
-            log['stderr'] - "Stage not specified"
+            log['stderr'] = "Section not specified"
             return
         # must be executing a test of some kind - the install stage
         # must be specified so we can find the tests to be run
@@ -124,9 +138,8 @@ class OpenMPI(LauncherMTTTool):
                                 newpath = ":".join(pieces)
                                 os.environ['LD_LIBRARY_PATH'] = newpath
                         except KeyError:
-                            log['status'] = 1
-                            log['stderr'] = "Location of middleware used for test build stage was not provided"
-                            return
+                            # if it was already installed, then no location would be provided
+                            pass
                         # check for modules required by the middleware
                         try:
                             if midlog['parameters'] is not None:
@@ -154,13 +167,6 @@ class OpenMPI(LauncherMTTTool):
         # parse any provided options - these will override the defaults
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
-        try:
-            if log['status'] is not None:
-                # we hit an error parsing the options
-                print "STATUS FOUND"
-                return
-        except KeyError:
-            pass
         # now ready to execute the test - we are pointed at the middleware
         # and have obtained the list of any modules associated with it. We need
         # to change to the test location and begin executing, first saving
@@ -175,28 +181,49 @@ class OpenMPI(LauncherMTTTool):
                 # pick up the executables from the specified directories
                 dirs = keyvals['test_dir'].split()
                 for dr in dirs:
+                    dr = dr.strip()
+                    # remove any commas and quotes
+                    dr = dr.replace('\"','')
+                    dr = dr.replace(',','')
                     for dirName, subdirList, fileList in os.walk(dr):
                         for fname in fileList:
                             # see if this is an executable
-                            if os.access(fname, os.X_OK):
+                            filename = os.path.abspath(os.path.join(dirName,fname))
+                            if os.path.isfile(filename) and os.access(filename, os.X_OK):
                                 # add this file to our list of tests to execute
-                                tests.append(os.path.abspath(fname))
+                                tests.append(filename)
         except KeyError:
             # get the list of executables from this directory and any
             # subdirectories beneath it
             for dirName, subdirList, fileList in os.walk("."):
                 for fname in fileList:
                     # see if this is an executable
-                    if os.access(fname, os.X_OK):
+                    filename = os.path.abspath(os.path.join(dirName,fname))
+                    if os.path.isfile(filename) and os.access(filename, os.X_OK):
                         # add this file to our list of tests to execute
-                        tests.append(os.path.abspath(fname))
+                        tests.append(filename)
         # check that we found something
         if not tests:
             log['status'] = 1
             log['stderr'] = "No tests found"
             return
+        # assemble the command
+        cmdargs = [self.options['command'][0]]
+        if self.options['np'][0] is not None:
+            cmdargs.append("-np")
+            cmdargs.append(self.options['np'][0])
+        if self.options['hostfile'][0] is not None:
+            cmdargs.append("-hostfile")
+            cmdargs.append(self.options['hostfile'][0])
         # cycle thru the list of tests and execute each of them
-        print "TESTS"
-        print tests
-        log['status'] = 1
+        log['testresults'] = []
+        for test in tests:
+            testLog = {'test':test}
+            cmdargs.append(test)
+            status,stdout,stderr = testDef.execmd.execute(cmdargs, testDef)
+            testLog['status'] = status
+            testLog['stdout'] = stdout
+            testLog['stderr'] = stderr
+            log['testresults'].append(testLog)
+            cmdargs = cmdargs[:-1]
         return

@@ -18,6 +18,13 @@ class DefaultTestBuild(TestBuildMTTStage):
         TestBuildMTTStage.__init__(self)
         self.options = {}
         self.options['middleware'] = (None, "Middleware stage that these tests are to be built against")
+        self.options['build_in_place'] = (True, "Build tests in current location (no prefix or install)")
+        self.options['merge_stdout_stderr'] = (False, "Merge stdout and stderr into one output stream")
+        self.options['stdout_save_lines'] = (None, "Number of lines of stdout to save")
+        self.options['stderr_save_lines'] = (None, "Number of lines of stderr to save")
+        self.options['autogen_cmd'] = (None, "Command to be executed to setup the configure script, usually called autogen.sh or autogen.pl")
+        self.options['configure_options'] = (None, "Options to be passed to configure. Note that the prefix will be automatically set and need not be provided here")
+        self.options['make_options'] = (None, "Options to be passed to the make command")
 
     def activate(self):
         # get the automatic procedure from IPlugin
@@ -39,6 +46,10 @@ class DefaultTestBuild(TestBuildMTTStage):
         return
 
     def execute(self, log, keyvals, testDef):
+        testDef.logger.verbose_print(testDef.options, "DefaultTestBuild")
+        # parse any provided options - these will override the defaults
+        cmds = {}
+        testDef.parseOptions(log, self.options, keyvals, cmds)
         # if this test requires middleware, the user
         # should have told us so by specifying the
         # corresponding middlewareBuild stage for it.
@@ -47,29 +58,31 @@ class DefaultTestBuild(TestBuildMTTStage):
         # activated
         midpath = False
         try:
-            if keyvals['middleware'] is not None:
+            if cmds['middleware'] is not None:
                 # pass it down
-                log['middleware'] = keyvals['middleware']
+                log['middleware'] = cmds['middleware']
                 # get the log entry of its location
-                midlog = testDef.logger.getLog(keyvals['middleware'])
+                midlog = testDef.logger.getLog(cmds['middleware'])
                 if midlog is not None:
                     # get the location of the middleware
                     try:
                         if midlog['location'] is not None:
                             # prepend that location to our paths
-                            path = os.environ['PATH']
-                            pieces = path.split(':')
+                            oldbinpath = os.environ['PATH']
+                            pieces = oldbinpath.split(':')
                             bindir = os.path.join(midlog['location'], "bin")
                             pieces.insert(0, bindir)
                             newpath = ":".join(pieces)
                             os.environ['PATH'] = newpath
                             # prepend the libdir path as well
-                            path = os.environ['LD_LIBRARY_PATH']
-                            pieces = path.split(':')
+                            oldlibpath = os.environ['LD_LIBRARY_PATH']
+                            pieces = oldlibpath.split(':')
                             bindir = os.path.join(midlog['location'], "lib")
                             pieces.insert(0, bindir)
                             newpath = ":".join(pieces)
                             os.environ['LD_LIBRARY_PATH'] = newpath
+                            # mark that this was done
+                            midpath = True
                     except KeyError:
                         pass
                     # check for modules required by the middleware
@@ -78,15 +91,15 @@ class DefaultTestBuild(TestBuildMTTStage):
                             for md in midlog['parameters']:
                                 if "modules" == md[0]:
                                     try:
-                                        if keyvals['modules'] is not None:
+                                        if cmds['modules'] is not None:
                                             # append these modules to those
                                             mods = md[1].split(',')
                                             newmods = modules.split(',')
                                             for md in newmods:
                                                 mods.append(md)
-                                            keyvals['modules'] = ','.join(mods)
+                                            cmds['modules'] = ','.join(mods)
                                     except KeyError:
-                                        keyvals['modules'] = md[1]
+                                        cmds['modules'] = md[1]
                                     break
                     except KeyError:
                         pass
@@ -102,7 +115,9 @@ class DefaultTestBuild(TestBuildMTTStage):
             log['status'] = 1
             log['stderr'] = "Autotools plugin not found"
             return
-        plugin.execute(log, keyvals, testDef)
+        plugin.execute(log, cmds, testDef)
         # if we added middleware to the paths, remove it
         if midpath:
-            pass
+            os.environ['PATH'] = oldbinpath
+            os.environ['LD_LIBRARY_PATH'] = oldlibpath
+        return
