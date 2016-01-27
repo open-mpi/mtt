@@ -4,6 +4,8 @@
 #                         All rights reserved.
 # Copyright (c) 2006-2012 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2016      Research Organization for Information Science
+#                         and Technology (RIST). All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -56,6 +58,12 @@ sub Build {
                        "trivial_tests_cflags");
     my $fflags = Value($ini, $config->{full_section_name}, 
                        "trivial_tests_fflags");
+    my $f77flags = Value($ini, $config->{full_section_name}, 
+                       "trivial_tests_f77flags");
+    my $f90flags = Value($ini, $config->{full_section_name}, 
+                       "trivial_tests_f90flags");
+    my $f08flags = Value($ini, $config->{full_section_name}, 
+                       "trivial_tests_f08flags");
     my $languages = Value($ini, $config->{full_section_name}, 
                        "trivial_tests_languages");
     my $mpicc  = Value($ini, $config->{full_section_name}, 
@@ -132,10 +140,10 @@ sub Build {
 
     if ($mpi_install->{mpifh_bindings} and $languages_hash->{"mpifh"}) {
         Debug("Test compile/link sample mpif.h MPI application\n");
-        $x = _do_compile("$mpif77 $fflags", "hello_mpifh.f", "hello_mpifh");
+        $x = _do_compile("$mpif77 $fflags $f77flags", "hello_mpifh.f", "hello_mpifh");
         return $x
             if (defined($x));
-        $x = _do_compile("$mpif77 $fflags", "ring_mpifh.f", "ring_mpifh");
+        $x = _do_compile("$mpif77 $fflags $f77flags", "ring_mpifh.f", "ring_mpifh");
         return $x
             if (defined($x));
     } else {
@@ -147,10 +155,10 @@ sub Build {
 
     if ($mpi_install->{usempi_bindings} and $languages_hash->{"usempi"}) {
         Debug("Test compile/link sample \"use mpi\" MPI application\n");
-        $x = _do_compile("$mpif90 $fflags", "hello_usempi.f90", "hello_usempi");
+        $x = _do_compile("$mpif90 $fflags $f90flags", "hello_usempi.f90", "hello_usempi");
         return $x
             if (defined($x));
-        $x = _do_compile("$mpif90 $fflags", "ring_usempi.f90", "ring_usempi");
+        $x = _do_compile("$mpif90 $fflags $f90flags", "ring_usempi.f90", "ring_usempi");
         return $x
             if (defined($x));
     } else {
@@ -162,10 +170,10 @@ sub Build {
 
     if ($mpi_install->{usempif08_bindings} and $languages_hash->{"usempif08"}) {
         Debug("Test compile/link sample \"use mpi_f08\" MPI application\n");
-        $x = _do_compile("$mpif08 $fflags", "hello_usempif08.f90", "hello_usempif08");
+        $x = _do_compile("$mpif08 $fflags $f08flags", "hello_usempif08.f90", "hello_usempif08");
         return $x
             if (defined($x));
-        $x = _do_compile("$mpif08 $fflags", "ring_usempif08.f90", "ring_usempif08");
+        $x = _do_compile("$mpif08 $fflags $f08flags", "ring_usempif08.f90", "ring_usempif08");
         return $x
             if (defined($x));
     } else {
