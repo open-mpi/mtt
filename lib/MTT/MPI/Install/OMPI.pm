@@ -136,7 +136,7 @@ sub Install {
     my $tmp;
     $tmp = &{$func}($ret->{bindir}, $ret->{libdir}, "f77");
     $tmp = &{$func}($ret->{bindir}, $ret->{libdir}, "mpif.h")
-        if (!$tmp);
+        unless (defined($tmp) && $tmp);
     $ret->{mpifh_bindings} = $ret->{f77_bindings} = $tmp;
     Debug("Have mpif.h bindings: $ret->{mpifh_bindings}\n"); 
 
@@ -144,7 +144,7 @@ sub Install {
     # versions refer to "bindings:f90".
     $tmp = &{$func}($ret->{bindir}, $ret->{libdir}, "f90");
     $tmp = &{$func}($ret->{bindir}, $ret->{libdir}, "use_mpi")
-        if (!$tmp);
+        unless (defined($tmp) && $tmp);
     $ret->{usempi_bindings} = $ret->{f90_bindings} = $tmp;
     Debug("Have \"use mpi\" bindings: $ret->{usempi_bindings}\n"); 
 
