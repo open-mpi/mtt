@@ -97,14 +97,25 @@ class Autotools(BuildMTTTool):
             pass
         # check to see if we are to leave things "as-is"
         try:
-            if keyvals['asis'] and not inPlace:
-                # see if the build already exists - if
-                # it does, then we are done
-                if os.path.exists(location) and os.path.isdir(location):
-                    # nothing further to do
-                    log['status'] = 0
-                    return
+            if keyvals['asis']:
+                if not inPlace:
+                    # see if the build already exists - if
+                    # it does, then we are done
+                    if os.path.exists(location) and os.path.isdir(location):
+                        testDef.logger.verbose_print(testDef.options, "As-Is location exists and is a directory")
+                        # nothing further to do
+                        log['status'] = 0
+                        return
+                else:
+                    # check if configure exists
+                    cfg = os.path.join(location, "configure")
+                    if os.path.exists(cfg):
+                        # good enough
+                        testDef.logger.verbose_print(testDef.options, "As-Is location has configure present")
+                        log['status'] = 0
+                        return
         except KeyError:
+            print "NO ASIS"
             pass
         # check to see if this is a dryrun
         if testDef.options.dryrun:

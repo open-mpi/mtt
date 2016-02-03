@@ -177,23 +177,22 @@ class OpenMPI(LauncherMTTTool):
         # did they give us a list of specific directories where the desired
         # tests to be executed reside?
         tests = []
-        try:
-            if keyvals['test_dir'] is not None:
-                # pick up the executables from the specified directories
-                dirs = keyvals['test_dir'].split()
-                for dr in dirs:
-                    dr = dr.strip()
-                    # remove any commas and quotes
-                    dr = dr.replace('\"','')
-                    dr = dr.replace(',','')
-                    for dirName, subdirList, fileList in os.walk(dr):
-                        for fname in fileList:
-                            # see if this is an executable
-                            filename = os.path.abspath(os.path.join(dirName,fname))
-                            if os.path.isfile(filename) and os.access(filename, os.X_OK):
-                                # add this file to our list of tests to execute
-                                tests.append(filename)
-        except KeyError:
+        if cmds['test_dir'] is not None:
+            # pick up the executables from the specified directories
+            dirs = cmds['test_dir'].split()
+            for dr in dirs:
+                dr = dr.strip()
+                # remove any commas and quotes
+                dr = dr.replace('\"','')
+                dr = dr.replace(',','')
+                for dirName, subdirList, fileList in os.walk(dr):
+                    for fname in fileList:
+                        # see if this is an executable
+                        filename = os.path.abspath(os.path.join(dirName,fname))
+                        if os.path.isfile(filename) and os.access(filename, os.X_OK):
+                            # add this file to our list of tests to execute
+                            tests.append(filename)
+        else:
             # get the list of executables from this directory and any
             # subdirectories beneath it
             for dirName, subdirList, fileList in os.walk("."):
@@ -208,38 +207,55 @@ class OpenMPI(LauncherMTTTool):
             log['status'] = 1
             log['stderr'] = "No tests found"
             return
+        # get the "skip" exit status
+        skipStatus = int(cmds['skipped'])
         # assemble the command
-        cmdargs = [self.options['command'][0]]
-        if self.options['np'][0] is not None:
+        cmdargs = [cmds['command']]
+        if cmds['np'] is not None:
             cmdargs.append("-np")
-            cmdargs.append(self.options['np'][0])
-        if self.options['hostfile'][0] is not None:
+            cmdargs.append(cmds['np'])
+        if cmds['hostfile'] is not None:
             cmdargs.append("-hostfile")
-            cmdargs.append(self.options['hostfile'][0])
+            cmdargs.append(cmds['hostfile'])
         # cycle thru the list of tests and execute each of them
         log['testresults'] = []
         finalStatus = 0
         finalError = None
         numTests = 0
-        try:
-            if self.options['max_num_tests'][0] is not None:
-                maxTests = int(self.options['max_num_tests'][0])
-        except KeyError:
+        numPass = 0
+        numSkip = 0
+        numFail = 0
+        if cmds['max_num_tests'] is not None:
+            maxTests = int(cmds['max_num_tests'])
+        else:
             maxTests = 10000000
-        for test in tests and numTests < maxTests:
+        for test in tests:
             testLog = {'test':test}
             cmdargs.append(test)
             status,stdout,stderr = testDef.execmd.execute(cmdargs, testDef)
             testLog['status'] = status
-            if 0 != status && 0 == finalStatus:
+            if 0 != status and skipStatus != status and 0 == finalStatus:
                 finalStatus = status
                 finalError = stderr
+            if 0 == status:
+                numPass = numPass + 1
+            elif skipStatus == status:
+                numSkip = numSkip + 1
+            else:
+                numFail = numFail + 1
             testLog['stdout'] = stdout
             testLog['stderr'] = stderr
             log['testresults'].append(testLog)
             cmdargs = cmdargs[:-1]
             numTests = numTests + 1
-
+            if numTests == maxTests:
+                break
         log['status'] = finalStatus
         log['stderr'] = finalError
+        log['numTests'] = numTests
+        log['numPass'] = numPass
+        log['numSkip'] = numSkip
+        log['numFail'] = numFail
+        print "LOG"
+        print log
         return

@@ -38,6 +38,7 @@ class ExecuteCmd(BaseMTTUtility):
         # them here
         for arg in cmdargs:
             mycmdargs.append(arg.replace('\"',''))
+        testDef.logger.verbose_print(testDef.options, "ExecuteCmd: " + " ".join(mycmdargs))
         # open a subprocess with stdout and stderr
         # as distinct pipes so we can capture their
         # output as the process runs

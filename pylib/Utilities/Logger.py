@@ -69,6 +69,10 @@ class Logger(BaseMTTUtility):
         return
 
     def getLog(self, key):
+        # if the key is None, then they want the entire
+        # log list
+        if key is None:
+            return self.results
         # we have been passed the name of a section, so
         # see if we have its log in the results
         for result in self.results:
