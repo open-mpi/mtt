@@ -32,6 +32,7 @@ class OpenMPI(LauncherMTTTool):
         self.options['fail_tests'] = (None, "Names of tests that are expected to fail")
         self.options['fail_timeout'] = (None, "Maximum execution time for tests expected to fail")
         self.options['skip_tests'] = (None, "Names of tests to be skipped")
+        self.options['max_num_tests'] = (None, "Maximum number of tests to run")
         return
 
 
@@ -217,13 +218,28 @@ class OpenMPI(LauncherMTTTool):
             cmdargs.append(self.options['hostfile'][0])
         # cycle thru the list of tests and execute each of them
         log['testresults'] = []
-        for test in tests:
+        finalStatus = 0
+        finalError = None
+        numTests = 0
+        try:
+            if self.options['max_num_tests'][0] is not None:
+                maxTests = int(self.options['max_num_tests'][0])
+        except KeyError:
+            maxTests = 10000000
+        for test in tests and numTests < maxTests:
             testLog = {'test':test}
             cmdargs.append(test)
             status,stdout,stderr = testDef.execmd.execute(cmdargs, testDef)
             testLog['status'] = status
+            if 0 != status && 0 == finalStatus:
+                finalStatus = status
+                finalError = stderr
             testLog['stdout'] = stdout
             testLog['stderr'] = stderr
             log['testresults'].append(testLog)
             cmdargs = cmdargs[:-1]
+            numTests = numTests + 1
+
+        log['status'] = finalStatus
+        log['stderr'] = finalError
         return

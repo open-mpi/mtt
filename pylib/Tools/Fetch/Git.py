@@ -27,6 +27,7 @@ class Git(FetchMTTTool):
         self.options['url'] = (None, "URL to access the repository")
         self.options['username'] = (None, "Username required for accessing the repository")
         self.options['password'] = (None, "Password required for that user to access the repository")
+        self.options['pwfile'] = (None, "File where password can be found")
         self.options['branch'] = (None, "Branch (if not master) to be downloaded")
         self.options['pr'] = (None, "Pull request to be downloaded")
         return
@@ -61,6 +62,49 @@ class Git(FetchMTTTool):
             log['stderr'] = "No repository URL was provided"
             return
         testDef.logger.verbose_print(testDef.options, "Working repo " + url)
+        # see if they gave us a username
+        username = self.options['username'][0]
+        try:
+            if keyvals['username'] is not None:
+                username = keyvals['username']
+        except KeyError:
+            pass
+        # see if they gave us a password
+        password = self.options['password'][0]
+        try:
+            if keyvals['password'] is not None:
+                password = keyvals['password']
+        except KeyError:
+            # if not, did they give us a file where we can find the password
+            try:
+                if keyvals['pwfile'] is not None:
+                    if os.path.exists(keyvals['pwfile']):
+                        f = open(keyvals['pwfile'], 'r')
+                        password = f.readline().strip()
+                        f.close()
+                    else:
+                        log['status'] = 1;
+                        log['stderr'] = "Password file " + keyvals['pwfile'] + " does not exist"
+                        return
+            except KeyError:
+                pass
+        # check for sanity - if a password was given, then
+        # we must have a username
+        if password is not None:
+            if username is None:
+                log['status'] = 1;
+                log['stderr'] = "Password without username"
+                return
+            # find the "//"
+            (leader,tail) = url.split("//", 1)
+            # put the username:password into the url
+            url = leader + "//" + username + ":" + password + "@" + tail
+        elif username is not None:
+            # find the "//"
+            (leader,tail) = url.split("//", 1)
+            # put the username:password into the url
+            url = leader + "//" + username + "@" + tail
+        testDef.logger.verbose_print(testDef.options, "Working final repo " + url)
         # the path component of the parser output contains
         # the name of the repo
         repo = os.path.basename(urlparse(url).path)

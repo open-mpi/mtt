@@ -77,10 +77,12 @@ class Autotools(BuildMTTTool):
             log['status'] = 1
             log['stderr'] = "Location of package to build was not specified in parent stage"
             return
+        inPlace = False
         try:
             if cmds['build_in_place']:
                 prefix = None
                 log['location'] = location
+                inPlace = True
             else:
                 # create the prefix path where this build result will be placed
                 pfx = os.path.join(testDef.options.scratchdir, "build", cmds['section'])
@@ -95,7 +97,7 @@ class Autotools(BuildMTTTool):
             pass
         # check to see if we are to leave things "as-is"
         try:
-            if keyvals['asis']:
+            if keyvals['asis'] and not inPlace:
                 # see if the build already exists - if
                 # it does, then we are done
                 if os.path.exists(location) and os.path.isdir(location):
