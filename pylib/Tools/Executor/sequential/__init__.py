@@ -56,89 +56,114 @@ class SequentialEx(ExecutorMTTTool):
 
     def execute(self, testDef):
         testDef.logger.verbose_print(testDef.options, "ExecuteSequential")
-        for title in testDef.config.sections():
-            testDef.logger.verbose_print(testDef.options, title)
-            if "MTTDefaults" == title.strip():  # handled this in the TestDef
-                continue
-            # if they provided the STOP section, that means we
-            # are to immediately stop processing the test definition
-            # file and return
-            if "STOP" == title.strip():
-                return
-            # if they included the "SKIP" qualifier, then we skip
-            # this section
-            if "SKIP" in title:
-                continue
-            # extract the stage and stage name from the title
-            stage,name = title.split(':')
-            stage = stage.strip()
-            # setup the log
-            stageLog = {'section':title}
-            stageLog["parameters"] = testDef.config.items(title)
-            # get the list of key-value tuples provided in this stage
-            # by the user and convert it to a dictionary for easier parsing
-            # Yes, we could do this automatically, but we instead do it
-            # manually so we can strip all the keys and values for easier
-            # parsing later
-            keyvals = {'section':title.strip()}
-            for kv in testDef.config.items(title):
-                keyvals[kv[0].strip()] = kv[1].strip()
-            # if they included the "ASIS" qualifier, remove it
-            # from the stage name
-            if "ASIS" in stage:
-                # find the first non-space character
-                i = 4
-                while stage[i].isspace():
-                    i = i + 1
-                stage = stage[i:]
-                stageLog['section'] = title[i:].strip()
-                keyvals['section'] = title[i:].strip()
-                keyvals['asis'] = True
-            # if this stage has a parent, get the log for that stage
-            # and check its status - if it didn't succeed, then we shall
-            # log this stage as also having failed and skip it
-            try:
-                parent = keyvals['parent']
-                if parent is not None:
-                    # get the log entry as it contains the status
-                    bldlog = testDef.logger.getLog(parent)
-                    if bldlog is None:
-                        # couldn't find the parent's log - cannot continue
-                        stageLog['status'] = 1
-                        stageLog['stderr'] = "Prior dependent step did not record a log"
-                        testDef.logger.logResults(title, stageLog)
-                        continue
-                    try:
-                        if bldlog['status'] != 0:
-                            # the parent step failed, and so we
-                            # cannot proceed here either
-                            stageLog['status'] = bldlog['status']
-                            stageLog['stderr'] = "Prior dependent step failed - cannot proceed"
+        for step in testDef.loader.stageOrder:
+            for title in testDef.config.sections():
+                if step not in title:
+                    continue
+                testDef.logger.verbose_print(testDef.options, title)
+                # if they provided the STOP section, that means we
+                # are to immediately stop processing the test definition
+                # file and return
+                if "STOP" == title.strip():
+                    return
+                # if they included the "SKIP" qualifier, then we skip
+                # this section
+                if "SKIP" in title:
+                    continue
+                # extract the stage and stage name from the title
+                if ":" in title:
+                    stage,name = title.split(':')
+                    stage = stage.strip()
+                else:
+                    stage = title
+                # setup the log
+                stageLog = {'section':title}
+                stageLog["parameters"] = testDef.config.items(title)
+                # get the list of key-value tuples provided in this stage
+                # by the user and convert it to a dictionary for easier parsing
+                # Yes, we could do this automatically, but we instead do it
+                # manually so we can strip all the keys and values for easier
+                # parsing later
+                keyvals = {'section':title.strip()}
+                for kv in testDef.config.items(title):
+                    keyvals[kv[0].strip()] = kv[1].strip()
+                # if they included the "ASIS" qualifier, remove it
+                # from the stage name
+                if "ASIS" in stage:
+                    # find the first non-space character
+                    i = 4
+                    while stage[i].isspace():
+                        i = i + 1
+                    stage = stage[i:]
+                    stageLog['section'] = title[i:].strip()
+                    keyvals['section'] = title[i:].strip()
+                    keyvals['asis'] = True
+                # if this stage has a parent, get the log for that stage
+                # and check its status - if it didn't succeed, then we shall
+                # log this stage as also having failed and skip it
+                try:
+                    parent = keyvals['parent']
+                    if parent is not None:
+                        # get the log entry as it contains the status
+                        bldlog = testDef.logger.getLog(parent)
+                        if bldlog is None:
+                            # couldn't find the parent's log - cannot continue
+                            stageLog['status'] = 1
+                            stageLog['stderr'] = "Prior dependent step did not record a log"
                             testDef.logger.logResults(title, stageLog)
                             continue
-                    except KeyError:
-                        # if it didn't report a status, we shouldn't rely on it
-                        stageLog['status'] = 1
-                        stageLog['stderr'] = "Prior dependent step failed to provide a status"
-                        testDef.logger.logResults(title, stageLog)
-                        continue
-            except KeyError:
-                pass
-            # extract the name of the plugin to use
-            plugin = None
-            try:
-                module = keyvals['plugin']
-                # see if this plugin exists
+                        try:
+                            if bldlog['status'] != 0:
+                                # the parent step failed, and so we
+                                # cannot proceed here either
+                                stageLog['status'] = bldlog['status']
+                                stageLog['stderr'] = "Prior dependent step failed - cannot proceed"
+                                testDef.logger.logResults(title, stageLog)
+                                continue
+                        except KeyError:
+                            # if it didn't report a status, we shouldn't rely on it
+                            stageLog['status'] = 1
+                            stageLog['stderr'] = "Prior dependent step failed to provide a status"
+                            testDef.logger.logResults(title, stageLog)
+                            continue
+                except KeyError:
+                    pass
+                # extract the name of the plugin to use
+                plugin = None
                 try:
-                    for pluginInfo in testDef.stages.getPluginsOfCategory(stage):
-                        if module == pluginInfo.plugin_object.print_name():
-                            plugin = pluginInfo.plugin_object
-                            break
-                    if plugin is None:
-                        # this plugin doesn't exist, or it may not be a stage as
-                        # sometimes a stage consists of executing a tool.
-                        # so let's check the tools too, noting that those
-                        # are not stage-specific.
+                    module = keyvals['plugin']
+                    # see if this plugin exists
+                    try:
+                        for pluginInfo in testDef.stages.getPluginsOfCategory(stage):
+                            if module == pluginInfo.plugin_object.print_name():
+                                plugin = pluginInfo.plugin_object
+                                break
+                        if plugin is None:
+                            # this plugin doesn't exist, or it may not be a stage as
+                            # sometimes a stage consists of executing a tool.
+                            # so let's check the tools too, noting that those
+                            # are not stage-specific.
+                            availTools = testDef.loader.tools.keys()
+                            for tool in availTools:
+                                for pluginInfo in testDef.tools.getPluginsOfCategory(tool):
+                                    if module == pluginInfo.plugin_object.print_name():
+                                        plugin = pluginInfo.plugin_object
+                                        break
+                                if plugin is not None:
+                                    break;
+                            if plugin is None:
+                                stageLog['status'] = 1
+                                stageLog['stderr'] = "Specified plugin",module,"does not exist in stage",stage,"or in the available tools"
+                                testDef.logger.logResults(title, stageLog)
+                                continue
+                            else:
+                                # activate the specified plugin
+                                testDef.tools.activatePluginByName(module, tool)
+                        else:
+                            # activate the specified plugin
+                            testDef.stages.activatePluginByName(module, stage)
+                    except KeyError:
+                        # check the tools
                         availTools = testDef.loader.tools.keys()
                         for tool in availTools:
                             for pluginInfo in testDef.tools.getPluginsOfCategory(tool):
@@ -155,43 +180,22 @@ class SequentialEx(ExecutorMTTTool):
                         else:
                             # activate the specified plugin
                             testDef.tools.activatePluginByName(module, tool)
-                    else:
-                        # activate the specified plugin
-                        testDef.stages.activatePluginByName(module, stage)
                 except KeyError:
-                    # check the tools
-                    availTools = testDef.loader.tools.keys()
-                    for tool in availTools:
-                        for pluginInfo in testDef.tools.getPluginsOfCategory(tool):
-                            if module == pluginInfo.plugin_object.print_name():
-                                plugin = pluginInfo.plugin_object
-                                break
-                        if plugin is not None:
-                            break;
+                    # if they didn't specify a plugin, use the default if one
+                    # is available and so designated
+                    default = "Default{0}".format(stage)
+                    for pluginInfo in testDef.stages.getPluginsOfCategory(stage):
+                        if default == pluginInfo.plugin_object.print_name():
+                            plugin = pluginInfo.plugin_object
+                            break
                     if plugin is None:
+                        # we really have to way of executing this
                         stageLog['status'] = 1
-                        stageLog['stderr'] = "Specified plugin",module,"does not exist in stage",stage,"or in the available tools"
+                        stageLog['stderr'] = "Plugin for stage",stage,"was not specified, and no default is available"
                         testDef.logger.logResults(title, stageLog)
                         continue
-                    else:
-                        # activate the specified plugin
-                        testDef.tools.activatePluginByName(module, tool)
-            except KeyError:
-                # if they didn't specify a plugin, use the default if one
-                # is available and so designated
-                default = "Default{0}".format(stage)
-                for pluginInfo in testDef.stages.getPluginsOfCategory(stage):
-                    if default == pluginInfo.plugin_object.print_name():
-                        plugin = pluginInfo.plugin_object
-                        break
-                if plugin is None:
-                    # we really have to way of executing this
-                    stageLog['status'] = 1
-                    stageLog['stderr'] = "Plugin",module,"for stage",stage,"was not specified, and no default is available"
-                    testDef.logger.logResults(title, stageLog)
-                    continue
 
-            # execute the provided test description and capture the result
-            plugin.execute(stageLog, keyvals, testDef)
-            testDef.logger.logResults(title, stageLog)
+                # execute the provided test description and capture the result
+                plugin.execute(stageLog, keyvals, testDef)
+                testDef.logger.logResults(title, stageLog)
         return

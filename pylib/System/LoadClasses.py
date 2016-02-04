@@ -12,10 +12,13 @@ import os
 import imp
 import sys
 import datetime
+from bisect import *
 
 class LoadClasses:
     def __init__(self):
         self.stages = {};
+        self.stageOrder = []
+        self.stageOrderIndices = []
         self.tools = {};
         self.utilities = {};
 
@@ -62,6 +65,13 @@ class LoadClasses:
                     # solely to avoid confusion with global namespaces
                     modname = modname[:-8]
                     self.stages[modname] = a.__class__
+                    # get the ordering index of this stage
+                    order = a.__class__().ordering()
+                    # find the point where it should be inserted
+                    i = bisect_left(self.stageOrderIndices, order)
+                    # now update both the indices and order
+                    self.stageOrder.insert(i, modname)
+                    self.stageOrderIndices.insert(i, order)
                 elif "Tool" in modname:
                     # trim the MTTTool from the name - it was included
                     # solely to avoid confusion with global namespaces

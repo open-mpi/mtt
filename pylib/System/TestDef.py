@@ -92,7 +92,7 @@ class TestDef:
         # as this would be an error
         for kvkey in kvkeys:
             try:
-                if target['kvkey'] is not None:
+                if target[kvkey] is not None:
                     pass
             except KeyError:
                 # carry it across
@@ -209,11 +209,8 @@ class TestDef:
         # Print the available MTT sections out, if requested
         if self.options.listsections:
             print "Supported MTT stages:"
-            stages = self.loader.stages.keys()
-            # always include the "defaults" stage as it isn't
-            # a plugin
-            stages.append("MTTDefaults")
-            for stage in stages:
+            # print them in the default order of execution
+            for stage in self.loader.stageOrder:
                 print "    " + stage
             exit(0)
 
@@ -221,9 +218,7 @@ class TestDef:
         if self.options.listplugins:
             # if the list is '*', print the plugins for every stage
             if self.options.listplugins == "*":
-                sections = self.loader.stages.keys()
-                # include the "defaults" stage with no plugin
-                sections.append("MTTDefaults")
+                sections = self.loader.stageOrder
             else:
                 sections = self.options.listplugins.split(',')
             print
@@ -233,10 +228,7 @@ class TestDef:
                     for pluginInfo in self.stages.getPluginsOfCategory(section):
                         print "    " + pluginInfo.plugin_object.print_name()
                 except KeyError:
-                    if section == "MTTDefaults":
-                        pass
-                    else:
-                        print "    Invalid stage name " + section
+                    print "    Invalid stage name " + section
                 print
             exit(1)
 
@@ -244,9 +236,7 @@ class TestDef:
         if self.options.liststageoptions:
             # if the list is '*', print the options for every stage/plugin
             if self.options.liststageoptions == "*":
-                sections = self.loader.stages.keys()
-                # include the "defaults" stage with no plugin
-                sections.append("MTTDefaults")
+                sections = self.loader.stageOrder
             else:
                 sections = self.options.liststageoptions.split(',')
             print
@@ -257,18 +247,7 @@ class TestDef:
                         print "    " + pluginInfo.plugin_object.print_name() + ":"
                         pluginInfo.plugin_object.print_options(self, "        ")
                 except KeyError:
-                    if section == "MTTDefaults":
-                        myopts = {}
-                        myopts['trial_run'] = (False, "Use when testing your MTT client setup; results that are generated and submitted to the database are marked as \"trials\" and are not included in normal reporting.")
-                        myopts['scratch'] = ("./mttscratch", "Specify the DIRECTORY under which scratch files are to be stored")
-                        myopts['logfile'] = (None, "Log all output to FILE (defaults to stdout)")
-                        myopts['description'] = (None, "Provide a brief title/description to be included in the log for this test")
-                        myopts['submit_group_results'] = (True, "Report results from each test section as it is completed")
-                        lines = self.printOptions(myopts)
-                        for line in lines:
-                            print "        " + line
-                    else:
-                        print "    Invalid stage name " + section
+                    print "    Invalid stage name " + section
                 print
             exit(1)
 

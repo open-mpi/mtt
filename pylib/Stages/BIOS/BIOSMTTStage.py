@@ -10,12 +10,12 @@
 
 from yapsy.IPlugin import IPlugin
 
-class TestGetMTTStage(IPlugin):
+class BIOSMTTStage(IPlugin):
     def __init__(self):
         # initialise parent class
         IPlugin.__init__(self)
     def print_name(self):
-        print "Get test software package"
+        print "BIOS flash and query stage"
 
     def ordering(self):
-        return 450
+        return 50
