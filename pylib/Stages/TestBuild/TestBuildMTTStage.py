@@ -18,4 +18,4 @@ class TestBuildMTTStage(IPlugin):
         print "Build test software package"
 
     def ordering(self):
-        return 450
+        return 475
