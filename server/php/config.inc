@@ -4,6 +4,12 @@
 $mother_site = "www.open-mpi.org";
 $server_dir = "/";
 
+if (array_key_exists("HTTPS", $_SERVER) && $_SERVER["HTTPS"] == "on") {
+    $GLOBALS["protocol"] = "https";
+} else {
+    $GLOBALS["protocol"] = "http";
+}
+
 # Are we the "mother site" or a mirror?  Remember that "alerts.php" is
 # run locally as a script via cron, therefore it won't have certain
 # array keys set in $_SERVER (and therefore should not be subject to
@@ -12,7 +18,7 @@ if (array_key_exists("SERVER_NAME", $_SERVER) &&
     0 != strncmp($_SERVER["SERVER_NAME"], $mother_site, strlen($mother_site)) ) {
     $equiv_dir = ereg_replace("^$server_dir", '', $_SERVER["REQUEST_URI"]);
     print "Sorry, this page is not mirrored.  " .
-           "Please see the <a href=\"http://$mother_site/$equiv_dir\">" .
+           "Please see the <a href=\"".$GLOBALS["protocol"]."://$mother_site/$equiv_dir\">" .
            "original version of this page</a> " .
            "on the main Open MPI web site.\n";
     exit();

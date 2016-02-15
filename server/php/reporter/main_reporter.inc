@@ -1795,7 +1795,7 @@ function drilldown_links() {
         $phase_results_table = $arr['aggregates'];
     }
 
-    $self = 'http://' . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'];
+    $self = $GLOBALS["protocol"].'://' . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'];
     $format = "<a href='$self?%s' class='black_ln' target='_self'>%s</a>";
 
     # 1. Entire row or data

@@ -46,7 +46,7 @@ function display_dashboard($nogo, $sql_cmd, $resource) {
     # Generate each of the screen's HTML components
     $layout = setup_layout_html($layout, $lasttime, $links, $disable);
 
-    $self = "http://" . $_SERVER['SERVER_NAME'] . $_SERVER['PHP_SELF'];
+    $self = $GLOBALS["protocol"]."://" . $_SERVER['SERVER_NAME'] . $_SERVER['PHP_SELF'];
     $phase_specific = $layout['farright']['html'] ? true : false;
 
     # Table cell tags
@@ -638,7 +638,7 @@ function setup_layout_html($layout, $lasttime, $links, $disable) {
     # AFTERWARDS ...
 
     $top    = DOCROOT;
-    $script = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
+    $script = $GLOBALS["protocol"].'://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
 
     # Display standard logo
     $logo = "$top/images/reporter_logo.gif";
@@ -747,7 +747,7 @@ function form_buttons($params, $disable_arg) {
     elseif (! (array_search('test_run', $phases) !== false))
         $disable['Performance'] = 'disabled';
 
-    $script = 'http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
+    $script = $GLOBALS["protocol"].'://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME'];
 
     # Reset and Clear 'buttons' are small links
     $buttons[] =
