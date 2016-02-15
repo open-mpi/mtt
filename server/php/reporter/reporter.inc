@@ -47,9 +47,9 @@ define('TRIAL_TRUE',  't');
 define('TRIAL_FALSE', 'f');
 
 # Define paths
-define('DOCROOT',  dirname('http://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME']));
+define('DOCROOT',  dirname($GLOBALS["protocol"].'://'.$_SERVER['SERVER_NAME'].$_SERVER['SCRIPT_NAME']));
 define('PATH',     dirname($_SERVER['SCRIPT_NAME']));
-define('FULLSELF', dirname('http://'.$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI']));
+define('FULLSELF', dirname($GLOBALS["$protocol"].'://'.$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI']));
 
 # Use GMT as the global timezone constant
 # Note: we have temporarily removed the timezone preference

@@ -394,7 +394,7 @@ function hidden_carryover2() {
 }
 
 function link_to_screen($type) {
-    $self = 'http://' . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'];
+    $self = $GLOBALS["protocol"].'://' . $_SERVER['SERVER_NAME'] . $_SERVER['SCRIPT_NAME'];
     $params = $_GET;
     $params['screen'] = $type;
 

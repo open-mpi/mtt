@@ -145,7 +145,7 @@ function make_redir($params) {
 
     $domain = $_SERVER['SERVER_NAME'];
     $script = $_SERVER['SCRIPT_NAME'];
-    $url    = "http://$domain$script?$qstring";
+    $url    = $GLOBALS['protocol']."://$domain$script?$qstring";
 
     # Create tiny URLs for the permalinks
     $query = "SELECT permalink_id FROM permalinks WHERE permalink = '$url'";
@@ -161,7 +161,7 @@ function make_redir($params) {
         do_pg_query($insert);
     }
 
-    $tinyurl = "http://$domain$script?do_redir=$id";
+    $tinyurl = $GLOBALS["protocol"]."://$domain$script?do_redir=$id";
 
     # Print tiny link in a tiny window
     $t = 50;
