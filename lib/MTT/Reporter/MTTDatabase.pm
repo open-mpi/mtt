@@ -5,9 +5,9 @@
 # Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2006-2008 Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
-# 
+#
 # Additional copyrights may follow
-# 
+#
 # $HEADER$
 #
 
@@ -73,7 +73,7 @@ sub Init {
     # in a given run.
 
     if (defined($username)) {
-        Error("The MTTDatabase plugin can only be used once in an INI file.\n");
+	Error("The MTTDatabase plugin can only be used once in an INI file.\n");
     }
 
     # Extract data from the ini fields
@@ -88,22 +88,22 @@ sub Init {
     $keep_debug_files = Value($ini, $section, "mttdatabase_keep_debug_files");
     $debug_server = 1 if ($url =~ /\bdebug\b|\bverbose\b/);
     $debug_server = Logical($ini, $section, "mttdatabase_debug_server")
-        if (1 != $debug_server);
+	if (1 != $debug_server);
     $hostname = Value($ini, $section, "mttdatabase_hostname");
     $local_username = Value($ini, "mtt", "local_username");
 
     $debug_index = 0;
     if (!$url) {
-        Warning("Need URL in MTTDatabase Reporter section [$section]\n");
-        return undef;
+	Warning("Need URL in MTTDatabase Reporter section [$section]\n");
+	return undef;
     }
     my $count = 0;
     ++$count if ($username);
     ++$count if ($password);
     ++$count if ($realm);
     if ($count > 0 && $count != 3) {
-        Warning("MTTDatabase Reporter section [$section]: if password, username, or realm is specified, they all must be specified.\n");
-        return undef;
+	Warning("MTTDatabase Reporter section [$section]: if password, username, or realm is specified, they all must be specified.\n");
+	return undef;
     }
     $platform = Value($ini, $section, "mttdatabase_platform");
 
@@ -113,24 +113,24 @@ sub Init {
     my $dir;
     my $host = $url;
     if ($host =~ /(http:\/\/[-a-zA-Z0-9.]+):(\d+)\/?(.*)?$/) {
-        $host = $1;
-        $port = $2;
-        $dir = $3;
+	$host = $1;
+	$port = $2;
+	$dir = $3;
     } elsif ($host =~ /(http:\/\/[-a-zA-Z0-9.]+)\/?(.*)?$/) {
-        $host = $1;
-        $dir = $2;
-        $port = 80;
+	$host = $1;
+	$dir = $2;
+	$port = 80;
     } elsif ($host =~ /(https:\/\/[-a-zA-Z0-9.]+)\/?(.*)?$/) {
-        $host = $1;
-        $dir = $2;
-        $port = 443;
+	$host = $1;
+	$dir = $2;
+	$port = 443;
     } elsif  ($host =~ /(https:\/\/[-a-zA-Z0-9.]+):(\d+)\/?(.*)?$/) {
-        $host = $1;
-        $port = $2;
-        $dir = $3;
+	$host = $1;
+	$port = $2;
+	$dir = $3;
     } else {
-        Warning("MTTDatabase Reporter did not get a valid url: $url .\n");
-        return undef;
+	Warning("MTTDatabase Reporter did not get a valid url: $url .\n");
+	return undef;
     }
     $url = "$host:$port/$dir";
 
@@ -142,74 +142,74 @@ sub Init {
     # entry, even if it's empty).
     my $proxies = \@{$MTT::Globals::Values->{proxies}->{$scheme}};
     if (defined($proxies)) {
-        foreach my $p (@{$proxies}) {
-            my %params = { env_proxy => 0 };
-            my $ua = LWP::UserAgent->new(%params);
-            
-            # @#$@!$# LWP proxying for https *does not work*.  So
-            # don't set $ua->proxy() for it.  Instead, we'll set
-            # $ENV{https_proxy} whenever we process requests that
-            # require SSL proxying, because that is obeyed deep down
-            # in the innards underneath LWP.
-            $ua->proxy([$scheme], $p->{proxy})
-                if ($p->{proxy} ne "" && $scheme ne "https");
-            $ua->agent("MPI Test MTTDatabase Reporter");
-            push(@lwps, {
-                scheme => $scheme,
-                agent => $ua,
-                proxy => $p->{proxy},
-                source => $p->{source},
-                 });
-        }
+	foreach my $p (@{$proxies}) {
+	    my %params = { env_proxy => 0 };
+	    my $ua = LWP::UserAgent->new(%params);
+
+	    # @#$@!$# LWP proxying for https *does not work*.  So
+	    # don't set $ua->proxy() for it.  Instead, we'll set
+	    # $ENV{https_proxy} whenever we process requests that
+	    # require SSL proxying, because that is obeyed deep down
+	    # in the innards underneath LWP.
+	    $ua->proxy([$scheme], $p->{proxy})
+		if ($p->{proxy} ne "" && $scheme ne "https");
+	    $ua->agent("MPI Test MTTDatabase Reporter");
+	    push(@lwps, {
+		scheme => $scheme,
+		agent => $ua,
+		proxy => $p->{proxy},
+		source => $p->{source},
+		 });
+	}
     } else {
-        my %params = { env_proxy => 0 };
-        my $ua = LWP::UserAgent->new(%params);
-        push(@lwps, {
-            scheme => $scheme,
-            agent => $ua,
-             });
+	my %params = { env_proxy => 0 };
+	my $ua = LWP::UserAgent->new(%params);
+	push(@lwps, {
+	    scheme => $scheme,
+	    agent => $ua,
+	     });
     }
     if ($realm && $username && $password) {
-        Verbose("   Set HTTP credentials for realm \"$realm\"\n");
+	Verbose("   Set HTTP credentials for realm \"$realm\"\n");
     }
 
     # Do a test ping to ensure that we can reach this URL.
 
     Debug("MTTDatabase client getting a client serial number...\n");
     my $form = {
-        SERIAL => 1,
+	SERIAL => 1,
     };
     my $req = POST ($url, $form);
     $req->authorization_basic($username, $password);
     my $response = _do_request($req);
     if (! $response->is_success()) {
-        Warning(">> Failed test ping to MTTDatabase URL: $url\n");
-        Warning(">> Error was: " . $response->status_line . "\n" . 
-                $response->content);
-        Error(">> Do not want to continue with possible bad submission URL -- aborting\n");
-        # Does not reach here
+	Warning(">> Failed test ping to MTTDatabase URL: $url\n");
+	Warning(">> Error was: " . $response->status_line . "\n" .
+		$response->content);
+	Error(">> Do not want to continue with possible bad submission URL -- aborting\n");
+	# Does not reach here
     }
 
     Debug("MTTDatabase client got response: " . $response->content . "\n");
     if ($response->content =~ m/===\s+$invocation_serial_name\s+=\s+([0-9]+)\s+===/) {
-        $invocation_serial_value = $1;
-        Debug("MTTDatabase client parsed invocation serial: $invocation_serial_value\n");
+	$invocation_serial_value = $1;
+	Debug("MTTDatabase client parsed invocation serial: $invocation_serial_value\n");
     } else {
-        Warning(">> MTTDatabase client did not get a serial\n");
-        Warning(">> Error was: " . $response->status_line . "\n" .
-                $response->content);
-        Error(">> Do not want to continue with possible bad submission URL -- aborting\n");
-        # Does not reach here
+	Warning(">> MTTDatabase client did not get a serial\n");
+	Warning(">> Error was: " . $response->status_line . "\n" .
+		$response->content);
+	Error(">> Do not want to continue with possible bad submission URL -- aborting\n");
+	# Does not reach here
     }
-    
+
     # If we have a debug filename, make it an absolute filename,
     # because there's oodles of chdir()'s within the testing.  Whack
     # the file if it's already there.
 
     # If filename given is relative, branch it off the scratch tree
     if ($debug_filename !~ /\//) {
-        $debug_filename = MTT::DoCommand::cwd() . 
-            "/mttdatabase-submit/$debug_filename";
+	$debug_filename = MTT::DoCommand::cwd() .
+	    "/mttdatabase-submit/$debug_filename";
     }
     MTT::Files::mkdir(dirname($debug_filename));
     Debug("MTTDatabase reporter writing to debug file ($debug_filename)\n");
@@ -233,9 +233,9 @@ sub Finalize {
 
     # Report number of server errors for entire MTT run
     if ($server_errors_total) {
-        Warning(">> $server_errors_total total MTTDatabase server error" . 
-                _plural($server_errors_total) . "\n" .
-                "See the above output for more info.\n");
+	Warning(">> $server_errors_total total MTTDatabase server error" .
+		_plural($server_errors_total) . "\n" .
+		"See the above output for more info.\n");
     }
 }
 
@@ -256,197 +256,197 @@ sub Submit {
     # Make a default form that will be used to seed all the forms that
     # will be sent
     my $default_form = {
-        mtt_client_version => $MTT::Version::Combined,
+	mtt_client_version => $MTT::Version::Combined,
     };
     my $phase_serials;
     my $serial_name = $invocation_serial_name;
     my $serial_value = $invocation_serial_value;
 
     if ($local_username) {
-        $default_form->{local_username} = $local_username;
+	$default_form->{local_username} = $local_username;
     } else {
-        $default_form->{local_username} = getpwuid($<);
+	$default_form->{local_username} = getpwuid($<);
     }
 
     # Try to get a FQDN
     if (!defined($hostname) || "" eq $hostname) {
-        $hostname = `hostname`;
-        chomp($hostname);
+	$hostname = `hostname`;
+	chomp($hostname);
     }
     Debug("Got hostname: $hostname\n");
     $default_form->{hostname} = $hostname;
 
     # Now iterate through all the records that were given to submit
     foreach my $phase (keys(%$entries)) {
-        my $phase_obj = $entries->{$phase};
+	my $phase_obj = $entries->{$phase};
 
-        foreach my $section (keys(%$phase_obj)) {
-            my $section_obj = $phase_obj->{$section};
+	foreach my $section (keys(%$phase_obj)) {
+	    my $section_obj = $phase_obj->{$section};
 
-            # Each section of a phase gets its own report to the
-            # database.  Make a deep copy of the default form to start
-            # with.
-            my $form;
-            %$form = %{$default_form};
+	    # Each section of a phase gets its own report to the
+	    # database.  Make a deep copy of the default form to start
+	    # with.
+	    my $form;
+	    %$form = %{$default_form};
 
-            # Fill in the client serial number
-            $form->{$serial_name} = $serial_value;
+	    # Fill in the client serial number
+	    $form->{$serial_name} = $serial_value;
 
-            # Fill in the trial flag
-            $form->{$trial_name} = $MTT::Globals::Values->{trial};
+	    # Fill in the trial flag
+	    $form->{$trial_name} = $MTT::Globals::Values->{trial};
 
-            # How many results are we submitting?
-            $form->{number_of_results} = $#{$section_obj} + 1;
-            $form->{platform_name} = $platform;
-            $form->{email} = $email if ($email);
+	    # How many results are we submitting?
+	    $form->{number_of_results} = $#{$section_obj} + 1;
+	    $form->{platform_name} = $platform;
+	    $form->{email} = $email if ($email);
 
-            # First, go through and union all the field names to come
-            # up with a comprehensive list of fields that we're
-            # submitting
-            my $fields;
-            foreach my $result (@$section_obj) {
-                foreach my $key (keys(%$result)) {
-                    $fields->{$key} = 1;
-                }
-            }
-            $form->{fields} = join(',', sort(keys(%$fields)));
-            $form->{phase} = $phase;
+	    # First, go through and union all the field names to come
+	    # up with a comprehensive list of fields that we're
+	    # submitting
+	    my $fields;
+	    foreach my $result (@$section_obj) {
+		foreach my $key (keys(%$result)) {
+		    $fields->{$key} = 1;
+		}
+	    }
+	    $form->{fields} = join(',', sort(keys(%$fields)));
+	    $form->{phase} = $phase;
 
-            # Now go through and actually attach all the result to
-            # fields in the form
-            my $count = 1;
-            foreach my $result (@$section_obj) {
+	    # Now go through and actually attach all the result to
+	    # fields in the form
+	    my $count = 1;
+	    foreach my $result (@$section_obj) {
 
-                # Go through all the keys in the results
-                foreach my $key (keys(%$result)) {
+		# Go through all the keys in the results
+		foreach my $key (keys(%$result)) {
 
-                    # Do not number serial fields (which by convention are
-                    # named "name_id")
-                    my $name = $key . ($key !~ /_id$/ ? "_" . $count : "");
+		    # Do not number serial fields (which by convention are
+		    # named "name_id")
+		    my $name = $key . ($key !~ /_id$/ ? "_" . $count : "");
 
-                    # If the field that has the word "timestamp" in it,
-                    # convert it to GMT ctime.
-                    if ($key =~ /timestamp/) {
+		    # If the field that has the word "timestamp" in it,
+		    # convert it to GMT ctime.
+		    if ($key =~ /timestamp/) {
 
-                        # If we have an epoch timestamp (raw seconds from 1970-01-01)
-                        # convert to MTTDatabase format (e.g., Postgres)
-                        if ($result->{$key} =~ /^\s*\d+\s*$/) {
-                            $form->{$name} = gmtime($result->{$key});
-                        # Otherwise, assume the timestamp is already in MTTDatabase format
-                        } else {
-                            $form->{$name} = $result->{$key};
+			# If we have an epoch timestamp (raw seconds from 1970-01-01)
+			# convert to MTTDatabase format (e.g., Postgres)
+			if ($result->{$key} =~ /^\s*\d+\s*$/) {
+			    $form->{$name} = gmtime($result->{$key});
+			# Otherwise, assume the timestamp is already in MTTDatabase format
+			} else {
+			    $form->{$name} = $result->{$key};
 
-                        }
-                    } 
+			}
+		    }
 
-                    # We can skip the phase key because it's already
-                    # in the top.  
-                    elsif ($key eq "phase") {
-                        next;
-                    }
+		    # We can skip the phase key because it's already
+		    # in the top.
+		    elsif ($key eq "phase") {
+			next;
+		    }
 
-                    elsif ($key eq "mpi_name" || $key eq "mpi_version") {
-                        $form->{$key} = $result->{$key};
-                    }
+		    elsif ($key eq "mpi_name" || $key eq "mpi_version") {
+			$form->{$key} = $result->{$key};
+		    }
 
-                    # Stringify any array references
-                    elsif (ref($result->{$key}) =~ /array/i) {
-                        $form->{$key} = join("\n\n---\n\n", @{$result->{$key}});
-                    }
+		    # Stringify any array references
+		    elsif (ref($result->{$key}) =~ /array/i) {
+			$form->{$key} = join("\n\n---\n\n", @{$result->{$key}});
+		    }
 
-                    # Stringify any hash references
-                    elsif (ref($result->{$key}) =~ /hash/i) {
-                        my $str = Dumper($result->{$key});
-                        $str =~ s/\$VAR1 = /        /;
-                        $form->{$key} = $str;
-                    }
+		    # Stringify any hash references
+		    elsif (ref($result->{$key}) =~ /hash/i) {
+			my $str = Dumper($result->{$key});
+			$str =~ s/\$VAR1 = /        /;
+			$form->{$key} = $str;
+		    }
 
-                    # Otherwise, just add it unmodified to the form
-                    else {
-                        $form->{$name} = $result->{$key};
-                    }
-                }
+		    # Otherwise, just add it unmodified to the form
+		    else {
+			$form->{$name} = $result->{$key};
+		    }
+		}
 
-                # Increment and repeat for all results
-                ++$count;
-            }
+		# Increment and repeat for all results
+		++$count;
+	    }
 
-            _debug("Submitting to MTTDatabase...\n");
-            
-            my ($req, $file) = _prepare_request(\$form);
-            my $response = _do_request($$req);
-            unlink($file);
+	    _debug("Submitting to MTTDatabase...\n");
 
-            my $sql_error = 0;
-            if ($response->is_success()) {
-                _debug("MTTDatabase response is a success\n");
-                ++$successes;
-                push(@success_outputs, $response->content);
-                $sql_error = _count_sql_errors($response->content);
-                $server_errors_count += $sql_error;
-                $server_errors_total += $server_errors_count;
-                Warning($response->content . "\n") if ($sql_error);
-                _debug("MTTDatabase client got response: " . 
-                       $response->content . "\n");
-            } else {
-                Warning(">> Failed to report to MTTDatabase: " .
-                        $response->status_line . "\n" . 
-                        ">> Content: " . $response->content);
-                ++$fails;
-                push(@fail_outputs, $response->content);
-            }
+	    my ($req, $file) = _prepare_request(\$form);
+	    my $response = _do_request($$req);
+	    unlink($file);
 
-            # The following parses the returned serial which will index either
-            # an "MPI Install" or a "Test Build"
-            if ($response->content =~ m/===\s+(\S+)\s+=\s+([0-9\,]+)\s+===/) {
-                eval "\$phase_serials->{$1} = $2;";
-                _debug("MTTDatabase client parsed serial: $1 = $2\n");
-            }
+	    my $sql_error = 0;
+	    if ($response->is_success()) {
+		_debug("MTTDatabase response is a success\n");
+		++$successes;
+		push(@success_outputs, $response->content);
+		$sql_error = _count_sql_errors($response->content);
+		$server_errors_count += $sql_error;
+		$server_errors_total += $server_errors_count;
+		Warning($response->content . "\n") if ($sql_error);
+		_debug("MTTDatabase client got response: " .
+		       $response->content . "\n");
+	    } else {
+		Warning(">> Failed to report to MTTDatabase: " .
+			$response->status_line . "\n" .
+			">> Content: " . $response->content);
+		++$fails;
+		push(@fail_outputs, $response->content);
+	    }
 
-            # If we did *NOT* get a serial number, then this is an
-            # error (the server sends a serial for each of MPI
-            # Install, Test Build, and Test Run).  Raise the warning
-            # and abort.
-            else {
-                Warning(">> Did not get a get a phase serial number back");
-                Warning(">> Error was: " . $response->status_line . "\n" . 
-                        $response->content);
-                Error(">> Do not want to continue without a serial number -- aborting\n");
-                # Does not reach here
-            }
+	    # The following parses the returned serial which will index either
+	    # an "MPI Install" or a "Test Build"
+	    if ($response->content =~ m/===\s+(\S+)\s+=\s+([0-9\,]+)\s+===/) {
+		eval "\$phase_serials->{$1} = $2;";
+		_debug("MTTDatabase client parsed serial: $1 = $2\n");
+	    }
 
-            $num_results += ($count - 1);
-            _debug("MTTDatabase client submit complete\n");
-            
-            # Write out what we *would* have sent via HTTP to a
-            # file
-            my $f;
-            if ($sql_error or $keep_debug_files) {
-                
-                $f = "$debug_filename.$debug_index" .
-                        ($sql_error ? "." . time . "-error" : "") . ".txt";
-                ++$debug_index;
-                Debug("Writing to MTTDatabase client debug file: $f\n");
-                open OUT, ">$f" || die "Could not open MTTDatabase client debug output file";
-                print OUT Dumper($form);
-                close OUT;
-                Debug("Debug MTTDatabase client file write complete\n");
-                
-                push(@success_outputs, "Wrote to file $f\n");
-            }
-        }
+	    # If we did *NOT* get a serial number, then this is an
+	    # error (the server sends a serial for each of MPI
+	    # Install, Test Build, and Test Run).  Raise the warning
+	    # and abort.
+	    else {
+		Warning(">> Did not get a get a phase serial number back");
+		Warning(">> Error was: " . $response->status_line . "\n" .
+			$response->content);
+		Error(">> Do not want to continue without a serial number -- aborting\n");
+		# Does not reach here
+	    }
+
+	    $num_results += ($count - 1);
+	    _debug("MTTDatabase client submit complete\n");
+
+	    # Write out what we *would* have sent via HTTP to a
+	    # file
+	    my $f;
+	    if ($sql_error or $keep_debug_files) {
+
+		$f = "$debug_filename.$debug_index" .
+			($sql_error ? "." . time . "-error" : "") . ".txt";
+		++$debug_index;
+		Debug("Writing to MTTDatabase client debug file: $f\n");
+		open OUT, ">$f" || die "Could not open MTTDatabase client debug output file";
+		print OUT Dumper($form);
+		close OUT;
+		Debug("Debug MTTDatabase client file write complete\n");
+
+		push(@success_outputs, "Wrote to file $f\n");
+	    }
+	}
     }
 
-    Verbose(">> Reported to MTTDatabase client: $successes successful submit" . 
-            _plural($successes) .  ", " .
-            "$fails failed submit" . _plural($fails) . 
-            " (total of $num_results result" . _plural($num_results) . ")\n");
+    Verbose(">> Reported to MTTDatabase client: $successes successful submit" .
+	    _plural($successes) .  ", " .
+	    "$fails failed submit" . _plural($fails) .
+	    " (total of $num_results result" . _plural($num_results) . ")\n");
 
     # Print a hairy warning if there was an SQL error
     if ($server_errors_count) {
-        BigWarning("$server_errors_count MTTDatabase server error" .  _plural($server_errors_count),
-                   "The data that failed to submit is in $debug_filename.*.txt.",
-                   "See the above output for more info.");
+	BigWarning("$server_errors_count MTTDatabase server error" .  _plural($server_errors_count),
+		   "The data that failed to submit is in $debug_filename.*.txt.",
+		   "See the above output for more info.");
     }
 
     return $phase_serials;
@@ -465,7 +465,7 @@ sub _count_sql_errors {
     my $count = 0;
 
     while (defined($line = shift @lines)) {
-        $count++ if ($line =~ /mttdatabase server error/i);
+	$count++ if ($line =~ /mttdatabase server error/i);
     }
     return $count;
 }
@@ -488,33 +488,33 @@ sub _do_request {
     my $response;
     my $num_retries = 0;
     while ( $num_retries <= 16 ) {
-        foreach my $ua (@lwps) {
-            _debug("MTTDatabase client trying proxy: $ua->{proxy} / $ua->{source}\n");
-            $ENV{https_proxy} = $ua->{proxy}
-                if ("https" eq $ua->{scheme});
+	foreach my $ua (@lwps) {
+	    _debug("MTTDatabase client trying proxy: $ua->{proxy} / $ua->{source}\n");
+	    $ENV{https_proxy} = $ua->{proxy}
+		if ("https" eq $ua->{scheme});
 
-            # Do the HTTP request
-            $response = $ua->{agent}->request($req);
+	    # Do the HTTP request
+	    $response = $ua->{agent}->request($req);
 
-            # If it succeeded, or if it failed with something other than
-            # code 500, return (code 500 = can't connect)
-            if ($response->is_success() ||
-                $response->code() != 500) {
-                _debug("MTTDatabase proxy successful / not 500\n");
-                %ENV = %ENV_SAVE;
-                return $response;
-            }
-            _debug("MTTDatabase proxy unsuccessful -- trying next\n");
+	    # If it succeeded, or if it failed with something other than
+	    # code 500, return (code 500 = can't connect)
+	    if ($response->is_success() ||
+		$response->code() != 500) {
+		_debug("MTTDatabase proxy successful / not 500\n");
+		%ENV = %ENV_SAVE;
+		return $response;
+	    }
+	    _debug("MTTDatabase proxy unsuccessful -- trying next\n");
 
-            # Otherwise, loop around and try again
-            Debug("Proxy $ua->{proxy} failed code: " .
-                  $response->status_line . "\n");
-        }
-        # If all failed, retry them all a few times with increasing sleep
-        # before giving up for good.
-        Warning(">> Failed to submit results... retrying...");
-        $num_retries++;
-        sleep (4 * $num_retries);
+	    # Otherwise, loop around and try again
+	    Debug("Proxy $ua->{proxy} failed code: " .
+		  $response->status_line . "\n");
+	}
+	# If all failed, retry them all a few times with increasing sleep
+	# before giving up for good.
+	Warning(">> Failed to submit results... retrying...");
+	$num_retries++;
+	sleep (4 * $num_retries);
     }
     # Sorry -- nothing got through...
     _debug("MTTDatabase proxy totally unsuccessful\n");
@@ -532,16 +532,16 @@ sub _prepare_request {
     # Find a temporary directory for the .inc files
     my $tmpdir;
     if (defined($ENV{TMPDIR})) {
-        $tmpdir = $ENV{TMPDIR};
+	$tmpdir = $ENV{TMPDIR};
     } else {
-        $tmpdir = "/tmp";
+	$tmpdir = "/tmp";
     }
     MTT::Files::mkdir($tmpdir);
 
     # Write an anonymous PHP array to a file
     my ($fh, $filename) = tempfile(
-        DIR    => $tmpdir,
-        SUFFIX => "-mttdatabase-submission.inc"
+	DIR    => $tmpdir,
+	SUFFIX => "-mttdatabase-submission.inc"
     );
     open(FILE, "> $filename");
     print FILE &_perl_arr_2_php_arr(Dumper($$form));
@@ -553,14 +553,14 @@ sub _prepare_request {
 
     # Create the "upload" POST request
     my $req = POST $url,
-         Content_Type => 'form-data',
-         Content => [ 
-             pageAction     => 'upload',
-             userfile       => [$filename],
-             newTitle       => $filename,
-             newCategory    => 'Open MPI',
-             newDescription => 'MTT Results Submission'
-         ];
+	 Content_Type => 'form-data',
+	 Content => [
+	     pageAction     => 'upload',
+	     userfile       => [$filename],
+	     newTitle       => $filename,
+	     newCategory    => 'Open MPI',
+	     newDescription => 'MTT Results Submission'
+	 ];
 
     $req->authorization_basic($username, $password);
 
@@ -572,16 +572,16 @@ sub _prepare_request {
 # For the submission hash of data, convert a Perl eval
 # string into a PHP eval string
 sub _perl_arr_2_php_arr {
-    
+
     my $str = shift;
     my @lines = split /\n|\r/, $str;
     my @ret;
 
     foreach my $line (@lines) {
-        $line =~ s/^\$VAR\d+ = {\s*$/array(/;
-        $line =~ s/^\s*};\s*$/)/;
+	$line =~ s/^\$VAR\d+ = {\s*$/array(/;
+	$line =~ s/^\s*};\s*$/)/;
 
-        push(@ret, $line);
+	push(@ret, $line);
     }
 
     return join("\n", @ret);
