@@ -578,8 +578,8 @@ sub _perl_arr_2_php_arr {
     my @ret;
 
     foreach my $line (@lines) {
-	$line =~ s/^\$VAR\d+ = {\s*$/array(/;
-	$line =~ s/^\s*};\s*$/)/;
+	$line =~ s/^\$VAR\d+ = \{\s*$/array(/;
+	$line =~ s/^\s*\};\s*$/)/;
 
 	push(@ret, $line);
     }
