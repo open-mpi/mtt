@@ -9,7 +9,7 @@ $| = 1;
 #
 # MTT Working Dir to find scripts
 #
-my $mtt_base_dir = "/l/osl/www/mtt.open-mpi.org/cron/";
+my $mtt_base_dir = "/l/osl/www/mtt.open-mpi.org/mtt/server/php/cron/";
 
 #
 # Stats collection script
