@@ -1,8 +1,15 @@
 *\\#
 server/mtt_config.php
 server/php/stats/mtt-contrib.pdf
+server/php/stats/mtt-contrib-1year.pdf
 server/php/tmp/*.csv
 server/php/tmp/*.png
+server/php/cron/mtt-update-stats-db-only-output.txt
+server/php/cron/mtt-update-stats-output.txt
+server/php/favicon.ico
+server/php/robots.txt
+server/php/stats/php_errors.log
+server/php/submit/php_errors.log
 *.pyc
 .DS_Store
 db.sqlite3
