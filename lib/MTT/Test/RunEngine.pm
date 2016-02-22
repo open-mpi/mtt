@@ -444,9 +444,15 @@ sub _run_one_test {
     $ENV{MTT_TEST_NP} = $MTT::Test::Run::test_np;
     _run_step($mpi_details, "before_each");
 
+    my $pertest_timeout = MTT::Values::Value($ini, 'mtt', 'per_test_timeout_global_override');
     my $timeout = MTT::Values::EvaluateString($run->{timeout}, $ini, $test_run_full_name);
-    $timeout = MTT::Util::parse_time_to_seconds($timeout)
-        if (defined($timeout));
+
+    if (defined $pertest_timeout) {
+	    $timeout = $pertest_timeout;
+    }
+    $timeout = MTT::Util::parse_time_to_seconds($timeout) if (defined($timeout));
+
+
     my $out_lines = MTT::Values::EvaluateString($run->{stdout_save_lines}, $ini, $test_run_full_name);
     my $err_lines = MTT::Values::EvaluateString($run->{stderr_save_lines}, $ini, $test_run_full_name);
     my $merge = MTT::Values::EvaluateString($run->{merge_stdout_stderr}, $ini, $test_run_full_name);
