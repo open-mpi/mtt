@@ -8,11 +8,11 @@
 #
 
 [Core]
-Name = MTT Database Plugin
-Module = MTTDatabase
+Name = IU Database Plugin
+Module = IUDatabase
 
 [Documentation]
 Author = Ralph Castain
 Version = 0.1
 Website = N/A
-Description = MTT Database reporter plugin
+Description = MTT Database reporter plugin for the legacy IU submission server
