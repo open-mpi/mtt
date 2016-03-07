@@ -43,7 +43,7 @@ class IUDatabase(ReporterMTTStage):
         return
 
     def print_name(self):
-        return "MTTDatabase"
+        return "IUDatabase"
 
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
