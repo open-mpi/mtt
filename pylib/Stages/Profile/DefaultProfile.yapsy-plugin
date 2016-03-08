@@ -1,0 +1,18 @@
+#
+# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
+
+[Core]
+Name = DefaultProfile Plugin
+Module = DefaultProfile
+
+[Documentation]
+Author = Ralph Castain
+Version = 0.1
+Website = N/A
+Description = Collect hardware ands software profile of the system

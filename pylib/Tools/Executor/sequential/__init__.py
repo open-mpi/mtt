@@ -64,7 +64,7 @@ class SequentialEx(ExecutorMTTTool):
                 # if they provided the STOP section, that means we
                 # are to immediately stop processing the test definition
                 # file and return
-                if "STOP" == title.strip():
+                if "STOP" in title:
                     return
                 # if they included the "SKIP" qualifier, then we skip
                 # this section

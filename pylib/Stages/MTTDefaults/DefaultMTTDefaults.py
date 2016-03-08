@@ -23,6 +23,8 @@ class DefaultMTTDefaults(MTTDefaultsMTTStage):
         self.options['logfile'] = (None, "Log all output to FILE (defaults to stdout)")
         self.options['description'] = (None, "Provide a brief title/description to be included in the log for this test")
         self.options['submit_group_results'] = (True, "Report results from each test section as it is completed")
+        self.options['platform'] = (None, "Name of the system under test")
+        self.options['organization'] = (None, "Name of the organization running the test")
         return
 
     def activate(self):

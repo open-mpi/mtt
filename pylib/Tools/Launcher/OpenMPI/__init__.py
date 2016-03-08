@@ -179,7 +179,7 @@ class OpenMPI(LauncherMTTTool):
         tests = []
         if cmds['test_dir'] is not None:
             # pick up the executables from the specified directories
-            dirs = cmds['test_dir'].split()
+            dirs = cmds['test_dir'][0].split()
             for dr in dirs:
                 dr = dr.strip()
                 # remove any commas and quotes
@@ -213,10 +213,10 @@ class OpenMPI(LauncherMTTTool):
         cmdargs = [cmds['command']]
         if cmds['np'] is not None:
             cmdargs.append("-np")
-            cmdargs.append(cmds['np'])
+            cmdargs.append(cmds['np'][0])
         if cmds['hostfile'] is not None:
             cmdargs.append("-hostfile")
-            cmdargs.append(cmds['hostfile'])
+            cmdargs.append(cmds['hostfile'][0])
         # cycle thru the list of tests and execute each of them
         log['testresults'] = []
         finalStatus = 0
@@ -226,7 +226,7 @@ class OpenMPI(LauncherMTTTool):
         numSkip = 0
         numFail = 0
         if cmds['max_num_tests'] is not None:
-            maxTests = int(cmds['max_num_tests'])
+            maxTests = int(cmds['max_num_tests'][0])
         else:
             maxTests = 10000000
         for test in tests:

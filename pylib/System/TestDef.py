@@ -73,30 +73,44 @@ class TestDef:
                     # they provided us with an update, so
                     # pass this value into the target - expand
                     # any provided lists
-                    if type(keyvals[kvkey][0]) is basestring and keyvals[kvkey][0] == "[":
-                        # remove the brackets
-                        val = keyvals[kvkey].replace('[','')
-                        val = val.replace(']','')
-                        # split the input to pickup sets of options
-                        target[key] = val.split(',')
+                    if type(keyvals[kvkey]) is basestring:
+                        if len(keyvals[kvkey]) == 0:
+                            continue
+                        if keyvals[kvkey][0][0] == "[":
+                            # remove the brackets
+                            val = keyvals[kvkey].replace('[','')
+                            val = val.replace(']','')
+                            # split the input to pickup sets of options
+                            newval = list(source[key])
+                            newval[0] = val.split(',')
+                            target[key] = tuple(newval)
+                        else:
+                            newval = list(source[key])
+                            newval[0] = keyvals[kvkey]
+                            target[key] = tuple(newval)
                     else:
-                        target[key] = keyvals[kvkey]
+                        newval = list(source[key])
+                        newval[0] = keyvals[kvkey]
+                        target[key] = tuple(newval)
                     found = True
                     break
             if not found:
                 # they didn't provide this one, so
                 # transfer it across
-                target[key] = source[key][0]
+                target[key] = source[key]
         # now go thru in the reverse direction to see
         # if any keyvals they provided aren't supported
         # as this would be an error
         for kvkey in kvkeys:
+            if kvkey == "section":
+                continue
+            if kvkey == "plugin":
+                continue
             try:
                 if target[kvkey] is not None:
                     pass
             except KeyError:
-                # carry it across
-                target[kvkey] = keyvals[kvkey]
+                print "Option",kvkey,"in section",keyvals["section"],"is not supported"
         # don't return a log entry for this operation
         return
 
@@ -436,6 +450,8 @@ class TestDef:
                     opts.append("True")
                 else:
                     opts.append("False")
+            elif isinstance(options[val][0], list):
+                opts.append(" ".join(options[val][0]))
             else:
                 opts.append(options[val][0])
             opts.append(options[val][1])

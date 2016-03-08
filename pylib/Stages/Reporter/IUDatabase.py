@@ -69,18 +69,18 @@ class IUDatabase(ReporterMTTStage):
             return
         try:
             if cmds['pwfile'] is not None:
-                if os.path.exists(cmds['pwfile']):
-                    f = open(cmds['pwfile'], 'r')
+                if os.path.exists(cmds['pwfile'][0]):
+                    f = open(cmds['pwfile'][0], 'r')
                     password = f.readline().strip()
                     f.close()
                 else:
                     log['status'] = 1;
-                    log['stderr'] = "Password file " + cmds['pwfile'] + " does not exist"
+                    log['stderr'] = "Password file " + cmds['pwfile'][0] + " does not exist"
                     return
         except KeyError:
             try:
                 if cmds['password'] is not None:
-                    password = cmds['password']
+                    password = cmds['password'][0]
             except KeyError:
                 pass
         # establish the sessoin
@@ -90,9 +90,9 @@ class IUDatabase(ReporterMTTStage):
 
         payload = {"mtt_version_major" : "4", "mtt_version_minor" : "0", "mtt_client_version" : "4.0a1"}
         if 0 < sanity:
-            r = s.post(cmds['url'], data=payload, headers=headers, auth=HTTPBasicAuth(cmds['username'], password), verify=False)
+            r = s.post(cmds['url'][0], data=payload, headers=headers, auth=HTTPBasicAuth(cmds['username'][0], password), verify=False)
         else:
-            r = s.post("https://mtt.open-mpi.org/submit/", data=payload, headers=headers, verify=False)
+            r = s.post(cmds['url'][0], data=payload, headers=headers, verify=False)
         print "<<<<<<<---------------- Response -------------------------->>>>>>"
         print "Result: %d: %s" % (r.status_code, r.headers['content-type'])
         print r.headers

@@ -44,13 +44,12 @@ class TextFile(ReporterMTTStage):
         return
 
     def execute(self, log, keyvals, testDef):
-        print log
         testDef.logger.verbose_print(testDef.options, "TextFile Reporter")
         # pickup the options
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
         if cmds['filename'] is not None:
-            self.fh = open(cmds['filename'], 'w')
+            self.fh = open(cmds['filename'][0], 'w')
         if testDef.options.description is not None:
             print >> self.fh,testDef.options.description
             print >> self.fh

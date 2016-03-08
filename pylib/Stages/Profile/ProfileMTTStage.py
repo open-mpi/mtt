@@ -1,0 +1,23 @@
+#!/usr/bin/env python
+#
+# Copyright (c) 2016      Intel, Inc. All rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
+
+from yapsy.IPlugin import IPlugin
+
+class ProfileMTTStage(IPlugin):
+    def __init__(self):
+        # initialise parent class
+        IPlugin.__init__(self)
+    def print_name(self):
+        print "Stage for profiling the system upon which the tests will be conducted"
+
+    def ordering(self):
+        # set this stage so it follows BIOS, firmware, and provisioning
+        # so we profile the final system
+        return 210
