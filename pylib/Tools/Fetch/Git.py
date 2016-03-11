@@ -52,7 +52,7 @@ class Git(FetchMTTTool):
         return
 
     def execute(self, log, keyvals, testDef):
-        testDef.logger.verbose_print(testDef.options, "Git Execute")
+        testDef.logger.verbose_print("Git Execute")
         # check that they gave us a URL
         try:
             if keyvals['url'] is not None:
@@ -61,7 +61,7 @@ class Git(FetchMTTTool):
             log['status'] = 1
             log['stderr'] = "No repository URL was provided"
             return
-        testDef.logger.verbose_print(testDef.options, "Working repo " + url)
+        testDef.logger.verbose_print("Working repo " + url)
         # see if they gave us a username
         username = self.options['username'][0]
         try:
@@ -104,7 +104,7 @@ class Git(FetchMTTTool):
             (leader,tail) = url.split("//", 1)
             # put the username:password into the url
             url = leader + "//" + username + "@" + tail
-        testDef.logger.verbose_print(testDef.options, "Working final repo " + url)
+        testDef.logger.verbose_print("Working final repo " + url)
         # the path component of the parser output contains
         # the name of the repo
         repo = os.path.basename(urlparse(url).path)
@@ -165,7 +165,7 @@ class Git(FetchMTTTool):
         # record our current location
         cwd = os.getcwd()
         # change to the scratch directory
-        os.chdir(testDef.options.scratchdir)
+        os.chdir(testDef.options['scratchdir'])
         # see if this software has already been cloned
         if os.path.exists(repo):
             if not os.path.isdir(repo):

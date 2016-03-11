@@ -45,7 +45,7 @@ class DefaultProfile(ProfileMTTStage):
         return
 
     def execute(self, log, keyvals, testDef):
-        testDef.logger.verbose_print(testDef.options, "Collect system profile")
+        testDef.logger.verbose_print("Collect system profile")
         # collect general information on the system
         myLog = {}
         # see what they want us to collect
@@ -53,14 +53,14 @@ class DefaultProfile(ProfileMTTStage):
         testDef.parseOptions(log, self.options, keyvals, cmds)
         keys = cmds.keys()
         for key in keys:
-            if cmds[key][0]:
-                status, stdout, stderr = testDef.execmd.execute(cmds[key][2], testDef)
+            if cmds[key]:
+                status, stdout, stderr = testDef.execmd.execute(self.options[key][2], testDef)
                 if 0 != status:
                     log['status'] = status
-                    log['stdout'] = stdout
-                    log['stderr'] = stderr
+                    log['stdout'] = stdout.strip()
+                    log['stderr'] = stderr.strip()
                     return
-                myLog[cmds[key][0]] = stdout
+                myLog[key] = stdout.strip()
         # add our log to the system log
         log['profile'] = myLog
         log['status'] = 0

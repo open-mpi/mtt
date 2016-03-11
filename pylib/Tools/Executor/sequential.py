@@ -55,12 +55,12 @@ class SequentialEx(ExecutorMTTTool):
         return
 
     def execute(self, testDef):
-        testDef.logger.verbose_print(testDef.options, "ExecuteSequential")
+        testDef.logger.verbose_print("ExecuteSequential")
         for step in testDef.loader.stageOrder:
             for title in testDef.config.sections():
                 if step not in title:
                     continue
-                testDef.logger.verbose_print(testDef.options, title)
+                testDef.logger.verbose_print(title)
                 # if they provided the STOP section, that means we
                 # are to immediately stop processing the test definition
                 # file and return
@@ -78,9 +78,10 @@ class SequentialEx(ExecutorMTTTool):
                     stage = title
                 # setup the log
                 stageLog = {'section':title}
+                # get the key-value tuples output by the configuration parser
                 stageLog["parameters"] = testDef.config.items(title)
-                # get the list of key-value tuples provided in this stage
-                # by the user and convert it to a dictionary for easier parsing
+                # convert the list of key-value tuples provided in this stage
+                # by the user to a dictionary for easier parsing.
                 # Yes, we could do this automatically, but we instead do it
                 # manually so we can strip all the keys and values for easier
                 # parsing later
@@ -189,7 +190,7 @@ class SequentialEx(ExecutorMTTTool):
                             plugin = pluginInfo.plugin_object
                             break
                     if plugin is None:
-                        # we really have to way of executing this
+                        # we really have no way of executing this
                         stageLog['status'] = 1
                         stageLog['stderr'] = "Plugin for stage",stage,"was not specified, and no default is available"
                         testDef.logger.logResults(title, stageLog)

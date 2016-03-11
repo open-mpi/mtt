@@ -18,6 +18,8 @@ class Logger(BaseMTTUtility):
         self.fh = sys.stdout
         self.results = []
         self.options = {}
+        self.printout = False
+        self.timestamp = False
 
     def print_name(self):
         return "Logger"
@@ -28,20 +30,57 @@ class Logger(BaseMTTUtility):
             print prefix + line
         return
 
-    def open(self, options):
+    def open(self, testDef):
         # init the logging file handle
-        self.fh = open(options.logfile, 'w') if options.logfile else sys.stdout
+        try:
+            if testDef.options['logfile'] is not None:
+                self.fh = open(testDef.options['logfile'], 'w')
+            else:
+                self.fh = sys.stdout
+        except KeyError:
+            self.fh = sys.stdout
+        # define the verbosity/debug flags
+        try:
+            if testDef.options['verbose']:
+                self.printout = True
+        except KeyError:
+            pass
+        try:
+            if testDef.options['debug']:
+                self.printout = True
+        except KeyError:
+            pass
+        try:
+            if testDef.options['dryrun']:
+                self.printout = True
+        except KeyError:
+            pass
+        # define the time flags
+        try:
+            if testDef.options['sectime']:
+                self.timestamp = True
+        except KeyError:
+            pass
+        try:
+            if testDef.options['cmdtime']:
+                self.timestamp = True
+        except KeyError:
+            pass
+        try:
+            if testDef.options['time']:
+                self.timestamp = True
+        except KeyError:
+            pass
         return
 
-    def verbose_print(self, options, str):
-        if options.verbose or options.debug or options.dryrun:
+    def verbose_print(self, str):
+        if self.printout:
             print >> self.fh, str
         return
 
-    def timestamp(self, options):
-        if options.sectime:
-            print >> self.fh, datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        return
+    def timestamp(self):
+        if self.timestamp:
+            return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     def close(self):
         if self.fh is not sys.stdout:
@@ -49,6 +88,7 @@ class Logger(BaseMTTUtility):
         return
 
     def logResults(self, title, result):
+        self.verbose_print("LOGGING results for " + title)
         self.results.append(result)
         return
 

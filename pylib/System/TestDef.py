@@ -53,65 +53,110 @@ class TestDef:
         self.log = {}
 
     def setOptions(self, options, args):
-        self.options = options
-        self.args = args
-        # if they asked us to print all times, then flag both sets
-        if (options.time):
-            self.options.cmdtime = True
-            self.options.sectime = True
+        self.options = vars(options)
+        self.args = args[:]
 
-    def parseOptions(self, log, source, keyvals, target):
+    # scan the key-value pairs obtained from the configuration
+    # parser and compare them with the options defined for a
+    # given plugin. Generate an output dictionary that contains
+    # the updated set of option values, the default value for
+    # any option that wasn't included in the configuration file,
+    # and return an error status plus output identifying any
+    # keys in the configuration file that are not supported
+    # by the list of options
+    #
+    # @log [INPUT]
+    #          - a dictionary that will return the status plus
+    #            stderr containing strings identifying any
+    #            provided keyvals that don't have a corresponding
+    #            supported option
+    # @options [INPUT]
+    #          - a dictionary of tuples, each consisting of three
+    #            entries:
+    #               (a) the default value
+    #               (b) data type
+    #               (c) a help-like description
+    # @keyvals [INPUT]
+    #          - a dictionary of key-value pairs obtained from
+    #            the configuration parser
+    # @target [OUTPUT]
+    #          - the resulting dictionary of key-value pairs
+    def parseOptions(self, log, options, keyvals, target):
         # parse the incoming keyvals dictionary against the source
         # options. If a source option isn't provided, then
         # copy it across to the target.
-        keys = source.keys()
+        opts = options.keys()
         kvkeys = keyvals.keys()
-        for key in keys:
+        for opt in opts:
             found = False
             for kvkey in kvkeys:
-                if kvkey == key:
+                if kvkey == opt:
                     # they provided us with an update, so
                     # pass this value into the target - expand
                     # any provided lists
-                    if type(keyvals[kvkey]) is basestring:
+                    if keyvals[kvkey] is None:
+                        continue
+                    if type(keyvals[kvkey]) is bool:
+                        target[opt] = keyvals[kvkey]
+                    else:
                         if len(keyvals[kvkey]) == 0:
-                            continue
+                            # this indicates they do not want this option
+                            found = True
+                            break
                         if keyvals[kvkey][0][0] == "[":
-                            # remove the brackets
+                            # they provided a list - remove the brackets
                             val = keyvals[kvkey].replace('[','')
                             val = val.replace(']','')
                             # split the input to pickup sets of options
-                            newval = list(source[key])
-                            newval[0] = val.split(',')
-                            target[key] = tuple(newval)
+                            newvals = list(val)
+                            # convert the values to specified type
+                            i=0
+                            for val in newvals:
+                                if type(opt[0]) is bool:
+                                    if val.lower in ['true', '1', 't', 'y', 'yes', 'yeah', 'yup', 'certainly', 'uh-huh']:
+                                        newvals[i] = True
+                                    else:
+                                        newvals[i] = False
+                                i = i + 1
+                            target[opt] = newvals
                         else:
-                            newval = list(source[key])
-                            newval[0] = keyvals[kvkey]
-                            target[key] = tuple(newval)
-                    else:
-                        newval = list(source[key])
-                        newval[0] = keyvals[kvkey]
-                        target[key] = tuple(newval)
+                            val = keyvals[kvkey]
+                            if type(opt[0]) is bool:
+                                if val.lower in ['true', '1', 't', 'y', 'yes', 'yeah', 'yup', 'certainly', 'uh-huh']:
+                                    val = True
+                                else:
+                                    val = False
+                            target[opt] = val
                     found = True
                     break
             if not found:
                 # they didn't provide this one, so
-                # transfer it across
-                target[key] = source[key]
+                # transfer only the value across
+                target[opt] = options[opt][0]
         # now go thru in the reverse direction to see
         # if any keyvals they provided aren't supported
         # as this would be an error
+        stderr = []
         for kvkey in kvkeys:
-            if kvkey == "section":
-                continue
-            if kvkey == "plugin":
+            # ignore some standard keys
+            if kvkey in ['section', 'plugin']:
                 continue
             try:
                 if target[kvkey] is not None:
                     pass
             except KeyError:
-                print "Option",kvkey,"in section",keyvals["section"],"is not supported"
-        # don't return a log entry for this operation
+                # some always need to be passed
+                if kvkey in ['parent', 'asis']:
+                    target[kvkey] = keyvals[kvkey]
+                else:
+                    stderr.append("Option " + kvkey + " is not supported")
+        if stderr:
+            # mark the log with an error status
+            log['status'] = 1
+            # pass the errors back
+            log['stderr'] = stderr
+        else:
+            log['status'] = 0
         return
 
     def loadPlugins(self, basedir, topdir):
@@ -135,9 +180,9 @@ class TestDef:
         # Note that we always look at the topdir location by default
         plugindirs = []
         plugindirs.append(topdir)
-        if self.options.plugindir:
+        if self.options['plugindir']:
             # could be a comma-delimited list, so split on commas
-            x = self.options.plugindir.split(',')
+            x = self.options['plugindir'].split(',')
             for y in x:
                 # prepend so we always look at the given
                 # location first in case the user wants
@@ -221,7 +266,7 @@ class TestDef:
 
     def printInfo(self):
         # Print the available MTT sections out, if requested
-        if self.options.listsections:
+        if self.options['listsections']:
             print "Supported MTT stages:"
             # print them in the default order of execution
             for stage in self.loader.stageOrder:
@@ -229,12 +274,12 @@ class TestDef:
             exit(0)
 
         # Print the detected plugins for a given stage
-        if self.options.listplugins:
+        if self.options['listplugins']:
             # if the list is '*', print the plugins for every stage
-            if self.options.listplugins == "*":
+            if self.options['listplugins'] == "*":
                 sections = self.loader.stageOrder
             else:
-                sections = self.options.listplugins.split(',')
+                sections = self.options['listplugins'].split(',')
             print
             for section in sections:
                 print section + ":"
@@ -247,12 +292,12 @@ class TestDef:
             exit(1)
 
         # Print the options for a given plugin
-        if self.options.liststageoptions:
+        if self.options['liststageoptions']:
             # if the list is '*', print the options for every stage/plugin
-            if self.options.liststageoptions == "*":
+            if self.options['liststageoptions'] == "*":
                 sections = self.loader.stageOrder
             else:
-                sections = self.options.liststageoptions.split(',')
+                sections = self.options['liststageoptions'].split(',')
             print
             for section in sections:
                 print section + ":"
@@ -266,7 +311,7 @@ class TestDef:
             exit(1)
 
         # Print the available MTT tools out, if requested
-        if self.options.listtools:
+        if self.options['listtools']:
             print "Available MTT tools:"
             availTools = self.loader.tools.keys()
             for tool in availTools:
@@ -274,13 +319,13 @@ class TestDef:
             exit(0)
 
         # Print the detected tool plugins for a given tool type
-        if self.options.listtoolmodules:
+        if self.options['listtoolmodules']:
             # if the list is '*', print the plugins for every type
-            if self.options.listtoolmodules == "*":
+            if self.options['listtoolmodules'] == "*":
                 print
                 availTools = self.loader.tools.keys()
             else:
-                availTools = self.options.listtoolmodules.split(',')
+                availTools = self.options['listtoolmodules'].split(',')
             print
             for tool in availTools:
                 print tool + ":"
@@ -293,12 +338,12 @@ class TestDef:
             exit(1)
 
         # Print the options for a given plugin
-        if self.options.listtooloptions:
+        if self.options['listtooloptions']:
             # if the list is '*', print the options for every stage/plugin
-            if self.options.listtooloptions == "*":
+            if self.options['listtooloptions'] == "*":
                 availTools = self.loader.tools.keys()
             else:
-                availTools = self.options.listtooloptions.split(',')
+                availTools = self.options['listtooloptions'].split(',')
             print
             for tool in availTools:
                 print tool + ":"
@@ -312,7 +357,7 @@ class TestDef:
             exit(1)
 
         # Print the available MTT utilities out, if requested
-        if self.options.listutils:
+        if self.options['listutils']:
             print "Available MTT utilities:"
             availUtils = self.loader.utilities.keys()
             for util in availUtils:
@@ -320,13 +365,13 @@ class TestDef:
             exit(0)
 
         # Print the detected utility plugins for a given tool type
-        if self.options.listutilmodules:
+        if self.options['listutilmodules']:
             # if the list is '*', print the plugins for every type
-            if self.options.listutilmodules == "*":
+            if self.options['listutilmodules'] == "*":
                 print
                 availUtils = self.loader.utilities.keys()
             else:
-                availUtils = self.options.listutilitymodules.split(',')
+                availUtils = self.options['listutilitymodules'].split(',')
             print
             for util in availUtils:
                 print util + ":"
@@ -339,12 +384,12 @@ class TestDef:
             exit(1)
 
         # Print the options for a given plugin
-        if self.options.listutiloptions:
+        if self.options['listutiloptions']:
             # if the list is '*', print the options for every stage/plugin
-            if self.options.listutiloptions == "*":
+            if self.options['listutiloptions'] == "*":
                 availUtils = self.loader.utilities.keys()
             else:
-                availTools = self.options.listutiloptions.split(',')
+                availTools = self.options['listutiloptions'].split(',')
             print
             for util in availUtils:
                 print util + ":"
@@ -359,7 +404,7 @@ class TestDef:
 
 
         # if they asked for the version info, print it and exit
-        if self.options.version:
+        if self.options['version']:
             for pluginInfo in self.tools.getPluginsOfCategory("Version"):
                 print "MTT Base:   " + pluginInfo.plugin_object.getVersion()
                 print "MTT Client: " + pluginInfo.plugin_object.getClientVersion()
@@ -373,7 +418,7 @@ class TestDef:
             sys.exit(1)
         # execute the provided test description
         self.logger = self.utilities.getPluginByName("Logger", "Base").plugin_object
-        self.logger.open(self.options)
+        self.logger.open(self)
         return
 
     def configTest(self):
@@ -382,10 +427,9 @@ class TestDef:
             self.config.read(testFile)
             for section in self.config.sections():
                 if self.logger is not None:
-                    self.logger.verbose_print(self.options, "SECTION: " + section)
-                    self.logger.verbose_print(self.options, self.config.items(section))
-                    self.logger.timestamp(self.options)
-                if self.options.dryrun:
+                    self.logger.verbose_print("SECTION: " + section)
+                    self.logger.verbose_print(self.config.items(section))
+                if self.options['dryrun']:
                     continue
                 if section.startswith("SKIP") or section.startswith("skip"):
                     # users often want to temporarily ignore a section
@@ -393,8 +437,6 @@ class TestDef:
                     # remove it lest they forget what it did. So let
                     # them just mark the section as "skip" to be ignored
                     continue;
-                if "MTTDefaults" == section.strip():
-                    self.setDefaults(self.config.items(section))
         return
 
     def executeTest(self):
@@ -404,33 +446,19 @@ class TestDef:
         if self.config is None:
             print "No test definition file was parsed - cannot execute test"
             exit(1)
-        if not self.tools.getPluginByName(self.options.executor, "Executor"):
+        if not self.tools.getPluginByName(self.options['executor'], "Executor"):
             print "Specified executor",self.executor,"not found"
             exit(1)
         # if they want us to clear the scratch, then do so
-        if self.options.clean:
-            shutil.rmtree(self.options.scratchdir)
+        if self.options['clean']:
+            shutil.rmtree(self.options['scratchdir'])
         # setup the scratch directory
-        _mkdir_recursive(self.options.scratchdir)
+        _mkdir_recursive(self.options['scratchdir'])
         # activate the specified plugin
-        self.tools.activatePluginByName(self.options.executor, "Executor")
+        self.tools.activatePluginByName(self.options['executor'], "Executor")
         # execute the provided test description
-        executor = self.tools.getPluginByName(self.options.executor, "Executor")
+        executor = self.tools.getPluginByName(self.options['executor'], "Executor")
         executor.plugin_object.execute(self)
-        return
-
-    def setDefaults(self, defaults=[]):
-        for default in defaults:
-            if "trial_run" in default[0]:
-                self.options.trial = default[1]
-            elif "scratch" in default[0]:
-                self.options.scratchdir = default[1]
-            elif "logfile" in default[0]:
-                self.options.logfile = default[1]
-            elif "description" in default[0]:
-                self.options.description = default[1]
-            elif "submit_group_results" in default[0]:
-                self.options.submit_group_results = default[1]
         return
 
     def printOptions(self, options):

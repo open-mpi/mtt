@@ -25,6 +25,7 @@ class DefaultTestBuild(TestBuildMTTStage):
         self.options['autogen_cmd'] = (None, "Command to be executed to setup the configure script, usually called autogen.sh or autogen.pl")
         self.options['configure_options'] = (None, "Options to be passed to configure. Note that the prefix will be automatically set and need not be provided here")
         self.options['make_options'] = (None, "Options to be passed to the make command")
+        self.options['save_stdout_on_success'] = (False, "Save stdout even if build succeeds")
 
     def activate(self):
         # get the automatic procedure from IPlugin
@@ -46,10 +47,13 @@ class DefaultTestBuild(TestBuildMTTStage):
         return
 
     def execute(self, log, keyvals, testDef):
-        testDef.logger.verbose_print(testDef.options, "DefaultTestBuild")
+        testDef.logger.verbose_print("DefaultTestBuild")
         # parse any provided options - these will override the defaults
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
+        # add our section header back into the cmds as it will
+        # be needed by autotools
+        cmds['section'] = keyvals['section']
         # if this test requires middleware, the user
         # should have told us so by specifying the
         # corresponding middlewareBuild stage for it.

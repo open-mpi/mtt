@@ -47,4 +47,7 @@ class DefaultMTTDefaults(MTTDefaultsMTTStage):
         return
 
     def execute(self, log, keyvals, testDef):
-        testDef.logger.verbose_print(testDef.options, "Set MTT Defaults")
+        testDef.logger.verbose_print("Set MTT Defaults")
+        cmds = {}
+        # the parseOptions function will record status for us
+        testDef.parseOptions(log, self.options, keyvals, cmds)

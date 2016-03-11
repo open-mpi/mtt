@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+import os
 import sys
 from ReporterMTTStage import *
 
@@ -44,14 +45,14 @@ class TextFile(ReporterMTTStage):
         return
 
     def execute(self, log, keyvals, testDef):
-        testDef.logger.verbose_print(testDef.options, "TextFile Reporter")
+        testDef.logger.verbose_print("TextFile Reporter")
         # pickup the options
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
         if cmds['filename'] is not None:
-            self.fh = open(cmds['filename'][0], 'w')
-        if testDef.options.description is not None:
-            print >> self.fh,testDef.options.description
+            self.fh = open(cmds['filename'], 'w')
+        if testDef.options['description'] is not None:
+            print >> self.fh,testDef.options['description']
             print >> self.fh
         # get the entire log of results
         fullLog = testDef.logger.getLog(None)
@@ -64,11 +65,46 @@ class TextFile(ReporterMTTStage):
                             print >> self.fh,"\t",p[0],"=",p[1]
                 except KeyError:
                     pass
+                if 0 != lg['status']:
+                    try:
+                        print >> self.fh,"\tERROR:",lg['stderr']
+                    except KeyError:
+                        try:
+                            print >> self.fh,"\tERROR:",lg['stdout']
+                        except KeyError:
+                            pass
             except KeyError:
                 pass
             try:
                 if lg['numTests'] is not None:
                     print >> self.fh,"Tests:",lg['numTests'],"Pass:",lg['numPass'],"Skip:",lg['numSkip'],"Fail:",lg['numFail']
+            except KeyError:
+                pass
+            try:
+                if lg['profile'] is not None:
+                    prf = lg['profile']
+                    keys = prf.keys()
+                    # find the max length of the keys
+                    max1 = 0
+                    for key in keys:
+                        if len(key) > max1:
+                            max1 = len(key)
+                    # add some padding
+                    max1 = max1 + 4
+                    # now provide the output
+                    sp = " "
+                    for key in keys:
+                        line = key + (max1-len(key))*sp + prf[key]
+                        print >> self.fh,"\t",line
+            except KeyError:
+                pass
+            try:
+                if lg['testresults'] is not None:
+                    for test in lg['testresults']:
+                        tname = os.path.basename(test['test'])
+                        print >> self.fh,"\t",tname,"  cmd:",test['cmd'],"  Status:",test['status']
+                        if 0 != test['status']:
+                            print >> self.fh,"\t\t","Stderr:",test['stderr']
             except KeyError:
                 pass
             print >> self.fh

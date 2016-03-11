@@ -29,16 +29,19 @@ class ExecuteCmd(BaseMTTUtility):
         return
 
     def execute(self, cmdargs, testDef):
-        testDef.logger.verbose_print(testDef.options, "ExecuteCmd")
+        testDef.logger.verbose_print("ExecuteCmd")
         # if this is a dryrun, just declare success
-        if testDef.options.dryrun:
-            return (0, None, None)
+        try:
+            if testDef.options['dryrun']:
+                return (0, None, None)
+        except KeyError:
+            pass
         mycmdargs = []
         # if any cmd arg has quotes around it, remove
         # them here
         for arg in cmdargs:
             mycmdargs.append(arg.replace('\"',''))
-        testDef.logger.verbose_print(testDef.options, "ExecuteCmd: " + " ".join(mycmdargs))
+        testDef.logger.verbose_print("ExecuteCmd: " + " ".join(mycmdargs))
         # open a subprocess with stdout and stderr
         # as distinct pipes so we can capture their
         # output as the process runs
@@ -57,11 +60,11 @@ class ExecuteCmd(BaseMTTUtility):
                 # if the data
                 if fd == p.stdout.fileno():
                     read = p.stdout.readline().rstrip()
-                    testDef.logger.verbose_print(testDef.options, 'stdout: ' + read)
+                    testDef.logger.verbose_print('stdout: ' + read)
                     stdout.append(read)
                 elif fd == p.stderr.fileno():
                     read = p.stderr.readline().rstrip()
-                    testDef.logger.verbose_print(testDef.options, 'stderr: ' + read)
+                    testDef.logger.verbose_print('stderr: ' + read)
                     stderr.append(read)
 
             if p.poll() != None:

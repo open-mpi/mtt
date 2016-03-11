@@ -91,7 +91,7 @@ execGroup.add_option("--skip-sections", dest="skipsections",
 execGroup.add_option("--no-reporter", dest="reporter",
                       action="store_true", default=False,
                       help="Do not invoke any MTT Reporter modules")
-execGroup.add_option("-l", "--log", dest="logfile",
+execGroup.add_option("-l", "--log", dest="logfile", default=None,
                      help="Log all output to FILE (defaults to stdout)", metavar="FILE")
 execGroup.add_option("--group-results", dest="submit_group_results", default=True,
                      help="Report results from each test section as it is completed")
@@ -116,7 +116,6 @@ debugGroup.add_option("--trial",
                       help="Use when testing your MTT client setup; results that are generated and submitted to the database are marked as \"trials\" and are not included in normal reporting.")
 parser.add_option_group(debugGroup)
 (options, args) = parser.parse_args()
-
 
 # Try to find the MTT TestDef class. Try several methods:
 

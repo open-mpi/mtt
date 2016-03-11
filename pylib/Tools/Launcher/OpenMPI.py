@@ -56,7 +56,7 @@ class OpenMPI(LauncherMTTTool):
         return
 
     def execute(self, log, keyvals, testDef):
-        testDef.logger.verbose_print(testDef.options, "OpenMPI Launcher")
+        testDef.logger.verbose_print("OpenMPI Launcher")
         # check the log for the title so we can
         # see if this is setting our default behavior
         try:
@@ -66,7 +66,6 @@ class OpenMPI(LauncherMTTTool):
                     # for this launcher
                     myopts = {}
                     testDef.parseOptions(log, self.options, keyvals, myopts)
-                    print myopts
                     # transfer the findings into our local storage
                     keys = self.options.keys()
                     optkeys = myopts.keys()
@@ -177,22 +176,33 @@ class OpenMPI(LauncherMTTTool):
         # did they give us a list of specific directories where the desired
         # tests to be executed reside?
         tests = []
-        if cmds['test_dir'] is not None:
-            # pick up the executables from the specified directories
-            dirs = cmds['test_dir'][0].split()
-            for dr in dirs:
-                dr = dr.strip()
-                # remove any commas and quotes
-                dr = dr.replace('\"','')
-                dr = dr.replace(',','')
-                for dirName, subdirList, fileList in os.walk(dr):
+        try:
+            if cmds['test_dir'] is not None:
+                # pick up the executables from the specified directories
+                dirs = cmds['test_dir'].split()
+                for dr in dirs:
+                    dr = dr.strip()
+                    # remove any commas and quotes
+                    dr = dr.replace('\"','')
+                    dr = dr.replace(',','')
+                    for dirName, subdirList, fileList in os.walk(dr):
+                        for fname in fileList:
+                            # see if this is an executable
+                            filename = os.path.abspath(os.path.join(dirName,fname))
+                            if os.path.isfile(filename) and os.access(filename, os.X_OK):
+                                # add this file to our list of tests to execute
+                                tests.append(filename)
+            else:
+                # get the list of executables from this directory and any
+                # subdirectories beneath it
+                for dirName, subdirList, fileList in os.walk("."):
                     for fname in fileList:
                         # see if this is an executable
                         filename = os.path.abspath(os.path.join(dirName,fname))
                         if os.path.isfile(filename) and os.access(filename, os.X_OK):
                             # add this file to our list of tests to execute
                             tests.append(filename)
-        else:
+        except KeyError:
             # get the list of executables from this directory and any
             # subdirectories beneath it
             for dirName, subdirList, fileList in os.walk("."):
@@ -206,6 +216,7 @@ class OpenMPI(LauncherMTTTool):
         if not tests:
             log['status'] = 1
             log['stderr'] = "No tests found"
+            os.chdir(cwd)
             return
         # get the "skip" exit status
         skipStatus = int(cmds['skipped'])
@@ -213,10 +224,10 @@ class OpenMPI(LauncherMTTTool):
         cmdargs = [cmds['command']]
         if cmds['np'] is not None:
             cmdargs.append("-np")
-            cmdargs.append(cmds['np'][0])
+            cmdargs.append(cmds['np'])
         if cmds['hostfile'] is not None:
             cmdargs.append("-hostfile")
-            cmdargs.append(cmds['hostfile'][0])
+            cmdargs.append(cmds['hostfile'])
         # cycle thru the list of tests and execute each of them
         log['testresults'] = []
         finalStatus = 0
@@ -226,12 +237,13 @@ class OpenMPI(LauncherMTTTool):
         numSkip = 0
         numFail = 0
         if cmds['max_num_tests'] is not None:
-            maxTests = int(cmds['max_num_tests'][0])
+            maxTests = int(cmds['max_num_tests'])
         else:
             maxTests = 10000000
         for test in tests:
             testLog = {'test':test}
             cmdargs.append(test)
+            testLog['cmd'] = " ".join(cmdargs)
             status,stdout,stderr = testDef.execmd.execute(cmdargs, testDef)
             testLog['status'] = status
             if 0 != status and skipStatus != status and 0 == finalStatus:
@@ -256,6 +268,5 @@ class OpenMPI(LauncherMTTTool):
         log['numPass'] = numPass
         log['numSkip'] = numSkip
         log['numFail'] = numFail
-        print "LOG"
-        print log
+        os.chdir(cwd)
         return
