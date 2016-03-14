@@ -4,6 +4,7 @@
 #                         All rights reserved.
 # Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2016      IBM Corporation.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -829,7 +830,7 @@ sub get_html_summary_report_template
 	}
 	foreach my $section (@sects) 
 	{
-		print("text reporter: section  $section\n");
+		Debug("text reporter: section  $section\n");
 		if ($section =~ /^\s*mpi install:/) 
 		{
 			my $sim_sec_name = GetSimpleSection($section);
