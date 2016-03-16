@@ -1,8 +1,8 @@
 Django==1.8.5
 django-enumfield==1.2.1
-Yapsy==1.11.223
-wsgiref==0.1.2
+doxypy==0.4.1
 pbr==1.8.1
+psycopg2==2.6.1
 requests==2.9.1
 six==1.10.0
 stevedore==1.9.0
@@ -10,4 +10,4 @@ virtualenv==13.1.2
 virtualenv-clone==0.2.6
 virtualenvwrapper==4.7.1
 wheel==0.26.0
-psycopg2==2.6.1
+Yapsy==1.11.223
