@@ -105,6 +105,9 @@ sub Analyze {
     my $test_build_id = $MTT::Test::builds->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{test_build_id};
     $report->{test_build_id} = $test_build_id;
 
+    my $submit_id = $MTT::Test::builds->{$mpi_details->{mpi_get_simple_section_name}}->{$mpi_details->{version}}->{$mpi_details->{mpi_install_simple_section_name}}->{$run->{test_build_simple_section_name}}->{submit_id};
+    $report->{submit_id} = $submit_id;
+
     return $report;
 }
 

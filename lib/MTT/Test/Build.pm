@@ -552,11 +552,21 @@ sub _do_build {
         $report->{mpi_install_id} = $mpi_install_id;
         $ret->{mpi_install_id} = $mpi_install_id;
 
+        # Fetch the submit_id serial
+        my $submit_id = $MTT::MPI::installs->{$mpi_install->{mpi_get_simple_section_name}}->{$mpi_install->{mpi_version}}->{$mpi_install->{simple_section_name}}->{submit_id};
+        $report->{submit_id} = $submit_id;
+        $ret->{submitl_id} = $submit_id;
+
         # Submit it!
         my $serials = MTT::Reporter::Submit("Test Build", $simple_section, $report);
 
         # Merge in the serials from the MTTDatabase
         my $module = "MTTDatabase";
+        foreach my $k (keys %{$serials->{$module}}) {
+            $ret->{$k} = $serials->{$module}->{$k};
+        }
+
+        $module = "MTTStorage";
         foreach my $k (keys %{$serials->{$module}}) {
             $ret->{$k} = $serials->{$module}->{$k};
         }
