@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2007-2008 Cisco, Inc.  All rights reserved.
 # Copyright (c) 2007 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2016      IBM Corporation.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -29,6 +30,7 @@ use base qw(Exporter);
              convert_time_to_human
              get_array_ref
              merge_hashes
+             trim_spaces
 );
 
 use MTT::Globals;
@@ -489,5 +491,14 @@ sub term_handler{
     }
 	Verbose("All is done, exiting.\n");
 	exit(0);
+}
+
+#--------------------------------------------------------------------------
+
+# Trim the leading and trailing whitespaces
+sub trim_spaces {
+    my ($str) = @_;
+    $str =~ s/^\s+|\s+$//g;
+    return $str;
 }
 1;

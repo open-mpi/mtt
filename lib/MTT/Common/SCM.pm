@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2007-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
+# Copyright (c) 2016      IBM Corporation.  All rights reserved.
 # $COPYRIGHT$
 # 
 # Additional copyrights may follow
@@ -21,6 +22,7 @@ use MTT::INI;
 use MTT::DoCommand;
 use MTT::FindProgram;
 use MTT::Module;
+use MTT::Util;
 use Data::Dumper;
 
 #--------------------------------------------------------------------------
@@ -80,7 +82,7 @@ sub Get {
     # Strip off trailing slash for basename
     my $cwd = MTT::DoCommand::cwd();
     $params->{url} =~ s/\/\s*$//;
-    my $basename = basename($params->{url});
+    my $basename = basename( trim_spaces($params->{url}) );
     $params->{dirname} = "$cwd/$basename";
 
     # Remove the cwd portion of the dirname so that we do not erroneously get a
