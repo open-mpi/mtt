@@ -179,6 +179,77 @@ class Submit(_ServerResourceBase):
     _phase_test_build  = 1
     _phase_test_run    = 2
 
+    def _validate_metadata(self, metadata):
+        prefix = "validate_metadata"
+        # "client_serial": "1347384",
+        # "hostname": "flux.cs.uwlax.edu",
+        # "http_username": "mtt",
+        # "local_username": "jjhursey",
+        # "mtt_client_version": "4.0a1",
+        # "number_of_results": 1,
+        # "phase": "Test Build",
+        # "platform_name": "uwl-flux",
+        # "trial": 0
+
+        required_fields = ["client_serial",
+                           "hostname",
+                           "http_username",
+                           "local_username",
+                           "mtt_client_version",
+                           "phase",
+                           "platform_name",
+                           "trial"]
+        optional_fields = ["number_of_results"]
+
+        for field in required_fields:
+            if field not in metadata.keys():
+                return self._return_error(prefix, -1,
+                                          "%s No field '%s' in 'metadata' portion of json data" % (prefix, field))
+
+        return None
+
+    def _validate_submit(self, metadata):
+        prefix = "validate_submit"
+        allfields = self._db.get_fields_for_submit()
+        for field in allfields['required']:
+            if field not in metadata.keys():
+                return self._return_error(prefix, -1,
+                                          "%s No field '%s' in 'metadata' portion of json data" % (prefix, field))
+
+        return None
+
+    def _validate_mpi_install(self, submit_id, metadata, data):
+        prefix = "validate_mpi_install"
+        allfields = self._db.get_fields_for_mpi_install()
+
+        for field in allfields['required']:
+            if field not in metadata.keys() and field not in data.keys():
+                return self._return_error(prefix, -1,
+                                          "%s No field '%s' in 'metadata' or 'data' portion of json data" % (prefix, field))
+
+        return None
+
+    def _validate_test_build(self, submit_id, metadata, data):
+        prefix = "validate_test_build"
+        allfields = self._db.get_fields_for_test_build()
+
+        for field in allfields['required']:
+            if field not in metadata.keys() and field not in data.keys():
+                return self._return_error(prefix, -1,
+                                          "%s No field '%s' in 'metadata' or 'data' portion of json data" % (prefix, field))
+
+        return None
+
+    def _validate_test_run(self, submit_id, metadata, data):
+        prefix = "validate_test_run"
+        allfields = self._db.get_fields_for_test_run()
+
+        for field in allfields['required']:
+            if field not in metadata.keys() and field not in data.keys():
+                return self._return_error(prefix, -1,
+                                          "%s No field '%s' in 'metadata' or 'data' portion of json data" % (prefix, field))
+        return None
+
     #
     # POST /submit/
     #
@@ -197,11 +268,20 @@ class Submit(_ServerResourceBase):
             self.logger.error(prefix + " No 'metadata' in json data")
             raise cherrypy.HTTPError(400)
 
-        if 'phase' not in data['metadata'].keys():
-            self.logger.error(prefix + " No 'phase' in 'metadata' in json data")
-            raise cherrypy.HTTPError(400)
+        #
+        # Make sure we have all the metadata we need
+        #
+        rtn = self._validate_metadata(data['metadata'])
+        if rtn is not None:
+            return rtn
 
+        #
+        # Convert the phase
+        #
         phase = self._convert_phase(data["metadata"]['phase'])
+        if phase == self._phase_unknown:
+            return self._return_error(prefix, -1, "%s An unknown phase (%s) was specified in the metadata" % (prefix, data["metadata"]["phase"]))
+
         self.logger.debug( "Phase: %2d = [%s]" % (phase, data["metadata"]['phase']) )
 
         if 'data' not in data.keys():
@@ -210,14 +290,12 @@ class Submit(_ServerResourceBase):
 
         data['metadata']['http_username'] = self._extract_http_username(cherrypy.request.headers['Authorization'])
 
-        # self.logger.debug( json.dumps( data, \
-        #                                sort_keys=True, \
-        #                                indent=4, \
-        #                                separators=(',', ': ') ) )
+        self.logger.debug( json.dumps( data, \
+                                       sort_keys=True, \
+                                       indent=4, \
+                                       separators=(',', ': ') ) )
 
         rtn = {}
-        rtn['status'] = 0
-        rtn['status_message'] = 'Success'
 
         #
         # Get the submission id
@@ -230,7 +308,12 @@ class Submit(_ServerResourceBase):
             submit_info = {'submit_id': data['metadata']['submit_id']}
         else:
             self.logger.debug( "************** submit_id: New...")
+            rtn = self._validate_submit(data['metadata'])
+            if rtn is not None:
+                return rtn
             submit_info = self._db.get_submit_id(data['metadata'])
+            if "submit_id" not in submit_info.keys():
+                return self._return_error(prefix, -1, "%s Failed [%s]" % (prefix, submit_info['error_msg']))
 
         #
         # Submit each entry to the database
@@ -240,10 +323,19 @@ class Submit(_ServerResourceBase):
             value = None
 
             if phase is self._phase_mpi_install:
+                rtn = self._validate_mpi_install(submit_info['submit_id'], data['metadata'], entry)
+                if rtn is not None:
+                    return rtn
                 value = self._db.insert_mpi_install(submit_info['submit_id'], data['metadata'], entry)
             elif phase is self._phase_test_build:
+                rtn = self._validate_test_build(submit_info['submit_id'], data['metadata'], entry)
+                if rtn is not None:
+                    return rtn
                 value = self._db.insert_test_build(submit_info['submit_id'], data['metadata'], entry)
             elif phase is self._phase_test_run:
+                rtn = self._validate_test_run(submit_info['submit_id'], data['metadata'], entry)
+                if rtn is not None:
+                    return rtn
                 value = self._db.insert_test_run(submit_info['submit_id'], data['metadata'], entry)
             else:
                 self.logger.error( "Unkown phase...")
@@ -259,6 +351,9 @@ class Submit(_ServerResourceBase):
         #
         # Return the ids for each of those submissions
         #
+        rtn = {}
+        rtn['status'] = 0
+        rtn['status_message'] = 'Success'
         rtn['submit_id'] = submit_info['submit_id']
         rtn['ids'] = ids
 

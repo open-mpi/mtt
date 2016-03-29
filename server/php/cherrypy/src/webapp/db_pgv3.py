@@ -204,15 +204,23 @@ class DatabaseV3():
         return self._get_nextval( "client_serial" )
 
     ##########################################################
-    def get_submit_id(self, metadata):
-        self._logger.debug( "************** Submit ****************" )
-
+    def get_fields_for_submit(self):
         fields = ["hostname",
                   "local_username",
                   "http_username",
                   "mtt_client_version"]
+        return {'required':fields, 'optional':[]}
+
+    def get_submit_id(self, metadata):
+        self._logger.debug( "************** Submit ****************" )
+
+        fields = self.get_fields_for_submit()['required']
         values = []
         for field in fields:
+            if field not in metadata.keys():
+                return {"error_msg": "%s Missing field: %s" % ("submit_id", field)}
+            elif metadata[field] is None:
+                return {"error_msg": "%s Empty field: %s" % ("submit_id", field)}
             values.append(metadata[field])
 
         submit_id = self._select_insert("submit", "submit_id", fields, values)
@@ -351,6 +359,37 @@ class DatabaseV3():
         return test_run_network_id
 
     ##########################################################
+    def get_fields_for_mpi_install(self):
+        fields = ["platform_name",
+                  "platform_hardware",
+                  "platform_type",
+                  "os_name",
+                  "os_version",
+                  "compiler_name",
+                  "compiler_version",
+                  "mpi_name",
+                  "mpi_version",
+                  "vpath_mode",
+                  "bitness",
+                  "endian",
+                  "configure_arguments",
+                  "start_timestamp",
+                  "duration",
+                  "result_message",
+                  "test_result",
+                  "trial",
+                  "exit_value",
+                  "exit_signal",
+                  "client_serial"]
+
+        optional = ["description",
+                    "environment",
+                    "merge_stdout_stderr",
+                    "result_stdout",
+                    "result_stderr"]
+
+        return {'required':fields, 'optional':optional}
+
     def insert_mpi_install(self, submit_id, metadata, entry):
         prefix = self._name + " (mpi_install) "
 
@@ -537,11 +576,11 @@ class DatabaseV3():
                          "test_result",
                          "trial",
                          "duration",
-                         "merge_stdout_stderr",
                          "exit_value",
                          "exit_signal",
                          "client_serial"]
-        optional_fields = ["result_stdout",
+        optional_fields = ["merge_stdout_stderr",
+                           "result_stdout",
                            "result_stderr"]
 
         values = [submit_id,
@@ -580,6 +619,30 @@ class DatabaseV3():
         return {'mpi_install_id':mpi_install_id}
 
     ##########################################################
+    def get_fields_for_test_build(self):
+        fields = ["compiler_name",
+                  "compiler_version",
+                  "suite_name",
+                  "start_timestamp",
+                  "duration",
+                  "trial",
+                  "result_message",
+                  "test_result",
+                  "exit_value",
+                  "exit_signal",
+                  "client_serial"]
+
+        # mpi_install_id - optional, can be NONE
+
+        optional = ["mpi_install_id",
+                    "description",
+                    "environment",
+                    "merge_stdout_stderr",
+                    "result_stdout",
+                    "result_stderr"]
+
+        return {'required':fields, 'optional':optional}
+
     def insert_test_build(self, submit_id, metadata, entry):
         prefix = self._name + " (test_build) "
         test_build_id = -1
@@ -762,8 +825,8 @@ class DatabaseV3():
                 fields.append( field )
 
         test_build_id = self._select_insert("test_build",
-                                             "test_build_id",
-                                             fields, values)
+                                            "test_build_id",
+                                            fields, values)
 
         self._logger.debug("%s --- Processing: test_build = %s" % (prefix, str(test_build_id)) )
 
@@ -773,6 +836,44 @@ class DatabaseV3():
         return {'test_build_id':test_build_id}
 
     ##########################################################
+    def get_fields_for_test_run(self):
+        fields = ["launcher",
+                  "resource_manager",
+                  "parameters",
+                  "network",
+                  "test_name",
+                  "np",
+                  "full_command",
+                  "start_timestamp",
+                  "duration",
+                  "trial",
+                  "result_message",
+                  "test_result",
+                  "exit_value",
+                  "exit_signal",
+                  "client_serial"]
+
+        # mpi_install_id - optional, can be NONE
+        # test_build_id  - optional, can be NONE
+
+        optional = ["mpi_install_id",
+                    "test_build_id",
+                    "latency_bandwidth",
+                    "message_size",
+                    "latency_min",
+                    "latency_avg",
+                    "latency_max",
+                    "bandwidth_min",
+                    "bandwidth_avg",
+                    "bandwidth_max",
+                    "description",
+                    "environment",
+                    "merge_stdout_stderr",
+                    "result_stdout",
+                    "result_stderr"]
+
+        return {'required':fields, 'optional':optional}
+
     def insert_test_run(self, submit_id, metadata, entry):
         prefix = self._name + " (test_run) "
         test_run_id = -1
@@ -831,8 +932,8 @@ class DatabaseV3():
             values = [latency_bandwidth_id]
 
             performance_id = self._select_insert("performance",
-                                                       "performance_id",
-                                                       fields, values)
+                                                 "performance_id",
+                                                 fields, values)
 
             self._logger.debug("%s --- Processing: latency_bandwidth (performance_id) = %s" % (prefix, str(performance_id)) )
 
