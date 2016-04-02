@@ -157,6 +157,7 @@ class TestDef:
             log['stderr'] = stderr
         else:
             log['status'] = 0
+            log['options'] = target
         return
 
     def loadPlugins(self, basedir, topdir):

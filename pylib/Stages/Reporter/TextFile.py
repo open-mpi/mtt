@@ -61,8 +61,18 @@ class TextFile(ReporterMTTStage):
                 print >> self.fh,"Section:",lg['section'],"Status:",lg['status']
                 try:
                     if lg['parameters'] is not None:
+                        print >> self.fh,"\tInput parameters:"
                         for p in lg['parameters']:
-                            print >> self.fh,"\t",p[0],"=",p[1]
+                            print >> self.fh,"\t\t",p[0],"=",p[1]
+                except KeyError:
+                    pass
+                try:
+                    if lg['options'] is not None:
+                        print >> self.fh,"\tFinal options:"
+                        opts = lg['options']
+                        keys = opts.keys()
+                        for p in keys:
+                            print >> self.fh,"\t\t",p,"=",opts[p]
                 except KeyError:
                     pass
                 if 0 != lg['status']:
@@ -92,10 +102,11 @@ class TextFile(ReporterMTTStage):
                     # add some padding
                     max1 = max1 + 4
                     # now provide the output
+                    print >> self.fh,"\tProfile:"
                     sp = " "
                     for key in keys:
                         line = key + (max1-len(key))*sp + prf[key]
-                        print >> self.fh,"\t",line
+                        print >> self.fh,"\t\t",line
             except KeyError:
                 pass
             try:
