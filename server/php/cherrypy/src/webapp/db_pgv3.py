@@ -13,6 +13,8 @@ from threading import Lock
 class DatabaseV3():
     _name = '[DB PG V3]'
 
+    _force_trial = True
+    
     def __init__(self, logger, auth):
         self._auth = auth
         self._logger = logger
@@ -81,7 +83,7 @@ class DatabaseV3():
     
     ##########################################################
     def _convert_boolean(self, value):
-        if value == 0:
+        if value == 1:
             return 'true'
         else:
             return 'false'
@@ -594,10 +596,16 @@ class DatabaseV3():
 
         for field in non_id_fields:
             value = self._find_value(metadata, entry, field)
+
             if value is None:
-                return {"error_msg": "%s Missing field: %s" % (prefix, field)} 
+                return {"error_msg": "%s Missing field: %s" % (prefix, field)}
+            
             if field == 'trial':
                 value = self._convert_boolean(value)
+                if self._force_trial is True:
+                    self._logger.debug(prefix + "*-*-*-*- Forcing Trial flag *-*-*-*-")
+                    value = self._convert_boolean( 1 )
+
             values.append( value )
         fields.extend( non_id_fields )
 
@@ -811,10 +819,16 @@ class DatabaseV3():
 
         for field in non_id_fields:
             value = self._find_value(metadata, entry, field)
+            
             if value is None:
                 return {"error_msg": "%s Missing field: %s" % (prefix, field)} 
+
             if field == 'trial':
                 value = self._convert_boolean(value)
+                if self._force_trial is True:
+                    self._logger.debug(prefix + "*-*-*-*- Forcing Trial flag *-*-*-*-")
+                    value = self._convert_boolean( 1 )
+
             values.append( value )
         fields.extend( non_id_fields )
 
@@ -843,7 +857,7 @@ class DatabaseV3():
                   "network",
                   "test_name",
                   "np",
-                  "full_command",
+                  "command",
                   "start_timestamp",
                   "duration",
                   "trial",
@@ -1146,6 +1160,9 @@ class DatabaseV3():
 
             if field == 'trial':
                 value = self._convert_boolean(value)
+                if self._force_trial is True:
+                    self._logger.debug(prefix + "*-*-*-*- Forcing Trial flag *-*-*-*-")
+                    value = self._convert_boolean( 1 )
 
             values.append( value )
         fields.extend( non_id_fields )

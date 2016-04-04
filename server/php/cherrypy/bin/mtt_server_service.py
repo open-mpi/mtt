@@ -18,7 +18,8 @@ import os
 import shutil
 import sys
 import time
-from subprocess import call, check_output
+#from subprocess import call, check_output
+from subprocess import call
 from tempfile import TemporaryFile
 
 from configobj import ConfigObj

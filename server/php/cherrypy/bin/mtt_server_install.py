@@ -101,7 +101,7 @@ print "=" * 70
 #
 # Setup virtual environment
 #
-call(['virtualenv', '-p', 'python2.7', env_dir])
+call(['virtualenv', '-p', 'python', env_dir])
 call([env_dir + '/bin/pip', 'install', '-r', source_dir + '/mtt_server_requirements.txt'])
 
 # Link Server to virtual environment
@@ -109,7 +109,7 @@ call([env_dir + '/bin/pip', 'install', '-r', source_dir + '/mtt_server_requireme
 # enforce this.
 cwd = os.getcwd()
 call(['cp', '-rs', cwd + '/' + source_dir + '/' + package_name,
-      env_dir + '/lib/python2.7/site-packages/' + package_name])
+      env_dir + '/lib/python/site-packages/' + package_name])
 
 # Use virtual environment to complete server setup
 call([env_dir + '/bin/python', source_dir + '/mtt_server_install_stage_two.py'])

@@ -87,7 +87,8 @@ class _ServerResourceBase:
 
         self.url_base = (server + '/' + self.__class__.__name__.lower() + '/')
         self.api_root = (server + '/api/')
-
+        self.logger.debug("Server: %s" % (self.api_root))
+        
         #
         # Define the Database connection - JJH TODO
         #
@@ -268,6 +269,16 @@ class Submit(_ServerResourceBase):
             self.logger.error(prefix + " No 'metadata' in json data")
             raise cherrypy.HTTPError(400)
 
+        self.logger.debug( "----------------------- All Data JSON (Start) ------------------ " )
+        self.logger.debug( json.dumps( data, \
+                                       sort_keys=True, \
+                                       indent=4, \
+                                       separators=(',', ': ') ) )
+        self.logger.debug( "----------------------- All Data JSON (End  ) ------------------ " )
+
+        data['metadata']['http_username'] = self._extract_http_username(cherrypy.request.headers['Authorization'])
+        self.logger.debug(prefix + " Append to metadata 'http_username' = '" + data['metadata']['http_username'] + "'")
+        
         #
         # Make sure we have all the metadata we need
         #
@@ -287,13 +298,6 @@ class Submit(_ServerResourceBase):
         if 'data' not in data.keys():
             self.logger.error(prefix + " No 'data' array in json data")
             raise cherrypy.HTTPError(400)
-
-        data['metadata']['http_username'] = self._extract_http_username(cherrypy.request.headers['Authorization'])
-
-        self.logger.debug( json.dumps( data, \
-                                       sort_keys=True, \
-                                       indent=4, \
-                                       separators=(',', ': ') ) )
 
         rtn = {}
 
