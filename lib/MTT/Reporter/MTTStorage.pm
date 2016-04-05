@@ -285,7 +285,6 @@ sub Submit {
             $form->{metadata}->{$trial_name} = $MTT::Globals::Values->{trial};
 
             # How many results are we submitting?
-            $form->{metadata}->{number_of_results} = $#{$section_obj} + 1;
             $form->{metadata}->{platform_name} = $platform;
             $form->{metadata}->{email} = $email if ($email);
             $form->{metadata}->{phase} = $phase;
@@ -328,17 +327,21 @@ sub Submit {
                         }
                     }
 
-                    elsif ($key eq "phase") {
+                    # If we want to skip this 'key' (internal, unused keys)
+                    elsif ( if_exclude_key($key) == 1 ) {
                         next;
                     }
 
+                    # If this key's value is really an integer
+                    elsif ( if_is_int($key) == 1 ) {
+                        $data->{$key} = int($result->{$key});
+                        next;
+                    }
+
+                    # If this is the submit_id, then we put it in the metadata
                     elsif ($key eq "submit_id") {
                         $submit_id = int($result->{$key});
                         next;
-                    }
-
-                    elsif ($key eq "mpi_name" || $key eq "mpi_version") {
-                        $data->{$key} = $result->{$key};
                     }
 
                     # Stringify any array references
@@ -451,6 +454,42 @@ sub Submit {
     }
 
     return $phase_serials;
+}
+
+sub if_exclude_key {
+    my $key = shift;
+    my @exclude_list = ("phase",
+                        "already_saved_to",
+                        "variant");
+    foreach my $k (@exclude_list) {
+        if( $key eq $k ) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+sub if_is_int {
+    my $key = shift;
+    my @exclude_list = ("bitness",
+                        "endian",
+                        "merge_stdout_stderr",
+                        "vpath_mode",
+                        "test_result",
+                        "submit_id",
+                        "mpi_install_id",
+                        "test_build_id",
+                        "test_run_id",
+                        "exit_signal",
+                        "exit_value");
+    foreach my $k (@exclude_list) {
+        if( $key eq $k ) {
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 sub _plural {
@@ -643,7 +682,7 @@ sub _get_client_serial() {
     my $json_packet = JSON->new->pretty->decode( $response->content );
     my $serial = $json_packet->{client_serial};
     Debug("MTTStorage serial = (".$serial.")\n");
-    $serial_value = $serial;
+    $serial_value = int($serial);
 
     #
     # Done

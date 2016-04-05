@@ -361,6 +361,14 @@ class Submit(_ServerResourceBase):
         rtn['submit_id'] = submit_info['submit_id']
         rtn['ids'] = ids
 
+        self.logger.debug( "----------------------- Return Values JSON (Start) ------------------ " )
+        self.logger.debug( json.dumps( rtn, \
+                                       sort_keys=True, \
+                                       indent=4, \
+                                       separators=(',', ': ') ) )
+        self.logger.debug( "----------------------- Return Values JSON (End  ) ------------------ " )
+
+
         return rtn
 
     #

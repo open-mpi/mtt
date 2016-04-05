@@ -14,6 +14,7 @@ import requests
 import json
 import pprint
 import re
+from datetime import datetime
 from requests.auth import HTTPBasicAuth
 
 from ReporterMTTStage import *
@@ -185,13 +186,15 @@ class IUDatabase(ReporterMTTStage):
         metadata['phase'] = 'Test Run'
 
         common_data = {}
-        common_data['mpi_install_id'] = None
-        common_data['test_build_id'] = None
+        #common_data['mpi_install_id'] = None
+        # For now assume that we only had one test_build submitted
+        # and all of the tests that follow are from that test_build
+        common_data['test_build_id'] = test_info['ids'][0]['test_build_id']
 
         for trun in testresults:
             data = {}
 
-            data['mpi_install_id'] = common_data['mpi_install_id']
+            #data['mpi_install_id'] = common_data['mpi_install_id']
             data['test_build_id'] = common_data['test_build_id']
 
             try:
@@ -199,11 +202,8 @@ class IUDatabase(ReporterMTTStage):
             except KeyError:
                 data['launcher'] = None
 
-            data['resource_manager'] = None
-            data['parameters'] = None
-            data['network'] = None
-
             data['test_name'] = None
+
             try:
                 data['np'] = options['np']
             except KeyError:
@@ -211,8 +211,8 @@ class IUDatabase(ReporterMTTStage):
 
             data['full_command'] = None
 
-            data['start_timestamp'] = None
-            data['duration'] = None
+            # For now just mark the time when submitted
+            data['start_timestamp'] = datetime.utcnow().strftime("%c")
 
             data['result_message'] = None
             data['test_result'] = None
@@ -222,19 +222,26 @@ class IUDatabase(ReporterMTTStage):
             except KeyError:
                 data['exit_value'] = None
 
-            data['exit_signal'] = None
-
             # Optional
-            data['latency_bandwidth'] = None
-            data['message_size'] = None
-            data['latency_min'] = None
-            data['latency_avg'] = None
-            data['latency_max'] = None
-            data['bandwidth_min'] = None
-            data['bandwidth_avg'] = None
-            data['bandwidth_max'] = None
-            data['description'] = None
-            data['environment'] = None
+            # data['duration'] = None
+
+            # data['exit_signal'] = None
+
+            # data['resource_manager'] = None
+            # data['parameters'] = None
+            # data['network'] = None
+
+            # data['latency_bandwidth'] = None
+            # data['message_size'] = None
+            # data['latency_min'] = None
+            # data['latency_avg'] = None
+            # data['latency_max'] = None
+            # data['bandwidth_min'] = None
+            # data['bandwidth_avg'] = None
+            # data['bandwidth_max'] = None
+
+            # data['description'] = None
+            # data['environment'] = None
 
             try:
                 if options['merge_stdout_stderr']:
@@ -297,24 +304,28 @@ class IUDatabase(ReporterMTTStage):
         data = {}
         metadata['phase'] = 'Test Build'
 
-        data['mpi_install_id'] = None
+        # For now assume that we only had one mpi_install submitted
+        data['mpi_install_id'] = install_info['ids'][0]['mpi_install_id']
 
         data['compiler_name'] = None
         data['compiler_version'] = None
 
         data['suite_name'] = None
 
-        data['start_timestamp'] = None
-        data['duration'] = None
+        # For now just mark the time when submitted
+        data['start_timestamp'] = datetime.utcnow().strftime("%c")
 
         data['result_message'] = None
         data['test_result'] = None
         data['exit_value'] = None
-        data['exit_signal'] = None
 
         # Optional
-        data['description'] = None
-        data['environment'] = None
+        #data['duration'] = None
+
+        #data['exit_signal'] = None
+        #data['description'] = None
+        #data['environment'] = None
+
         try:
             if options['merge_stdout_stderr']:
                 data['merge_stdout_stderr'] = 1
@@ -358,15 +369,19 @@ class IUDatabase(ReporterMTTStage):
 
         # Find 'parent' MiddlewareGet (MPI Get) (not needed?)
 
-         # get the options used to do the run
-        try:
-            options = lg['options']
-        except KeyError:
-            return None
+        # get the options used to do the run
+        # no options for MPI Install (?)
+        # try:
+        #     options = lg['options']
+        # except KeyError:
+        #     print "Error: Failed to get 'options'"
+        #     return None
+        options = None
 
         # get the system profile
-        profile = logger.getLog('profile')
+        profile = logger.getLog('Profile:Installed')['profile']
         if profile is None:
+            print "Error: Failed to get 'profile'"
             return None
 
         #
@@ -402,25 +417,28 @@ class IUDatabase(ReporterMTTStage):
         data['mpi_name'] = None
         data['mpi_version'] = None
 
-        data['vpath_mode'] = None
-        data['bitness'] = None
-        data['endian'] = None
-
         data['configure_arguments'] = None
-        data['start_timestamp'] = None
-        data['duration'] = None
+
+        # For now just mark the time when submitted
+        data['start_timestamp'] = datetime.utcnow().strftime("%c")
 
         data['result_message'] = None
         data['test_result'] = None
         data['exit_value'] = None
-        data['exit_signal'] = None
 
         # Optional
-        data['description'] = None
-        data['environment'] = None
+        # data['duration'] = None
+
+        # data['vpath_mode'] = None
+        # data['bitness'] = None
+        # data['endian'] = None
+
+        #data['exit_signal'] = None
+        #data['description'] = None
+        #data['environment'] = None
 
         try:
-            if options['merge_stdout_stderr']:
+            if options is not None and options['merge_stdout_stderr']:
                 data['merge_stdout_stderr'] = 1
             else:
                 data['merge_stdout_stderr'] = 0

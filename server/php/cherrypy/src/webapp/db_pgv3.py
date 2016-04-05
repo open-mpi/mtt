@@ -107,17 +107,23 @@ class DatabaseV3():
             return "00";
 
     def _convert_bitness(self, bitness):
-        if bitness == "8" or bitness == 1:
+        # 8 bit
+        if bitness == 1:
             return "000001";
-        elif bitness == "16" or bitness == 2:
+        # 16 bit
+        elif bitness == 2:
             return "000010";
-        elif bitness == "32/64" or bitness == 4:
+        # 32/64 bit
+        elif bitness == 4:
             return "001100";
-        elif bitness == "32" or bitness == 6:
+        # 32 bit
+        elif bitness == 6:
             return "000100";
-        elif bitness == "64" or bitness == 8:
+        # 64 bit
+        elif bitness == 8:
             return "001000";
-        elif bitness == "128" or bitness == 16:
+        # 128 bit
+        elif bitness == 16:
             return "010000";
         elif bitness == "unknown":
             return "000000";
@@ -371,21 +377,21 @@ class DatabaseV3():
                   "compiler_version",
                   "mpi_name",
                   "mpi_version",
-                  "vpath_mode",
-                  "bitness",
-                  "endian",
                   "configure_arguments",
                   "start_timestamp",
-                  "duration",
                   "result_message",
                   "test_result",
                   "trial",
                   "exit_value",
-                  "exit_signal",
                   "client_serial"]
 
         optional = ["description",
                     "environment",
+                    "duration",
+                    "vpath_mode",
+                    "bitness",
+                    "endian",
+                    "exit_signal",
                     "merge_stdout_stderr",
                     "result_stdout",
                     "result_stderr"]
@@ -478,7 +484,14 @@ class DatabaseV3():
         for field in fields:
             value = self._find_value(metadata, entry, field)
             if value is None:
-                return {"error_msg": "%s Missing field: %s" % (prefix, field)} 
+                if field == "vpath_mode":
+                    value = "unknown"
+                elif field == "bitness":
+                    value = "unknown"
+                elif field == "endian":
+                    value = "unknown"
+                else:
+                    return {"error_msg": "%s Missing field: %s" % (prefix, field)} 
 
             if field == "vpath_mode":
                 value = self._convert_vpath_mode(value)
@@ -598,7 +611,12 @@ class DatabaseV3():
             value = self._find_value(metadata, entry, field)
 
             if value is None:
-                return {"error_msg": "%s Missing field: %s" % (prefix, field)}
+                if field == "exit_signal":
+                    value = -1
+                elif field == "duration":
+                    value = "0 seconds"
+                else:
+                    return {"error_msg": "%s Missing field: %s" % (prefix, field)}
             
             if field == 'trial':
                 value = self._convert_boolean(value)
@@ -612,7 +630,10 @@ class DatabaseV3():
         for field in optional_fields:
             value = self._find_value(metadata, entry, field)
             if value is not None:
-                values.append( value )
+                if field == "merge_stdout_stderr":
+                    values.append( self._convert_boolean( value ) )
+                else:
+                    values.append( value )
                 fields.append( field )
 
         mpi_install_id = self._select_insert("mpi_install",
@@ -632,17 +653,17 @@ class DatabaseV3():
                   "compiler_version",
                   "suite_name",
                   "start_timestamp",
-                  "duration",
                   "trial",
                   "result_message",
                   "test_result",
                   "exit_value",
-                  "exit_signal",
                   "client_serial"]
 
         # mpi_install_id - optional, can be NONE
 
         optional = ["mpi_install_id",
+                    "duration",
+                    "exit_signal",
                     "description",
                     "environment",
                     "merge_stdout_stderr",
@@ -821,7 +842,12 @@ class DatabaseV3():
             value = self._find_value(metadata, entry, field)
             
             if value is None:
-                return {"error_msg": "%s Missing field: %s" % (prefix, field)} 
+                if field == "exit_signal":
+                    value = -1
+                elif field == "duration":
+                    value = "0 seconds"
+                else:
+                    return {"error_msg": "%s Missing field: %s" % (prefix, field)} 
 
             if field == 'trial':
                 value = self._convert_boolean(value)
@@ -835,7 +861,10 @@ class DatabaseV3():
         for field in optional_fields:
             value = self._find_value(metadata, entry, field)
             if value is not None:
-                values.append( value )
+                if field == "merge_stdout_stderr":
+                    values.append( self._convert_boolean( value ) )
+                else:
+                    values.append( value )
                 fields.append( field )
 
         test_build_id = self._select_insert("test_build",
@@ -851,20 +880,14 @@ class DatabaseV3():
 
     ##########################################################
     def get_fields_for_test_run(self):
-        fields = ["launcher",
-                  "resource_manager",
-                  "parameters",
-                  "network",
-                  "test_name",
+        fields = ["test_name",
                   "np",
                   "command",
                   "start_timestamp",
-                  "duration",
                   "trial",
                   "result_message",
                   "test_result",
                   "exit_value",
-                  "exit_signal",
                   "client_serial"]
 
         # mpi_install_id - optional, can be NONE
@@ -872,6 +895,12 @@ class DatabaseV3():
 
         optional = ["mpi_install_id",
                     "test_build_id",
+                    "duration",
+                    "launcher",
+                    "resource_manager",
+                    "parameters",
+                    "network",
+                    "exit_signal",
                     "latency_bandwidth",
                     "message_size",
                     "latency_min",
@@ -1150,13 +1179,21 @@ class DatabaseV3():
                   result_message_id]
 
         for field in non_id_fields:
+            # Try acommon alias for this field 'command'
             if field == 'full_command':
-                value = self._find_value(metadata, entry, 'command')
+                value = self._find_value(metadata, entry, field)
+                if value is None:
+                    value = self._find_value(metadata, entry, 'command')
             else:
                 value = self._find_value(metadata, entry, field)
 
             if value is None:
-                return {"error_msg": "%s Missing field: %s" % (prefix, field)} 
+                if field == "exit_signal":
+                    value = -1
+                elif field == "duration":
+                    value = "0 seconds"
+                else:
+                    return {"error_msg": "%s Missing field: %s" % (prefix, field)} 
 
             if field == 'trial':
                 value = self._convert_boolean(value)
@@ -1170,7 +1207,10 @@ class DatabaseV3():
         for field in optional_fields:
             value = self._find_value(metadata, entry, field)
             if value is not None:
-                values.append( value )
+                if field == "merge_stdout_stderr":
+                    values.append( self._convert_boolean( value ) )
+                else:
+                    values.append( value )
                 fields.append( field )
 
         test_run_id = self._select_insert("test_run",
