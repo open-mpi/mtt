@@ -1,0 +1,18 @@
+#
+# Copyright (c) 2016      Intel, Inc. All rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
+
+[Core]
+Name = Compilers
+Module = Compilers
+
+[Documentation]
+Author = Ralph Castain
+Version = 0.1
+Website = N/A
+Description = Identify the type and version of compilers in-use

@@ -42,33 +42,38 @@ class ExecuteCmd(BaseMTTUtility):
         for arg in cmdargs:
             mycmdargs.append(arg.replace('\"',''))
         testDef.logger.verbose_print("ExecuteCmd: " + " ".join(mycmdargs))
-        # open a subprocess with stdout and stderr
-        # as distinct pipes so we can capture their
-        # output as the process runs
-        p = subprocess.Popen(mycmdargs,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        # define storage to catch the output
-        stdout = []
-        stderr = []
+        # it is possible that the command doesn't exist or
+        # isn't in our path, so protect us
+        try:
+            # open a subprocess with stdout and stderr
+            # as distinct pipes so we can capture their
+            # output as the process runs
+            p = subprocess.Popen(mycmdargs,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            # define storage to catch the output
+            stdout = []
+            stderr = []
 
-        # loop until the pipes close
-        while True:
-            reads = [p.stdout.fileno(), p.stderr.fileno()]
-            ret = select.select(reads, [], [])
+            # loop until the pipes close
+            while True:
+                reads = [p.stdout.fileno(), p.stderr.fileno()]
+                ret = select.select(reads, [], [])
 
-            for fd in ret[0]:
-                # if the data
-                if fd == p.stdout.fileno():
-                    read = p.stdout.readline().rstrip()
-                    testDef.logger.verbose_print('stdout: ' + read)
-                    stdout.append(read)
-                elif fd == p.stderr.fileno():
-                    read = p.stderr.readline().rstrip()
-                    testDef.logger.verbose_print('stderr: ' + read)
-                    stderr.append(read)
+                for fd in ret[0]:
+                    # if the data
+                    if fd == p.stdout.fileno():
+                        read = p.stdout.readline().rstrip()
+                        testDef.logger.verbose_print('stdout: ' + read)
+                        stdout.append(read)
+                    elif fd == p.stderr.fileno():
+                        read = p.stderr.readline().rstrip()
+                        testDef.logger.verbose_print('stderr: ' + read)
+                        stderr.append(read)
 
-            if p.poll() != None:
-                break
+                if p.poll() != None:
+                    break
+        except OSError, e:
+            return (1, None, str(e))
 
         output = "\n".join(stdout)
         errors = "\n".join(stderr)
