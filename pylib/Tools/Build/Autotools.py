@@ -128,7 +128,6 @@ class Autotools(BuildMTTTool):
                         log['status'] = 0
                         return
         except KeyError:
-            print "NO ASIS"
             pass
         # check to see if this is a dryrun
         if testDef.options['dryrun']:
