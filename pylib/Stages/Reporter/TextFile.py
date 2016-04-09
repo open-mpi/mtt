@@ -86,8 +86,11 @@ class TextFile(ReporterMTTStage):
             except KeyError:
                 pass
             try:
-                if lg['numTests'] is not None:
-                    print >> self.fh,"Tests:",lg['numTests'],"Pass:",lg['numPass'],"Skip:",lg['numSkip'],"Fail:",lg['numFail']
+                if lg['compiler'] is not None:
+                    print >> self.fh,"Compiler:"
+                    comp = lg['compiler']
+                    print >> self.fh,"\t",comp['family']
+                    print >> self.fh,"\t",comp['version']
             except KeyError:
                 pass
             try:
@@ -110,14 +113,21 @@ class TextFile(ReporterMTTStage):
             except KeyError:
                 pass
             try:
+                if lg['numTests'] is not None:
+                    print >> self.fh,"\tTests:",lg['numTests'],"Pass:",lg['numPass'],"Skip:",lg['numSkip'],"Fail:",lg['numFail']
+            except KeyError:
+                pass
+            try:
                 if lg['testresults'] is not None:
                     for test in lg['testresults']:
                         tname = os.path.basename(test['test'])
-                        print >> self.fh,"\t",tname,"  cmd:",test['cmd'],"  Status:",test['status']
+                        print >> self.fh,"\t\t",tname,"  Status:",test['status']
                         if 0 != test['status']:
-                            print >> self.fh,"\t\t","Stderr:",test['stderr']
+                            print >> self.fh,"\t\t\t","Stderr:",test['stderr']
             except KeyError:
                 pass
             print >> self.fh
+        if cmds['filename'] is not None:
+            self.fh.close()
         log['status'] = 0
         return

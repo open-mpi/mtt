@@ -128,7 +128,6 @@ class Autotools(BuildMTTTool):
                         log['status'] = 0
                         return
         except KeyError:
-            print "NO ASIS"
             pass
         # check to see if this is a dryrun
         if testDef.options['dryrun']:
@@ -149,6 +148,23 @@ class Autotools(BuildMTTTool):
         except KeyError:
             # not required to provide a module
             pass
+
+        # sense and record the compiler being used
+        plugin = None
+        availUtil = testDef.loader.utilities.keys()
+        for util in availUtil:
+            for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
+                if "Compilers" == pluginInfo.plugin_object.print_name():
+                    plugin = pluginInfo.plugin_object
+                    break
+        if plugin is None:
+            log['compiler'] = {'status' : 1, 'family' : "unknown", 'version' : "unknown"}
+        else:
+            compilerLog = {}
+            plugin.execute(compilerLog, testDef)
+            log['compiler'] = compilerLog
+        print log['compiler']
+
         # save the current directory so we can return to it
         cwd = os.getcwd()
         # now move to the package location
