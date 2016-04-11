@@ -825,6 +825,11 @@ sub _do_install {
             $ret->{$k} = $serials->{$module}->{$k};
         }
 
+        $module = "MTTStorage";
+        foreach my $k (keys %{$serials->{$module}}) {
+            $ret->{$k} = $serials->{$module}->{$k};
+        }
+
         MTT::MPI::SaveInstalls($install_base,
             $MTT::Globals::Internals->{mpi_get_name},
             $mpi_get->{version},

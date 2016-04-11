@@ -1,0 +1,16 @@
+[server]
+socket_host = string()
+socket_port = integer(0, 65535)
+url_docroot = string()
+
+[logging]
+log_level = option('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
+log_file = string()
+
+[pg_v3]
+type = string()
+dbname = string()
+username = string()
+password = string()
+server = string()
+port = integer(0, 65535)

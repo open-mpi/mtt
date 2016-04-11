@@ -15,3 +15,8 @@ server/php/submit/php_errors.log
 db.sqlite3
 */mttscratch
 
+server/php/cherrypy/bin/mtt_server.cfg
+server/php/cherrypy/.htaccess
+server/php/cherrypy/src/env
+server/php/cherrypy/log/
+server/php/cherrypy/src/.mtt_server.pid
