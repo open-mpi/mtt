@@ -83,18 +83,18 @@ sub Init {
 
     # Extract data from the ini fields
 
-    $username = Value($ini, $section, "mttdatabase_username");
-    $password = Value($ini, $section, "mttdatabase_password");
-    $url = Value($ini, $section, "mttdatabase_url");
-    $realm = Value($ini, $section, "mttdatabase_realm");
-    $email = Value($ini, $section, "mttdatabase_email_errors_to");
-    $debug_filename = Value($ini, $section, "mttdatabase_debug_filename");
-    $debug_filename = "mttdatabase_debug" if (! $debug_filename);
-    $keep_debug_files = Value($ini, $section, "mttdatabase_keep_debug_files");
+    $username = Value($ini, $section, "mttstorage_username");
+    $password = Value($ini, $section, "mttstorage_password");
+    $url = Value($ini, $section, "mttstorage_url");
+    $realm = Value($ini, $section, "mttstorage_realm");
+    $email = Value($ini, $section, "mttstorage_email_errors_to");
+    $debug_filename = Value($ini, $section, "mttstorage_debug_filename");
+    $debug_filename = "mttstorage_debug" if (! $debug_filename);
+    $keep_debug_files = Value($ini, $section, "mttstorage_keep_debug_files");
     $debug_server = 1 if ($url =~ /\bdebug\b|\bverbose\b/);
-    $debug_server = Logical($ini, $section, "mttdatabase_debug_server")
+    $debug_server = Logical($ini, $section, "mttstorage_debug_server")
         if (1 != $debug_server);
-    $hostname = Value($ini, $section, "mttdatabase_hostname");
+    $hostname = Value($ini, $section, "mttstorage_hostname");
     $local_username = Value($ini, "mtt", "local_username");
 
     $debug_index = 0;
@@ -111,7 +111,7 @@ sub Init {
         Warning("MTTStorage Reporter section [$section]: if password, username, or realm is specified, they all must be specified.\n");
         return undef;
     }
-    $platform = Value($ini, $section, "mttdatabase_platform");
+    $platform = Value($ini, $section, "mttstorage_platform");
 
     # Extract the host and port from the URL.  Needed for the
     # credentials section.
@@ -194,7 +194,7 @@ sub Init {
     # If filename given is relative, branch it off the scratch tree
     if ($debug_filename !~ /\//) {
         $debug_filename = MTT::DoCommand::cwd() .
-            "/mttdatabase-submit/$debug_filename";
+            "/mttstorage-submit/$debug_filename";
     }
     MTT::Files::mkdir(dirname($debug_filename));
     Debug("MTTStorage reporter writing to debug file ($debug_filename)\n");
@@ -505,7 +505,7 @@ sub _count_sql_errors {
     my $count = 0;
 
     while (defined($line = shift @lines)) {
-        $count++ if ($line =~ /mttdatabase server error/i);
+        $count++ if ($line =~ /mttstorage server error/i);
     }
     return $count;
 }
@@ -596,7 +596,7 @@ sub _prepare_request_zip {
     # Write an anonymous PHP array to a file
     my ($fh, $filename) = tempfile(
         DIR    => $tmpdir,
-        SUFFIX => "-mttdatabase-submission.inc"
+        SUFFIX => "-mttstorage-submission.inc"
         );
     open(FILE, "> $filename");
     print FILE &_perl_arr_2_php_arr(Dumper($$form));
