@@ -1526,6 +1526,8 @@ sub env_name {
         if n1ge_job();
     return "loadleveler"
         if loadleveler_job();
+    return "LSF"
+        if lsf_job();
 
     # Hostfile
     return "hostfile"
@@ -1568,6 +1570,8 @@ sub env_max_procs {
         if n1ge_job();
     return loadleveler_max_procs()
         if loadleveler_job();
+    return lsf_max_procs()
+        if lsf_job();
 
     # Hostfile
     return hostfile_max_procs()
@@ -1616,6 +1620,8 @@ sub env_hosts {
         $ret = n1ge_hosts();
     } elsif (loadleveler_job()) {
         $ret = loadleveler_hosts();
+    } elsif (lsf_job()) {
+        $ret = lsf_hosts();
     }
 
     # Hostfile
@@ -2280,6 +2286,63 @@ sub loadleveler_hosts {
     return "$hosts";
 }
 
+#--------------------------------------------------------------------------
+
+# Return "1" if we're running in a LSF job; "0" otherwise.
+sub lsf_job {
+    Debug("&lsf_job\n");
+
+    return ((exists($ENV{LSB_JOBID}) &&
+             exists($ENV{LSB_DJOB_HOSTFILE})) ? "1" : "0");
+}
+
+#--------------------------------------------------------------------------
+
+# If in a LSF job, return the max number of processes we can run.
+# Otherwise, return 0.
+sub lsf_max_procs {
+    Debug("&lsf_max_procs\n");
+
+    return "0"
+        if (!lsf_job());
+
+    # The LSF env variable LSB_HOSTS is a space sparated list of strings.
+    # Each string is a hostname - one per process allocated on the node.
+    # So we have to process for duplicates, and count.
+    #
+    # The LSF env variable LSB_DJOB_HOSTFILE points to a file that has
+    # a line for each hostname - one per process allocated on the node.
+    # So we have to process for duplicates, and count.
+    #
+    # The LSF env variable LSB_DJOB_NUMPROC tells us the total number
+    # of processes we are allowed to run.
+
+    my $max_procs = int($ENV{LSB_DJOB_NUMPROC});
+
+    Debug("&lsf_max_procs returning: $max_procs\n");
+    return "$max_procs";
+}
+
+#--------------------------------------------------------------------------
+
+# If in a LSF job, return the hosts we can run on.  Otherwise,
+# return "".
+sub lsf_hosts {
+    Debug("&lsf_hosts\n");
+
+    return ""
+        if (!lsf_job());
+
+    my $ret = 0;
+    my $cmd = "cat ".$ENV{LSB_DJOB_HOSTFILE}. " | uniq";
+    my $output = `$cmd`;
+    chomp($output);
+    $output =~ s/\n/,/g;
+    $ret = $output;
+
+    Debug("&lsf_hosts returning: $ret\n");
+    return $ret;
+}
 
 #--------------------------------------------------------------------------
 
@@ -2434,6 +2497,29 @@ sub get_absoft_version {
     }
     
     Debug("&get_absoft_version returning: $ret\n");
+    return $ret;
+}
+
+#--------------------------------------------------------------------------
+
+# Return the version of the IBM xlc compiler
+sub get_xlc_version {
+    Debug("&get_xlc_version\n");
+    my $xlc = shift;
+    my $ret = "unknown";
+
+    $xlc = "xlc"
+        if (!defined($xlc));
+    if (open XLC, "$xlc --version|") {
+        my $str = <XLC>;
+        close(XLC);
+        chomp($str);
+
+        my @vals = split(" ", $str);
+        $ret = $vals[5];
+    }
+
+    Debug("&get_xlc_version returning: $ret\n");
     return $ret;
 }
 

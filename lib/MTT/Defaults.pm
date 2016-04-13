@@ -44,7 +44,7 @@ our $System_config = {
                               "pathscale", "sun", "microsoft", "none", 
                               "clang", "unknown" ],
     known_resource_manager_names => [ "slurm", "tm", "loadleveler", "sge",
-                                      "alps", "none", "unknown" ],
+                                      "alps", "lsf", "none", "unknown" ],
     known_network_names => [ "tcp", "udp", "ethernet", "gm", "mx", "verbs",
                              "udapl", "psm", "elan", "portals", "shmem", "usnic",
                              "loopback", "unknown" ],
