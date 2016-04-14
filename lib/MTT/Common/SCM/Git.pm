@@ -61,7 +61,15 @@ sub Checkout {
         $git_ver_output->{result_stdout} =~ m/git version (\d+).(\d+).(\d+).(\d+)/) {
         ($git_major, $git_minor) = ($1, $2);
     } 
-    
+
+    # clone only the branch specified to potentially reduce the size of the dir
+    if (defined($params->{rev})) {
+        # git 1.7.10 added this option, so check the version
+        if( $git_major > 1 || ($git_major == 1 && $git_minor > 7) ) {
+            $cmd .= " --single-branch ";
+        }
+    }
+
     if (defined($params->{username})) {
         my $u = URI->new($params->{url});
         $u->userinfo($params->{username} . ":" . $params->{password});
