@@ -135,9 +135,12 @@ class Shell(BuildMTTTool):
         log['status'] = status
         log['stdout'] = stdout
         log['stderr'] = stderr
+        # record this location for any follow-on steps
+        log['location'] = location
         if usedModule:
             # unload the modules before returning
             testDef.modcmd.unloadModules(log, cmds['modules'], testDef)
+        
         # return to original location
         os.chdir(cwd)
         return

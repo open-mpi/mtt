@@ -21,7 +21,7 @@ class ModuleCmd(BaseMTTUtility):
         return
 
     def print_name(self):
-        return "Module"
+        return "ModuleCmd"
 
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)

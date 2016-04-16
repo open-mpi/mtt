@@ -9,6 +9,7 @@
 #
 
 import shutil
+import os
 from BaseMTTUtility import *
 
 class Copytree(BaseMTTUtility):
@@ -47,6 +48,9 @@ class Copytree(BaseMTTUtility):
         log['location'] = dst
         # perform the copy
         try:
+            # Cleanup the target directory if it exists
+            if os.path.exists(dst):
+                shutil.rmtree(dst)
             shutil.copytree(cmds['src'], dst, symlinks=False)
             log['status'] = 0
         except shutil.Error as e:

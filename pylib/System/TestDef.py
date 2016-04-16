@@ -390,7 +390,7 @@ class TestDef:
             if self.options['listutiloptions'] == "*":
                 availUtils = self.loader.utilities.keys()
             else:
-                availTools = self.options['listutiloptions'].split(',')
+                availUtils = self.options['listutiloptions'].split(',')
             print
             for util in availUtils:
                 print util + ":"
