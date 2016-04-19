@@ -223,6 +223,11 @@ class SLURM(LauncherMTTTool):
         skipStatus = int(cmds['skipped'])
         # assemble the command
         cmdargs = [cmds['command']]
+        if cmds['job_name'] is not None:
+            cmdargs.append("--job-name")
+            cmdargs.append(cmds['job_name'])
+        if cmds['options'] is not None:
+            cmdargs.append(cmds['options'])
         if cmds['np'] is not None:
             cmdargs.append("-np")
             cmdargs.append(cmds['np'])
