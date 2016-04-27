@@ -1095,6 +1095,15 @@ sub test_executable_basename {
 
 #--------------------------------------------------------------------------
 
+# Return mpirun args specified by a test run section
+sub test_mpirun_args {
+    Debug("&test_mpirun_args returning $MTT::Test::Run::test_mpirun_args\n");
+
+    return $MTT::Test::Run::test_mpirun_args;
+}
+
+#--------------------------------------------------------------------------
+
 # Return the current argv (excluding $argv[0]) from a running test
 sub test_argv {
     Debug("&test_argv returning $MTT::Test::Run::test_argv\n");
