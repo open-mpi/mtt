@@ -53,7 +53,7 @@ class Copytree(BaseMTTUtility):
                 shutil.rmtree(dst)
             shutil.copytree(cmds['src'], dst, symlinks=False)
             log['status'] = 0
-        except shutil.Error as e:
+        except (os.error, shutil.Error) as e:
             log['status'] = 1
             log['stderr'] = str(e)
         return

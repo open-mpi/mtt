@@ -423,7 +423,12 @@ class TestDef:
         return
 
     def configTest(self):
+        # Tuck away the full path and the testFile file name
+        self.log['inifiles'] = ','.join(self.args)
         for testFile in self.args:
+            if not os.path.isfile(testFile):
+                print "Test .ini file not found!: " + testFile
+                sys.exit(1)
             self.config = ConfigParser.ConfigParser()
             self.config.read(testFile)
             for section in self.config.sections():

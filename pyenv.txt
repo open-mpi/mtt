@@ -11,3 +11,4 @@ virtualenv-clone==0.2.6
 virtualenvwrapper==4.7.1
 wheel==0.26.0
 Yapsy==1.11.223
+junit_xml==1.6
