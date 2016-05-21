@@ -109,6 +109,18 @@ class Shell(BuildMTTTool):
         except KeyError:
             # not required to provide a module
             pass
+        usedModuleUnload = False
+        try:
+            if cmds['modules_unload'] is not None:
+                status,stdout,stderr = testDef.modcmd.unloadModules(log, cmds['modules_unload'], testDef)
+                if 0 != status:
+                    log['status'] = status
+                    log['stderr'] = stderr
+                    return
+                usedModuleUnload = True
+        except KeyError:
+            # not required to provide a module to unload
+            pass
 
         # sense and record the compiler being used
         plugin = None
@@ -140,6 +152,8 @@ class Shell(BuildMTTTool):
         if usedModule:
             # unload the modules before returning
             testDef.modcmd.unloadModules(log, cmds['modules'], testDef)
+        if usedModuleUnload:
+            testDef.modcmd.loadModules(log, cmds['modules_unload'], testDef)
         
         # return to original location
         os.chdir(cwd)
