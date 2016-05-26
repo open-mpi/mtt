@@ -97,8 +97,8 @@ execGroup.add_option("--group-results", dest="submit_group_results", default=Tru
                      help="Report results from each test section as it is completed")
 execGroup.add_option("--default-make-options", dest="default_make_options", default="-j10",
                      help="Default options when running the \"make\" command")
-execGroup.add_option("--module-cmd", dest="module_cmd", default="module",
-                     help="Command used to load/unload a module")
+execGroup.add_option("--env-module-cmd-path", dest="env_module_cmd_path", default=None,
+                     help="Path to the lmod python env_modules_python.py wrapper")
 parser.add_option_group(execGroup)
 
 debugGroup = OptionGroup(parser, "Debug Options")

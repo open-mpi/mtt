@@ -23,6 +23,8 @@ class Shell(BuildMTTTool):
         self.options['stdout_save_lines'] = (None, "Number of lines of stdout to save")
         self.options['stderr_save_lines'] = (None, "Number of lines of stderr to save")
         self.options['save_stdout_on_success'] = (False, "Save stdout even if build succeeds")
+        self.options['modules'] = (None, "Modules to load")
+        self.options['modules_unload'] = (None, "Modules to unload")
         return
 
     def activate(self):
@@ -144,9 +146,15 @@ class Shell(BuildMTTTool):
         # execute the specified command
         cfgargs = cmds['command'].split()
         status, stdout, stderr = testDef.execmd.execute(cfgargs, testDef)
-        log['status'] = status
+        if 0 != status:
+            # return to original location
+            os.chdir(cwd)
+            log['status'] = status
+            log['stdout'] = stdout
+            log['stderr'] = stderr
+            return
+        log['status'] = 0
         log['stdout'] = stdout
-        log['stderr'] = stderr
         # record this location for any follow-on steps
         log['location'] = location
         if usedModule:

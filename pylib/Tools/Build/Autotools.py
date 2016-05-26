@@ -177,20 +177,20 @@ class Autotools(BuildMTTTool):
                 for arg in args:
                     agargs.append(arg.strip())
                 status, stdout, stderr = testDef.execmd.execute(agargs, testDef)
-            if 0 != status:
-                log['status'] = status
-                log['stdout'] = stdout
-                log['stderr'] = stderr
-                if usedModule:
-                    # unload the modules before returning
-                    testDef.modcmd.unloadModules(log, cmds['modules'], testDef)
-                # return to original location
-                os.chdir(cwd)
-                return
-            else:
-                # this is a multistep operation, and so we need to
-                # retain the output from each step in the log
-                log['autogen'] = (stdout, stderr)
+                if 0 != status:
+                    log['status'] = status
+                    log['stdout'] = stdout
+                    log['stderr'] = stderr
+                    if usedModule:
+                        # unload the modules before returning
+                        testDef.modcmd.unloadModules(log, cmds['modules'], testDef)
+                    # return to original location
+                    os.chdir(cwd)
+                    return
+                else:
+                    # this is a multistep operation, and so we need to
+                    # retain the output from each step in the log
+                    log['autogen'] = (stdout, stderr)
         except KeyError:
             # autogen phase is not required
             pass
