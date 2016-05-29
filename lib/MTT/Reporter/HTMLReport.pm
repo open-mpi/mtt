@@ -254,6 +254,12 @@ sub _summary_report
 	{
 	    if ( $to ) 
 		{
+
+		my $send_succ_threshold = Value($ini, $section, "min_succ");
+		if (defined $send_succ_threshold and ($total_succ <= $send_succ_threshold)) {
+			Verbose(">> Skipping email: $total_succ <= $send_succ_threshold\n");
+			return 1;
+		}
 	        # Evaluate the email subject header and from
 			my ($subject, $body_footer);
 	        my $subject_tmpl = Value($ini, $section, "email_subject");
