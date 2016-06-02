@@ -17,7 +17,8 @@ from BaseMTTUtility import *
 class ModuleCmd(BaseMTTUtility):
     def __init__(self):
         BaseMTTUtility.__init__(self)
-        self.lmod_env_modules_python_path = None
+        self.env_module_wrapper = None
+        self.env_module_link = None
         self.options = {}
         return
 
@@ -31,32 +32,40 @@ class ModuleCmd(BaseMTTUtility):
         return
 
     def setCommand(self, options):
-        # Check first if the --env-module-cmd-path switch was used.  If not, then check for the LMOD_PKG environment variable.
-        if options['env_module_cmd_path'] is not None:
-            self.lmod_env_modules_python_path = options['env_module_cmd_path']
-            check_if_wrapper_file_exists = os.path.join(self.lmod_env_modules_python_path , "env_modules_python.py")
-            if not os.path.isfile(check_if_wrapper_file_exists):
-                print "Module (lmod) python support via --env-module-cmd-path + env_modules_python.py was not found"
+        # Check first if the --env-module-wrapper switch was used.  If not, then check for the LMOD_PKG environment variable.
+        if options['env_module_wrapper'] is not None:
+            self.env_module_wrapper = options['env_module_wrapper']
+            if not os.path.isfile(self.env_module_wrapper):
+                print "Environment module python wrapper not found: " + self.env_module_wrapper
                 return 1
         else:
             try:
                 lmod_pkg = os.environ['LMOD_PKG']
-                env_modules_python_path = os.path.join(lmod_pkg, "init")
-                self.lmod_env_modules_python_path = env_modules_python_path
+                self.env_module_wrapper = os.path.join(lmod_pkg, "init/env_modules_python.py")
             except KeyError:
-                print "Module (lmod) python support via os.environ['LMOD_PKG']/init/env_modules_python.py was not found"
+                print "The --env-module-wrapper switch was not used and lmod python support via os.environ['LMOD_PKG']/init/env_modules_python.py was not found"
                 return 1
+        try:
+            # scratchdir defaults to mttscratch if not set
+            self.env_module_link = os.path.join(options['scratchdir'], "env_modules_python.py")
+            if os.path.isfile(self.env_module_link):
+                os.remove(self.env_module_link)
+            # create a soft link that includes the .py extention; the tcl python module file does not include this
+            os.symlink(self.env_module_wrapper, self.env_module_link)
+        except:
+            print "Unable to link to " + self.env_module_wrapper
+            return 1
         return
 
     def loadModules(self, log, modules, testDef):
-        if self.lmod_env_modules_python_path is None:
+        if self.env_module_wrapper is None:
             # cannot perform this operation
             log['status'] = 1
-            log['stderr'] = "Module (lmod) capability was not found"
-            return (1, None, "Module (lmod) capability was not found")
+            log['stderr'] = "Module capability was not found"
+            return (1, None, "Module capability was not found")
 
         # Load the lmod python module() definition
-        sys.path.insert(0, self.lmod_env_modules_python_path)
+        sys.path.insert(0, os.path.dirname(self.env_module_link))
         try:
             from env_modules_python import module
         except:
@@ -75,7 +84,7 @@ class ModuleCmd(BaseMTTUtility):
             try:
                 module("load", mod)
             except:
-                # If a module name is not found the lmod python flow will trigger this exception.
+                # If a module name is not found the module python flow will trigger this exception.
                 return (1, None, "Attempt to load environment module " + mod + " failed")
 
         # Restore sys.stdout and sys.stderr
@@ -93,14 +102,14 @@ class ModuleCmd(BaseMTTUtility):
         return (status, stdout, stderr)
 
     def unloadModules(self, log, modules, testDef):
-        if self.lmod_env_modules_python_path is None:
+        if self.env_module_wrapper is None:
             # cannot perform this operation
             log['status'] = 1
-            log['stderr'] = "Module (lmod) capability was not found"
-            return (1, None, "Module (lmod) capability was not found")
+            log['stderr'] = "Module capability was not found"
+            return (1, None, "Module capability was not found")
         
         # Load the lmod python module() definition
-        sys.path.insert(0, self.lmod_env_modules_python_path)
+        sys.path.insert(0, os.path.dirname(self.env_module_link))
         try:
             from env_modules_python import module
         except:
@@ -119,7 +128,7 @@ class ModuleCmd(BaseMTTUtility):
             try:
                 module("unload", mod)
             except:
-                # Unlike the load, the lmod python flow will not cause an exception if the module can not be found.  
+                # Unlike the load, the module python flow will not cause an exception if the module can not be found.  
                 # Add this to catch any other unexpected exceptions.
                 return (1, None, "Attempt to unload environment module " + mod + " failed")
 
