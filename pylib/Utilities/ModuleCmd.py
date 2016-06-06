@@ -10,13 +10,15 @@
 
 import sys
 import select
-import subprocess
+import os
+from StringIO import StringIO
 from BaseMTTUtility import *
 
 class ModuleCmd(BaseMTTUtility):
     def __init__(self):
         BaseMTTUtility.__init__(self)
-        self.command = None
+        self.env_module_wrapper = None
+        self.env_module_link = None
         self.options = {}
         return
 
@@ -30,42 +32,116 @@ class ModuleCmd(BaseMTTUtility):
         return
 
     def setCommand(self, options):
+        # Check first if the --env-module-wrapper switch was used.  If not, then check for the LMOD_PKG environment variable.
+        if options['env_module_wrapper'] is not None:
+            self.env_module_wrapper = options['env_module_wrapper']
+            if not os.path.isfile(self.env_module_wrapper):
+                print "Environment module python wrapper not found: " + self.env_module_wrapper
+                return 1
+        else:
+            try:
+                lmod_pkg = os.environ['LMOD_PKG']
+                self.env_module_wrapper = os.path.join(lmod_pkg, "init/env_modules_python.py")
+            except KeyError:
+                print "The --env-module-wrapper switch was not used and lmod python support via os.environ['LMOD_PKG']/init/env_modules_python.py was not found"
+                return 1
         try:
-            self.command = options['module_cmd']
-        except KeyError:
-            print "Module command was not provided"
+            # scratchdir defaults to mttscratch if not set
+            self.env_module_link = os.path.join(options['scratchdir'], "env_modules_python.py")
+            if os.path.isfile(self.env_module_link):
+                os.remove(self.env_module_link)
+            # create a soft link that includes the .py extention; the tcl python module file does not include this
+            os.symlink(self.env_module_wrapper, self.env_module_link)
+        except:
+            print "Unable to link to " + self.env_module_wrapper
+            return 1
         return
 
     def loadModules(self, log, modules, testDef):
-        if self.command is None:
+        if self.env_module_wrapper is None:
             # cannot perform this operation
             log['status'] = 1
-            log['stderr'] = "Module (lmod) capability was not found"
-            return
+            log['stderr'] = "Module capability was not found"
+            return (1, None, "Module capability was not found")
+
+        # Load the lmod python module() definition
+        sys.path.insert(0, os.path.dirname(self.env_module_link))
+        try:
+            from env_modules_python import module
+        except:
+            return (1, None, "No module named env_modules_python found")
+
+        # We have to run this in the same python context for it to take effect and be propagated to future children
+        # Redirect the sys.stdout and sys.stderr for the module loads and unloads.
+        saved_stdout = sys.stdout
+        saved_stderr = sys.stderr
+        load_stdout = sys.stdout = StringIO()
+        load_stderr = sys.stderr = StringIO()
+
         modules = modules.split()
         for mod in modules:
             mod = mod.strip()
-            status,stdout,stderr = testDef.execmd.execute([self.command, "load", mod], testDef)
-            if 0 != status:
-                break
+            try:
+                module("load", mod)
+            except:
+                # If a module name is not found the module python flow will trigger this exception.
+                return (1, None, "Attempt to load environment module " + mod + " failed")
+
+        # Restore sys.stdout and sys.stderr
+        sys.stdout = saved_stdout
+        sys.stderr = saved_stderr
+
+        status = load_stderr.len
+        stdout = load_stdout.getvalue()
+        stderr = load_stderr.getvalue()
+        load_stdout.close()
+        load_stderr.close()
         log['status'] = status
         log['stdout'] = stdout
         log['stderr'] = stderr
-        return
+        return (status, stdout, stderr)
 
     def unloadModules(self, log, modules, testDef):
-        if self.command is None:
+        if self.env_module_wrapper is None:
             # cannot perform this operation
             log['status'] = 1
-            log['stderr'] = "Module (lmod) capability was not found"
-            return
+            log['stderr'] = "Module capability was not found"
+            return (1, None, "Module capability was not found")
+        
+        # Load the lmod python module() definition
+        sys.path.insert(0, os.path.dirname(self.env_module_link))
+        try:
+            from env_modules_python import module
+        except:
+            return (1, None, "No module named env_modules_python found")
+
+        # We have to run this in the same python context for it to take effect and be propagated to future children
+        # Redirect the sys.stdout and sys.stderr for the module loads and unloads.
+        saved_stdout = sys.stdout
+        saved_stderr = sys.stderr
+        unload_stdout = sys.stdout = StringIO()
+        unload_stderr = sys.stderr = StringIO()
+
         modules = modules.split()
         for mod in modules:
             mod = mod.strip()
-            status,stdout,stderr = testDef.execmd.execute([self.command, "unload", mod], testDef)
-            if 0 != status:
-                break
+            try:
+                module("unload", mod)
+            except:
+                # Unlike the load, the module python flow will not cause an exception if the module can not be found.  
+                # Add this to catch any other unexpected exceptions.
+                return (1, None, "Attempt to unload environment module " + mod + " failed")
+
+        # Restore sys.stdout and sys.stderr
+        sys.stdout = saved_stdout
+        sys.stderr = saved_stderr
+
+        status = unload_stderr.len
+        stdout = unload_stdout.getvalue()
+        stderr = unload_stderr.getvalue()
+        unload_stdout.close()
+        unload_stderr.close()
         log['status'] = status
         log['stdout'] = stdout
         log['stderr'] = stderr
-        return
+        return (status, stdout, stderr)

@@ -55,6 +55,11 @@ class TestDef:
     def setOptions(self, options, args):
         self.options = vars(options)
         self.args = args[:]
+        # if they want us to clear the scratch, then do so
+        if self.options['clean']:
+            shutil.rmtree(self.options['scratchdir'])
+        # setup the scratch directory
+        _mkdir_recursive(self.options['scratchdir'])
 
     # scan the key-value pairs obtained from the configuration
     # parser and compare them with the options defined for a
@@ -455,11 +460,6 @@ class TestDef:
         if not self.tools.getPluginByName(self.options['executor'], "Executor"):
             print "Specified executor",self.executor,"not found"
             exit(1)
-        # if they want us to clear the scratch, then do so
-        if self.options['clean']:
-            shutil.rmtree(self.options['scratchdir'])
-        # setup the scratch directory
-        _mkdir_recursive(self.options['scratchdir'])
         # activate the specified plugin
         self.tools.activatePluginByName(self.options['executor'], "Executor")
         # execute the provided test description
