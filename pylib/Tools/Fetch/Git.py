@@ -121,7 +121,7 @@ class Git(FetchMTTTool):
         usedModule = False
         try:
             if keyvals['modules'] is not None:
-                status,stdout,stderr = testDef.modcmd.loadModules(log, keyvals['modules'], testDef)
+                status,stdout,stderr = testDef.modcmd.loadModules(keyvals['modules'], testDef)
                 if 0 != status:
                     log['status'] = status
                     log['stderr'] = stderr
@@ -135,7 +135,11 @@ class Git(FetchMTTTool):
             log['stderr'] = "Executable git not found"
             if usedModule:
                 # unload the modules before returning
-                testDef.modcmd.unloadModules(log, keyvals['modules'], testDef)
+                status,stdout,stderr = testDef.modcmd.unloadModules(keyvals['modules'], testDef)
+                if 0 != status:
+                    log['status'] = status
+                    log['stderr'] = stderr
+                    return
             return
         # see if they asked for a specific branch
         branch = None
@@ -160,7 +164,11 @@ class Git(FetchMTTTool):
                     log['stderr'] = "Prior attempt to clone or update repo {0} failed".format(repo)
                 if usedModule:
                     # unload the modules before returning
-                    testDef.modcmd.unloadModules(log, keyvals['modules'], testDef)
+                    status,stdout,stderr = testDef.modcmd.unloadModules(keyvals['modules'], testDef)
+                    if 0 != status:
+                        log['status'] = status
+                        log['stderr'] = stderr
+                        return
                 return
         # record our current location
         cwd = os.getcwd()
@@ -175,7 +183,11 @@ class Git(FetchMTTTool):
                 self.done.append((repo, 1))
                 if usedModule:
                     # unload the modules before returning
-                    testDef.modcmd.unloadModules(log, keyvals['modules'], testDef)
+                    status,stdout,stderr = testDef.modcmd.unloadModules(keyvals['modules'], testDef)
+                    if 0 != status:
+                        log['status'] = status
+                        log['stderr'] = stderr
+                        return
                 return
             # move to that location
             os.chdir(repo)
@@ -212,5 +224,9 @@ class Git(FetchMTTTool):
         os.chdir(cwd)
         if usedModule:
             # unload the modules before returning
-            testDef.modcmd.unloadModules(log, keyvals['modules'], testDef)
+            status,stdout,stderr = testDef.modcmd.unloadModules(keyvals['modules'], testDef)
+            if 0 != status:
+                log['status'] = status
+                log['stderr'] = stderr
+                return
         return

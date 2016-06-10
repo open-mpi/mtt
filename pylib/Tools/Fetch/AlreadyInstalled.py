@@ -51,7 +51,7 @@ class AlreadyInstalled(FetchMTTTool):
                 # do so prior to checking for the executable
                 try:
                     if keyvals['module'] is not None:
-                        status,stdout,stderr = testDef.modcmd.loadModules(log, keyvals['modules'], testDef)
+                        status,stdout,stderr = testDef.modcmd.loadModules(keyvals['modules'], testDef)
                         if 0 != status:
                             log['status'] = status
                             log['stderr'] = stderr
@@ -67,13 +67,21 @@ class AlreadyInstalled(FetchMTTTool):
                     log['status'] = 0
                 if usedModule:
                     # unload the modules before returning
-                    testDef.modcmd.unloadModules(log, keyvals['modules'], testDef)
+                    status,stdout,stderr = testDef.modcmd.unloadModules(keyvals['modules'], testDef)
+                    if 0 != status:
+                        log['status'] = status
+                        log['stderr'] = stderr
+                        return
                     usedModule = False
                 return
         except KeyError:
             pass
         if usedModule:
             # unload the modules before returning
-            testDef.modcmd.unloadModules(log, keyvals['modules'], testDef)
+            status,stdout,stderr = testDef.modcmd.unloadModules(keyvals['modules'], testDef)
+            if 0 != status:
+                log['status'] = status
+                log['stderr'] = stderr
+                return
         log['status'] = 0
         return

@@ -102,7 +102,7 @@ class Shell(BuildMTTTool):
         usedModule = False
         try:
             if cmds['modules'] is not None:
-                status,stdout,stderr = testDef.modcmd.loadModules(log, cmds['modules'], testDef)
+                status,stdout,stderr = testDef.modcmd.loadModules(cmds['modules'], testDef)
                 if 0 != status:
                     log['status'] = status
                     log['stderr'] = stderr
@@ -114,7 +114,7 @@ class Shell(BuildMTTTool):
         usedModuleUnload = False
         try:
             if cmds['modules_unload'] is not None:
-                status,stdout,stderr = testDef.modcmd.unloadModules(log, cmds['modules_unload'], testDef)
+                status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules_unload'], testDef)
                 if 0 != status:
                     log['status'] = status
                     log['stderr'] = stderr
@@ -159,9 +159,19 @@ class Shell(BuildMTTTool):
         log['location'] = location
         if usedModule:
             # unload the modules before returning
-            testDef.modcmd.unloadModules(log, cmds['modules'], testDef)
+            status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules'], testDef)
+            if 0 != status:
+                log['status'] = status
+                log['stderr'] = stderr
+                os.chdir(cwd)
+                return
         if usedModuleUnload:
-            testDef.modcmd.loadModules(log, cmds['modules_unload'], testDef)
+            status,stdout,stderr = testDef.modcmd.loadModules(cmds['modules_unload'], testDef)
+            if 0 != status:
+                log['status'] = status
+                log['stderr'] = stderr
+                os.chdir(cwd)
+                return
         
         # return to original location
         os.chdir(cwd)

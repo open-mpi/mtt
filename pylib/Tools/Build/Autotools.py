@@ -26,6 +26,7 @@ class Autotools(BuildMTTTool):
         self.options['stdout_save_lines'] = (None, "Number of lines of stdout to save")
         self.options['stderr_save_lines'] = (None, "Number of lines of stderr to save")
         self.options['save_stdout_on_success'] = (False, "Save stdout even if build succeeds")
+        self.options['modules'] = (None, "Modules to load")
         return
 
     def activate(self):
@@ -139,7 +140,7 @@ class Autotools(BuildMTTTool):
         usedModule = False
         try:
             if cmds['modules'] is not None:
-                status,stdout,stderr = testDef.modcmd.loadModules(log, cmds['modules'], testDef)
+                status,stdout,stderr = testDef.modcmd.loadModules(cmds['modules'], testDef)
                 if 0 != status:
                     log['status'] = status
                     log['stderr'] = stderr
@@ -183,7 +184,10 @@ class Autotools(BuildMTTTool):
                     log['stderr'] = stderr
                     if usedModule:
                         # unload the modules before returning
-                        testDef.modcmd.unloadModules(log, cmds['modules'], testDef)
+                        status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules'], testDef)
+                        if 0 != status:
+                            log['status'] = status
+                            log['stderr'] = stderr
                     # return to original location
                     os.chdir(cwd)
                     return
@@ -215,7 +219,10 @@ class Autotools(BuildMTTTool):
             log['stderr'] = stderr
             if usedModule:
                 # unload the modules before returning
-                testDef.modcmd.unloadModules(log, cmds['modules'], testDef)
+                status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules'], testDef)
+                if 0 != status:
+                    log['status'] = status
+                    log['stderr'] = stderr
             # return to original location
             os.chdir(cwd)
             return
@@ -246,7 +253,10 @@ class Autotools(BuildMTTTool):
             log['stderr'] = stderr
             if usedModule:
                 # unload the modules before returning
-                testDef.modcmd.unloadModules(log, cmds['modules'], testDef)
+                status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules'], testDef)
+                if 0 != status:
+                    log['status'] = status
+                    log['stderr'] = stderr
             # return to original location
             os.chdir(cwd)
             return
@@ -264,7 +274,10 @@ class Autotools(BuildMTTTool):
             log['stderr'] = stderr
             if usedModule:
                 # unload the modules before returning
-                testDef.modcmd.unloadModules(log, cmds['modules'], testDef)
+                status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules'], testDef)
+                if 0 != status:
+                    log['status'] = status
+                    log['stderr'] = stderr
             # return to original location
             os.chdir(cwd)
             return
@@ -284,7 +297,10 @@ class Autotools(BuildMTTTool):
         log['stderr'] = stderr
         if usedModule:
             # unload the modules before returning
-            testDef.modcmd.unloadModules(log, cmds['modules'], testDef)
+            status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules'], testDef)
+            if 0 != status:
+                log['status'] = status
+                log['stderr'] = stderr
         # return home
         os.chdir(cwd)
         return

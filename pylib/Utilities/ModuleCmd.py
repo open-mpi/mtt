@@ -57,11 +57,10 @@ class ModuleCmd(BaseMTTUtility):
             return 1
         return
 
-    def loadModules(self, log, modules, testDef):
+    def loadModules(self, modules, testDef):
+        # Logging of results from the environment modules usage is the responsibility of the plugin that is making use of this utility.
         if self.env_module_wrapper is None:
             # cannot perform this operation
-            log['status'] = 1
-            log['stderr'] = "Module capability was not found"
             return (1, None, "Module capability was not found")
 
         # Load the lmod python module() definition
@@ -96,16 +95,11 @@ class ModuleCmd(BaseMTTUtility):
         stderr = load_stderr.getvalue()
         load_stdout.close()
         load_stderr.close()
-        log['status'] = status
-        log['stdout'] = stdout
-        log['stderr'] = stderr
         return (status, stdout, stderr)
 
-    def unloadModules(self, log, modules, testDef):
+    def unloadModules(self, modules, testDef):
         if self.env_module_wrapper is None:
             # cannot perform this operation
-            log['status'] = 1
-            log['stderr'] = "Module capability was not found"
             return (1, None, "Module capability was not found")
         
         # Load the lmod python module() definition
@@ -141,7 +135,4 @@ class ModuleCmd(BaseMTTUtility):
         stderr = unload_stderr.getvalue()
         unload_stdout.close()
         unload_stderr.close()
-        log['status'] = status
-        log['stdout'] = stdout
-        log['stderr'] = stderr
         return (status, stdout, stderr)
