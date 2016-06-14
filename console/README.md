@@ -10,15 +10,19 @@ The console is executed inside a "virtual" Python environment to avoid conflicts
 
 It probably is already there, but Django doesn't support all versions. You should ensure that you either have Python 2.7, or Python 3.4 before continuing.
 
-##### Install the Pythoon virtual tools (optional)
+##### Install the Python virtual tools (optional)
 
-This can be done several ways, but the easiest is to just utilize the _easy_install_ script:
+Change directory to the default python packages directory on your computer.
+
+
+Installation can be done several ways, but the easiest is to just utilize the _easy_install_ script:
 
 ```
-$ easy_install virtualenv virtualenv-wrappers
+$ easy_install virtualenv 
+$ easy_install virtualenvwrapper
 ```
 
-This should install virtualenv and the virtualenv-wrappers in your default site-packages directory. In order to use them, you need to add the following lines to your .bashrc (or the equivalent lines in the setup file for whichever shell you prefer):
+This should install virtualenv and the virtualenvwrapper in your default site-packages directory. In order to use them, you need to add the following lines to your .bashrc (or the equivalent lines in the setup file for whichever shell you prefer):
 
 ```
 source "/usr/bin/virtualenvwrapper.sh"
@@ -43,14 +47,17 @@ and clone the MTT repo into it:
 $ git clone http://github.com/open-mpi/mtt
 $ cd mtt
 ```
-
+ 
 Now you can setup the Python environment by simply typing:
 
 ```
-$ mkvirtualenv -r pyenv.txt
+$ mkvirtualenv -r pyenv.txt newVirtualEnvName
 ```
 
 This will create the virtual environment in a subdirectory created under your WORKON_HOME location, and add all the required packages (django, django-enumfield, etc.) to it. It will also create an executable "manage.py" file in your current working directory. At this time, you are nearly ready to go - all that is necessary is to setup your database.
+
+Note: This install may fail if pg_config is not on your system. You may need to install postgresql package.
+
 
 ##### Setup a database
 
