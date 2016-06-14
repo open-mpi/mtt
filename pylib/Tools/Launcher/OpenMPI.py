@@ -124,15 +124,21 @@ class OpenMPI(LauncherMTTTool):
                         try:
                             if midlog['location'] is not None:
                                 # prepend that location to our paths
-                                path = os.environ['PATH']
-                                pieces = path.split(':')
+                                try:
+                                    path = os.environ['PATH']
+                                    pieces = path.split(':')
+                                except KeyError:
+                                    pieces = []
                                 bindir = os.path.join(midlog['location'], "bin")
                                 pieces.insert(0, bindir)
                                 newpath = ":".join(pieces)
                                 os.environ['PATH'] = newpath
                                 # prepend the libdir path as well
-                                path = os.environ['LD_LIBRARY_PATH']
-                                pieces = path.split(':')
+                                try:
+                                    path = os.environ['LD_LIBRARY_PATH']
+                                    pieces = path.split(':')
+                                except KeyError:
+                                    pieces = []
                                 bindir = os.path.join(midlog['location'], "lib")
                                 pieces.insert(0, bindir)
                                 newpath = ":".join(pieces)

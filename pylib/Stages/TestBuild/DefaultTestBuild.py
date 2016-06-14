@@ -72,15 +72,23 @@ class DefaultTestBuild(TestBuildMTTStage):
                     try:
                         if midlog['location'] is not None:
                             # prepend that location to our paths
-                            oldbinpath = os.environ['PATH']
-                            pieces = oldbinpath.split(':')
+                            try:
+                                oldbinpath = os.environ['PATH']
+                                pieces = oldbinpath.split(':')
+                            except KeyError:
+                                oldbinpath = ""
+                                pieces = []
                             bindir = os.path.join(midlog['location'], "bin")
                             pieces.insert(0, bindir)
                             newpath = ":".join(pieces)
                             os.environ['PATH'] = newpath
                             # prepend the libdir path as well
-                            oldlibpath = os.environ['LD_LIBRARY_PATH']
-                            pieces = oldlibpath.split(':')
+                            try:
+                                oldlibpath = os.environ['LD_LIBRARY_PATH']
+                                pieces = oldlibpath.split(':')
+                            except KeyError:
+                                oldlibpath = ""
+                                pieces = []
                             bindir = os.path.join(midlog['location'], "lib")
                             pieces.insert(0, bindir)
                             newpath = ":".join(pieces)
