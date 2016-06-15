@@ -10,6 +10,8 @@
 
 import os
 import re
+import string
+import sys
 from BuildMTTTool import *
 
 class Autotools(BuildMTTTool):
@@ -21,12 +23,13 @@ class Autotools(BuildMTTTool):
         self.options['autogen_cmd'] = (None, "Command to be executed to setup the configure script, usually called autogen.sh or autogen.pl")
         self.options['configure_options'] = (None, "Options to be passed to configure. Note that the prefix will be automatically set and need not be provided here")
         self.options['make_options'] = (None, "Options to be passed to the make command")
-        self.options['build_in_place'] = (True, "Build tests in current location (no prefix or install)")
+        self.options['build_in_place'] = (False, "Build tests in current location (no prefix or install)")
         self.options['merge_stdout_stderr'] = (False, "Merge stdout and stderr into one output stream")
         self.options['stdout_save_lines'] = (None, "Number of lines of stdout to save")
         self.options['stderr_save_lines'] = (None, "Number of lines of stderr to save")
         self.options['save_stdout_on_success'] = (False, "Save stdout even if build succeeds")
         self.options['modules'] = (None, "Modules to load")
+        self.exclude = set(string.punctuation)
         return
 
     def activate(self):
@@ -91,9 +94,8 @@ class Autotools(BuildMTTTool):
                 inPlace = True
             else:
                 # create the prefix path where this build result will be placed
-                pfx = os.path.join(testDef.options['scratchdir'], "build", keyvals['section'])
-                # need to remove any illegal characters like ':'
-                pfx = re.sub('[^A-Za-z0-9]+:;', '', pfx)
+                section = ''.join(ch for ch in keyvals['section'] if ch not in self.exclude)
+                pfx = os.path.join(testDef.options['scratchdir'], "build", section)
                 # convert it to an absolute path
                 pfx = os.path.abspath(pfx)
                 # record this location for any follow-on steps
@@ -101,9 +103,8 @@ class Autotools(BuildMTTTool):
                 prefix = "--prefix={0}".format(pfx)
         except KeyError:
             # create the prefix path where this build result will be placed
-            pfx = os.path.join(testDef.options['scratchdir'], "build", keyvals['section'])
-            # need to remove any illegal characters like ':'
-            pfx = re.sub('[^A-Za-z0-9]+:;', '', pfx)
+            section = ''.join(ch for ch in keyvals['section'] if ch not in self.exclude)
+            pfx = os.path.join(testDef.options['scratchdir'], "build", section)
             # convert it to an absolute path
             pfx = os.path.abspath(pfx)
             # record this location for any follow-on steps
@@ -115,8 +116,8 @@ class Autotools(BuildMTTTool):
                 if not inPlace:
                     # see if the build already exists - if
                     # it does, then we are done
-                    if os.path.exists(location) and os.path.isdir(location):
-                        testDef.logger.verbose_print("As-Is location " + location + " exists and is a directory")
+                    if os.path.exists(pfx) and os.path.isdir(pfx):
+                        testDef.logger.verbose_print("As-Is location " + pfx + " exists and is a directory")
                         # nothing further to do
                         log['status'] = 0
                         return
