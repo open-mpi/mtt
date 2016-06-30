@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 from yapsy.IPlugin import IPlugin
 
 class TestRunMTTStage(IPlugin):
@@ -15,7 +16,7 @@ class TestRunMTTStage(IPlugin):
         # initialise parent class
         IPlugin.__init__(self)
     def print_name(self):
-        print "Run test software package"
+        print("Run test software package")
 
     def ordering(self):
         return 500

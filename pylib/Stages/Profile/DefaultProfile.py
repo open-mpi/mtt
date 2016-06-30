@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 import os
 from ProfileMTTStage import *
 
@@ -41,7 +42,7 @@ class DefaultProfile(ProfileMTTStage):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print(prefix + line)
         return
 
     def execute(self, log, keyvals, testDef):
@@ -51,7 +52,7 @@ class DefaultProfile(ProfileMTTStage):
         # see what they want us to collect
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
-        keys = cmds.keys()
+        keys = list(cmds.keys())
         for key in keys:
             if cmds[key]:
                 status, stdout, stderr = testDef.execmd.execute(self.options[key][2], testDef)

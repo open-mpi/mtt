@@ -8,9 +8,12 @@
 # $HEADER$
 #
 
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
 import os
 import sys
-import ConfigParser
+import configparser
 import importlib
 import logging
 import imp
@@ -51,7 +54,7 @@ class SequentialEx(ExecutorMTTTool):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print(prefix + line)
         return
 
     def execute(self, testDef):
@@ -144,7 +147,7 @@ class SequentialEx(ExecutorMTTTool):
                             # sometimes a stage consists of executing a tool or utility.
                             # so let's check the tools too, noting that those
                             # are not stage-specific.
-                            availTools = testDef.loader.tools.keys()
+                            availTools = list(testDef.loader.tools.keys())
                             for tool in availTools:
                                 for pluginInfo in testDef.tools.getPluginsOfCategory(tool):
                                     if module == pluginInfo.plugin_object.print_name():
@@ -154,7 +157,7 @@ class SequentialEx(ExecutorMTTTool):
                                     break;
                             if plugin is None:
                                 # Check the utilities
-                                availUtils = testDef.loader.utilities.keys()
+                                availUtils = list(testDef.loader.utilities.keys())
                                 for util in availUtils:
                                     for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
                                         if module == pluginInfo.plugin_object.print_name():
@@ -175,7 +178,7 @@ class SequentialEx(ExecutorMTTTool):
                             testDef.stages.activatePluginByName(module, stage)
                     except KeyError:
                         # If this stage has no plugins then check the tools and the utilities
-                        availTools = testDef.loader.tools.keys()
+                        availTools = list(testDef.loader.tools.keys())
                         for tool in availTools:
                             for pluginInfo in testDef.tools.getPluginsOfCategory(tool):
                                 if module == pluginInfo.plugin_object.print_name():
@@ -185,7 +188,7 @@ class SequentialEx(ExecutorMTTTool):
                                 break;
                         if plugin is None:
                             # Check the utilities
-                            availUtils = testDef.loader.utilities.keys()
+                            availUtils = list(testDef.loader.utilities.keys())
                             for util in availUtils:
                                 for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
                                     if module == pluginInfo.plugin_object.print_name():

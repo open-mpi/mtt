@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 import os
 import sys
 from ReporterMTTStage import *
@@ -41,7 +42,7 @@ class TextFile(ReporterMTTStage):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print(prefix + line)
         return
 
     def execute(self, log, keyvals, testDef):
@@ -52,51 +53,51 @@ class TextFile(ReporterMTTStage):
         if cmds['filename'] is not None:
             self.fh = open(cmds['filename'], 'w')
         if testDef.options['description'] is not None:
-            print >> self.fh,testDef.options['description']
-            print >> self.fh
+            print(testDef.options['description'], file=self.fh)
+            print(file=self.fh)
         # get the entire log of results
         fullLog = testDef.logger.getLog(None)
         for lg in fullLog:
             try:
-                print >> self.fh,"Section:",lg['section'],"Status:",lg['status']
+                print("Section:",lg['section'],"Status:",lg['status'], file=self.fh)
                 try:
                     if lg['parameters'] is not None:
-                        print >> self.fh,"\tInput parameters:"
+                        print("\tInput parameters:", file=self.fh)
                         for p in lg['parameters']:
-                            print >> self.fh,"\t\t",p[0],"=",p[1]
+                            print("\t\t",p[0],"=",p[1], file=self.fh)
                 except KeyError:
                     pass
                 try:
                     if lg['options'] is not None:
-                        print >> self.fh,"\tFinal options:"
+                        print("\tFinal options:", file=self.fh)
                         opts = lg['options']
-                        keys = opts.keys()
+                        keys = list(opts.keys())
                         for p in keys:
-                            print >> self.fh,"\t\t",p,"=",opts[p]
+                            print("\t\t",p,"=",opts[p], file=self.fh)
                 except KeyError:
                     pass
                 if 0 != lg['status']:
                     try:
-                        print >> self.fh,"\tERROR:",lg['stderr']
+                        print("\tERROR:",lg['stderr'], file=self.fh)
                     except KeyError:
                         try:
-                            print >> self.fh,"\tERROR:",lg['stdout']
+                            print("\tERROR:",lg['stdout'], file=self.fh)
                         except KeyError:
                             pass
             except KeyError:
                 pass
             try:
                 if lg['compiler'] is not None:
-                    print >> self.fh,"Compiler:"
+                    print("Compiler:", file=self.fh)
                     comp = lg['compiler']
-                    print >> self.fh,"\t",comp['family']
-                    print >> self.fh,"\t",comp['version']
+                    print("\t",comp['family'], file=self.fh)
+                    print("\t",comp['version'], file=self.fh)
             except KeyError:
                 pass
             try:
                 if lg['profile'] is not None:
                     prf = lg['profile']
-                    keys = prf.keys()
+                    keys = list(prf.keys())
                     # find the max length of the keys
                     max1 = 0
                     for key in keys:
@@ -105,28 +106,28 @@ class TextFile(ReporterMTTStage):
                     # add some padding
                     max1 = max1 + 4
                     # now provide the output
-                    print >> self.fh,"\tProfile:"
+                    print("\tProfile:", file=self.fh)
                     sp = " "
                     for key in keys:
                         line = key + (max1-len(key))*sp + prf[key]
-                        print >> self.fh,"\t\t",line
+                        print("\t\t",line, file=self.fh)
             except KeyError:
                 pass
             try:
                 if lg['numTests'] is not None:
-                    print >> self.fh,"\tTests:",lg['numTests'],"Pass:",lg['numPass'],"Skip:",lg['numSkip'],"Fail:",lg['numFail']
+                    print("\tTests:",lg['numTests'],"Pass:",lg['numPass'],"Skip:",lg['numSkip'],"Fail:",lg['numFail'], file=self.fh)
             except KeyError:
                 pass
             try:
                 if lg['testresults'] is not None:
                     for test in lg['testresults']:
                         tname = os.path.basename(test['test'])
-                        print >> self.fh,"\t\t",tname,"  Status:",test['status']
+                        print("\t\t",tname,"  Status:",test['status'], file=self.fh)
                         if 0 != test['status']:
-                            print >> self.fh,"\t\t\t","Stderr:",test['stderr']
+                            print("\t\t\t","Stderr:",test['stderr'], file=self.fh)
             except KeyError:
                 pass
-            print >> self.fh
+            print(file=self.fh)
         if cmds['filename'] is not None:
             self.fh.close()
         log['status'] = 0

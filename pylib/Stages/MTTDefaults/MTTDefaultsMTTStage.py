@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 from yapsy.IPlugin import IPlugin
 
 class MTTDefaultsMTTStage(IPlugin):
@@ -15,7 +16,7 @@ class MTTDefaultsMTTStage(IPlugin):
         # initialise parent class
         IPlugin.__init__(self)
     def print_name(self):
-        print "Set MTT defaults for this test definition"
+        print("Set MTT defaults for this test definition")
 
     def ordering(self):
         return 0

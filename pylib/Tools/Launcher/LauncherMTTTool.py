@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 from yapsy.IPlugin import IPlugin
 
 class LauncherMTTTool(IPlugin):
@@ -16,5 +17,5 @@ class LauncherMTTTool(IPlugin):
         IPlugin.__init__(self)
 
     def print_name(self):
-        print "Launcher"
+        print("Launcher")
 

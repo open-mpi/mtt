@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 from yapsy.IPlugin import IPlugin
 
 class ReporterMTTStage(IPlugin):
@@ -15,7 +16,7 @@ class ReporterMTTStage(IPlugin):
         # initialise parent class
         IPlugin.__init__(self)
     def print_name(self):
-        print "Report test results stage"
+        print("Report test results stage")
 
     def ordering(self):
         return 600

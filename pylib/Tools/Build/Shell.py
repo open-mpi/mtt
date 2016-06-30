@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 import os
 import re
 from BuildMTTTool import *
@@ -47,7 +48,7 @@ class Shell(BuildMTTTool):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print(prefix + line)
         return
 
     def execute(self, log, keyvals, testDef):
@@ -187,7 +188,7 @@ class Shell(BuildMTTTool):
 
         # sense and record the compiler being used
         plugin = None
-        availUtil = testDef.loader.utilities.keys()
+        availUtil = list(testDef.loader.utilities.keys())
         for util in availUtil:
             for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
                 if "Compilers" == pluginInfo.plugin_object.print_name():

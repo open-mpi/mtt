@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 import os
 import re
 import string
@@ -51,7 +52,7 @@ class Autotools(BuildMTTTool):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print(prefix + line)
         return
 
     def execute(self, log, keyvals, testDef):
@@ -153,7 +154,7 @@ class Autotools(BuildMTTTool):
 
         # sense and record the compiler being used
         plugin = None
-        availUtil = testDef.loader.utilities.keys()
+        availUtil = list(testDef.loader.utilities.keys())
         for util in availUtil:
             for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
                 if "Compilers" == pluginInfo.plugin_object.print_name():
@@ -165,7 +166,7 @@ class Autotools(BuildMTTTool):
             compilerLog = {}
             plugin.execute(compilerLog, testDef)
             log['compiler'] = compilerLog
-        print log['compiler']
+        print(log['compiler'])
 
         # save the current directory so we can return to it
         cwd = os.getcwd()

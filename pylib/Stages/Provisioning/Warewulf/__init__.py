@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 from ProvisionMTTStage import *
 
 class WarewulfPlugin(ProvisionMTTStage):
@@ -33,5 +34,5 @@ class WarewulfPlugin(ProvisionMTTStage):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print(prefix + line)
         return

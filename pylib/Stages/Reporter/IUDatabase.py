@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 import os
 import pwd
 import requests
@@ -53,7 +54,7 @@ class IUDatabase(ReporterMTTStage):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print(prefix + line)
         return
 
     def execute(self, log, keyvals, testDef):
@@ -104,7 +105,7 @@ class IUDatabase(ReporterMTTStage):
         # Get a client serial number
         client_serial = self._get_client_serial(s, cmds['url'], www_auth)
         if client_serial < 0:
-            print "Error: Unable to get a client serial (rtn=%d)" % (client_serial)
+            print("Error: Unable to get a client serial (rtn=%d)" % (client_serial))
 
         headers = {}
         headers['content-type'] = 'application/json'
@@ -137,11 +138,11 @@ class IUDatabase(ReporterMTTStage):
         #
         # Dump the entire log
         #
-        print "<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>"
+        print("<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>")
         for lg in fullLog:
-            print "----------------- Section (%s) " % (lg['section'])
+            print("----------------- Section (%s) " % (lg['section']))
             pp.pprint(lg)
-        print "<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>"
+        print("<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>")
 
         #
         # Process the test run sections
@@ -160,7 +161,7 @@ class IUDatabase(ReporterMTTStage):
         return z
 
     def _submit_test_run(self, logger, lg, metadata, s, url, httpauth=None):
-        print "----------------- Test Run (%s) " % (lg['section'])
+        print("----------------- Test Run (%s) " % (lg['section']))
 
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(lg)
@@ -277,7 +278,7 @@ class IUDatabase(ReporterMTTStage):
         return True
 
     def _submit_test_build(self, logger, lg, metadata, s, url, httpauth=None):
-        print "----------------- Test Build (%s) " % (lg['section'])
+        print("----------------- Test Build (%s) " % (lg['section']))
 
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(lg)
@@ -363,7 +364,7 @@ class IUDatabase(ReporterMTTStage):
                                  install_info)
 
     def _submit_install(self, logger, lg, metadata, s, url, httpauth=None):
-        print "----------------- MPI Install (%s) " % (lg['section'])
+        print("----------------- MPI Install (%s) " % (lg['section']))
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(lg)
 
@@ -381,7 +382,7 @@ class IUDatabase(ReporterMTTStage):
         # get the system profile
         profile = logger.getLog('Profile:Installed')['profile']
         if profile is None:
-            print "Error: Failed to get 'profile'"
+            print("Error: Failed to get 'profile'")
             return None
 
         #
@@ -475,9 +476,9 @@ class IUDatabase(ReporterMTTStage):
         headers = {}
         headers['content-type'] = 'application/json'
 
-        print "<<<<<<<---------------- Payload (Start) -------------------------->>>>>>"
-        print json.dumps(payload, sort_keys=True, indent=4, separators=(',',': '))
-        print "<<<<<<<---------------- Payload (End  ) -------------------------->>>>>>"
+        print("<<<<<<<---------------- Payload (Start) -------------------------->>>>>>")
+        print(json.dumps(payload, sort_keys=True, indent=4, separators=(',',': ')))
+        print("<<<<<<<---------------- Payload (End  ) -------------------------->>>>>>")
 
         r = s.post(url,
                    data=json.dumps(payload),
@@ -485,13 +486,13 @@ class IUDatabase(ReporterMTTStage):
                    auth=httpauth,
                    verify=False)
 
-        print "<<<<<<<---------------- Response -------------------------->>>>>>"
-        print "Result: %d: %s" % (r.status_code, r.headers['content-type'])
-        print r.headers
-        print r.reason
-        print "<<<<<<<---------------- Raw Output (Start) ---------------->>>>>>"
-        print r.text
-        print "<<<<<<<---------------- Raw Output (End  ) ---------------->>>>>>"
+        print("<<<<<<<---------------- Response -------------------------->>>>>>")
+        print("Result: %d: %s" % (r.status_code, r.headers['content-type']))
+        print(r.headers)
+        print(r.reason)
+        print("<<<<<<<---------------- Raw Output (Start) ---------------->>>>>>")
+        print(r.text)
+        print("<<<<<<<---------------- Raw Output (End  ) ---------------->>>>>>")
 
         if r.status_code != 200:
             return None
@@ -501,13 +502,13 @@ class IUDatabase(ReporterMTTStage):
     def _extract_param(self, logger, section, parameter):
         found = logger.getLog(section)
         if found is None:
-            print "_extract_param: Section (%s) Not Found! [param=%s]" % (section, parameter)
+            print("_extract_param: Section (%s) Not Found! [param=%s]" % (section, parameter))
             return None
 
         try:
             params = found['parameters']
         except KeyError:
-            print "_extract_param: Section (%s) did not contain a parameters entry! [param=%s]" % (section, parameter)
+            print("_extract_param: Section (%s) did not contain a parameters entry! [param=%s]" % (section, parameter))
             return None
         for p in params:
             if p[0] == parameter:

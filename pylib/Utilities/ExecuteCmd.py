@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import str
 #!/usr/bin/env python
 #
 # Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
@@ -25,7 +27,7 @@ class ExecuteCmd(BaseMTTUtility):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print(prefix + line)
         return
 
     def execute(self, cmdargs, testDef):
@@ -41,7 +43,7 @@ class ExecuteCmd(BaseMTTUtility):
         # them here
         for arg in cmdargs:
             mycmdargs.append(arg.replace('\"',''))
-        testDef.logger.verbose_print("ExecuteCmd: " + " ".join(mycmdargs))
+        testDef.logger.verbose_print("ExecuteCmd: " + " " + '.'.join(mycmdargs))
         # it is possible that the command doesn't exist or
         # isn't in our path, so protect us
         try:
@@ -63,16 +65,16 @@ class ExecuteCmd(BaseMTTUtility):
                     # if the data
                     if fd == p.stdout.fileno():
                         read = p.stdout.readline().rstrip()
-                        testDef.logger.verbose_print('stdout: ' + read)
-                        stdout.append(read)
+                        testDef.logger.verbose_print('stdout: ' + read.decode("utf-8"))
+                        stdout.append(read.decode("utf-8"))
                     elif fd == p.stderr.fileno():
                         read = p.stderr.readline().rstrip()
-                        testDef.logger.verbose_print('stderr: ' + read)
-                        stderr.append(read)
+                        testDef.logger.verbose_print('stderr: ' + read.decode("utf-8"))
+                        stderr.append(read.decode("utf-8"))
 
                 if p.poll() != None:
                     break
-        except OSError, e:
+        except OSError as e:
             return (1, None, str(e))
 
         output = "\n".join(stdout)

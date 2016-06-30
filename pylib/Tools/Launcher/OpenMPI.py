@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 import os
 from LauncherMTTTool import *
 
@@ -52,7 +53,7 @@ class OpenMPI(LauncherMTTTool):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print(prefix + line)
         return
 
     def execute(self, log, keyvals, testDef):
@@ -67,8 +68,8 @@ class OpenMPI(LauncherMTTTool):
                     myopts = {}
                     testDef.parseOptions(log, self.options, keyvals, myopts)
                     # transfer the findings into our local storage
-                    keys = self.options.keys()
-                    optkeys = myopts.keys()
+                    keys = list(self.options.keys())
+                    optkeys = list(myopts.keys())
                     for optkey in optkeys:
                         for key in keys:
                             if key == optkey:

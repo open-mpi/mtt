@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 import os
 import sys
 import re
@@ -39,7 +40,7 @@ class JunitXML(ReporterMTTStage):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print(prefix + line)
         return
 
     def execute(self, log, keyvals, testDef):
@@ -50,8 +51,8 @@ class JunitXML(ReporterMTTStage):
         if cmds['filename'] is not None:
             self.fh = open(cmds['filename'], 'w')
         if testDef.options['description'] is not None:
-            print >> self.fh,testDef.options['description']
-            print >> self.fh
+            print(testDef.options['description'], file=self.fh)
+            print(file=self.fh)
        
         # Use the Junit classname field to store the list of inifiles
         try:
@@ -87,7 +88,7 @@ class JunitXML(ReporterMTTStage):
         # TODO:  Pull in the resource manager jobid.
         jobid = "job1"
         ts = TestSuite(jobid, testCases)
-        print >> self.fh,TestSuite.to_xml_string([ts])
+        print(TestSuite.to_xml_string([ts]), file=self.fh)
 
         if cmds['filename'] is not None:
             self.fh.close()
