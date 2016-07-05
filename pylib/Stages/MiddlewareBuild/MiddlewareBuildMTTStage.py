@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 from yapsy.IPlugin import IPlugin
 
 class MiddlewareBuildMTTStage(IPlugin):
@@ -15,7 +16,7 @@ class MiddlewareBuildMTTStage(IPlugin):
         # initialise parent class
         IPlugin.__init__(self)
     def print_name(self):
-        print "Stage for building middleware such as MPI"
+        print("Stage for building middleware such as MPI")
 
     def ordering(self):
         return 400

@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 from yapsy.IPlugin import IPlugin
 
 class MiddlewareGetMTTStage(IPlugin):
@@ -15,7 +16,7 @@ class MiddlewareGetMTTStage(IPlugin):
         # initialise parent class
         IPlugin.__init__(self)
     def print_name(self):
-        print "Stage for getting middleware source code"
+        print("Stage for getting middleware source code")
 
     def ordering(self):
         return 300

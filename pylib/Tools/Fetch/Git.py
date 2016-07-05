@@ -8,8 +8,11 @@
 # $HEADER$
 #
 
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
 import os
-from urlparse import urlparse
+from urllib.parse import urlparse
 from FetchMTTTool import *
 from distutils.spawn import find_executable
 
@@ -48,7 +51,7 @@ class Git(FetchMTTTool):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print(prefix + line)
         return
 
     def execute(self, log, keyvals, testDef):

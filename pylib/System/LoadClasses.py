@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import object
 #!/usr/bin/env python
 #
 # Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
@@ -14,7 +16,7 @@ import sys
 import datetime
 from bisect import *
 
-class LoadClasses:
+class LoadClasses(object):
     def __init__(self):
         self.stages = {};
         self.stageOrder = []
@@ -54,7 +56,7 @@ class LoadClasses:
             try:
                 m = imp.load_source(modname, filename)
             except ImportError:
-                print "ERROR: unable to load " + modname + " from file " + filename
+                print("ERROR: unable to load " + modname + " from file " + filename)
                 exit(1)
             # add the class to the corresponding category
             try:

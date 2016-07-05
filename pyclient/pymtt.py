@@ -8,9 +8,12 @@
 # $HEADER$
 #
 
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
 import os
 import sys
-import ConfigParser
+import configparser
 import importlib
 import logging
 import imp
@@ -130,7 +133,7 @@ if options.basedir:
     basedir = options.basedir
     topdir = basedir
     if not os.path.exists(basedir) or not os.path.isdir(basedir):
-        print "The specified base directory",basedir,"doesn't exist"
+        print("The specified base directory",basedir,"doesn't exist")
         sys.exit(1)
     if not os.path.exists(os.path.join(basedir, "TestDef.py")):
         # try adding std path to it
@@ -139,20 +142,20 @@ if options.basedir:
             # see if the pylib/System location exists
             basedir = os.path.join(options.basedir, "pylib", "System")
             if not os.path.exists(basedir) or not os.path.isdir(basedir):
-                print "The TestDef.py file was not found in the specified base directory,"
-                print "and no standard location under the specified base directory",basedir,"exists"
+                print("The TestDef.py file was not found in the specified base directory,")
+                print("and no standard location under the specified base directory",basedir,"exists")
                 sys.exit(1)
             else:
                 if not os.path.exists(os.path.join(basedir, "TestDef.py")):
-                    print "The TestDef.py file was not found in the specified base directory,"
-                    print "or any standard location under the specified base directory",basedir
+                    print("The TestDef.py file was not found in the specified base directory,")
+                    print("or any standard location under the specified base directory",basedir)
                     sys.exit(1)
         else:
             if os.path.exists(os.path.join(chkdir, "TestDef.py")):
                 basedir = chkdir
             else:
-                print "The TestDef.py file was not found in the standard location"
-                print "under the specified base directory at",chkdir
+                print("The TestDef.py file was not found in the standard location")
+                print("under the specified base directory at",chkdir)
                 sys.exit(1)
 elif os.path.exists("TestDef.py"):
     # the class file is local to us, so use it
@@ -163,18 +166,18 @@ elif os.path.exists("pylib"):
     basedir = os.path.join("./", "pylib", "System")
     topdir = os.path.join("./", "pylib")
     if not os.path.exists(basedir) or not os.path.isdir(basedir):
-        print "The local directory",basedir,"doesn't exist"
+        print("The local directory",basedir,"doesn't exist")
         sys.exit(1)
     if not os.path.exists(os.path.join(basedir, "TestDef.py")):
-        print "The TestDef.py file was not found in the standard location"
-        print "under the specified base directory at",basedir
+        print("The TestDef.py file was not found in the standard location")
+        print("under the specified base directory at",basedir)
         sys.exit(1)
 else:
     try:
         # try that location
         basedir = os.path.join(os.environ['MTT_HOME'], "pylib", "System")
         if not os.path.exists(basedir) or not os.path.isdir(basedir):
-            print "MTT_HOME points to an invalid location - please correct"
+            print("MTT_HOME points to an invalid location - please correct")
             sys.exit(1)
         topdir = os.path.join(os.environ['MTT_HOME'], "pylib")
     except KeyError:
@@ -186,16 +189,16 @@ else:
             basedir = os.path.join(path, "pylib", "System")
             topdir = os.path.join(path, "pylib")
             if not os.path.exists(basedir) or not os.path.isdir(basedir):
-                print "A base directory for MTT was not specified, we do not appear"
-                print "to be in the MTT home directory, and MTT_HOME has not been"
-                print "set in the environment. We cannot continue as we will be"
-                print "unable to find the MTT libraries"
+                print("A base directory for MTT was not specified, we do not appear")
+                print("to be in the MTT home directory, and MTT_HOME has not been")
+                print("set in the environment. We cannot continue as we will be")
+                print("unable to find the MTT libraries")
                 sys.exit(1)
         else:
-            print "A base directory for MTT was not specified, we do not appear"
-            print "to be in the MTT home directory, and MTT_HOME has not been"
-            print "set in the environment. We cannot continue as we will be"
-            print "unable to find the MTT libraries"
+            print("A base directory for MTT was not specified, we do not appear")
+            print("to be in the MTT home directory, and MTT_HOME has not been")
+            print("set in the environment. We cannot continue as we will be")
+            print("unable to find the MTT libraries")
             sys.exit(1)
 
 # if they want debug, set the logging level
@@ -207,7 +210,7 @@ if (options.debug):
 try:
     m = imp.load_source("TestDef", os.path.join(basedir, "TestDef.py"));
 except ImportError:
-    print "ERROR: unable to load TestDef that must contain the Test Definition object"
+    print("ERROR: unable to load TestDef that must contain the Test Definition object")
     exit(1)
 cls = getattr(m, "TestDef")
 a = cls()

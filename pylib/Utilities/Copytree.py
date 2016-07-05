@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import str
 #!/usr/bin/env python
 #
 # Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
@@ -24,7 +26,7 @@ class Copytree(BaseMTTUtility):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print(prefix + line)
         return
 
     def execute(self, log, keyvals, testDef):

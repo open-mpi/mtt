@@ -11,6 +11,7 @@ server/php/robots.txt
 server/php/stats/php_errors.log
 server/php/submit/php_errors.log
 *.pyc
+*.bak
 .DS_Store
 db.sqlite3
 */mttscratch

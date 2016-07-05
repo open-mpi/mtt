@@ -8,10 +8,13 @@
 # $HEADER$
 #
 
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
 import sys
 import select
 import os
-from StringIO import StringIO
+from io import StringIO
 from BaseMTTUtility import *
 
 class ModuleCmd(BaseMTTUtility):
@@ -28,7 +31,7 @@ class ModuleCmd(BaseMTTUtility):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print(prefix + line)
         return
 
     def setCommand(self, options):
@@ -37,7 +40,7 @@ class ModuleCmd(BaseMTTUtility):
             self.env_module_wrapper = options['env_module_wrapper']
             if not os.path.isfile(self.env_module_wrapper):
                 if options['verbose'] or options['debug'] :
-                    print "Environment module python wrapper not found: " + self.env_module_wrapper
+                    print("Environment module python wrapper not found: " + self.env_module_wrapper)
                 return
         else:
             try:
@@ -45,7 +48,7 @@ class ModuleCmd(BaseMTTUtility):
                 self.env_module_wrapper = os.path.join(lmod_pkg, "init/env_modules_python.py")
             except KeyError:
                 if options['verbose'] or options['debug'] :
-                    print "The --env-module-wrapper switch was not used and lmod python support via os.environ['LMOD_PKG']/init/env_modules_python.py was not found"
+                    print("The --env-module-wrapper switch was not used and lmod python support via os.environ['LMOD_PKG']/init/env_modules_python.py was not found")
                 return
         try:
             # scratchdir defaults to mttscratch if not set
@@ -55,9 +58,9 @@ class ModuleCmd(BaseMTTUtility):
             # create a soft link that includes the .py extension; the tcl python module file does not include this
             os.symlink(self.env_module_wrapper, self.env_module_link)
         except:
-            print "Unable to link to " + self.env_module_wrapper
-            print "Since we are unable to meet this basic user directive,"
-            print "we will now abort"
+            print("Unable to link to " + self.env_module_wrapper)
+            print("Since we are unable to meet this basic user directive,")
+            print("we will now abort")
             sys.exit(1)
         return
 

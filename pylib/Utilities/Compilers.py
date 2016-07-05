@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 import os
 from BaseMTTUtility import *
 
@@ -23,7 +24,7 @@ class Compilers(BaseMTTUtility):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print(prefix + line)
         return
 
     def execute(self, log, testDef):
@@ -169,7 +170,7 @@ class Compilers(BaseMTTUtility):
         # write out a little test program
         fh = open("spastic", 'w')
         for ln in c_code:
-            print >> fh,ln
+            print(ln, file=fh)
         fh.close()
 
         # Attempt to compile it

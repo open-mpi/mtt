@@ -9,6 +9,7 @@
 #
 
 
+from __future__ import print_function
 from FetchMTTTool import *
 from distutils.spawn import find_executable
 
@@ -38,7 +39,7 @@ class AlreadyInstalled(FetchMTTTool):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print(prefix + line)
         return
 
     def execute(self, log, keyvals, testDef):

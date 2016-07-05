@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import str
 #!/usr/bin/env python
 #
 # Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
@@ -27,7 +29,7 @@ class Logger(BaseMTTUtility):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print(prefix + line)
         return
 
     def open(self, testDef):
@@ -75,7 +77,7 @@ class Logger(BaseMTTUtility):
 
     def verbose_print(self, str):
         if self.printout:
-            print >> self.fh, str
+            print(str, file=self.fh)
         return
 
     def timestamp(self):
@@ -98,14 +100,14 @@ class Logger(BaseMTTUtility):
         for result in self.results:
             try:
                 if result['status'] is not None:
-                    print >> self.fh, "Section " + result['section'] + ": Status " + str(result['status'])
+                    print("Section " + result['section'] + ": Status " + str(result['status']), file=self.fh)
                     if 0 != result['status']:
                         try:
-                            print >> self.fh,"    " + result['stderr']
+                            print("    " + result['stderr'], file=self.fh)
                         except KeyError:
                             pass
             except KeyError:
-                print >> self.fh, "Section " + result['section'] + " did not return a status"
+                print("Section " + result['section'] + " did not return a status", file=self.fh)
         return
 
     def getLog(self, key):
