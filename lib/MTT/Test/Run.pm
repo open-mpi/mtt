@@ -522,6 +522,9 @@ sub _do_run {
     $tmp = $ini->val($section, "timeout");
     $config->{timeout} = $tmp
         if (defined($tmp));
+    $tmp = $ini->val($section, "treat_timeouts_as_fail");
+    $config->{treat_timeouts_as_fail} = $tmp
+        if (defined($tmp));
 
     $MTT::Test::Run::mpi_details = undef;
     foreach my $field ($ini->Parameters($section)) {
