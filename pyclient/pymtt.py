@@ -18,8 +18,7 @@ import importlib
 import logging
 import imp
 from yapsy.PluginManager import PluginManager
-from optparse import OptionParser, OptionGroup
-
+import argparse
 
 # First check for bozo error - we need to be given
 # at least a cmd line option, so no params at all
@@ -27,98 +26,97 @@ from optparse import OptionParser, OptionGroup
 #if 1 == len(sys.argv):
 #    sys.exit('MTT usage error: add -h for help')
 
-# define the cmd line options
-parser = OptionParser("usage: %prog [options] testfile1 testfile2 ...")
+# define the cmd line arguments
+parser = argparse.ArgumentParser(description="usage: %prog [options] testfile1 testfile2 ...")
 
-infoGroup = OptionGroup(parser, "Informational Options")
-infoGroup.add_option("-v", "--version",
+parser.add_argument('ini_files', action='append', metavar='FILE', nargs='+', help = ".ini file to be used")
+
+infoGroup = parser.add_argument_group('InfoGroup','Informational Options')
+infoGroup.add_argument("-v", "--version",
                      action="store_true", dest="version", default=False,
                      help="Print version")
-infoGroup.add_option("--list-stages",
+infoGroup.add_argument("--list-stages",
                      action="store_true", dest="listsections", default=False,
                      help="List section names understood by this client")
-infoGroup.add_option("--list-stage-plugins",
+infoGroup.add_argument("--list-stage-plugins",
                      action="store", dest="listplugins", metavar="STAGE",
                      help="List available plugins for SECTION (* => all)")
-infoGroup.add_option("--list-stage-options",
+infoGroup.add_argument("--list-stage-options",
                      action="store", dest="liststageoptions", metavar="STAGE",
                      help="List available options for STAGE (* => all)")
-infoGroup.add_option("--list-tools",
+infoGroup.add_argument("--list-tools",
                      action="store_true", dest="listtools", default=False,
                      help="List tools available to this client")
-infoGroup.add_option("--list-tool-plugins",
+infoGroup.add_argument("--list-tool-plugins",
                      action="store", dest="listtoolmodules", metavar="TYPE",
                      help="List available modules for TYPE (* => all)")
-infoGroup.add_option("--list-tool-options",
+infoGroup.add_argument("--list-tool-options",
                      action="store", dest="listtooloptions", metavar="TOOL",
                      help="List available options for TOOL (* => all)")
-infoGroup.add_option("--list-utilities",
+infoGroup.add_argument("--list-utilities",
                      action="store_true", dest="listutils", default=False,
                      help="List utilities available to this client")
-infoGroup.add_option("--list-utility-plugins",
+infoGroup.add_argument("--list-utility-plugins",
                      action="store", dest="listutilmodules", metavar="TYPE",
                      help="List available modules for TYPE (* => all)")
-infoGroup.add_option("--list-utility-options",
+infoGroup.add_argument("--list-utility-options",
                      action="store", dest="listutiloptions", metavar="UTILITY",
                      help="List available options for UTILITY (* => all)")
-parser.add_option_group(infoGroup)
 
-execGroup = OptionGroup(parser, "Execution Options")
-execGroup.add_option("--description", dest="description",
+execGroup = parser.add_argument_group('execGroup', "Execution Options")
+execGroup.add_argument("--description", dest="description",
                      help="Provide a brief title/description to be included in the log for this test")
-execGroup.add_option("-e", "--executor", dest="executor", default="sequential",
+execGroup.add_argument("-e", "--executor", dest="executor", default="sequential",
                      help="Use the specified execution STRATEGY module", metavar="STRATEGY")
 
-execGroup.add_option("--base-dir", dest="basedir",
+execGroup.add_argument("--base-dir", dest="basedir",
                      help="Specify the DIRECTORY where we can find the TestDef class (checks DIRECTORY, DIRECTORY/Utilities, and DIRECTORY/pylib/Utilities locations) - also serves as default plugin-dir", metavar="DIRECTORY")
-execGroup.add_option("--plugin-dir", dest="plugindir",
+execGroup.add_argument("--plugin-dir", dest="plugindir",
                      help="Specify the DIRECTORY where additional plugins can be found (or comma-delimited list of DIRECTORYs)", metavar="DIRECTORY")
-execGroup.add_option("--scratch-dir", dest="scratchdir", default="./mttscratch",
+execGroup.add_argument("--scratch-dir", dest="scratchdir", default="./mttscratch",
                      help="Specify the DIRECTORY under which scratch files are to be stored", metavar="DIRECTORY")
-execGroup.add_option("--print-section-time", dest="sectime",
+execGroup.add_argument("--print-section-time", dest="sectime",
                       action="store_true", default=False,
                       help="Display the amount of time taken in each section")
-execGroup.add_option("--print-cmd-time", dest="cmdtime",
+execGroup.add_argument("--print-cmd-time", dest="cmdtime",
                      action="store_true", default=False,
                      help="Display the amount of time taken by each command")
-execGroup.add_option("--timestamp", dest="time",
+execGroup.add_argument("--timestamp", dest="time",
                      action="store_true", default=False,
                      help="Alias for --print-section-time --print-cmd-time")
-execGroup.add_option("--clean-start", dest="clean",
-                     action="store_true", default=False,
+execGroup.add_argument("--clean-start", dest="clean",
+                     action="store_true",
                      help="Clean the scratch directory from past MTT invocations before running")
-execGroup.add_option("-s", "--section", dest="section",
+execGroup.add_argument("-s", "--section", dest="section",
                      help="Execute the specified SECTION (or comma-delimited list of SECTIONs)", metavar="SECTION")
-execGroup.add_option("--skip-sections", dest="skipsections",
+execGroup.add_argument("--skip-sections", dest="skipsections",
                      help="Skip the specified SECTION (or comma-delimited list of SECTIONs)", metavar="SECTION")
-execGroup.add_option("--no-reporter", dest="reporter",
+execGroup.add_argument("--no-reporter", dest="reporter",
                       action="store_true", default=False,
                       help="Do not invoke any MTT Reporter modules")
-execGroup.add_option("-l", "--log", dest="logfile", default=None,
+execGroup.add_argument("-l", "--log", dest="logfile", default=None,
                      help="Log all output to FILE (defaults to stdout)", metavar="FILE")
-execGroup.add_option("--group-results", dest="submit_group_results", default=True,
+execGroup.add_argument("--group-results", dest="submit_group_results", default=True,
                      help="Report results from each test section as it is completed")
-execGroup.add_option("--default-make-options", dest="default_make_options", default="-j10",
+execGroup.add_argument("--default-make-options", dest="default_make_options", default="-j10",
                      help="Default options when running the \"make\" command")
-execGroup.add_option("--env-module-wrapper", dest="env_module_wrapper", default=None,
+execGroup.add_argument("--env-module-wrapper", dest="env_module_wrapper", default=None,
                      help="Python environment module wrapper")
-parser.add_option_group(execGroup)
 
-debugGroup = OptionGroup(parser, "Debug Options")
-debugGroup.add_option("-d", "--debug", dest="debug",
+debugGroup = parser.add_argument_group('debugGroup', 'Debug Options')
+debugGroup.add_argument("-d", "--debug", dest="debug",
                       action="store_true", default=False,
                       help="Output lots of debug messages")
-debugGroup.add_option("--verbose",
+debugGroup.add_argument("--verbose",
                       action="store_true", dest="verbose", default=False,
                       help="Output some status/verbose messages while processing")
-debugGroup.add_option("--dryrun",
+debugGroup.add_argument("--dryrun",
                       action="store_true", dest="dryrun", default=False,
                       help="Show commands, but do not execute them")
-debugGroup.add_option("--trial",
+debugGroup.add_argument("--trial",
                       action="store_true", dest="trial", default=False,
                       help="Use when testing your MTT client setup; results that are generated and submitted to the database are marked as \"trials\" and are not included in normal reporting.")
-parser.add_option_group(debugGroup)
-(options, args) = parser.parse_args()
+args = parser.parse_args()
 
 # Try to find the MTT TestDef class. Try several methods:
 
@@ -129,18 +127,18 @@ parser.add_option_group(debugGroup)
 # 3. Check to see if MTT_HOME is set in the environment
 # 4. If $0 is a path, try seeing if that is the place.
 #
-if options.basedir:
-    basedir = options.basedir
+if args.basedir:
+    basedir = args.basedir
     topdir = basedir
     if not os.path.exists(basedir) or not os.path.isdir(basedir):
         print("The specified base directory",basedir,"doesn't exist")
         sys.exit(1)
     if not os.path.exists(os.path.join(basedir, "TestDef.py")):
         # try adding std path to it
-        chkdir = os.path.join(options.basedir, "System")
+        chkdir = os.path.join(args.basedir, "System")
         if not os.path.exists(chkdir) or not os.path.isdir(chkdir):
             # see if the pylib/System location exists
-            basedir = os.path.join(options.basedir, "pylib", "System")
+            basedir = os.path.join(args.basedir, "pylib", "System")
             if not os.path.exists(basedir) or not os.path.isdir(basedir):
                 print("The TestDef.py file was not found in the specified base directory,")
                 print("and no standard location under the specified base directory",basedir,"exists")
@@ -202,7 +200,7 @@ else:
             sys.exit(1)
 
 # if they want debug, set the logging level
-if (options.debug):
+if (args.debug):
     logging.basicConfig(level=logging.DEBUG)
 
 # load the "testdef" Test Definition class so we can
@@ -219,7 +217,7 @@ a = cls()
 # options and arguments
 # create the scratch directory
 testDef = a.__class__();
-testDef.setOptions(options, args)
+testDef.setOptions(args)
 
 # load the plugins for this test
 testDef.loadPlugins(basedir, topdir)
@@ -230,7 +228,7 @@ testDef.printInfo()
 
 # if they didn't specify any files, then there is nothing
 # for us to do
-if not args:
+if not args.ini_files:
     sys.exit('MTT requires at least one test-specification file')
 
 # open the logging file if given - otherwise, we log

@@ -1,8 +1,3 @@
-from __future__ import print_function
-from future import standard_library
-standard_library.install_aliases()
-from builtins import range
-from builtins import object
 #!/usr/bin/env python
 #
 # Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
@@ -13,6 +8,11 @@ from builtins import object
 # $HEADER$
 #
 
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import object
 import os
 import shutil
 import sys
@@ -21,7 +21,6 @@ import importlib
 import logging
 import imp
 from yapsy.PluginManager import PluginManager
-from optparse import OptionParser, OptionGroup
 import datetime
 from distutils.spawn import find_executable
 
@@ -35,7 +34,6 @@ def _mkdir_recursive(path):
         _mkdir_recursive(sub_path)
     if not os.path.exists(path):
         os.mkdir(path)
-
 
 class TestDef(object):
     def __init__(self):
@@ -57,9 +55,9 @@ class TestDef(object):
         self.utilities = None
         self.log = {}
 
-    def setOptions(self, options, args):
-        self.options = vars(options)
-        self.args = args[:]
+    def setOptions(self, args):
+        self.options = vars(args)
+        self.args = args
         # if they want us to clear the scratch, then do so
         if self.options['clean']:
             shutil.rmtree(self.options['scratchdir'])
@@ -434,11 +432,12 @@ class TestDef(object):
 
     def configTest(self):
         # Tuck away the full path and the testFile file name
-        self.log['inifiles'] = ','.join(self.args)
-        for testFile in self.args:
+        self.log['inifiles'] = self.args.ini_files[0]
+        for testFile in self.log['inifiles']:
             if not os.path.isfile(testFile):
                 print("Test .ini file not found!: " + testFile)
                 sys.exit(1)
+##TO DO, remove from loop, change testFile to list of files               
             self.config = configparser.ConfigParser()
             self.config.read(testFile)
             for section in self.config.sections():
