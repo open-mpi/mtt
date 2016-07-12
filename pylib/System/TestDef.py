@@ -437,21 +437,20 @@ class TestDef(object):
             if not os.path.isfile(testFile):
                 print("Test .ini file not found!: " + testFile)
                 sys.exit(1)
-##TO DO, remove from loop, change testFile to list of files               
-            self.config = configparser.ConfigParser()
-            self.config.read(testFile)
-            for section in self.config.sections():
-                if self.logger is not None:
-                    self.logger.verbose_print("SECTION: " + section)
-                    self.logger.verbose_print(self.config.items(section))
-                if self.options['dryrun']:
-                    continue
-                if section.startswith("SKIP") or section.startswith("skip"):
-                    # users often want to temporarily ignore a section
-                    # of their test definition file, but don't want to
-                    # remove it lest they forget what it did. So let
-                    # them just mark the section as "skip" to be ignored
-                    continue;
+        self.config = configparser.ConfigParser()
+        self.config.read(self.log['inifiles'])
+        for section in self.config.sections():
+            if self.logger is not None:
+                self.logger.verbose_print("SECTION: " + section)
+                self.logger.verbose_print(self.config.items(section))
+            if self.options['dryrun']:
+                continue
+            if section.startswith("SKIP") or section.startswith("skip"):
+                # users often want to temporarily ignore a section
+                # of their test definition file, but don't want to
+                # remove it lest they forget what it did. So let
+                # them just mark the section as "skip" to be ignored
+                continue;
         return
 
     def executeTest(self):
