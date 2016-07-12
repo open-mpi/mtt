@@ -29,7 +29,7 @@ directory and they should be run when you run test.py via the command line.
 import os
 import unittest
 import coverage
-from optparse import OptionParser
+import argparse
      
 def run_tests(verbosity):
     "Run test suite"
@@ -92,19 +92,19 @@ def run_tests(verbosity):
     
 if __name__ == '__main__':
     # instantiate the arguments parser
-    PARSER = OptionParser()
+    PARSER = argparse.ArgumentParser()
     # add an option so we can set the test runner verbosity
-    PARSER.add_option('--verbosity', 
+    PARSER.add_argument('--verbosity', 
                         action='store', 
                         dest='verbosity', 
                         default='1',
-                        type='choice', 
+                        type=int, 
                         choices=['0', '1', '2'],
                         help="""Verbosity level; 0=minimal output, 
                             1=normal output, 2=all output"""
                         ),
     # parse the command arguments
-    (OPTIONS, ARGS) = PARSER.parse_args()
+    OPTIONS = PARSER.parse_args()
         
     # run the tests with the passed verbosity
     run_tests(OPTIONS.verbosity)
