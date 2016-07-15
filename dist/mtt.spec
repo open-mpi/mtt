@@ -49,7 +49,7 @@ This is the MPI Testing Tool (MTT) software package for the server.
 %package perlclient 
 Summary: MTT Perl Client 
 Group: Development/Libraries
-Requires: mtt-common, perl 
+Requires: mtt-common, perl, perl-libwww-perl
 %description perlclient 
 This is the MPI Testing Tool (MTT) software package for the perl client.
 
