@@ -97,7 +97,7 @@ class ModuleCmd(BaseMTTUtility):
         sys.stdout = saved_stdout
         sys.stderr = saved_stderr
 
-        status = load_stderr.len
+        status = load_stderr.seek(0, os.SEEK_END)
         stdout = load_stdout.getvalue()
         stderr = load_stderr.getvalue()
         load_stdout.close()
@@ -137,7 +137,7 @@ class ModuleCmd(BaseMTTUtility):
         sys.stdout = saved_stdout
         sys.stderr = saved_stderr
 
-        status = unload_stderr.len
+        status = unload_stderr.seek(0, os.SEEK_END)
         stdout = unload_stdout.getvalue()
         stderr = unload_stderr.getvalue()
         unload_stdout.close()

@@ -438,6 +438,8 @@ class TestDef(object):
                 print("Test .ini file not found!: " + testFile)
                 sys.exit(1)
         self.config = configparser.ConfigParser()
+        # Set the config parser to make option names case sensitive.
+        self.config.optionxform = str
         self.config.read(self.log['inifiles'])
         for section in self.config.sections():
             if self.logger is not None:
