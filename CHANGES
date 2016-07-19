@@ -180,7 +180,7 @@ To announce to OMPI core testers:
   interpolates those sections into the current INI section, allowing the user
   to factor down an INI file. Note: --section filtering is performed *after*
   the interpolation, so there is no need to supply "include" sections to the 
-  --section option. (See samples/ompi-core-template.ini for examples)
+  --section option. (See samples/perl/ompi-core-template.ini for examples)
 
 - New options:
   - --no-force
