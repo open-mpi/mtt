@@ -124,7 +124,7 @@ and which tests to run.
 
 The Open MPI Project uses MTT for nightly regression testing.  A
 sample client configuration file is included in
-samples/ompi-core-template.ini.  This template will require
+samples/perl/ompi-core-template.ini.  This template will require
 customization for each site's specific requirements.  It is also
 suitable as an example for organizations outside of the Open MPI
 Project.
