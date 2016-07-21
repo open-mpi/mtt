@@ -60,6 +60,7 @@ class SLURM(LauncherMTTTool):
         return
 
     def execute(self, log, keyvals, testDef):
+
         testDef.logger.verbose_print("SLURM Launcher")
         # check the log for the title so we can
         # see if this is setting our default behavior
@@ -77,6 +78,7 @@ class SLURM(LauncherMTTTool):
                         for key in keys:
                             if key == optkey:
                                 self.options[key] = (myopts[optkey],self.options[key][1])
+                    
                     # we captured the default settings, so we can
                     # now return with success
                     log['status'] = 0
@@ -335,6 +337,22 @@ class SLURM(LauncherMTTTool):
         log['numPass'] = numPass
         log['numSkip'] = numSkip
         log['numFail'] = numFail
+
+        # handle case where srun is used instead of mpirun for number of processes (np)
+        if cmds['command'] == 'srun':
+            if '-n ' in cmds['options']:
+                log['np'] = str(cmds['options'].split('-n ')[1].split(' ')[0])
+            elif '--ntasks=' in cmds['options']:
+                log['np'] = str(cmds['options'].split('--ntasks=')[1].split(' ')[0])
+            elif '-N ' in cmds['options']:
+                log['np'] = str(cmds['options'].split('-N ')[1].split(' ')[0])
+            else: #'--nodes=' in cmds['options']
+                log['np'] = str(cmds['options'].split('--nodes=')[1].split(' ')[0])
+        else:
+            try:
+                log['np'] = cmds['np']
+            except KeyError:
+                log['np'] = None
 
         if usedModule:
             # unload the modules before returning

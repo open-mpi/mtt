@@ -4,3 +4,4 @@ configobj==5.0.6
 six==1.10.0
 wheel==0.29.0
 psycopg2==2.6.1
+virtualenvwrapper==4.7.1

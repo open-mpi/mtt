@@ -201,6 +201,21 @@ class Shell(BuildMTTTool):
             plugin.execute(compilerLog, testDef)
             log['compiler'] = compilerLog
 
+        # Find MPI information for IUDatabase plugin
+        plugin = None
+        availUtil = list(testDef.loader.utilities.keys())
+        for util in availUtil:
+            for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
+                if "MPIVersion" == pluginInfo.plugin_object.print_name():
+                    plugin = pluginInfo.plugin_object
+                    break
+        if plugin is None:
+            log['mpi_info'] = {'name' : 'unknown', 'version' : 'unknown'}
+        else:
+            mpi_info = {}
+            plugin.execute(mpi_info, testDef)
+            log['mpi_info'] = mpi_info
+
         # save the current directory so we can return to it
         cwd = os.getcwd()
         # now move to the package location

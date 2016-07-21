@@ -190,9 +190,10 @@ class IUDatabase(ReporterMTTStage):
         #common_data['mpi_install_id'] = None
         # For now assume that we only had one test_build submitted
         # and all of the tests that follow are from that test_build
-        common_data['test_build_id'] = test_info['ids'][0]['test_build_id']
+        common_data['test_build_id'] = test_info['test_build_id']
 
-        for trun in testresults:
+
+        for trun in lg['testresults']:
             data = {}
 
             #data['mpi_install_id'] = common_data['mpi_install_id']
@@ -203,25 +204,48 @@ class IUDatabase(ReporterMTTStage):
             except KeyError:
                 data['launcher'] = None
 
-            data['test_name'] = None
+            data['test_name'] = trun['test'].split('/')[-1]
+
+            # Number of processes field
 
             try:
-                data['np'] = options['np']
+                data['np'] = lg['np']
             except KeyError:
                 data['np'] = None
 
-            data['full_command'] = None
+            data['command'] = trun['cmd']
 
             # For now just mark the time when submitted
             data['start_timestamp'] = datetime.utcnow().strftime("%c")
 
-            data['result_message'] = None
-            data['test_result'] = None
-
             try:
-                data['exit_value'] = lg['status']
+                status = trun['status']
             except KeyError:
-                data['exit_value'] = None
+                status = -1
+            if status == 0:
+                data['result_message'] = "Success"
+                data['test_result'] = 1
+                data['exit_value'] = 0
+            elif status == 1:
+                data['result_message'] = "Failed"
+                data['test_result'] = 0
+                if 'stderr' in lg and '[Errno' in lg['stderr']:
+                    try:
+                        data['exit_value'] = int(lg['stderr'].split("[Errno ")[1].split("]")[0])
+                    except:
+                        data['exit_value'] = -1
+                else:
+                    data['exit_value'] = -1
+            else:
+                data['result_message'] = "Failed"
+                data['test_result'] = -1
+                if 'stderr' in lg and '[Errno' in lg['stderr']:
+                    try:
+                        data['exit_value'] = int(lg['stderr'].split("[Errno ")[1].split("]")[0])
+                    except:
+                        data['exit_value'] = -1
+                else:
+                    data['exit_value'] = -1
 
             # Optional
             # data['duration'] = None
@@ -253,12 +277,12 @@ class IUDatabase(ReporterMTTStage):
                 data['merge_stdout_stderr'] = None
 
             try:
-                data['result_stdout'] = lg['stdout']
+                data['result_stdout'] = trun['stdout']
             except KeyError:
                 data['result_stdout'] = None
 
             try:
-                data['result_stderr'] = lg['stderr']
+                data['result_stderr'] = trun['stderr']
             except KeyError:
                 data['result_stderr'] = None
 
@@ -286,7 +310,7 @@ class IUDatabase(ReporterMTTStage):
         # Find 'parent' Test Get (not needed)
         # Find 'middleware' MiddlewareBuild (MPI Install)
         install_info = self._submit_install(logger,
-                                   logger.getLog(self._extract_param(logger, lg['section'], 'middleware')),
+                                   lg,
                                    metadata,
                                    s, url, httpauth)
         if install_info is None:
@@ -306,19 +330,55 @@ class IUDatabase(ReporterMTTStage):
         metadata['phase'] = 'Test Build'
 
         # For now assume that we only had one mpi_install submitted
-        data['mpi_install_id'] = install_info['ids'][0]['mpi_install_id']
+        data['mpi_install_id'] = install_info['mpi_install_id']
 
-        data['compiler_name'] = None
-        data['compiler_version'] = None
+        try:
+            data['compiler_name'] = lg['compiler']['compiler']
+            data['compiler_version'] = lg['compiler']['version']
+        except KeyError:
+            full_log = logger.getLog(None)
+            for entry in full_log:
+                if 'compiler' in entry:
+                    data['compiler_name'] = entry['compiler']['compiler']
+                    data['compiler_version'] = entry['compiler']['version'] 
+                    break
+            else:
+                data['compiler_name'] = None
+                data['compiler_version'] = None
 
-        data['suite_name'] = None
+        data['suite_name'] = lg['section']
 
         # For now just mark the time when submitted
         data['start_timestamp'] = datetime.utcnow().strftime("%c")
 
-        data['result_message'] = None
-        data['test_result'] = None
-        data['exit_value'] = None
+        try:
+            status = lg['status']
+        except KeyError:
+            status = -1
+        if status == 0:
+            data['result_message'] = "Success"
+            data['test_result'] = 1
+            data['exit_value'] = 0
+        elif status == 1:
+            data['result_message'] = "Failed"
+            data['test_result'] = 0
+            if 'stderr' in lg and '[Errno' in lg['stderr']:
+                try:
+                    data['exit_value'] = int(lg['stderr'].split("[Errno ")[1].split("]")[0])
+                except:
+                    data['exit_value'] = -1
+            else:
+                data['exit_value'] = -1
+        else:
+            data['result_message'] = "Failed"
+            data['test_result'] = -1
+            if 'stderr' in lg and '[Errno' in lg['stderr']:
+                try:
+                    data['exit_value'] = int(lg['stderr'].split("[Errno ")[1].split("]")[0])
+                except:
+                    data['exit_value'] = -1
+            else:
+                data['exit_value'] = -1
 
         # Optional
         #data['duration'] = None
@@ -360,10 +420,11 @@ class IUDatabase(ReporterMTTStage):
             return None
 
         # Extract ID
-        return self._merge_dict( {'test_build_id':data['ids']['test_build_id']},
+        return self._merge_dict( {'test_build_id':data['ids'][0]['test_build_id']},
                                  install_info)
 
     def _submit_install(self, logger, lg, metadata, s, url, httpauth=None):
+
         print("----------------- MPI Install (%s) " % (lg['section']))
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(lg)
@@ -412,20 +473,70 @@ class IUDatabase(ReporterMTTStage):
         except KeyError:
             data['os_version'] = None
 
-        data['compiler_name'] = None
-        data['compiler_version'] = None
+        try:
+            data['compiler_name'] = lg['compiler']['compiler']
+            data['compiler_version'] = lg['compiler']['version']
+        except KeyError:
+            full_log = logger.getLog(None)
+            for entry in full_log:
+                if 'compiler' in entry:
+                    data['compiler_name'] = entry['compiler']['compiler']
+                    data['compiler_version'] = entry['compiler']['version'] 
+                    break
+            else:
+                data['compiler_name'] = None
+                data['compiler_version'] = None
 
-        data['mpi_name'] = None
-        data['mpi_version'] = None
+        try:
+            data['mpi_name'] = lg['mpi_info']['name']
+            data['mpi_version'] = lg['mpi_info']['version']
+        except KeyError:
+            full_log = logger.getLog(None)
+            for entry in full_log:
+                if 'mpi_info' in entry:
+                    data['mpi_name'] = entry['mpi_info']['name']
+                    data['mpi_version'] = entry['mpi_info']['version']
+                    break
+            else:
+                data['mpi_name'] = None
+                data['mpi_version'] = None
 
-        data['configure_arguments'] = None
+        try:
+            data['configure_arguments'] = lg['configure_options']
+        except KeyError:
+            data['configure_arguments'] = None
 
         # For now just mark the time when submitted
         data['start_timestamp'] = datetime.utcnow().strftime("%c")
 
-        data['result_message'] = None
-        data['test_result'] = None
-        data['exit_value'] = None
+        try:
+            status = lg['status']
+        except KeyError:
+            status = -1
+        if status == 0:
+            data['result_message'] = "Success"
+            data['test_result'] = 1
+            data['exit_value'] = 0
+        elif status == 1:
+            data['result_message'] = "Failed"
+            data['test_result'] = 0
+            if 'stderr' in lg and '[Errno' in lg['stderr']:
+                try:
+                    data['exit_value'] = int(stderr.split("[Errno ")[1].split("]")[0])
+                except:
+                    data['exit_value'] = -1
+            else:
+                data['exit_value'] = -1
+        else:
+            data['result_message'] = "Failed"
+            data['test_result'] = -1
+            if 'stderr' in lg and '[Errno' in lg['stderr']:
+                try:
+                    data['exit_value'] = int(stderr.split("[Errno ")[1].split("]")[0])
+                except:
+                    data['exit_value'] = -1
+            else:
+                data['exit_value'] = -1
 
         # Optional
         # data['duration'] = None
@@ -470,7 +581,7 @@ class IUDatabase(ReporterMTTStage):
             return None
 
         # Extract ID
-        return {'mpi_install_id':data['ids']['mpi_install_id']}
+        return {'mpi_install_id':data['ids'][0]['mpi_install_id']}
 
     def _submit_json_data(self, payload, s, url, httpauth=None):
         headers = {}
