@@ -1,0 +1,16 @@
+How to add Intel(R) Cluster Checker view to the mtt PostgreSQL database.
+
+1) Verify that the clck_1 view is not already been added to the database:
+ -------------------
+ shell$ psql mtt
+ mtt=> \d
+ -------------------
+
+2) Import the SQL into the psql database using the 'mtt' user.
+ mtt=> \i clck_view.sql
+
+3) Check the database to confirm the clck_1 view is added.
+ -------------------
+ shell$ psql mtt
+ mtt=> \d
+ -------------------
