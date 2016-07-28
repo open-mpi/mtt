@@ -1,7 +1,7 @@
 <?php
 
 # Open MPI-specific functionality: deny mirrors access to Open MPI MTT
-$mother_site = "www.open-mpi.org";
+$mother_site = "mtt.open-mpi.org";
 $server_dir = "/";
 
 if (array_key_exists("HTTPS", $_SERVER) && $_SERVER["HTTPS"] == "on") {
@@ -41,7 +41,7 @@ $mtt_body_html_prefix = "";
 
 # If you want some data output at the end of the <body>, put it
 # in this variable.
-$mtt_body_html_suffix = rtrim(file_get_contents("/l/osl/www/www.open-mpi.org/mtt/body_suffix.html"));
+$mtt_body_html_suffix = rtrim(file_get_contents("/l/osl/www/mtt.open-mpi.org/mtt/server/php/body_suffix.html"));
 
 # Database name
 $mtt_database_name = "mtt";
@@ -50,13 +50,13 @@ $mtt_database_name = "mtt";
 $mtt_database_username = "mtt";
 
 # Database password
-$mtt_database_password = rtrim(file_get_contents("/l/osl/www/doc/www.open-mpi.org/mtt-db-password.txt"));
+$mtt_database_password = rtrim(file_get_contents("/home/mpiteam/www-not-in-docroot/mtt-db-password.txt"));
 
 # HTTP username
 $mtt_http_username = "sun";
 
 # HTTP password
-$mtt_http_password = rtrim(file_get_contents("/l/osl/www/doc/www.open-mpi.org/mtt-http-password.txt"));
+$mtt_http_password = rtrim(file_get_contents("/home/mpiteam/www-not-in-docroot/mtt-http-password.txt"));
 
 # Where to render graphs?  Must be writable by the web server.
 $mtt_graph_tmp_dir = "tmp";
