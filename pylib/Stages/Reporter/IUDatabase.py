@@ -502,7 +502,7 @@ class IUDatabase(ReporterMTTStage):
                 data['mpi_version'] = None
 
         try:
-            data['configure_arguments'] = lg['configure_options']
+            data['configure_arguments'] = logger.getLog(lg['middleware'])['configure_options']
         except KeyError:
             data['configure_arguments'] = None
 
