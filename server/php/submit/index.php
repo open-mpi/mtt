@@ -1713,7 +1713,7 @@ function mtt_send_mail($message, $func) {
     if( isset($_POST['email']) ) {
         $user      = $_POST['email'];
     }
-    $admin         = 'mtt-devel-core@open-mpi.org';
+    $admin         = 'mtt-devel-core@lists.open-mpi.org';
     $date          = date('r');
     $phpversion    = phpversion();
     $boundary      = md5(time());

@@ -145,7 +145,7 @@ if(!$ok || $help_arg) {
 # Set up defaults
 $perfbase_arg = MTT::FindProgram::FindProgram(qw(perfbase))
     unless $perfbase_arg;
-$email_arg = "afriedle\@open-mpi.org" unless $email_arg;
+$email_arg = "mtt-devel-core\@lists.open-mpi.org" unless $email_arg;
 
 
 # Check debug
