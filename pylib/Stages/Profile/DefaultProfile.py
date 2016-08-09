@@ -23,7 +23,7 @@ class DefaultProfile(ProfileMTTStage):
         self.options['kernelVersion'] = (True, "Kernel version string", ["uname", "-v"])
         self.options['machineName'] = (True, "Machine name", ["uname", "-m"])
         self.options['processorType'] = (True, "Processor type", ["uname", "-p"])
-        self.options['nodeName'] = (True, "Kernel version string", ["uname", "-n"])
+        self.options['nodeName'] = (True, "Node name", ["uname", "-n"])
         return
 
     def activate(self):
