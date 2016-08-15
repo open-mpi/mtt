@@ -8,9 +8,12 @@
 # $HEADER$
 #
 
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
 import os
 import sys
-import ConfigParser
+import configparser
 import importlib
 import logging
 import imp
@@ -51,13 +54,13 @@ class SequentialEx(ExecutorMTTTool):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print(prefix + line)
         return
 
     def execute(self, testDef):
         testDef.logger.verbose_print("ExecuteSequential")
         for step in testDef.loader.stageOrder:
-            for title in testDef.config.sections():
+            for title in testDef.configRun.sections():
                 if step not in title:
                     continue
                 testDef.logger.verbose_print(title)
@@ -79,14 +82,14 @@ class SequentialEx(ExecutorMTTTool):
                 # setup the log
                 stageLog = {'section':title}
                 # get the key-value tuples output by the configuration parser
-                stageLog["parameters"] = testDef.config.items(title)
+                stageLog["parameters"] = testDef.configRun.items(title)
                 # convert the list of key-value tuples provided in this stage
                 # by the user to a dictionary for easier parsing.
                 # Yes, we could do this automatically, but we instead do it
                 # manually so we can strip all the keys and values for easier
                 # parsing later
                 keyvals = {'section':title.strip()}
-                for kv in testDef.config.items(title):
+                for kv in testDef.configRun.items(title):
                     keyvals[kv[0].strip()] = kv[1].strip()
                 # if they included the "ASIS" qualifier, remove it
                 # from the stage name
@@ -144,7 +147,7 @@ class SequentialEx(ExecutorMTTTool):
                             # sometimes a stage consists of executing a tool or utility.
                             # so let's check the tools too, noting that those
                             # are not stage-specific.
-                            availTools = testDef.loader.tools.keys()
+                            availTools = list(testDef.loader.tools.keys())
                             for tool in availTools:
                                 for pluginInfo in testDef.tools.getPluginsOfCategory(tool):
                                     if module == pluginInfo.plugin_object.print_name():
@@ -154,7 +157,7 @@ class SequentialEx(ExecutorMTTTool):
                                     break;
                             if plugin is None:
                                 # Check the utilities
-                                availUtils = testDef.loader.utilities.keys()
+                                availUtils = list(testDef.loader.utilities.keys())
                                 for util in availUtils:
                                     for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
                                         if module == pluginInfo.plugin_object.print_name():
@@ -175,7 +178,7 @@ class SequentialEx(ExecutorMTTTool):
                             testDef.stages.activatePluginByName(module, stage)
                     except KeyError:
                         # If this stage has no plugins then check the tools and the utilities
-                        availTools = testDef.loader.tools.keys()
+                        availTools = list(testDef.loader.tools.keys())
                         for tool in availTools:
                             for pluginInfo in testDef.tools.getPluginsOfCategory(tool):
                                 if module == pluginInfo.plugin_object.print_name():
@@ -185,7 +188,7 @@ class SequentialEx(ExecutorMTTTool):
                                 break;
                         if plugin is None:
                             # Check the utilities
-                            availUtils = testDef.loader.utilities.keys()
+                            availUtils = list(testDef.loader.utilities.keys())
                             for util in availUtils:
                                 for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
                                     if module == pluginInfo.plugin_object.print_name():

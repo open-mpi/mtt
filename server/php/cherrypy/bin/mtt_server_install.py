@@ -108,8 +108,17 @@ call([env_dir + '/bin/pip', 'install', '-r', source_dir + '/mtt_server_requireme
 # FIXME: This assumes python2.7. Need to find a way with virtualenv/pip to
 # enforce this.
 cwd = os.getcwd()
+
+for dir,_,_ in os.walk(env_dir):
+    if dir.endswith("site-packages"):
+        site_packages_dir = dir
+        break
+else:
+    print >> sys.stderr, "Cherrypy error: site-packages directory doesn't exist in virtualenv"
+    sys.exit(1)
+
 call(['cp', '-rs', cwd + '/' + source_dir + '/' + package_name,
-      env_dir + '/lib/python/site-packages/' + package_name])
+      site_packages_dir + '/' + package_name])
 
 # Use virtual environment to complete server setup
 call([env_dir + '/bin/python', source_dir + '/mtt_server_install_stage_two.py'])

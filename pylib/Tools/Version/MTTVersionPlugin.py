@@ -9,6 +9,7 @@
 #
 
 
+from __future__ import print_function
 from VersionMTTTool import *
 
 # Major and minor version number of the MTT
@@ -49,7 +50,7 @@ class MTTVersionPlugin(VersionMTTTool):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print(prefix + line)
         return
 
     def getVersion(self):

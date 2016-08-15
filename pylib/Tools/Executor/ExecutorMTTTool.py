@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 from yapsy.IPlugin import IPlugin
 
 class ExecutorMTTTool(IPlugin):
@@ -15,5 +16,5 @@ class ExecutorMTTTool(IPlugin):
         # initialise parent class
         IPlugin.__init__(self)
     def print_name(self):
-        print "Executor"
+        print("Executor")
 

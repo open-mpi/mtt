@@ -29,6 +29,19 @@ sub Analyze {
         $pass = MTT::Values::EvaluateString($run->{pass});
     }
 
+    # If treat_timeouts_as_fail==1 and we timed out, then override it
+    if (defined($results->{timed_out}) && $results->{timed_out} == 1 &&
+        defined($run->{treat_timeouts_as_fail}) &&
+        $run->{treat_timeouts_as_fail} == 1) {
+        Debug("*** Timeout converted to failure\n");
+
+        $results->{result_stdout} .=
+            "\n==> MTT: Test timed out, but reclassified as a failure";
+
+        $results->{timed_out} = 0;
+        $pass = 0;
+    }
+
     # result value: 0=fail, 1=pass, 2=skipped, 3=timed out
     my $result = MTT::Values::FAIL;
     if ($skipped) {

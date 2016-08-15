@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 import os
 from MTTDefaultsMTTStage import *
 
@@ -43,7 +44,7 @@ class DefaultMTTDefaults(MTTDefaultsMTTStage):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print(prefix + line)
         return
 
     def execute(self, log, keyvals, testDef):

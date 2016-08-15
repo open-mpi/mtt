@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 from yapsy.IPlugin import IPlugin
 
 class BaseMTTUtility(IPlugin):
@@ -16,5 +17,5 @@ class BaseMTTUtility(IPlugin):
         IPlugin.__init__(self)
 
     def print_name(self):
-        print "Utility"
+        print("Utility")
 

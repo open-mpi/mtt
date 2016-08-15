@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 from yapsy.IPlugin import IPlugin
 
 class ProfileMTTStage(IPlugin):
@@ -15,7 +16,7 @@ class ProfileMTTStage(IPlugin):
         # initialise parent class
         IPlugin.__init__(self)
     def print_name(self):
-        print "Stage for profiling the system upon which the tests will be conducted"
+        print("Stage for profiling the system upon which the tests will be conducted")
 
     def ordering(self):
         # set this stage so it follows BIOS, firmware, and provisioning

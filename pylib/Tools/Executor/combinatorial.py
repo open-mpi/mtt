@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 from ExecutorMTTTool import *
 
 class CombinatorialEx(ExecutorMTTTool):
@@ -33,5 +34,5 @@ class CombinatorialEx(ExecutorMTTTool):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print(prefix + line)
         return

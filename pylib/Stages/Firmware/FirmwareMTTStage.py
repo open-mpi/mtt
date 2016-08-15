@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 from yapsy.IPlugin import IPlugin
 
 class FirmwareMTTStage(IPlugin):
@@ -15,7 +16,7 @@ class FirmwareMTTStage(IPlugin):
         # initialise parent class
         IPlugin.__init__(self)
     def print_name(self):
-        print "Firmware flash and query stage"
+        print("Firmware flash and query stage")
 
     def ordering(self):
         return 100

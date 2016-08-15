@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 from yapsy.IPlugin import IPlugin
 
 class LauncherDefaultsMTTStage(IPlugin):
@@ -15,7 +16,7 @@ class LauncherDefaultsMTTStage(IPlugin):
         # initialise parent class
         IPlugin.__init__(self)
     def print_name(self):
-        print "Allow a user to set default values for a specific launcher"
+        print("Allow a user to set default values for a specific launcher")
 
     def ordering(self):
         return 490

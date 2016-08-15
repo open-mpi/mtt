@@ -377,7 +377,6 @@ class DatabaseV3():
                   "compiler_version",
                   "mpi_name",
                   "mpi_version",
-                  "configure_arguments",
                   "start_timestamp",
                   "result_message",
                   "test_result",
@@ -391,6 +390,7 @@ class DatabaseV3():
                     "vpath_mode",
                     "bitness",
                     "endian",
+                    "configure_arguments",
                     "exit_signal",
                     "merge_stdout_stderr",
                     "result_stdout",
@@ -489,6 +489,8 @@ class DatabaseV3():
                 elif field == "bitness":
                     value = "unknown"
                 elif field == "endian":
+                    value = "unknown"
+                elif field == "configure_arguments":
                     value = "unknown"
                 else:
                     return {"error_msg": "%s Missing field: %s" % (prefix, field)} 

@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 import os
 import re
 import string
@@ -51,10 +52,11 @@ class Autotools(BuildMTTTool):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print(prefix + line)
         return
 
     def execute(self, log, keyvals, testDef):
+
         testDef.logger.verbose_print("Autotools Execute")
         # parse any provided options - these will override the defaults
         cmds = {}
@@ -153,7 +155,7 @@ class Autotools(BuildMTTTool):
 
         # sense and record the compiler being used
         plugin = None
-        availUtil = testDef.loader.utilities.keys()
+        availUtil = list(testDef.loader.utilities.keys())
         for util in availUtil:
             for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
                 if "Compilers" == pluginInfo.plugin_object.print_name():
@@ -165,7 +167,28 @@ class Autotools(BuildMTTTool):
             compilerLog = {}
             plugin.execute(compilerLog, testDef)
             log['compiler'] = compilerLog
-        print log['compiler']
+        print(log['compiler'])
+
+        # Find MPI information for IUDatabase plugin
+        plugin = None
+        availUtil = list(testDef.loader.utilities.keys())
+        for util in availUtil:
+            for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
+                if "MPIVersion" == pluginInfo.plugin_object.print_name():
+                    plugin = pluginInfo.plugin_object
+                    break
+        if plugin is None:
+            log['mpi_info'] = {'name' : 'unknown', 'version' : 'unknown'}
+        else:
+            mpi_info = {}
+            plugin.execute(mpi_info, testDef)
+            log['mpi_info'] = mpi_info
+
+        # Add configure options to log for IUDatabase plugin
+        try:
+            log['configure_options'] = cmds['configure_options']
+        except KeyError:
+            log['configure_options'] = ''
 
         # save the current directory so we can return to it
         cwd = os.getcwd()
@@ -196,6 +219,7 @@ class Autotools(BuildMTTTool):
                     # this is a multistep operation, and so we need to
                     # retain the output from each step in the log
                     log['autogen'] = (stdout, stderr)
+
         except KeyError:
             # autogen phase is not required
             pass
@@ -304,4 +328,5 @@ class Autotools(BuildMTTTool):
                 log['stderr'] = stderr
         # return home
         os.chdir(cwd)
+
         return

@@ -8,6 +8,7 @@
 # $HEADER$
 #
 
+from __future__ import print_function
 from yapsy.IPlugin import IPlugin
 
 class ProvisionMTTStage(IPlugin):
@@ -15,7 +16,7 @@ class ProvisionMTTStage(IPlugin):
         # initialise parent class
         IPlugin.__init__(self)
     def print_name(self):
-        print "Provisioning stage"
+        print("Provisioning stage")
 
     def ordering(self):
         return 200
