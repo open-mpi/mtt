@@ -12,6 +12,7 @@ from __future__ import print_function
 from future import standard_library
 standard_library.install_aliases()
 import os
+import shutil
 import sys
 import configparser
 import importlib
@@ -235,10 +236,19 @@ if not args.ini_files:
 # to stdout
 testDef.openLogger()
 
+# Create list of .ini files to process
+iniLog = testDef.createIniLog()
 # Read the input test definition file(s)
-testDef.configTest()
+for nextFile in iniLog:
+    if not os.path.isfile(iniLog[nextFile]):
+        print("Test .ini file not found!: " + nextFile)
+        sys.exit(1)    
+    testDef.configTest(iniLog[nextFile])
+    testDef.executeTest()
+    testDef.cleanConfig()
 
-# Now execute the strategy
-testDef.executeTest()
-
+# Clean up temporary files
+print (testDef.getTempDir())
+#shutil.rmtree(testDef.getTempDir())
+    
 # All done!

@@ -60,7 +60,7 @@ class SequentialEx(ExecutorMTTTool):
     def execute(self, testDef):
         testDef.logger.verbose_print("ExecuteSequential")
         for step in testDef.loader.stageOrder:
-            for title in testDef.config.sections():
+            for title in testDef.configRun.sections():
                 if step not in title:
                     continue
                 testDef.logger.verbose_print(title)
@@ -82,14 +82,14 @@ class SequentialEx(ExecutorMTTTool):
                 # setup the log
                 stageLog = {'section':title}
                 # get the key-value tuples output by the configuration parser
-                stageLog["parameters"] = testDef.config.items(title)
+                stageLog["parameters"] = testDef.configRun.items(title)
                 # convert the list of key-value tuples provided in this stage
                 # by the user to a dictionary for easier parsing.
                 # Yes, we could do this automatically, but we instead do it
                 # manually so we can strip all the keys and values for easier
                 # parsing later
                 keyvals = {'section':title.strip()}
-                for kv in testDef.config.items(title):
+                for kv in testDef.configRun.items(title):
                     keyvals[kv[0].strip()] = kv[1].strip()
                 # if they included the "ASIS" qualifier, remove it
                 # from the stage name
