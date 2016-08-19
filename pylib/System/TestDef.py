@@ -51,7 +51,7 @@ class TestDef(object):
         self.modcmd = None
         self.execmd = None
         # config will contain data from the command line
-        # .ini file
+        # .ini file/s
         self.config = None
         # parser is the workhorse for createIniLog
         self.parser = configparser.ConfigParser()
