@@ -275,5 +275,9 @@ class OpenMPI(LauncherMTTTool):
         log['numPass'] = numPass
         log['numSkip'] = numSkip
         log['numFail'] = numFail
+        try:
+	    log['np'] = cmds['np']
+        except KeyError:
+	    log['np'] = None
         os.chdir(cwd)
         return
