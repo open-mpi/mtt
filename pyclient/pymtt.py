@@ -29,7 +29,7 @@ import argparse
 # define the cmd line arguments
 parser = argparse.ArgumentParser(description="usage: %prog [options] testfile1 testfile2 ...")
 
-parser.add_argument('ini_files', action='append', metavar='FILE', nargs='+', help = ".ini file to be used")
+parser.add_argument('ini_files', action='append', metavar='FILE', nargs='*', help = ".ini file to be used")
 
 infoGroup = parser.add_argument_group('InfoGroup','Informational Options')
 infoGroup.add_argument("-v", "--version",

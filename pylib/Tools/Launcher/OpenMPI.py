@@ -70,6 +70,7 @@ class OpenMPI(LauncherMTTTool):
                     # transfer the findings into our local storage
                     keys = list(self.options.keys())
                     optkeys = list(myopts.keys())
+                    print ("OMPI OPTIONS: " + myopts['command'])
                     for optkey in optkeys:
                         for key in keys:
                             if key == optkey:
@@ -228,8 +229,8 @@ class OpenMPI(LauncherMTTTool):
         # get the "skip" exit status
         skipStatus = int(cmds['skipped'])
         # assemble the command
-        cmdargs = [cmds['command']]
-        if cmds['np'] is not None:
+        cmdargs = cmds['command'].split()
+        if ['np'] is not None:
             cmdargs.append("-np")
             cmdargs.append(cmds['np'])
         if cmds['hostfile'] is not None:
@@ -276,8 +277,8 @@ class OpenMPI(LauncherMTTTool):
         log['numSkip'] = numSkip
         log['numFail'] = numFail
         try:
-	    log['np'] = cmds['np']
+            log['np'] = cmds['np']
         except KeyError:
-	    log['np'] = None
+            log['np'] = None
         os.chdir(cwd)
         return
