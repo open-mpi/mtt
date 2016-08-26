@@ -70,7 +70,6 @@ class OpenMPI(LauncherMTTTool):
                     # transfer the findings into our local storage
                     keys = list(self.options.keys())
                     optkeys = list(myopts.keys())
-                    print ("OMPI OPTIONS: " + myopts['command'])
                     for optkey in optkeys:
                         for key in keys:
                             if key == optkey:
