@@ -89,55 +89,6 @@ class Autotools(BuildMTTTool):
             log['stderr'] = "Location of package to build was not specified in parent stage"
             return
         inPlace = False
-        try:
-            if cmds['build_in_place']:
-                prefix = None
-                log['location'] = location
-                inPlace = True
-            else:
-                # create the prefix path where this build result will be placed
-                section = ''.join(ch for ch in keyvals['section'] if ch not in self.exclude)
-                pfx = os.path.join(testDef.options['scratchdir'], "build", section)
-                # convert it to an absolute path
-                pfx = os.path.abspath(pfx)
-                # record this location for any follow-on steps
-                log['location'] = pfx
-                prefix = "--prefix={0}".format(pfx)
-        except KeyError:
-            # create the prefix path where this build result will be placed
-            section = ''.join(ch for ch in keyvals['section'] if ch not in self.exclude)
-            pfx = os.path.join(testDef.options['scratchdir'], "build", section)
-            # convert it to an absolute path
-            pfx = os.path.abspath(pfx)
-            # record this location for any follow-on steps
-            log['location'] = pfx
-            prefix = "--prefix={0}".format(pfx)
-        # check to see if we are to leave things "as-is"
-        try:
-            if cmds['asis']:
-                if not inPlace:
-                    # see if the build already exists - if
-                    # it does, then we are done
-                    if os.path.exists(pfx) and os.path.isdir(pfx):
-                        testDef.logger.verbose_print("As-Is location " + pfx + " exists and is a directory")
-                        # nothing further to do
-                        log['status'] = 0
-                        return
-                else:
-                    # check if configure exists
-                    cfg = os.path.join(location, "configure")
-                    if os.path.exists(cfg):
-                        # good enough
-                        testDef.logger.verbose_print("As-Is location " + location + " has configure present")
-                        log['status'] = 0
-                        return
-        except KeyError:
-            pass
-        # check to see if this is a dryrun
-        if testDef.options['dryrun']:
-            # just log success and return
-            log['status'] = 0
-            return
         # check to see if they specified a module to use
         # where the autotools can be found
         usedModule = False
@@ -189,6 +140,56 @@ class Autotools(BuildMTTTool):
             log['configure_options'] = cmds['configure_options']
         except KeyError:
             log['configure_options'] = ''
+
+        try:
+            if cmds['build_in_place']:
+                prefix = None
+                log['location'] = location
+                inPlace = True
+            else:
+                # create the prefix path where this build result will be placed
+                section = ''.join(ch for ch in keyvals['section'] if ch not in self.exclude)
+                pfx = os.path.join(testDef.options['scratchdir'], "build", section)
+                # convert it to an absolute path
+                pfx = os.path.abspath(pfx)
+                # record this location for any follow-on steps
+                log['location'] = pfx
+                prefix = "--prefix={0}".format(pfx)
+        except KeyError:
+            # create the prefix path where this build result will be placed
+            section = ''.join(ch for ch in keyvals['section'] if ch not in self.exclude)
+            pfx = os.path.join(testDef.options['scratchdir'], "build", section)
+            # convert it to an absolute path
+            pfx = os.path.abspath(pfx)
+            # record this location for any follow-on steps
+            log['location'] = pfx
+            prefix = "--prefix={0}".format(pfx)
+        # check to see if we are to leave things "as-is"
+        try:
+            if cmds['asis']:
+                if not inPlace:
+                    # see if the build already exists - if
+                    # it does, then we are done
+                    if os.path.exists(pfx) and os.path.isdir(pfx):
+                        testDef.logger.verbose_print("As-Is location " + pfx + " exists and is a directory")
+                        # nothing further to do
+                        log['status'] = 0
+                        return
+                else:
+                    # check if configure exists
+                    cfg = os.path.join(location, "configure")
+                    if os.path.exists(cfg):
+                        # good enough
+                        testDef.logger.verbose_print("As-Is location " + location + " has configure present")
+                        log['status'] = 0
+                        return
+        except KeyError:
+            pass
+        # check to see if this is a dryrun
+        if testDef.options['dryrun']:
+            # just log success and return
+            log['status'] = 0
+            return
 
         # save the current directory so we can return to it
         cwd = os.getcwd()
