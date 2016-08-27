@@ -167,7 +167,7 @@ class Autotools(BuildMTTTool):
             compilerLog = {}
             plugin.execute(compilerLog, testDef)
             log['compiler'] = compilerLog
-        print(log['compiler'])
+        testDef.logger.verbose_print(log['compiler'])
 
         # Find MPI information for IUDatabase plugin
         plugin = None

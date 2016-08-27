@@ -35,7 +35,7 @@ class MPIVersion(BaseMTTUtility):
             log['name'] = 'None'
             log['version'] = 'Unknown'
             return
-        
+
         name = None
         version = None
 
@@ -60,7 +60,7 @@ class MPIVersion(BaseMTTUtility):
             name = 'MVAPICH2'
             version = version_str.split('MVAPICH2 Version')[1].split(':')[1].split('\n')[0].strip()
         # Intel MPI
-        # Example Output:        
+        # Example Output:
         # Intel(R) MPI Library 5.1.3 for Linux* OS
         elif 'Intel' in version_str:
             name = 'Intel MPI'
@@ -87,10 +87,11 @@ class MPIVersion(BaseMTTUtility):
 #include <stdio.h>
 int main(int argc, char **argv) {
     MPI_Init(NULL, NULL);
-    char version[1000];
+    char version[3000];
     int resultlen;
     MPI_Get_library_version(version, &resultlen);
     printf("%s\\n", version);
+    MPI_Finalize();
     return 0;
 }""")
         fh.close()
@@ -107,7 +108,7 @@ int main(int argc, char **argv) {
             if os.path.exists("mpi_get_version.c"): os.remove("mpi_get_version.c")
             os.chdir("..")
             return None
-        
+
         if os.path.exists("mpi_get_version"): os.remove("mpi_get_version")
         if os.path.exists("mpi_get_version.c"): os.remove("mpi_get_version.c")
         os.chdir("..")
