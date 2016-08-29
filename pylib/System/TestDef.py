@@ -104,8 +104,12 @@ class TestDef(object):
                     # any provided lists
                     if keyvals[kvkey] is None:
                         continue
-                    if type(keyvals[kvkey]) is bool:
-                        target[opt] = keyvals[kvkey]
+                    if type(options[kvkey][0]) is bool:
+                        # convert the input string to bool
+                        if keyvals[kvkey].upper() in ['TRUE', '1', 'T', 'Y', 'YES']:
+                            target[opt] = True
+                        else:
+                            target[opt] = False
                     else:
                         if len(keyvals[kvkey]) == 0:
                             # this indicates they do not want this option
