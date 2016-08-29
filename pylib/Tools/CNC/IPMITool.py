@@ -10,19 +10,139 @@
 
 import os
 import sys
+import Queue
+import threading
 from CNCMTTTool import *
+
+class workerThread(threading.Thread):
+    def __init__(self, threadID, queue, status, lock, testDef):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+        self.queue = queue
+        self.lock = lock
+        self.status = status
+        self.testDef = testDef
+        return
+
+    def run(self):
+        self.testDef.logger.verbose_print("IPMITool: Thread " + str(self.threadID) + " is active")
+        while True:
+            self.lock.acquire()
+            if not self.queue.empty():
+                task = self.queue.get()
+                self.lock.release()
+                self.testDef.logger.verbose_print("IPMITool: Thread " + str(self.threadID) + " received task " + ' '.join(task['cmd']))
+                # we should have received a dictionary - check for dryrun
+                dryrun = False
+                try:
+                    if task['dryrun']:
+                        dryrun = True
+                except:
+                    pass
+                # check the cmd
+                try:
+                    if task['reset']:
+                        if dryrun:
+                            # just record a result
+                            self.testDef.logger.verbose_print("IPMITool: Thread " + str(self.threadID) + " dryrun reset " + task['target'])
+                            self.lock.acquire()
+                            self.status.append((0, ' '.join(task['cmd']), None))
+                            self.lock.release()
+                            continue
+                        # ping until we get a response
+                        ntries = 0
+                        while True:
+                            ++ntries
+                            status,stdout,stderr = self.testDef.execmd.execute(task['cmd'], testDef)
+                            if 0 == status or ntries == task['maxtries']:
+                                self.testDef.logger.verbose_print("IPMITool: node " + task['target'] + " is back")
+                                break
+                        # record the result
+                        self.lock.acquire()
+                        if 0 != status and ntries >= task['maxtries']:
+                            msg = "Operation timed out on node " + task['target']
+                            self.status.append((-1, ' '.join(task['cmd']), msg))
+                        else:
+                            self.status.append((status, ' '.join(task['cmd']), stderr))
+                        self.lock.release()
+                        continue
+                except:
+                    try:
+                        if task['cmd'] is not None:
+                            if dryrun:
+                                # just record a result
+                                self.testDef.logger.verbose_print("IPMITool: Thread " + str(self.threadID) + " dryrun " + ' '.join(task['cmd']))
+                                self.lock.acquire()
+                                self.status.append((0, ' '.join(task['cmd']), None))
+                                # add reset command if required
+                                try:
+                                    if task['target'] is not None:
+                                        # add the reset command to the queue
+                                        ckcmd = {}
+                                        ckcmd['reset'] = True
+                                        ckcmd['cmd'] = ["ping", "-c", "1", task['target']]
+                                        ckcmd['maxtries'] = task['maxtries']
+                                        ckcmd['target'] = task['target']  # just for debug purposes
+                                        ckcmd['dryrun'] = dryrun
+                                        # add it to the queue
+                                        self.queue.put(ckcmd)
+                                except:
+                                    pass
+                                self.lock.release()
+                                continue
+                            # send it off to ipmitool to execute
+                            self.testDef.logger.verbose_print("IPMITool: " + ' '.join(task['cmd']))
+                            st,stdout,stderr = self.testDef.execmd.execute(task['cmd'], testDef)
+                            self.lock.acquire()
+                            self.status.append((st, ' '.join(task['cmd']), stderr))
+                            try:
+                                if task['target'] is not None:
+                                    # add the reset command to the queue
+                                    ckcmd['reset'] = True
+                                    ckcmd['cmd'] = ["ping", "-c", "1", task['target']]
+                                    ckcmd['maxtries'] = task['maxtries']
+                                    ckcmd['target'] = task['target']  # just for debug purposes
+                                    ckcmd['dryrun'] = dryrun
+                                    # add it to the queue
+                                    self.queue.put(ckcmd)
+                            except:
+                                pass
+                            self.lock.release()
+                            continue
+                        else:
+                            # mark as a bad command
+                            self.lock.acquire()
+                            self.status.append((2, "NULL", "Missing command"))
+                            self.lock.release()
+                            continue
+                    except:
+                        # bad input
+                        self.lock.acquire()
+                        self.status.append((2, "NULL", "Missing command"))
+                        self.lock.release()
+                        continue
+            else:
+                # if the queue is empty, then we are done
+                self.lock.release()
+                return
 
 class IPMITool(CNCMTTTool):
     def __init__(self):
         CNCMTTTool.__init__(self)
         self.options = {}
-        self.options['target'] = (None, "Remote host name or LAN interface")
-        self.options['controller'] = (None, "IP address of remote node's controller/BMC")
+        self.options['target'] = (None, "List of remote host names or LAN interfaces to monitor during reset operations")
+        self.options['controller'] = (None, "List of IP addresses of remote node controllers/BMCs")
         self.options['username'] = (None, "Remote session username")
         self.options['password'] = (None, "Remote session password")
         self.options['pwfile'] = (None, "File containing remote session password")
         self.options['command'] = (None, "Command to be sent")
-        self.options['maxtries'] = (100, "Max number of times to ping the host before declaring reset to fail")
+        self.options['maxtries'] = (100, "Max number of times to ping each host before declaring reset to fail")
+        self.options['numthreads'] = (30, "Number of worker threads to use")
+        self.options['dryrun'] = (False, "Dryrun - print out commands but do not execute")
+        self.lock = threading.Lock()
+        self.threads = []
+        self.threadID = 0
+        self.status = []
         return
 
     def activate(self):
@@ -43,7 +163,7 @@ class IPMITool(CNCMTTTool):
         return
 
     def execute(self, log, keyvals, testDef):
-        testDef.logger.verbose_print("IPMITool power cycle")
+        testDef.logger.verbose_print("IPMITool execute")
         # check for a modules directive
         mods = None
         try:
@@ -69,25 +189,19 @@ class IPMITool(CNCMTTTool):
         # parse what we were given against our defined options
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
-        # must at least have a target
-        try:
-            if cmds['target'] is None:
-                log['status'] = 1
-                log['stderr'] = "No target node identified"
-                return
-        except:
-            log['status'] = 1
-            log['stderr'] = "No target node identified"
-            return
+        print ("IPMITool: " + ' '.join(cmds))
         # and a controller address
         try:
             if cmds['controller'] is None:
                 log['status'] = 1
-                log['stderr'] = "No target controller identified"
+                log['stderr'] = "No target controllers identified"
                 return
+            else:
+                # convert to a list
+                controllers = cmds['controller'].split(',')
         except:
             log['status'] = 1
-            log['stderr'] = "No target controller identified"
+            log['stderr'] = "No target controllers identified"
             return
         # and a command
         try:
@@ -99,33 +213,88 @@ class IPMITool(CNCMTTTool):
             log['status'] = 1
             log['stderr'] = "No IPMI command given"
             return
-        # construct the cmd
-        ipmicmd = cmds['command'].split()
-        ipmicmd.insert(0, "ipmitool")
-        ipmicmd.append("-H")
-        ipmicmd.append(cmds['controller'])
-        if cmds['username'] is not None:
-            ipmicmd.append("-U")
-            ipmicmd.append(cmds['username'])
-        if cmds['password'] is not None:
-            ipmicmd.append("-P")
-            ipmicmd.append(cmds['password'])
-        # execute it
-        testDef.logger.verbose_print("IPMITool: " + ' '.join(ipmicmd))
-        status,stdout,stderr = testDef.execmd.execute(ipmicmd, testDef)
-        if 0 == status:
-            # need to wait for the node to come back
-            ntries = 0
-            ckcmd = ["ping", "-c", "1", cmds['target']]
-            while True:
-                ++ntries
-                status,stdout,stderr = testDef.execmd.execute(ckcmd, testDef)
-                if 0 == status or ntries == cmds['maxtries']:
-                    testDef.logger.verbose_print("IPMITool: node " + cmds['target'] + " is back")
-                    break
-        log['status'] = status
-        log['stdout'] = stdout
-        log['stderr'] = stderr
+        # if this is a reset command, then we must have targets
+        # for each controller
+        try:
+            if cmds['target'] is None:
+                log['status'] = 1
+                log['stderr'] = "No target nodes identified"
+                return
+            else:
+                # convert it to a list
+                targets = cmds['target'].split(",")
+                # must match number of controllers
+                if len(targets) != len(controllers):
+                    log['status'] = 1
+                    log['stderr'] = "Number of targets doesn't equal number of controllers"
+                    return
+                reset = True
+        except:
+            reset = False
+        # Setup the queue - we need a spot for the command to be sent to each
+        # identified target. If it is a command that will result in cycling
+        # the node, then we need to double it so we can execute the loop of
+        # "ping" commands to detect node restart
+        if reset:
+            ipmiQueue = Queue.Queue(2 * len(controllers))
+        else:
+            ipmiQueue = Queue.Queue(len(controllers))
+
+        # Fill the queue
+        self.lock.acquire()
+        for n in range(0, len(controllers)):
+            # construct the cmd
+            cmd = {}
+            ipmicmd = cmds['command'].split()
+            ipmicmd.insert(0, "ipmitool")
+            ipmicmd.append("-H")
+            ipmicmd.append(controllers[n])
+            if cmds['username'] is not None:
+                ipmicmd.append("-U")
+                ipmicmd.append(cmds['username'])
+            if cmds['password'] is not None:
+                ipmicmd.append("-P")
+                ipmicmd.append(cmds['password'])
+            cmd['cmd'] = ipmicmd
+            if reset:
+                cmd['target'] = targets[n]
+                cmd['maxtries'] = cmds['maxtries']
+            cmd['dryrun'] = cmds['dryrun']
+            # add it to the queue
+            ipmiQueue.put(cmd)
+        # setup the response
+        self.status = []
+        # spin up the threads
+        self.threads = []
+        # release the queue
+        self.lock.release()
+        if len(targets) < self.options['numthreads']:
+            rng = len(targets)
+        else:
+            rng = self.options['numthreads']
+        for n in range(0, rng):
+            thread = workerThread(self.threadID, ipmiQueue, self.status, self.lock, testDef)
+            thread.start()
+            self.threads.append(thread)
+            self.threadID += 1
+        # wait for completion
+        while not ipmiQueue.empty():
+            pass
+        # wait for all threads to complete/terminate
+        for t in self.threads:
+            t.join()
+        # set our default log
+        log['status'] = 0
+        log['stdout'] = None
+        log['stderr'] = None
+        # determine our final status - if any of the steps failed, then
+        # set the status to the first one that did
+        for st in self.status:
+            if 0 != st[0]:
+                log['status'] = st[0]
+                log['stdout'] = st[1]
+                log['stderr'] = st[2]
+        # reset modules if necessary
         if mods is not None:
             testDef.modcmd.unloadModules(mods, testDef)
         return
