@@ -277,12 +277,12 @@ class IUDatabase(ReporterMTTStage):
                 data['merge_stdout_stderr'] = None
 
             try:
-                data['result_stdout'] = trun['stdout']
+                data['result_stdout'] = '\n'.join(trun['stdout'])
             except KeyError:
                 data['result_stdout'] = None
 
             try:
-                data['result_stderr'] = trun['stderr']
+                data['result_stderr'] = '\n'.join(trun['stderr'])
             except KeyError:
                 data['result_stderr'] = None
 
@@ -396,12 +396,12 @@ class IUDatabase(ReporterMTTStage):
             data['merge_stdout_stderr'] = None
 
         try:
-            data['result_stdout'] = lg['stdout']
+            data['result_stdout'] = '\n'.join(lg['stdout'])
         except KeyError:
             data['result_stdout'] = None
 
         try:
-            data['result_stderr'] = lg['stderr']
+            data['result_stderr'] = '\n'.join(lg['stderr'])
         except KeyError:
             data['result_stderr'] = None
 
@@ -558,12 +558,12 @@ class IUDatabase(ReporterMTTStage):
             data['merge_stdout_stderr'] = None
 
         try:
-            data['result_stdout'] = lg['stdout']
+            data['result_stdout'] = '\n'.join(lg['stdout'])
         except KeyError:
             data['result_stdout'] = None
 
         try:
-            data['result_stderr'] = lg['stderr']
+            data['result_stderr'] = '\n'.join(lg['stderr'])
         except KeyError:
             data['result_stderr'] = None
 
