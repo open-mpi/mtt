@@ -73,6 +73,8 @@ execGroup.add_argument("--base-dir", dest="basedir",
                      help="Specify the DIRECTORY where we can find the TestDef class (checks DIRECTORY, DIRECTORY/Utilities, and DIRECTORY/pylib/Utilities locations) - also serves as default plugin-dir", metavar="DIRECTORY")
 execGroup.add_argument("--plugin-dir", dest="plugindir",
                      help="Specify the DIRECTORY where additional plugins can be found (or comma-delimited list of DIRECTORYs)", metavar="DIRECTORY")
+execGroup.add_argument("--ignore-loadpath-errors", action="store_true", dest="ignoreloadpatherrs", default=False,
+                     help="Ignore errors in plugin paths")
 execGroup.add_argument("--scratch-dir", dest="scratchdir", default="./mttscratch",
                      help="Specify the DIRECTORY under which scratch files are to be stored", metavar="DIRECTORY")
 execGroup.add_argument("--print-section-time", dest="sectime",
@@ -87,7 +89,7 @@ execGroup.add_argument("--timestamp", dest="time",
 execGroup.add_argument("--clean-start", dest="clean",
                      action="store_true",
                      help="Clean the scratch directory from past MTT invocations before running")
-execGroup.add_argument("-s", "--section", dest="section",
+execGroup.add_argument("-s", "--sections", dest="section",
                      help="Execute the specified SECTION (or comma-delimited list of SECTIONs)", metavar="SECTION")
 execGroup.add_argument("--skip-sections", dest="skipsections",
                      help="Skip the specified SECTION (or comma-delimited list of SECTIONs)", metavar="SECTION")
@@ -117,6 +119,7 @@ debugGroup.add_argument("--trial",
                       action="store_true", dest="trial", default=False,
                       help="Use when testing your MTT client setup; results that are generated and submitted to the database are marked as \"trials\" and are not included in normal reporting.")
 args = parser.parse_args()
+
 
 # Try to find the MTT TestDef class. Try several methods:
 
@@ -206,7 +209,7 @@ if (args.debug):
 # load the "testdef" Test Definition class so we can
 # begin building this test
 try:
-    m = imp.load_source("TestDef", os.path.join(basedir, "TestDef.py"));
+    m = imp.load_source("TestDef", os.path.join(basedir, "TestDef.py"))
 except ImportError:
     print("ERROR: unable to load TestDef that must contain the Test Definition object")
     exit(1)
@@ -230,6 +233,11 @@ testDef.printInfo()
 # for us to do
 if not args.ini_files:
     sys.exit('MTT requires at least one test-specification file')
+
+# sanity check a couple of options
+if args.section and args.skipsections:
+    print("ERROR: Cannot both execute specific sections and specify sections to be skipped")
+    sys.exit(1)
 
 # open the logging file if given - otherwise, we log
 # to stdout
