@@ -106,10 +106,21 @@ class TestDef(object):
                         continue
                     if type(options[kvkey][0]) is bool:
                         # convert the input string to bool
-                        if keyvals[kvkey].upper() in ['TRUE', '1', 'T', 'Y', 'YES']:
-                            target[opt] = True
+                        if type(keyvals[kvkey]) is bool:
+                            target[opt] = keyvals[kvkey]
+                        elif type(keyvals[kvkey]) is str:
+                            if keyvals[kvkey].lower() in ['true', '1', 't', 'y', 'yes']:
+                                target[opt] = True
+                            else:
+                                target[opt] = False
+                        elif type(keyvals[kvkey]) is int:
+                            if 0 == keyvals[kvkey]:
+                                target[opt] = False
+                            else:
+                                target[opt] = True
                         else:
-                            target[opt] = False
+                            # unknown conversion required
+                            print("Unknown conversion required for option " + keyvals[kvkey])
                     else:
                         if len(keyvals[kvkey]) == 0:
                             # this indicates they do not want this option
@@ -124,21 +135,47 @@ class TestDef(object):
                             # convert the values to specified type
                             i=0
                             for val in newvals:
+                                # if the target is type bool, then we need to ensure
+                                # we properly convert the input to also be bool
                                 if type(opt[0]) is bool:
-                                    if val.lower in ['true', '1', 't', 'y', 'yes', 'yeah', 'yup', 'certainly', 'uh-huh']:
-                                        newvals[i] = True
+                                    if type(val) is bool:
+                                        newvals[i] = val
+                                    elif type(val) is str:
+                                        if val.lower in ['true', '1', 't', 'y', 'yes']:
+                                            newvals[i] = True
+                                        else:
+                                            newvals[i] = False
+                                    elif type(val) is int:
+                                        if 0 == val:
+                                            target[opt] = False
+                                        else:
+                                            target[opt] = True
                                     else:
-                                        newvals[i] = False
+                                        # unknown conversion required
+                                        print("Unknown conversion required for option " + val)
+                                        pass
                                 i = i + 1
                             target[opt] = newvals
                         else:
                             val = keyvals[kvkey]
                             if type(opt[0]) is bool:
-                                if val.lower in ['true', '1', 't', 'y', 'yes', 'yeah', 'yup', 'certainly', 'uh-huh']:
-                                    val = True
+                                if type(val) is bool:
+                                    target[opt] = val
+                                elif type(val) is str:
+                                    if val.lower in ['true', '1', 't', 'y', 'yes']:
+                                        target[opt] = True
+                                    else:
+                                        target[opt] = False
+                                elif type(val) is int:
+                                    if 0 == val:
+                                        target[opt] = False
+                                    else:
+                                        target[opt] = True
                                 else:
-                                    val = False
-                            target[opt] = val
+                                    # unknown conversion required
+                                    print("Unknown conversion required for option " + val)
+                            else:
+                                target[opt] = val
                     found = True
                     break
             if not found:
