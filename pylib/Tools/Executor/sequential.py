@@ -63,6 +63,9 @@ class SequentialEx(ExecutorMTTTool):
             for title in testDef.config.sections():
                 if step not in title:
                     continue
+                # see if this is a step we are to execute
+                if title not in testDef.actives:
+                    continue
                 testDef.logger.verbose_print(title)
                 # if they provided the STOP section, that means we
                 # are to immediately stop processing the test definition

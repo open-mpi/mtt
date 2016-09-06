@@ -238,16 +238,21 @@ class TestDef(object):
                 # location first in case the user wants
                 # to "overload/replace" a default MTT
                 # class definition
-                plugindirs.prepend(y)
+                plugindirs.insert(0, y)
 
         # Traverse the plugin directory tree and add all
         # the class definitions we can find
         for dirPath in plugindirs:
-            filez = os.listdir(dirPath)
-            for file in filez:
-                file = os.path.join(dirPath, file)
-                if os.path.isdir(file):
-                    self.loader.load(file)
+            try:
+                filez = os.listdir(dirPath)
+                for file in filez:
+                    file = os.path.join(dirPath, file)
+                    if os.path.isdir(file):
+                        self.loader.load(file)
+            except:
+                if not self.options['ignoreloadpatherrs']:
+                    print("Plugin directory",dirPath,"not found")
+                    sys.exit(1)
 
         # Build the stages plugin manager
         self.stages = PluginManager()
@@ -472,28 +477,60 @@ class TestDef(object):
         return
 
     def configTest(self):
-        # Tuck away the full path and the testFile file name
-        self.log['inifiles'] = self.args.ini_files[0]
-        for testFile in self.log['inifiles']:
-            if not os.path.isfile(testFile):
-                print("Test .ini file not found!: " + testFile)
-                sys.exit(1)
+        # setup the configuration parser
         self.config = configparser.ConfigParser()
         # Set the config parser to make option names case sensitive.
         self.config.optionxform = str
-        self.config.read(self.log['inifiles'])
+        # log the list of files - note that the argument parser
+        # puts the input files in a list, with the first member
+        # being the list of input files
+        self.log['inifiles'] = self.args.ini_files[0]
+        # initialize the list of active sections
+        self.actives = []
+        # if they specified a list to execute, then use it
+        sections = []
+        if self.args.section:
+            sections = self.args.section.split(",")
+            skip = False
+        elif self.args.skipsections:
+            sections = self.args.skipsections.split(",")
+            skip = True
+        else:
+            sections = None
+        # cycle thru the input files
+        for testFile in self.log['inifiles']:
+            if not os.path.isfile(testFile):
+                print("Test description file",testFile,"not found!")
+                sys.exit(1)
+            self.config.read(self.log['inifiles'])
         for section in self.config.sections():
-            if self.logger is not None:
-                self.logger.verbose_print("SECTION: " + section)
-                self.logger.verbose_print(self.config.items(section))
-            if self.options['dryrun']:
-                continue
             if section.startswith("SKIP") or section.startswith("skip"):
                 # users often want to temporarily ignore a section
                 # of their test definition file, but don't want to
                 # remove it lest they forget what it did. So let
                 # them just mark the section as "skip" to be ignored
-                continue;
+                continue
+            # if we are to filter the sections, then do so
+            takeus = True
+            if sections is not None:
+                found = False
+                for sec in sections:
+                    if sec == section:
+                        found = True
+                        sections.remove(sec)
+                        if skip:
+                            takeus = False
+                        break
+                if not found and not skip:
+                    takeus = False
+            if takeus:
+                self.actives.append(section)
+            if self.logger is not None:
+                self.logger.verbose_print("SECTION: " + section)
+                self.logger.verbose_print(self.config.items(section))
+        if 0 != len(sections) and not skip:
+            print("ERROR: sections were specified for execution and not found:",sections)
+            sys.exit(1)
         return
 
     def executeTest(self):
