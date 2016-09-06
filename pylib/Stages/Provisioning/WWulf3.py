@@ -17,7 +17,16 @@ class WWulf3(ProvisionMTTStage):
         # initialise parent class
         ProvisionMTTStage.__init__(self)
         self.options = {}
-        self.options['target'] = (None, "Remote host name for LAN interface")
+        self.options['target'] = (None, "List of remote host names or LAN interfaces to be provisioned")
+        self.options['image'] = (None, "Name of image to be instantiated")
+        self.options['bootstrap'] = (None, "Name of bootstrap to be used")
+        self.options['controller'] = (None, "List of IP addresses of remote node controllers/BMCs")
+        self.options['username'] = (None, "Remote controller username")
+        self.options['password'] = (None, "Remote controller password")
+        self.options['pwfile'] = (None, "File containing remote controller password")
+        self.options['sudo'] = (False, "Use sudo to execute privileged commands")
+        return
+
 
     def activate(self):
         # use the automatic procedure from IPlugin
@@ -32,42 +41,127 @@ class WWulf3(ProvisionMTTStage):
     def print_name(self):
         return "WWulf3"
 
+
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
             print(prefix + line)
         return
 
+
     def execute(self, log, keyvals, testDef):
         testDef.logger.verbose_print("Warewulf 3 Provisioner")
-        # check for a modules directive
-        mods = None
-        try:
-            if keyvals['modules'] is not None:
-                if testDef.modcmd is None:
-                    # cannot execute this request
-                    log['stderr'] = "No module support available"
-                    log['status'] = 1
-                    return
-                # create a list of the requested modules
-                mods = keyvals['modules'].split(',')
-                # have them loaded
-                status,stdout,stderr = testDef.modcmd.loadModules(mods, testDef)
-                if 0 != status:
-                    log['status'] = status
-                    log['stdout'] = stdout
-                    log['stderr'] = stderr
-                    return
-        except KeyError:
-            pass
-
         # parse what we were given against our defined options
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
-        # they had to at least give us the target node
+        # they had to at least give us one target node and controller
+        try:
+            if cmds['target'] is None:
+                log['status'] = 1
+                log['stderr'] = "No target hosts identified"
+                return
+            else:
+                # convert to a list
+                targets = cmds['target'].split(',')
+        except:
+            log['status'] = 1
+            log['stderr'] = "No target hosts identified"
+            return
+        try:
+            if cmds['controller'] is None:
+                log['status'] = 1
+                log['stderr'] = "No target controllers identified"
+                return
+            else:
+                # convert to a list
+                controllers = cmds['controller'].split(',')
+        except:
+            log['status'] = 1
+            log['stderr'] = "No target controllers identified"
+            return
+        # must give us an image
+        try:
+            if cmds['image'] is None:
+                log['status'] = 1
+                log['stderr'] = "No image specified"
+                return
+        except:
+            log['status'] = 1
+            log['stderr'] = "No image specified"
+            return
 
-        # update the provisioning database to the new image
-
-        # power cycle the node
-
-
+        # sanity check the provided nodes to ensure they are in the
+        # database - output goes to stdout
+        wwcmd = ["wwsh", "node", "list"]
+        if cmds['sudo']:
+            wwcmd.insert(0, "sudo")
+        status,stdout,stderr = testDef.execmd.execute(wwcmd, testDef)
+        if 0 != status or stdout is None:
+            log['status'] = status
+            log['stderr'] = "Node list was not obtained"
+            return
+        # parse stdout for the node names - start by splitting
+        # it back into a list of lines
+        lines = stdout.split('\n')
+        # skip first two lines as they are headers
+        del lines[0:2]
+        # parse each line to collect out the individual nodes
+        nodes = []
+        for line in lines:
+            # node name is at the front, ended by a space
+            nodes.append(line[0:line.find(' ')])
+        # now check that each target is in the list of nodes - no
+        # way around just a big double-loop, i fear
+        for tgt in targets:
+            found = false
+            for node in nodes:
+                if tgt == node:
+                    found = true
+                    break
+            if not found:
+                log['status'] = 1
+                log['stderr'] = "Target " + tgt + " is not included in Warewulf node table"
+                return
+        # if we get here, then all the targets are known!
+        # so cycle thru the targets and update the provisioning
+        # database for each of them
+        for tgt in targets:
+            wwcmd = ["wwsh", "provision", "set"]
+            if cmds['sudo']:
+                wwcmd.insert(0, "sudo")
+            wwcmd.append(tgt)
+            wwcmd.append("--vnfs=" + cmds['image'])
+            # update the provisioning database to the new image
+            status,stdout,stderr = testDef.execmd.execute(wwcmd, testDef)
+            if 0 != status:
+                log['status'] = status
+                log['stderr'] = stderr
+                return
+        # assemble command to power cycle each node. Note that
+        # we will be passing a set of keyvals down, so we can
+        # include directives such as 'sudo' there
+        ipmicmd = {}
+        ipmicmd['command'] = ["power", "cycle"]
+        ipmicmd['target'] = cmds['target']
+        ipmicmd['controller'] = cmds['controller']
+        ipmicmd['username'] = cmds['username']
+        ipmicmd['password'] = cmds['password']
+        ipmicmd['pwfile'] = cmds['pwfile']
+        ipmicmd['sudo'] = cmds['sudo']
+        # find the IPMITool plugin
+        # order the nodes to power cycle
+        ipmitool = testDef.selectPlugin("IPMITool", "tool")
+        if ipmitool is None:
+            log['status'] = 1
+            log['stderr'] = "IPMITool was not found"
+            return
+        # execute the request
+        ipmilog = {}
+        ipmitool.execute(ipmilog, ipmicmd, testDef)
+        # update our results to reflect the overall status
+        log['status'] = ipmilog['status']
+        if impilog['stdout'] is not None:
+            log['stdout'] = ipmilog['stdout']
+        if impilog['stderr'] is not None:
+            log['stderr'] = ipmilog['stderr']
+        return
