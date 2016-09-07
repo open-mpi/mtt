@@ -528,7 +528,7 @@ class TestDef(object):
             if self.logger is not None:
                 self.logger.verbose_print("SECTION: " + section)
                 self.logger.verbose_print(self.config.items(section))
-        if 0 != len(sections) and not skip:
+        if sections is not None and 0 != len(sections) and not skip:
             print("ERROR: sections were specified for execution and not found:",sections)
             sys.exit(1)
         return
