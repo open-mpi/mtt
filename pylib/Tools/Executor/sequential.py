@@ -225,4 +225,7 @@ class SequentialEx(ExecutorMTTTool):
                 # execute the provided test description and capture the result
                 plugin.execute(stageLog, keyvals, testDef)
                 testDef.logger.logResults(title, stageLog)
+                if testDef.options['stop_on_fail'] is not False and stageLog['status'] != 0:
+                    print("Section " + stageLog['section'] + ": Status " + str(stageLog['status']))
+                    sys.exit(1)
         return

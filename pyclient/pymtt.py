@@ -104,6 +104,9 @@ execGroup.add_argument("--default-make-options", dest="default_make_options", de
                      help="Default options when running the \"make\" command")
 execGroup.add_argument("--env-module-wrapper", dest="env_module_wrapper", default=None,
                      help="Python environment module wrapper")
+execGroup.add_argument("--stop-on-fail", dest="stop_on_fail",
+                     action="store_true", default=False,
+                     help="If a stage fails, exit and issue a non-zero return code")
 
 debugGroup = parser.add_argument_group('debugGroup', 'Debug Options')
 debugGroup.add_argument("-d", "--debug", dest="debug",
