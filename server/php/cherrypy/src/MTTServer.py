@@ -63,6 +63,7 @@ if __name__ == '__main__':
             'log.access_file': '../log/access.log',
             'log.error_file': '../log/cherrypy_error.log',
             'log.screen': False,
+            'engine.autoreload.on': False,
 
             # Don't run CherryPy Checker on custom conf sections:
             # FIXME: This setting doesn't seem to be working...

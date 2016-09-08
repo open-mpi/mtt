@@ -28,6 +28,18 @@ if (array_key_exists("db", $_GET) &&
     $mtt_database_name = $_GET['db'];
 }
 
+# Function for reporting errors back to the client
+function mtt_abort($status, $str) {
+    if (!headers_sent()) {
+        header("HTTP/1.0 $status");
+    } else {
+        print("MTTDatabase abort: (Tried to send HTTP error) $status\n");
+    }
+    print("MTTDatabase abort: $str\n");
+    pg_close();
+    exit(0);
+}
+
 # Function used to determine which _POST fields
 # to INSERT. Prevent non-existent fields from being
 # INSERTed
@@ -91,6 +103,8 @@ function get_table_fields($table_name) {
 
 # Connect to the Postgres database
 function do_pg_connect() {
+    global $mtt_database_server;
+    global $mtt_database_port;
     global $mtt_database_name;
     global $mtt_database_username;
     global $mtt_database_password;
@@ -102,10 +116,10 @@ function do_pg_connect() {
 
     if (!$connected) {
         $pgsql_conn = 
-            pg_connect("host=localhost port=5432 dbname=$mtt_database_name user=$mtt_database_username password=$mtt_database_password");
+            pg_connect("host=$mtt_database_server port=$mtt_database_port dbname=$mtt_database_name user=$mtt_database_username password=$mtt_database_password");
         if (!$pgsql_conn) {
             mtt_abort(400, "\nCould not connect to the $mtt_database_name database; " .
-                    "submit this run later.");
+                    "submit this run later." );
         } else {
             $connected = true;
             # Serialize all transactions by default - Safer that way.
