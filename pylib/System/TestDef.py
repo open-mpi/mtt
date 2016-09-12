@@ -69,7 +69,9 @@ class TestDef(object):
         self.iniLog = None
         # Create directory to hold .ini files
         self.tempDir = tempfile.mkdtemp()
-        
+        # full name of section should be used
+        self.sectionsToRun = []
+         
     def setOptions(self, args):
         self.options = vars(args)
         self.args = args
@@ -494,23 +496,12 @@ class TestDef(object):
     def createIniLog(self):
         self.runLog = {}
         self.iniLog = {}
+        tempSpecialSection = {}
         # configParser object to write individual options to files
         writeOption = configparser.ConfigParser()
         writeOption.optionxform = str
         # Tuck away the full path and the testFile file name
-        self.log['inifiles'] = self.args.ini_files[0]
-        # initialize the list of active sections
-        self.actives = []
-        # if they specified a list to execute, then use it
-        sections = []
-        if self.args.section:
-            sections = self.args.section.split(",")
-            skip = False
-        elif self.args.skipsections:
-            sections = self.args.skipsections.split(",")
-            skip = True
-        else:
-            sections = None
+        self.log['inifiles'] = self.args.ini_files[0]     
         # cycle thru the input files
         for testFile in self.log['inifiles']:
             if not os.path.isfile(testFile):
@@ -520,8 +511,18 @@ class TestDef(object):
         # Set the config parser to make option names case sensitive.
         self.config.optionxform = str
         self.config.read(self.log['inifiles'])
+        # if they specified a list of sections to execute, then use it
+        if self.args.section:
+            self.sectionsToRun = self.args.section.split(",")            
+        elif self.args.skipsections:
+            for section in self.config.sections():
+                if(section not in self.args.skipsections):
+                    self.sectionsToRun.append(section)
+        else:
+            for section in self.config.sections():
+                self.sectionsToRun.append(section)
         # Sort base .ini sections and write to temp files
-        tempSpecialSection = {}
+
         for section in self.config.sections():
             if section.startswith("SKIP") or section.startswith("skip"):
                 # users often want to temporarily ignore a section
@@ -538,14 +539,13 @@ class TestDef(object):
                 self.parser.write(configfile)
             # Clear out parser for next section
             self.parser.remove_section(section)
-            # write MiddlewareGet files to iniLog
             if "MiddlewareGet" in section:
                 self.runLog[section] = fileName
-            elif "TestGet" in section:
+            elif "TestRun" in section:
                 tempSpecialSection[section] = fileName
             else:
                 self.iniLog[section] = fileName
-        # Combine TestGet and MiddlewareGet files
+        # Combine TestRun and MiddlewareGet files
         tempList = {}
         for section in self.runLog:
             self.parser.read(self.runLog[section])
@@ -559,7 +559,6 @@ class TestDef(object):
             self.parser.remove_section(section)
         self.runLog.clear()
         self.runLog = tempList
-            
         # Sort sections for comma separated values to be parsed
         optionsCSV = {}
         for section in self.iniLog:
@@ -572,7 +571,6 @@ class TestDef(object):
                     except KeyError:
                         optionsCSV[section] = []
                     optionsCSV[section].append(option)
-
                 else:
                     # write option to base run files
                     for fd in self.runLog:
@@ -603,7 +601,7 @@ class TestDef(object):
                     writeOption.read(self.runLog[fd])
                     for nextOpt in optionList:
                         try:
-                            if writeOption.has_section(section) is not None:
+                            if writeOption.has_section(section):
                                 pass
                         except KeyError:
                             writeOption.add_section(section)
@@ -622,9 +620,6 @@ class TestDef(object):
         print (self.runLog)
         return self.runLog
         
-    def getTempDir(self):
-        return self.tempDir
-    
     def executeTest(self):
         if not self.loaded:
             print("Plugins have not been loaded - cannot execute test")

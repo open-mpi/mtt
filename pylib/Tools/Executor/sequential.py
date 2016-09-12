@@ -64,7 +64,7 @@ class SequentialEx(ExecutorMTTTool):
                 if step not in title:
                     continue
                 # see if this is a step we are to execute
-                if title not in testDef.actives:
+                if title not in testDef.sectionsToRun:
                     continue
                 testDef.logger.verbose_print(title)
                 # if they provided the STOP section, that means we

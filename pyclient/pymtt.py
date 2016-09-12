@@ -90,10 +90,10 @@ execGroup.add_argument("--timestamp", dest="time",
 execGroup.add_argument("--clean-start", dest="clean",
                      action="store_true",
                      help="Clean the scratch directory from past MTT invocations before running")
-execGroup.add_argument("-s", "--sections", dest="section",
-                     help="Execute the specified SECTION (or comma-delimited list of SECTIONs)", metavar="SECTION")
-execGroup.add_argument("--skip-sections", dest="skipsections",
-                     help="Skip the specified SECTION (or comma-delimited list of SECTIONs)", metavar="SECTION")
+execGroup.add_argument("-s", "--sections", dest="section", action="append",
+                       help="Execute the specified SECTION (or comma-delimited list of SECTIONs)", metavar="SECTION", nargs='*')
+execGroup.add_argument("--skip-sections", dest="skipsections", action="append",
+                       help="Skip the specified SECTION (or comma-delimited list of SECTIONs)", metavar="SECTION", nargs='*')
 execGroup.add_argument("--no-reporter", dest="reporter",
                       action="store_true", default=False,
                       help="Do not invoke any MTT Reporter modules")
@@ -259,7 +259,7 @@ for nextFile in iniLog:
     testDef.cleanConfig()
 
 # Clean up temporary files
-print (testDef.getTempDir())
+print (testDef.tempDir)
 #shutil.rmtree(testDef.getTempDir())
     
 # All done!
