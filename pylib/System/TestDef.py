@@ -614,3 +614,42 @@ class TestDef(object):
         # add one blank line
         lines.append("")
         return lines
+
+
+    def selectPlugin(self, name, category):
+        if category == "stage":
+            try:
+                availStages = list(self.loader.stages.keys())
+                for stage in availStages:
+                    for pluginInfo in testDef.stages.getPluginsOfCategory(stage):
+                        if name == pluginInfo.plugin_object.print_name():
+                            return pluginInfo.plugin_object
+                # didn't find it
+                return None
+            except:
+                return None
+        elif category == "tool":
+            try:
+                availTools = list(self.loader.tools.keys())
+                for tool in availTools:
+                    for pluginInfo in testDef.tools.getPluginsOfCategory(tool):
+                        if name == pluginInfo.plugin_object.print_name():
+                            return pluginInfo.plugin_object
+                # didn't find it
+                return None
+            except:
+                return None
+        elif category == "utility":
+            try:
+                availUtils = list(self.loader.utilities.keys())
+                for util in availUtils:
+                    for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
+                        if name == pluginInfo.plugin_object.print_name():
+                            return pluginInfo.plugin_object
+                # didn't find it
+                return None
+            except:
+                return None
+        else:
+            print("Unrecognized category:",category)
+            return None

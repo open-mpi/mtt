@@ -132,13 +132,14 @@ class IPMITool(CNCMTTTool):
         self.options = {}
         self.options['target'] = (None, "List of remote host names or LAN interfaces to monitor during reset operations")
         self.options['controller'] = (None, "List of IP addresses of remote node controllers/BMCs")
-        self.options['username'] = (None, "Remote session username")
-        self.options['password'] = (None, "Remote session password")
-        self.options['pwfile'] = (None, "File containing remote session password")
+        self.options['username'] = (None, "Remote controller username")
+        self.options['password'] = (None, "Remote controller password")
+        self.options['pwfile'] = (None, "File containing remote controller password")
         self.options['command'] = (None, "Command to be sent")
         self.options['maxtries'] = (100, "Max number of times to ping each host before declaring reset to fail")
         self.options['numthreads'] = (30, "Number of worker threads to use")
         self.options['dryrun'] = (False, "Dryrun - print out commands but do not execute")
+        self.options['sudo'] = (False, "Use sudo to execute privileged commands")
         self.lock = threading.Lock()
         self.threads = []
         self.threadID = 0
@@ -189,8 +190,8 @@ class IPMITool(CNCMTTTool):
         # parse what we were given against our defined options
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
-        print ("IPMITool: " + ' '.join(cmds))
-        # and a controller address
+        testDef.logger.verbose_print("IPMITool: " + ' '.join(cmds))
+        # must have given us at least one controller address
         try:
             if cmds['controller'] is None:
                 log['status'] = 1
@@ -247,6 +248,8 @@ class IPMITool(CNCMTTTool):
             cmd = {}
             ipmicmd = cmds['command'].split()
             ipmicmd.insert(0, "ipmitool")
+            if cmds['sudo']:
+                ipmicmd.insert(0, "sudo")
             ipmicmd.append("-H")
             ipmicmd.append(controllers[n])
             if cmds['username'] is not None:
