@@ -76,20 +76,20 @@ class IUDatabase(ReporterMTTStage):
             return
         try:
             if cmds['pwfile'] is not None:
-                if os.path.exists(cmds['pwfile'][0]):
-                    f = open(cmds['pwfile'][0], 'r')
+                if os.path.exists(cmds['pwfile']):
+                    f = open(cmds['pwfile'], 'r')
                     password = f.readline().strip()
                     f.close()
                 else:
                     log['status'] = 1;
-                    log['stderr'] = "Password file " + cmds['pwfile'][0] + " does not exist"
+                    log['stderr'] = "Password file " + cmds['pwfile'] + " does not exist"
                     return
             elif cmds['password'] is not None:
                 password = cmds['password']
         except KeyError:
             try:
                 if cmds['password'] is not None:
-                    password = cmds['password'][0]
+                    password = cmds['password']
             except KeyError:
                 pass
         #
@@ -277,12 +277,12 @@ class IUDatabase(ReporterMTTStage):
                 data['merge_stdout_stderr'] = None
 
             try:
-                data['result_stdout'] = trun['stdout']
+                data['result_stdout'] = '\n'.join(trun['stdout'])
             except KeyError:
                 data['result_stdout'] = None
 
             try:
-                data['result_stderr'] = trun['stderr']
+                data['result_stderr'] = '\n'.join(trun['stderr'])
             except KeyError:
                 data['result_stderr'] = None
 
@@ -340,7 +340,7 @@ class IUDatabase(ReporterMTTStage):
             for entry in full_log:
                 if 'compiler' in entry:
                     data['compiler_name'] = entry['compiler']['compiler']
-                    data['compiler_version'] = entry['compiler']['version'] 
+                    data['compiler_version'] = entry['compiler']['version']
                     break
             else:
                 data['compiler_name'] = None
@@ -396,12 +396,12 @@ class IUDatabase(ReporterMTTStage):
             data['merge_stdout_stderr'] = None
 
         try:
-            data['result_stdout'] = lg['stdout']
+            data['result_stdout'] = '\n'.join(lg['stdout'])
         except KeyError:
             data['result_stdout'] = None
 
         try:
-            data['result_stderr'] = lg['stderr']
+            data['result_stderr'] = '\n'.join(lg['stderr'])
         except KeyError:
             data['result_stderr'] = None
 
@@ -481,7 +481,7 @@ class IUDatabase(ReporterMTTStage):
             for entry in full_log:
                 if 'compiler' in entry:
                     data['compiler_name'] = entry['compiler']['compiler']
-                    data['compiler_version'] = entry['compiler']['version'] 
+                    data['compiler_version'] = entry['compiler']['version']
                     break
             else:
                 data['compiler_name'] = None
@@ -502,7 +502,7 @@ class IUDatabase(ReporterMTTStage):
                 data['mpi_version'] = None
 
         try:
-            data['configure_arguments'] = lg['configure_options']
+            data['configure_arguments'] = logger.getLog(lg['middleware'])['configure_options']
         except KeyError:
             data['configure_arguments'] = None
 
@@ -558,12 +558,12 @@ class IUDatabase(ReporterMTTStage):
             data['merge_stdout_stderr'] = None
 
         try:
-            data['result_stdout'] = lg['stdout']
+            data['result_stdout'] = '\n'.join(lg['stdout'])
         except KeyError:
             data['result_stdout'] = None
 
         try:
-            data['result_stderr'] = lg['stderr']
+            data['result_stderr'] = '\n'.join(lg['stderr'])
         except KeyError:
             data['result_stderr'] = None
 

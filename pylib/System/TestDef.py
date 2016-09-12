@@ -79,6 +79,48 @@ class TestDef(object):
         # setup the scratch directory
         _mkdir_recursive(self.options['scratchdir'])
 
+    # private function to convert values
+    def __convert_value(self, opt, inval):
+        if opt is None or type(opt) is str:
+            return 0, inval
+        elif type(opt) is bool:
+            if type(inval) is bool:
+                return 0, inval
+            elif type(inval) is str:
+                if inval.lower() in ['true', '1', 't', 'y', 'yes']:
+                    return 0, True
+                else:
+                    return 0, False
+            elif type(inval) is int:
+                if 0 == inval:
+                    return 0, False
+                else:
+                    return 0, True
+            else:
+                # unknown conversion required
+                print("Unknown conversion required for " + inval)
+                return 1, None
+        elif type(opt) is int:
+            if type(inval) is int:
+                return 0, inval
+            elif type(inval) is str:
+                return 0, int(inval)
+            else:
+                # unknown conversion required
+                print("Unknown conversion required for " + inval)
+                return 1, None
+        elif type(opt) is float:
+            if type(inval) is float:
+                return 0, inval
+            elif type(inval) is str or type(inval) is int:
+                return 0, float(inval)
+            else:
+                # unknown conversion required
+                print("Unknown conversion required for " + inval)
+                return 1, None
+        else:
+            return 1, None
+
     # scan the key-value pairs obtained from the configuration
     # parser and compare them with the options defined for a
     # given plugin. Generate an output dictionary that contains
@@ -119,8 +161,9 @@ class TestDef(object):
                     # any provided lists
                     if keyvals[kvkey] is None:
                         continue
-                    if type(keyvals[kvkey]) is bool:
-                        target[opt] = keyvals[kvkey]
+                    st, outval = self.__convert_value(options[opt][0], keyvals[kvkey])
+                    if 0 == st:
+                        target[opt] = outval
                     else:
                         if len(keyvals[kvkey]) == 0:
                             # this indicates they do not want this option
@@ -135,21 +178,11 @@ class TestDef(object):
                             # convert the values to specified type
                             i=0
                             for val in newvals:
-                                if type(opt[0]) is bool:
-                                    if val.lower in ['true', '1', 't', 'y', 'yes', 'yeah', 'yup', 'certainly', 'uh-huh']:
-                                        newvals[i] = True
-                                    else:
-                                        newvals[i] = False
+                                st, newvals[i] = self.__convert_value(opt[0], val)
                                 i = i + 1
                             target[opt] = newvals
                         else:
-                            val = keyvals[kvkey]
-                            if type(opt[0]) is bool:
-                                if val.lower in ['true', '1', 't', 'y', 'yes', 'yeah', 'yup', 'certainly', 'uh-huh']:
-                                    val = True
-                                else:
-                                    val = False
-                            target[opt] = val
+                            st, target[opt] = self.__convert_value(opt[0], keyvals[kvkey])
                     found = True
                     break
             if not found:
@@ -212,16 +245,21 @@ class TestDef(object):
                 # location first in case the user wants
                 # to "overload/replace" a default MTT
                 # class definition
-                plugindirs.prepend(y)
+                plugindirs.insert(0, y)
 
         # Traverse the plugin directory tree and add all
         # the class definitions we can find
         for dirPath in plugindirs:
-            filez = os.listdir(dirPath)
-            for file in filez:
-                file = os.path.join(dirPath, file)
-                if os.path.isdir(file):
-                    self.loader.load(file)
+            try:
+                filez = os.listdir(dirPath)
+                for file in filez:
+                    file = os.path.join(dirPath, file)
+                    if os.path.isdir(file):
+                        self.loader.load(file)
+            except:
+                if not self.options['ignoreloadpatherrs']:
+                    print("Plugin directory",dirPath,"not found")
+                    sys.exit(1)
 
         # Build the stages plugin manager
         self.stages = PluginManager()
@@ -461,9 +499,22 @@ class TestDef(object):
         writeOption.optionxform = str
         # Tuck away the full path and the testFile file name
         self.log['inifiles'] = self.args.ini_files[0]
+        # initialize the list of active sections
+        self.actives = []
+        # if they specified a list to execute, then use it
+        sections = []
+        if self.args.section:
+            sections = self.args.section.split(",")
+            skip = False
+        elif self.args.skipsections:
+            sections = self.args.skipsections.split(",")
+            skip = True
+        else:
+            sections = None
+        # cycle thru the input files
         for testFile in self.log['inifiles']:
             if not os.path.isfile(testFile):
-                print("Test .ini file not found!: " + testFile)
+                print("Test description file",testFile,"not found!")
                 sys.exit(1)
         self.config = configparser.ConfigParser()
         # Set the config parser to make option names case sensitive.
@@ -472,11 +523,6 @@ class TestDef(object):
         # Sort base .ini sections and write to temp files
         tempSpecialSection = {}
         for section in self.config.sections():
-            if self.logger is not None:
-                self.logger.verbose_print("SECTION: " + section)
-                self.logger.verbose_print(self.config.items(section))
-            if self.options['dryrun']:
-                continue
             if section.startswith("SKIP") or section.startswith("skip"):
                 # users often want to temporarily ignore a section
                 # of their test definition file, but don't want to
@@ -543,7 +589,6 @@ class TestDef(object):
                             self.parser.remove_section(sect)       
             writeOption.remove_section(section)
         # Process CSV options
-
         for section in optionsCSV:
             self.parser.read(self.iniLog[section])
             for option in optionsCSV[section]:

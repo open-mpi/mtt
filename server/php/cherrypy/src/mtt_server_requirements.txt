@@ -1,7 +1,7 @@
-CherryPy==5.1.0
-requests==2.9.1
-configobj==5.0.6
-six==1.10.0
-wheel==0.29.0
-psycopg2==2.6.1
-virtualenvwrapper==4.7.1
+CherryPy>=8.1.0
+requests>=2.11.1
+configobj>=5.0.6
+six>=1.10.0
+wheel>=0.29.0
+psycopg2>=2.6.2
+virtualenvwrapper>=4.7.2

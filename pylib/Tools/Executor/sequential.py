@@ -63,6 +63,9 @@ class SequentialEx(ExecutorMTTTool):
             for title in testDef.configRun.sections():
                 if step not in title:
                     continue
+                # see if this is a step we are to execute
+                if title not in testDef.actives:
+                    continue
                 testDef.logger.verbose_print(title)
                 # if they provided the STOP section, that means we
                 # are to immediately stop processing the test definition
@@ -222,4 +225,7 @@ class SequentialEx(ExecutorMTTTool):
                 # execute the provided test description and capture the result
                 plugin.execute(stageLog, keyvals, testDef)
                 testDef.logger.logResults(title, stageLog)
+                if testDef.options['stop_on_fail'] is not False and stageLog['status'] != 0:
+                    print("Section " + stageLog['section'] + ": Status " + str(stageLog['status']))
+                    sys.exit(1)
         return

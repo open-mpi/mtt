@@ -20,8 +20,8 @@ my $debug_no_email;
 
 #my $to_email_address     = "FILL THIS IN";
 #my $from_email_address   = "FILL THIS IN";
-my $to_email_address     = "mtt-devel-core\@open-mpi.org";
-my $from_email_address   = "mtt-devel-core\@open-mpi.org";
+my $to_email_address     = "mtt-devel-core\@lists.open-mpi.org";
+my $from_email_address   = "mtt-devel-core\@lists.open-mpi.org";
 my $current_mail_subject = "MTT Database Maintenance: IC Check";
 my $current_mail_header  = "";
 my $current_mail_body    = "";

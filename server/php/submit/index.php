@@ -1677,16 +1677,16 @@ function associative_select($cmd) {
 ######################################################################
 
 # Function for reporting errors back to the client
-function mtt_abort($status, $str) {
-    if (!headers_sent()) {
-        header("HTTP/1.0 $status");
-    } else {
-        print("MTTDatabase abort: (Tried to send HTTP error) $status\n");
-    }
-    print("MTTDatabase abort: $str\n");
-    pg_close();
-    exit(0);
-}
+# function mtt_abort($status, $str) {
+#     if (!headers_sent()) {
+#         header("HTTP/1.0 $status");
+#     } else {
+#         print("MTTDatabase abort: (Tried to send HTTP error) $status\n");
+#     }
+#     print("MTTDatabase abort: $str\n");
+#     pg_close();
+#     exit(0);
+# }
 
 function mtt_send_mail($message, $func) {
 
@@ -1713,7 +1713,7 @@ function mtt_send_mail($message, $func) {
     if( isset($_POST['email']) ) {
         $user      = $_POST['email'];
     }
-    $admin         = 'mtt-devel-core@open-mpi.org';
+    $admin         = 'mtt-devel-core@lists.open-mpi.org';
     $date          = date('r');
     $phpversion    = phpversion();
     $boundary      = md5(time());

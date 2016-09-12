@@ -89,6 +89,58 @@ class Autotools(BuildMTTTool):
             log['stderr'] = "Location of package to build was not specified in parent stage"
             return
         inPlace = False
+        # check to see if they specified a module to use
+        # where the autotools can be found
+        usedModule = False
+        try:
+            if cmds['modules'] is not None:
+                status,stdout,stderr = testDef.modcmd.loadModules(cmds['modules'], testDef)
+                if 0 != status:
+                    log['status'] = status
+                    log['stderr'] = stderr
+                    return
+                usedModule = True
+        except KeyError:
+            # not required to provide a module
+            pass
+
+        # sense and record the compiler being used
+        plugin = None
+        availUtil = list(testDef.loader.utilities.keys())
+        for util in availUtil:
+            for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
+                if "Compilers" == pluginInfo.plugin_object.print_name():
+                    plugin = pluginInfo.plugin_object
+                    break
+        if plugin is None:
+            log['compiler'] = {'status' : 1, 'family' : "unknown", 'version' : "unknown"}
+        else:
+            compilerLog = {}
+            plugin.execute(compilerLog, testDef)
+            log['compiler'] = compilerLog
+        testDef.logger.verbose_print(log['compiler'])
+
+        # Find MPI information for IUDatabase plugin
+        plugin = None
+        availUtil = list(testDef.loader.utilities.keys())
+        for util in availUtil:
+            for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
+                if "MPIVersion" == pluginInfo.plugin_object.print_name():
+                    plugin = pluginInfo.plugin_object
+                    break
+        if plugin is None:
+            log['mpi_info'] = {'name' : 'unknown', 'version' : 'unknown'}
+        else:
+            mpi_info = {}
+            plugin.execute(mpi_info, testDef)
+            log['mpi_info'] = mpi_info
+
+        # Add configure options to log for IUDatabase plugin
+        try:
+            log['configure_options'] = cmds['configure_options']
+        except KeyError:
+            log['configure_options'] = ''
+
         try:
             if cmds['build_in_place']:
                 prefix = None
@@ -138,57 +190,6 @@ class Autotools(BuildMTTTool):
             # just log success and return
             log['status'] = 0
             return
-        # check to see if they specified a module to use
-        # where the autotools can be found
-        usedModule = False
-        try:
-            if cmds['modules'] is not None:
-                status,stdout,stderr = testDef.modcmd.loadModules(cmds['modules'], testDef)
-                if 0 != status:
-                    log['status'] = status
-                    log['stderr'] = stderr
-                    return
-                usedModule = True
-        except KeyError:
-            # not required to provide a module
-            pass
-
-        # sense and record the compiler being used
-        plugin = None
-        availUtil = list(testDef.loader.utilities.keys())
-        for util in availUtil:
-            for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
-                if "Compilers" == pluginInfo.plugin_object.print_name():
-                    plugin = pluginInfo.plugin_object
-                    break
-        if plugin is None:
-            log['compiler'] = {'status' : 1, 'family' : "unknown", 'version' : "unknown"}
-        else:
-            compilerLog = {}
-            plugin.execute(compilerLog, testDef)
-            log['compiler'] = compilerLog
-        print(log['compiler'])
-
-        # Find MPI information for IUDatabase plugin
-        plugin = None
-        availUtil = list(testDef.loader.utilities.keys())
-        for util in availUtil:
-            for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
-                if "MPIVersion" == pluginInfo.plugin_object.print_name():
-                    plugin = pluginInfo.plugin_object
-                    break
-        if plugin is None:
-            log['mpi_info'] = {'name' : 'unknown', 'version' : 'unknown'}
-        else:
-            mpi_info = {}
-            plugin.execute(mpi_info, testDef)
-            log['mpi_info'] = mpi_info
-
-        # Add configure options to log for IUDatabase plugin
-        try:
-            log['configure_options'] = cmds['configure_options']
-        except KeyError:
-            log['configure_options'] = ''
 
         # save the current directory so we can return to it
         cwd = os.getcwd()

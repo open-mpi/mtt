@@ -59,7 +59,7 @@ print "\nCreating reports specified in $ini_file.";
 # Reference:
 #   http://www.zend.com/zend/trick/html-email.php
 
-$headers  = "From: mtt-results@open-mpi.org\r\n";
+$headers  = "From: mtt-results@lists.open-mpi.org\r\n";
 $headers .= "MIME-Version: 1.0\r\n";
 $boundary = uniqid("MTTREPORT");
 $headers .= "Content-Type: multipart/alternative" .

@@ -37,3 +37,7 @@ How to restore the database from a backup
  http://www.postgresql.org/docs/8.2/static/backup-dump.html
 
 shell$ gunzip -c mtt-db-2012-09-28.gz | psql -U mtt mtt
+
+How to setup Intel(R) Cluster Checker database view
+----------------------------------------------------
+See server/sql/analysis/README
