@@ -10,8 +10,8 @@ Stages
 * Profile/DefaultProfile : default_collect_profile.ini,default_check_profile.ini  
 * Provisioning/WWulf3 : TBD
 * Reporter/IUDatabase : TBD
-* Reporter/JunitXML : TBD
-* Reporter/TextFile : TBD
+* Reporter/JunitXML : negative.ini
+* Reporter/TextFile : negative.ini
 * TestBuild/DefaultTestBuild : TBD
 * TestGet : TBD
 * TestRun : TBD
