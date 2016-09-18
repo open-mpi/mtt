@@ -53,15 +53,16 @@ class DefaultProfile(ProfileMTTStage):
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
         keys = list(cmds.keys())
+        opts = self.options.keys()
         for key in keys:
-            if cmds[key]:
-                status, stdout, stderr = testDef.execmd.execute(self.options[key][2], testDef)
+            if cmds[key] and key in opts:
+                status, stdout, stderr = testDef.execmd.execute(cmds, self.options[key][2], testDef)
                 if 0 != status:
                     log['status'] = status
-                    log['stdout'] = stdout.strip()
-                    log['stderr'] = stderr.strip()
+                    log['stdout'] = stdout
+                    log['stderr'] = stderr
                     return
-                myLog[key] = stdout.strip()
+                myLog[key] = stdout
         # add our log to the system log
         log['profile'] = myLog
         log['status'] = 0

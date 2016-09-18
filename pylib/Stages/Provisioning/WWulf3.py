@@ -95,7 +95,7 @@ class WWulf3(ProvisionMTTStage):
         wwcmd = ["wwsh", "node", "list"]
         if cmds['sudo']:
             wwcmd.insert(0, "sudo")
-        status,stdout,stderr = testDef.execmd.execute(wwcmd, testDef)
+        status,stdout,stderr = testDef.execmd.execute(cmds, wwcmd, testDef)
         if 0 != status or stdout is None:
             log['status'] = status
             log['stderr'] = "Node list was not obtained"
@@ -132,7 +132,7 @@ class WWulf3(ProvisionMTTStage):
             wwcmd.append(tgt)
             wwcmd.append("--vnfs=" + cmds['image'])
             # update the provisioning database to the new image
-            status,stdout,stderr = testDef.execmd.execute(wwcmd, testDef)
+            status,stdout,stderr = testDef.execmd.execute(cmds, wwcmd, testDef)
             if 0 != status:
                 log['status'] = status
                 log['stderr'] = stderr

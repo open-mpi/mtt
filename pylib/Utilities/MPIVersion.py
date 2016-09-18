@@ -95,14 +95,14 @@ int main(int argc, char **argv) {
     return 0;
 }""")
         fh.close()
-        status, _, _ = testDef.execmd.execute('mpicc -o mpi_get_version mpi_get_version.c'.split(), testDef)
+        status, _, _ = testDef.execmd.execute(None, 'mpicc -o mpi_get_version mpi_get_version.c'.split(), testDef)
         if 0 != status:
             if os.path.exists("mpi_get_version"): os.remove("mpi_get_version")
             if os.path.exists("mpi_get_version.c"): os.remove("mpi_get_version.c")
             os.chdir("..")
             return None
 
-        status, stdout, _ = testDef.execmd.execute('./mpi_get_version'.split(), testDef)
+        status, stdout, _ = testDef.execmd.execute(None, './mpi_get_version'.split(), testDef)
         if 0 != status:
             if os.path.exists("mpi_get_version"): os.remove("mpi_get_version")
             if os.path.exists("mpi_get_version.c"): os.remove("mpi_get_version.c")

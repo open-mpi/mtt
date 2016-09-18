@@ -27,8 +27,8 @@ class SLURM(LauncherMTTTool):
         self.options['options'] = (None, "Comma-delimited sets of command line options that shall be used on each test")
         self.options['skipped'] = ("77", "Exit status of a test that declares it was skipped")
         self.options['merge_stdout_stderr'] = (False, "Merge stdout and stderr into one output stream")
-        self.options['stdout_save_lines'] = (None, "Number of lines of stdout to save")
-        self.options['stderr_save_lines'] = (None, "Number of lines of stderr to save")
+        self.options['stdout_save_lines'] = (-1, "Number of lines of stdout to save")
+        self.options['stderr_save_lines'] = (-1, "Number of lines of stderr to save")
         self.options['test_dir'] = (None, "Names of directories to be scanned for tests")
         self.options['fail_tests'] = (None, "Names of tests that are expected to fail")
         self.options['fail_timeout'] = (None, "Maximum execution time for tests expected to fail")
@@ -78,7 +78,7 @@ class SLURM(LauncherMTTTool):
                         for key in keys:
                             if key == optkey:
                                 self.options[key] = (myopts[optkey],self.options[key][1])
-                    
+
                     # we captured the default settings, so we can
                     # now return with success
                     log['status'] = 0
@@ -308,12 +308,12 @@ class SLURM(LauncherMTTTool):
         except KeyError:
             # not required to provide a module to unload
             pass
-  
+
         for test in tests:
             testLog = {'test':test}
             cmdargs.append(test)
             testLog['cmd'] = " ".join(cmdargs)
-            status,stdout,stderr = testDef.execmd.execute(cmdargs, testDef)
+            status,stdout,stderr = testDef.execmd.execute(cmds, cmdargs, testDef)
             testLog['status'] = status
             if 0 != status and skipStatus != status and 0 == finalStatus:
                 finalStatus = status

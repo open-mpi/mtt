@@ -120,7 +120,11 @@ class IUDatabase(ReporterMTTStage):
         metadata['local_username'] = pwd.getpwuid(os.getuid()).pw_name
         metadata['mtt_client_version'] = '4.0a1'
         metadata['platform_name'] = self._extract_param(testDef.logger, 'MTTDefaults', 'platform')
-        metadata['trial'] = int(self._extract_param(testDef.logger, 'MTTDefaults', 'trial'))
+        trl = self._extract_param(testDef.logger, 'MTTDefaults', 'trial')
+        if trl:
+            metadata['trial'] = 1
+        else:
+            metadata['trial'] = 0
 
         # Strategy:
         # For each Test Run section
@@ -229,21 +233,35 @@ class IUDatabase(ReporterMTTStage):
             elif status == 1:
                 data['result_message'] = "Failed"
                 data['test_result'] = 0
-                if 'stderr' in lg and '[Errno' in lg['stderr']:
-                    try:
-                        data['exit_value'] = int(lg['stderr'].split("[Errno ")[1].split("]")[0])
-                    except:
+                if 'stderr' in lg:
+                    # the log should be a list, but it is possible
+                    # that it got joined into a single string
+                    # somewhere along the way - so handle both
+                    # cases here
+                    if type(lg['stderr']) is list:
+                        lgerr = '\n'.join(lg['stderr'])
+                    else:
+                        lgerr = lg['stderr']
+                    if '[Errno' in lgerr:
+                        try:
+                            data['exit_value'] = int(lgerr.split("[Errno ")[1].split("]")[0])
+                        except:
+                            data['exit_value'] = -1
+                    else:
                         data['exit_value'] = -1
-                else:
-                    data['exit_value'] = -1
             else:
                 data['result_message'] = "Failed"
                 data['test_result'] = -1
-                if 'stderr' in lg and '[Errno' in lg['stderr']:
-                    try:
-                        data['exit_value'] = int(lg['stderr'].split("[Errno ")[1].split("]")[0])
-                    except:
-                        data['exit_value'] = -1
+                if 'stderr' in lg:
+                    if type(lg['stderr']) is list:
+                        lgerr = '\n'.join(lg['stderr'])
+                    else:
+                        lgerr = lg['stderr']
+                    if '[Errno' in lgerr:
+                        try:
+                            data['exit_value'] = int(lgerr.split("[Errno ")[1].split("]")[0])
+                        except:
+                            data['exit_value'] = -1
                 else:
                     data['exit_value'] = -1
 
@@ -277,12 +295,18 @@ class IUDatabase(ReporterMTTStage):
                 data['merge_stdout_stderr'] = None
 
             try:
-                data['result_stdout'] = '\n'.join(trun['stdout'])
+                if type(trun['stdout']) is list:
+                    data['result_stdout'] = '\n'.join(trun['stdout'])
+                else:
+                    data['result_stdout'] = trun(['stdout'])
             except KeyError:
                 data['result_stdout'] = None
 
             try:
-                data['result_stderr'] = '\n'.join(trun['stderr'])
+                if type(trun['stderr']) is list:
+                    data['result_stderr'] = '\n'.join(trun['stderr'])
+                else:
+                    data['result_stderr'] = trun['stderr']
             except KeyError:
                 data['result_stderr'] = None
 
@@ -362,21 +386,39 @@ class IUDatabase(ReporterMTTStage):
         elif status == 1:
             data['result_message'] = "Failed"
             data['test_result'] = 0
-            if 'stderr' in lg and '[Errno' in lg['stderr']:
-                try:
-                    data['exit_value'] = int(lg['stderr'].split("[Errno ")[1].split("]")[0])
-                except:
-                    data['exit_value'] = -1
+            if 'stderr' in lg:
+                # the log should be a list, but it is possible
+                # that it got joined into a single string
+                # somewhere along the way - so handle both
+                # cases here
+                if type(lg['stderr']) is list:
+                    lgerr = '\n'.join(lg['stderr'])
+                else:
+                    lgerr = lg['stderr']
+                if '[Errno' in lgerr:
+                    try:
+                        data['exit_value'] = int(lgerr.split("[Errno ")[1].split("]")[0])
+                    except:
+                        data['exit_value'] = -1
             else:
                 data['exit_value'] = -1
         else:
             data['result_message'] = "Failed"
             data['test_result'] = -1
-            if 'stderr' in lg and '[Errno' in lg['stderr']:
-                try:
-                    data['exit_value'] = int(lg['stderr'].split("[Errno ")[1].split("]")[0])
-                except:
-                    data['exit_value'] = -1
+            if 'stderr' in lg:
+                # the log should be a list, but it is possible
+                # that it got joined into a single string
+                # somewhere along the way - so handle both
+                # cases here
+                if type(lg['stderr']) is list:
+                    lgerr = '\n'.join(lg['stderr'])
+                else:
+                    lgerr = lg['stderr']
+                if '[Errno' in lgerr:
+                    try:
+                        data['exit_value'] = int(lgerr.split("[Errno ")[1].split("]")[0])
+                    except:
+                        data['exit_value'] = -1
             else:
                 data['exit_value'] = -1
 
@@ -396,12 +438,18 @@ class IUDatabase(ReporterMTTStage):
             data['merge_stdout_stderr'] = None
 
         try:
-            data['result_stdout'] = '\n'.join(lg['stdout'])
+            if type(lg['stdout']) is list:
+                data['result_stdout'] = '\n'.join(lg['stdout'])
+            else:
+                data['result_stdout'] = lg['stdout']
         except KeyError:
             data['result_stdout'] = None
 
         try:
-            data['result_stderr'] = '\n'.join(lg['stderr'])
+            if type(lg['stderr']) is list:
+                data['result_stderr'] = '\n'.join(lg['stderr'])
+            else:
+                data['result_stderr'] = lg['stderr']
         except KeyError:
             data['result_stderr'] = None
 
@@ -520,21 +568,39 @@ class IUDatabase(ReporterMTTStage):
         elif status == 1:
             data['result_message'] = "Failed"
             data['test_result'] = 0
-            if 'stderr' in lg and '[Errno' in lg['stderr']:
-                try:
-                    data['exit_value'] = int(stderr.split("[Errno ")[1].split("]")[0])
-                except:
-                    data['exit_value'] = -1
+            if 'stderr' in lg:
+                # the log should be a list, but it is possible
+                # that it got joined into a single string
+                # somewhere along the way - so handle both
+                # cases here
+                if type(lg['stderr']) is list:
+                    lgerr = '\n'.join(lg['stderr'])
+                else:
+                    lgerr = lg['stderr']
+                if '[Errno' in lgerr:
+                    try:
+                        data['exit_value'] = int(lgerr.split("[Errno ")[1].split("]")[0])
+                    except:
+                        data['exit_value'] = -1
             else:
                 data['exit_value'] = -1
         else:
             data['result_message'] = "Failed"
             data['test_result'] = -1
-            if 'stderr' in lg and '[Errno' in lg['stderr']:
-                try:
-                    data['exit_value'] = int(stderr.split("[Errno ")[1].split("]")[0])
-                except:
-                    data['exit_value'] = -1
+            if 'stderr' in lg:
+                # the log should be a list, but it is possible
+                # that it got joined into a single string
+                # somewhere along the way - so handle both
+                # cases here
+                if type(lg['stderr']) is list:
+                    lgerr = '\n'.join(lg['stderr'])
+                else:
+                    lgerr = lg['stderr']
+                if '[Errno' in lgerr:
+                    try:
+                        data['exit_value'] = int(lgerr.split("[Errno ")[1].split("]")[0])
+                    except:
+                        data['exit_value'] = -1
             else:
                 data['exit_value'] = -1
 
@@ -558,12 +624,18 @@ class IUDatabase(ReporterMTTStage):
             data['merge_stdout_stderr'] = None
 
         try:
-            data['result_stdout'] = '\n'.join(lg['stdout'])
+            if type(lg['stdout']) is list:
+                data['result_stdout'] = '\n'.join(lg['stdout'])
+            else:
+                data['result_stdout'] = lg['stdout']
         except KeyError:
             data['result_stdout'] = None
 
         try:
-            data['result_stderr'] = '\n'.join(lg['stderr'])
+            if type(lg['stderr']) is list:
+                data['result_stderr'] = '\n'.join(lg['stderr'])
+            else:
+                data['result_stderr'] = lg['stderr']
         except KeyError:
             data['result_stderr'] = None
 

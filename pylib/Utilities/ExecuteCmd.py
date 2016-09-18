@@ -30,7 +30,7 @@ class ExecuteCmd(BaseMTTUtility):
             print(prefix + line)
         return
 
-    def execute(self, cmdargs, testDef):
+    def execute(self, options, cmdargs, testDef):
         testDef.logger.verbose_print("ExecuteCmd")
         # if this is a dryrun, just declare success
         try:
@@ -38,6 +38,31 @@ class ExecuteCmd(BaseMTTUtility):
                 return (0, None, None)
         except KeyError:
             pass
+        #  check the options for a directive to merge
+        # stdout into stderr
+        try:
+            if options['merge_stdout_stderr']:
+                merge = True
+            else:
+                merge = False
+        except:
+            merge = False
+        # check for line limits
+        try:
+            if options['stdout_save_lines'] is None or options['stdout_save_lines'] < 0:
+                stdoutlines = 0
+            else:
+                stdoutlines = -1 * options['stdout_save_lines']
+        except:
+            stdoutlines = 0
+        try:
+            if options['stderr_save_lines'] is None or options['stderr_save_lines'] < 0:
+                stderrlines = 0
+            else:
+                stderrlines = -1 * options['stderr_save_lines']
+        except:
+            stderrlines = 0
+        # setup the command arguments
         mycmdargs = []
         # if any cmd arg has quotes around it, remove
         # them here
@@ -66,7 +91,10 @@ class ExecuteCmd(BaseMTTUtility):
                     if fd == p.stdout.fileno():
                         read = p.stdout.readline().rstrip()
                         testDef.logger.verbose_print('stdout: ' + read.decode("utf-8"))
-                        stdout.append(read.decode("utf-8"))
+                        if merge:
+                            stderr.append(read.decode("utf-8"))
+                        else:
+                            stdout.append(read.decode("utf-8"))
                     elif fd == p.stderr.fileno():
                         read = p.stderr.readline().rstrip()
                         testDef.logger.verbose_print('stderr: ' + read.decode("utf-8"))
@@ -77,6 +105,4 @@ class ExecuteCmd(BaseMTTUtility):
         except OSError as e:
             return (1, None, str(e))
 
-        output = "\n".join(stdout)
-        errors = "\n".join(stderr)
-        return (p.returncode, output, errors)
+        return (p.returncode, stdout[stdoutlines:], stderr[stderrlines:])

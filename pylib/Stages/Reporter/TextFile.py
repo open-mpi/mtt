@@ -109,7 +109,7 @@ class TextFile(ReporterMTTStage):
                     print("\tProfile:", file=self.fh)
                     sp = " "
                     for key in keys:
-                        line = key + (max1-len(key))*sp + prf[key]
+                        line = key + (max1-len(key))*sp + '\n'.join(prf[key])
                         print("\t\t",line, file=self.fh)
             except KeyError:
                 pass
