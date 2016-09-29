@@ -561,6 +561,8 @@ class TestDef(object):
                     opts.append("False")
             elif isinstance(options[val][0], list):
                 opts.append(" ".join(options[val][0]))
+            elif isinstance(options[val][0], int):
+                opts.append(str(options[val][0]))
             else:
                 opts.append(options[val][0])
             opts.append(options[val][1])
