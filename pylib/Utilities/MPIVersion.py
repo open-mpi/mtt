@@ -12,6 +12,10 @@ import os
 import sys
 from BaseMTTUtility import *
 
+## @addtogroup Utilities
+# @{
+# @section MPIVersion
+# @}
 class MPIVersion(BaseMTTUtility):
     def __init__(self):
         BaseMTTUtility.__init__(self)

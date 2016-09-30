@@ -12,6 +12,11 @@
 from __future__ import print_function
 from FirmwareMTTStage import *
 
+## @addtogroup Stages
+# @{
+# @addtogroup Firmware
+# @section FooFlash
+# @}
 class FooFlash(FirmwareMTTStage):
 
     def __init__(self):
@@ -23,7 +28,6 @@ class FooFlash(FirmwareMTTStage):
         # get the automatic procedure from IPlugin
         IPlugin.activate(self)
         return
-
 
     def deactivate(self):
         IPlugin.deactivate(self)

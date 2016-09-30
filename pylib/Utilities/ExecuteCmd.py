@@ -15,6 +15,10 @@ import select
 import subprocess
 from BaseMTTUtility import *
 
+## @addtogroup Utilities
+# @{
+# @section ExecuteCmd
+# @}
 class ExecuteCmd(BaseMTTUtility):
     def __init__(self):
         BaseMTTUtility.__init__(self)

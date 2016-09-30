@@ -12,6 +12,30 @@ from __future__ import print_function
 import os
 from LauncherMTTTool import *
 
+## @addtogroup Tools
+# @{
+# @addtogroup Launcher
+# @section SLURM
+# @param merge_stdout_stderr       Merge stdout and stderr into one output stream
+# @param skipped                   Exit status of a test that declares it was skipped
+# @param hostfile                  The hostfile for OpenMPI to use
+# @param skip_tests                Names of tests to be skipped
+# @param job_name                  User-defined name for job
+# @param test_dir                  Names of directories to be scanned for tests
+# @param modules                   Modules to load
+# @param stdout_save_lines         Number of lines of stdout to save
+# @param save_stdout_on_pass       Whether or not to save stdout on passed tests
+# @param stderr_save_lines         Number of lines of stderr to save
+# @param fail_tests                Names of tests that are expected to fail
+# @param fail_timeout              Maximum execution time for tests expected to fail
+# @param command                   Command for executing the application
+# @param timeout                   Maximum execution time - terminate a test if it exceeds this time
+# @param modules_unload            Modules to unload
+# @param np                        Number of processes to run
+# @param max_num_tests             Maximum number of tests to run
+# @param report_after_n_results    Number of tests to run before updating the reporter
+# @param options                   Comma-delimited sets of command line options that shall be used on each test
+# @}
 class SLURM(LauncherMTTTool):
 
     def __init__(self):

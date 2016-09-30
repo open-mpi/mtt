@@ -12,6 +12,17 @@ from __future__ import print_function
 import os
 from ProfileMTTStage import *
 
+## @addtogroup Stages
+# @{
+# @addtogroup Profile
+# @section DefaultProfile
+# @param kernelVersion    Kernel version string
+# @param nodeName         Node name
+# @param kernelRelease    Kernel release string
+# @param machineName      Machine name
+# @param processorType    Processor type
+# @param kernelName       Kernel name
+# @}
 class DefaultProfile(ProfileMTTStage):
 
     def __init__(self):

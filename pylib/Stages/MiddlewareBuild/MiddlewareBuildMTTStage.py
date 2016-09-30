@@ -11,6 +11,11 @@
 from __future__ import print_function
 from yapsy.IPlugin import IPlugin
 
+## @addtogroup Stages
+# @{
+# @addtogroup MiddlewareBuild
+# ordering 400
+# @}
 class MiddlewareBuildMTTStage(IPlugin):
     def __init__(self):
         # initialise parent class

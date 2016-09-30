@@ -16,6 +16,18 @@ from urllib.parse import urlparse
 from FetchMTTTool import *
 from distutils.spawn import find_executable
 
+## @addtogroup Tools
+# @{
+# @addtogroup Fetch
+# @section Git
+# @param username    Username required for accessing the repository
+# @param pr          Pull request to be downloaded
+# @param url         URL to access the repository
+# @param module      Modules (or lmod modules) to be loaded for accessing this package
+# @param branch      Branch (if not master) to be downloaded
+# @param pwfile      File where password can be found
+# @param password    Password required for that user to access the repository
+# @}
 class Git(FetchMTTTool):
 
     def __init__(self):

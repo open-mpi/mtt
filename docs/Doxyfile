@@ -250,7 +250,7 @@ OPTIMIZE_OUTPUT_FOR_C  = NO
 # qualified scopes will look different, etc.
 # The default value is: NO.
 
-OPTIMIZE_OUTPUT_JAVA   = NO
+OPTIMIZE_OUTPUT_JAVA   = YES
 
 # Set the OPTIMIZE_FOR_FORTRAN tag to YES if your project consists of Fortran
 # sources. Doxygen will then generate output that is tailored for Fortran.
@@ -415,7 +415,7 @@ EXTRACT_ALL            = YES
 # be included in the documentation.
 # The default value is: NO.
 
-EXTRACT_PRIVATE        = NO
+EXTRACT_PRIVATE        = YES
 
 # If the EXTRACT_PACKAGE tag is set to YES, all members with package or internal
 # scope will be included in the documentation.

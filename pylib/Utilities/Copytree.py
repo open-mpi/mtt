@@ -14,6 +14,11 @@ import shutil
 import os
 from BaseMTTUtility import *
 
+## @addtogroup Utilities
+# @{
+# @section Copytree
+# @param  src    The top directory of the tree to be copied
+# @}
 class Copytree(BaseMTTUtility):
     def __init__(self):
         BaseMTTUtility.__init__(self)

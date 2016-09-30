@@ -30,6 +30,12 @@ from ExecutorMTTTool import *
 # Thus, the user is responsible for ensuring that the order of execution
 # is correct.
 #
+
+## @addtogroup Tools
+# @{
+# @addtogroup Executor
+# @section SequentialEx
+# @}
 class SequentialEx(ExecutorMTTTool):
 
     def __init__(self):
@@ -37,12 +43,10 @@ class SequentialEx(ExecutorMTTTool):
         ExecutorMTTTool.__init__(self)
         self.options = {}
 
-
     def activate(self):
         # use the automatic procedure from IPlugin
         IPlugin.activate(self)
         return
-
 
     def deactivate(self):
         IPlugin.deactivate(self)

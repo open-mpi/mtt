@@ -11,6 +11,11 @@
 from __future__ import print_function
 from yapsy.IPlugin import IPlugin
 
+## @addtogroup Tools
+# @{
+# @addtogroup Fetch
+# Tools for fetching tests
+# @}
 class FetchMTTTool(IPlugin):
     def __init__(self):
         # initialise parent class

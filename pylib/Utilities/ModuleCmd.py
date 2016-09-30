@@ -17,6 +17,10 @@ import os
 from io import StringIO
 from BaseMTTUtility import *
 
+## @addtogroup Utilities
+# @{
+# @section ModuleCmd
+# @}
 class ModuleCmd(BaseMTTUtility):
     def __init__(self):
         BaseMTTUtility.__init__(self)

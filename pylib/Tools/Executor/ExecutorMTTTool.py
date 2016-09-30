@@ -11,6 +11,11 @@
 from __future__ import print_function
 from yapsy.IPlugin import IPlugin
 
+## @addtogroup Tools
+# @{
+# @addtogroup Executor
+# Executor of test description
+# @}
 class ExecutorMTTTool(IPlugin):
     def __init__(self):
         # initialise parent class

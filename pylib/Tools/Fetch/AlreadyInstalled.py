@@ -13,6 +13,13 @@ from __future__ import print_function
 from FetchMTTTool import *
 from distutils.spawn import find_executable
 
+## @addtogroup Tools
+# @{
+# @addtogroup Fetch
+# @section AlreadyInstalled
+# @param module    Modules (or lmod modules) to be loaded for accessing this package
+# @param exec      Executable that should be in path
+# @}
 class AlreadyInstalled(FetchMTTTool):
 
     def __init__(self):

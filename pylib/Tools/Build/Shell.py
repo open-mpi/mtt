@@ -13,6 +13,20 @@ import os
 import re
 from BuildMTTTool import *
 
+## @addtogroup Tools
+# @{
+# @addtogroup Build
+# @section Shell
+# @param merge_stdout_stderr       Merge stdout and stderr into one output stream
+# @param parent                    Section that precedes this one in the dependency tree
+# @param modules_unload            Modules to unload
+# @param stdout_save_lines         Number of lines of stdout to save
+# @param modules                   Modules to load
+# @param stderr_save_lines         Number of lines of stderr to save
+# @param save_stdout_on_success    Save stdout even if build succeeds
+# @param command                   Command to execute
+# @param middleware                Middleware stage that these tests are to be built against
+# @}
 class Shell(BuildMTTTool):
     def __init__(self):
         BuildMTTTool.__init__(self)

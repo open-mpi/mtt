@@ -25,7 +25,11 @@ MTTPyClientMinor = "0"
 MTTPyClientRelease = "0"
 MTTPyClientGreek = "a1"
 
-
+## @addtogroup Tools
+# @{
+# @addtogroup Version
+# @section MTTVersionPlugin
+# @}
 class MTTVersionPlugin(VersionMTTTool):
 
     def __init__(self):
