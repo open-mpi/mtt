@@ -11,6 +11,11 @@
 from __future__ import print_function
 from yapsy.IPlugin import IPlugin
 
+## @addtogroup Stages
+# @{
+# @addtogroup Profile
+# ordering 210
+# @}
 class ProfileMTTStage(IPlugin):
     def __init__(self):
         # initialise parent class

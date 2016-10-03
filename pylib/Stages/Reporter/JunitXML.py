@@ -15,6 +15,13 @@ import re
 from junit_xml import TestSuite, TestCase
 from ReporterMTTStage import *
 
+## @addtogroup Stages
+# @{
+# @addtogroup Reporter
+# @section JunitXML
+# @param textwrap    Max line length before wrapping
+# @param filename    Name of the file into which the report is to be written
+# @}
 class JunitXML(ReporterMTTStage):
 
     def __init__(self):

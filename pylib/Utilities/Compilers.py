@@ -12,6 +12,10 @@ from __future__ import print_function
 import os
 from BaseMTTUtility import *
 
+## @addtogroup Utilities
+# @{
+# @section Compilers
+# @}
 class Compilers(BaseMTTUtility):
     def __init__(self):
         BaseMTTUtility.__init__(self)

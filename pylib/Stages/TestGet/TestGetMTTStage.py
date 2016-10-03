@@ -11,6 +11,11 @@
 from __future__ import print_function
 from yapsy.IPlugin import IPlugin
 
+## @addtogroup Stages
+# @{
+# @addtogroup TestGet
+# ordering 450
+# @}
 class TestGetMTTStage(IPlugin):
     def __init__(self):
         # initialise parent class

@@ -12,6 +12,19 @@ from __future__ import print_function
 import os
 from MTTDefaultsMTTStage import *
 
+##
+# @addtogroup Stages
+# @{
+# @addtogroup MTTDefaults
+# @section DefaultMTTDefaults
+# @param description             Provide a brief title/description to be included in the log for this test
+# @param platform                Name of the system under test
+# @param scratch                 Specify the DIRECTORY under which scratch files are to be stored
+# @param trial                   Use when testing your MTT client setup; results that are generated and submitted to the database are marked as "trials" and are not included in normal reporting.
+# @param organization            Name of the organization running the test
+# @param logfile                 Log all output to FILE (defaults to stdout)
+# @param submit_group_results    Report results from each test section as it is completed
+# @}
 class DefaultMTTDefaults(MTTDefaultsMTTStage):
 
     def __init__(self):

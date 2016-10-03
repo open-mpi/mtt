@@ -14,6 +14,10 @@ import sys
 import datetime
 from BaseMTTUtility import *
 
+## @addtogroup Utilities
+# @{
+# @section Logger
+# @}
 class Logger(BaseMTTUtility):
     def __init__(self):
         BaseMTTUtility.__init__(self)

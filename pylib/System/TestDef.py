@@ -35,6 +35,16 @@ def _mkdir_recursive(path):
     if not os.path.exists(path):
         os.mkdir(path)
 
+## @mainpage
+# See @ref Stages for details on the stages of test execution.\n
+# See @ref Tools for details on the plugins required by Stages.\n
+# See @ref Utilities for details on the plugins used by the MTT framework.\n
+# @addtogroup Stages
+# Stages of test execution
+# @addtogroup Tools
+# Plugins required by Stages
+# @addtogroup Utilities
+# Plugins used by the MTT framework
 class TestDef(object):
     def __init__(self):
         # set aside storage for options and cmd line args

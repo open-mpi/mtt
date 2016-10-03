@@ -11,6 +11,11 @@
 from __future__ import print_function
 from yapsy.IPlugin import IPlugin
 
+## @addtogroup Tools
+# @{
+# @addtogroup CNC
+# Comand and control tools for system managment
+# @}
 class CNCMTTTool(IPlugin):
     def __init__(self):
         # initialise parent class

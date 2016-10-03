@@ -15,6 +15,21 @@ import string
 import sys
 from BuildMTTTool import *
 
+## @addtogroup Tools
+# @{
+# @addtogroup Build
+# @section Autotools
+# @param merge_stdout_stderr       Merge stdout and stderr into one output stream
+# @param make_options              Options to be passed to the make command
+# @param parent                    Section that precedes this one in the dependency tree
+# @param build_in_place            Build tests in current location (no prefix or install)
+# @param stdout_save_lines         Number of lines of stdout to save
+# @param modules                   Modules to load
+# @param configure_options         Options to be passed to configure. Note that the prefix will be automatically set and need not be provided here
+# @param save_stdout_on_success    Save stdout even if build succeeds
+# @param autogen_cmd               Command to be executed to setup the configure script, usually called autogen.sh or autogen.pl
+# @param stderr_save_lines         Number of lines of stderr to save
+# @}
 class Autotools(BuildMTTTool):
     def __init__(self):
         BuildMTTTool.__init__(self)

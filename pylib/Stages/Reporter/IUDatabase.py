@@ -20,6 +20,22 @@ from requests.auth import HTTPBasicAuth
 
 from ReporterMTTStage import *
 
+## @addtogroup Stages
+# @{
+# @addtogroup Reporter
+# @section IUDatabase
+# @param username   Username to be used for submitting data
+# @param debug_filename      Debug output file for server interaction information
+# @param keep_debug_files    Retain reporter debug output after execution
+# @param realm               Database name
+# @param url                 URL of the database server
+# @param hostname            Name of the hosts involved in the tests (may be regular expression)
+# @param email               Email to which errors are to be sent
+# @param platform            Name of the platform (cluster) upon which the tests were run
+# @param pwfile              File where password can be found
+# @param password            Password for that username
+# @param debug_server        Ask the server to return its debug output as well
+# @}
 class IUDatabase(ReporterMTTStage):
 
     def __init__(self):

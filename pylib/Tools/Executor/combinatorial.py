@@ -11,6 +11,11 @@
 from __future__ import print_function
 from ExecutorMTTTool import *
 
+## @addtogroup Tools
+# @{
+# @addtogroup Executor
+# @section CombinatorialEx
+# @}
 class CombinatorialEx(ExecutorMTTTool):
 
     def __init__(self):

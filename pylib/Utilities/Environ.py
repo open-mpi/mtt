@@ -12,6 +12,10 @@ import shutil
 import os
 from BaseMTTUtility import *
 
+## @addtogroup Utilities
+# @{
+# @section Environ
+# @}
 class Environ(BaseMTTUtility):
     def __init__(self):
         BaseMTTUtility.__init__(self)

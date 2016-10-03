@@ -10,6 +10,11 @@
 
 from yapsy.IPlugin import IPlugin
 
+## @addtogroup Tools
+# @{
+# @addtogroup Version
+# Tools that collect version information
+# @}
 class VersionMTTTool(IPlugin):
     def __init__(self):
         # initialise parent class
