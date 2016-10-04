@@ -12,6 +12,7 @@ from __future__ import print_function
 from future import standard_library
 standard_library.install_aliases()
 import os
+import shutil
 import sys
 import configparser
 import importlib
@@ -89,10 +90,10 @@ execGroup.add_argument("--timestamp", dest="time",
 execGroup.add_argument("--clean-start", dest="clean",
                      action="store_true",
                      help="Clean the scratch directory from past MTT invocations before running")
-execGroup.add_argument("-s", "--sections", dest="section",
-                     help="Execute the specified SECTION (or comma-delimited list of SECTIONs)", metavar="SECTION")
-execGroup.add_argument("--skip-sections", dest="skipsections",
-                     help="Skip the specified SECTION (or comma-delimited list of SECTIONs)", metavar="SECTION")
+execGroup.add_argument("-s", "--sections", dest="section", action="append",
+                       help="Execute the specified SECTION (or comma-delimited list of SECTIONs)", metavar="SECTION", nargs='*')
+execGroup.add_argument("--skip-sections", dest="skipsections", action="append",
+                       help="Skip the specified SECTION (or comma-delimited list of SECTIONs)", metavar="SECTION", nargs='*')
 execGroup.add_argument("--no-reporter", dest="reporter",
                       action="store_true", default=False,
                       help="Do not invoke any MTT Reporter modules")
@@ -246,10 +247,19 @@ if args.section and args.skipsections:
 # to stdout
 testDef.openLogger()
 
+# Create list of .ini files to process
+iniLog = testDef.createIniLog()
 # Read the input test definition file(s)
-testDef.configTest()
+for nextFile in iniLog:
+    if not os.path.isfile(iniLog[nextFile]):
+        print("Test .ini file not found!: " + nextFile)
+        sys.exit(1)    
+    testDef.configTest(iniLog[nextFile])
+    testDef.executeTest()
+    testDef.cleanConfig()
 
-# Now execute the strategy
-testDef.executeTest()
-
+# Clean up temporary files
+print (testDef.tempDir)
+#shutil.rmtree(testDef.getTempDir())
+    
 # All done!

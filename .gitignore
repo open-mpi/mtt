@@ -15,6 +15,7 @@ server/php/submit/php_errors.log
 .DS_Store
 db.sqlite3
 */mttscratch
+tests/pytestDir/.cache/*
 *~
 
 server/php/cherrypy/bin/mtt_server.cfg

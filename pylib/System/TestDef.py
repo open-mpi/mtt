@@ -15,6 +15,7 @@ from builtins import range
 from builtins import object
 import os
 import shutil
+import tempfile
 import sys
 import configparser
 import importlib
@@ -59,12 +60,28 @@ class TestDef(object):
         self.logger = None
         self.modcmd = None
         self.execmd = None
+        # config will contain data from the command line
+        # .ini file/s
         self.config = None
+        # parser is the workhorse for createIniLog
+        self.parser = configparser.ConfigParser()
+        self.parser.optionxform = str
+        # configRun will contain data from the
+        # next .ini file in the runLog
+        self.configRun = configparser.ConfigParser()
+        self.configRun.optionxform = str
         self.stages = None
         self.tools = None
         self.utilities = None
         self.log = {}
-
+        # list of .ini files to be run
+        self.runLog = None
+        self.iniLog = None
+        # Create directory to hold .ini files
+        self.tempDir = tempfile.mkdtemp()
+        # full name of section should be used
+        self.sectionsToRun = []
+         
     def setOptions(self, args):
         self.options = vars(args)
         self.args = args
@@ -197,7 +214,7 @@ class TestDef(object):
                     pass
             except KeyError:
                 # some always need to be passed
-                if kvkey in ['parent', 'asis']:
+                if kvkey in ['parent', 'asis'] or kvkey in ['parent', 'ASIS']:
                     target[kvkey] = keyvals[kvkey]
                 else:
                     stderr.append("Option " + kvkey + " is not supported")
@@ -322,7 +339,7 @@ class TestDef(object):
         return
 
     def printInfo(self):
-        # Print the available MTT sections out, if requested
+         # Print the available MTT sections out, if requested
         if self.options['listsections']:
             print("Supported MTT stages:")
             # print them in the default order of execution
@@ -478,33 +495,44 @@ class TestDef(object):
         self.logger.open(self)
         return
 
-    def configTest(self):
-        # setup the configuration parser
-        self.config = configparser.ConfigParser()
-        # Set the config parser to make option names case sensitive.
-        self.config.optionxform = str
-        # log the list of files - note that the argument parser
-        # puts the input files in a list, with the first member
-        # being the list of input files
-        self.log['inifiles'] = self.args.ini_files[0]
-        # initialize the list of active sections
-        self.actives = []
-        # if they specified a list to execute, then use it
-        sections = []
-        if self.args.section:
-            sections = self.args.section.split(",")
-            skip = False
-        elif self.args.skipsections:
-            sections = self.args.skipsections.split(",")
-            skip = True
-        else:
-            sections = None
+    def configTest(self, nextFile):
+        self.configRun.read(nextFile)
+        
+    def cleanConfig(self):
+        for section in self.configRun.sections():
+            self.configRun.remove_section(section)
+            
+    # Create .ini files for each combination to be run        
+    def createIniLog(self):
+        self.runLog = {}
+        self.iniLog = {}
+        tempSpecialSection = {}
+        # configParser object to write individual options to files
+        writeOption = configparser.ConfigParser()
+        writeOption.optionxform = str
+        # Tuck away the full path and the testFile file name
+        self.log['inifiles'] = self.args.ini_files[0]     
         # cycle thru the input files
         for testFile in self.log['inifiles']:
             if not os.path.isfile(testFile):
                 print("Test description file",testFile,"not found!")
                 sys.exit(1)
-            self.config.read(self.log['inifiles'])
+        self.config = configparser.ConfigParser()
+        # Set the config parser to make option names case sensitive.
+        self.config.optionxform = str
+        self.config.read(self.log['inifiles'])
+        # if they specified a list of sections to execute, then use it
+        if self.args.section:
+            self.sectionsToRun = self.args.section.split(",")            
+        elif self.args.skipsections:
+            for section in self.config.sections():
+                if(section not in self.args.skipsections):
+                    self.sectionsToRun.append(section)
+        else:
+            for section in self.config.sections():
+                self.sectionsToRun.append(section)
+        # Sort base .ini sections and write to temp files
+
         for section in self.config.sections():
             if section.startswith("SKIP") or section.startswith("skip"):
                 # users often want to temporarily ignore a section
@@ -512,34 +540,101 @@ class TestDef(object):
                 # remove it lest they forget what it did. So let
                 # them just mark the section as "skip" to be ignored
                 continue
-            # if we are to filter the sections, then do so
-            takeus = True
-            if sections is not None:
-                found = False
-                for sec in sections:
-                    if sec == section:
-                        found = True
-                        sections.remove(sec)
-                        if skip:
-                            takeus = False
-                        break
-                if not found and not skip:
-                    takeus = False
-            if takeus:
-                self.actives.append(section)
-            if self.logger is not None:
-                self.logger.verbose_print("SECTION: " + section)
-                self.logger.verbose_print(self.config.items(section))
-        if sections is not None and 0 != len(sections) and not skip:
-            print("ERROR: sections were specified for execution and not found:",sections)
-            sys.exit(1)
-        return
-
+            self.parser.add_section(section)
+            for option in self.config.options(section):
+                self.parser.set(section, option, self.config.get(section, option))
+            # TODO: FIX Getting temp file in tmp dir that is not being removed
+            fd, fileName = tempfile.mkstemp(suffix=".ini", dir = self.tempDir)
+            with open(fileName, 'w') as configfile:
+                self.parser.write(configfile)
+            # Clear out parser for next section
+            self.parser.remove_section(section)
+            if "MiddlewareGet" in section:
+                self.runLog[section] = fileName
+            elif "TestRun" in section:
+                tempSpecialSection[section] = fileName
+            else:
+                self.iniLog[section] = fileName
+        # Combine TestRun and MiddlewareGet files
+        tempList = {}
+        for section in self.runLog:
+            self.parser.read(self.runLog[section])
+            for id in tempSpecialSection:
+                self.parser.read(tempSpecialSection[id])
+                fd, fileName = tempfile.mkstemp(suffix = ".ini", dir = self.tempDir)
+                with open(fileName, 'w') as configfile:
+                    self.parser.write(configfile)
+                self.parser.remove_section(id)
+                tempList[fd] = fileName
+            self.parser.remove_section(section)
+        self.runLog.clear()
+        self.runLog = tempList
+        # Sort sections for comma separated values to be parsed
+        optionsCSV = {}
+        for section in self.iniLog:
+            writeOption.read(self.iniLog[section])
+            for option in writeOption.options(section):
+                if ',' in writeOption.get(section, option):
+                    try:
+                        if optionsCSV[section] is not None:
+                            pass
+                    except KeyError:
+                        optionsCSV[section] = []
+                    optionsCSV[section].append(option)
+                else:
+                    # write option to base run files
+                    for fd in self.runLog:
+                        # set up parser to write to each file
+                        self.parser.read(self.runLog[fd])
+                        if not self.parser.has_section(section):
+                            self.parser.add_section(section)
+                        self.parser.set(section, option, writeOption.get(section, option))
+                        # Want to overwrite file with new parser contents
+                        with open(self.runLog[fd], 'w') as configfile:
+                            self.parser.write(configfile)
+                        # clear parser for next file
+                        for sect in self.parser.sections():
+                            self.parser.remove_section(sect)       
+            writeOption.remove_section(section)
+        # Process CSV options
+        for section in optionsCSV:
+            self.parser.read(self.iniLog[section])
+            for option in optionsCSV[section]:
+                # Get clean list of CSV's
+                rawList = self.parser.get(section, option)
+                splitList = rawList.split(',')
+                optionList = []
+                for item in splitList:
+                    optionList.append(item.strip())
+                newList = {}
+                for fd in self.runLog:
+                    writeOption.read(self.runLog[fd])
+                    for nextOpt in optionList:
+                        try:
+                            if writeOption.has_section(section):
+                                pass
+                        except KeyError:
+                            writeOption.add_section(section)
+                        writeOption.set(section, option, nextOpt)
+                        fd, fileName = tempfile.mkstemp(suffix=".ini", dir = self.tempDir)
+                        with open(fileName, 'w') as configfile:
+                            writeOption.write(configfile)
+                        newList[fd] = fileName
+                    for sect in writeOption.sections():
+                        writeOption.remove_section(sect)
+                # Update runLog for next pass
+                self.runLog.clear()
+                self.runLog = newList
+            self.parser.remove_section(section)
+        # Debugging
+        print (self.runLog)
+        return self.runLog
+        
     def executeTest(self):
         if not self.loaded:
             print("Plugins have not been loaded - cannot execute test")
             exit(1)
-        if self.config is None:
+        if self.configRun is None:
             print("No test definition file was parsed - cannot execute test")
             exit(1)
         if not self.tools.getPluginByName(self.options['executor'], "Executor"):

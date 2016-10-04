@@ -7,7 +7,8 @@
 #
 # $HEADER$
 #
-
+from __future__ import print_function
+from builtins import str
 import shutil
 import os
 from BaseMTTUtility import *
@@ -27,7 +28,7 @@ class Environ(BaseMTTUtility):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print prefix + line
+            print (prefix + line)
         return
 
     def execute(self, log, keyvals, testDef):
