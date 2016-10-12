@@ -248,8 +248,14 @@ testDef.openLogger()
 
 # Read the input test definition file(s)
 testDef.configTest()
-
-# Now execute the strategy
 testDef.executeTest()
+# Determine executor to use
+if testDef.args.executor == "sequential" or testDef.args.executor == "Sequential":
+    testDef.executeTest()
+elif testDef.args.executor == "combinatorial" or testDef.args.executor == "Combinatorial":
+    testDef.executeCombinatorial()
+else:
+    print("Specified executor ", testDef.args.executor, " not found!")
+    sys.exit(1)    
 
 # All done!
