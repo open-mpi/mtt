@@ -248,7 +248,7 @@ testDef.openLogger()
 
 # Read the input test definition file(s)
 testDef.configTest()
-testDef.executeTest()
+
 # Determine executor to use
 if testDef.args.executor == "sequential" or testDef.args.executor == "Sequential":
     testDef.executeTest()

@@ -18,6 +18,7 @@ import importlib
 import logging
 import imp
 import datetime
+import tempfile
 from yapsy.PluginManager import PluginManager
 
 from ExecutorMTTTool import *
@@ -33,13 +34,13 @@ class CombinatorialEx(ExecutorMTTTool):
         # initialise parent class
         ExecutorMTTTool.__init__(self)
         self.options = {}
-		self.parser = configparser.ConfigParser()
-		self.parser.optionxform = str
-		# Create temp directory to hold .ini files
-		self.tempDir = tempfile.mkdtemp()
-		self.baseIniFile = None
-		self.runLog = {}
-		self.iniLog = {}
+        self.parser = configparser.ConfigParser()
+        self.parser.optionxform = str
+        # Create temp directory to hold .ini files
+        self.tempDir = tempfile.mkdtemp()
+        self.baseIniFile = None
+        self.runLog = {}
+        self.iniLog = {}
 
     def activate(self):
         # use the automatic procedure from IPlugin
@@ -50,7 +51,7 @@ class CombinatorialEx(ExecutorMTTTool):
 
     def deactivate(self):
         IPlugin.deactivate(self)
-		return
+        return
 
     def print_name(self):
         return "Combinatorial executor"
@@ -59,23 +60,13 @@ class CombinatorialEx(ExecutorMTTTool):
         lines = testDef.printOptions(self.options)
         for line in lines:
             print(prefix + line)
-		return
+        return
 
-	def execute(self, testDef):
-		testDef.logger.verbose_print("ExecuteCombinatorial")
-		self.runLog = createIniLog(testDef)
-		testDef.isCombinatorial = True
 
-		for nextFile in runLog:
-			if not os.path.isfile(iniLog[nextFile]):
-				print("Test .ini file not found!: " + nextFile)
-				sys.exit(1)
-			testDef.configNextTest(iniLog[nextFile])
-			testDef.executeTest()
     # Create .ini files for each combination to be run
     # BaseIniFile created by TestDef ConfigTest()
     def createIniLog(self, testDef):
-		self.baseIniFile = testDef.config
+        self.baseIniFile = testDef.config
         tempSpecialSection = {}
         # configParser object to write individual options to files
         writeOption = configparser.ConfigParser()
@@ -175,6 +166,17 @@ class CombinatorialEx(ExecutorMTTTool):
                 self.runLog = newList
             self.parser.remove_section(section)
         # Debugging
-        print (self.runLog)
         return self.runLog
-			
+            
+    def execute(self, testDef):
+        testDef.logger.verbose_print("ExecuteCombinatorial")
+        self.runLog = createIniLog(testDef)
+        testDef.isCombinatorial = True
+
+        for nextFile in self.runLog:
+            if not os.path.isfile(self.iniLog[nextFile]):
+                print("Test .ini file not found!: " + nextFile)
+                sys.exit(1)
+            testDef.configNextTest(self.iniLog[nextFile])
+            testDef.executeTest()
+            

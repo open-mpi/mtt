@@ -81,7 +81,9 @@ class Logger(BaseMTTUtility):
 
     def verbose_print(self, str):
         if self.printout:
-            print(str + file=self.fh)
+            for item in str:
+                print(item)
+            print(str, file=self.fh)
         return
 
     def timestamp(self):

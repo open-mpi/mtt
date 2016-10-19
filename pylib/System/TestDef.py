@@ -425,7 +425,7 @@ class TestDef(object):
                         print("    " + pluginInfo.plugin_object.print_name() + ":")
                         pluginInfo.plugin_object.print_options(self, "        ")
                 except KeyError:
-                  print("    Invalid tool type name " + tool)
+                    print("    Invalid tool type name " + tool)
                 print()
             exit(1)
 
@@ -471,7 +471,7 @@ class TestDef(object):
                         print("    " + pluginInfo.plugin_object.print_name() + ":")
                         pluginInfo.plugin_object.print_options(self, "        ")
                 except KeyError:
-                  print("    Invalid utility type name " + util)
+                    print("    Invalid utility type name " + util)
                 print()
             exit(1)
 
@@ -569,9 +569,6 @@ class TestDef(object):
             if self.logger is not None:
                 self.logger.verbose_print("SECTION: " + section)
                 self.logger.verbose_print(self.config.items(section))
-        if sections is not None and 0 != len(sections) and not skip:
-            print("ERROR: sections were specified for execution and not found:",sections)
-            sys.exit(1)
         return
  
     def executeTest(self):
