@@ -525,6 +525,12 @@ sub _do_run {
     $tmp = $ini->val($section, "treat_timeouts_as_fail");
     $config->{treat_timeouts_as_fail} = $tmp
         if (defined($tmp));
+    $config->{corefile_size_limit} = -1;
+    $tmp = $ini->val($section, "corefile_size_limit");
+    $config->{corefile_size_limit} = $tmp
+        if (defined($tmp));
+
+    MTT::DoCommand::set_corefile_size_limit($config->{corefile_size_limit});
 
     $MTT::Test::Run::mpi_details = undef;
     foreach my $field ($ini->Parameters($section)) {

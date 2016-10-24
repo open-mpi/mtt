@@ -33,6 +33,21 @@ use File::Spec;
 use Cwd;
 use Benchmark;
 
+# See if we've got BSD::Resource.  If so, get some values from it so
+# that we don't get compile errors for systems that *don't* have it.
+my $_can_setrlimit;
+my $_rlimit_core;
+my $_rlim_infinity;
+if (eval "require BSD::Resource") {
+    $_can_setrlimit = 1;
+    $_rlimit_core = eval 'use BSD::Resource; RLIMIT_CORE';
+    $_rlim_infinity = eval 'use BSD::Resource; RLIM_INFINITY';
+} else {
+    $_can_setrlimit = 0;
+    $_rlimit_core = 0;
+    $_rlim_infinity = 0;
+}
+
 #--------------------------------------------------------------------------
 
 # Want to see what MTT *would* do?
@@ -285,6 +300,29 @@ sub _append {
             if (length($$partial) > 0);
         shift(@{$array})
             while ($#{$array} >= $max_lines);
+    }
+}
+
+#--------------------------------------------------------------------------
+
+# Max the size of the core dumps
+sub set_corefile_size_limit {
+    my $size_in_bytes = shift;
+
+    if (! $_can_setrlimit) {
+        # If the user set anything other than infinity (i.e., a
+        # negative size), error out (because we can't set it).
+        return
+            if (defined($size_in_bytes) && $size_in_bytes < 0);
+
+        Error("Cannot load the BSD::Resources perl module, which is necessary to effect the [Test Run] corefile_size_limit directive\n");
+        # Will not return
+    }
+
+    if (defined($size_in_bytes)) {
+        $size_in_bytes = $_rlim_infinity
+            if ($size_in_bytes < 0);
+        BSD::Resource::setrlimit($_rlimit_core, $size_in_bytes, $size_in_bytes);
     }
 }
 
