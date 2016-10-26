@@ -45,6 +45,7 @@ class Git(FetchMTTTool):
         self.options['pwfile'] = (None, "File where password can be found")
         self.options['branch'] = (None, "Branch (if not master) to be downloaded")
         self.options['pr'] = (None, "Pull request to be downloaded")
+        self.options['subdir'] = (None, "Subdirectory of interest in repository")
         return
 
     def activate(self):
@@ -68,38 +69,48 @@ class Git(FetchMTTTool):
 
     def execute(self, log, keyvals, testDef):
         testDef.logger.verbose_print("Git Execute")
+        # parse any provided options - these will override the defaults
+        cmds = {}
+        testDef.parseOptions(log, self.options, keyvals, cmds)
         # check that they gave us a URL
         try:
-            if keyvals['url'] is not None:
-                url = keyvals['url']
+            if cmds['url'] is not None:
+                url = cmds['url']
         except KeyError:
             log['status'] = 1
             log['stderr'] = "No repository URL was provided"
             return
         testDef.logger.verbose_print("Working repo " + url)
-        # see if they gave us a username
-        username = self.options['username'][0]
-        try:
-            if keyvals['username'] is not None:
-                username = keyvals['username']
-        except KeyError:
-            pass
+        username = cmds['username']
+        password = None
         # see if they gave us a password
-        password = self.options['password'][0]
         try:
-            if keyvals['password'] is not None:
-                password = keyvals['password']
+            if cmds['password'] is not None:
+                password = cmds['password']
+            else:
+                try:
+                    if cmds['pwfile'] is not None:
+                        if os.path.exists(cmds['pwfile']):
+                            f = open(cmds['pwfile'], 'r')
+                            password = f.readline().strip()
+                            f.close()
+                        else:
+                            log['status'] = 1;
+                            log['stderr'] = "Password file " + cmds['pwfile'] + " does not exist"
+                            return
+                except KeyError:
+                    pass
         except KeyError:
             # if not, did they give us a file where we can find the password
             try:
-                if keyvals['pwfile'] is not None:
-                    if os.path.exists(keyvals['pwfile']):
-                        f = open(keyvals['pwfile'], 'r')
+                if cmds['pwfile'] is not None:
+                    if os.path.exists(cmds['pwfile']):
+                        f = open(cmds['pwfile'], 'r')
                         password = f.readline().strip()
                         f.close()
                     else:
                         log['status'] = 1;
-                        log['stderr'] = "Password file " + keyvals['pwfile'] + " does not exist"
+                        log['stderr'] = "Password file " + cmds['pwfile'] + " does not exist"
                         return
             except KeyError:
                 pass
@@ -135,8 +146,8 @@ class Git(FetchMTTTool):
         # where git can be found
         usedModule = False
         try:
-            if keyvals['modules'] is not None:
-                status,stdout,stderr = testDef.modcmd.loadModules(keyvals['modules'], testDef)
+            if cmds['modules'] is not None:
+                status,stdout,stderr = testDef.modcmd.loadModules(cmds['modules'], testDef)
                 if 0 != status:
                     log['status'] = status
                     log['stderr'] = stderr
@@ -150,7 +161,7 @@ class Git(FetchMTTTool):
             log['stderr'] = "Executable git not found"
             if usedModule:
                 # unload the modules before returning
-                status,stdout,stderr = testDef.modcmd.unloadModules(keyvals['modules'], testDef)
+                status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules'], testDef)
                 if 0 != status:
                     log['status'] = status
                     log['stderr'] = stderr
@@ -159,15 +170,15 @@ class Git(FetchMTTTool):
         # see if they asked for a specific branch
         branch = None
         try:
-            if keyvals['branch'] is not None:
-                branch = keyvals['branch']
+            if cmds['branch'] is not None:
+                branch = cmds['branch']
         except KeyError:
             pass
         # or if they asked for a specific PR
         pr = None
         try:
-            if keyvals['pr'] is not None:
-                pr = keyvals['pr']
+            if cmds['pr'] is not None:
+                pr = cmds['pr']
         except KeyError:
             pass
         # see if we have already serviced this one
@@ -179,7 +190,7 @@ class Git(FetchMTTTool):
                     log['stderr'] = "Prior attempt to clone or update repo {0} failed".format(repo)
                 if usedModule:
                     # unload the modules before returning
-                    status,stdout,stderr = testDef.modcmd.unloadModules(keyvals['modules'], testDef)
+                    status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules'], testDef)
                     if 0 != status:
                         log['status'] = status
                         log['stderr'] = stderr
@@ -208,16 +219,16 @@ class Git(FetchMTTTool):
             os.chdir(repo)
             # if they want us to leave it as-is, then we are done
             try:
-                if keyvals['asis']:
+                if cmds['asis']:
                     status = 0
                     stdout = None
                     stderr = None
             except KeyError:
                 # since it already exists, let's just update it
-                status, stdout, stderr = testDef.execmd.execute(["git", "pull"], testDef)
+                status, stdout, stderr = testDef.execmd.execute(cmds, ["git", "pull"], testDef)
         else:
             # clone it
-            status, stdout, stderr = testDef.execmd.execute(["git", "clone", url], testDef)
+            status, stdout, stderr = testDef.execmd.execute(cmds, ["git", "clone", url], testDef)
             # move into it
             os.chdir(repo)
         # record the result
@@ -228,9 +239,10 @@ class Git(FetchMTTTool):
         log['location'] = os.getcwd()
         # if they indicated that a specific subdirectory was
         # the target, then modify the location accordingly
+        print("CMDS",cmds)
         try:
-            if keyvals['subdir'] is not None:
-                log['location'] = os.path.join(log['location'], keyvals['subdir'])
+            if cmds['subdir'] is not None:
+                log['location'] = os.path.join(log['location'], cmds['subdir'])
         except KeyError:
             pass
         # track that we serviced this one
@@ -239,7 +251,7 @@ class Git(FetchMTTTool):
         os.chdir(cwd)
         if usedModule:
             # unload the modules before returning
-            status,stdout,stderr = testDef.modcmd.unloadModules(keyvals['modules'], testDef)
+            status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules'], testDef)
             if 0 != status:
                 log['status'] = status
                 log['stderr'] = stderr

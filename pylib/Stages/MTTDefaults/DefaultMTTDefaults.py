@@ -39,6 +39,9 @@ class DefaultMTTDefaults(MTTDefaultsMTTStage):
         self.options['submit_group_results'] = (True, "Report results from each test section as it is completed")
         self.options['platform'] = (None, "Name of the system under test")
         self.options['organization'] = (None, "Name of the organization running the test")
+        self.options['merge_stdout_stderr'] = (False, "Merge stdout and stderr into one output stream")
+        self.options['stdout_save_lines'] = (-1, "Number of lines of stdout to save (-1 for unlimited)")
+        self.options['stderr_save_lines'] = (-1, "Number of lines of stderr to save (-1 for unlimited)")
         return
 
     def activate(self):
@@ -60,8 +63,17 @@ class DefaultMTTDefaults(MTTDefaultsMTTStage):
             print(prefix + line)
         return
 
+    def priority(self):
+        return 5
+
     def execute(self, log, keyvals, testDef):
         testDef.logger.verbose_print("Set MTT Defaults")
         cmds = {}
         # the parseOptions function will record status for us
         testDef.parseOptions(log, self.options, keyvals, cmds)
+        # we need to record the results into our options so
+        # subsequent sections can capture them
+        keys = cmds.keys()
+        for key in keys:
+            self.options[key] = (cmds[key], self.options[key][1])
+        return

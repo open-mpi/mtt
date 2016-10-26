@@ -53,7 +53,7 @@ class workerThread(threading.Thread):
                         ntries = 0
                         while True:
                             ++ntries
-                            status,stdout,stderr = self.testDef.execmd.execute(task['cmd'], testDef)
+                            status,stdout,stderr = self.testDef.execmd.execute(None, task['cmd'], testDef)
                             if 0 == status or ntries == task['maxtries']:
                                 self.testDef.logger.verbose_print("IPMITool: node " + task['target'] + " is back")
                                 break
@@ -92,7 +92,7 @@ class workerThread(threading.Thread):
                                 continue
                             # send it off to ipmitool to execute
                             self.testDef.logger.verbose_print("IPMITool: " + ' '.join(task['cmd']))
-                            st,stdout,stderr = self.testDef.execmd.execute(task['cmd'], testDef)
+                            st,stdout,stderr = self.testDef.execmd.execute(None, task['cmd'], testDef)
                             self.lock.acquire()
                             self.status.append((st, ' '.join(task['cmd']), stderr))
                             try:

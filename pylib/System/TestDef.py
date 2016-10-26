@@ -63,6 +63,7 @@ class TestDef(object):
         self.stages = None
         self.tools = None
         self.utilities = None
+        self.defaults = None
         self.log = {}
 
     def setOptions(self, args):
@@ -184,6 +185,15 @@ class TestDef(object):
                 # they didn't provide this one, so
                 # transfer only the value across
                 target[opt] = options[opt][0]
+        # add in any default settings that have not
+        # been overridden - anything set by this input
+        # stage will override the default
+        if self.defaults is not None:
+            keys = self.defaults.options.keys()
+            for key in keys:
+                if key not in target:
+                    target[key] = self.defaults.options[key][0]
+
         # now go thru in the reverse direction to see
         # if any keyvals they provided aren't supported
         # as this would be an error
@@ -318,6 +328,12 @@ class TestDef(object):
             print("This is a basic capability required")
             print("for MTT operations - cannot continue")
             sys.exit(1)
+        # similarly, capture the highest priority defaults stage here
+        pri = -1
+        for pluginInfo in self.stages.getPluginsOfCategory("MTTDefaults"):
+            if pri < pluginInfo.plugin_object.priority():
+                self.defaults = pluginInfo.plugin_object
+                pri = pluginInfo.plugin_object.priority()
 
         return
 
@@ -587,8 +603,12 @@ class TestDef(object):
             # column entries
             if len(opts[i]) > max1:
                 max1 = len(opts[i])
-            if len(opts[i+1]) > max2:
-                max2 = len(opts[i+1])
+            if type(opts[i+1]) is not str:
+                optout = str(opts[i+1])
+            else:
+                optout = opts[i+1]
+            if len(optout) > max2:
+                max2 = len(optout)
         # provide some spacing
         max1 = max1 + 4
         max2 = max2 + 4
@@ -598,7 +618,11 @@ class TestDef(object):
         sp = " "
         for i in range(0,len(opts),3):
             line = opts[i] + (max1-len(opts[i]))*sp
-            line = line + opts[i+1] + (max2-len(opts[i+1]))*sp
+            if type(opts[i+1]) is not str:
+                optout = str(opts[i+1])
+            else:
+                optout = opts[i+1]
+            line = line + optout + (max2-len(optout))*sp
             # to make this more readable, we will wrap the line at
             # 130 characters. First, see if the line is going to be
             # too long

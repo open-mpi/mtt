@@ -179,7 +179,7 @@ class Compilers(BaseMTTUtility):
 
         # Attempt to compile it
         mycmdargs = [compiler, "-c", "spastic"]
-        status, stdout, stderr = testDef.execmd.execute(mycmdargs, testDef)
+        status, stdout, stderr = testDef.execmd.execute(None, mycmdargs, testDef)
 
         # cleanup the test
         os.remove("spastic")
@@ -211,6 +211,6 @@ class Compilers(BaseMTTUtility):
     def check_version(self, compiler, version, testDef):
         # try the universal version option
         mycmdargs = [compiler, version]
-        status, stdout, stderr = testDef.execmd.execute(mycmdargs, testDef)
+        status, stdout, stderr = testDef.execmd.execute(None, mycmdargs, testDef)
         return status, stdout
 
