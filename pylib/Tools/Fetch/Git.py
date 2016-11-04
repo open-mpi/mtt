@@ -228,7 +228,10 @@ class Git(FetchMTTTool):
                 status, stdout, stderr = testDef.execmd.execute(cmds, ["git", "pull"], testDef)
         else:
             # clone it
-            status, stdout, stderr = testDef.execmd.execute(cmds, ["git", "clone", url], testDef)
+            if branch is not None:
+                status, stdout, stderr = testDef.execmd.execute(cmds, ["git", "clone", "-b", branch, url], testDef)
+            else:
+                status, stdout, stderr = testDef.execmd.execute(cmds, ["git", "clone", url], testDef)
             # move into it
             os.chdir(repo)
         # record the result
