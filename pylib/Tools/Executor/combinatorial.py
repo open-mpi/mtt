@@ -19,6 +19,7 @@ import logging
 import imp
 import datetime
 import tempfile
+import shutil
 from yapsy.PluginManager import PluginManager
 
 from ExecutorMTTTool import *
@@ -44,9 +45,7 @@ class CombinatorialEx(ExecutorMTTTool):
 
     def activate(self):
         # use the automatic procedure from IPlugin
-        print("activating Combinatorial executor")
         IPlugin.activate(self)
-        print("activated")
         return
 
     def deactivate(self):
@@ -165,18 +164,22 @@ class CombinatorialEx(ExecutorMTTTool):
                 self.runLog.clear()
                 self.runLog = newList
             self.parser.remove_section(section)
-        # Debugging
-        return self.runLog
-            
+
     def execute(self, testDef):
         testDef.logger.verbose_print("ExecuteCombinatorial")
-        self.runLog = createIniLog(testDef)
-        testDef.isCombinatorial = True
-
-        for nextFile in self.runLog:
-            if not os.path.isfile(self.iniLog[nextFile]):
-                print("Test .ini file not found!: " + nextFile)
+        self.createIniLog(testDef)
+        try:
+            if not self.runLog:
+                print("Error, empty run log, combinatorial executor failed")
                 sys.exit(1)
-            testDef.configNextTest(self.iniLog[nextFile])
-            testDef.executeTest()
+            for nextFile in self.runLog:
+                if not os.path.isfile(self.runLog[nextFile]):
+                    print("Test .ini file not found!: " + nextFile)
+                    sys.exit(1)
+                testDef.configNewTest(self.runLog[nextFile])
+                testDef.executeTest()
+            # clean up temporary files
+        finally:
+            shutil.rmtree(self.tempDir)
+        
             

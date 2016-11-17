@@ -250,12 +250,11 @@ testDef.openLogger()
 testDef.configTest()
 
 # Determine executor to use
-if testDef.args.executor == "sequential" or testDef.args.executor == "Sequential":
+if (testDef.options['executor'] == "sequential" or testDef.options['executor'] == "Sequential"):
     testDef.executeTest()
-elif testDef.args.executor == "combinatorial" or testDef.args.executor == "Combinatorial":
+elif (testDef.options['executor']== "combinatorial" or testDef.options['executor'] == "Combinatorial"):
     testDef.executeCombinatorial()
 else:
     print("Specified executor ", testDef.args.executor, " not found!")
     sys.exit(1)    
-
 # All done!
