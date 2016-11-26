@@ -42,7 +42,7 @@ class DefaultMTTDefaults(MTTDefaultsMTTStage):
         self.options['merge_stdout_stderr'] = (False, "Merge stdout and stderr into one output stream")
         self.options['stdout_save_lines'] = (-1, "Number of lines of stdout to save (-1 for unlimited)")
         self.options['stderr_save_lines'] = (-1, "Number of lines of stderr to save (-1 for unlimited)")
-        self.options['executor'] = (None, "Strategy to use: combinatorial or sequential executor")
+        self.options['executor'] = ('sequential', "Strategy to use: combinatorial or sequential executor")
         return
 
     def activate(self):
