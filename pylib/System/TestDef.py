@@ -70,7 +70,7 @@ class TestDef(object):
         self.options = vars(args)
         self.args = args
         # if they want us to clear the scratch, then do so
-        if self.options['clean']:
+        if self.options['clean'] and os.path.isdir(self.options['scratchdir']) :
             shutil.rmtree(self.options['scratchdir'])
         # setup the scratch directory
         _mkdir_recursive(self.options['scratchdir'])
