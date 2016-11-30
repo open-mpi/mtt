@@ -265,9 +265,10 @@ elif(testDef.config.has_option('MTTDefaults', 'executor')):
     elif (testDef.config.get('MTTDefaults', 'executor') == "combinatorial" or testDef.config.get('MTTDefaults', 'executor') == "Combinatorial"):
         testDef.executeCombinatorial()
     else:
-        print("Specified executor ", testDef.args.executor, " not found!")
+        print("Specified executor ", testDef.config.get('MTTDefaults', 'executor'), " not found!")
         sys.exit(1)  
 # If no executor is specified default to sequential
 else:
+    testDef.config.set('MTTDefaults', 'executor', 'sequential')
     testDef.executeTest()  
 # All done!
