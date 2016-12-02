@@ -425,7 +425,7 @@ class TestDef(object):
                         print("    " + pluginInfo.plugin_object.print_name() + ":")
                         pluginInfo.plugin_object.print_options(self, "        ")
                 except KeyError:
-                  print("    Invalid tool type name " + tool)
+                    print("    Invalid tool type name " + tool)
                 print()
             exit(1)
 
@@ -471,7 +471,7 @@ class TestDef(object):
                         print("    " + pluginInfo.plugin_object.print_name() + ":")
                         pluginInfo.plugin_object.print_options(self, "        ")
                 except KeyError:
-                  print("    Invalid utility type name " + util)
+                    print("    Invalid utility type name " + util)
                 print()
             exit(1)
 
@@ -551,6 +551,26 @@ class TestDef(object):
             sys.exit(1)
         return
 
+    # Used with combinatorial executor, loads next .ini file to be run with the
+    # sequential executor
+    def configNewTest(self, file):
+        # clear the configuration parser
+        for section in self.config.sections():
+            self.config.remove_section(section)
+        # read in the file
+        self.config.read(file)
+        for section in self.config.sections():
+            if section.startswith("SKIP") or section.startswith("skip"):
+                # users often want to temporarily ignore a section
+                # of their test definition file, but don't want to
+                # remove it lest they forget what it did. So let
+                # them just mark the section as "skip" to be ignored
+                continue
+            if self.logger is not None:
+                self.logger.verbose_print("SECTION: " + section)
+                self.logger.verbose_print(self.config.items(section))
+        return
+ 
     def executeTest(self):
         if not self.loaded:
             print("Plugins have not been loaded - cannot execute test")
@@ -558,16 +578,27 @@ class TestDef(object):
         if self.config is None:
             print("No test definition file was parsed - cannot execute test")
             exit(1)
-        if not self.tools.getPluginByName(self.options['executor'], "Executor"):
-            print("Specified executor",self.executor,"not found")
+        if not self.tools.getPluginByName("sequential" , "Executor"):
+            print("Specified executor sequential not found")
             exit(1)
         # activate the specified plugin
-        self.tools.activatePluginByName(self.options['executor'], "Executor")
+        self.tools.activatePluginByName("sequential", "Executor")
         # execute the provided test description
-        executor = self.tools.getPluginByName(self.options['executor'], "Executor")
+        executor = self.tools.getPluginByName("sequential", "Executor")
         executor.plugin_object.execute(self)
         return
 
+    def executeCombinatorial(self):
+        if not self.tools.getPluginByName("combinatorial", "Executor"):
+            print("Specified executor combinatorial not found")
+            exit(1)
+        # activate the specified plugin
+        self.tools.activatePluginByName("combinatorial", "Executor")
+        # execute the provided test description
+        executor = self.tools.getPluginByName("combinatorial", "Executor")
+        executor.plugin_object.execute(self)
+        return
+  
     def printOptions(self, options):
         # if the options are empty, report that
         if not options:

@@ -1,5 +1,3 @@
-from __future__ import print_function
-from builtins import str
 #!/usr/bin/env python
 #
 # Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
@@ -10,6 +8,8 @@ from builtins import str
 # $HEADER$
 #
 
+from __future__ import print_function
+from builtins import str
 import sys
 import select
 import subprocess
@@ -94,15 +94,15 @@ class ExecuteCmd(BaseMTTUtility):
                     # if the data
                     if fd == p.stdout.fileno():
                         read = p.stdout.readline().rstrip()
-                        testDef.logger.verbose_print('stdout: ' + read.decode("utf-8"))
+                        testDef.logger.verbose_print('stdout: ' + read.decode("utf-8", errors='replace'))
                         if merge:
-                            stderr.append(read.decode("utf-8"))
+                            stderr.append(read.decode("utf-8", errors='replace'))
                         else:
-                            stdout.append(read.decode("utf-8"))
+                            stdout.append(read.decode("utf-8", errors='replace'))
                     elif fd == p.stderr.fileno():
                         read = p.stderr.readline().rstrip()
-                        testDef.logger.verbose_print('stderr: ' + read.decode("utf-8"))
-                        stderr.append(read.decode("utf-8"))
+                        testDef.logger.verbose_print('stderr: ' + read.decode("utf-8", errors='replace'))
+                        stderr.append(read.decode("utf-8", errors='replace'))
 
                 if p.poll() != None:
                     break

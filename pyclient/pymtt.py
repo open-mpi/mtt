@@ -66,9 +66,8 @@ infoGroup.add_argument("--list-utility-options",
 execGroup = parser.add_argument_group('execGroup', "Execution Options")
 execGroup.add_argument("--description", dest="description",
                      help="Provide a brief title/description to be included in the log for this test")
-execGroup.add_argument("-e", "--executor", dest="executor", default="sequential",
+execGroup.add_argument("-e", "--executor", dest="executor",
                      help="Use the specified execution STRATEGY module", metavar="STRATEGY")
-
 execGroup.add_argument("--base-dir", dest="basedir",
                      help="Specify the DIRECTORY where we can find the TestDef class (checks DIRECTORY, DIRECTORY/Utilities, and DIRECTORY/pylib/Utilities locations) - also serves as default plugin-dir", metavar="DIRECTORY")
 execGroup.add_argument("--plugin-dir", dest="plugindir",
@@ -249,7 +248,27 @@ testDef.openLogger()
 # Read the input test definition file(s)
 testDef.configTest()
 
-# Now execute the strategy
-testDef.executeTest()
-
+# Determine executor to use
+if(args.executor is not None):
+    if(args.executor == "sequential" or args.executor == "Sequential"):
+        testDef.config.set('MTTDefaults', 'executor', 'sequential')
+        testDef.executeTest()
+    elif(args.executor == "combinatorial" or args.executor == "Combinatorial"):
+        testDef.config.set('MTTDefaults', 'executor', 'combinatorial')
+        testDef.executeCombinatorial()
+    else:
+        print("Specified executor ", args.executor, " not found!")
+        sys.exit(1)
+elif(testDef.config.has_option('MTTDefaults', 'executor')):
+    if (testDef.config.get('MTTDefaults', 'executor') == "sequential" or testDef.config.get('MTTDefaults', 'executor') == "Sequential"):
+        testDef.executeTest()
+    elif (testDef.config.get('MTTDefaults', 'executor') == "combinatorial" or testDef.config.get('MTTDefaults', 'executor') == "Combinatorial"):
+        testDef.executeCombinatorial()
+    else:
+        print("Specified executor ", testDef.config.get('MTTDefaults', 'executor'), " not found!")
+        sys.exit(1)  
+# If no executor is specified default to sequential
+else:
+    testDef.config.set('MTTDefaults', 'executor', 'sequential')
+    testDef.executeTest()  
 # All done!
