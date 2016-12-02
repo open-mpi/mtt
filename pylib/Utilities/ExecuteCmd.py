@@ -94,6 +94,11 @@ class ExecuteCmd(BaseMTTUtility):
                     # if the data
                     if fd == p.stdout.fileno():
                         read = p.stdout.readline().rstrip()
+                        testDef.logger.verbose_print('stdout: ' + read.decode("utf-8", errors='replace'))
+                        if merge:
+                            stderr.append(read.decode("utf-8", errors='replace'))
+                        else:
+                            stdout.append(read.decode("utf-8", errors='replace'))
                     elif fd == p.stderr.fileno():
                         read = p.stderr.readline().rstrip()
                         testDef.logger.verbose_print('stderr: ' + read.decode("utf-8", errors='replace'))
