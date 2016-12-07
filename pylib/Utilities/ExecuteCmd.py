@@ -35,7 +35,6 @@ class ExecuteCmd(BaseMTTUtility):
         return
 
     def execute(self, options, cmdargs, testDef):
-        testDef.logger.verbose_print("ExecuteCmd")
         # if this is a dryrun, just declare success
         try:
             if testDef.options['dryrun']:
@@ -56,14 +55,14 @@ class ExecuteCmd(BaseMTTUtility):
             if options['stdout_save_lines'] is None or options['stdout_save_lines'] < 0:
                 stdoutlines = 0
             else:
-                stdoutlines = -1 * options['stdout_save_lines']
+                stdoutlines = -1 * int(options['stdout_save_lines'])
         except:
             stdoutlines = 0
         try:
             if options['stderr_save_lines'] is None or options['stderr_save_lines'] < 0:
                 stderrlines = 0
             else:
-                stderrlines = -1 * options['stderr_save_lines']
+                stderrlines = -1 * int(options['stderr_save_lines'])
         except:
             stderrlines = 0
         # setup the command arguments
@@ -72,7 +71,7 @@ class ExecuteCmd(BaseMTTUtility):
         # them here
         for arg in cmdargs:
             mycmdargs.append(arg.replace('\"',''))
-        testDef.logger.verbose_print("ExecuteCmd: " + " " + '.'.join(mycmdargs))
+        testDef.logger.verbose_print("ExecuteCmd: " + ' '.join(mycmdargs))
         # it is possible that the command doesn't exist or
         # isn't in our path, so protect us
         try:
@@ -94,15 +93,17 @@ class ExecuteCmd(BaseMTTUtility):
                     # if the data
                     if fd == p.stdout.fileno():
                         read = p.stdout.readline().rstrip()
-                        testDef.logger.verbose_print('stdout: ' + read.decode("utf-8", errors='replace'))
-                        if merge:
-                            stderr.append(read.decode("utf-8", errors='replace'))
-                        else:
-                            stdout.append(read.decode("utf-8", errors='replace'))
+                        if read:
+                            testDef.logger.verbose_print('stdout: ' + read.decode("utf-8", errors='replace'))
+                            if merge:
+                                stderr.append(read.decode("utf-8", errors='replace'))
+                            else:
+                                stdout.append(read.decode("utf-8", errors='replace'))
                     elif fd == p.stderr.fileno():
                         read = p.stderr.readline().rstrip()
-                        testDef.logger.verbose_print('stderr: ' + read.decode("utf-8", errors='replace'))
-                        stderr.append(read.decode("utf-8", errors='replace'))
+                        if read:
+                            testDef.logger.verbose_print('stderr: ' + read.decode("utf-8", errors='replace'))
+                            stderr.append(read.decode("utf-8", errors='replace'))
 
                 if p.poll() != None:
                     break
