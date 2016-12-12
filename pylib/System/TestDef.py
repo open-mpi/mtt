@@ -82,6 +82,8 @@ class TestDef(object):
         elif type(opt) is bool:
             if type(inval) is bool:
                 return 0, inval
+            elif type(inval) is unicode:
+                return 0, int(inval)
             elif type(inval) is str:
                 if inval.lower() in ['true', '1', 't', 'y', 'yes']:
                     return 0, True
