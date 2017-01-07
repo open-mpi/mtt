@@ -1,6 +1,6 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
-# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2017 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -279,6 +279,8 @@ class ALPS(LauncherMTTTool):
         # assemble the command
         cmdargs = [cmds['command']]
         if cmds['options'] is not None:
+            for op in cmds['options'].split():
+                cmdargs.append(op)
             cmdargs.append(cmds['options'])
         if cmds['np'] is not None:
             cmdargs.append("-n")
