@@ -1,0 +1,18 @@
+#
+# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
+
+[Core]
+Name = ALPS
+Module = ALPS
+
+[Documentation]
+Author = Ralph Castain
+Version = 0.1
+Website = http://www.cray.com
+Description = Plugin for using ALPS to launch tests

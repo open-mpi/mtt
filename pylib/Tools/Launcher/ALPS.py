@@ -1,6 +1,6 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
-# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2017 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -15,12 +15,11 @@ from LauncherMTTTool import *
 ## @addtogroup Tools
 # @{
 # @addtogroup Launcher
-# @section SLURM
+# @section ALPS
 # @param merge_stdout_stderr       Merge stdout and stderr into one output stream
 # @param skipped                   Exit status of a test that declares it was skipped
 # @param hostfile                  The hostfile for OpenMPI to use
 # @param skip_tests                Names of tests to be skipped
-# @param job_name                  User-defined name for job
 # @param test_dir                  Names of directories to be scanned for tests
 # @param modules                   Modules to load
 # @param stdout_save_lines         Number of lines of stdout to save
@@ -36,14 +35,14 @@ from LauncherMTTTool import *
 # @param report_after_n_results    Number of tests to run before updating the reporter
 # @param options                   Comma-delimited sets of command line options that shall be used on each test
 # @}
-class SLURM(LauncherMTTTool):
+class ALPS(LauncherMTTTool):
 
     def __init__(self):
         # initialise parent class
         LauncherMTTTool.__init__(self)
         self.options = {}
-        self.options['hostfile'] = (None, "The hostfile for SLURM to use")
-        self.options['command'] = ("srun", "Command for executing the application")
+        self.options['hostfile'] = (None, "The hostfile for ALPS to use")
+        self.options['command'] = ("aprun", "Command for executing the application")
         self.options['np'] = (None, "Number of processes to run")
         self.options['save_stdout_on_pass'] = (False, "Whether or not to save stdout on passed tests")
         self.options['report_after_n_results'] = (None, "Number of tests to run before updating the reporter")
@@ -58,7 +57,6 @@ class SLURM(LauncherMTTTool):
         self.options['fail_timeout'] = (None, "Maximum execution time for tests expected to fail")
         self.options['skip_tests'] = (None, "Names of tests to be skipped")
         self.options['max_num_tests'] = (None, "Maximum number of tests to run")
-        self.options['job_name'] = (None, "User-defined name for job")
         self.options['modules'] = (None, "Modules to load")
         self.options['modules_unload'] = (None, "Modules to unload")
         return
@@ -75,7 +73,7 @@ class SLURM(LauncherMTTTool):
 
 
     def print_name(self):
-        return "SLURM"
+        return "ALPS"
 
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
@@ -85,7 +83,7 @@ class SLURM(LauncherMTTTool):
 
     def execute(self, log, keyvals, testDef):
 
-        testDef.logger.verbose_print("SLURM Launcher")
+        testDef.logger.verbose_print("ALPS Launcher")
         # check the log for the title so we can
         # see if this is setting our default behavior
         try:
@@ -280,16 +278,15 @@ class SLURM(LauncherMTTTool):
         skipStatus = int(cmds['skipped'])
         # assemble the command
         cmdargs = [cmds['command']]
-        if cmds['job_name'] is not None:
-            cmdargs.append("--job-name")
-            cmdargs.append(cmds['job_name'])
         if cmds['options'] is not None:
+            for op in cmds['options'].split():
+                cmdargs.append(op)
             cmdargs.append(cmds['options'])
         if cmds['np'] is not None:
-            cmdargs.append("-np")
+            cmdargs.append("-n")
             cmdargs.append(cmds['np'])
         if cmds['hostfile'] is not None:
-            cmdargs.append("-hostfile")
+            cmdargs.append("--node-list-file")
             cmdargs.append(cmds['hostfile'])
         # cycle thru the list of tests and execute each of them
         log['testresults'] = []
@@ -362,8 +359,8 @@ class SLURM(LauncherMTTTool):
         log['numSkip'] = numSkip
         log['numFail'] = numFail
 
-        # handle case where srun is used instead of mpirun for number of processes (np)
-        if cmds['command'] == 'srun':
+        # handle case where aprun is used instead of mpirun for number of processes (np)
+        if cmds['command'] == 'aprun':
             if '-n ' in cmds['options']:
                 log['np'] = str(cmds['options'].split('-n ')[1].split(' ')[0])
             elif '--ntasks=' in cmds['options']:
