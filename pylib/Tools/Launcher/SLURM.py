@@ -284,7 +284,8 @@ class SLURM(LauncherMTTTool):
             cmdargs.append("--job-name")
             cmdargs.append(cmds['job_name'])
         if cmds['options'] is not None:
-            cmdargs.append(cmds['options'])
+            for op in cmds['options'].split():
+                cmdargs.append(op)
         if cmds['np'] is not None:
             cmdargs.append("-np")
             cmdargs.append(cmds['np'])
