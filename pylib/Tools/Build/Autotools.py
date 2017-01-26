@@ -71,6 +71,7 @@ class Autotools(BuildMTTTool):
         return
 
     def execute(self, log, keyvals, testDef):
+
         testDef.logger.verbose_print("Autotools Execute")
         # parse any provided options - these will override the defaults
         cmds = {}

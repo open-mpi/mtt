@@ -469,7 +469,6 @@ class IUDatabase(ReporterMTTStage):
         except KeyError:
             data['result_stderr'] = None
 
-
         #
         # Submit
         #

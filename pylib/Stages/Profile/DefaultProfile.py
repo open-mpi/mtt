@@ -67,13 +67,14 @@ class DefaultProfile(ProfileMTTStage):
         opts = self.options.keys()
         for key in keys:
             if cmds[key] and key in opts:
+#                import pdb; pdb.set_trace()
                 status, stdout, stderr = testDef.execmd.execute(cmds, self.options[key][2], testDef)
                 if 0 != status:
                     log['status'] = status
                     log['stdout'] = stdout
                     log['stderr'] = stderr
                     return
-                myLog[key] = stdout
+                myLog[key] = "\n".join(stdout)
         # add our log to the system log
         log['profile'] = myLog
         log['status'] = 0
