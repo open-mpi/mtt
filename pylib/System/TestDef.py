@@ -442,46 +442,27 @@ class TestDef(object):
         # Print the available MTT utilities out, if requested
         if self.options['listutils']:
             print("Available MTT utilities:")
-            availUtils = list(self.loader.utilities.keys())
-            for util in availUtils:
-                print("    " + util)
+            availUtil = list(self.loader.utilities.keys())
+            for util in availUtil:
+                for pluginInfo in self.utilities.getPluginsOfCategory(util):
+                    print("    " + pluginInfo.plugin_object.print_name())
             exit(0)
-
-        # Print the detected utility plugins for a given tool type
-        if self.options['listutilmodules']:
-            # if the list is '*', print the plugins for every type
-            if self.options['listutilmodules'] == "*":
-                print()
-                availUtils = list(self.loader.utilities.keys())
-            else:
-                availUtils = self.options['listutilitymodules'].split(',')
-            print()
-            for util in availUtils:
-                print(util + ":")
-                try:
-                    for pluginInfo in self.utilities.getPluginsOfCategory(util):
-                        print("    " + pluginInfo.plugin_object.print_name())
-                except KeyError:
-                    print("    Invalid utility type name")
-                print()
-            exit(1)
 
         # Print the options for a given plugin
         if self.options['listutiloptions']:
-            # if the list is '*', print the options for every stage/plugin
-            if self.options['listutiloptions'] == "*":
-                availUtils = list(self.loader.utilities.keys())
-            else:
-                availUtils = self.options['listutiloptions'].split(',')
             print()
+            availUtils = list(self.loader.utilities.keys())
             for util in availUtils:
                 print(util + ":")
-                try:
-                    for pluginInfo in self.utilities.getPluginsOfCategory(util):
+                for pluginInfo in self.utilities.getPluginsOfCategory(util):
+                    if self.options['listutiloptions'] == "*":
                         print("    " + pluginInfo.plugin_object.print_name() + ":")
                         pluginInfo.plugin_object.print_options(self, "        ")
-                except KeyError:
-                    print("    Invalid utility type name " + util)
+                    else:
+                        tmp = pluginInfo.plugin_object.print_name()
+                        if tmp in self.options['listutiloptions']:
+                            print("    " + tmp + ":")
+                            pluginInfo.plugin_object.print_options(self, "        ")
                 print()
             exit(1)
 
