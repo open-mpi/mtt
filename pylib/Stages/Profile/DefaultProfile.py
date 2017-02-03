@@ -74,7 +74,7 @@ class DefaultProfile(ProfileMTTStage):
                     log['stdout'] = stdout
                     log['stderr'] = stderr
                     return
-                myLog[key] = "\n".join(stdout)
+                myLog[key] = stdout
         # add our log to the system log
         log['profile'] = myLog
         log['status'] = 0
