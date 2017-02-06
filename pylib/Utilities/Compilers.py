@@ -212,5 +212,5 @@ class Compilers(BaseMTTUtility):
         # try the universal version option
         mycmdargs = [compiler, version]
         status, stdout, stderr = testDef.execmd.execute(None, mycmdargs, testDef)
-        return status, "\n".join(stdout)
+        return status, stdout
 

@@ -131,7 +131,7 @@ class IUDatabase(ReporterMTTStage):
         profile = testDef.logger.getLog('Profile:Installed')
         metadata = {}
         metadata['client_serial'] = client_serial
-        metadata['hostname'] = profile['profile']['nodeName']
+        metadata['hostname'] = "\n".join(profile['profile']['nodeName'])
         metadata['http_username'] = cmds['username']
         metadata['local_username'] = pwd.getpwuid(os.getuid()).pw_name
         metadata['mtt_client_version'] = '4.0a1'
@@ -311,10 +311,7 @@ class IUDatabase(ReporterMTTStage):
                 data['merge_stdout_stderr'] = None
 
             try:
-                if type(trun['stdout']) is list:
-                    data['result_stdout'] = '\n'.join(trun['stdout'])
-                else:
-                    data['result_stdout'] = trun(['stdout'])
+                data['result_stdout'] = '\n'.join(trun['stdout'])
             except KeyError:
                 data['result_stdout'] = None
 
@@ -374,13 +371,13 @@ class IUDatabase(ReporterMTTStage):
 
         try:
             data['compiler_name'] = lg['compiler']['compiler']
-            data['compiler_version'] = lg['compiler']['version']
+            data['compiler_version'] = "\n".join(lg['compiler']['version'])
         except KeyError:
             full_log = logger.getLog(None)
             for entry in full_log:
                 if 'compiler' in entry:
                     data['compiler_name'] = entry['compiler']['compiler']
-                    data['compiler_version'] = entry['compiler']['version']
+                    data['compiler_version'] = "\n".join(entry['compiler']['version'])
                     break
             else:
                 data['compiler_name'] = None
@@ -454,10 +451,7 @@ class IUDatabase(ReporterMTTStage):
             data['merge_stdout_stderr'] = None
 
         try:
-            if type(lg['stdout']) is list:
-                data['result_stdout'] = '\n'.join(lg['stdout'])
-            else:
-                data['result_stdout'] = lg['stdout']
+            data['result_stdout'] = '\n'.join(lg['stdout'])
         except KeyError:
             data['result_stdout'] = None
 
@@ -517,34 +511,34 @@ class IUDatabase(ReporterMTTStage):
         metadata['phase'] = 'MPI Install'
 
         try:
-            data['platform_hardware'] = profile['machineName']
+            data['platform_hardware'] = "\n".join(profile['machineName'])
         except KeyError:
             data['platform_hardware'] = None
 
         try:
-            data['platform_type'] = profile['processorType']
+            data['platform_type'] = "\n".join(profile['processorType'])
         except KeyError:
             data['platform_type'] = None
 
         try:
-            data['os_name'] = profile['kernelName']
+            data['os_name'] = "\n".join(profile['kernelName'])
         except KeyError:
             data['os_name'] = None
 
         try:
-            data['os_version'] = profile['kernelRelease']
+            data['os_version'] = "\n".join(profile['kernelRelease'])
         except KeyError:
             data['os_version'] = None
 
         try:
             data['compiler_name'] = lg['compiler']['compiler']
-            data['compiler_version'] = lg['compiler']['version']
+            data['compiler_version'] = "\n".join(lg['compiler']['version'])
         except KeyError:
             full_log = logger.getLog(None)
             for entry in full_log:
                 if 'compiler' in entry:
                     data['compiler_name'] = entry['compiler']['compiler']
-                    data['compiler_version'] = entry['compiler']['version']
+                    data['compiler_version'] = "\n".join(entry['compiler']['version'])
                     break
             else:
                 data['compiler_name'] = None
@@ -639,10 +633,7 @@ class IUDatabase(ReporterMTTStage):
             data['merge_stdout_stderr'] = None
 
         try:
-            if type(lg['stdout']) is list:
-                data['result_stdout'] = '\n'.join(lg['stdout'])
-            else:
-                data['result_stdout'] = lg['stdout']
+            data['result_stdout'] = '\n'.join(lg['stdout'])
         except KeyError:
             data['result_stdout'] = None
 
