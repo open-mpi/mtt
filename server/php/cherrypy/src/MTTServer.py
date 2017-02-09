@@ -13,7 +13,7 @@ from cherrypy.process.plugins import Daemonizer, PIDFile
 from configobj import ConfigObj
 from validate import Validator
 
-from webapp.dispatchers import Root, Submit
+from webapp.dispatchers import Root, Submit, Fields, Summary, Detail
 
 def _CORS():
     """Set HTTP Access Control Header to allow cross-site HTTP requests from
@@ -139,6 +139,9 @@ if __name__ == '__main__':
 
     cherrypy.tree.mount(Root(cfg),       '/',           conf)
     cherrypy.tree.mount(Submit(cfg),     '/submit',     conf)
+    cherrypy.tree.mount(Fields(cfg),     '/fields',     conf)
+    cherrypy.tree.mount(Summary(cfg),    '/summary',    conf)
+    cherrypy.tree.mount(Detail(cfg),     '/detail',     conf)
 
     logger.info('Starting cherrypy engine')
     cherrypy.engine.start()
