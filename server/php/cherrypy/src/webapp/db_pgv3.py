@@ -241,9 +241,6 @@ class DatabaseV3():
     _force_trial = True
     
     def __init__(self, logger, auth):
-        global DEBUG_TICK
-        DEBUG_TICK = None
-
         self._auth = auth
         self._logger = logger
 
@@ -387,7 +384,6 @@ class DatabaseV3():
         return None
 
     def _detail(self, phase, columns, search, options=[]):
-        global DEBUG_TICK
         self._logger.debug("%s _detail()" % (self._name))
 
         if "install" in phase:

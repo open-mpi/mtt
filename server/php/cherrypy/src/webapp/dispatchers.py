@@ -195,9 +195,27 @@ class Submit(_ServerResourceBase):
         # "platform_name": "uwl-flux",
         # "trial": 0
 
-        required_metadata_fields = ["http_username"]
+        required_fields = ["client_serial",
+                           "hostname",
+                           "http_username",
+                           "local_username",
+                           "mtt_client_version",
+                           "phase",
+                           "platform_name",
+                           "trial"]
+        optional_fields = ["number_of_results"]
 
-        for field in required_metadata_fields:
+        for field in required_fields:
+            if field not in metadata.keys():
+                return self._return_error(prefix, -1,
+                                          "%s No field '%s' in 'metadata' portion of json data" % (prefix, field))
+
+        return None
+
+    def _validate_submit(self, metadata):
+        prefix = "validate_submit"
+        allfields = self._db.get_fields_for_submit()
+        for field in allfields['required']:
             if field not in metadata.keys():
                 return self._return_error(prefix, -1,
                                           "%s No field '%s' in 'metadata' portion of json data" % (prefix, field))
@@ -303,6 +321,7 @@ class Submit(_ServerResourceBase):
             submit_info = self._db.get_submit_id(data['metadata'])
             if "submit_id" not in submit_info.keys():
                 return self._return_error(prefix, -1, "%s Failed [%s]" % (prefix, submit_info['error_msg']))
+
         #
         # Submit each entry to the database
         #
@@ -339,12 +358,11 @@ class Submit(_ServerResourceBase):
         #
         # Return the ids for each of those submissions
         #
-        rtn['ids'] = ids
-        rtn['submit_id'] = submit_info['submit_id']
-
+        rtn = {}
         rtn['status'] = 0
         rtn['status_message'] = 'Success'
-
+        rtn['submit_id'] = submit_info['submit_id']
+        rtn['ids'] = ids
 
         self.logger.debug( "----------------------- Return Values JSON (Start) ------------------ " )
         self.logger.debug( json.dumps( rtn, \
