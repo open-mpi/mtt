@@ -332,15 +332,17 @@ class DatabaseV3():
                 return True
         return False
 
-    def _summary_compare(self, row1, row2, test_result_included):
-        for k,v in row1.items():
-            if (test_result_included or k != "test_result") and v != row2[k]:
+    def _summary_compare(self, row1, row2):
+        """row1 is from combiner and row2 is from result
+        """
+        for k,v in row2.items():
+            if v != row1[k]:
                 return False
         return True
 
     def _summary_find_in_combiner(self, combiner, row):
         for i,r in enumerate(combiner):
-            if self._summary_compare(r[0],row):
+            if self._summary_compare(r,row):
                 return i
         return -1
 
@@ -357,7 +359,7 @@ class DatabaseV3():
                 newrow["test_result_failed"]   = 0
                 newrow["test_result_passed"]   = 0
                 newrow["test_result_skipped"]  = 0
-                newrow["test_result_timedout"] = 0
+                newrow["test_result_timed_out"] = 0
                 newrow["test_result_unknown"]  = 0
                 combiner.append(newrow)
             if combiner[combiner_ind]["test_result"] == 0:
