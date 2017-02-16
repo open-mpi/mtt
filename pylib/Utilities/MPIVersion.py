@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
             os.chdir("..")
             return None
 
-        status, stdout, _ = testDef.execmd.execute(None, './mpi_get_version'.split(), testDef)
+        status, stdout, _ = testDef.execmd.execute(None, 'mpiexec ./mpi_get_version'.split(), testDef)
         if 0 != status:
             if os.path.exists("mpi_get_version"): os.remove("mpi_get_version")
             if os.path.exists("mpi_get_version.c"): os.remove("mpi_get_version.c")
