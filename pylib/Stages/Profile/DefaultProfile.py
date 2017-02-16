@@ -67,7 +67,6 @@ class DefaultProfile(ProfileMTTStage):
         opts = self.options.keys()
         for key in keys:
             if cmds[key] and key in opts:
-#                import pdb; pdb.set_trace()
                 status, stdout, stderr = testDef.execmd.execute(cmds, self.options[key][2], testDef)
                 if 0 != status:
                     log['status'] = status

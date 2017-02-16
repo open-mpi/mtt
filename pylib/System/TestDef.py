@@ -690,7 +690,7 @@ class TestDef(object):
             try:
                 availStages = list(self.loader.stages.keys())
                 for stage in availStages:
-                    for pluginInfo in testDef.stages.getPluginsOfCategory(stage):
+                    for pluginInfo in self.stages.getPluginsOfCategory(stage):
                         if name == pluginInfo.plugin_object.print_name():
                             return pluginInfo.plugin_object
                 # didn't find it
@@ -701,7 +701,7 @@ class TestDef(object):
             try:
                 availTools = list(self.loader.tools.keys())
                 for tool in availTools:
-                    for pluginInfo in testDef.tools.getPluginsOfCategory(tool):
+                    for pluginInfo in self.tools.getPluginsOfCategory(tool):
                         if name == pluginInfo.plugin_object.print_name():
                             return pluginInfo.plugin_object
                 # didn't find it
@@ -712,7 +712,7 @@ class TestDef(object):
             try:
                 availUtils = list(self.loader.utilities.keys())
                 for util in availUtils:
-                    for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
+                    for pluginInfo in self.utilities.getPluginsOfCategory(util):
                         if name == pluginInfo.plugin_object.print_name():
                             return pluginInfo.plugin_object
                 # didn't find it
