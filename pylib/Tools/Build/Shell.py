@@ -26,6 +26,8 @@ from BuildMTTTool import *
 # @param save_stdout_on_success    Save stdout even if build succeeds
 # @param command                   Command to execute
 # @param middleware                Middleware stage that these tests are to be built against
+# @param fail_test                 Specifies whether this test is expected to fail (value=None means test is expected to succeed)
+# @param fail_returncode           Specifies the expected failure returncode of this test
 # @}
 class Shell(BuildMTTTool):
     def __init__(self):
@@ -41,6 +43,8 @@ class Shell(BuildMTTTool):
         self.options['save_stdout_on_success'] = (False, "Save stdout even if build succeeds")
         self.options['modules'] = (None, "Modules to load")
         self.options['modules_unload'] = (None, "Modules to unload")
+        self.options['fail_test'] = (None, "Specifies whether this test is expected to fail (value=None means test is expected to succeed)")
+        self.options['fail_returncode'] = (None, "Specifies the expected failure returncode of this test")
         return
 
     def activate(self):
@@ -237,15 +241,22 @@ class Shell(BuildMTTTool):
         # execute the specified command
         cfgargs = cmds['command'].split()
         status, stdout, stderr = testDef.execmd.execute(cmds, cfgargs, testDef)
-        if 0 != status:
+        if (cmds['fail_test'] is None and 0 != status) \
+                or (cmds['fail_test'] is not None and cmds['fail_returncode'] is None and 0 == status) \
+                or (cmds['fail_test'] is not None and cmds['fail_returncode'] is not None and int(cmds['fail_returncode']) != status):
             # return to original location
             os.chdir(cwd)
-            log['status'] = status
+            if log['status'] == 0:
+                log['status'] = 1
+            else:
+                log['status'] = status
             log['stdout'] = stdout
             log['stderr'] = stderr
             return
         log['status'] = 0
         log['stdout'] = stdout
+        if cmds['fail_test'] == True:
+            log['stderr'] = stderr
         # record this location for any follow-on steps
         log['location'] = location
         if usedModule:

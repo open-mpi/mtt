@@ -212,8 +212,9 @@ class IUDatabase(ReporterMTTStage):
         # and all of the tests that follow are from that test_build
         common_data['test_build_id'] = test_info['test_build_id']
 
+        #import pdb; pdb.set_trace()
 
-        for trun in lg['testresults']:
+        for trun in (lg['testresults'] if 'testresults' in lg else [lg]):
             data = {}
 
             #data['mpi_install_id'] = common_data['mpi_install_id']
@@ -224,16 +225,25 @@ class IUDatabase(ReporterMTTStage):
             except KeyError:
                 data['launcher'] = None
 
-            data['test_name'] = trun['test'].split('/')[-1]
+            if 'testresults' in lg:
+                data['test_name'] = trun['test'].split('/')[-1]
+            else:
+                data['test_name'] = trun['options']['command'].split('/')[-1]
 
             # Number of processes field
 
             try:
-                data['np'] = lg['np']
+                if 'testresults' in lg:
+                    data['np'] = lg['np']
+                else:
+                    data['np'] = 1
             except KeyError:
                 data['np'] = None
 
-            data['command'] = trun['cmd']
+            if 'testresults' in lg:
+                data['command'] = trun['cmd']
+            else:
+                data['command'] = trun['options']['command']
 
             # For now just mark the time when submitted
             data['start_timestamp'] = datetime.utcnow().strftime("%c")
@@ -311,15 +321,15 @@ class IUDatabase(ReporterMTTStage):
                 data['merge_stdout_stderr'] = None
 
             try:
-                data['result_stdout'] = '\n'.join(trun['stdout'])
+                data['result_stdout'] = '\n'.join(trun['stdout'] if trun['stdout'] is not None else "")
             except KeyError:
                 data['result_stdout'] = None
 
             try:
                 if type(trun['stderr']) is list:
-                    data['result_stderr'] = '\n'.join(trun['stderr'])
+                    data['result_stderr'] = '\n'.join(trun['stderr'] if trun['stderr'] is not None else "")
                 else:
-                    data['result_stderr'] = trun['stderr']
+                    data['result_stderr'] = (trun['stderr'] if trun['stderr'] is not None else "")
             except KeyError:
                 data['result_stderr'] = None
 

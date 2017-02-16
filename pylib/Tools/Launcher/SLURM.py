@@ -27,6 +27,7 @@ from LauncherMTTTool import *
 # @param save_stdout_on_pass       Whether or not to save stdout on passed tests
 # @param stderr_save_lines         Number of lines of stderr to save
 # @param fail_tests                Names of tests that are expected to fail
+# @param fail_returncodes          Expected returncodes of tests expected to fail
 # @param fail_timeout              Maximum execution time for tests expected to fail
 # @param command                   Command for executing the application
 # @param timeout                   Maximum execution time - terminate a test if it exceeds this time
@@ -55,6 +56,7 @@ class SLURM(LauncherMTTTool):
         self.options['stderr_save_lines'] = (-1, "Number of lines of stderr to save")
         self.options['test_dir'] = (None, "Names of directories to be scanned for tests")
         self.options['fail_tests'] = (None, "Names of tests that are expected to fail")
+        self.options['fail_returncodes'] = (None, "Expected return code of tests expected to fail")
         self.options['fail_timeout'] = (None, "Maximum execution time for tests expected to fail")
         self.options['skip_tests'] = (None, "Names of tests to be skipped")
         self.options['max_num_tests'] = (None, "Maximum number of tests to run")
@@ -295,7 +297,7 @@ class SLURM(LauncherMTTTool):
         # cycle thru the list of tests and execute each of them
         log['testresults'] = []
         finalStatus = 0
-        finalError = None
+        finalError = ""
         numTests = 0
         numPass = 0
         numSkip = 0
@@ -334,21 +336,50 @@ class SLURM(LauncherMTTTool):
             # not required to provide a module to unload
             pass
 
+        fail_tests = cmds['fail_tests']
+        if fail_tests is not None:
+            fail_tests = [t.strip() for t in fail_tests.split(",")]
+        for i,t in enumerate(fail_tests):
+            for t2 in tests:
+                if t2.split("/")[-1] == t:
+                    fail_tests[i] = t2
+        fail_returncodes = cmds['fail_returncodes']
+        if fail_returncodes is not None:
+            fail_returncodes = [int(t.strip()) for t in fail_returncodes.split(",")]
+
+        if fail_tests is None:
+            expected_returncodes = {test:0 for test in tests}
+        else:
+            if fail_returncodes is None:
+                expected_returncodes = {test:(None if test in fail_tests else 0) for test in tests}
+            else:
+                fail_returncodes = {test:rtncode for test,rtncode in zip(fail_tests,fail_returncodes)}
+                expected_returncodes = {test:(fail_returncodes[test] if test in fail_returncodes else 0) for test in tests}
+
         for test in tests:
             testLog = {'test':test}
             cmdargs.append(test)
             testLog['cmd'] = " ".join(cmdargs)
             status,stdout,stderr = testDef.execmd.execute(cmds, cmdargs, testDef)
-            testLog['status'] = status
-            if 0 != status and skipStatus != status and 0 == finalStatus:
-                finalStatus = status
+            if ((expected_returncodes[test] is None and 0 == status) or (expected_returncodes[test] is not None and expected_returncodes[test] != status)) and skipStatus != status and 0 == finalStatus:
+                if expected_returncodes[test] == 0:
+                    finalStatus = status
+                else:
+                    finalStatus = 1
                 finalError = stderr
-            if 0 == status:
+            if (expected_returncodes[test] is None and 0 != status) or (expected_returncodes[test] == status):
                 numPass = numPass + 1
             elif skipStatus == status:
                 numSkip = numSkip + 1
             else:
                 numFail = numFail + 1
+            if expected_returncodes[test] == 0:
+                testLog['status'] = status
+            else:
+                if status == expected_returncodes[test]:
+                    testLog['status'] = 0
+                else:
+                    testLog['status'] = 1
             testLog['stdout'] = stdout
             testLog['stderr'] = stderr
             log['testresults'].append(testLog)
