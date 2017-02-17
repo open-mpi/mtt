@@ -113,23 +113,20 @@ class WWulf3(ProvisionMTTStage):
             log['status'] = status
             log['stderr'] = "Node list was not obtained"
             return
-        # parse stdout for the node names - start by splitting
-        # it back into a list of lines
-        lines = stdout.split('\n')
         # skip first two lines as they are headers
-        del lines[0:2]
+        del stdout[0:2]
         # parse each line to collect out the individual nodes
         nodes = []
-        for line in lines:
+        for line in stdout:
             # node name is at the front, ended by a space
             nodes.append(line[0:line.find(' ')])
         # now check that each target is in the list of nodes - no
         # way around just a big double-loop, i fear
         for tgt in targets:
-            found = false
+            found = False
             for node in nodes:
                 if tgt == node:
-                    found = true
+                    found = True
                     break
             if not found:
                 log['status'] = 1
@@ -173,8 +170,8 @@ class WWulf3(ProvisionMTTStage):
         ipmitool.execute(ipmilog, ipmicmd, testDef)
         # update our results to reflect the overall status
         log['status'] = ipmilog['status']
-        if impilog['stdout'] is not None:
+        if ipmilog['stdout'] is not None:
             log['stdout'] = ipmilog['stdout']
-        if impilog['stderr'] is not None:
+        if ipmilog['stderr'] is not None:
             log['stderr'] = ipmilog['stderr']
         return
