@@ -62,13 +62,17 @@ class MPIVersion(BaseMTTUtility):
         # MVAPICH2 FC           : gfortran   -g -O3
         elif 'MVAPICH2' in version_str:
             name = 'MVAPICH2'
-            version = version_str.split('MVAPICH2 Version')[1].split(':')[1].split('\n')[0].strip()
+            version = version_str.split('MVAPICH2 Version')[1].split(':')[1].split("'")[0].split("\\t")[1]
         # Intel MPI
         # Example Output:
         # Intel(R) MPI Library 5.1.3 for Linux* OS
         elif 'Intel' in version_str:
             name = 'Intel MPI'
             version = version_str.split('Intel(R) MPI Library ')[1].split(' ')[0]
+
+        elif 'CRAY MPICH' in version_str:
+            name = 'CRAY MPICH'
+            version = version_str.split('CRAY MPICH version ')[1].split(' ')[0]
 
         # record the result
         log['name'] = str(name)
@@ -98,17 +102,23 @@ int main(int argc, char **argv) {
         fh.close()
         status, _, _ = testDef.execmd.execute(None, 'mpicc -o mpi_get_version mpi_get_version.c'.split(), testDef)
         if 0 != status:
-            if os.path.exists("mpi_get_version"): os.remove("mpi_get_version")
-            if os.path.exists("mpi_get_version.c"): os.remove("mpi_get_version.c")
-            os.chdir("..")
-            return None
+            status, _, _ = testDef.execmd.execute(None, 'cc -o mpi_get_version mpi_get_version.c'.split(), testDef)
+            if 0 != status:
+                if os.path.exists("mpi_get_version"): os.remove("mpi_get_version")
+                if os.path.exists("mpi_get_version.c"): os.remove("mpi_get_version.c")
+                os.chdir("..")
+                return None
 
         status, stdout, _ = testDef.execmd.execute(None, 'mpiexec ./mpi_get_version'.split(), testDef)
         if 0 != status:
-            if os.path.exists("mpi_get_version"): os.remove("mpi_get_version")
-            if os.path.exists("mpi_get_version.c"): os.remove("mpi_get_version.c")
-            os.chdir("..")
-            return None
+            status, stdout, _ = testDef.execmd.execute(None, 'aprun ./mpi_get_version'.split(), testDef)
+            if 0 != status:
+                status, stdout, _ = testDef.execmd.execute(None, './mpi_get_version'.split(), testDef)
+                if 0 != status:
+                    if os.path.exists("mpi_get_version"): os.remove("mpi_get_version")
+                    if os.path.exists("mpi_get_version.c"): os.remove("mpi_get_version.c")
+                    os.chdir("..")
+                    return None
 
         if os.path.exists("mpi_get_version"): os.remove("mpi_get_version")
         if os.path.exists("mpi_get_version.c"): os.remove("mpi_get_version.c")
