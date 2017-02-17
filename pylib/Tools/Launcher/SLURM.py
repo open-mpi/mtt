@@ -339,6 +339,8 @@ class SLURM(LauncherMTTTool):
         fail_tests = cmds['fail_tests']
         if fail_tests is not None:
             fail_tests = [t.strip() for t in fail_tests.split(",")]
+        else:
+            fail_tests = []
         for i,t in enumerate(fail_tests):
             for t2 in tests:
                 if t2.split("/")[-1] == t:
