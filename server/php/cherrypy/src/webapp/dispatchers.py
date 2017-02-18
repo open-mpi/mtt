@@ -141,7 +141,7 @@ class Root(_ServerResourceBase):
     #
     @cherrypy.tools.json_out()
     def GET(self, **kwargs):
-        prefix = '[GET /]'
+        prefix = 'Root [GET /]'
         self.logger.debug(prefix)
 
         rtn = {}
@@ -156,7 +156,7 @@ class Root(_ServerResourceBase):
     @cherrypy.tools.json_out()
     @cherrypy.tools.json_in()
     def POST(self, cmd, **kwargs):
-        prefix = '[POST /%s]' % str(cmd)
+        prefix = 'Root [POST /%s]' % str(cmd)
         self.logger.debug(prefix)
 
         rtn = {}
@@ -184,7 +184,7 @@ class Submit(_ServerResourceBase):
     _phase_test_run    = 2
 
     def _validate_metadata(self, metadata):
-        prefix = "validate_metadata"
+        prefix = "Submit validate_metadata"
         # "client_serial": "1347384",
         # "hostname": "flux.cs.uwlax.edu",
         # "http_username": "mtt",
@@ -213,7 +213,7 @@ class Submit(_ServerResourceBase):
         return None
 
     def _validate_submit(self, metadata):
-        prefix = "validate_submit"
+        prefix = "Submit validate_submit"
         allfields = self._db.get_fields_for_submit()
         for field in allfields['required']:
             if field not in metadata.keys():
@@ -223,7 +223,7 @@ class Submit(_ServerResourceBase):
         return None
 
     def _validate_mpi_install(self, submit_id, metadata, data):
-        prefix = "validate_mpi_install"
+        prefix = "Submit validate_mpi_install"
         allfields = self._db.get_fields_for_mpi_install()
 
         for field in allfields['required']:
@@ -234,7 +234,7 @@ class Submit(_ServerResourceBase):
         return None
 
     def _validate_test_build(self, submit_id, metadata, data):
-        prefix = "validate_test_build"
+        prefix = "Submit validate_test_build"
         allfields = self._db.get_fields_for_test_build()
 
         for field in allfields['required']:
@@ -245,7 +245,7 @@ class Submit(_ServerResourceBase):
         return None
 
     def _validate_test_run(self, submit_id, metadata, data):
-        prefix = "validate_test_run"
+        prefix = "Submit validate_test_run"
         allfields = self._db.get_fields_for_test_run()
 
         for field in allfields['required']:
@@ -260,7 +260,7 @@ class Submit(_ServerResourceBase):
     @cherrypy.tools.json_out()
     @cherrypy.tools.json_in()
     def POST(self, **kwargs):
-        prefix = '[POST /submit/]'
+        prefix = 'Submit [POST /submit/]'
         self.logger.debug(prefix)
 
         if not hasattr(cherrypy.request, "json"):
@@ -397,7 +397,7 @@ class Submit(_ServerResourceBase):
 class GenericQuery(_ServerResourceBase):
 
     def _validate_metadata(self, metadata):
-        prefix = "validate_metadata"
+        prefix = "GenericQuery validate_metadata"
 
         required_fields = ["http_username"]
 
@@ -500,7 +500,7 @@ class Fields(GenericQuery):
 class Summary(GenericQuery):
 
     def _validate_phase(self, phase):
-        prefix = "validate_phase"
+        prefix = "Summary validate_phase"
         valid_phases = ["install", "test_build", "test_run"]
         if phase not in valid_phases:
             return self._return_error(prefix, -1,
@@ -508,7 +508,7 @@ class Summary(GenericQuery):
         return None
 
     def _validate_columns(self, columns):
-        prefix = "validate_columns"
+        prefix = "Summary validate_columns"
         valid_columns = FIELD_DESCRIPTIONS.keys()
         for col in columns:
             if col not in valid_columns:
@@ -516,7 +516,7 @@ class Summary(GenericQuery):
                                           "%s Column '%s' in 'columns' is not a valid column" % (prefix, col))
 
     def _validate_search(self, search):
-        prefix = "validate_search"
+        prefix = "Summary validate_search"
         valid_keys = FIELD_DESCRIPTIONS.keys()
         for key in search.keys():
             if key not in valid_keys:
@@ -524,7 +524,7 @@ class Summary(GenericQuery):
                                           "%s Search key '%s' in 'search' is not a valid key" % (prefix, key))
 
     def validate_options(self, options):
-        prefix = "validate_options"
+        prefix = "Summary validate_options"
         valid_options = ["count_only", "limit", "offset"]
         for op in options.keys():
             if op not in valid_options:
@@ -544,7 +544,7 @@ class Summary(GenericQuery):
                                               "%s Option 'offset' in 'options' must be >= 0. It is instead %d" % (prefix, int(options[op])))
 
     def _validate(self, data):
-        prefix = "validate"
+        prefix = "Summary validate"
 
         required_fields = ["metadata", "phase", "columns", "search"]
 
@@ -586,7 +586,7 @@ class Summary(GenericQuery):
 class Detail(GenericQuery):
 
     def _validate_phase(self, phase):
-        prefix = "validate_phase"
+        prefix = "Detail validate_phase"
         valid_phases = ["install", "test_build", "test_run"]
         if phase not in valid_phases:
             return self._return_error(prefix, -1,
@@ -594,7 +594,7 @@ class Detail(GenericQuery):
         return None
 
     def _validate_columns(self, columns):
-        prefix = "validate_columns"
+        prefix = "Detail validate_columns"
         valid_columns = FIELD_DESCRIPTIONS.keys()
         for col in columns:
             if col not in valid_columns:
@@ -602,7 +602,7 @@ class Detail(GenericQuery):
                                           "%s Column '%s' in 'columns' is not a valid column" % (prefix, col))
 
     def _validate_search(self, search):
-        prefix = "validate_search"
+        prefix = "Detail validate_search"
         valid_keys = FIELD_DESCRIPTIONS.keys()
         for key in search.keys():
             if key not in valid_keys:
@@ -610,7 +610,7 @@ class Detail(GenericQuery):
                                           "%s Search key '%s' in 'search' is not a valid key" % (prefix, key))
 
     def validate_options(self, options):
-        prefix = "validate_options"
+        prefix = "Detail validate_options"
         valid_options = ["count_only", "limit", "offset"]
         for op in options.keys():
             if op not in valid_options:
@@ -630,7 +630,7 @@ class Detail(GenericQuery):
                                               "%s Option 'offset' in 'options' must be >= 0. It is instead %d" % (prefix, int(options[op])))
 
     def _validate(self, data):
-        prefix = "validate"
+        prefix = "Detail validate"
 
         required_fields = ["metadata", "phase", "columns", "search"]
 
@@ -668,7 +668,7 @@ class Detail(GenericQuery):
 class InfoTestsuite(GenericQuery):
 
     def _validate_search(self, search):
-        prefix = "validate_search"
+        prefix = "InfoTestsuite validate_search"
         valid_keys = FIELD_DESCRIPTIONS.keys()
         for key in search.keys():
             if key not in valid_keys:
@@ -679,7 +679,7 @@ class InfoTestsuite(GenericQuery):
                                       "%s Search key 'test_suite_name' is not found in 'search'" % (prefix))
 
     def _validate(self, data):
-        prefix = "validate"
+        prefix = "InfoTestsuite validate"
 
         required_fields = ["metadata", "search"]
 
@@ -710,7 +710,7 @@ class InfoTestsuite(GenericQuery):
 class InfoRuntime(GenericQuery):
 
     def _validate_phase(self, phase):
-        prefix = "validate_phase"
+        prefix = "InfoRuntime validate_phase"
         valid_phases = ["install", "test_build", "test_run"]
         if phase not in valid_phases:
             return self._return_error(prefix, -1,
@@ -718,7 +718,7 @@ class InfoRuntime(GenericQuery):
         return None
 
     def _validate_search(self, search, phase):
-        prefix = "validate_search"
+        prefix = "InfoRuntime validate_search"
         valid_keys = FIELD_DESCRIPTIONS.keys()
         for key in search.keys():
             if key not in valid_keys:
@@ -741,7 +741,7 @@ class InfoRuntime(GenericQuery):
                                           "%s Field 'test_name' not present in test_run phase" % (prefix))
 
     def _validate(self, data):
-        prefix = "validate"
+        prefix = "InfoRuntime validate"
 
         required_fields = ["metadata", "search"]
 
