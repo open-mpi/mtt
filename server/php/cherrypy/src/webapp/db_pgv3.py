@@ -205,7 +205,15 @@ FIELD_INFO = {
 "full_command":           {"type": "str",
                            "desc": "The full command line string used",
                            "disp": "command",
-                           "table": "test_run"}
+                           "table": "test_run"},
+"test_name":              {"type": "str",
+                           "desc": "Name of the test",
+                           "disp": "test_name",
+                           "table": "test_names"},
+"test_name_description":  {"type": "str",
+                           "desc": "Description of the test",
+                           "disp": "test_description",
+                           "table": "test_names"},
 }
 
 FIELD_TYPES = {f:d["type"] for f,d in FIELD_INFO.items()}
@@ -216,6 +224,8 @@ FIELD_NAMES_MAPPING = {d["disp"]:f for f,d in FIELD_INFO.items()}
 COMMON_FIELDS = [f for f,d in FIELD_INFO.items() if d["table"] == "results_fields"]
 
 TABLE_TREE = {
+"environment":                 {"parents": ["mpi_install", "test_build", "test_run"], "key": "environment_id",           "foreign_key": "environment_id"},
+"result_message":              {"parents": ["mpi_install", "test_build", "test_run"], "key": "result_message_id",        "foreign_key": "result_message_id"},
 "description":                 {"parents": ["mpi_install", "test_build", "test_run"], "key": "description_id",           "foreign_key": "description_id"},
 "compute_cluster":             {"parents": ["mpi_install", "test_build", "test_run"], "key": "compute_cluster_id",       "foreign_key": "compute_cluster_id"},
 "compiler":                    {"parents": ["mpi_install", "test_build", "test_run"], "key": "compiler_id",              "foreign_key": "mpi_install_compiler_id"},
@@ -231,9 +241,21 @@ TABLE_TREE = {
 "latency_bandwidth":           {"parents": ["performance"],                           "key": "latency_bandwidth_id",     "foreign_key": "latency_bandwidth_id"},
 }
 
-TABLE_ORDER = ["description", "compute_cluster", "compiler", "mpi_get", "mpi_install_configure_args", "submit", "test_names", "test_suites", "performance", "test_run_command", "test_run_networks", "interconnects", "latency_bandwidth"]
+TABLE_ORDER = ["environment", "result_message", "description", "compute_cluster", "compiler", "mpi_get", "mpi_install_configure_args", "submit", "test_names", "test_suites", "performance", "test_run_command", "test_run_networks", "interconnects", "latency_bandwidth"]
 
 FIELDS_TABLE = {f:d["table"] for f,d in FIELD_INFO.items()}
+
+TABLE_TREE_TABLES = TABLE_TREE.keys()
+FIELD_INFO_TABLES = set([v["table"] for v in FIELD_INFO.values()])
+
+for t in TABLE_ORDER:
+    assert t in TABLE_TREE_TABLES, "%s in TABLE_ORDER not in TABLE_TREE_TABLES" % (t)
+for t in TABLE_TREE_TABLES:
+    assert t in TABLE_ORDER, "%s in TABLE_TREE_TABLES not in TABLE_ORDER" % (t)
+for t in FIELD_INFO_TABLES:
+    if t == "results_fields" or t == "mpi_install" or t == "test_build" or t == "test_run":
+        continue
+    assert t in TABLE_ORDER, "%s in FIELD_INFO_TABLES not in TABLE_ORDER" % (t)
 
 class DatabaseV3():
     _name = '[DB PG V3]'
@@ -411,7 +433,11 @@ class DatabaseV3():
         tables = set([FIELDS_TABLE[FIELD_NAMES_MAPPING[f]] for f in list(legal_columns) if f not in COMMON_FIELDS] + \
                      [FIELDS_TABLE[FIELD_NAMES_MAPPING[k]] for k in legal_search_keys if k not in COMMON_FIELDS])
 
+        self._logger.debug("DEBUG (tables): %s" % (str(tables)))
+
         table_order = [t for t in TABLE_ORDER if t in tables or (t not in ["mpi_install", "test_build", "test_run"] and self._is_a_parent_of_any([t], tables))]
+
+        self._logger.debug("DEBUG (table_order): %s" % (str(table_order)))
 
         select_stmt =  "SELECT %s " % (", ".join(legal_columns))
         select_stmt += "FROM %s " % (phase_name)
@@ -420,6 +446,8 @@ class DatabaseV3():
         where_clause = " AND ".join(["%s = '%s'" % (k,v) for k,v in legal_search_columnnames.items()])
         if where_clause:
             select_stmt += "WHERE %s " % (where_clause)
+
+        self._logger.debug("DEBUG (select_stmt): %s" % (select_stmt))
 
         cursor = self.get_cursor()
         cursor.execute( select_stmt )

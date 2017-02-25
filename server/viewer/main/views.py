@@ -109,3 +109,26 @@ def index(request):
                   {"display_content_type": display_content_type,
                    "display_content_data": display_content_data,
                    "display_content_fields": display_content_fields}) 
+
+
+# Display the Basic Acceptance Test which displays test data in MPI Install
+
+@csrf_protect
+def bat(request):
+
+    display_content_type = "MPI Install Results"
+    display_content_data = get_mtt_data("install", ["result_message", "trial", "platform_type"], {"platform_type": "test"})
+
+    import pprint; pprint.pprint(display_content_data)
+
+    if display_content_data:
+        display_content_fields = display_content_data[0].keys()
+    else:
+        display_content_fields = []
+    display_content_data = [[row[f] for f in display_content_fields] for row in display_content_data]
+
+    return render(request, "main_template.html",
+                  {"display_content_type": display_content_type,
+                   "display_content_data": display_content_data,
+                   "display_content_fields": display_content_fields})
+
