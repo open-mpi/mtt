@@ -10,252 +10,47 @@ import re
 import json
 from threading import Lock
 import sys
-import datetime
 
-VALID_FIELD_TYPES = ["str", "bool", "int", "float", "str_list", "bool_list", "int_list", "float_list"]
-FIELD_INFO = {
-"platform_name":          {"type": "str", 
-                           "desc": "Custom name of the platform (e.g., \"my-cluster\")",
-                           "disp": "platform_name",
-                           "table": "compute_cluster"},
-"platform_hardware":      {"type": "str",
-                           "desc": "String representation of the hardware (e.g., \"x86_64\")",
-                           "disp": "platform_hardware",
-                           "table": "compute_cluster"},
-"platform_type":          {"type": "str",
-                           "desc": "String representation of the platform type (e.g., \"linux-rhel6.7-x86_64\")",
-                           "disp": "platform_type",
-                           "table": "compute_cluster"},
-"os_name":                {"type": "str",
-                           "desc": "Common name for the OS (e.g., \"Linux\")",
-                           "disp": "os_name",
-                           "table": "compute_cluster"},
-"os_version":             {"type": "str",
-                           "desc": "Version information for the OS (e.g., \"Linux 2.6.32-573.12.1.e16.x86_64\")",
-                           "disp": "os_version",
-                           "table": "compute_cluster"},
-"hostname":               {"type": "str",
-                           "desc": "The hostname where the test ras run",
-                           "disp": "hostname",
-                           "table": "submit"},
-"local_username":         {"type": "str",
-                           "desc": "The local username of the host",
-                           "disp": "local_username",
-                           "table": "submit"},
-"http_username":          {"type": "str",
-                           "desc": "TODO",
-                           "disp": "http_username",
-                           "table": "submit"},
-"mtt_client_version":     {"type": "str",
-                           "desc": "Version of the client you are running",
-                           "disp": "mtt_client_version",
-                           "table": "submit"},
-"compiler_name":          {"type": "str",
-                           "desc": "Common name for the compiler (e.g., \"gnu\")",
-                           "disp": "compiler_name",
-                           "table": "compiler"},
-"compiler_version":       {"type": "str",
-                           "desc": "Version string for the compiler (e.g., \"4.4.7\")",
-                           "disp": "compiler_version",
-                           "table": "compiler"},
-"mpi_name":               {"type": "str",
-                           "desc": "A name for the MPI version (e.g., \"ompi-nightly-v1.10\")",
-                           "disp": "mpi_name",
-                           "table": "mpi_get"},
-"mpi_version":            {"type": "str",
-                           "desc": "Version strin reported by MPI (e.g., \"v1.10.2-114-gf3bad94\")",
-                           "disp": "mpi_version",
-                           "table": "mpi_get"},
-"description":            {"type": "str",
-                           "desc": "Text description of this test",
-                           "disp": "description",
-                           "table": "description"},
-"result_message":         {"type": "str",
-                           "desc": "A string representation of the test result (e.g., \"Success\" or \"Failed; timeout expired (00:10 DD:HH:MM:SS)\")",
-                           "disp": "result_message",
-                           "table": "result_message"},
-"environment":            {"type": "str",
-                           "desc": "Any environment variables of note (usually this is blank)",
-                           "disp": "environment",
-                           "table": "environment"},
-"vpath_mode":             {"type": "int",
-                           "desc": "If the code was compiled using a VPATH build: 1 = relative path, 2 = absolute path, 0 = unknown (default)",
-                           "disp": "vpath_mode",
-                           "table": "mpi_install_configure_args"},
-"bitness":                {"type": "int",
-                           "desc": "The bitness of the machine: 1 = 8 bit, 2 = 16 bit, 4 = 32 bit, 6 = 32/64 bit, 8 = 64 bit, 16 = 128 bit, \"unknown\" = unknown bitness",
-                           "disp": "bitness",
-                           "table": "mpi_install_configure_args"},
-"configure_arguments":    {"type": "str",
-                           "desc": "TODO",
-                           "disp": "configure_arguments",
-                           "table": "mpi_install_configure_args"},
-"start_timestamp":        {"type": "str",
-                           "desc": "Timestamp when the test started",
-                           "disp": "start_timestamp",
-                           "table": "results_fields"},
-"test_result":            {"type": "int",
-                           "desc": "A numerical classification of the test result: 0 = failed, 1 = passed, 2 = skipped, 3 = timed out, -1 = unknown",
-                           "disp": "test_result",
-                           "table": "results_fields"},
-"trial":                  {"type": "bool",
-                           "desc": "Whether this is a trial run: 0 = false, 1 = true",
-                           "disp": "trial",
-                           "table": "results_fields"},
-"submit_timestamp":       {"type": "str",
-                           "desc": "TODO",
-                           "disp": "submit_timestamp",
-                           "table": "results_fields"},
-"duration":               {"type": "str",
-                           "desc": "Time taken interval (e.g. \"322 seconds\", default \"0 seconds\")",
-                           "disp": "duration",
-                           "table": "results_fields"},
-"result_stdout":          {"type": "str",
-                           "desc": "stdout of the process",
-                           "disp": "result_stdout",
-                           "table": "results_fields"},
-"result_stderr":          {"type": "str",
-                           "desc": "stderr of the process",
-                           "disp": "result_stderr",
-                           "table": "results_fields"},
-"merge_stdout_stderr":    {"type": "bool",
-                           "desc": "If the output was merged: 0 = false, 1 = true",
-                           "disp": "merge_stdout_stderr",
-                           "table": "results_fields"},
-"exit_value":             {"type": "int",
-                           "desc": "The return code of the process (e.g., \"0\")",
-                           "disp": "exit_value",
-                           "table": "results_fields"},
-"exit_signal":            {"type": "int",
-                           "desc": "TODO",
-                           "disp": "exit_signal",
-                           "table": "results_fields"},
-"client_serial":          {"type": "int",
-                           "desc": "A valid integer from a previous call to /serial",
-                           "disp": "client_serial",
-                           "table": "results_fields"},
-"suite_name":             {"type": "str",
-                           "desc": "A name for the test suite (e.g., \"trivial\")",
-                           "disp": "suite_name",
-                           "table": "test_suites"},
-"test_suite_description": {"type": "str",
-                           "desc": "A description for the test suite",
-                           "disp": "test_suite_description",
-                           "table": "test_suites"},
-"test_name":              {"type": "str",
-                           "desc": "A name for the test - usually the binary name (e.g., \"hello_c\")",
-                           "disp": "test_name",
-                           "table": "test_name"},
-"test_name_description":  {"type": "str",
-                           "desc": "A description for the test",
-                           "disp": "test_description",
-                           "table": "test_name"},
-"message_size":           {"type": "int_list",
-                           "desc": "TODO",
-                           "disp": "message_size",
-                           "table": "latency_bandwidth"},
-"bandwidth_min":          {"type": "float_list",
-                           "desc": "TODO",
-                           "disp": "bandwidth_min",
-                           "table": "latency_bandwidth"},
-"bandwidth_max":          {"type": "float_list",
-                           "desc": "TODO",
-                           "disp": "bandwidth_max",
-                           "table": "latency_bandwidth"},
-"bandwidth_avg":          {"type": "float_list",
-                           "desc": "TODO",
-                           "disp": "bandwidth_avg",
-                           "table": "latency_bandwidth"},
-"latency_min":            {"type": "float_list",
-                           "desc": "TODO",
-                           "disp": "latency_min",
-                           "table": "latency_bandwidth"},
-"latency_max":            {"type": "float_list",
-                           "desc": "TODO",
-                           "disp": "latency_max",
-                           "table": "latency_bandwidth"},
-"latency_avg":            {"type": "float_list",
-                           "desc": "TODO",
-                           "disp": "latency_avg",
-                           "table": "latency_bandwidth"},
-"interconnect_name":      {"type": "str",
-                           "desc": "TODO",
-                           "disp": "interconnect_name",
-                           "table": "interconnects"},
-"launcher":               {"type": "str",
-                           "desc": "Binary name of what was used to launch the process (e.g., \"mpirun\")",
-                           "disp": "launcher",
-                           "table": "test_run_command"},
-"resource_mgr":           {"type": "str",
-                           "desc": "String representation of the resource manager used (e.g. \"slurm\")",
-                           "disp": "resource_manager",
-                           "table": "test_run_command"},
-"parameters":             {"type": "str",
-                           "desc": "Breakdown the command line parameters (often we just send \"\", server will try to discover from command)",
-                           "disp": "parameters",
-                           "table": "test_run_command"},
-"network":                {"type": "str",
-                           "desc": "String representation of the network (often we just send \"\", server will try to discover from command)",
-                           "disp": "network",
-                           "table": "test_run_command"},
-"np":                     {"type": "int",
-                           "desc": "Number of processes used (input to mpirun command)",
-                           "disp": "np",
-                           "table": "test_run"},
-"full_command":           {"type": "str",
-                           "desc": "The full command line string used",
-                           "disp": "command",
-                           "table": "test_run"},
-"test_name":              {"type": "str",
-                           "desc": "Name of the test",
-                           "disp": "test_name",
-                           "table": "test_names"},
-"test_name_description":  {"type": "str",
-                           "desc": "Description of the test",
-                           "disp": "test_description",
-                           "table": "test_names"},
+ID_TABLE_TUPLES = [
+    ("compute_cluster_id","compute_cluster"),
+    ("compiler_id","compiler"),
+    ("mpi_get_id","mpi_get"),
+    ("mpi_install_configure_id","mpi_install_configure_args"),
+    ("mpi_install_id","mpi_install"),
+    ("environment_id","environment"),
+    ("submit_id","submit"),
+    ("test_build_id","test_build"),
+    ("result_message_id","result_message"),
+    ("test_suite_id","test_suites"),
+    ("test_run_id","test_run"),
+    ("description_id","description"),
+    ("test_name_id","test_names"),
+    ("performance_id","performance"),
+    ("test_run_command_id","test_run_command"),
+    ("network_id","test_run_networks"),
+    ("latency_bandwidth_id","latency_bandwidth"),
+    ("performance_data_id","performance_data"),
+    ("axis_label_id","axis_label"),
+    ("interconnect_id","interconnects")
+]
+ID_TABLE_MAPPING = {t[0]:t[1] for t in ID_TABLE_TUPLES}
+TABLE_ID_MAPPING = {t[1]:t[0] for t in ID_TABLE_TUPLES}
+
+FOREIGN_KEY_MAPPING = {
+    "mpi_install_compiler_id": "compiler_id",
+    "test_build_compiler_id": "compiler_id",
+    "test_run_network_id": "network_id"
+}
+FOREIGN_KEY_MAPPING_JOIN = {
+    "compiler_id": ["mpi_install_compiler_id", "test_build_compiler_id"],
+    "test_run_network_id": ["network_id"]
 }
 
-FIELD_TYPES = {f:d["type"] for f,d in FIELD_INFO.items()}
-assert(sum([0 if t in VALID_FIELD_TYPES else 1 for t in FIELD_TYPES.values()]) == 0)
-
-FIELD_NAMES_MAPPING = {d["disp"]:f for f,d in FIELD_INFO.items()}
-
-COMMON_FIELDS = [f for f,d in FIELD_INFO.items() if d["table"] == "results_fields"]
-
-TABLE_TREE = {
-"environment":                 {"parents": ["mpi_install", "test_build", "test_run"], "key": "environment_id",           "foreign_key": "environment_id"},
-"result_message":              {"parents": ["mpi_install", "test_build", "test_run"], "key": "result_message_id",        "foreign_key": "result_message_id"},
-"description":                 {"parents": ["mpi_install", "test_build", "test_run"], "key": "description_id",           "foreign_key": "description_id"},
-"compute_cluster":             {"parents": ["mpi_install", "test_build", "test_run"], "key": "compute_cluster_id",       "foreign_key": "compute_cluster_id"},
-"compiler":                    {"parents": ["mpi_install", "test_build", "test_run"], "key": "compiler_id",              "foreign_key": "mpi_install_compiler_id"},
-"mpi_get":                     {"parents": ["mpi_install", "test_build", "test_run"], "key": "mpi_get_id",               "foreign_key": "mpi_get_id"},
-"mpi_install_configure_args":  {"parents": ["mpi_install", "test_build", "test_run"], "key": "mpi_install_configure_id", "foreign_key": "mpi_install_configure_id"},
-"submit":                      {"parents": ["mpi_install", "test_build", "test_run"], "key": "submit_id",                "foreign_key": "submit_id"},
-"test_names":                  {"parents": ["test_run"],                              "key": "test_name_id",             "foreign_key": "test_name_id"},
-"test_suites":                 {"parents": ["test_build", "test_run", "test_names"],  "key": "test_suite_id",            "foreign_key": "test_suite_id"},
-"performance":                 {"parents": ["test_run"],                              "key": "performance_id",           "foreign_key": "performance_id"},
-"test_run_command":            {"parents": ["test_run"],                              "key": "test_run_command_id",      "foreign_key": "test_run_command_id"},
-"test_run_networks":           {"parents": ["test_run_command"],                      "key": "test_run_network_id",      "foreign_key": "test_run_network_id"},
-"interconnects":               {"parents": ["test_run_networks"],                     "key": "interconnect_id",          "foreign_key": "interconnect_id"},
-"latency_bandwidth":           {"parents": ["performance"],                           "key": "latency_bandwidth_id",     "foreign_key": "latency_bandwidth_id"},
-}
-
-TABLE_ORDER = ["environment", "result_message", "description", "compute_cluster", "compiler", "mpi_get", "mpi_install_configure_args", "submit", "test_names", "test_suites", "performance", "test_run_command", "test_run_networks", "interconnects", "latency_bandwidth"]
-
-FIELDS_TABLE = {f:d["table"] for f,d in FIELD_INFO.items()}
-
-TABLE_TREE_TABLES = TABLE_TREE.keys()
-FIELD_INFO_TABLES = set([v["table"] for v in FIELD_INFO.values()])
-
-for t in TABLE_ORDER:
-    assert t in TABLE_TREE_TABLES, "%s in TABLE_ORDER not in TABLE_TREE_TABLES" % (t)
-for t in TABLE_TREE_TABLES:
-    assert t in TABLE_ORDER, "%s in TABLE_TREE_TABLES not in TABLE_ORDER" % (t)
-for t in FIELD_INFO_TABLES:
-    if t == "results_fields" or t == "mpi_install" or t == "test_build" or t == "test_run":
-        continue
-    assert t in TABLE_ORDER, "%s in FIELD_INFO_TABLES not in TABLE_ORDER" % (t)
+FIELD_NAME_MAPPING = {"mpi_install_compiler_id": "compiler_id",
+                      "test_build_compiler_id": "compiler_id",
+                      }#"test_run_network_id": "network_id"}
+FIELD_NAME_MAPPING_JOIN = {"compiler_id": ["mpi_install_compiler_id", "test_build_compiler_id"],
+                           }#"test_run_network_id": ["network_id"]}
 
 class DatabaseV3():
     _name = '[DB PG V3]'
@@ -309,6 +104,23 @@ class DatabaseV3():
         self._connection = None
 
     ##########################################################
+    def _find_all_table_names(self, table_name, fields):
+        #if table_name == 'test_run_command': import pdb; pdb.set_trace()
+        id_fields = [f for f in self._fields(table_name) if f.endswith("_id")]
+        level_1_table_names = [(ID_TABLE_MAPPING[FOREIGN_KEY_MAPPING[f]] if f in FOREIGN_KEY_MAPPING else ID_TABLE_MAPPING[f]) \
+                            for f in id_fields if table_name != \
+                            (ID_TABLE_MAPPING[FOREIGN_KEY_MAPPING[f]] if f in FOREIGN_KEY_MAPPING else ID_TABLE_MAPPING[f])]
+        lower_level_table_names = [self._find_all_table_names(t_name, fields) for t_name in level_1_table_names]
+        table_names = list(set([item for sublist in [[tn_1] + tn_ll for tn_1,tn_ll in zip(level_1_table_names, lower_level_table_names)] for item in sublist]))
+        if fields is None:
+            return table_names
+        for f in fields:
+            for tn in table_names:
+                if f in self._fields(tn):
+                    return table_names
+        return []
+
+    ##########################################################
     def _fields(self, table_name):
         cursor = self.get_cursor()
         select_stmt = "SELECT column_name FROM information_schema.columns WHERE table_name='" + table_name + "';"
@@ -325,153 +137,59 @@ class DatabaseV3():
         return result
 
     ##########################################################
+    # TODO DEBUG THIS CODE Has duplicate "compiler_id"
+
     def __find_last_occurence(self, lst, itemlst):
         for item in reversed(lst):
             if item in itemlst:
                 return item
         return None
 
-    ##########################################################
-    def _is_a_parent(self, parent_names, table_name):
-        """Recursive check if a table has at least one table in the parent list in its ancestery
-        parent_names is a list
-        table_name is a string
-        returns boolean
-        """
-        if table_name not in TABLE_TREE:
-            return False
-        for table in TABLE_TREE[table_name]['parents']:
-            if table in parent_names:
-                return True
-        for table in TABLE_TREE[table_name]['parents']:
-            if self._is_a_parent(parent_names, table):
-                return True
-        return False
-
-    def _is_a_parent_of_any(self, parent_names, table_names):
-        for t in table_names:
-            if self._is_a_parent(parent_names, t):
-                return True
-        return False
-
-    def _summary_compare(self, row1, row2):
-        """row1 is from combiner and row2 is from result
-        """
-        for k,v in row2.items():
-            if v != row1[k]:
-                return False
-        return True
-
-    def _summary_find_in_combiner(self, combiner, row):
-        for i,r in enumerate(combiner):
-            if self._summary_compare(r,row):
-                return i
-        return -1
-
-    def _summary(self, phase, columns, search, options=[]):
-        self._logger.debug("%s _summary()" % (self._name))
-
-        data = self._detail(phase, list(set(columns + ["test_result"])), search, options=options)
-
-        combiner = []
-        for row in data:
-            combiner_ind = self._summary_find_in_combiner(combiner, row)
-            if combiner_ind == -1:
-                newrow = row.copy()
-                newrow["test_result_failed"]   = 0
-                newrow["test_result_passed"]   = 0
-                newrow["test_result_skipped"]  = 0
-                newrow["test_result_timed_out"] = 0
-                newrow["test_result_unknown"]  = 0
-                combiner.append(newrow)
-            if combiner[combiner_ind]["test_result"] == 0:
-                combiner[combiner_ind]["test_result_failed"] += 1 
-            elif combiner[combiner_ind]["test_result"] == 1:
-                combiner[combiner_ind]["test_result_passed"] += 1
-            elif combiner[combiner_ind]["test_result"] == 2:
-                combiner[combiner_ind]["test_result_skipped"] += 1
-            elif combiner[combiner_ind]["test_result"] == 3:
-                combiner[combiner_ind]["test_result_timed_out"] += 1
-            else:
-                combiner[combiner_ind]["test_result_unknown"] += 1
-
-        if "test_result" not in columns:
-            for row in combiner:
-                del row["test_result"]
-
-        return combiner
-        
-    def _select_item_in(self, selection, lst):
-        for item in selection:
-            if item in lst:
-                return item
-        return None
-
-    def _detail(self, phase, columns, search, options=[]):
-        self._logger.debug("%s _detail()" % (self._name))
-
-        if "install" in phase:
-            phase_name = "mpi_install"
-        elif "test_build" in phase:
-            phase_name = "test_build"
-        elif "test_run" in phase:
-            phase_name = "test_run"
-        else:
-            self._logger.debug("%s _summary() -- Invalid phase input" % (self._name))
-            return None
-
-        legal_columns = set([f for f in columns if f in COMMON_FIELDS \
-                             or FIELDS_TABLE[FIELD_NAMES_MAPPING[f]] == phase_name \
-                             or self._is_a_parent([phase_name], FIELDS_TABLE[FIELD_NAMES_MAPPING[f]])])
-
-        legal_search = {k:v for k,v in search.items() if k in COMMON_FIELDS \
-                             or FIELDS_TABLE[FIELD_NAMES_MAPPING[k]] == phase_name \
-                             or self._is_a_parent([phase_name], FIELDS_TABLE[FIELD_NAMES_MAPPING[k]])}
-        legal_search_columnnames = {"%s.%s" % (phase_name if k in COMMON_FIELDS else FIELDS_TABLE[FIELD_NAMES_MAPPING[k]],k):v for k,v in legal_search.items()}
-        legal_search_keys = set(legal_search.keys())
-
-        tables = set([FIELDS_TABLE[FIELD_NAMES_MAPPING[f]] for f in list(legal_columns) if f not in COMMON_FIELDS] + \
-                     [FIELDS_TABLE[FIELD_NAMES_MAPPING[k]] for k in legal_search_keys if k not in COMMON_FIELDS])
-
-        self._logger.debug("DEBUG (tables): %s" % (str(tables)))
-
-        table_order = [t for t in TABLE_ORDER if t in tables or (t not in ["mpi_install", "test_build", "test_run"] and self._is_a_parent_of_any([t], tables))]
-
-        self._logger.debug("DEBUG (table_order): %s" % (str(table_order)))
-
-        select_stmt =  "SELECT %s " % (", ".join(legal_columns))
-        select_stmt += "FROM %s " % (phase_name)
-        select_stmt += "%s " % (" ".join(["INNER JOIN %s ON %s.%s = %s.%s " % (t,t,TABLE_TREE[t]["key"], self._select_item_in(TABLE_TREE[t]["parents"], [phase_name] + table_order[:i]), TABLE_TREE[t]["foreign_key"]) for i,t in enumerate(table_order)]))
-
-        where_clause = " AND ".join(["%s = '%s'" % (k,v) for k,v in legal_search_columnnames.items()])
-        if where_clause:
-            select_stmt += "WHERE %s " % (where_clause)
-
-        self._logger.debug("DEBUG (select_stmt): %s" % (select_stmt))
-
+    def _query(self, table_name, filters=[], row_id=None, fields=None):
+        for item in filters:
+            if len(item.split(" ")) != 3:
+                print >> sys.stderr, "Error: _query() has wrong format input for filters"
+                return None
+        table_names = [table_name] + list(self._find_all_table_names(table_name, fields))
+        table_names = [tn for tn in table_names if tn != "compiler"]
+        field_names = []
+        for t_name in table_names:
+            field_names.extend(self._fields(t_name))
+        if fields is not None:
+            for f in fields:
+                if f not in field_names:
+                    print >> sys.stderr, "Error: _query() has wrong format input for fields"
+                    return None
+            field_names = fields
+        self._logger.debug("%s _query_all() %s" % (self._name, str(table_name))) #+ ", ".join([FIELD_NAME_MAPPING[f] if f in FIELD_NAME_MAPPING else f for f in field_names])
+        select_stmt = "SELECT " + ("*" if fields is None else ", ".join(fields)) + " FROM " + " NATURAL LEFT JOIN ".join([ \
+                 ("(SELECT " + ", ".join( \
+                     ["compiler_id as test_build_compiler_id" if fn == "compiler_id" else fn for fn in self._fields("compiler")]) \
+                  + " FROM compiler) as compiler_"+self.__find_last_occurence(table_names[:i],["mpi_install","test_build","test_run"]) \
+                  if self.__find_last_occurence(table_names[:i],["mpi_install","test_build","test_run"]) in ["test_build", "test_run"] \
+                  else \
+                  "(SELECT " + ", ".join( \
+                    ["compiler_id as mpi_install_compiler_id" if fn == "compiler_id" else fn for fn in self._fields("compiler")]) \
+                  + " FROM compiler) as compiler_"+self.__find_last_occurence(table_names[:i],["mpi_install","test_build","test_run"])) \
+                 if tn == "compiler" \
+                 else tn for i,tn in enumerate(table_names)])
+        print select_stmt
+#        select_stmt = "SELECT *" + " FROM " + " NATURAL JOIN ".join(["(SELECT " + ", ".join([", ".join([f + " as " + m for m in FIELD_NAME_MAPPING_JOIN[f]]) if f in FIELD_NAME_MAPPING_JOIN else f for f in self._fields(tn)]) + " FROM " + tn + ") as _" + tn + "_" for tn in table_names])
+        if filters or row_id is not None:
+            select_stmt += " WHERE "
+            select_stmt += " AND ".join(filters)
+            if row_id is not None:
+                if filters:
+                    select_stmt += " AND %s = %d" % (TABLE_ID_MAPPING[table_name], row_id)
         cursor = self.get_cursor()
         cursor.execute( select_stmt )
         row = cursor.fetchone()
-
         result = []
         while row is not None:
-            row = [str(v) if isinstance(v, datetime.date) or isinstance(v, datetime.timedelta) else v for v in row]
-            result.append({field:val for field,val in zip(legal_columns,row)})
+            result.append({field:val for field,val in zip(field_names,row)})
             row = cursor.fetchone()
         cursor.close()
-
         return result
-
-
-    def _info_testsuite(self, search):
-        self._logger.debug("%s _info_testsuite()" % (self._name))
-        #TODO
-        return None
-
-    def _info_runtime(self, phase, search):
-        self._logger.debug("%s _info_runtime()" % (self._name))
-        #TODO
-        return None
         
     ##########################################################
     def _find_value(self, metadata, data, field, aliases=None):

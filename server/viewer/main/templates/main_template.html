@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+
+<head>
+
+<title>SeTH Reporter</title>
+
+<style>
+.table_main {
+  border-top-style: ridge;
+  border-bottom-style: ridge;
+  border-left-style: ridge;
+  border-right-style: ridge;
+  border-color: black;
+  border-width: 3px;
+}
+.table_main td {
+  background: $D5D8DC;
+  border-right: solid 1px black;
+  border-bottom: 1px solid black;
+  text-align: center;
+}
+.table_main th {
+  background: $FDFEFE;
+  border-right: solid 1px black;
+  border-bottom: 1px solid black;
+  text-align center;
+}
+</style>
+
+</head>
+
+<body>
+
+<form action="." method="post">{% csrf_token %}
+  <input type="submit" value="View Test Run Results" name="view_test_run_results" />
+  <input type="submit" value="View MPI Install Results" name="view_mpi_install_results" />
+  <input type="submit" value="View Test Build Results" name="view_test_build_results" />
+</form>
+
+{% block content_type %}
+<p>{{ display_content_type }}</p>
+{% endblock %}
+
+{% if display_content_data %}
+  {% block content_data %}
+  <table class="table_main">
+    <tr>
+      {% for item in display_content_fields %}
+        <th>{{ item }}</th>
+      {% endfor %}
+    </tr>
+    {% for row in display_content_data %}
+      <tr>
+        {% for item in row %}
+          <td>{{ item }}</td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+  </table>
+  {% endblock %}
+{% endif %}
+
+</body>
