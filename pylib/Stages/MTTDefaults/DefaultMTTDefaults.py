@@ -1,6 +1,6 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
-# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2017 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -43,6 +43,7 @@ class DefaultMTTDefaults(MTTDefaultsMTTStage):
         self.options['stdout_save_lines'] = (-1, "Number of lines of stdout to save (-1 for unlimited)")
         self.options['stderr_save_lines'] = (-1, "Number of lines of stderr to save (-1 for unlimited)")
         self.options['executor'] = ('sequential', "Strategy to use: combinatorial or sequential executor")
+        self.options['time'] = (True, "Record how long it takes to run each individual test")
         return
 
     def activate(self):

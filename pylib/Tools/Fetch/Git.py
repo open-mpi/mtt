@@ -1,6 +1,6 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
-# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2017 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -225,13 +225,13 @@ class Git(FetchMTTTool):
                     stderr = None
             except KeyError:
                 # since it already exists, let's just update it
-                status, stdout, stderr = testDef.execmd.execute(cmds, ["git", "pull"], testDef)
+                status, stdout, stderr, _ = testDef.execmd.execute(cmds, ["git", "pull"], testDef)
         else:
             # clone it
             if branch is not None:
-                status, stdout, stderr = testDef.execmd.execute(cmds, ["git", "clone", "-b", branch, url], testDef)
+                status, stdout, stderr, _ = testDef.execmd.execute(cmds, ["git", "clone", "-b", branch, url], testDef)
             else:
-                status, stdout, stderr = testDef.execmd.execute(cmds, ["git", "clone", url], testDef)
+                status, stdout, stderr, _ = testDef.execmd.execute(cmds, ["git", "clone", url], testDef)
             # move into it
             os.chdir(repo)
         # record the result

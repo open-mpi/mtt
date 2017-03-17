@@ -1,6 +1,6 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
-# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2017 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -120,7 +120,7 @@ class WWulf3(ProvisionMTTStage):
         wwcmd = ["wwsh", "node", "list"]
         if cmds['sudo']:
             wwcmd.insert(0, "sudo")
-        status,stdout,stderr = testDef.execmd.execute(cmds, wwcmd, testDef)
+        status,stdout,stderr,_ = testDef.execmd.execute(cmds, wwcmd, testDef)
         if 0 != status or stdout is None:
             log['status'] = status
             log['stderr'] = "Node list was not obtained"
@@ -156,7 +156,7 @@ class WWulf3(ProvisionMTTStage):
             if cmds['bootstrap']:
                wwcmd.append("--bootstrap=" + cmds['bootstrap'])
             # update the provisioning database to the new image
-            status,stdout,stderr = testDef.execmd.execute(cmds, wwcmd, testDef)
+            status,stdout,stderr,_ = testDef.execmd.execute(cmds, wwcmd, testDef)
             if 0 != status:
                 log['status'] = status
                 log['stderr'] = stderr

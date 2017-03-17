@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2017 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -13,6 +13,7 @@ from builtins import str
 import sys
 import select
 import subprocess
+import time
 from BaseMTTUtility import *
 
 ## @addtogroup Utilities
@@ -65,6 +66,15 @@ class ExecuteCmd(BaseMTTUtility):
                 stderrlines = -1 * int(options['stderr_save_lines'])
         except:
             stderrlines = 0
+        # check for timing request
+        try:
+            if options['time']:
+                time_exec = True
+            else:
+                time_exec = False
+        except:
+            time_exec = False
+        elapsed = -1
         # setup the command arguments
         mycmdargs = []
         # if any cmd arg has quotes around it, remove
@@ -75,6 +85,9 @@ class ExecuteCmd(BaseMTTUtility):
         # it is possible that the command doesn't exist or
         # isn't in our path, so protect us
         try:
+            if time_exec:
+                starttime = time.time()
+
             # open a subprocess with stdout and stderr
             # as distinct pipes so we can capture their
             # output as the process runs
@@ -107,7 +120,11 @@ class ExecuteCmd(BaseMTTUtility):
 
                 if p.poll() != None:
                     break
-        except OSError as e:
-            return (1, None, str(e))
+            if time_exec:
+                endtime = time.time()
+                elapsed = endtime - starttime
 
-        return (p.returncode, stdout[stdoutlines:], stderr[stderrlines:])
+        except OSError as e:
+            return (1, None, str(e), elapsed)
+
+        return (p.returncode, stdout[stdoutlines:], stderr[stderrlines:], elapsed)

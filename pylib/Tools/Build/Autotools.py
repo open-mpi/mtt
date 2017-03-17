@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2017 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -217,7 +217,7 @@ class Autotools(BuildMTTTool):
                 args = cmds['autogen_cmd'].split()
                 for arg in args:
                     agargs.append(arg.strip())
-                status, stdout, stderr = testDef.execmd.execute(cmds, agargs, testDef)
+                status, stdout, stderr, _ = testDef.execmd.execute(cmds, agargs, testDef)
                 if 0 != status:
                     log['status'] = status
                     log['stdout'] = stdout
@@ -253,7 +253,7 @@ class Autotools(BuildMTTTool):
                     cfgargs.append(arg.strip())
         except KeyError:
             pass
-        status, stdout, stderr = testDef.execmd.execute(cmds, cfgargs, testDef)
+        status, stdout, stderr, _ = testDef.execmd.execute(cmds, cfgargs, testDef)
         if 0 != status:
             log['status'] = status
             log['stdout'] = stdout
@@ -287,7 +287,7 @@ class Autotools(BuildMTTTool):
                 bldargs.append(arg.strip())
         # step thru the process, starting with "clean"
         bldargs.append("clean")
-        status, stdout, stderr = testDef.execmd.execute(cmds, bldargs, testDef)
+        status, stdout, stderr, _ = testDef.execmd.execute(cmds, bldargs, testDef)
         if 0 != status:
             log['status'] = status
             log['stdout'] = stdout
@@ -308,7 +308,7 @@ class Autotools(BuildMTTTool):
         # now execute "make all"
         bldargs = bldargs[0:-1]
         bldargs.append("all")
-        status, stdout, stderr = testDef.execmd.execute(cmds, bldargs, testDef)
+        status, stdout, stderr, _ = testDef.execmd.execute(cmds, bldargs, testDef)
         if 0 != status:
             log['status'] = status
             log['stdout'] = stdout
@@ -330,7 +330,7 @@ class Autotools(BuildMTTTool):
         if prefix is not None:
             bldargs = bldargs[0:-1]
             bldargs.append("install")
-            status, stdout, stderr = testDef.execmd.execute(cmds, bldargs, testDef)
+            status, stdout, stderr, _ = testDef.execmd.execute(cmds, bldargs, testDef)
         # this is the end of the operation, so the status is our
         # overall status
         log['status'] = status
