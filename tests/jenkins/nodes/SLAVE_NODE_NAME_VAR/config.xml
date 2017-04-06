@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<slave>
+  <name>SLAVE_NODE_NAME_VAR</name>
+  <description></description>
+  <remoteFS>/var/jenkins</remoteFS>
+  <numExecutors>SLAVE_NODE_NUM_EXECUTORS_VAR</numExecutors>
+  <mode>EXCLUSIVE</mode>
+  <retentionStrategy class="hudson.slaves.RetentionStrategy$Always"/>
+  <launcher class="hudson.plugins.sshslaves.SSHLauncher" plugin="ssh-slaves@1.12">
+    <host>SLAVE_NODE_IP_ADDR_VAR</host>
+    <port>22</port>
+    <credentialsId>bfd309c7-0e2a-42a8-ba88-a8af6da095e4</credentialsId>
+    <maxNumRetries>0</maxNumRetries>
+    <retryWaitTime>0</retryWaitTime>
+  </launcher>
+  <label>SLAVE_NODE_NAME_VAR</label>
+  <nodeProperties>
+    <hudson.slaves.EnvironmentVariablesNodeProperty>
+      <envVars serialization="custom">
+        <unserializable-parents/>
+        <tree-map>
+          <default>
+            <comparator class="hudson.util.CaseInsensitiveComparator"/>
+          </default>
+          <int>3</int>
+          <string>NUM_COMPUTES_AVAIL</string>
+          <string>SLAVE_NODE_NUM_COMPUTES_VAR</string>
+        </tree-map>
+      </envVars>
+    </hudson.slaves.EnvironmentVariablesNodeProperty>
+  </nodeProperties>
+</slave>
