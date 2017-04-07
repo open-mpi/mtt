@@ -10,3 +10,7 @@ psql -U mtt mtt -f /opt/mtt/server/sql/summary/summary_trigger.sql && \
 psql -U mtt mtt -f /opt/mtt/server/sql/schemas-stats.sql && \
 psql -U mtt mtt -f /opt/mtt/server/sql/schemas-reporter.sql && \
 psql -U mtt mtt -f /opt/mtt/server/sql/schemas-indexes.sql
+
+# Script must be run from the server/sql/support directory
+cd /opt/mtt/server/sql/support/
+./yearly-table-update.pl 2017
