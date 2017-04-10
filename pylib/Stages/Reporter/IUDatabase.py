@@ -288,6 +288,8 @@ class IUDatabase(ReporterMTTStage):
                             data['exit_value'] = int(lgerr.split("[Errno ")[1].split("]")[0])
                         except:
                             data['exit_value'] = -1
+                    else:
+                        data['exit_value'] = -1
                 else:
                     data['exit_value'] = -1
 
@@ -381,13 +383,15 @@ class IUDatabase(ReporterMTTStage):
 
         try:
             data['compiler_name'] = lg['compiler']['compiler']
-            data['compiler_version'] = "\n".join(lg['compiler']['version'])
+#            data['compiler_version'] = "\n".join(lg['compiler']['version'])
+            data['compiler_version'] = lg['compiler']['version']
         except KeyError:
             full_log = logger.getLog(None)
             for entry in full_log:
                 if 'compiler' in entry:
                     data['compiler_name'] = entry['compiler']['compiler']
-                    data['compiler_version'] = "\n".join(entry['compiler']['version'])
+#                    data['compiler_version'] = "\n".join(entry['compiler']['version'])
+                    data['compiler_version'] = entry['compiler']['version']
                     break
             else:
                 data['compiler_name'] = None
@@ -423,6 +427,8 @@ class IUDatabase(ReporterMTTStage):
                         data['exit_value'] = int(lgerr.split("[Errno ")[1].split("]")[0])
                     except:
                         data['exit_value'] = -1
+                else:
+                    data['exit_value'] = -1
             else:
                 data['exit_value'] = -1
         else:
@@ -442,6 +448,8 @@ class IUDatabase(ReporterMTTStage):
                         data['exit_value'] = int(lgerr.split("[Errno ")[1].split("]")[0])
                     except:
                         data['exit_value'] = -1
+                else:
+                    data['exit_value'] = -1
             else:
                 data['exit_value'] = -1
 
@@ -542,13 +550,15 @@ class IUDatabase(ReporterMTTStage):
 
         try:
             data['compiler_name'] = lg['compiler']['compiler']
-            data['compiler_version'] = "\n".join(lg['compiler']['version'])
+#            data['compiler_version'] = "\n".join(lg['compiler']['version'])
+            data['compiler_version'] = lg['compiler']['version']
         except KeyError:
             full_log = logger.getLog(None)
             for entry in full_log:
                 if 'compiler' in entry:
                     data['compiler_name'] = entry['compiler']['compiler']
-                    data['compiler_version'] = "\n".join(entry['compiler']['version'])
+#                    data['compiler_version'] = "\n".join(entry['compiler']['version'])
+                    data['compiler_version'] = entry['compiler']['version']
                     break
             else:
                 data['compiler_name'] = None
@@ -601,6 +611,8 @@ class IUDatabase(ReporterMTTStage):
                         data['exit_value'] = int(lgerr.split("[Errno ")[1].split("]")[0])
                     except:
                         data['exit_value'] = -1
+                else:
+                    data['exit_value'] = -1
             else:
                 data['exit_value'] = -1
         else:
@@ -620,6 +632,8 @@ class IUDatabase(ReporterMTTStage):
                         data['exit_value'] = int(lgerr.split("[Errno ")[1].split("]")[0])
                     except:
                         data['exit_value'] = -1
+                else:
+                    data['exit_value'] = -1
             else:
                 data['exit_value'] = -1
 

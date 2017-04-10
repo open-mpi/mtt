@@ -167,7 +167,7 @@ class Compilers(BaseMTTUtility):
         # record the result
         log['status'] = status
         log['compiler'] = compiler
-        log['version'] = vsn
+        log['version'] = "\n".join(vsn)[:64]
         return
 
     def check_compile(self, testDef, macro, c_code, compiler):
