@@ -179,18 +179,6 @@ class Shell(BuildMTTTool):
 
         # check to see if they specified a module to use
         # where the compiler can be found
-        usedModule = False
-        try:
-            if cmds['modules'] is not None:
-                status,stdout,stderr = testDef.modcmd.loadModules(cmds['modules'], testDef)
-                if 0 != status:
-                    log['status'] = status
-                    log['stderr'] = stderr
-                    return
-                usedModule = True
-        except KeyError:
-            # not required to provide a module
-            pass
         usedModuleUnload = False
         try:
             if cmds['modules_unload'] is not None:
@@ -202,6 +190,18 @@ class Shell(BuildMTTTool):
                 usedModuleUnload = True
         except KeyError:
             # not required to provide a module to unload
+            pass
+        usedModule = False
+        try:
+            if cmds['modules'] is not None:
+                status,stdout,stderr = testDef.modcmd.loadModules(cmds['modules'], testDef)
+                if 0 != status:
+                    log['status'] = status
+                    log['stderr'] = stderr
+                    return
+                usedModule = True
+        except KeyError:
+            # not required to provide a module
             pass
 
         # sense and record the compiler being used
