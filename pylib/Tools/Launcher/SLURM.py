@@ -132,20 +132,6 @@ class SLURM(LauncherMTTTool):
                     return
                 try:
                     if bldlog['parameters'] is not None:
-                        # check for modules used during the build of these tests
-                        for md in bldlog['parameters']:
-                            if "modules" == md[0]:
-                                try:
-                                    if keyvals['modules'] is not None:
-                                        # append these modules to those
-                                        mods = md[1].split(',')
-                                        newmods = keyvals['modules'].split(',')
-                                        for mdx in newmods:
-                                            mods.append(mdx)
-                                        keyvals['modules'] = ','.join(mods)
-                                except KeyError:
-                                    keyvals['modules'] = md[1]
-                                break
                         # check for modules unloaded during the build of these tests
                         for md in bldlog['parameters']:
                             if "modules_unload" == md[0]:
@@ -159,6 +145,20 @@ class SLURM(LauncherMTTTool):
                                         keyvals['modules_unload'] = ','.join(mods)
                                 except KeyError:
                                     keyvals['modules_unload'] = md[1]
+                                break
+                        # check for modules used during the build of these tests
+                        for md in bldlog['parameters']:
+                            if "modules" == md[0]:
+                                try:
+                                    if keyvals['modules'] is not None:
+                                        # append these modules to those
+                                        mods = md[1].split(',')
+                                        newmods = keyvals['modules'].split(',')
+                                        for mdx in newmods:
+                                            mods.append(mdx)
+                                        keyvals['modules'] = ','.join(mods)
+                                except KeyError:
+                                    keyvals['modules'] = md[1]
                                 break
                 except KeyError:
                     pass
@@ -188,20 +188,6 @@ class SLURM(LauncherMTTTool):
                             pass
                         try:
                             if midlog['parameters'] is not None:
-                                # check for modules required by the middleware
-                                for md in midlog['parameters']:
-                                    if "modules" == md[0]:
-                                        try:
-                                            if keyvals['modules'] is not None:
-                                                # append these modules to those
-                                                mods = md[1].split(',')
-                                                newmods = keyvals['modules'].split(',')
-                                                for mdx in newmods:
-                                                    mods.append(mdx)
-                                                keyvals['modules'] = ','.join(mods)
-                                        except KeyError:
-                                            keyvals['modules'] = md[1]
-                                        break
                                 # check for modules unloaded by the middleware
                                 for md in midlog['parameters']:
                                     if "modules_unload" == md[0]:
@@ -215,6 +201,20 @@ class SLURM(LauncherMTTTool):
                                                 keyvals['modules_unload'] = ','.join(mods)
                                         except KeyError:
                                             keyvals['modules_unload'] = md[1]
+                                        break
+                                # check for modules required by the middleware
+                                for md in midlog['parameters']:
+                                    if "modules" == md[0]:
+                                        try:
+                                            if keyvals['modules'] is not None:
+                                                # append these modules to those
+                                                mods = md[1].split(',')
+                                                newmods = keyvals['modules'].split(',')
+                                                for mdx in newmods:
+                                                    mods.append(mdx)
+                                                keyvals['modules'] = ','.join(mods)
+                                        except KeyError:
+                                            keyvals['modules'] = md[1]
                                         break
                         except KeyError:
                             pass
@@ -307,20 +307,6 @@ class SLURM(LauncherMTTTool):
         else:
             maxTests = 10000000
 
-        # Load modules that were required during the middleware or test build
-        usedModule = False
-        try:
-            if cmds['modules'] is not None:
-                status,stdout,stderr = testDef.modcmd.loadModules(cmds['modules'], testDef)
-                if 0 != status:
-                    log['status'] = status
-                    log['stderr'] = stderr
-                    os.chdir(cwd)
-                    return
-                usedModule = True
-        except KeyError:
-            # not required to provide a module
-            pass
         # unload modules that were removed during the middleware or test build
         usedModuleUnload = False
         try:
@@ -334,6 +320,20 @@ class SLURM(LauncherMTTTool):
                 usedModuleUnload = True
         except KeyError:
             # not required to provide a module to unload
+            pass
+        # Load modules that were required during the middleware or test build
+        usedModule = False
+        try:
+            if cmds['modules'] is not None:
+                status,stdout,stderr = testDef.modcmd.loadModules(cmds['modules'], testDef)
+                if 0 != status:
+                    log['status'] = status
+                    log['stderr'] = stderr
+                    os.chdir(cwd)
+                    return
+                usedModule = True
+        except KeyError:
+            # not required to provide a module
             pass
 
         fail_tests = cmds['fail_tests']
