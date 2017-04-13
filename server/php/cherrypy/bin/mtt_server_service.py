@@ -121,7 +121,8 @@ switch = {
 }
 
 if __name__ == '__main__':
-    os.chdir(_src_dir)
+    basedir = os.path.dirname(sys.argv[0])
+    os.chdir(os.path.join(basedir, '../', _src_dir))
     try:
         switch[sys.argv[1]]()
     except (IndexError, KeyError):
