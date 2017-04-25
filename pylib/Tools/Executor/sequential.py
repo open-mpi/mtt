@@ -80,12 +80,17 @@ class SequentialEx(ExecutorMTTTool):
                 # this section
                 if "SKIP" in title:
                     continue
+
+                if 'MTTDefaults' in title and 'LTP' in title:
+                    import pdb; pdb.set_trace()
+
                 # extract the stage and stage name from the title
-                if ":" in title:
-                    stage,name = title.split(':')
-                    stage = stage.strip()
-                else:
-                    stage = title
+                stage = title.split(step)[0] + step
+#                if ":" in title:
+#                    stage,name = title.split(':')
+#                    stage = stage.strip()
+#                else:
+#                    stage = title
                 # setup the log
                 stageLog = {'section':title}
                 # get the key-value tuples output by the configuration parser

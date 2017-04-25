@@ -128,7 +128,8 @@ class IUDatabase(ReporterMTTStage):
 
         data = {}
 
-        profile = testDef.logger.getLog('Profile:Installed')
+        profile = [lg for lg in testDef.logger.getLog(None) if 'Profile' in lg['section'] and 'Installed' in lg['section']][0]
+#        profile = testDef.logger.getLog('Profile:Installed')
         metadata = {}
         metadata['client_serial'] = client_serial
         metadata['hostname'] = "\n".join(profile['profile']['nodeName'])
