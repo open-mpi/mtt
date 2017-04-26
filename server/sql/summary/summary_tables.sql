@@ -1,9 +1,9 @@
-DROP TABLE summary_mpi_install;
-DROP TABLE summary_test_build;
-DROP TABLE summary_test_run;
-DROP TABLE summary_base;
+DROP TABLE IF EXISTS summary_mpi_install;
+DROP TABLE IF EXISTS summary_test_build;
+DROP TABLE IF EXISTS summary_test_run;
+DROP TABLE IF EXISTS summary_base;
 
-DROP TABLE summary_range;
+DROP TABLE IF EXISTS summary_range;
 
 --
 -- A table to quickly lookup the earliest date for which there is summary data.

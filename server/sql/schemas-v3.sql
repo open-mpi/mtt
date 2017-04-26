@@ -25,13 +25,13 @@
 --
 -- Serial number used for individual MTT runs
 --
-DROP SEQUENCE client_serial;
+DROP SEQUENCE IF EXISTS client_serial;
 CREATE SEQUENCE client_serial;
 
 --
 -- Cluster Table
 --
-DROP TABLE compute_cluster CASCADE;
+DROP TABLE IF EXISTS compute_cluster CASCADE;
 CREATE TABLE compute_cluster (
     compute_cluster_id  serial,
 
@@ -62,7 +62,7 @@ INSERT INTO compute_cluster VALUES ('0', 'undef', 'undef', 'undef', 'undef', 'un
 --
 -- Submit Table
 --
-DROP TABLE submit CASCADE;
+DROP TABLE IF EXISTS submit CASCADE;
 CREATE TABLE submit (
     submit_id           serial,
 
@@ -73,7 +73,7 @@ CREATE TABLE submit (
     -- Current Max: 8 chars
     http_username       varchar(16)  NOT NULL DEFAULT 'bogus',
     -- Current Max: 8 chars
-    mtt_client_version  varchar(16)          NOT NULL DEFAULT '',
+    mtt_client_version  varchar(16)  NOT NULL DEFAULT '',
 
     PRIMARY KEY (submit_id)
 );
@@ -83,7 +83,7 @@ INSERT INTO submit VALUES ('0', 'undef', 'undef', 'undef', 'undef');
 --
 -- Compiler Table
 --
-DROP TABLE compiler CASCADE;
+DROP TABLE IF EXISTS compiler CASCADE;
 CREATE TABLE compiler (
     compiler_id      serial,
 
@@ -105,7 +105,7 @@ INSERT INTO compiler VALUES ('0', 'undef', 'undef');
 --
 -- MPI Get Table
 --
-DROP TABLE mpi_get CASCADE;
+DROP TABLE IF EXISTS mpi_get CASCADE;
 CREATE TABLE mpi_get (
     mpi_get_id  serial,
 
@@ -127,7 +127,7 @@ INSERT INTO mpi_get VALUES ('0', 'undef', 'undef');
 --
 -- Results: Description Normalization table
 --
-DROP TABLE description CASCADE;
+DROP TABLE IF EXISTS description CASCADE;
 CREATE TABLE description (
     description_id  serial,
 
@@ -135,11 +135,15 @@ CREATE TABLE description (
 
     PRIMARY KEY (description_id)
 );
+--
+-- Add empty row to the description table
+--
+INSERT INTO description VALUES(0, '');
 
 --
 -- Results: Result Message Normalization table
 --
-DROP TABLE result_message CASCADE;
+DROP TABLE IF EXISTS result_message CASCADE;
 CREATE TABLE result_message (
     result_message_id  serial,
 
@@ -153,7 +157,7 @@ INSERT INTO result_message VALUES('0', 'undef');
 --
 -- Results: Environment Normalization table
 --
-DROP TABLE environment CASCADE;
+DROP TABLE IF EXISTS environment CASCADE;
 CREATE TABLE environment (
     environment_id  serial,
 
@@ -161,12 +165,16 @@ CREATE TABLE environment (
 
     PRIMARY KEY (environment_id)
 );
+--
+-- Add empty row to the environment table
+--
+INSERT INTO environment VALUES(0, '');
 
 
 --
 -- MPI Install Configure Argument Normalization table
 --
-DROP TABLE mpi_install_configure_args CASCADE;
+DROP TABLE IF EXISTS mpi_install_configure_args CASCADE;
 CREATE TABLE mpi_install_configure_args (
     mpi_install_configure_id        serial,
 
@@ -211,7 +219,7 @@ INSERT INTO mpi_install_configure_args VALUES ('0', DEFAULT, DEFAULT, DEFAULT, '
 --  get the total number of results in the database across the
 --  three partiion tables.
 --
-DROP TABLE results_fields CASCADE;
+DROP TABLE IF EXISTS results_fields CASCADE;
 CREATE TABLE results_fields (
     description_id      integer NOT NULL,
 
@@ -238,7 +246,7 @@ CREATE TABLE results_fields (
 --
 -- MPI Install Table
 --
-DROP TABLE mpi_install CASCADE;
+DROP TABLE IF EXISTS mpi_install CASCADE;
 CREATE TABLE mpi_install (
     mpi_install_id      serial,
 
@@ -285,7 +293,7 @@ INSERT INTO mpi_install
     mpi_install_configure_id, 
     mpi_install_id
    ) VALUES (
-    '1',
+    '0',
     TIMESTAMP '2006-11-01',
     '1',
     DEFAULT,
@@ -310,7 +318,7 @@ INSERT INTO mpi_install
 --
 -- Test Suite Table
 --
-DROP TABLE test_suites CASCADE;
+DROP TABLE IF EXISTS test_suites CASCADE;
 CREATE TABLE test_suites (
     test_suite_id       serial,
 
@@ -332,7 +340,7 @@ INSERT INTO test_suites VALUES ('0', 'undef', 'undef');
 -- Ind. Test Name Table
 -- NOTE: Test names are assumed to be unique in a test suite
 --
-DROP TABLE test_names CASCADE;
+DROP TABLE IF EXISTS test_names CASCADE;
 CREATE TABLE test_names (
     test_name_id        serial,
 
@@ -357,7 +365,7 @@ INSERT INTO test_names VALUES('0', '0', 'undef', 'undef');
 --
 -- Test Build Table
 --
-DROP TABLE test_build CASCADE;
+DROP TABLE IF EXISTS test_build CASCADE;
 CREATE TABLE test_build (
     test_build_id       serial,
 
@@ -415,7 +423,7 @@ INSERT INTO test_build
     test_build_compiler_id,
     test_build_id
    ) VALUES (
-    '1',
+    '0',
     TIMESTAMP '2006-11-01',
     '1',
     DEFAULT,
@@ -441,9 +449,72 @@ INSERT INTO test_build
    );
 
 --
+-- BIOS Table
+--
+DROP TABLE IF EXISTS bios CASCADE;
+CREATE TABLE bios (
+    bios_id     serial,
+    -- file with the bios switches; not an MTT .ini file.
+    bios_nodelist    text    NOT NULL DEFAULT '',
+    bios_params text    NOT NULL DEFAULT '',
+    bios_values text    NOT NULL DEFAULT '',
+
+    PRIMARY KEY (bios_id)
+
+);
+-- An invalid row in case we need it
+INSERT INTO bios VALUES ('0', '');
+
+--
+-- Firmware Table
+--
+DROP TABLE IF EXISTS firmware CASCADE;
+CREATE TABLE firmware (
+    firmware_id     serial,
+
+    flashupdt_cfg       text    NOT NULL DEFAULT '',
+    firmware_nodelist   text    NOT NULL DEFAULT '',
+
+    PRIMARY KEY (firmware_id)
+);
+-- An invalid row in case we need it
+INSERT INTO firmware VALUES ('0', '');
+
+--
+-- Provision Table
+--
+-- TODO: Is this table too specific to ipmi and warewulf? How to abstract?
+--
+DROP TABLE IF EXISTS provision CASCADE;
+CREATE TABLE provision (
+    provision_id    serial,
+    targets         text    NOT NULL DEFAULT '',
+    image           varchar(64),
+    controllers     text    NOT NULL DEFAULT '',
+    bootstrap       varchar(64),
+
+    PRIMARY KEY (provision_id)
+);
+INSERT INTO provision VALUES ('0', '', '', '', '');
+
+-- TODO: Create a Harasser table
+DROP TABLE IF EXISTS harasser CASCADE;
+CREATE TABLE harasser (
+    harasser_id     serial,
+
+    harasser_seed   integer,
+    inject_script   text    NOT NULL DEFAULT '',
+    cleanup_script  text    NOT NULL DEFAULT '',
+    check_script    text    NOT NULL DEFAULT '',
+
+    PRIMARY KEY (harasser_id)
+);
+INSERT INTO harasser VALUES ('0', '0', '', '', '');
+
+--
 -- Latency/Bandwidth Table
 --
-DROP TABLE latency_bandwidth CASCADE;
+DROP TABLE IF EXISTS latency_bandwidth CASCADE;
 CREATE TABLE latency_bandwidth (
     latency_bandwidth_id    serial,
 
@@ -461,7 +532,7 @@ CREATE TABLE latency_bandwidth (
 --
 -- Performance Table
 --
-DROP TABLE performance CASCADE;
+DROP TABLE IF EXISTS performance CASCADE;
 CREATE TABLE performance (
     performance_id          serial,
 
@@ -473,9 +544,22 @@ CREATE TABLE performance (
 );
 
 --
+-- Cluster Checker Table
+--
+DROP TABLE IF EXISTS cluster_checker CASCADE;
+CREATE TABLE cluster_checker (
+    clck_id             serial,
+    clck_results_file   text NOT NULL DEFAULT '',
+
+    PRIMARY KEY (clck_id)
+);
+-- An invalid row in case we need it
+INSERT INTO cluster_checker VALUES ('0', 'undef');
+
+--
 -- Interconnect Normalization table
 --
-DROP TABLE interconnects CASCADE;
+DROP TABLE IF EXISTS interconnects CASCADE;
 CREATE TABLE interconnects (
     interconnect_id         serial,
 
@@ -487,11 +571,11 @@ CREATE TABLE interconnects (
 --
 -- Test Run Command Network Normalization Table
 --
-DROP SEQUENCE test_run_network_id;
+DROP SEQUENCE IF EXISTS test_run_network_id;
 CREATE SEQUENCE test_run_network_id;
 
 
-DROP TABLE test_run_networks CASCADE;
+DROP TABLE IF EXISTS test_run_networks CASCADE;
 CREATE TABLE test_run_networks (
     -- This value should never be referenced!
     network_id              serial,
@@ -508,7 +592,7 @@ CREATE TABLE test_run_networks (
 --
 -- Test Run Command Normalization Table
 --
-DROP TABLE test_run_command CASCADE;
+DROP TABLE IF EXISTS test_run_command CASCADE;
 CREATE TABLE test_run_command (
     test_run_command_id          serial,
 
@@ -533,22 +617,27 @@ CREATE TABLE test_run_command (
 --  Use the create-partitions.pl script to generate the child table SQL commands
 --  Needed to link with this table.
 --
-DROP TABLE test_run CASCADE;
+DROP TABLE IF EXISTS test_run CASCADE;
 CREATE TABLE test_run (
     test_run_id         serial,
 
-    submit_id           integer NOT NULL DEFAULT '-38',
-    compute_cluster_id  integer NOT NULL DEFAULT '-38',
-    mpi_install_compiler_id         integer NOT NULL DEFAULT '-38',
-    mpi_get_id          integer NOT NULL DEFAULT '-38',
-    mpi_install_configure_id        integer NOT NULL DEFAULT '-38',
-    mpi_install_id      integer NOT NULL DEFAULT '-38',
-    test_suite_id       integer NOT NULL DEFAULT '-38',
-    test_build_compiler_id         integer NOT NULL DEFAULT '-38',
-    test_build_id       integer NOT NULL DEFAULT '-38',
-    test_name_id        integer NOT NULL DEFAULT '-38',
-    performance_id      integer  DEFAULT '-38',
-    test_run_command_id integer NOT NULL DEFAULT '-38',
+    submit_id                   integer NOT NULL DEFAULT '-38',
+    compute_cluster_id          integer NOT NULL DEFAULT '-38',
+    mpi_install_compiler_id     integer NOT NULL DEFAULT '-38',
+    mpi_get_id                  integer NOT NULL DEFAULT '-38',
+    mpi_install_configure_id    integer NOT NULL DEFAULT '-38',
+    mpi_install_id              integer NOT NULL DEFAULT '-38',
+    test_suite_id               integer NOT NULL DEFAULT '-38',
+    test_build_compiler_id      integer NOT NULL DEFAULT '-38',
+    test_build_id               integer NOT NULL DEFAULT '-38',
+    test_name_id                integer NOT NULL DEFAULT '-38',
+    performance_id              integer DEFAULT '-38',
+    clck_id                     integer DEFAULT '-38',
+    test_run_command_id         integer NOT NULL DEFAULT '-38',
+    bios_id                     integer DEFAULT '-38',
+    firmware_id                 integer DEFAULT '-38',
+    provision_id                integer DEFAULT '-38',
+    harasser_id                 integer DEFAULT '-38',
 
     np                  smallint NOT NULL DEFAULT '-38',
     full_command        text NOT NULL DEFAULT 'bogus',
@@ -568,6 +657,7 @@ CREATE TABLE test_run (
     -- PARTITION/FK PROBLEM: FOREIGN KEY (test_build_id) REFERENCES test_build(test_build_id),
     FOREIGN KEY (test_name_id) REFERENCES test_names(test_name_id),
     FOREIGN KEY (performance_id) REFERENCES performance(performance_id),
+    FOREIGN KEY (clck_id) REFERENCES cluster_checker(clck_id),
     FOREIGN KEY (test_run_command_id) REFERENCES test_run_command(test_run_command_id),
     FOREIGN KEY (description_id) REFERENCES description(description_id),
     FOREIGN KEY (environment_id) REFERENCES environment(environment_id),
@@ -582,7 +672,7 @@ CREATE TABLE test_run (
 --
 -- Cluster Table
 --
-DROP TABLE temp_conv_compute_cluster CASCADE;
+DROP TABLE IF EXISTS temp_conv_compute_cluster CASCADE;
 CREATE TABLE temp_conv_compute_cluster (
     new_compute_cluster_id  integer NOT NULL,
     old_compute_cluster_id  integer NOT NULL
@@ -592,7 +682,7 @@ CREATE INDEX temp_conv_compute_cluster_idx ON temp_conv_compute_cluster (old_com
 --
 -- Submit Table
 --
-DROP TABLE temp_conv_submit CASCADE;
+DROP TABLE IF EXISTS temp_conv_submit CASCADE;
 CREATE TABLE temp_conv_submit (
     new_submit_id  integer NOT NULL,
     old_submit_id  integer NOT NULL
@@ -602,7 +692,7 @@ CREATE INDEX temp_conv_submit_idx ON temp_conv_submit (old_submit_id);
 --
 -- Compiler Table
 --
-DROP TABLE temp_conv_compiler CASCADE;
+DROP TABLE IF EXISTS temp_conv_compiler CASCADE;
 CREATE TABLE temp_conv_compiler (
     new_compiler_id  integer NOT NULL,
     old_compiler_id  integer NOT NULL
@@ -612,7 +702,7 @@ CREATE INDEX temp_conv_compiler_idx ON temp_conv_compiler (old_compiler_id);
 --
 -- Mpi_Get Table
 --
-DROP TABLE temp_conv_mpi_get CASCADE;
+DROP TABLE IF EXISTS temp_conv_mpi_get CASCADE;
 CREATE TABLE temp_conv_mpi_get (
     new_mpi_get_id  integer NOT NULL,
     old_mpi_get_id  integer NOT NULL
@@ -622,7 +712,7 @@ CREATE INDEX temp_conv_mpi_get_idx ON temp_conv_mpi_get (old_mpi_get_id);
 --
 -- Latency_Bandwidth Table
 --
-DROP TABLE temp_conv_latency_bandwidth CASCADE;
+DROP TABLE IF EXISTS temp_conv_latency_bandwidth CASCADE;
 CREATE TABLE temp_conv_latency_bandwidth (
     new_latency_bandwidth_id  integer NOT NULL,
     old_latency_bandwidth_id  integer NOT NULL
@@ -632,7 +722,7 @@ CREATE INDEX temp_conv_latency_bandwidth_idx ON temp_conv_latency_bandwidth (old
 --
 -- MPI Install
 --
-DROP TABLE temp_conv_mpi_install CASCADE;
+DROP TABLE IF EXISTS temp_conv_mpi_install CASCADE;
 CREATE TABLE temp_conv_mpi_install (
     new_mpi_install_id  integer NOT NULL,
 
@@ -645,7 +735,7 @@ CREATE INDEX temp_conv_mpi_install_idx ON temp_conv_mpi_install (old_results_id)
 --
 -- Test Build
 --
-DROP TABLE temp_conv_test_build CASCADE;
+DROP TABLE IF EXISTS temp_conv_test_build CASCADE;
 CREATE TABLE temp_conv_test_build (
     new_test_build_id  integer NOT NULL,
 
@@ -658,7 +748,7 @@ CREATE INDEX temp_conv_test_build_idx ON temp_conv_test_build (old_results_id);
 --
 -- Test Run
 --
-DROP TABLE temp_conv_test_run CASCADE;
+DROP TABLE IF EXISTS temp_conv_test_run CASCADE;
 CREATE TABLE temp_conv_test_run (
     new_test_run_id  integer NOT NULL,
 
@@ -675,16 +765,6 @@ CREATE INDEX temp_conv_test_run_idx ON temp_conv_test_run (old_results_id);
 --
 INSERT INTO latency_bandwidth VALUES(0);
 INSERT INTO performance VALUES(0,0);
-
---
--- Add empty row to the description table
---
-INSERT INTO description VALUES(0, '');
-
---
--- Add empty row to the environment table
---
-INSERT INTO environment VALUES(0, '');
 
 --
 -- Add empty row to test_run_command as a placeholder

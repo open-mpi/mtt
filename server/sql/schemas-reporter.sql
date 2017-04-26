@@ -5,7 +5,7 @@
 --
 -- Permalinks
 --
-DROP TABLE permalinks CASCADE;
+DROP TABLE IF EXISTS permalinks CASCADE;
 CREATE TABLE permalinks (
     permalink_id    serial PRIMARY KEY,
     permalink       text NOT NULL,

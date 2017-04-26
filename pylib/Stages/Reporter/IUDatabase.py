@@ -191,6 +191,7 @@ class IUDatabase(ReporterMTTStage):
                                       logger.getLog(self._extract_param(logger, lg['section'], 'parent')),
                                       metadata,
                                       s, url, httpauth)
+
         if test_info is None:
             return None
 
@@ -211,8 +212,6 @@ class IUDatabase(ReporterMTTStage):
         # For now assume that we only had one test_build submitted
         # and all of the tests that follow are from that test_build
         common_data['test_build_id'] = test_info['test_build_id']
-
-        #import pdb; pdb.set_trace()
 
         for trun in (lg['testresults'] if 'testresults' in lg else [lg]):
             data = {}
@@ -312,7 +311,64 @@ class IUDatabase(ReporterMTTStage):
             # data['bandwidth_max'] = None
 
             # data['description'] = None
+            data['description'] = self._extract_param(logger, 'MTTDefaults', 'description')
             # data['environment'] = None
+            environment = {}
+            for lgentry in logger.getLog(None):
+                if 'environ' in lgentry:
+                    environment.update(lgentry['environ'])
+            data['environment'] = "\n".join([str(k) + "=" + str(v) for k,v in environment.items()])
+
+
+            # BIOS table
+            bios = {}
+            for lgentry in logger.getLog(None):
+                if 'bios' in lgentry:
+                    bios.update(lgentry['bios'])
+            try:
+                data['bios_nodelist'] = bios['nodelist']
+                data['bios_params'] = bios['params']
+                data['bios_values'] = bios['values']
+            except KeyError:
+                pass
+
+            # Firmware table (TODO: may want to grab whole cfg file)
+            firmware = {}
+            for lgentry in logger.getLog(None):
+                if 'firmware' in lgentry:
+                    firmware.update(lgentry['firmware'])
+            try:
+                data['flashupdt_cfg'] = firmware['flashupdt_cfg']
+                data['firmware_nodelist'] = firmware['nodelist']
+            except KeyError:
+                pass
+
+            # Provision table
+            provisioning = {}
+            for lgentry in logger.getLog(None):
+                if 'provisioning' in lgentry:
+                    provisioning.update(lgentry['provisioning'])
+            try:
+                data['targets'] = provisioning['target']
+                data['image'] = provisioning['image']
+                data['controllers'] = provisioning['controller']
+                data['bootstrap'] = provisioning['bootstrap']
+            except KeyError:
+                pass
+
+            # Harasser table
+            harasser = {}
+            for lgentry in logger.getLog(None):
+                if 'harasser' in lgentry:
+                    harasser.update(lgentry['harasser'])
+            try:
+                data['harasser_seed'] = harasser['seed']
+                data['inject_script'] = harasser['inject_script']
+                data['cleanup_script'] = harasser['cleanup_script']
+                data['check_script'] = harasser['check_script']
+            except KeyError:
+                pass
+
 
             try:
                 if options['merge_stdout_stderr']:
@@ -458,7 +514,13 @@ class IUDatabase(ReporterMTTStage):
 
         #data['exit_signal'] = None
         #data['description'] = None
+        data['description'] = self._extract_param(logger, 'MTTDefaults', 'description')
         #data['environment'] = None
+        environment = {}
+        for lgentry in logger.getLog(None):
+            if 'environ' in lgentry:
+                environment.update(lgentry['environ'])
+        data['environment'] = "\n".join([str(k) + "=" + str(v) for k,v in environment.items()])
 
         try:
             if options['merge_stdout_stderr']:
@@ -516,6 +578,7 @@ class IUDatabase(ReporterMTTStage):
         options = None
 
         # get the system profile
+
         profile = logger.getLog('Profile:Installed')['profile']
         if profile is None:
             print("Error: Failed to get 'profile'")
@@ -646,7 +709,13 @@ class IUDatabase(ReporterMTTStage):
 
         #data['exit_signal'] = None
         #data['description'] = None
+        data['description'] = self._extract_param(logger, 'MTTDefaults', 'description')
         #data['environment'] = None
+        environment = {}
+        for lgentry in logger.getLog(None):
+            if 'environ' in lgentry:
+                environment.update(lgentry['environ'])
+        data['environment'] = "\n".join([str(k) + "=" + str(v) for k,v in environment.items()])
 
         try:
             if options is not None and options['merge_stdout_stderr']:
