@@ -11,6 +11,7 @@ from builtins import str
 #
 
 import shutil
+import distutils.dir_util
 import os
 from BaseMTTUtility import *
 
@@ -40,6 +41,7 @@ class Copytree(BaseMTTUtility):
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
         # if they didn't provide a src, then we can't do anything
+
         try:
             if cmds['src'] is None:
                 log['status'] = 1
@@ -58,7 +60,9 @@ class Copytree(BaseMTTUtility):
             # Cleanup the target directory if it exists
             if os.path.exists(dst):
                 shutil.rmtree(dst)
-            shutil.copytree(cmds['src'], dst, symlinks=False)
+            for srcpath in cmds['src'].split(','):
+                srcpath = srcpath.strip()
+                distutils.dir_util.copy_tree(srcpath, dst)
             log['status'] = 0
         except (os.error, shutil.Error) as e:
             log['status'] = 1
