@@ -12,9 +12,13 @@
 use strict;
 use DBI;
 use Class::Struct;
+use Config::IniFiles;
 
 # Flush I/O frequently
 $| = 1;
+
+my $config_filename = "config.ini";
+my $ini_section;
 
 my $replace_where_field       = "<REPLACE_WHERE>";
 my $replace_insert_keys_field = "<REPLACE_INSERT_KEYS>";
@@ -228,6 +232,24 @@ if( 0 != parse_cmd_line() ) {
   print_usage();
   exit -1;
 }
+
+my $ini = new Config::IniFiles(-file => $config_filename,
+                               -nocase => 1,
+                               -allowcontinue => 1);
+if( !$ini ) {
+    print "Error: Failed to read: $config_filename\n";
+    exit 1;
+}
+# Check the contents of the config file
+check_ini_section($ini, "database", ("user", "password", "hostname", "port", "dbname") );
+
+# Read in config entries
+$ini_section = "database";
+my $mtt_user = resolve_value($ini, $ini_section, "user");;
+my $mtt_pass = resolve_value($ini, $ini_section, "password");
+my $mtt_hostname = resolve_value($ini, $ini_section, "hostname");
+my $mtt_port = resolve_value($ini, $ini_section, "port");
+my $mtt_dbname = resolve_value($ini, $ini_section, "dbname");
 
 #######
 # Some programmatic defines
@@ -776,6 +798,18 @@ sub parse_cmd_line() {
       $verbose = $ARGV[$i];
     }
     #
+    # Config file to use
+    #
+    elsif( $ARGV[$i] =~ /-config/ ) {
+      $i++;
+      if( $i < $argc ) {
+        $config_filename = $ARGV[$i];
+      } else {
+        print_update("Error: -config requires a file argument\n");
+        return -1;
+      }
+    }
+    #
     # Invalid options produce a usage message
     #
     else {
@@ -827,16 +861,9 @@ sub display_timer() {
 
 sub connect_db() {
   my $stmt;
-  my $mtt_user     = "mtt";
-  my $mtt_password;
 
   # Connect to the DB
-  if( defined($mtt_password) ) {
-    $dbh_mtt = DBI->connect("dbi:Pg:dbname=mtt",  $mtt_user, $mtt_password);
-  }
-  else {
-    $dbh_mtt = DBI->connect("dbi:Pg:dbname=mtt",  $mtt_user);
-  }
+  $dbh_mtt = DBI->connect("dbi:Pg:dbname=".$mtt_dbname.";host=".$mtt_hostname.";port=".$mtt_port,  $mtt_user, $mtt_pass);
 
   # Set an optimizer flag
   $stmt = $dbh_mtt->prepare("set constraint_exclusion = on");
@@ -906,7 +933,7 @@ sub sql_create_db_queries() {
   # DB size in Bytes
   #
   $db_select_size =
-    ("SELECT pg_database_size('mtt')");
+    ("SELECT pg_database_size('".$mtt_dbname."')");
 
   #
   # Select Existing DB Stat
@@ -1264,19 +1291,19 @@ sub sql_1d_array_cmd($$) {
 
   $stmt = $dbh_mtt->prepare($select);
 
-  @rtn = sql_1d_array_stmt($stmt);
-  if( !defined(@rtn) ) {
-    print("Error: sql_1d_array_cmd(): Unable to execute query:\n".$select."\n");
-  }
+  @rtn = sql_1d_array_stmt($stmt, $select);
+
   return @rtn;
 }
 
 sub sql_1d_array_stmt($$) {
   my $stmt = shift(@_);
+  my $select = shift(@_);
   my @rtn = ();
   my @row;
 
   if(!$stmt->execute()) {
+    print("Error: sql_1d_array_cmd(): Unable to execute query:\n".$select."\n");
     return @row;
   }
   while(@row = $stmt->fetchrow_array ) {
@@ -1300,21 +1327,21 @@ sub sql_2d_array_cmd($$) {
 
   $stmt = $dbh_mtt->prepare($select);
 
-  @rtn = sql_2d_array_stmt($stmt);
-  if( !defined(@rtn) ) {
-    print("Error: sql_2d_array_cmd(): Unable to execute query:\n".$select."\n");
-  }
+  @rtn = sql_2d_array_stmt($stmt, $select);
+
   return @rtn;
 }
 
 sub sql_2d_array_stmt($$) {
   my $stmt = shift(@_);
+  my $select = shift(@_);
   my @rtn = ();
   my @accum = ();
   my @row;
   my $r;
 
   if(!$stmt->execute()) {
+    print("Error: sql_2d_array_cmd(): Unable to execute query:\n".$select."\n");
     return @row;
   }
   while(@row = $stmt->fetchrow_array ) {
@@ -2180,4 +2207,49 @@ sub pg_escape_value() {
   $val = "'" . $val . "'";
 
   return $val;
+}
+
+sub resolve_value() {
+    my $ini = shift(@_);
+    my $section = shift(@_);
+    my $key = shift(@_);
+    my $value;
+    
+    $value = $ini->val($section, $key);
+    if( !defined($value) ) {
+        print "Error: Failed to find \"$key\" in section \"$section\"\n";
+        exit 1;
+    }
+    $value =~ s/^\"//;
+    $value =~ s/\"$//;
+
+    if( $value =~ /^run/ ) {
+        $value = $';
+        $value =~ s/^\(//;
+        $value =~ s/\)$//;
+        $value = `$value`;
+        chomp($value);
+    }
+
+    return $value;
+}
+
+sub check_ini_section() {
+    my $ini = shift(@_);
+    my $section = shift(@_);
+    my @keys = @_;
+
+    if( !$ini->SectionExists($section) ) {
+        print "Error: INI file does not contain a $section field\n";
+        exit 1;
+    }
+
+    foreach my $key (@keys) {
+        if( !$ini->exists($section, $key) ) {
+            print "Error: INI file missing $section key named $key\n";
+            exit 1;
+        }
+    }
+
+    return 0;
 }

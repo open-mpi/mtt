@@ -2,6 +2,7 @@
 
 use strict;
 use Env qw(HOME PATH USER);
+use Config::IniFiles;
 
 #
 # Script requires the following software packages installed:
@@ -9,13 +10,8 @@ use Env qw(HOME PATH USER);
 # - gnuplot (with postscript terminal)
 # - ps2pdf
 #
-
-# Directory containing scripts to execute
-my $working_dir = "/l/osl/www/mtt.open-mpi.org/mtt/server/php/cron/stats";
-# Directory to place the contribution graph
-my $output_dir  = "/l/osl/www/mtt.open-mpi.org/mtt/server/php/stats/";
-# Temporary directory to store data files
-my $tmp_dir = "/tmp/";
+my $config_filename = "config.ini";
+my $ini_section;
 
 my $cmd;
 
@@ -40,6 +36,25 @@ if( 0 != parse_cmd_line() ) {
   exit -1;
 }
 
+my $ini = new Config::IniFiles(-file => $config_filename,
+                               -nocase => 1,
+                               -allowcontinue => 1);
+if( !$ini ) {
+    print "Error: Failed to read: $config_filename\n";
+    exit 1;
+}
+
+# Check the contents of the config file
+check_ini_section($ini, "stats", ("working_dir", "output_dir", "tmp_dir") );
+
+$ini_section = "stats";
+# Directory containing scripts to execute
+my $working_dir = resolve_value($ini, $ini_section, "working_dir");
+# Directory to place the contribution graph
+my $output_dir  = resolve_value($ini, $ini_section, "output_dir");
+# Temporary directory to store data files
+my $tmp_dir = resolve_value($ini, $ini_section, "tmp_dir");
+
 if(!chdir($working_dir) ) {
   print "Error: Cannot chdir to <$working_dir>\n";
   exit(-1);
@@ -61,6 +76,7 @@ if( $is_limited_to_one_year eq "t" ) {
 #
 # Gather the raw data
 #
+
 $cmd = "./make-raw-data.pl -year ".$extra_cmd_line_arg." > ".$tmp_dir.$data_file_year;
 if(0 != system($cmd) ) {
   print "Error: Cannot exec the command <$cmd>\n";
@@ -139,6 +155,15 @@ sub parse_cmd_line() {
     elsif( $ARGV[$i] eq "-l" ) {
       $is_limited_to_one_year = "t";
     }
+    elsif( $ARGV[$i] =~ /-config/ ) {
+      $i++;
+      if( $i < $argc ) {
+        $config_filename = $ARGV[$i];
+      } else {
+        print_update("Error: -config requires a file argument\n");
+        return -1;
+      }
+    }
     #
     # Invalid options produce a usage message
     #
@@ -157,4 +182,50 @@ sub print_usage() {
   print "="x50 . "\n";
 
   return 0;
+}
+
+
+sub resolve_value() {
+    my $ini = shift(@_);
+    my $section = shift(@_);
+    my $key = shift(@_);
+    my $value;
+    
+    $value = $ini->val($section, $key);
+    if( !defined($value) ) {
+        print "Error: Failed to find \"$key\" in section \"$section\"\n";
+        exit 1;
+    }
+    $value =~ s/^\"//;
+    $value =~ s/\"$//;
+
+    if( $value =~ /^run/ ) {
+        $value = $';
+        $value =~ s/^\(//;
+        $value =~ s/\)$//;
+        $value = `$value`;
+        chomp($value);
+    }
+
+    return $value;
+}
+
+sub check_ini_section() {
+    my $ini = shift(@_);
+    my $section = shift(@_);
+    my @keys = @_;
+
+    if( !$ini->SectionExists($section) ) {
+        print "Error: INI file does not contain a $section field\n";
+        exit 1;
+    }
+
+    foreach my $key (@keys) {
+        if( !$ini->exists($section, $key) ) {
+            print "Error: INI file missing $section key named $key\n";
+            exit 1;
+        }
+    }
+
+    return 0;
 }

@@ -123,7 +123,10 @@ function do_pg_connect() {
         } else {
             $connected = true;
             # Serialize all transactions by default - Safer that way.
-            do_pg_query("SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL SERIALIZABLE", false);
+            # Old Postgres value: SERIALIZABLE
+            #  -- Depricated value in favor of:
+            # New Postgres value: REPEATABLE READ
+            do_pg_query("SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL REPEATABLE READ", false);
             # Set statement timeout to 60 seconds to prevent accidental/malicious long running 
             # queries from wasting system resources.
             do_pg_query("SET statement_timeout = 60000", false);
@@ -133,22 +136,56 @@ function do_pg_connect() {
 
 # Execute an SQL query
 function do_pg_query($cmd, $silent) {
+    global $mtt_err_log_file;
+
     do_pg_connect();
 
     $start = gettimeofday();
     $start = $start['sec'] + ($start['usec'] / 1000000.0);
 
     debug("\nSQL: $cmd\n");
-    if (! ($db_res = pg_query($cmd))) {
+    if (! ($db_res = @pg_query($cmd))) {
+
         $out = "\nSQL QUERY: " . $cmd .
             "\nSQL ERROR: " . pg_last_error() .
             "\nSQL ERROR: " . pg_result_error();
+
+        $err = error_get_last();
+        $err_str = $err['message'];
+
+        $err_str_array = explode("\n", pg_last_error());
+        $err_str_elements = min(4, count($err_str_array));
+        $short_err_str  = "";
+        for($i = 0; $i < $err_str_elements; ++$i ) {
+            $short_err_str .= $err_str_array[$i] . "\n";
+        }
+        $short_err_str .= "...\n";
+        $short_err_str .= array_pop($err_str_array);
+
+        $date = date('d.m.Y h:i:s');
+        $out_to_log  = "--------------------------------------- do_pg_query() failed...\n";
+        $out_to_log .= "Date: ".$date."\n";
+        $out_to_log .= "--------- SQL Query (First line):\n";
+        $out_to_log .= strtok($cmd, "\n")."\n";  # Only get the first line
+        $out_to_log .= "--------- SQL Error Message (Shortened):\n";
+        $out_to_log .= $short_err_str . "\n";
+        $out_to_log .= "--------- SQL Query (Full):\n";
+        $out_to_log .= "$cmd\n";
+        $out_to_log .= "--------- SQL Error Message (Full):\n";
+        $out_to_log .= pg_last_error() . "\n";
+        #$out_to_log .= "--------- SQL Error Message (B):\n";
+        #$out_to_log .= "$err_str\n";
+        $out_to_log .= "---------------------------------------\n";
+        error_log($out_to_log, 3, $mtt_err_log_file);
+        error_log("do_pg_query() failed. Check log for serialization problems! $mtt_err_log_file");
 
         # Some errors are unsurprising, allow for silence in
         # such cases
         if (! $silent) {
             mtt_error($out);
         }
+        #print "ERROR: $out\n";
+        return 0;
     }
 
     $finish = gettimeofday();

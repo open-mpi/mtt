@@ -23,6 +23,7 @@ include_once("$topdir/google-analytics.inc");
 include_once("$topdir/reporter/reporter.inc");
 # For debug()
 include_once("$topdir/reporter/util.inc");
+include_once("$topdir/database.inc");
 
 if (array_key_exists("db", $_GET) &&
     preg_match("/mtt/i", $_GET['db'])) {
@@ -853,46 +854,6 @@ function is_null_($var) {
 
 ######################################################################
 
-function do_pg_connect() {
-
-    global $mtt_database_name;
-    global $mtt_database_username;
-    global $mtt_database_password;
-    global $pgsql_conn;
-    static $connected = false;
-
-    if (!$connected) {
-        $pgsql_conn =
-            pg_connect("host=localhost port=5432 dbname=$mtt_database_name user=$mtt_database_username password=$mtt_database_password");
-
-        # Exit if we cannot connect
-        if (!$pgsql_conn)
-            mtt_abort("\nCould not connect to the $dbname database; " .
-                      "submit this run later.");
-        else
-            $connected = true;
-    }
-}
-
-function do_pg_query($cmd, $silent) {
-
-    do_pg_connect();
-
-    debug("\nSQL: $cmd\n");
-    if (! ($db_res = pg_query($cmd))) {
-        $out = "\nSQL QUERY: " . $cmd .
-               "\nSQL ERROR: " . pg_last_error() .
-               "\nSQL ERROR: " . pg_result_error();
-
-        # Some errors are unsurprising, allow for silence in
-        # such cases
-        if (! $silent) {
-            mtt_error($out);
-            mtt_send_mail($out);
-        }
-    }
-    debug("\nDatabase rows affected: " . pg_affected_rows($db_res) . "\n");
-}
 
 # Fetch All distinct values for this key
 function select_all_distinct($field) {
@@ -919,35 +880,6 @@ function sql_resolve_date($date) {
     return select_scalar("select DATE ( $date )");
 }
 
-# Fetch scalar value
-function select_scalar($cmd) {
-    $set = array();
-    $set = simple_select($cmd);
-    return array_shift($set);
-}
-
-# Fetch 1D array
-function simple_select($cmd) {
-
-    do_pg_connect();
-
-    $rows = null;
-
-    debug("\nSQL: $cmd\n");
-    if (! ($result = pg_query($cmd))) {
-        $out = "\nSQL QUERY: " . $cmd .
-               "\nSQL ERROR: " . pg_last_error() .
-               "\nSQL ERROR: " . pg_result_error();
-        mtt_error($out);
-        mtt_send_mail($out);
-    }
-    $max = pg_num_rows($result);
-    for ($i = 0; $i < $max; ++$i) {
-        $row = pg_fetch_array($result, $i, PGSQL_NUM);
-        $rows[] = $row[0];
-    }
-    return $rows;
-}
 
 # Fetch an associative hash (column name => value)
 function associative_select($cmd) {
@@ -965,50 +897,6 @@ function associative_select($cmd) {
     return pg_fetch_array($result);
 }
 
-# Fetch 2D array
-function select($cmd) {
-    $rtn = null;
-
-    do_pg_connect();
-
-    debug("\nSQL: $cmd\n");
-    if (! ($result = pg_query($cmd))) {
-        $out = "\nSQL QUERY: " . $cmd .
-               "\nSQL ERROR: " . pg_last_error() .
-               "\nSQL ERROR: " . pg_result_error();
-        mtt_error($out);
-        mtt_send_mail($out);
-    }
-    $rtn = pg_fetch_all($result);
-    if( false == $rtn ) {
-       return array();
-    }
-    else {
-       return $rtn;
-    }
-}
-
-######################################################################
-
-# Function for reporting errors back to the client
-function mtt_abort($status, $str) {
-    if (!headers_sent()) {
-        header("HTTP/1.0 $status");
-    } else {
-        print("MTTDatabase abort: (Tried to send HTTP error) $status\n");
-    }
-    print("MTTDatabase abort: $str\n");
-}
-
-# Function for reporting errors back to the client
-function mtt_error($str) {
-    print("MTTDatabase server error: $str\n");
-}
-
-# Function for reporting notices back to the client
-function mtt_notice($str) {
-    print("MTTDatabase server notice: $str\n");
-}
 
 ######################################################################
 

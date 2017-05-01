@@ -21,14 +21,15 @@
 use strict;
 use DBI;
 use Mail::Sendmail;
+use Config::IniFiles;
 
 my $debug;
 my $debug_no_email;
 
-#my $to_email_address     = "FILL THIS IN";
-#my $from_email_address   = "FILL THIS IN";
-my $to_email_address     = "mtt-devel-core\@lists.open-mpi.org";
-my $from_email_address   = "mtt-devel-core\@lists.open-mpi.org";
+my $config_filename = "config.ini";
+my $ini_section;
+
+# Static values
 my $current_mail_subject = "MTT Database Maintenance: ";
 my $current_mail_header  = "";
 my $current_mail_body    = "";
@@ -94,6 +95,29 @@ if( 0 != parse_args() ) {
   exit -1;
 }
 
+my $ini = new Config::IniFiles(-file => $config_filename,
+                               -nocase => 1,
+                               -allowcontinue => 1);
+if( !$ini ) {
+    print "Error: Failed to read: $config_filename\n";
+    exit 1;
+}
+# Check the contents of the config file
+check_ini_section($ini, "database", ("user", "password", "hostname", "port", "dbname") );
+check_ini_section($ini, "reporting", ("to_email", "from_email") );
+
+# Read in config entries
+$ini_section = "database";
+my $mtt_user = resolve_value($ini, $ini_section, "user");
+my $mtt_pass = resolve_value($ini, $ini_section, "password");
+my $mtt_hostname = resolve_value($ini, $ini_section, "hostname");
+my $mtt_port = resolve_value($ini, $ini_section, "port");
+my $mtt_dbname = resolve_value($ini, $ini_section, "dbname");
+
+$ini_section = "reporting";
+my $to_email_address     = resolve_value($ini, $ini_section, "to_email");
+my $from_email_address   = resolve_value($ini, $ini_section, "from_email");
+
 set_date_ranges();
 
 if( $MAIN_YEAR == $cur_main ) {
@@ -144,6 +168,15 @@ sub parse_args() {
     }
     elsif( $ARGV[$i] =~ /-year/ ) {
       $cur_main = $MAIN_YEAR;
+    }
+    elsif( $ARGV[$i] =~ /-config/ ) {
+      $i++;
+      if( $i < $argc ) {
+        $config_filename = $ARGV[$i];
+      } else {
+        print_update("Error: -config requires a file argument\n");
+        return -1;
+      }
     }
     else {
       print_update("Unknown ARG $i) <".$ARGV[$i].">\n");
@@ -263,14 +296,13 @@ sub periodic_wait() {
 }
 
 sub connect_db() {
-  my $mtt_user = "mtt";
   my $stmt;
 
   if( defined($debug) ) {
     return 0;
   }
 
-  $dbh_mtt = DBI->connect("dbi:Pg:dbname=mtt",  $mtt_user);
+  $dbh_mtt = DBI->connect("dbi:Pg:dbname=".$mtt_dbname.";host=".$mtt_hostname.";port=".$mtt_port,  $mtt_user, $mtt_pass);
 
   $stmt = $dbh_mtt->prepare("set vacuum_mem = ".(32 * 1024));
   $stmt->execute();
@@ -541,4 +573,49 @@ sub send_reminder() {
   }
 
   return 0;
+}
+
+sub resolve_value() {
+    my $ini = shift(@_);
+    my $section = shift(@_);
+    my $key = shift(@_);
+    my $value;
+    
+    $value = $ini->val($section, $key);
+    if( !defined($value) ) {
+        print "Error: Failed to find \"$key\" in section \"$section\"\n";
+        exit 1;
+    }
+    $value =~ s/^\"//;
+    $value =~ s/\"$//;
+
+    if( $value =~ /^run/ ) {
+        $value = $';
+        $value =~ s/^\(//;
+        $value =~ s/\)$//;
+        $value = `$value`;
+        chomp($value);
+    }
+
+    return $value;
+}
+
+sub check_ini_section() {
+    my $ini = shift(@_);
+    my $section = shift(@_);
+    my @keys = @_;
+
+    if( !$ini->SectionExists($section) ) {
+        print "Error: INI file does not contain a $section field\n";
+        exit 1;
+    }
+
+    foreach my $key (@keys) {
+        if( !$ini->exists($section, $key) ) {
+            print "Error: INI file missing $section key named $key\n";
+            exit 1;
+        }
+    }
+
+    return 0;
 }
