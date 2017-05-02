@@ -498,9 +498,16 @@ class TestDef(object):
 
     def configTest(self):
         # setup the configuration parser
-        self.config = configparser.ConfigParser()
+        self.config = configparser.SafeConfigParser(interpolation=configparser.ExtendedInterpolation())
+
         # Set the config parser to make option names case sensitive.
         self.config.optionxform = str
+
+        # fill ENV section with environemt variables
+        self.config.add_section('ENV')
+        for k,v in os.environ.items():
+            self.config.set('ENV', k, v.replace("$","$$"))
+
         # log the list of files - note that the argument parser
         # puts the input files in a list, with the first member
         # being the list of input files
