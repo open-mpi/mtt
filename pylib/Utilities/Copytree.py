@@ -60,6 +60,7 @@ class Copytree(BaseMTTUtility):
             # Cleanup the target directory if it exists
             if os.path.exists(dst):
                 shutil.rmtree(dst)
+            os.mkdir(dst)
             for srcpath in cmds['src'].split(','):
                 srcpath = srcpath.strip()
                 distutils.dir_util.copy_tree(srcpath, dst)
