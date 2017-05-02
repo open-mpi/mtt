@@ -55,11 +55,13 @@ class ALPS(LauncherMTTTool):
         self.options['stderr_save_lines'] = (-1, "Number of lines of stderr to save")
         self.options['test_dir'] = (None, "Names of directories to be scanned for tests")
         self.options['fail_tests'] = (None, "Names of tests that are expected to fail")
+        self.options['fail_returncodes'] = (None, "Expected return code of tests expected to fail")
         self.options['fail_timeout'] = (None, "Maximum execution time for tests expected to fail")
         self.options['skip_tests'] = (None, "Names of tests to be skipped")
         self.options['max_num_tests'] = (None, "Maximum number of tests to run")
         self.options['modules'] = (None, "Modules to load")
         self.options['modules_unload'] = (None, "Modules to unload")
+        self.options['test_list'] = (None, "List of tests to run, default is all")
         return
 
 
@@ -224,6 +226,13 @@ class ALPS(LauncherMTTTool):
         # parse any provided options - these will override the defaults
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
+
+        # Check if command is correct
+        if cmds['command'] != "aprun":
+            log['status'] = 1
+            log['stderr'] = "Command for ALPS plugin must be aprun. It is currently '%s'" % (cmds['command'] if cmds['command'] is not None else "None")
+            return
+
         # now ready to execute the test - we are pointed at the middleware
         # and have obtained the list of any modules associated with it. We need
         # to change to the test location and begin executing, first saving
@@ -233,23 +242,34 @@ class ALPS(LauncherMTTTool):
         # did they give us a list of specific directories where the desired
         # tests to be executed reside?
         tests = []
-        try:
-            if cmds['test_dir'] is not None:
-                # pick up the executables from the specified directories
-                dirs = cmds['test_dir'].split()
-                for dr in dirs:
-                    dr = dr.strip()
-                    # remove any commas and quotes
-                    dr = dr.replace('\"','')
-                    dr = dr.replace(',','')
-                    for dirName, subdirList, fileList in os.walk(dr):
+        if cmds['test_list'] is None:
+            try:
+                if cmds['test_dir'] is not None:
+                    # pick up the executables from the specified directories
+                    dirs = cmds['test_dir'].split()
+                    for dr in dirs:
+                        dr = dr.strip()
+                        # remove any commas and quotes
+                        dr = dr.replace('\"','')
+                        dr = dr.replace(',','')
+                        for dirName, subdirList, fileList in os.walk(dr):
+                            for fname in fileList:
+                                # see if this is an executable
+                                filename = os.path.abspath(os.path.join(dirName,fname))
+                                if os.path.isfile(filename) and os.access(filename, os.X_OK):
+                                    # add this file to our list of tests to execute
+                                    tests.append(filename)
+                else:
+                    # get the list of executables from this directory and any
+                    # subdirectories beneath it
+                    for dirName, subdirList, fileList in os.walk("."):
                         for fname in fileList:
                             # see if this is an executable
                             filename = os.path.abspath(os.path.join(dirName,fname))
                             if os.path.isfile(filename) and os.access(filename, os.X_OK):
                                 # add this file to our list of tests to execute
                                 tests.append(filename)
-            else:
+            except KeyError:
                 # get the list of executables from this directory and any
                 # subdirectories beneath it
                 for dirName, subdirList, fileList in os.walk("."):
@@ -259,16 +279,25 @@ class ALPS(LauncherMTTTool):
                         if os.path.isfile(filename) and os.access(filename, os.X_OK):
                             # add this file to our list of tests to execute
                             tests.append(filename)
-        except KeyError:
-            # get the list of executables from this directory and any
-            # subdirectories beneath it
-            for dirName, subdirList, fileList in os.walk("."):
-                for fname in fileList:
-                    # see if this is an executable
-                    filename = os.path.abspath(os.path.join(dirName,fname))
-                    if os.path.isfile(filename) and os.access(filename, os.X_OK):
-                        # add this file to our list of tests to execute
-                        tests.append(filename)
+        # If list of tests is provided, use list rather than grabbing all tests
+        else:
+            if cmds['test_dir'] is not None:
+                dirs = cmds['test_dir'].split()
+            else:
+                dirs = ['.']
+            for dr in dirs:
+                dr = dr.strip()
+                dr = dr.replace('\"','')
+                dr = dr.replace(',','')
+                for dirName, subdirList, fileList in os.walk(dr):
+                    for fname in cmds['test_list'].split(","):
+                        fname = fname.strip()
+                        if fname not in fileList:
+                            continue
+                        filename = os.path.abspath(os.path.join(dirName,fname))
+                        if os.path.isfile(filename) and os.access(filename, os.X_OK):
+                            tests.append(filename)
+
         # check that we found something
         if not tests:
             log['status'] = 1
@@ -353,7 +382,15 @@ class ALPS(LauncherMTTTool):
                 fail_returncodes = {test:rtncode for test,rtncode in zip(fail_tests,fail_returncodes)}
                 expected_returncodes = {test:(fail_returncodes[test] if test in fail_returncodes else 0) for test in tests}
 
+        # For test in tests
         for test in tests:
+            # Skip tests that are in "skip_tests" ini input
+            if cmds['skip_tests'] is not None and test.split('/')[-1] in [st.strip() for st in cmds['skip_tests'].split()]:
+                numTests += 1
+                numSkip += 1
+                if numTests == maxTests:
+                    break
+                continue
             testLog = {'test':test}
             cmdargs.append(test)
             testLog['cmd'] = " ".join(cmdargs)
@@ -392,20 +429,19 @@ class ALPS(LauncherMTTTool):
         log['numFail'] = numFail
 
         # handle case where aprun is used instead of mpirun for number of processes (np)
-        if cmds['command'] == 'aprun':
+        if 'np' not in cmds or cmds['np'] is None:
             if '-n ' in cmds['options']:
                 log['np'] = str(cmds['options'].split('-n ')[1].split(' ')[0])
             elif '--ntasks=' in cmds['options']:
                 log['np'] = str(cmds['options'].split('--ntasks=')[1].split(' ')[0])
             elif '-N ' in cmds['options']:
                 log['np'] = str(cmds['options'].split('-N ')[1].split(' ')[0])
-            else: #'--nodes=' in cmds['options']
+            elif '--nodes=' in cmds['options']:
                 log['np'] = str(cmds['options'].split('--nodes=')[1].split(' ')[0])
-        else:
-            try:
-                log['np'] = cmds['np']
-            except KeyError:
+            else:
                 log['np'] = None
+        else:
+            log['np'] = cmds['np']
 
         if usedModule:
             # unload the modules before returning

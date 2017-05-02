@@ -63,6 +63,7 @@ class SLURM(LauncherMTTTool):
         self.options['job_name'] = (None, "User-defined name for job")
         self.options['modules'] = (None, "Modules to load")
         self.options['modules_unload'] = (None, "Modules to unload")
+        self.options['test_list'] = (None, "List of tests to run, default is all")
         return
 
 
@@ -236,23 +237,34 @@ class SLURM(LauncherMTTTool):
         # did they give us a list of specific directories where the desired
         # tests to be executed reside?
         tests = []
-        try:
-            if cmds['test_dir'] is not None:
-                # pick up the executables from the specified directories
-                dirs = cmds['test_dir'].split()
-                for dr in dirs:
-                    dr = dr.strip()
-                    # remove any commas and quotes
-                    dr = dr.replace('\"','')
-                    dr = dr.replace(',','')
-                    for dirName, subdirList, fileList in os.walk(dr):
+        if cmds['test_list'] is None:
+            try:
+                if cmds['test_dir'] is not None:
+                    # pick up the executables from the specified directories
+                    dirs = cmds['test_dir'].split()
+                    for dr in dirs:
+                        dr = dr.strip()
+                        # remove any commas and quotes
+                        dr = dr.replace('\"','')
+                        dr = dr.replace(',','')
+                        for dirName, subdirList, fileList in os.walk(dr):
+                            for fname in fileList:
+                                # see if this is an executable
+                                filename = os.path.abspath(os.path.join(dirName,fname))
+                                if os.path.isfile(filename) and os.access(filename, os.X_OK):
+                                    # add this file to our list of tests to execute
+                                    tests.append(filename)
+                else:
+                    # get the list of executables from this directory and any
+                    # subdirectories beneath it
+                    for dirName, subdirList, fileList in os.walk("."):
                         for fname in fileList:
                             # see if this is an executable
                             filename = os.path.abspath(os.path.join(dirName,fname))
                             if os.path.isfile(filename) and os.access(filename, os.X_OK):
                                 # add this file to our list of tests to execute
                                 tests.append(filename)
-            else:
+            except KeyError:
                 # get the list of executables from this directory and any
                 # subdirectories beneath it
                 for dirName, subdirList, fileList in os.walk("."):
@@ -262,16 +274,24 @@ class SLURM(LauncherMTTTool):
                         if os.path.isfile(filename) and os.access(filename, os.X_OK):
                             # add this file to our list of tests to execute
                             tests.append(filename)
-        except KeyError:
-            # get the list of executables from this directory and any
-            # subdirectories beneath it
-            for dirName, subdirList, fileList in os.walk("."):
-                for fname in fileList:
-                    # see if this is an executable
-                    filename = os.path.abspath(os.path.join(dirName,fname))
-                    if os.path.isfile(filename) and os.access(filename, os.X_OK):
-                        # add this file to our list of tests to execute
-                        tests.append(filename)
+        # If list of tests is provided, use list rather than grabbing all tests
+        else:
+            if cmds['test_dir'] is not None:
+                dirs = cmds['test_dir'].split()
+            else:
+                dirs = ['.']
+            for dr in dirs:
+                dr = dr.strip()
+                dr = dr.replace('\"','')
+                dr = dr.replace(',','')
+                for dirName, subdirList, fileList in os.walk(dr):
+                    for fname in cmds['test_list'].split(","):
+                        fname = fname.strip()
+                        if fname not in fileList:
+                            continue
+                        filename = os.path.abspath(os.path.join(dirName,fname))
+                        if os.path.isfile(filename) and os.access(filename, os.X_OK):
+                            tests.append(filename)
         # check that we found something
         if not tests:
             log['status'] = 1
@@ -358,7 +378,15 @@ class SLURM(LauncherMTTTool):
                 fail_returncodes = {test:rtncode for test,rtncode in zip(fail_tests,fail_returncodes)}
                 expected_returncodes = {test:(fail_returncodes[test] if test in fail_returncodes else 0) for test in tests}
 
+        # Execute all tests
         for test in tests:
+            # Skip tests that are in "skip_tests" ini input
+            if cmds['skip_tests'] is not None and test.split('/')[-1] in [st.strip() for st in cmds['skip_tests'].split()]:
+                numTests += 1
+                numSkip += 1
+                if numTests == maxTests:
+                    break
+                continue
             testLog = {'test':test}
             cmdargs.append(test)
             testLog['cmd'] = " ".join(cmdargs)
