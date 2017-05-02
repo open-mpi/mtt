@@ -230,7 +230,7 @@ class ALPS(LauncherMTTTool):
         # Check if command is correct
         if cmds['command'] != "aprun":
             log['status'] = 1
-            log['stderr'] = "Command for SLURM plugin must be aprun. It is currently '%s'" % (cmds['command'] if cmds['command'] is not None else "None")
+            log['stderr'] = "Command for ALPS plugin must be aprun. It is currently '%s'" % (cmds['command'] if cmds['command'] is not None else "None")
             return
 
         # now ready to execute the test - we are pointed at the middleware
