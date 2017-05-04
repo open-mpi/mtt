@@ -52,7 +52,7 @@ class Copytree(BaseMTTUtility):
             log['stderr'] = "Src directory not specified"
             return
         # define the dst directory
-        dst = os.path.join(testDef.options['scratchdir'], log['section'])
+        dst = os.path.join(testDef.options['scratchdir'], log['section'].replace(":","_"))
         # record the location
         log['location'] = dst
         # perform the copy
