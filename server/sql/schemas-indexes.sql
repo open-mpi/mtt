@@ -11,7 +11,7 @@
 -- Submit Table
 --
 --
-DROP INDEX idx_submit_http_username;
+DROP INDEX IF EXISTS idx_submit_http_username;
 CREATE INDEX idx_submit_http_username on submit (http_username);
 
 
@@ -43,7 +43,7 @@ CREATE INDEX idx_submit_http_username on submit (http_username);
 --
 -- Test Names Table
 --
-DROP INDEX idx_test_names_test_suite_id;
+DROP INDEX IF EXISTS idx_test_names_test_suite_id;
 CREATE INDEX idx_test_names_test_suite_id       ON test_names (test_suite_id);
 
 --

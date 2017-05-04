@@ -603,8 +603,8 @@ class DatabaseV3():
         #
         # Insert this value
         #
-        #self._logger.debug(insert_stmt)
-        #self._logger.debug( ", ".join(str(x) for x in values) )
+        self._logger.debug(insert_stmt)
+        self._logger.debug( ", ".join(str(x) for x in values) )
         found_id = self._get_nextval( "%s_%s_seq" % (table, table_id))
 
         stmt_values.insert(0, found_id)
@@ -634,6 +634,7 @@ class DatabaseV3():
     def get_submit_id(self, metadata):
         self._logger.debug( "************** Submit ****************" )
 
+        
         fields = self.get_fields_for_submit()['required']
         values = []
         for field in fields:
@@ -1327,7 +1328,20 @@ class DatabaseV3():
                     "environment",
                     "merge_stdout_stderr",
                     "result_stdout",
-                    "result_stderr"]
+                    "result_stderr",
+                    "bios_nodelist",
+                    "bios_params",
+                    "bios_values",
+                    "flashupdt_cfg",
+                    "firmware_nodelist",
+                    "targets",
+                    "image",
+                    "controllers",
+                    "bootstrap",
+                    "harasser_seed",
+                    "inject_script",
+                    "cleanup_script",
+                    "check_script"]
 
         return {'required':fields, 'optional':optional}
 
@@ -1542,6 +1556,131 @@ class DatabaseV3():
             self._logger.debug("%s --- Processing: environment = %s" % (prefix, str(environment_id)) )
 
         #
+        # Process: cluster_checker
+        #
+        self._logger.debug("%s --- Processing: cluster_checker" % (prefix) )
+
+        clck_id = 0
+        if 'cluster_checker' not in entry.keys():
+            self._logger.debug("%s --- Processing: cluster_checker -- Skip" % (prefix) )
+        else:
+            fields = ["clck_results_file"]
+            values = []
+            for field in fields:
+                value = self._find_value(metadata, entry, field)
+                if value is None:
+                    return {"error_msg": "%s Missing field: %s" % (prefix, field)} 
+                values.append( value )
+
+            clck_id = self._select_insert("cluster_checker",
+                                          "clck_id",
+                                          fields, values)
+
+            self._logger.debug("%s --- Processing: cluster_checker = %s" % (prefix, str(clck_id)) )
+
+        #
+        # Process: bios
+        #
+        self._logger.debug("%s --- Processing: bios" % (prefix) )
+
+        bios_id = 0
+        if 'bios_nodelist' not in entry.keys() \
+                or 'bios_params' not in entry.keys() \
+                or 'bios_values' not in entry.keys():
+            self._logger.debug("%s --- Processing: bios -- Skip" % (prefix) )
+        else:
+            fields = ["bios_nodelist", "bios_params", "bios_values"]
+            values = []
+            for field in fields:
+                value = self._find_value(metadata, entry, field)
+                if value is None:
+                    return {"error_msg": "%s Missing field: %s" % (prefix, field)} 
+                values.append( value )
+
+            bios_id = self._select_insert("bios",
+                                          "bios_id",
+                                          fields, values)
+
+            self._logger.debug("%s --- Processing: bios = %s" % (prefix, str(bios_id)) )
+
+        #
+        # Process: firmware
+        #
+        self._logger.debug("%s --- Processing: firmware" % (prefix) )
+
+        firmware_id = 0
+        if 'flashupdt_cfg' not in entry.keys() or 'firmware_nodelist' not in entry.keys():
+            self._logger.debug("%s --- Processing: firmware -- Skip" % (prefix) )
+        else:
+            fields = ["flashupdt_cfg", "firmware_nodelist"]
+            values = []
+            for field in fields:
+                value = self._find_value(metadata, entry, field)
+                if value is None:
+                    return {"error_msg": "%s Missing field: %s" % (prefix, field)} 
+                values.append( value )
+
+            firmware_id = self._select_insert("firmware",
+                                              "firmware_id",
+                                              fields, values)
+
+            self._logger.debug("%s --- Processing: firmware = %s" % (prefix, str(firmware_id)) )
+
+        #
+        # Process: provision
+        #
+        self._logger.debug("%s --- Processing: provision" % (prefix) )
+
+        provision_id = 0
+        if 'targets' not in entry.keys() \
+                or 'image' not in entry.keys() \
+                or 'controllers' not in entry.keys() \
+                or 'bootstrap' not in entry.keys():
+            self._logger.debug("%s --- Processing: provision -- Skip" % (prefix) )
+        else:
+            fields = ["targets", "image", "controllers", "bootstrap"]
+            values = []
+            for field in fields:
+                value = self._find_value(metadata, entry, field)
+                if value is None:
+                    return {"error_msg": "%s Missing field: %s" % (prefix, field)} 
+                values.append( value )
+
+            provision_id = self._select_insert("provision",
+                                               "provision_id",
+                                               fields, values)
+
+            self._logger.debug("%s --- Processing: provision = %s" % (prefix, str(provision_id)) )
+
+        #
+        # Process: harasser
+        #
+        self._logger.debug("%s --- Processing: harasser" % (prefix) )
+
+        harasser_id = 0
+        if 'harasser_seed' not in entry.keys() \
+                or 'inject_script' not in entry.keys() \
+                or 'cleanup_script' not in entry.keys() \
+                or 'check_script' not in entry.keys():
+            self._logger.debug("%s --- Processing: harasser -- Skip" % (prefix) )
+        else:
+            fields = ["harasser_seed", "inject_script", "cleanup_script", "check_script"]
+            values = []
+            for field in fields:
+                value = self._find_value(metadata, entry, field)
+                if value is None:
+                    return {"error_msg": "%s Missing field: %s" % (prefix, field)} 
+                values.append( value )
+
+            harasser_id = self._select_insert("harasser",
+                                              "harasser_id",
+                                              fields, values)
+
+            self._logger.debug("%s --- Processing: harasser = %s" % (prefix, str(harasser_id)) )
+
+        # TODO: Add Process: firmware, provision, harasser too
+
+        #
         # Process: test_run
         #
         self._logger.debug("%s --- Processing: test_run" % (prefix) )
@@ -1561,7 +1700,12 @@ class DatabaseV3():
                   "test_run_command_id",
                   "description_id",
                   "environment_id",
-                  "result_message_id"]
+                  "result_message_id",
+                  "clck_id",
+                  "bios_id",
+                  "firmware_id",
+                  "provision_id",
+                  "harasser_id"]
 
         non_id_fields = ["start_timestamp",
                          "np",
@@ -1590,7 +1734,12 @@ class DatabaseV3():
                   test_run_command_id,
                   description_id,
                   environment_id,
-                  result_message_id]
+                  result_message_id,
+                  clck_id,
+                  bios_id,
+                  firmware_id,
+                  provision_id,
+                  harasser_id]
 
         for field in non_id_fields:
             # Try acommon alias for this field 'command'

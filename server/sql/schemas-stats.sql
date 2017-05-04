@@ -7,7 +7,7 @@
 --
 -- Contribution/Coverage table
 --
-DROP TABLE mtt_stats_contrib CASCADE;
+DROP TABLE IF EXISTS mtt_stats_contrib CASCADE;
 CREATE TABLE mtt_stats_contrib (
     mtt_stats_contrib_id            serial,
 
@@ -83,7 +83,7 @@ CREATE TABLE mtt_stats_contrib (
 --
 -- Database Stats table
 --
-DROP TABLE mtt_stats_database CASCADE;
+DROP TABLE IF EXISTS mtt_stats_database CASCADE;
 CREATE TABLE mtt_stats_database (
     mtt_stats_database_id       serial,
 

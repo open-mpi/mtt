@@ -1,6 +1,7 @@
 --
 -- We need this language for the triggers
 --
+-- CREATE OR REPLACE LANGUAGE plpgsql;
 CREATE LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION update_summary_table() RETURNS TRIGGER AS $update_summary_table$

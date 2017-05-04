@@ -38,4 +38,5 @@ class Environ(BaseMTTUtility):
         for kvkey in kvkeys:
             os.environ[kvkey] = keyvals[kvkey]
         log['status'] = 0
+        log['environ'] = keyvals
         return

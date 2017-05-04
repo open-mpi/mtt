@@ -67,6 +67,18 @@ class WWulf3(ProvisionMTTStage):
         # parse what we were given against our defined options
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
+
+        mylog = {}
+        if cmds['target']:
+            mylog['target'] = cmds['target']
+        if cmds['image']:
+            mylog['image'] = cmds['image']
+        if cmds['controller']:
+            mylog['controller'] = cmds['controller']
+        if cmds['bootstrap']:
+            mylog['bootstrap'] = cmds['bootstrap']
+        log['provisioning'] = mylog
+
         # they had to at least give us one target node and controller
         try:
             if cmds['target'] is None:
