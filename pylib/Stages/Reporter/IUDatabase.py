@@ -128,7 +128,7 @@ class IUDatabase(ReporterMTTStage):
 
         data = {}
 
-        profile = testDef.logger.getLog('Profile:Installed')
+        profile = [lg for lg in testDef.logger.getLog(None) if 'Profile' in lg['section'] and 'Installed' in lg['section']][0]
         metadata = {}
         metadata['client_serial'] = client_serial
         metadata['hostname'] = "\n".join(profile['profile']['nodeName'])
@@ -211,8 +211,6 @@ class IUDatabase(ReporterMTTStage):
         # For now assume that we only had one test_build submitted
         # and all of the tests that follow are from that test_build
         common_data['test_build_id'] = test_info['test_build_id']
-
-        #import pdb; pdb.set_trace()
 
         for trun in (lg['testresults'] if 'testresults' in lg else [lg]):
             data = {}
@@ -516,7 +514,7 @@ class IUDatabase(ReporterMTTStage):
         options = None
 
         # get the system profile
-        profile = logger.getLog('Profile:Installed')['profile']
+        profile = [lg for lg in testDef.logger.getLog(None) if 'Profile' in lg['section'] and 'Installed' in lg['section']][0]
         if profile is None:
             print("Error: Failed to get 'profile'")
             return None
