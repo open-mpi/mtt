@@ -141,6 +141,8 @@ class WWulf3(ProvisionMTTStage):
                 wwcmd.insert(0, "sudo")
             wwcmd.append(tgt)
             wwcmd.append("--vnfs=" + cmds['image'])
+            if cmds['bootstrap']:
+               wwcmd.append("--bootstrap=" + cmds['bootstrap'])
             # update the provisioning database to the new image
             status,stdout,stderr = testDef.execmd.execute(cmds, wwcmd, testDef)
             if 0 != status:
