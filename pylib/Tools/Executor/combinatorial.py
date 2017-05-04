@@ -72,6 +72,8 @@ class CombinatorialEx(ExecutorMTTTool):
         writeOption.optionxform = str
         # Sort base .ini sections and write to temp files 
         for section in self.baseIniFile.sections():
+            if section == "ENV":
+                continue
             if section.startswith("SKIP") or section.startswith("skip"):
                 # users often want to temporarily ignore a section
                 # of their test definition file, but don't want to
