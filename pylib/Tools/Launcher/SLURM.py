@@ -1,6 +1,6 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
-# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2017 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -390,7 +390,7 @@ class SLURM(LauncherMTTTool):
             testLog = {'test':test}
             cmdargs.append(test)
             testLog['cmd'] = " ".join(cmdargs)
-            status,stdout,stderr = testDef.execmd.execute(cmds, cmdargs, testDef)
+            status,stdout,stderr,time = testDef.execmd.execute(cmds, cmdargs, testDef)
             if ((expected_returncodes[test] is None and 0 == status) or (expected_returncodes[test] is not None and expected_returncodes[test] != status)) and skipStatus != status and 0 == finalStatus:
                 if expected_returncodes[test] == 0:
                     finalStatus = status
@@ -412,6 +412,7 @@ class SLURM(LauncherMTTTool):
                     testLog['status'] = 1
             testLog['stdout'] = stdout
             testLog['stderr'] = stderr
+            testLog['time'] = time
             log['testresults'].append(testLog)
             cmdargs = cmdargs[:-1]
             numTests = numTests + 1

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2017 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -240,7 +240,7 @@ class Shell(BuildMTTTool):
         os.chdir(location)
         # execute the specified command
         cfgargs = cmds['command'].split()
-        status, stdout, stderr = testDef.execmd.execute(cmds, cfgargs, testDef)
+        status, stdout, stderr, time = testDef.execmd.execute(cmds, cfgargs, testDef)
         if (cmds['fail_test'] is None and 0 != status) \
                 or (cmds['fail_test'] is not None and cmds['fail_returncode'] is None and 0 == status) \
                 or (cmds['fail_test'] is not None and cmds['fail_returncode'] is not None and int(cmds['fail_returncode']) != status):
@@ -252,9 +252,11 @@ class Shell(BuildMTTTool):
                 log['status'] = status
             log['stdout'] = stdout
             log['stderr'] = stderr
+            log['time'] = time
             return
         log['status'] = 0
         log['stdout'] = stdout
+        log['time'] = time
         if cmds['fail_test'] == True:
             log['stderr'] = stderr
         # record this location for any follow-on steps

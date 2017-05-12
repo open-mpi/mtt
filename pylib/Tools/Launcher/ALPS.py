@@ -394,7 +394,7 @@ class ALPS(LauncherMTTTool):
             testLog = {'test':test}
             cmdargs.append(test)
             testLog['cmd'] = " ".join(cmdargs)
-            status,stdout,stderr = testDef.execmd.execute(cmds, cmdargs, testDef)
+            status,stdout,stderr,time = testDef.execmd.execute(cmds, cmdargs, testDef)
             if 0 != status and skipStatus != status and 0 == finalStatus:
                 if expected_returncodes[test] == 0:
                     finalStatus = status
@@ -416,6 +416,7 @@ class ALPS(LauncherMTTTool):
                     testLog['status'] = 1
             testLog['stdout'] = stdout
             testLog['stderr'] = stderr
+            testLog['time'] = time
             log['testresults'].append(testLog)
             cmdargs = cmdargs[:-1]
             numTests = numTests + 1
