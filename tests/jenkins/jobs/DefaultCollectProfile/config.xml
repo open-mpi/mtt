@@ -35,7 +35,7 @@
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers/>
   <concurrentBuild>false</concurrentBuild>
-  <customWorkspace>/home/test/jenkins</customWorkspace>
+  <customWorkspace>SLAVE_NODE_EXEC_DIR_VAR</customWorkspace>
   <builders>
     <hudson.tasks.Shell>
       <command>#!/bin/bash -ex

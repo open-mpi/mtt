@@ -30,6 +30,7 @@ docker build \
 --build-arg slave_node_ip_addr=10.20.30.40 \
 --build-arg slave_node_num_executors=2 \
 --build-arg slave_node_ssh_username=root \
+--build-arg slave_node_exec_dir=\\/home\\/test\\/jenkins \
 --build-arg master_num_executors=2 \
 --build-arg compute_node_names="node1 node2 node3 node4" \
 -t mttconsole .
