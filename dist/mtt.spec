@@ -105,6 +105,6 @@ rm -rf $RPM_BUILD_ROOT
 %files bat
 %defattr(-,root,root)
 %dir %{install_path}
-%{install_path}/tests/bat
+%{install_path}/tests
 
 %changelog
