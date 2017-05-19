@@ -65,7 +65,8 @@ class SequentialEx(ExecutorMTTTool):
         testDef.logger.verbose_print("ExecuteSequential")
         for step in testDef.loader.stageOrder:
             for title in testDef.config.sections():
-                if step not in title:
+                if (":" in title and step not in title.split(":")[0]) or \
+                   (":" not in title and step not in title):
                     continue
                 # see if this is a step we are to execute
                 if title not in testDef.actives:
