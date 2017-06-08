@@ -35,13 +35,14 @@
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers/>
   <concurrentBuild>false</concurrentBuild>
-  <customWorkspace>/home/test/jenkins</customWorkspace>
+  <customWorkspace>SLAVE_NODE_EXEC_DIR_VAR</customWorkspace>
   <builders>
     <hudson.tasks.Shell>
       <command>#!/bin/bash -ex
 
 source /etc/profile.d/lmod.sh
 
+export KERNEL_VERSION="Change this to match your system's kernel version (uname -r)"
 export TEST_DIR=$WORKSPACE/mtt_exec
 
 mkdir -p $TEST_DIR

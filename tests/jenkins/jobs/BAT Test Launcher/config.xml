@@ -26,7 +26,7 @@
   <builders/>
   <publishers>
     <hudson.tasks.BuildTrigger>
-      <childProjects>DefaultCheckProfile, DefaultCollectProfile, Negative</childProjects>
+      <childProjects>DefaultCollectProfile, Negative</childProjects>
       <threshold>
         <name>UNSTABLE</name>
         <ordinal>1</ordinal>

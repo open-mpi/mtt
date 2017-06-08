@@ -9,6 +9,7 @@ ARG slave_node_num_computes
 ARG slave_node_ip_addr
 ARG slave_node_num_executors
 ARG slave_node_ssh_username
+ARG slave_node_exec_dir
 ARG master_num_executors
 ARG compute_node_names
 
@@ -49,6 +50,7 @@ ADD jobs $JENKINS_HOME/jobs
 RUN bash -c "perl -pi -e 's/SLAVE_NODE_NAME_VAR/${slave_node_name}/g' $JENKINS_HOME/jobs/*/config.xml"
 RUN bash -c "perl -pi -e 's/COMPUTE_NODE_NAMES_VAR/${compute_node_names}/g' $JENKINS_HOME/jobs/*/config.xml"
 RUN bash -c "perl -pi -e 's/SLAVE_NODE_NUM_COMPUTES_VAR/${slave_node_num_computes}/g' $JENKINS_HOME/jobs/*/config.xml"
+RUN bash -c "perl -pi -e 's/SLAVE_NODE_EXEC_DIR_VAR/${slave_node_exec_dir}/g' $JENKINS_HOME/jobs/*/config.xml"
 
 # Users configuration step
 ADD users $JENKINS_HOME/users
