@@ -240,7 +240,23 @@ class Shell(BuildMTTTool):
         os.chdir(location)
         # execute the specified command
         cfgargs = cmds['command'].split()
+
+        if 'TestRun' in log['section'].split(":")[0]:
+            harass_exec_ids = testDef.harasser.start(log, testDef)
+
+            harass_check = testDef.harasser.check(harass_exec_ids, log, testDef)
+            if harass_check is not None:
+                log['stderr'] = 'Not all harasser scripts started. These failed to start: ' \
+                                + ','.join([h_info[1]['start_script'] for h_info in harass_check[0]])
+                log['time'] = sum([r_info[3] for r_info in harass_check[1]])
+                log['status'] = 1
+                return
+
         status, stdout, stderr, time = testDef.execmd.execute(cmds, cfgargs, testDef)
+
+        if 'TestRun' in log['section'].split(":")[0]:
+            testDef.harasser.stop(harass_exec_ids, log, testDef)
+
         if (cmds['fail_test'] is None and 0 != status) \
                 or (cmds['fail_test'] is not None and cmds['fail_returncode'] is None and 0 == status) \
                 or (cmds['fail_test'] is not None and cmds['fail_returncode'] is not None and int(cmds['fail_returncode']) != status):

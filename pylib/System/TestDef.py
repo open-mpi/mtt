@@ -59,6 +59,7 @@ class TestDef(object):
         self.logger = None
         self.modcmd = None
         self.execmd = None
+        self.harasser = None
         self.config = None
         self.stages = None
         self.tools = None
@@ -329,6 +330,17 @@ class TestDef(object):
             print("ExecuteCmd plugin was not found")
             print("This is a basic capability required")
             print("for MTT operations - cannot continue")
+            sys.exit(1)
+        print(self.tools.getPluginsOfCategory("Harasser"))
+        for pluginInfo in self.tools.getPluginsOfCategory("Harasser"):
+            print(pluginInfo.plugin_object.print_name())
+            if "Harasser" == pluginInfo.plugin_object.print_name():
+                self.harasser = pluginInfo.plugin_object
+                break
+        if self.harasser is None:
+            print("Harasser plugin was not found")
+            print("This is required for all TestRun plugins")
+            print("cannot continue")
             sys.exit(1)
         # similarly, capture the highest priority defaults stage here
         pri = -1

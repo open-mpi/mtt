@@ -1,0 +1,18 @@
+#
+# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
+
+[Core]
+Name = Harasser
+Module = Harasser
+
+[Documentation]
+Author = Richard Barella
+Version = 0.1
+Website = N/A
+Description = Run harasser scripts while test-content is running
