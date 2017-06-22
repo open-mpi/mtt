@@ -49,6 +49,10 @@ sub Checkout {
         $cmd .= $params->{rev};
     }
 
+    if (defined($params->{shallow})) {
+        $cmd .= " --depth 1";
+    }
+
     $cmd .= " ";
 
     my $git_major = 0;
