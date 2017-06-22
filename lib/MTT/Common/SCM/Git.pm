@@ -3,9 +3,9 @@
 # Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
 # Copyright (c) 2008      Cisco Systems, Inc.  All rights reserved.
 # $COPYRIGHT$
-# 
+#
 # Additional copyrights may follow
-# 
+#
 # $HEADER$
 #
 
@@ -39,16 +39,16 @@ sub Checkout {
     $cmd .= " " . $params->{command_arguments}
         if (defined($params->{command_arguments}));
 
-    $cmd .= " " . 
+    $cmd .= " " .
         (defined($params->{subcommand}) ? $params->{subcommand} : "clone");
     $cmd .= " " . $params->{subcommand_arguments}
         if (defined($params->{subcommand_arguments}));
-    
+
     if (defined($params->{rev})) {
-    	$cmd .= " -b ";    
-    	$cmd .= $params->{rev};
+        $cmd .= " -b ";
+        $cmd .= $params->{rev};
     }
-    
+
     $cmd .= " ";
 
     my $git_major = 0;
@@ -57,10 +57,10 @@ sub Checkout {
 
     my $git_ver_output = MTT::DoCommand::Cmd(1, $git_cmd);
 
-    if (MTT::DoCommand::wsuccess($git_ver_output->{exit_status}) && 
+    if (MTT::DoCommand::wsuccess($git_ver_output->{exit_status}) &&
         $git_ver_output->{result_stdout} =~ m/git version (\d+).(\d+).(\d+).(\d+)/) {
         ($git_major, $git_minor) = ($1, $2);
-    } 
+    }
 
     # clone only the branch specified to potentially reduce the size of the dir
     if (defined($params->{rev})) {
@@ -78,7 +78,7 @@ sub Checkout {
         $cmd .= $params->{url};
     }
     $cmd .= " " . $params->{dirname};
-	
+
     my $x = MTT::DoCommand::Cmd(1, $cmd);
     if (!MTT::DoCommand::wsuccess($x->{exit_status})) {
         Warning("Git clone failure: $x->{result_stdout}\n");
