@@ -23,6 +23,7 @@ import imp
 from yapsy.PluginManager import PluginManager
 import datetime
 from distutils.spawn import find_executable
+import multiprocessing as mp
 
 # The Test Definition class is mostly a storage construct
 # to make it easier when passing values across stages and
@@ -65,6 +66,7 @@ class TestDef(object):
         self.utilities = None
         self.defaults = None
         self.log = {}
+        self.harasser = None
 
     def setOptions(self, args):
         self.options = vars(args)
@@ -323,13 +325,19 @@ class TestDef(object):
                     self.modcmd = pluginInfo.plugin_object
                     # initialize this module
                     self.modcmd.setCommand(self.options)
-                if self.execmd is not None and self.modcmd is not None:
+                elif "Harasser" == pluginInfo.plugin_object.print_name():
+                    self.harasser = pluginInfo.plugin_object
+                if self.execmd is not None and self.modcmd is not None and self.harasser is not None:
                     break
         if self.execmd is None:
             print("ExecuteCmd plugin was not found")
             print("This is a basic capability required")
             print("for MTT operations - cannot continue")
             sys.exit(1)
+        # if we have a harasser class, then set the multiprocessing
+        # start method to "spawn"
+        # if self.harasser is not None:
+        #    mp.set_start_method('spawn')
         # similarly, capture the highest priority defaults stage here
         pri = -1
         for pluginInfo in self.stages.getPluginsOfCategory("MTTDefaults"):
@@ -434,46 +442,27 @@ class TestDef(object):
         # Print the available MTT utilities out, if requested
         if self.options['listutils']:
             print("Available MTT utilities:")
-            availUtils = list(self.loader.utilities.keys())
-            for util in availUtils:
-                print("    " + util)
+            availUtil = list(self.loader.utilities.keys())
+            for util in availUtil:
+                for pluginInfo in self.utilities.getPluginsOfCategory(util):
+                    print("    " + pluginInfo.plugin_object.print_name())
             exit(0)
-
-        # Print the detected utility plugins for a given tool type
-        if self.options['listutilmodules']:
-            # if the list is '*', print the plugins for every type
-            if self.options['listutilmodules'] == "*":
-                print()
-                availUtils = list(self.loader.utilities.keys())
-            else:
-                availUtils = self.options['listutilitymodules'].split(',')
-            print()
-            for util in availUtils:
-                print(util + ":")
-                try:
-                    for pluginInfo in self.utilities.getPluginsOfCategory(util):
-                        print("    " + pluginInfo.plugin_object.print_name())
-                except KeyError:
-                    print("    Invalid utility type name")
-                print()
-            exit(1)
 
         # Print the options for a given plugin
         if self.options['listutiloptions']:
-            # if the list is '*', print the options for every stage/plugin
-            if self.options['listutiloptions'] == "*":
-                availUtils = list(self.loader.utilities.keys())
-            else:
-                availUtils = self.options['listutiloptions'].split(',')
             print()
+            availUtils = list(self.loader.utilities.keys())
             for util in availUtils:
                 print(util + ":")
-                try:
-                    for pluginInfo in self.utilities.getPluginsOfCategory(util):
+                for pluginInfo in self.utilities.getPluginsOfCategory(util):
+                    if self.options['listutiloptions'] == "*":
                         print("    " + pluginInfo.plugin_object.print_name() + ":")
                         pluginInfo.plugin_object.print_options(self, "        ")
-                except KeyError:
-                    print("    Invalid utility type name " + util)
+                    else:
+                        tmp = pluginInfo.plugin_object.print_name()
+                        if tmp in self.options['listutiloptions']:
+                            print("    " + tmp + ":")
+                            pluginInfo.plugin_object.print_options(self, "        ")
                 print()
             exit(1)
 
@@ -579,7 +568,7 @@ class TestDef(object):
                 self.logger.verbose_print("SECTION: " + section)
                 self.logger.verbose_print(self.config.items(section))
         return
- 
+
     def executeTest(self):
         if not self.loaded:
             print("Plugins have not been loaded - cannot execute test")
@@ -607,7 +596,7 @@ class TestDef(object):
         executor = self.tools.getPluginByName("combinatorial", "Executor")
         executor.plugin_object.execute(self)
         return
-  
+
     def printOptions(self, options):
         # if the options are empty, report that
         if not options:

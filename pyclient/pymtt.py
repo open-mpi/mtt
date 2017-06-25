@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2017 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -56,9 +56,6 @@ infoGroup.add_argument("--list-tool-options",
 infoGroup.add_argument("--list-utilities",
                      action="store_true", dest="listutils", default=False,
                      help="List utilities available to this client")
-infoGroup.add_argument("--list-utility-plugins",
-                     action="store", dest="listutilmodules", metavar="TYPE",
-                     help="List available modules for TYPE (* => all)")
 infoGroup.add_argument("--list-utility-options",
                      action="store", dest="listutiloptions", metavar="UTILITY",
                      help="List available options for UTILITY (* => all)")
@@ -266,9 +263,9 @@ elif(testDef.config.has_option('MTTDefaults', 'executor')):
         testDef.executeCombinatorial()
     else:
         print("Specified executor ", testDef.config.get('MTTDefaults', 'executor'), " not found!")
-        sys.exit(1)  
+        sys.exit(1)
 # If no executor is specified default to sequential
 else:
     testDef.config.set('MTTDefaults', 'executor', 'sequential')
-    testDef.executeTest()  
+    testDef.executeTest()
 # All done!
