@@ -433,8 +433,14 @@ class SLURM(LauncherMTTTool):
                 log['np'] = str(cmds['options'].split('--ntasks=')[1].split(' ')[0])
             elif '-N ' in cmds['options']:
                 log['np'] = str(cmds['options'].split('-N ')[1].split(' ')[0])
-            else: #'--nodes=' in cmds['options']
+            elif '--nodes=' in cmds['options']:
                 log['np'] = str(cmds['options'].split('--nodes=')[1].split(' ')[0])
+            elif '-w ' in cmds['options']:
+                log['np'] = str(len(cmds['options'].split('-w ')[1].split(' ')[0].split(',')))
+            elif '--nodelist=' in cmds['options']:
+                log['np'] = str(len(cmds['options'].split('--nodelist=')[1].split(' ')[0].split(',')))
+            else:
+                log['np'] = None
         else:
             try:
                 log['np'] = cmds['np']
