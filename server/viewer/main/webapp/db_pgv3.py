@@ -105,7 +105,6 @@ class DatabaseV3():
 
     ##########################################################
     def _find_all_table_names(self, table_name, fields):
-        #if table_name == 'test_run_command': import pdb; pdb.set_trace()
         id_fields = [f for f in self._fields(table_name) if f.endswith("_id")]
         level_1_table_names = [(ID_TABLE_MAPPING[FOREIGN_KEY_MAPPING[f]] if f in FOREIGN_KEY_MAPPING else ID_TABLE_MAPPING[f]) \
                             for f in id_fields if table_name != \
