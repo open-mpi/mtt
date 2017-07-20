@@ -472,7 +472,7 @@ class GenericQuery(_ServerResourceBase):
     @cherrypy.tools.json_out()
     @cherrypy.tools.json_in()
     def POST(self, **kwargs):
-        return execute('generic_query')
+        return self.execute('generic_query')
 
 ########################################################
 # Fields
@@ -492,7 +492,7 @@ class Fields(GenericQuery):
     @cherrypy.tools.json_out()
     @cherrypy.tools.json_in()
     def POST(self, **kwargs):
-        return execute('POST /fields/')
+        return self.execute('POST /fields/')
  
 ########################################################
 # Summary
