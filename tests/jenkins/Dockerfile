@@ -62,6 +62,7 @@ RUN perl -pi -e "s/SLAVE_NODE_NAME_VAR/$slave_node_name/g" $JENKINS_HOME/nodes/$
 RUN perl -pi -e "s/SLAVE_NODE_NUM_EXECUTORS_VAR/$slave_node_num_executors/g" $JENKINS_HOME/nodes/$slave_node_name/config.xml
 RUN perl -pi -e "s/SLAVE_NODE_IP_ADDR_VAR/$slave_node_ip_addr/g" $JENKINS_HOME/nodes/$slave_node_name/config.xml
 RUN perl -pi -e "s/SLAVE_NODE_NUM_COMPUTES_VAR/$slave_node_num_computes/g" $JENKINS_HOME/nodes/$slave_node_name/config.xml
+RUN perl -pi -e "s/SLAVE_NODE_EXEC_DIR_VAR/${slave_node_exec_dir}/g" $JENKINS_HOME/nodes/$slave_node_name/config.xml
 # $slave_node_name
 
 # Lockable resources configuration step

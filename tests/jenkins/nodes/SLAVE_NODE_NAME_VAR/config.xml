@@ -2,7 +2,7 @@
 <slave>
   <name>SLAVE_NODE_NAME_VAR</name>
   <description></description>
-  <remoteFS>/var/jenkins</remoteFS>
+  <remoteFS>SLAVE_NODE_EXEC_DIR_VAR</remoteFS>
   <numExecutors>SLAVE_NODE_NUM_EXECUTORS_VAR</numExecutors>
   <mode>EXCLUSIVE</mode>
   <retentionStrategy class="hudson.slaves.RetentionStrategy$Always"/>
@@ -22,9 +22,11 @@
           <default>
             <comparator class="hudson.util.CaseInsensitiveComparator"/>
           </default>
-          <int>3</int>
+          <int>2</int>
           <string>NUM_COMPUTES_AVAIL</string>
           <string>SLAVE_NODE_NUM_COMPUTES_VAR</string>
+          <string>LANG</string>
+          <string>POSIX</string>
         </tree-map>
       </envVars>
     </hudson.slaves.EnvironmentVariablesNodeProperty>
