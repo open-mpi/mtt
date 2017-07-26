@@ -11,6 +11,7 @@
 from __future__ import print_function
 import os
 import re
+import shlex
 from BuildMTTTool import *
 
 ## @addtogroup Tools
@@ -239,7 +240,8 @@ class Shell(BuildMTTTool):
         # now move to the package location
         os.chdir(location)
         # execute the specified command
-        cfgargs = cmds['command'].split()
+        # Use shlex.split() for correct tokenization for args
+        cfgargs = shlex.split(cmds['command'])
 
         if 'TestRun' in log['section'].split(":")[0]:
             harass_exec_ids = testDef.harasser.start(log, testDef)
