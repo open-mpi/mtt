@@ -13,6 +13,7 @@ import os
 import re
 import string
 import sys
+import shlex
 from BuildMTTTool import *
 
 ## @addtogroup Tools
@@ -248,7 +249,7 @@ class Autotools(BuildMTTTool):
         # if they gave us any configure args, add them
         try:
             if cmds['configure_options'] is not None:
-                args = cmds['configure_options'].split()
+                args = shlex.split(cmds['configure_options'])
                 for arg in args:
                     cfgargs.append(arg.strip())
         except KeyError:
