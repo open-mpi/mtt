@@ -63,6 +63,7 @@ class Copytree(BaseMTTUtility):
             os.mkdir(dst)
             for srcpath in cmds['src'].split(','):
                 srcpath = srcpath.strip()
+                reload(distutils.dir_util)
                 distutils.dir_util.copy_tree(srcpath, dst)
             log['status'] = 0
         except (os.error, shutil.Error) as e:
