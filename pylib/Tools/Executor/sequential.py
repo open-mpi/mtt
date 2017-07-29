@@ -232,5 +232,9 @@ class SequentialEx(ExecutorMTTTool):
                 testDef.logger.logResults(title, stageLog)
                 if testDef.options['stop_on_fail'] is not False and stageLog['status'] != 0:
                     print("Section " + stageLog['section'] + ": Status " + str(stageLog['status']))
+                    try:
+                        print("Section " + stageLog['section'] + ": Stderr " + str(stageLog['stderr']))
+                    except KeyError:
+                        pass
                     sys.exit(1)
         return
