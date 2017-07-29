@@ -99,10 +99,10 @@ class DefaultTestBuild(TestBuildMTTStage):
                             os.environ['PATH'] = newpath
                             # prepend the libdir path as well
                             try:
-                                oldlibpath = os.environ['LD_LIBRARY_PATH']
-                                pieces = oldlibpath.split(':')
+                                oldldlibpath = os.environ['LD_LIBRARY_PATH']
+                                pieces = oldldlibpath.split(':')
                             except KeyError:
-                                oldlibpath = ""
+                                oldldlibpath = ""
                                 pieces = []
                             bindir = os.path.join(midlog['location'], "lib")
                             pieces.insert(0, bindir)
@@ -146,5 +146,5 @@ class DefaultTestBuild(TestBuildMTTStage):
         # if we added middleware to the paths, remove it
         if midpath:
             os.environ['PATH'] = oldbinpath
-            os.environ['LD_LIBRARY_PATH'] = oldlibpath
+            os.environ['LD_LIBRARY_PATH'] = oldldlibpath
         return

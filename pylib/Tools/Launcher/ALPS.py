@@ -169,19 +169,30 @@ class ALPS(LauncherMTTTool):
                         try:
                             if midlog['location'] is not None:
                                 # prepend that location to our paths
-                                path = os.environ['PATH']
-                                pieces = path.split(':')
+                                try:
+                                    oldbinpath = os.environ['PATH']
+                                    pieces = oldbinpath.split(':')
+                                except KeyError:
+                                    oldbinpath = ""
+                                    pieces = []
                                 bindir = os.path.join(midlog['location'], "bin")
                                 pieces.insert(0, bindir)
                                 newpath = ":".join(pieces)
                                 os.environ['PATH'] = newpath
-                                # prepend the libdir path as well
-                                path = os.environ['LD_LIBRARY_PATH']
-                                pieces = path.split(':')
+                                # prepend the loadable lib path
+                                try:
+                                    oldldlibpath = os.environ['LD_LIBRARY_PATH']
+                                    pieces = oldldlibpath.split(':')
+                                except KeyError:
+                                    oldldlibpath = ""
+                                    pieces = []
                                 bindir = os.path.join(midlog['location'], "lib")
                                 pieces.insert(0, bindir)
                                 newpath = ":".join(pieces)
                                 os.environ['LD_LIBRARY_PATH'] = newpath
+    
+                                # mark that this was done
+                                midpath = True
                         except KeyError:
                             # if it was already installed, then no location would be provided
                             pass
@@ -477,6 +488,11 @@ class ALPS(LauncherMTTTool):
                 log['stderr'] = stderr
                 os.chdir(cwd)
                 return
+
+        # if we added middleware to the paths, remove it
+        if midpath:
+            os.environ['PATH'] = oldbinpath
+            os.environ['LD_LIBRARY_PATH'] = oldldlibpath
 
         os.chdir(cwd)
         return

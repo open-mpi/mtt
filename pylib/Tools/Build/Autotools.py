@@ -25,6 +25,7 @@ from BuildMTTTool import *
 # @param parent                    Section that precedes this one in the dependency tree
 # @param build_in_place            Build tests in current location (no prefix or install)
 # @param stdout_save_lines         Number of lines of stdout to save
+# @param middleware                Middleware stage that these tests are to be built against
 # @param modules                   Modules to load
 # @param configure_options         Options to be passed to configure. Note that the prefix will be automatically set and need not be provided here
 # @param save_stdout_on_success    Save stdout even if build succeeds
@@ -36,6 +37,7 @@ class Autotools(BuildMTTTool):
         BuildMTTTool.__init__(self)
         self.activated = False
         self.options = {}
+        self.options['middleware'] = (None, "Middleware stage that these tests are to be built against")
         self.options['parent'] = (None, "Section that precedes this one in the dependency tree")
         self.options['autogen_cmd'] = (None, "Command to be executed to setup the configure script, usually called autogen.sh or autogen.pl")
         self.options['configure_options'] = (None, "Options to be passed to configure. Note that the prefix will be automatically set and need not be provided here")
@@ -207,6 +209,88 @@ class Autotools(BuildMTTTool):
             log['status'] = 0
             return
 
+        # check if we need to point to middleware
+        midpath = False
+        try:
+            if cmds['middleware'] is not None:
+                # pass it down
+                log['middleware'] = cmds['middleware']
+                # get the log entry of its location
+                midlog = testDef.logger.getLog(cmds['middleware'])
+                if midlog is not None:
+                    # get the location of the middleware
+                    try:
+                        if midlog['location'] is not None:
+                            # prepend that location to our paths
+                            try:
+                                oldbinpath = os.environ['PATH']
+                                pieces = oldbinpath.split(':')
+                            except KeyError:
+                                oldbinpath = ""
+                                pieces = []
+                            bindir = os.path.join(midlog['location'], "bin")
+                            pieces.insert(0, bindir)
+                            newpath = ":".join(pieces)
+                            os.environ['PATH'] = newpath
+                            # prepend the loadable lib path
+                            try:
+                                oldldlibpath = os.environ['LD_LIBRARY_PATH']
+                                pieces = oldldlibpath.split(':')
+                            except KeyError:
+                                oldldlibpath = ""
+                                pieces = []
+                            bindir = os.path.join(midlog['location'], "lib")
+                            pieces.insert(0, bindir)
+                            newpath = ":".join(pieces)
+                            os.environ['LD_LIBRARY_PATH'] = newpath
+                            # prepend the include path 
+                            try:
+                                oldcpath = os.environ['CPATH']
+                                pieces = oldcpath.split(':')
+                            except KeyError:
+                                oldcpath = ""
+                                pieces = []
+                            bindir = os.path.join(midlog['location'], "include")
+                            pieces.insert(0, bindir)
+                            newpath = ":".join(pieces)
+                            os.environ['CPATH'] = newpath
+                            # prepend the lib path 
+                            try:
+                                oldlibpath = os.environ['LIBRARY_PATH']
+                                pieces = oldlibpath.split(':')
+                            except KeyError:
+                                oldlibpath = ""
+                                pieces = []
+                            bindir = os.path.join(midlog['location'], "lib")
+                            pieces.insert(0, bindir)
+                            newpath = ":".join(pieces)
+                            os.environ['LIBRARY_PATH'] = newpath
+
+                            # mark that this was done
+                            midpath = True
+                    except KeyError:
+                        pass
+                    # check for modules required by the middleware
+                    try:
+                        if midlog['parameters'] is not None:
+                            for md in midlog['parameters']:
+                                if "modules" == md[0]:
+                                    try:
+                                        if cmds['modules'] is not None:
+                                            # append these modules to those
+                                            mods = md[1].split(',')
+                                            newmods = modules.split(',')
+                                            for md in newmods:
+                                                mods.append(md)
+                                            cmds['modules'] = ','.join(mods)
+                                    except KeyError:
+                                        cmds['modules'] = md[1]
+                                    break
+                    except KeyError:
+                        pass
+        except KeyError:
+            pass
+
         # save the current directory so we can return to it
         cwd = os.getcwd()
         # now move to the package location
@@ -343,6 +427,14 @@ class Autotools(BuildMTTTool):
             if 0 != status:
                 log['status'] = status
                 log['stderr'] = stderr
+
+        # if we added middleware to the paths, remove it
+        if midpath:
+            os.environ['PATH'] = oldbinpath
+            os.environ['LD_LIBRARY_PATH'] = oldldlibpath
+            os.environ['CPATH'] = oldcpath
+            os.environ['LIBRARY_PATH'] = oldlibpath
+
         # return home
         os.chdir(cwd)
 
