@@ -606,8 +606,8 @@ class TestDef(object):
         self.tools.activatePluginByName("sequential", "Executor")
         # execute the provided test description
         executor = self.tools.getPluginByName("sequential", "Executor")
-        executor.plugin_object.execute(self)
-        return
+        status = executor.plugin_object.execute(self)
+        return status
 
     def executeCombinatorial(self):
         if not self.tools.getPluginByName("combinatorial", "Executor"):
@@ -617,8 +617,8 @@ class TestDef(object):
         self.tools.activatePluginByName("combinatorial", "Executor")
         # execute the provided test description
         executor = self.tools.getPluginByName("combinatorial", "Executor")
-        executor.plugin_object.execute(self)
-        return
+        status = executor.plugin_object.execute(self)
+        return status
   
     def printOptions(self, options):
         # if the options are empty, report that

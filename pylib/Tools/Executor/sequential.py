@@ -63,6 +63,7 @@ class SequentialEx(ExecutorMTTTool):
 
     def execute(self, testDef):
         testDef.logger.verbose_print("ExecuteSequential")
+        status = 0
         for step in testDef.loader.stageOrder:
             for title in testDef.config.sections():
                 if (":" in title and step not in title.split(":")[0]) or \
@@ -237,4 +238,8 @@ class SequentialEx(ExecutorMTTTool):
                     except KeyError:
                         pass
                     sys.exit(1)
-        return
+         
+                # Set flag if any stage failed so that a return code can be passed back up
+                if stageLog['status'] != 0:
+                    status = 1
+        return status

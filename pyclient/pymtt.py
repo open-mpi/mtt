@@ -252,23 +252,30 @@ testDef.configTest()
 if(args.executor is not None):
     if(args.executor == "sequential" or args.executor == "Sequential"):
         testDef.config.set('MTTDefaults', 'executor', 'sequential')
-        testDef.executeTest()
+        status = testDef.executeTest()
     elif(args.executor == "combinatorial" or args.executor == "Combinatorial"):
         testDef.config.set('MTTDefaults', 'executor', 'combinatorial')
-        testDef.executeCombinatorial()
+        status = testDef.executeCombinatorial()
     else:
         print("Specified executor ", args.executor, " not found!")
         sys.exit(1)
+    # All done!
+    sys.exit(status)
+
 elif(testDef.config.has_option('MTTDefaults', 'executor')):
     if (testDef.config.get('MTTDefaults', 'executor') == "sequential" or testDef.config.get('MTTDefaults', 'executor') == "Sequential"):
-        testDef.executeTest()
+        status = testDef.executeTest()
     elif (testDef.config.get('MTTDefaults', 'executor') == "combinatorial" or testDef.config.get('MTTDefaults', 'executor') == "Combinatorial"):
-        testDef.executeCombinatorial()
+        status = testDef.executeCombinatorial()
     else:
         print("Specified executor ", testDef.config.get('MTTDefaults', 'executor'), " not found!")
         sys.exit(1)  
+    # All done!
+    sys.exit(status)
+
 # If no executor is specified default to sequential
 else:
     testDef.config.set('MTTDefaults', 'executor', 'sequential')
-    testDef.executeTest()  
+    status = testDef.executeTest()  
 # All done!
+    sys.exit(status)
