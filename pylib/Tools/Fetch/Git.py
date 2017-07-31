@@ -198,8 +198,17 @@ class Git(FetchMTTTool):
                 return
         # record our current location
         cwd = os.getcwd()
+
+        dst = os.path.join(testDef.options['scratchdir'], log['section'].replace(":","_"))
+        try:
+            if not os.path.exists(dst): os.mkdir(dst)
+        except:
+            log['status'] = 1
+            log['stderr'] = "Unable to create " + dst
+            return
+
         # change to the scratch directory
-        os.chdir(testDef.options['scratchdir'])
+        os.chdir(dst)
         # see if this software has already been cloned
         if os.path.exists(repo):
             if not os.path.isdir(repo):
@@ -238,6 +247,7 @@ class Git(FetchMTTTool):
         log['status'] = status
         log['stdout'] = stdout
         log['stderr'] = stderr
+
         # log our absolute location so others can find it
         log['location'] = os.getcwd()
         # if they indicated that a specific subdirectory was
@@ -250,8 +260,6 @@ class Git(FetchMTTTool):
             pass
         # track that we serviced this one
         self.done[repo] = (status, log['location'])
-        # change back to the original directory
-        os.chdir(cwd)
         if usedModule:
             # unload the modules before returning
             status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules'], testDef)
@@ -259,4 +267,7 @@ class Git(FetchMTTTool):
                 log['status'] = status
                 log['stderr'] = stderr
                 return
+        # change back to the original directory
+        os.chdir(cwd)
+
         return

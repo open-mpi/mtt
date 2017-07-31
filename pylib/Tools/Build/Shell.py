@@ -142,9 +142,31 @@ class Shell(BuildMTTTool):
                             pieces.insert(0, bindir)
                             newpath = ":".join(pieces)
                             os.environ['PATH'] = newpath
-                            # prepend the libdir path as well
+                            # prepend the loadable lib path
                             try:
-                                oldlibpath = os.environ['LD_LIBRARY_PATH']
+                                oldldlibpath = os.environ['LD_LIBRARY_PATH']
+                                pieces = oldldlibpath.split(':')
+                            except KeyError:
+                                oldldlibpath = ""
+                                pieces = []
+                            bindir = os.path.join(midlog['location'], "lib")
+                            pieces.insert(0, bindir)
+                            newpath = ":".join(pieces)
+                            os.environ['LD_LIBRARY_PATH'] = newpath
+                            # prepend the include path 
+                            try:
+                                oldcpath = os.environ['CPATH']
+                                pieces = oldcpath.split(':')
+                            except KeyError:
+                                oldcpath = ""
+                                pieces = []
+                            bindir = os.path.join(midlog['location'], "include")
+                            pieces.insert(0, bindir)
+                            newpath = ":".join(pieces)
+                            os.environ['CPATH'] = newpath
+                            # prepend the lib path 
+                            try:
+                                oldlibpath = os.environ['LIBRARY_PATH']
                                 pieces = oldlibpath.split(':')
                             except KeyError:
                                 oldlibpath = ""
@@ -152,7 +174,8 @@ class Shell(BuildMTTTool):
                             bindir = os.path.join(midlog['location'], "lib")
                             pieces.insert(0, bindir)
                             newpath = ":".join(pieces)
-                            os.environ['LD_LIBRARY_PATH'] = newpath
+                            os.environ['LIBRARY_PATH'] = newpath
+
                             # mark that this was done
                             midpath = True
                     except KeyError:
@@ -297,7 +320,9 @@ class Shell(BuildMTTTool):
         # if we added middleware to the paths, remove it
         if midpath:
             os.environ['PATH'] = oldbinpath
-            os.environ['LD_LIBRARY_PATH'] = oldlibpath
+            os.environ['LD_LIBRARY_PATH'] = oldldlibpath
+            os.environ['CPATH'] = oldcpath
+            os.environ['LIBRARY_PATH'] = oldlibpath
 
         # return to original location
         os.chdir(cwd)
