@@ -11,6 +11,7 @@
 from __future__ import print_function
 import os
 from LauncherMTTTool import *
+import shlex
 
 ## @addtogroup Tools
 # @{
@@ -35,6 +36,9 @@ from LauncherMTTTool import *
 # @param max_num_tests             Maximum number of tests to run
 # @param report_after_n_results    Number of tests to run before updating the reporter
 # @param options                   Comma-delimited sets of command line options that shall be used on each test
+# @param test_list                 List of tests to run, default is all
+# @param allocate_cmd              Command to use for allocating nodes from the resource manager
+# @param deallocate_cmd            Command to use for deallocating nodes from the resource manager
 # @}
 class ALPS(LauncherMTTTool):
 
@@ -62,6 +66,8 @@ class ALPS(LauncherMTTTool):
         self.options['modules'] = (None, "Modules to load")
         self.options['modules_unload'] = (None, "Modules to unload")
         self.options['test_list'] = (None, "List of tests to run, default is all")
+        self.options['allocate_cmd'] = (None, "Command to use for allocating nodes from the resource manager")
+        self.options['deallocate_cmd'] = (None, "Command to use for deallocating nodes from the resource manager")
         return
 
 
@@ -85,6 +91,8 @@ class ALPS(LauncherMTTTool):
         return
 
     def execute(self, log, keyvals, testDef):
+
+        midpath = False
 
         testDef.logger.verbose_print("ALPS Launcher")
         # check the log for the title so we can
@@ -393,6 +401,18 @@ class ALPS(LauncherMTTTool):
                 fail_returncodes = {test:rtncode for test,rtncode in zip(fail_tests,fail_returncodes)}
                 expected_returncodes = {test:(fail_returncodes[test] if test in fail_returncodes else 0) for test in tests}
 
+        # Allocate cluster
+        allocated = False
+        if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None:
+            allocate_cmdargs = shlex.split(cmds['allocate_cmd'])
+            status,stdout,stderr,time = testDef.execmd.execute(cmds, allocate_cmdargs, testDef)
+            if 0 != status:
+                log['status'] = status
+                log['stderr'] = stderr
+                os.chdir(cwd)
+                return
+            allocated = True
+
         # For test in tests
         for test in tests:
             # Skip tests that are in "skip_tests" ini input
@@ -451,6 +471,17 @@ class ALPS(LauncherMTTTool):
             numTests = numTests + 1
             if numTests == maxTests:
                 break
+
+        # Deallocate cluster
+        if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None and allocated:
+            deallocate_cmdargs = shlex.split(cmds['deallocate_cmd'])
+            status,stdout,stderr,time = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)
+            if 0 != status:
+                log['status'] = status
+                log['stderr'] = stderr
+                os.chdir(cwd)
+                return
+
         log['status'] = finalStatus
         log['stderr'] = finalError
         log['numTests'] = numTests
