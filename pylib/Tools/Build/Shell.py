@@ -29,6 +29,8 @@ from BuildMTTTool import *
 # @param middleware                Middleware stage that these tests are to be built against
 # @param fail_test                 Specifies whether this test is expected to fail (value=None means test is expected to succeed)
 # @param fail_returncode           Specifies the expected failure returncode of this test
+# @param allocate_cmd              Command to use for allocating nodes from the resource manager
+# @param deallocate_cmd            Command to use for deallocating nodes from the resource manager
 # @}
 class Shell(BuildMTTTool):
     def __init__(self):
@@ -46,6 +48,8 @@ class Shell(BuildMTTTool):
         self.options['modules_unload'] = (None, "Modules to unload")
         self.options['fail_test'] = (None, "Specifies whether this test is expected to fail (value=None means test is expected to succeed)")
         self.options['fail_returncode'] = (None, "Specifies the expected failure returncode of this test")
+        self.options['allocate_cmd'] = (None, "Command to use for allocating nodes from the resource manager")
+        self.options['deallocate_cmd'] = (None, "Command to use for deallocating nodes from the resource manager")
         return
 
     def activate(self):
@@ -264,6 +268,19 @@ class Shell(BuildMTTTool):
         os.chdir(location)
         # execute the specified command
         # Use shlex.split() for correct tokenization for args
+
+        # Allocate cluster
+        allocated = False
+        if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None:
+            allocate_cmdargs = shlex.split(cmds['allocate_cmd'])
+            status,stdout,stderr,time = testDef.execmd.execute(cmds, allocate_cmdargs, testDef)
+            if 0 != status:
+                log['status'] = status
+                log['stderr'] = stderr
+                os.chdir(cwd)
+                return
+            allocated = True
+
         cfgargs = shlex.split(cmds['command'])
 
         if 'TestRun' in log['section'].split(":")[0]:
@@ -281,6 +298,16 @@ class Shell(BuildMTTTool):
 
         if 'TestRun' in log['section'].split(":")[0]:
             testDef.harasser.stop(harass_exec_ids, log, testDef)
+
+        # Deallocate cluster
+        if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None and allocated:
+            deallocate_cmdargs = shlex.split(cmds['deallocate_cmd'])
+            status,stdout,stderr,time = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)
+            if 0 != status:
+                log['status'] = status
+                log['stderr'] = stderr
+                os.chdir(cwd)
+                return
 
         if (cmds['fail_test'] is None and 0 != status) \
                 or (cmds['fail_test'] is not None and cmds['fail_returncode'] is None and 0 == status) \
