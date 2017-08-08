@@ -119,7 +119,7 @@ sub Install {
         $ENV{LD_LIBRARY_PATH} = "$config->{libdir}";
     }
 
-    $x = MTT::Common::Do_step::do_step($config, "make check", 1);
+    $x = MTT::Common::Do_step::do_step($config, "make check VERBOSE=1", 1);
     %$ret = (%$ret, %$x);
     return $ret if (!MTT::DoCommand::wsuccess($ret->{exit_status}));
     %ENV = %ENV_SAVE;
