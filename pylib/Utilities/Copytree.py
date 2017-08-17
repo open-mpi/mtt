@@ -55,6 +55,14 @@ class Copytree(BaseMTTUtility):
         dst = os.path.join(testDef.options['scratchdir'], log['section'].replace(":","_"))
         # record the location
         log['location'] = dst
+        # Check if already exists to skip if ASIS is set
+        try:
+            if cmds['asis'] and os.path.exists(dst) and os.path.isdir(dst):
+                testDef.logger.verbose_print("As-Is location " + dst + " exists and is a directory")
+                log['status'] = 0
+                return
+        except KeyError:
+            pass
         # perform the copy
         try:
             # Cleanup the target directory if it exists

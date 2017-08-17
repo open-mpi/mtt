@@ -50,6 +50,7 @@ class Shell(BuildMTTTool):
         self.options['fail_returncode'] = (None, "Specifies the expected failure returncode of this test")
         self.options['allocate_cmd'] = (None, "Command to use for allocating nodes from the resource manager")
         self.options['deallocate_cmd'] = (None, "Command to use for deallocating nodes from the resource manager")
+        self.options['binary'] = (None, "Specifies name of binary being built. This is used with \"ASIS\" keyword to determine whether to do anything.")
         return
 
     def activate(self):
@@ -122,6 +123,16 @@ class Shell(BuildMTTTool):
             # just log success and return
             log['status'] = 0
             return
+
+        try:
+            if cmds['asis'] and os.path.exists(os.path.join(location,cmds['binary'])) \
+                            and os.path.isfile(os.path.join(location,cmds['binary'])):
+                testDef.logger.verbose_print("As-Is binary " + os.path.join(location,cmds['binary']) + " exists and is a file")
+                log['location'] = location
+                log['status'] = 0
+                return
+        except KeyError:
+            pass
 
         # check if we need to point to middleware
         midpath = False
