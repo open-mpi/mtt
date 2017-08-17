@@ -8,6 +8,7 @@
 #                         University of Stuttgart.  All rights reserved.
 # Copyright (c) 2015      Research Organization for Information Science
 #                         and Technology (RIST). All rights reserved.
+# Copyright (c) 2017      IBM Corporation.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -103,26 +104,27 @@ sub Install {
     # really only want to see it if something fails (i.e., it's common
     # to display junk to result_stderr during "make check"'s normal
     # execution).
+    if( !$config->{skip_make_check} ) {
+        my %ENV_SAVE = %ENV;
+        $ENV{TMPDIR} = "$config->{installdir}/tmp";
+        mkdir($ENV{TMPDIR}, 0777);
+        # The intent here is just to ensure that the LD_LIBRARY_PATH
+        # in the environment does not point to shared libraries
+        # outside of MTT's scope that would interfere with "make
+        # check" (e.g., another libmpi.so outside of MTT).  Just
+        # prepend our own $libdir to LD_LIBRARY_PATH and hope that
+        # that's Good Enough.  :-)
+        if (exists($ENV{LD_LIBRARY_PATH})) {
+            $ENV{LD_LIBRARY_PATH} = "$config->{libdir}:$ENV{LD_LIBRARY_PATH}";
+        } else {
+            $ENV{LD_LIBRARY_PATH} = "$config->{libdir}";
+        }
 
-    my %ENV_SAVE = %ENV;
-    $ENV{TMPDIR} = "$config->{installdir}/tmp";
-    mkdir($ENV{TMPDIR}, 0777);
-    # The intent here is just to ensure that the LD_LIBRARY_PATH
-    # in the environment does not point to shared libraries
-    # outside of MTT's scope that would interfere with "make
-    # check" (e.g., another libmpi.so outside of MTT).  Just
-    # prepend our own $libdir to LD_LIBRARY_PATH and hope that
-    # that's Good Enough.  :-)
-    if (exists($ENV{LD_LIBRARY_PATH})) {
-        $ENV{LD_LIBRARY_PATH} = "$config->{libdir}:$ENV{LD_LIBRARY_PATH}";
-    } else {
-        $ENV{LD_LIBRARY_PATH} = "$config->{libdir}";
+        $x = MTT::Common::Do_step::do_step($config, "make check VERBOSE=1", 1);
+        %$ret = (%$ret, %$x);
+        return $ret if (!MTT::DoCommand::wsuccess($ret->{exit_status}));
+        %ENV = %ENV_SAVE;
     }
-
-    $x = MTT::Common::Do_step::do_step($config, "make check VERBOSE=1", 1);
-    %$ret = (%$ret, %$x);
-    return $ret if (!MTT::DoCommand::wsuccess($ret->{exit_status}));
-    %ENV = %ENV_SAVE;
 
     $x = MTT::Common::Do_step::do_step($config, "make install", 1);
     %$ret = (%$ret, %$x);
