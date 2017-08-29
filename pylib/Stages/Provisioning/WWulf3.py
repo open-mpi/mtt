@@ -10,6 +10,7 @@
 
 from __future__ import print_function
 from ProvisionMTTStage import *
+import shlex
 
 ## @addtogroup Stages
 # @{
@@ -23,6 +24,8 @@ from ProvisionMTTStage import *
 # @param controller    List of IP addresses of remote node controllers/BMCs
 # @param pwfile        File containing remote controller password
 # @param password      Remote controller password
+# @param allocate_cmd              Command to use for allocating nodes from the resource manager
+# @param deallocate_cmd            Command to use for deallocating nodes from the resource manager
 # @}
 class WWulf3(ProvisionMTTStage):
 
@@ -38,6 +41,8 @@ class WWulf3(ProvisionMTTStage):
         self.options['password'] = (None, "Remote controller password")
         self.options['pwfile'] = (None, "File containing remote controller password")
         self.options['sudo'] = (False, "Use sudo to execute privileged commands")
+        self.options['allocate_cmd'] = (None, "Command to use for allocating nodes from the resource manager")
+        self.options['deallocate_cmd'] = (None, "Command to use for deallocating nodes from the resource manager")
         return
 
 
@@ -144,6 +149,18 @@ class WWulf3(ProvisionMTTStage):
                 log['status'] = 1
                 log['stderr'] = "Target " + tgt + " is not included in Warewulf node table"
                 return
+
+        # Allocate cluster
+        allocated = False
+        if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None:
+            allocate_cmdargs = shlex.split(cmds['allocate_cmd'])
+            _status,_stdout,_stderr,_time = testDef.execmd.execute(cmds, allocate_cmdargs, testDef)
+            if 0 != _status:
+                log['status'] = _status
+                log['stderr'] = _stderr
+                return
+            allocated = True
+
         # if we get here, then all the targets are known!
         # so cycle thru the targets and update the provisioning
         # database for each of them
@@ -182,6 +199,16 @@ class WWulf3(ProvisionMTTStage):
         # execute the request
         ipmilog = {}
         ipmitool.execute(ipmilog, ipmicmd, testDef)
+
+        # Deallocate cluster
+        if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None and allocated:
+            deallocate_cmdargs = shlex.split(cmds['deallocate_cmd'])
+            _status,_stdout,_stderr,_time = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)
+            if 0 != _status:
+                log['status'] = _status
+                log['stderr'] = _stderr
+                return
+
         # update our results to reflect the overall status
         log['status'] = ipmilog['status']
         if ipmilog['stdout'] is not None:
