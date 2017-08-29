@@ -165,16 +165,22 @@ sub find_network {
 sub get_version {
     my $bindir = shift;
 
-    open INFO, "$bindir/ompi_info --parsable|";
+    my $match = qr/ompi:version:full:(.*)$/;
+
+    if (not open INFO, "$bindir/ompi_info --parsable|") {
+        open INFO, "$bindir/ompi_info -V|";
+        $match = qr/Open\s+MPI\s+(.*)$/;
+    }
 
     while (<INFO>) {
-        if (/ompi:version:full:(.*)$/) {
+        if (/$match/) {
             Debug(">> " . (caller(0))[3] . " returning $1\n");
             close(INFO);
             return $1;
         }
     }
     close(INFO);
+
     return undef;
 }
 
