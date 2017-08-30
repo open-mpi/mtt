@@ -284,10 +284,10 @@ class Shell(BuildMTTTool):
         allocated = False
         if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None:
             allocate_cmdargs = shlex.split(cmds['allocate_cmd'])
-            status,stdout,stderr,time = testDef.execmd.execute(cmds, allocate_cmdargs, testDef)
-            if 0 != status:
-                log['status'] = status
-                log['stderr'] = stderr
+            _status,_stdout,_stderr,_time = testDef.execmd.execute(cmds, allocate_cmdargs, testDef)
+            if 0 != _status:
+                log['status'] = _status
+                log['stderr'] = _stderr
                 os.chdir(cwd)
                 return
             allocated = True
@@ -313,10 +313,10 @@ class Shell(BuildMTTTool):
         # Deallocate cluster
         if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None and allocated:
             deallocate_cmdargs = shlex.split(cmds['deallocate_cmd'])
-            status,stdout,stderr,time = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)
-            if 0 != status:
-                log['status'] = status
-                log['stderr'] = stderr
+            _status,_stdout,_stderr,_time = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)
+            if 0 != _status:
+                log['status'] = _status
+                log['stderr'] = _stderr
                 os.chdir(cwd)
                 return
 
