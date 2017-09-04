@@ -7,9 +7,9 @@
 # Copyright (c) 2015      Research Organization for Information Science
 #                         and Technology (RIST). All rights reserved.
 # $COPYRIGHT$
-# 
+#
 # Additional copyrights may follow
-# 
+#
 # $HEADER$
 #
 
@@ -103,7 +103,7 @@ sub find_network {
 
     # To safely use this string in a regexp
     # we must escape all non-word characters
-    $final = quotemeta($final); 
+    $final = quotemeta($final);
 
     # Ignore everything beyond $final
     $str =~ s/^(.+)\s*$final.+$/\1/;
