@@ -542,6 +542,21 @@ class TestDef(object):
                 print("Test description file",testFile,"not found!")
                 sys.exit(1)
             self.config.read(self.log['inifiles'])
+
+        # Check for ENV input
+        required_env = []
+        for testFile in self.log['inifiles']:
+            file_contents = open(testFile, "r").read()
+            if "${ENV:" in file_contents:
+                required_env.extend([s.split("}")[0] for s in file_contents.split("${ENV:")[1:]])
+        env_not_found = set([e for e in required_env if e not in os.environ.keys()])
+        if env_not_found:
+            print("ERROR: Not all required environment variables are defined.")
+            print("       Still need:")
+            for e in env_not_found:
+                print("         {ENV:%s}"%e)
+            sys.exit(1)
+
         for section in self.config.sections():
             if section.startswith("SKIP") or section.startswith("skip"):
                 # users often want to temporarily ignore a section
