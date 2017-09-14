@@ -304,13 +304,14 @@ class SLURM(LauncherMTTTool):
                 dr = dr.replace('\"','')
                 dr = dr.replace(',','')
                 for dirName, subdirList, fileList in os.walk(dr):
-                    for fname in cmds['test_list'].split(","):
-                        fname = fname.strip()
+                    for fname_cmd in cmds['test_list'].split("\n"):
+                        fname = fname_cmd.strip().split(" ")[0]
+                        fname_args = " ".join(fname_cmd.strip().split(" ")[1:])
                         if fname not in fileList:
                             continue
                         filename = os.path.abspath(os.path.join(dirName,fname))
                         if os.path.isfile(filename) and os.access(filename, os.X_OK):
-                            tests.append(filename)
+                            tests.append((filename+" "+fname_args).strip())
         # check that we found something
         if not tests:
             log['status'] = 1
@@ -380,16 +381,16 @@ class SLURM(LauncherMTTTool):
 
         fail_tests = cmds['fail_tests']
         if fail_tests is not None:
-            fail_tests = [t.strip() for t in fail_tests.split(",")]
+            fail_tests = [t.strip() for t in fail_tests.split("\n")]
         else:
             fail_tests = []
         for i,t in enumerate(fail_tests):
             for t2 in tests:
-                if t2.split("/")[-1] == t:
+                if (t2.split(" ")[0].split("/")[-1]+" "+" ".join(t2.split(" ")[1:])).strip() == t.strip():
                     fail_tests[i] = t2
         fail_returncodes = cmds['fail_returncodes']
         if fail_returncodes is not None:
-            fail_returncodes = [int(t.strip()) for t in fail_returncodes.split(",")]
+            fail_returncodes = [int(t.strip()) for t in fail_returncodes.split("\n")]
 
         if fail_tests is None:
             expected_returncodes = {test:0 for test in tests}
@@ -415,15 +416,15 @@ class SLURM(LauncherMTTTool):
         # Execute all tests
         for test in tests:
             # Skip tests that are in "skip_tests" ini input
-            if cmds['skip_tests'] is not None and test.split('/')[-1] in [st.strip() for st in cmds['skip_tests'].split()]:
+            if cmds['skip_tests'] is not None and (test.split(" ")[0].split('/')[-1]+" "+" ".join(test.split(" ")[1:])).strip() in [st.strip() for st in cmds['skip_tests'].split()]:
                 numTests += 1
                 numSkip += 1
                 if numTests == maxTests:
                     break
                 continue
             testLog = {'test':test}
-            cmdargs.append(test)
-            testLog['cmd'] = " ".join(cmdargs)
+            cmdargs.extend(shlex.split(test))
+            testLog['cmd'] = " ".join(["\"%s\"" % cmdarg if " " in cmdarg else cmdarg for cmdarg in cmdargs])
 
             harass_exec_ids = testDef.harasser.start(testLog, testDef)
 
