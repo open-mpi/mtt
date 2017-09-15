@@ -545,16 +545,22 @@ class TestDef(object):
 
         # Check for ENV input
         required_env = []
+        all_file_contents = []
         for testFile in self.log['inifiles']:
             file_contents = open(testFile, "r").read()
+            file_contents = "\n".join(["%s %d: %s" % (testFile.split("/")[-1],i,l) for i,l in enumerate(file_contents.split("\n")) if not l.lstrip().startswith("#")])
+            all_file_contents.append(file_contents)
             if "${ENV:" in file_contents:
                 required_env.extend([s.split("}")[0] for s in file_contents.split("${ENV:")[1:]])
         env_not_found = set([e for e in required_env if e not in os.environ.keys()])
-        if env_not_found:
+        lines_with_env_not_found = []
+        for file_contents in all_file_contents:
+            lines_with_env_not_found.extend([l for l in file_contents.split("\n") if sum(["${ENV:%s}"%e in l for e in env_not_found])])
+        if lines_with_env_not_found:
             print("ERROR: Not all required environment variables are defined.")
-            print("       Still need:")
-            for e in env_not_found:
-                print("         {ENV:%s}"%e)
+            print("ERROR: Still need:")
+            for l in lines_with_env_not_found:
+                print("ERROR: %s"%l)
             sys.exit(1)
 
         for section in self.config.sections():
