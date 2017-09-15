@@ -327,11 +327,11 @@ class SLURM(LauncherMTTTool):
         if cmds['options'] is not None:
             for op in cmds['options'].split():
                 cmdargs.append(op)
-        if (cmds['command'] == 'mpiexec' or cmds['command'] == 'mpirun') and cmds['np'] is not None:
+        if (cmds['command'] == 'mpiexec' or cmds['command'] == 'mpiexec.hydra' or cmds['command'] == 'mpirun') and cmds['np'] is not None:
             cmdargs.append("-np")
             cmdargs.append(cmds['np'])
         elif cmds['command'] == 'srun' and cmds['np'] is not None:
-            cmdargs.append("-N")
+            cmdargs.append("-n")
             cmdargs.append(cmds['np'])
         if cmds['hostfile'] is not None:
             cmdargs.append("-hostfile")
@@ -490,18 +490,59 @@ class SLURM(LauncherMTTTool):
 
         # handle case where srun is used instead of mpirun for number of processes (np)
         if cmds['command'] == 'srun':
+            num_tasks = None
+            num_nodes = None
+            num_tasks_per_node = None
+            
             if '-n ' in cmds['options']:
-                log['np'] = str(cmds['options'].split('-n ')[1].split(' ')[0])
-            elif '--ntasks=' in cmds['options']:
-                log['np'] = str(cmds['options'].split('--ntasks=')[1].split(' ')[0])
-            elif '-N ' in cmds['options']:
-                log['np'] = str(cmds['options'].split('-N ')[1].split(' ')[0])
-            elif '--nodes=' in cmds['options']:
-                log['np'] = str(cmds['options'].split('--nodes=')[1].split(' ')[0])
-            elif '-w ' in cmds['options']:
-                log['np'] = str(len(cmds['options'].split('-w ')[1].split(' ')[0].split(',')))
-            elif '--nodelist=' in cmds['options']:
-                log['np'] = str(len(cmds['options'].split('--nodelist=')[1].split(' ')[0].split(',')))
+                num_tasks = str(cmds['options'].split('-n ')[1].split(' ')[0])
+            if '--ntasks=' in cmds['options']:
+                num_tasks = str(cmds['options'].split('--ntasks=')[1].split(' ')[0])
+            if '-N ' in cmds['options']:
+                num_nodes = str(cmds['options'].split('-N ')[1].split(' ')[0])
+            if '--nodes=' in cmds['options']:
+                num_nodes = str(cmds['options'].split('--nodes=')[1].split(' ')[0])
+            if '-w ' in cmds['options']:
+                num_nodes = str(len(cmds['options'].split('-w ')[1].split(' ')[0].split(',')))
+            if '--nodelist=' in cmds['options']:
+                num_nodes = str(len(cmds['options'].split('--nodelist=')[1].split(' ')[0].split(',')))
+            if '--ntasks-per-node=' in cmds['options']:
+                num_tasks_per_node = str(cmds['options'].split('--ntasks-per-node=')[1].split(' ')[0])
+
+            if num_tasks is not None:
+                log['np'] = num_tasks
+            elif num_nodes is not None and num_tasks_per_node is not None:
+                try:
+                    log['np'] = str(int(num_tasks_per_node)*int(num_nodes))
+                except:
+                    log['np'] = None
+            else:
+                log['np'] = None
+        elif cmds['command'] == 'mpiexec' or cmds['command'] == 'mpiexec.hydra' or cmds['command'] == 'mpirun':
+            num_tasks = None
+            num_nodes = None
+            num_tasks_per_node = None
+
+            if '-n ' in cmds['options']:
+                num_tasks = str(cmds['options'].split('-n ')[1].split(' ')[0])
+            if '-np ' in cmds['options']:
+                num_tasks = str(cmds['options'].split('-np ')[1].split(' ')[0])
+            if '-hosts ' in cmds['options']:
+                num_nodes = str(len(cmds['options'].split('-hosts ')[1].split(' ')[0]))
+            if '-ppn ' in cmds['options']:
+                num_tasks_per_node = str(cmds['options'].split('-ppn ')[1].split(' ')[0])
+            if '-grr ' in cmds['options']:
+                num_tasks_per_node = str(cmds['options'].split('-grr ')[1].split(' ')[0])
+            if '-perhost ' in cmds['options']:
+                num_tasks_per_node = str(cmds['options'].split('-perhost ')[1].split(' ')[0])
+
+            if num_tasks is not None:
+                log['np'] = num_tasks
+            elif num_nodes is not None and num_tasks_per_node is not None:
+                try:
+                    log['np'] = str(int(num_tasks_per_node)*int(num_nodes))
+                except:
+                    log['np'] = None
             else:
                 log['np'] = None
         else:
