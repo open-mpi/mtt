@@ -27,6 +27,7 @@ from BuildMTTTool import *
 # @param stdout_save_lines         Number of lines of stdout to save
 # @param middleware                Middleware stage that these tests are to be built against
 # @param modules                   Modules to load
+# @param modules_unload            Modules to unload
 # @param configure_options         Options to be passed to configure. Note that the prefix will be automatically set and need not be provided here
 # @param save_stdout_on_success    Save stdout even if build succeeds
 # @param autogen_cmd               Command to be executed to setup the configure script, usually called autogen.sh or autogen.pl
@@ -48,6 +49,7 @@ class Autotools(BuildMTTTool):
         self.options['stderr_save_lines'] = (-1, "Number of lines of stderr to save")
         self.options['save_stdout_on_success'] = (False, "Save stdout even if build succeeds")
         self.options['modules'] = (None, "Modules to load")
+        self.options['modules_unload'] = (None, "Modules to unload")
         self.exclude = set(string.punctuation)
         return
 
@@ -109,6 +111,18 @@ class Autotools(BuildMTTTool):
         inPlace = False
         # check to see if they specified a module to use
         # where the autotools can be found
+        usedModuleUnload = False
+        try:
+            if cmds['modules_unload'] is not None:
+                status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules_unload'], testDef)
+                if 0 != status:
+                    log['status'] = status
+                    log['stderr'] = stderr
+                    return
+                usedModuleUnload = True
+        except KeyError:
+            # not required to provide a module to unload
+            pass
         usedModule = False
         try:
             if cmds['modules'] is not None:
@@ -313,6 +327,15 @@ class Autotools(BuildMTTTool):
                         if 0 != status:
                             log['status'] = status
                             log['stderr'] = stderr
+                            os.chdir(cwd)
+                            return
+                    if usedModuleUnload:
+                        status,stdout,stderr = testDef.modcmd.loadModules(cmds['modules_unload'], testDef)
+                        if 0 != status:
+                            log['status'] = status
+                            log['stderr'] = stderr
+                            os.chdir(cwd)
+                            return
                     # return to original location
                     os.chdir(cwd)
                     return
