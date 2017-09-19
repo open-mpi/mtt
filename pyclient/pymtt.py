@@ -233,7 +233,7 @@ testDef.printInfo()
 
 # if they didn't specify any files, then there is nothing
 # for us to do
-if not args.ini_files:
+if not args.ini_files or not args.ini_files[0]:
     sys.exit('MTT requires at least one test-specification file')
 
 # sanity check a couple of options
