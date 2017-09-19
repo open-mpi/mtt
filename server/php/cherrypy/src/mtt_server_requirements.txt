@@ -1,4 +1,6 @@
-CherryPy>=8.1.0
+# CherryPy at 9.0.0 is broken for our setup
+# - force the last known working version
+CherryPy==8.9.0
 requests>=2.11.1
 configobj>=5.0.6
 six>=1.10.0
