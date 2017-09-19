@@ -555,7 +555,9 @@ class TestDef(object):
         env_not_found = set([e for e in required_env if e not in os.environ.keys()])
         lines_with_env_not_found = []
         for file_contents in all_file_contents:
-            lines_with_env_not_found.extend([l for l in file_contents.split("\n") if sum(["${ENV:%s}"%e in l for e in env_not_found])])
+            lines_with_env_not_found.extend(["%s: %s"%(",".join([e for e in env_not_found if "${ENV:%s}"%e in l]),l) \
+                                             for l in file_contents.split("\n") \
+                                             if sum(["${ENV:%s}"%e in l for e in env_not_found])])
         if lines_with_env_not_found:
             print("ERROR: Not all required environment variables are defined.")
             print("ERROR: Still need:")
