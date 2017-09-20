@@ -322,9 +322,26 @@ class SLURM(LauncherMTTTool):
         skipStatus = int(cmds['skipped'])
         # assemble the command
         cmdargs = [cmds['command']]
-        if cmds['job_name'] is not None:
+
+        # Add support for using job_name with mpiexec
+        if (cmds['command'] == 'mpiexec' or cmds['command'] == 'mpiexec.hydra' or cmds['command'] == 'mpirun') and cmds['job_name'] is not None:
+            if cmds['options'] is None or (cmds['options'] is not None and '-bootstrap slurm' not in cmds['options']):
+                # Check if this is a negative test using fail_tests=ini_check 
+                if cmds['fail_tests'] is not None and 'ini_check' in cmds['fail_tests']:
+                    log['status'] = 0
+                    # log the results directly since this will be marked as a pass
+                    testDef.logger.verbose_print('stdout: ' + "%s used, but \"-bootstrap slurm\" not in options" % cmds['command'])
+                else:
+                    log['status'] = 1
+                log['stderr'] = "%s used, but \"-bootstrap slurm\" not in options" % cmds['command']
+                os.chdir(cwd)
+                return
+            cmdargs.append("-bootstrap-exec-args")
+            cmdargs.append("--job-name=%s"%cmds['job_name'])
+        elif cmds['command'] == 'srun' and cmds['job_name'] is not None:
             cmdargs.append("--job-name")
             cmdargs.append(cmds['job_name'])
+
         if cmds['options'] is not None:
             for op in cmds['options'].split():
                 cmdargs.append(op)
