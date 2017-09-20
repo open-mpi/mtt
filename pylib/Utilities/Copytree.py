@@ -74,7 +74,8 @@ class Copytree(BaseMTTUtility):
                 reload(distutils.dir_util)
                 distutils.dir_util.copy_tree(srcpath, dst)
             log['status'] = 0
-        except (os.error, shutil.Error) as e:
+        except (os.error, shutil.Error, \
+                distutils.errors.DistutilsFileError) as e:
             log['status'] = 1
             log['stderr'] = str(e)
         return
