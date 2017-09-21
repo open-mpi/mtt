@@ -10,7 +10,10 @@
 
 import os
 import sys
-import Queue
+try:
+    from Queue import *
+except:
+    from queue import *
 import threading
 from CNCMTTTool import *
 
