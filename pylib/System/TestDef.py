@@ -202,7 +202,7 @@ class TestDef(object):
         # now go thru in the reverse direction to see
         # if any keyvals they provided aren't supported
         # as this would be an error
-        stderr = []
+        unsupported_options = []
         for kvkey in kvkeys:
             # ignore some standard keys
             if kvkey in ['section', 'plugin']:
@@ -215,15 +215,12 @@ class TestDef(object):
                 if kvkey in ['parent', 'asis']:
                     target[kvkey] = keyvals[kvkey]
                 else:
-                    stderr.append("Option " + kvkey + " is not supported")
-        if stderr:
-            # mark the log with an error status
-            log['status'] = 1
-            # pass the errors back
-            log['stderr'] = stderr
-        else:
-            log['status'] = 0
-            log['options'] = target
+                    unsupported_options.append(kvkey)
+        if unsupported_options:
+            sys.exit("ERROR: Unsupported options for section [%s]: %s" % (log['section'], ",".join(unsupported_options)))
+
+        log['status'] = 0
+        log['options'] = target
         return
 
     def loadPlugins(self, basedir, topdir):
