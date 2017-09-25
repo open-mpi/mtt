@@ -1,6 +1,7 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
 # Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
+# Copyright (c) 2017      IBM Corporation.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -19,6 +20,9 @@ from datetime import datetime
 from requests.auth import HTTPBasicAuth
 
 from ReporterMTTStage import *
+
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 ## @addtogroup Stages
 # @{
@@ -643,7 +647,7 @@ class IUDatabase(ReporterMTTStage):
 
         try:
             data['configure_arguments'] = logger.getLog(lg['middleware'])['configure_options']
-        except KeyError:
+        except (KeyError, TypeError):
             data['configure_arguments'] = None
 
         # For now just mark the time when submitted

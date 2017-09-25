@@ -13,3 +13,4 @@ wheel==0.26.0
 Yapsy==1.11.223
 junit_xml==1.6
 future
+configparser
