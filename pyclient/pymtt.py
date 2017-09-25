@@ -77,11 +77,11 @@ execGroup.add_argument("--ignore-loadpath-errors", action="store_true", dest="ig
 execGroup.add_argument("--scratch-dir", dest="scratchdir", default="./mttscratch",
                      help="Specify the DIRECTORY under which scratch files are to be stored", metavar="DIRECTORY")
 execGroup.add_argument("--print-section-time", dest="sectime",
-                      action="store_true", default=False,
-                      help="Display the amount of time taken in each section")
+                      action="store_true", default=True,
+                      help="Display section timestamps and execution time")
 execGroup.add_argument("--print-cmd-time", dest="cmdtime",
                      action="store_true", default=False,
-                     help="Display the amount of time taken by each command")
+                     help="Display stdout/stderr timestamps and cmd execution time")
 execGroup.add_argument("--timestamp", dest="time",
                      action="store_true", default=False,
                      help="Alias for --print-section-time --print-cmd-time")
@@ -114,6 +114,9 @@ debugGroup.add_argument("-d", "--debug", dest="debug",
 debugGroup.add_argument("--verbose",
                       action="store_true", dest="verbose", default=False,
                       help="Output some status/verbose messages while processing")
+debugGroup.add_argument("--extraverbose",
+                      action="store_true", dest="extraverbose", default=False,
+                      help="Output timestamps with every verbose message")
 debugGroup.add_argument("--dryrun",
                       action="store_true", dest="dryrun", default=False,
                       help="Show commands, but do not execute them")

@@ -14,6 +14,7 @@ import sys
 import select
 import subprocess
 import time
+import datetime
 from BaseMTTUtility import *
 
 ## @addtogroup Utilities
@@ -68,25 +69,26 @@ class ExecuteCmd(BaseMTTUtility):
             stderrlines = 0
         # check for timing request
         try:
-            if options['time']:
+            if options['cmdtime'] or options['time']:
                 time_exec = True
             else:
                 time_exec = False
         except:
             time_exec = False
-        elapsed = -1
+        elapsed_secs = -1
+        elapsed_datetime = None
         # setup the command arguments
         mycmdargs = []
         # if any cmd arg has quotes around it, remove
         # them here
         for arg in cmdargs:
             mycmdargs.append(arg.replace('\"',''))
-        testDef.logger.verbose_print("ExecuteCmd: " + ' '.join(mycmdargs))
+        testDef.logger.verbose_print("ExecuteCmd start: " + ' '.join(mycmdargs), timestamp=datetime.datetime.now() if time_exec else None)
         # it is possible that the command doesn't exist or
         # isn't in our path, so protect us
         try:
             if time_exec:
-                starttime = time.time()
+                starttime = datetime.datetime.now()
 
             # open a subprocess with stdout and stderr
             # as distinct pipes so we can capture their
@@ -121,10 +123,14 @@ class ExecuteCmd(BaseMTTUtility):
                 if p.poll() != None:
                     break
             if time_exec:
-                endtime = time.time()
-                elapsed = endtime - starttime
+                endtime = datetime.datetime.now()
+                elapsed_datetime = endtime - starttime
+                elapsed_secs = elapsed_datetime.total_seconds()
+
+            testDef.logger.verbose_print("ExecuteCmd done%s" % (": elapsed=%s"%elapsed_datetime if time_exec else ""), \
+                                         timestamp=endtime if time_exec else None)
 
         except OSError as e:
-            return (1, None, str(e), elapsed)
+            return (1, None, str(e), elapsed_secs)
 
-        return (p.returncode, stdout[stdoutlines:], stderr[stderrlines:], elapsed)
+        return (p.returncode, stdout[stdoutlines:], stderr[stderrlines:], elapsed_secs)
