@@ -1,6 +1,8 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
 # Copyright (c) 2015-2017 Intel, Inc.  All rights reserved.
+# Copyright (c) 2017      Los Alamos National Security, LLC. All rights
+#                         reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -31,6 +33,7 @@ import shlex
 # @param command                   Command for executing the application
 # @param timeout                   Maximum execution time - terminate a test if it exceeds this time
 # @param np                        Number of processes to run
+# @param ppn                       Number of processes per node to run
 # @param max_num_tests             Maximum number of tests to run
 # @param report_after_n_results    Number of tests to run before updating the reporter
 # @param options                   Comma-delimited sets of command line options that shall be used on each test
@@ -47,6 +50,7 @@ class OpenMPI(LauncherMTTTool):
         self.options['hostfile'] = (None, "The hostfile for OpenMPI to use")
         self.options['command'] = ("mpirun", "Command for executing the application")
         self.options['np'] = (None, "Number of processes to run")
+        self.options['ppn'] = (None, "Number of processes per node to run")
         self.options['save_stdout_on_pass'] = (False, "Whether or not to save stdout on passed tests")
         self.options['report_after_n_results'] = (None, "Number of tests to run before updating the reporter")
         self.options['timeout'] = (None, "Maximum execution time - terminate a test if it exceeds this time")
@@ -290,6 +294,9 @@ class OpenMPI(LauncherMTTTool):
         if cmds['np'] is not None:
             cmdargs.append("-np")
             cmdargs.append(cmds['np'])
+        if cmds['ppn'] is not None:
+            cmdargs.append("-N")
+            cmdargs.append(cmds['ppn'])
         if cmds['hostfile'] is not None:
             cmdargs.append("-hostfile")
             cmdargs.append(cmds['hostfile'])
