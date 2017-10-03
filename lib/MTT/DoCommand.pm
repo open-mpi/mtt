@@ -338,9 +338,13 @@ sub Cmd {
     } else {
         $print_timestamp = 0;
     }
+
     my $ini = $MTT::Globals::Internals->{ini};
-    my $pause_file = MTT::Values::Value( $ini, "MTT", 'docommand_pause_file' );
-    my @pause_array = split(',', $pause_file);
+    my ($pause_file, @pause_array);
+    if ($ini) {
+        $pause_file = MTT::Values::Value( $ini, "MTT", 'docommand_pause_file' );
+        @pause_array = split(',', $pause_file);
+    }
 
     $MTT::Globals::Values->{last_cmd_stdout} = undef;
     $MTT::Globals::Values->{last_cmd_stderr} = undef;
