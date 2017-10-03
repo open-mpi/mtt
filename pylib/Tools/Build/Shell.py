@@ -75,6 +75,35 @@ class Shell(BuildMTTTool):
             print(prefix + line)
         return
 
+    def allocate(self, log, cmds, testDef):
+        self.allocated = False
+        if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None:
+            allocate_cmdargs = shlex.split(cmds['allocate_cmd'])
+            status,stdout,stderr,time = testDef.execmd.execute(cmds, allocate_cmdargs, testDef)
+            if 0 != status:
+                log['status'] = status
+                if log['stderr']:
+                    log['stderr'].extend(stderr)
+                else:
+                    log['stderr'] = stderr
+                return False
+            self.allocated = True
+        return True
+
+    def deallocate(self, log, cmds, testDef):
+        if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None and self.allocated == True:
+            deallocate_cmdargs = shlex.split(cmds['deallocate_cmd'])
+            status,stdout,stderr,time = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)
+            self.allocated = False
+            if 0 != status:
+                log['status'] = status
+                if log['stderr']:
+                    log['stderr'].extend(stderr)
+                else:
+                    log['stderr'] = stderr
+                return False
+        return True
+
     def execute(self, log, keyvals, testDef):
         testDef.logger.verbose_print("Shell Execute")
         # parse any provided options - these will override the defaults
@@ -281,16 +310,8 @@ class Shell(BuildMTTTool):
         # Use shlex.split() for correct tokenization for args
 
         # Allocate cluster
-        allocated = False
-        if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None:
-            allocate_cmdargs = shlex.split(cmds['allocate_cmd'])
-            _status,_stdout,_stderr,_time = testDef.execmd.execute(cmds, allocate_cmdargs, testDef)
-            if 0 != _status:
-                log['status'] = _status
-                log['stderr'] = _stderr
-                os.chdir(cwd)
-                return
-            allocated = True
+        if False == self.allocate(log, cmds, testDef):
+            return
 
         cfgargs = shlex.split(cmds['command'])
 
@@ -303,6 +324,7 @@ class Shell(BuildMTTTool):
                                 + ','.join([h_info[1]['start_script'] for h_info in harass_check[0]])
                 log['time'] = sum([r_info[3] for r_info in harass_check[1]])
                 log['status'] = 1
+                self.deallocate(log, cmds, testDef)
                 return
 
         status, stdout, stderr, time = testDef.execmd.execute(cmds, cfgargs, testDef)
@@ -311,14 +333,8 @@ class Shell(BuildMTTTool):
             testDef.harasser.stop(harass_exec_ids, log, testDef)
 
         # Deallocate cluster
-        if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None and allocated:
-            deallocate_cmdargs = shlex.split(cmds['deallocate_cmd'])
-            _status,_stdout,_stderr,_time = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)
-            if 0 != _status:
-                log['status'] = _status
-                log['stderr'] = _stderr
-                os.chdir(cwd)
-                return
+        if False == self.deallocate(log, cmds, testDef):
+            return
 
         if (cmds['fail_test'] is None and 0 != status) \
                 or (cmds['fail_test'] is not None and cmds['fail_returncode'] is None and 0 == status) \
