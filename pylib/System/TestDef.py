@@ -24,6 +24,8 @@ from yapsy.PluginManager import PluginManager
 import datetime
 from distutils.spawn import find_executable
 
+is_py2 = sys.version[0] == '2'
+
 # The Test Definition class is mostly a storage construct
 # to make it easier when passing values across stages and
 # tools.
@@ -83,8 +85,6 @@ class TestDef(object):
         elif type(opt) is bool:
             if type(inval) is bool:
                 return 0, inval
-            elif type(inval) is unicode:
-                return 0, int(inval)
             elif type(inval) is str:
                 if inval.lower() in ['true', '1', 't', 'y', 'yes']:
                     return 0, True
@@ -95,6 +95,8 @@ class TestDef(object):
                     return 0, False
                 else:
                     return 0, True
+            elif is_py2 and type(inval) is unicode:
+                return 0, int(inval)
             else:
                 # unknown conversion required
                 print("Unknown conversion required for " + inval)
