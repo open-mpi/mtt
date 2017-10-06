@@ -429,7 +429,10 @@ sub _do_run {
         $ini->val($mpi_details_section, "network$suffix");
 
     # Go to the right dir
-    MTT::DoCommand::Chdir($test_build->{srcdir});
+    # 'installdir' is defined by build module, so it has higher priority
+    my $test_bin_dir = $test_build->{installdir} ? $test_build->{installdir}
+                                                 : $test_build->{srcdir};
+    MTT::DoCommand::Chdir($test_bin_dir);
 
     # Set the PATH and LD_LIBRARY_PATH
     if ($mpi_install->{bindir}) {

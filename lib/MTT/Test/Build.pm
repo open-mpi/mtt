@@ -557,6 +557,10 @@ sub _do_build {
         $report->{submit_id} = $submit_id;
         $ret->{submitl_id} = $submit_id;
 
+        if ($ret->{installdir}) {
+            $report->{installdir} = $ret->{installdir};
+        }
+
         # Submit it!
         my $serials = MTT::Reporter::Submit("Test Build", $simple_section, $report);
 
