@@ -296,8 +296,8 @@ sub _do_build {
     $config->{result_stdout} = "";
 
     # Find the build module
-    $config->{build_module} = Value($ini, $section, "module");
-    if (!$config->{build_module}) {
+    $config->{module} = Value($ini, $section, "module");
+    if (!$config->{module}) {
         Warning("No module specified for [$section]; skipping\n");
         return;
     }
@@ -414,7 +414,7 @@ sub _do_build {
         $ret->{test_result} = MTT::Values::FAIL;
         $ret->{result_message} = "Preparing the test source failed -- see MTT client output for details";
     } elsif ($config->{srcdir}) {
-        $ret = MTT::Module::Run("MTT::Test::Build::$config->{build_module}",
+        $ret = MTT::Module::Run("MTT::Test::Build::$config->{module}",
                                 "Build", $ini, $mpi_install, $config);
     } else {
         $ret->{test_result} = MTT::Values::FAIL;
