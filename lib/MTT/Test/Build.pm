@@ -454,6 +454,10 @@ sub _do_build {
         $ret->{start_timestamp} = timegm(gmtime());
         $ret->{refcount} = 0;
 
+        if ($ret->{noop_installdir}) {
+            $ret->{srcdir} = $ret->{noop_installdir};
+        }
+
         if (!defined($ret->{test_result})) {
             $ret->{test_result} = MTT::Values::FAIL;
         }
