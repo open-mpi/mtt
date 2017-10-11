@@ -254,9 +254,9 @@ class IPMITool(CNCMTTTool):
         # the node, then we need to double it so we can execute the loop of
         # "ping" commands to detect node restart
         if reset:
-            ipmiQueue = Queue.Queue(2 * len(controllers))
+            ipmiQueue = Queue(2 * len(controllers))
         else:
-            ipmiQueue = Queue.Queue(len(controllers))
+            ipmiQueue = Queue(len(controllers))
 
         # Fill the queue
         self.lock.acquire()
