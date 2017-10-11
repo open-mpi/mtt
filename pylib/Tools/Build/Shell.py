@@ -31,6 +31,7 @@ from BuildMTTTool import *
 # @param fail_returncode           Specifies the expected failure returncode of this test
 # @param allocate_cmd              Command to use for allocating nodes from the resource manager
 # @param deallocate_cmd            Command to use for deallocating nodes from the resource manager
+# @param asis_target                    Specifies name of asis_target being built. This is used with \"ASIS\" keyword to determine whether to do anything.
 # @}
 class Shell(BuildMTTTool):
     def __init__(self):
@@ -50,7 +51,7 @@ class Shell(BuildMTTTool):
         self.options['fail_returncode'] = (None, "Specifies the expected failure returncode of this test")
         self.options['allocate_cmd'] = (None, "Command to use for allocating nodes from the resource manager")
         self.options['deallocate_cmd'] = (None, "Command to use for deallocating nodes from the resource manager")
-        self.options['binary'] = (None, "Specifies name of binary being built. This is used with \"ASIS\" keyword to determine whether to do anything.")
+        self.options['asis_target'] = (None, "Specifies name of asis_target being built. This is used with \"ASIS\" keyword to determine whether to do anything.")
         return
 
     def activate(self):
@@ -121,6 +122,7 @@ class Shell(BuildMTTTool):
             return
 
         # get the location of the software we are to build
+        parentlog = None
         try:
             if cmds['parent'] is not None:
                 # we have to retrieve the log entry from
@@ -132,34 +134,58 @@ class Shell(BuildMTTTool):
                     log['status'] = 1
                     log['stderr'] = "Parent",cmds['parent'],"log not found"
                     return
-            else:
-                log['status'] = 1
-                log['stderr'] = "Parent log not recorded"
-                return
-
         except KeyError:
             log['status'] = 1
             log['stderr'] = "Parent not specified"
             return
         try:
-            location = parentlog['location']
+            parentloc = os.path.join(os.getcwd(),log['options']['scratch'])
+            location = parentloc
         except KeyError:
             log['status'] = 1
-            log['stderr'] = "Location of package to build was not specified in parent stage"
+            log['stderr'] = "No scratch directory in log"
             return
+        if parentlog is not None:
+            try:
+                parentloc = parentlog['location']
+                location = parentloc
+            except KeyError:
+                log['status'] = 1
+                log['stderr'] = "Location of package to build was not specified in parent stage"
+                return
+        else:
+            try:
+                if log['section'].startswith("TestGet:") or log['section'].startswith("MiddlewareGet:"):
+                    location = os.path.join(parentloc,log['section'].replace(":","_"))
+            except KeyError:
+                log['status'] = 1
+                log['stderr'] = "No section in log"
+                return
         # check to see if this is a dryrun
         if testDef.options['dryrun']:
             # just log success and return
             log['status'] = 0
             return
 
+        # Check to see if this needs to be ran if ASIS is specified
         try:
-            if cmds['asis'] and os.path.exists(os.path.join(location,cmds['binary'])) \
-                            and os.path.isfile(os.path.join(location,cmds['binary'])):
-                testDef.logger.verbose_print("As-Is binary " + os.path.join(location,cmds['binary']) + " exists and is a file")
-                log['location'] = location
-                log['status'] = 0
-                return
+            if cmds['asis']:
+                if cmds['asis_target'] is not None:
+                    if os.path.exists(os.path.join(parentloc,cmds['asis_target'])):
+                        testDef.logger.verbose_print("asis_target " + os.path.join(parentloc,cmds['asis_target']) + " exists. Skipping...")
+                        log['location'] = location
+                        log['status'] = 0
+                        return
+                    else:
+                        testDef.logger.verbose_print("asis_target " + os.path.join(parentloc,cmds['asis_target']) + " does not exist. Continuing...")
+                else: # no asis target, default to check for directory
+                    if os.path.exists(location):
+                        testDef.logger.verbose_print("directory " + location + " exists. Skipping...")
+                        log['location'] = location
+                        log['status'] = 0
+                        return
+                    else:
+                        testDef.logger.verbose_print("directory " + location + " does not exist. Continuing...")
         except KeyError:
             pass
 
@@ -288,23 +314,26 @@ class Shell(BuildMTTTool):
             log['compiler'] = compilerLog
 
         # Find MPI information for IUDatabase plugin
-        plugin = None
-        availUtil = list(testDef.loader.utilities.keys())
-        for util in availUtil:
-            for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
-                if "MPIVersion" == pluginInfo.plugin_object.print_name():
-                    plugin = pluginInfo.plugin_object
-                    break
-        if plugin is None:
-            log['mpi_info'] = {'name' : 'unknown', 'version' : 'unknown'}
-        else:
-            mpi_info = {}
-            plugin.execute(mpi_info, testDef)
-            log['mpi_info'] = mpi_info
+        if log['section'].startswith("TestBuild:") or log['section'].startswith("MiddlewareBuild:"):
+            plugin = None
+            availUtil = list(testDef.loader.utilities.keys())
+            for util in availUtil:
+                for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
+                    if "MPIVersion" == pluginInfo.plugin_object.print_name():
+                        plugin = pluginInfo.plugin_object
+                        break
+            if plugin is None:
+                log['mpi_info'] = {'name' : 'unknown', 'version' : 'unknown'}
+            else:
+                mpi_info = {}
+                plugin.execute(mpi_info, testDef)
+                log['mpi_info'] = mpi_info
 
         # save the current directory so we can return to it
         cwd = os.getcwd()
         # now move to the package location
+        if not os.path.exists(location):
+            os.makedirs(location)
         os.chdir(location)
         # execute the specified command
         # Use shlex.split() for correct tokenization for args
