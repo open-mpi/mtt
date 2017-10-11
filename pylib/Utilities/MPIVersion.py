@@ -11,6 +11,7 @@
 import os
 import sys
 from BaseMTTUtility import *
+import shlex
 
 ## @addtogroup Utilities
 # @{
@@ -100,27 +101,27 @@ int main(int argc, char **argv) {
     char version[3000];
     int resultlen;
     MPI_Get_library_version(version, &resultlen);
-    printf("%s\\n", version);
+    printf("%s", version);
     MPI_Finalize();
     return 0;
 }""")
             fh.close()
-        status, _, _, _ = testDef.execmd.execute(None, 'mpicc -o mpi_get_version mpi_get_version.c'.split(), testDef)
+        status, _, _, _ = testDef.execmd.execute(None, shlex.split('mpicc -o mpi_get_version mpi_get_version.c'), testDef)
         if 0 != status:
-            status, _, _, _ = testDef.execmd.execute(None, 'cc -o mpi_get_version mpi_get_version.c'.split(), testDef)
+            status, _, _, _ = testDef.execmd.execute(None, shlex.split('cc -o mpi_get_version mpi_get_version.c'), testDef)
             if 0 != status:
                 os.chdir("..")
                 return None
 
-        status, stdout, _, _ = testDef.execmd.execute(None, 'mpiexec ./mpi_get_version'.split(), testDef)
+        status, stdout, _, _ = testDef.execmd.execute(None, shlex.split('sh -c "mpiexec ./mpi_get_version |uniq -c"'), testDef)
         if 0 != status:
-            status, stdout, _, _ = testDef.execmd.execute(None, 'aprun ./mpi_get_version'.split(), testDef)
+            status, stdout, _, _ = testDef.execmd.execute(None, shlex.split('sh -c "aprun ./mpi_get_version |uniq -c"'), testDef)
             if 0 != status:
-                status, stdout, _, _ = testDef.execmd.execute(None, './mpi_get_version'.split(), testDef)
+                status, stdout, _, _ = testDef.execmd.execute(None, shlex.split('sh -c "./mpi_get_version |uniq -c"'), testDef)
                 if 0 != status:
                     os.chdir("..")
                     return None
 
         os.chdir("..")
-        return str(stdout)
 
+        return "\n".join(stdout)
