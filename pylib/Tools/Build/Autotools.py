@@ -180,8 +180,7 @@ class Autotools(BuildMTTTool):
                 inPlace = True
             else:
                 # create the prefix path where this build result will be placed
-                section = ''.join(ch for ch in keyvals['section'] if ch not in self.exclude)
-                pfx = os.path.join(testDef.options['scratchdir'], "build", section)
+                pfx = os.path.join(testDef.options['scratchdir'], log['section'].replace(':','_'))
                 # convert it to an absolute path
                 pfx = os.path.abspath(pfx)
                 # record this location for any follow-on steps
@@ -189,8 +188,7 @@ class Autotools(BuildMTTTool):
                 prefix = "--prefix={0}".format(pfx)
         except KeyError:
             # create the prefix path where this build result will be placed
-            section = ''.join(ch for ch in keyvals['section'] if ch not in self.exclude)
-            pfx = os.path.join(testDef.options['scratchdir'], "build", section)
+            pfx = os.path.join(testDef.options['scratchdir'], log['section'].replace(':','_'))
             # convert it to an absolute path
             pfx = os.path.abspath(pfx)
             # record this location for any follow-on steps
