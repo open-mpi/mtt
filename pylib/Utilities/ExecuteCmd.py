@@ -77,6 +77,7 @@ class ExecuteCmd(BaseMTTUtility):
             time_exec = False
         elapsed_secs = -1
         elapsed_datetime = None
+
         # setup the command arguments
         mycmdargs = []
         # if any cmd arg has quotes around it, remove
@@ -84,6 +85,11 @@ class ExecuteCmd(BaseMTTUtility):
         for arg in cmdargs:
             mycmdargs.append(arg.replace('\"',''))
         testDef.logger.verbose_print("ExecuteCmd start: " + ' '.join(mycmdargs), timestamp=datetime.datetime.now() if time_exec else None)
+
+        if not mycmdargs:
+            testDef.logger.verbose_print("ExecuteCmd error: no cmdargs")
+            return (1, None, "MTT ExecuteCmd error: no cmdargs", 0)
+
         # it is possible that the command doesn't exist or
         # isn't in our path, so protect us
         try:
