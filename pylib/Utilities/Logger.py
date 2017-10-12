@@ -97,16 +97,17 @@ class Logger(BaseMTTUtility):
         return
 
     def stage_start_print(self, stagename, pluginname):
+        self.stage_start[stagename] = datetime.datetime.now()
         if self.printout:
-            self.stage_start[stagename] = datetime.datetime.now()
             print("%sStart executing [%s] plugin=%s" % ("%s "%self.stage_start[stagename] if self.sectimestamp else "",
                                                             stagename, pluginname), file=self.fh)
 
-    def stage_end_print(self, stagename, pluginname):
+    def stage_end_print(self, stagename, pluginname, log):
+        stage_end = datetime.datetime.now()
         if self.printout:
-            stage_end = datetime.datetime.now()
             print("%sDone executing [%s] plugin=%s elapsed=%s" % ("%s "%stage_end if self.sectimestamp else "",
                                                            stagename, pluginname, stage_end-self.stage_start[stagename]), file=self.fh)
+        log['time'] = (stage_end-self.stage_start[stagename]).total_seconds()
 
     def verbose_print(self, string, timestamp=None):
         if self.printout:

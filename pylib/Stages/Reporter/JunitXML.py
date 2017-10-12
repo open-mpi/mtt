@@ -80,6 +80,10 @@ class JunitXML(ReporterMTTStage):
                 stderr = lg['stderr']
             except KeyError:
                 stderr = None
+            try:
+                time = lg['time']
+            except KeyError:
+                time = 0
             tc = TestCase(lg['section'], classname, time, stdout, stderr)
             try:
                 if 0 != lg['status']:
