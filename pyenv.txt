@@ -2,7 +2,7 @@ Django==1.8.5
 django-enumfield==1.2.1
 doxypy==0.4.1
 pbr==1.8.1
-psycopg2==2.6.1
+psycopg2==2.7.3
 requests==2.9.1
 six==1.10.0
 stevedore==1.9.0
