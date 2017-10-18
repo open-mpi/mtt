@@ -20,13 +20,14 @@ from distutils.spawn import find_executable
 # @{
 # @addtogroup Fetch
 # @section Git
-# @param username    Username required for accessing the repository
-# @param pr          Pull request to be downloaded
-# @param url         URL to access the repository
 # @param module      Modules (or lmod modules) to be loaded for accessing this package
-# @param branch      Branch (if not master) to be downloaded
-# @param pwfile      File where password can be found
+# @param url         URL to access the repository
+# @param username    Username required for accessing the repository
 # @param password    Password required for that user to access the repository
+# @param pwfile      File where password can be found
+# @param branch      Branch (if not master) to be downloaded
+# @param pr          Pull request to be downloaded
+# @param subdir      Subdirectory of interest in repository
 # @}
 class Git(FetchMTTTool):
 

@@ -17,13 +17,19 @@ from MTTDefaultsMTTStage import *
 # @{
 # @addtogroup MTTDefaults
 # @section DefaultMTTDefaults
-# @param description             Provide a brief title/description to be included in the log for this test
-# @param platform                Name of the system under test
-# @param scratch                 Specify the DIRECTORY under which scratch files are to be stored
-# @param trial                   Use when testing your MTT client setup; results that are generated and submitted to the database are marked as "trials" and are not included in normal reporting.
-# @param organization            Name of the organization running the test
-# @param logfile                 Log all output to FILE (defaults to stdout)
-# @param submit_group_results    Report results from each test section as it is completed
+# @param force                 Honestly don't remember
+# @param trial                 Use when testing your MTT client setup; results that are generated and submitted to the database are marked as \"trials\" and are not included in normal reporting.
+# @param scratch               Specify the DIRECTORY under which scratch files are to be stored
+# @param logfile               Log all output to FILE (defaults to stdout)
+# @param description           Provide a brief title/description to be included in the log for this test
+# @param submit_group_results  Report results from each test section as it is completed
+# @param platform              Name of the system under test
+# @param organization          Name of the organization running the test
+# @param merge_stdout_stderr   Merge stdout and stderr into one output stream
+# @param stdout_save_lines     Number of lines of stdout to save (-1 for unlimited)
+# @param stderr_save_lines     Number of lines of stderr to save (-1 for unlimited)
+# @param executor              Strategy to use: combinatorial or sequential executor
+# @param time                  Record how long it takes to run each individual test
 # @}
 class DefaultMTTDefaults(MTTDefaultsMTTStage):
 

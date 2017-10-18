@@ -16,16 +16,16 @@ import shlex
 # @{
 # @addtogroup Provision
 # @section WWulf3
-# @param username      Remote controller username
-# @param sudo          Use sudo to execute privileged commands
-# @param target        List of remote host names or LAN interfaces to be provisioned
-# @param image         Name of image to be instantiated
-# @param bootstrap     Name of bootstrap to be used
-# @param controller    List of IP addresses of remote node controllers/BMCs
-# @param pwfile        File containing remote controller password
-# @param password      Remote controller password
-# @param allocate_cmd              Command to use for allocating nodes from the resource manager
-# @param deallocate_cmd            Command to use for deallocating nodes from the resource manager
+# @param target           List of remote host names or LAN interfaces to be provisioned
+# @param image            Name of image to be instantiated
+# @param bootstrap        Name of bootstrap to be used
+# @param controller       List of IP addresses of remote node controllers/BMCs
+# @param username         Remote controller username
+# @param password         Remote controller password
+# @param pwfile           File containing remote controller password
+# @param sudo             Use sudo to execute privileged commands
+# @param allocate_cmd     Command to use for allocating nodes from the resource manager
+# @param deallocate_cmd   Command to use for deallocating nodes from the resource manager
 # @}
 class WWulf3(ProvisionMTTStage):
 
