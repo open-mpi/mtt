@@ -87,8 +87,10 @@ define("undef", "");
 
 if (sizeof($_FILES)) {
     $include_file = gunzip_file($_FILES['userfile']['tmp_name']);
-    include_once($include_file);
-    unlink($include_file);
+    if( ! is_null_($include_file) ) {
+        include_once($include_file);
+        unlink($include_file);
+    }
 
     # If setup_post() is renamed, it must also be renamed in gunzip_file()
     setup_post();
@@ -1689,6 +1691,7 @@ function associative_select($cmd) {
 # }
 
 function mtt_send_mail($message, $func) {
+    global $mtt_submit_tmp_dir;
 
     # Send only one email per phase to avoid a hurricane of
     # SQL error emails (generally in this case, when it
@@ -1699,7 +1702,7 @@ function mtt_send_mail($message, $func) {
         return;
 
     # Export the PHP POST data to a temp file
-    if (! ($filename = tempnam("/tmp", "submit-")))
+    if (! ($filename = tempnam($mtt_submit_tmp_dir, "submit-")))
         mtt_notice("Could not create a temporary file.\n");
 
     $filename .= ".inc";
@@ -2021,8 +2024,10 @@ function var_dump_debug_inserts($function, $line, $var_name, $arr) {
 
 # Return the name a temporary file to include
 function gunzip_file($filename) {
+    global $mtt_submit_tmp_dir;
+    global $mtt_err_log_file;
 
-    $temp_filename = tempnam("/tmp", "mtt-submit-php-");
+    $temp_filename = tempnam($mtt_submit_tmp_dir, "mtt-submit-php-");
 
     $fp = fopen($temp_filename, "wb");
     chmod($temp_filename, 0664);
@@ -2032,6 +2037,18 @@ function setup_post() {
         \$_POST = ");
 
     $handle = gzopen($filename, 'r');
+    if( ! $handle ) {
+        pg_close();
+
+        $date = date('d.m.Y h:i:s');
+        $out_to_log  = "--------------------------------------- gzip failed...\n";
+        $out_to_log .= "Date: ".$date."\n";
+        $out_to_log .= "gunzip failed (in gzopen). Please check tmp dir for overflow.\n";
+        error_log($out_to_log, 3, $mtt_err_log_file);
+        mtt_abort(400, "gunzip failed. Contact MTT Admins for help!");
+        exit(1);
+        #return null;
+    }
     while (! gzeof($handle)) {
         fwrite($fp, gzgets($handle, 4096));
     }

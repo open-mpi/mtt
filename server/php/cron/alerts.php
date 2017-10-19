@@ -40,7 +40,7 @@ if ($GLOBALS['verbose']) {
 #
 # Includes
 #
-$topdir = "/l/osl/www/mtt.open-mpi.org/mtt/server/php";
+$topdir = "/mnt/data/mtt.open-mpi.org/mtt/server/php";
 include_once("$topdir/curl_get.inc");
 include_once("$topdir/ini.inc");
 include_once("$topdir/reporter/reporter.inc");

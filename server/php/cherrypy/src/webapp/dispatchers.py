@@ -255,7 +255,7 @@ class Submit(_ServerResourceBase):
         return None
 
     #
-    # GET / : Server status
+    # GET /submit/ : Server status
     #
     @cherrypy.tools.json_out()
     def GET(self, **kwargs):

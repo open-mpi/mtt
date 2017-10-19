@@ -1484,7 +1484,7 @@ function column_exists_any($column) {
                   'test_run'
                   );
 
-    $columns = split(',', $column);
+    $columns = preg_split("/[,]/", $column);
 
     $select_list = null;
     foreach($tbls as $t) {
@@ -1527,7 +1527,7 @@ function column_exists_any($column) {
 # Return true if $column exists in $table.
 # $column is a CSV of one or more column_name's
 function column_exists($column, $table) {
-    $columns = split(',', $column);
+    $columns = preg_split("/[,]/", $column);
 
     foreach ($columns as $c) {
         $one = select_scalar("SELECT 1 FROM information_schema.columns " .

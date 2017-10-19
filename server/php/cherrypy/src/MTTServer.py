@@ -63,6 +63,10 @@ if __name__ == '__main__':
             'log.access_file': '../log/access.log',
             'log.error_file': '../log/cherrypy_error.log',
             'log.screen': False,
+            # Autoreload is very useful when debugging or updating frequently
+            # It will notice when any of the server files have been updated
+            # and reboot the server. Disable it during production runs
+            # as the continual overhead will accure CPU time.
             'engine.autoreload.on': False,
 
             # Don't run CherryPy Checker on custom conf sections:

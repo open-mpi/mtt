@@ -60,3 +60,9 @@ $mtt_http_password = rtrim(file_get_contents("/home/mpiteam/www-not-in-docroot/m
 
 # Where to render graphs?  Must be writable by the web server.
 $mtt_graph_tmp_dir = "tmp";
+
+# Where to log detailed reports on server failures
+$mtt_err_log_file = "/mnt/data/mtt.open-mpi.org/log/mtt-php-errors.log";
+
+# TMP dir to use when unpacking submission posts
+$mtt_submit_tmp_dir = "/tmp";

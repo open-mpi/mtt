@@ -1,0 +1,48 @@
+# Note UTC is +4 from US EST
+#### MTT ################
+# Update MTT Statistics [Database]
+#  - everyday at 11:00 pm EST (3 am UTC)
+#  - runs in about 1 min
+#########################
+0 3 * * *  (cd /mnt/data/mtt.open-mpi.org/mtt/server/php/cron/ && ./mtt-update-stats-db-only.pl )
+
+#### MTT ################
+# Update MTT Statistics [Contribution]
+#  - everyday at 1 am EST (5 am UTC)
+#  - runs in about 2 hours
+#########################
+0 5 * * *  (cd /mnt/data/mtt.open-mpi.org/mtt/server/php/cron/ && ./mtt-update-stats.pl )
+
+#### MTT ################
+# Update Contrib Graphs
+# - Everyday at 3 am EST (7 am UTC)
+# "-l" limits to just last year of data. (faster to run)
+#########################
+# Runs in < 1 min
+0 7 * * * (cd /mnt/data/mtt.open-mpi.org/mtt/server/php/cron/ && ./create-contrib-graph.pl -l )
+# Runs in about 45 minutes
+30 7 * * * (cd /mnt/data/mtt.open-mpi.org/mtt/server/php/cron/ && ./create-contrib-graph.pl )
+
+#### MTT ################
+# Maintain internal PostgreSQL stats (Week)
+#  - Sunday at 4 am EST (8 am UTC)
+#  - runs in about 30 min
+#########################
+0 8 * * 0  (cd /mnt/data/mtt.open-mpi.org/mtt/server/php/cron/ && ./periodic-maintenance.pl -week 1> /dev/null 2> /dev/null )
+
+#### MTT ################
+# Maintain internal PostgreSQL stats (Year)
+#  - Dec. 1 at 4 am EST (8 am EST)
+#  - runs in about 6 hours (?? Verify)
+#########################
+0 8 1 12 *  (cd /mnt/data/mtt.open-mpi.org/mtt/server/php/cron/ && ./periodic-maintenance.pl -year 1> /dev/null 2> /dev/null )
+
+#### MTT ################
+# Email Reports
+#  - Tues - Thursday at 9 am (Past 12 hours) (1 pm UTC)
+#  - Tues - Thursday at 9 pm (Past 24 hours) (1 am UTC)
+#  - Monday at 9 am (Past 60 hours) (1 pm UTC)
+#########################
+0 13 * * 2-4  /mnt/data/mtt.open-mpi.org/mtt/server/php/cron/alerts.php -f /mnt/data/mtt.open-mpi.org/mtt/server/php/cron/morning.ini 1> /dev/null 2> /dev/null
+0 1 * * 2-4 /mnt/data/mtt.open-mpi.org/mtt/server/php/cron/alerts.php -f /mnt/data/mtt.open-mpi.org/mtt/server/php/cron/evening.ini 1> /dev/null 2> /dev/null
+0 13 * * 1    /mnt/data/mtt.open-mpi.org/mtt/server/php/cron/alerts.php -f /mnt/data/mtt.open-mpi.org/mtt/server/php/cron/monday.ini  1> /dev/null 2> /dev/null

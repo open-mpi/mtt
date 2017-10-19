@@ -1,0 +1,21 @@
+[database]
+user = USERNAME
+# Can use "run(cat /path/to/my/file/mtt-db-password.txt)"
+password = PASSWORD
+hostname = HOSTNAME
+port = 5432
+dbname = DATABASENAME
+
+[reporting]
+to_email = EMAIL@ADDRRESS
+from_email = EMAIL@ADDRRESS
+
+[stats]
+# MTT Working Dir to find scripts
+base_dir = "/path_to/cron/"
+# Directory containing scripts to execute
+working_dir = "/path_to/cron/stats"
+# Directory to place the contribution graph
+output_dir = "/path_to/stats/"
+# Temporary directory to store data files
+tmp_dir = "/tmp/"
