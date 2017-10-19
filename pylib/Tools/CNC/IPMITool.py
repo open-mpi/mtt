@@ -133,15 +133,16 @@ class workerThread(threading.Thread):
 # @{
 # @addtogroup CNC
 # @section IPMITool
-# @param username      Remote session username
-# @param dryrun        Dryrun - print out commands but do not execute
 # @param target        List of remote host names or LAN interfaces to monitor during reset operations
-# @param numthreads    Number of worker threads to use
 # @param controller    List of IP addresses of remote node controllers/BMCs
-# @param command       Command to be sent
-# @param pwfile        File containing remote session password
+# @param username      Remote session username
 # @param password      Remote session password
+# @param pwfile        File containing remote session password
+# @param command       Command to be sent
 # @param maxtries      Max number of times to ping each host before declaring reset to fail
+# @param numthreads    Number of worker threads to use
+# @param dryrun        Dryrun - print out commands but do not execute
+# @param sudo          Use sudo to exeute privilaged comands
 # @}
 class IPMITool(CNCMTTTool):
     def __init__(self):

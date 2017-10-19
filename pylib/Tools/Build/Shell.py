@@ -18,15 +18,15 @@ from BuildMTTTool import *
 # @{
 # @addtogroup Build
 # @section Shell
-# @param merge_stdout_stderr       Merge stdout and stderr into one output stream
+# @param middleware                Middleware stage that these tests are to be built against
+# @param command                   Command to execute
 # @param parent                    Section that precedes this one in the dependency tree
-# @param modules_unload            Modules to unload
+# @param merge_stdout_stderr       Merge stdout and stderr into one output stream
 # @param stdout_save_lines         Number of lines of stdout to save
-# @param modules                   Modules to load
 # @param stderr_save_lines         Number of lines of stderr to save
 # @param save_stdout_on_success    Save stdout even if build succeeds
-# @param command                   Command to execute
-# @param middleware                Middleware stage that these tests are to be built against
+# @param modules                   Modules to load
+# @param modules_unload            Modules to unload
 # @param fail_test                 Specifies whether this test is expected to fail (value=None means test is expected to succeed)
 # @param fail_returncode           Specifies the expected failure returncode of this test
 # @param allocate_cmd              Command to use for allocating nodes from the resource manager

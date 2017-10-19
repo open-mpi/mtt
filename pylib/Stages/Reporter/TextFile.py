@@ -17,11 +17,11 @@ from ReporterMTTStage import *
 # @{
 # @addtogroup Reporter
 # @section TextFile
-# @param summary_footer    Footer to be placed at bottom of summary
-# @param detail_footer     Footer to be placed at bottome of detail report
-# @param detail_header     Header to be put at top of detail report
-# @param textwrap          Max line length before wrapping
 # @param filename          Name of the file into which the report is to be written
+# @param summary_footer    Footer to be placed at bottom of summary
+# @param detail_header     Header to be put at top of detail report
+# @param detail_footer     Footer to be placed at bottome of detail report
+# @param textwrap          Max line length before wrapping
 # @}
 class TextFile(ReporterMTTStage):
 

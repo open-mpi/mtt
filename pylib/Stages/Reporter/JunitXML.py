@@ -19,8 +19,8 @@ from ReporterMTTStage import *
 # @{
 # @addtogroup Reporter
 # @section JunitXML
-# @param textwrap    Max line length before wrapping
 # @param filename    Name of the file into which the report is to be written
+# @param textwrap    Max line length before wrapping
 # @}
 class JunitXML(ReporterMTTStage):
 

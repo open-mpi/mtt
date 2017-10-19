@@ -17,25 +17,25 @@ import shlex
 # @{
 # @addtogroup Launcher
 # @section ALPS
-# @param merge_stdout_stderr       Merge stdout and stderr into one output stream
-# @param skipped                   Exit status of a test that declares it was skipped
 # @param hostfile                  The hostfile for OpenMPI to use
-# @param skip_tests                Names of tests to be skipped
-# @param test_dir                  Names of directories to be scanned for tests
-# @param modules                   Modules to load
-# @param stdout_save_lines         Number of lines of stdout to save
+# @param command                   Command for executing the application
+# @param np                        Number of processes to run
 # @param save_stdout_on_pass       Whether or not to save stdout on passed tests
+# @param report_after_n_results    Number of tests to run before updating the reporter
+# @param timeout                   Maximum execution time - terminate a test if it exceeds this time
+# @param options                   Comma-delimited sets of command line options that shall be used on each test
+# @param skipped                   Exit status of a test that declares it was skipped
+# @param merge_stdout_stderr       Merge stdout and stderr into one output stream
+# @param stdout_save_lines         Number of lines of stdout to save
 # @param stderr_save_lines         Number of lines of stderr to save
+# @param test_dir                  Names of directories to be scanned for tests
 # @param fail_tests                Names of tests that are expected to fail
 # @param fail_returncodes          Expected returncodes of tests expected to fail
 # @param fail_timeout              Maximum execution time for tests expected to fail
-# @param command                   Command for executing the application
-# @param timeout                   Maximum execution time - terminate a test if it exceeds this time
-# @param modules_unload            Modules to unload
-# @param np                        Number of processes to run
+# @param skip_tests                Names of tests to be skipped
 # @param max_num_tests             Maximum number of tests to run
-# @param report_after_n_results    Number of tests to run before updating the reporter
-# @param options                   Comma-delimited sets of command line options that shall be used on each test
+# @param modules                   Modules to load
+# @param modules_unload            Modules to unload
 # @param test_list                 List of tests to run, default is all
 # @param allocate_cmd              Command to use for allocating nodes from the resource manager
 # @param deallocate_cmd            Command to use for deallocating nodes from the resource manager

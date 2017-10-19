@@ -16,12 +16,12 @@ from ProfileMTTStage import *
 # @{
 # @addtogroup Profile
 # @section DefaultProfile
-# @param kernelVersion    Kernel version string
-# @param nodeName         Node name
+# @param kernelName       Kernel name
 # @param kernelRelease    Kernel release string
+# @param kernelVersion    Kernel version string
 # @param machineName      Machine name
 # @param processorType    Processor type
-# @param kernelName       Kernel name
+# @param nodeName         Node name
 # @}
 class DefaultProfile(ProfileMTTStage):
 
