@@ -78,6 +78,10 @@ foreach $month (@month_array) {
     print "    FOREIGN KEY (test_build_compiler_id) REFERENCES compiler(compiler_id),\n";
     print "    -- PARTITION/FK PROBLEM: FOREIGN KEY (test_build_id) REFERENCES test_build(test_build_id),\n";
     print "    FOREIGN KEY (test_name_id) REFERENCES test_names(test_name_id),\n";
+    print "    FOREIGN KEY (bios_id) REFERENCES bios(bios_id),\n";
+    print "    FOREIGN KEY (firmware_id) REFERENCES firmware(firmware_id),\n";
+    print "    FOREIGN KEY (provision_id) REFERENCES provision(provision_id),\n";
+    print "    FOREIGN KEY (harasser_id) REFERENCES harasser(harasser_id),\n";
     print "    FOREIGN KEY (performance_id) REFERENCES performance(performance_id),\n";
     print "    FOREIGN KEY (test_run_command_id) REFERENCES test_run_command(test_run_command_id),\n";
     print "    FOREIGN KEY (description_id) REFERENCES description(description_id),\n";
@@ -133,6 +137,10 @@ foreach $month (@month_array) {
     print "         test_build_compiler_id,\n";
     print "         test_build_id,\n";
     print "         test_name_id,\n";
+    print "         bios_id,\n";
+    print "         firmware_id,\n";
+    print "         provision_id,\n";
+    print "         harasser_id,\n";
     print "         performance_id,\n";
     print "         test_run_command_id,\n";
     print "         np,\n";
@@ -164,6 +172,10 @@ foreach $month (@month_array) {
     print "              NEW.test_build_compiler_id,\n";
     print "              NEW.test_build_id,\n";
     print "              NEW.test_name_id,\n";
+    print "              NEW.bios_id,\n";
+    print "              NEW.firmware_id,\n";
+    print "              NEW.provision_id,\n";
+    print "              NEW.harasser_id,\n";
     print "              NEW.performance_id,\n";
     print "              NEW.test_run_command_id,\n";
     print "              NEW.np,\n";

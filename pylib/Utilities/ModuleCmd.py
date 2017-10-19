@@ -48,11 +48,18 @@ class ModuleCmd(BaseMTTUtility):
                 return
         else:
             try:
-                lmod_pkg = os.environ['LMOD_PKG']
-                self.env_module_wrapper = os.path.join(lmod_pkg, "init/env_modules_python.py")
+                mod_pkg = os.environ['MODULESHOME']
+                if os.path.isfile(os.path.join(mod_pkg, "init/env_modules_python.py")) :
+                   self.env_module_wrapper = os.path.join(mod_pkg, "init/env_modules_python.py")
+                elif os.path.isfile(os.path.join(mod_pkg, "init/python.py")) :
+                   self.env_module_wrapper = os.path.join(mod_pkg, "init/python.py")
+                else:
+                   if options['verbose'] or options['debug'] :
+                       print("The --env-module-wrapper switch was not used and module python support via os.environ['MODULESHOME']/init/env_modules_python.py was not found")
+                   return
             except KeyError:
                 if options['verbose'] or options['debug'] :
-                    print("The --env-module-wrapper switch was not used and lmod python support via os.environ['LMOD_PKG']/init/env_modules_python.py was not found")
+                    print("The --env-module-wrapper switch was not used and module python support via os.environ['MODULESHOME'] was not found")
                 return
         try:
             # scratchdir defaults to mttscratch if not set

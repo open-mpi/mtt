@@ -17,8 +17,8 @@ from distutils.spawn import find_executable
 # @{
 # @addtogroup Fetch
 # @section AlreadyInstalled
-# @param module    Modules (or lmod modules) to be loaded for accessing this package
 # @param exec      Executable that should be in path
+# @param module    Modules (or lmod modules) to be loaded for accessing this package
 # @}
 class AlreadyInstalled(FetchMTTTool):
 

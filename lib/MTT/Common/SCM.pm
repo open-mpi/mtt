@@ -4,9 +4,9 @@
 # Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
 # Copyright (c) 2016      IBM Corporation.  All rights reserved.
 # $COPYRIGHT$
-# 
+#
 # Additional copyrights may follow
-# 
+#
 # $HEADER$
 #
 
@@ -43,7 +43,7 @@ sub Get {
 
     # Note on the subtle difference between want_new/have_new:
     #  * want_new = Do we want to Get sources?
-    #  * have_new = Do we want to tell the Install 
+    #  * have_new = Do we want to tell the Install
     #               phase that we have "new" sources to install?
     #
     # There are a number of possible scenarios:
@@ -116,7 +116,7 @@ sub Get {
         if ($ver = &get_version_from_filename($scm_dirname)) {
             Debug("Getting version string from name-<number> in the directory basename.\n");
             $ret->{version} = $ver;
-        } 
+        }
         # 3. Use the SVN r number
         elsif (defined($params->{rev})) {
             Debug("Getting version string from the SCM r number.\n");
@@ -125,7 +125,7 @@ sub Get {
         # Give up
         else {
             Debug("Couldn't find a decent version string. Using a date string.\n");
-            $ret->{version} = "$params->{simple_section}-" . 
+            $ret->{version} = "$params->{simple_section}-" .
                 strftime("%m%d%Y-%H%M%S", localtime);
         }
     }
@@ -178,7 +178,7 @@ sub get_version_from_filename {
 }
 
 # Process INI parameter functions for any Subverison-like versioning
-# system. We default to SVN for backcompatibility and because SVN is 
+# system. We default to SVN for backcompatibility and because SVN is
 # what the Open MPI community uses.
 sub ProcessInputParameters {
     Debug(">> ProcessInputParameters\n");
@@ -197,7 +197,10 @@ sub ProcessInputParameters {
     Debug(">> $package: got url $url\n");
 
     # Process INI file parameters
-    foreach my $k (qw/url r rev username password password_cache export checkout command command_arguments subcommand subcommand_arguments delete_first pre_copy post_copy version clone_all/) {
+    foreach my $k (qw/url r rev username password password_cache export checkout
+                      command command_arguments subcommand subcommand_arguments
+                      delete_first pre_copy post_copy version clone_all
+                      shallow/) {
         $ret->{$k} = Value($ini, $section, &_prefix_parameter($k));
     }
 

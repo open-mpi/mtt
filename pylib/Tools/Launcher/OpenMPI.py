@@ -1,6 +1,8 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
-# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2017 Intel, Inc.  All rights reserved.
+# Copyright (c) 2017      Los Alamos National Security, LLC. All rights
+#                         reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -11,27 +13,33 @@
 from __future__ import print_function
 import os
 from LauncherMTTTool import *
+import shlex
 
 ## @addtogroup Tools
 # @{
 # @addtogroup Launcher
 # @section OpenMPI
-# @param merge_stdout_stderr       Merge stdout and stderr into one output stream
-# @param skipped                   Exit status of a test that declares it was skipped
 # @param hostfile                  The hostfile for OpenMPI to use
-# @param skip_tests                Names of tests to be skipped
-# @param test_dir                  Names of directories to be scanned for tests
-# @param stdout_save_lines         Number of lines of stdout to save
-# @param save_stdout_on_pass       Whether or not to save stdout on passed tests
-# @param stderr_save_lines         Number of lines of stderr to save
-# @param fail_tests                Names of tests that are expected to fail
-# @param fail_timeout              Maximum execution time for tests expected to fail
 # @param command                   Command for executing the application
-# @param timeout                   Maximum execution time - terminate a test if it exceeds this time
 # @param np                        Number of processes to run
-# @param max_num_tests             Maximum number of tests to run
+# @param ppn                       Number of processes per node to run
+# @param save_stdout_on_pass       Whether or not to save stdout on passed tests
 # @param report_after_n_results    Number of tests to run before updating the reporter
+# @param timeout                   Maximum execution time - terminate a test if it exceeds this time
 # @param options                   Comma-delimited sets of command line options that shall be used on each test
+# @param skipped                   Exit status of a test that declares it was skipped
+# @param merge_stdout_stderr       Merge stdout and stderr into one output stream
+# @param stdout_save_lines         Number of lines of stdout to save
+# @param stderr_save_lines         Number of lines of stderr to save
+# @param test_dir                  Names of directories to be scanned for tests
+# @param fail_tests                Names of tests that are expected to fail
+# @param fail_returncodes          Expected return codes of tests expected to fail
+# @param fail_timeout              Maximum execution time for tests expected to fail
+# @param skip_tests                Names of tests to be skipped
+# @param max_num_tests             Maximum number of tests to run
+# @param test_list                 List of tests to run, default is all
+# @param allocate_cmd              Command to use for allocating nodes from the resource manager
+# @param deallocate_cmd            Command to use for deallocating nodes from the resource manager
 # @}
 class OpenMPI(LauncherMTTTool):
 
@@ -42,6 +50,7 @@ class OpenMPI(LauncherMTTTool):
         self.options['hostfile'] = (None, "The hostfile for OpenMPI to use")
         self.options['command'] = ("mpirun", "Command for executing the application")
         self.options['np'] = (None, "Number of processes to run")
+        self.options['ppn'] = (None, "Number of processes per node to run")
         self.options['save_stdout_on_pass'] = (False, "Whether or not to save stdout on passed tests")
         self.options['report_after_n_results'] = (None, "Number of tests to run before updating the reporter")
         self.options['timeout'] = (None, "Maximum execution time - terminate a test if it exceeds this time")
@@ -52,9 +61,13 @@ class OpenMPI(LauncherMTTTool):
         self.options['stderr_save_lines'] = (-1, "Number of lines of stderr to save")
         self.options['test_dir'] = (None, "Names of directories to be scanned for tests")
         self.options['fail_tests'] = (None, "Names of tests that are expected to fail")
+        self.options['fail_returncodes'] = (None, "Expected returncodes of tests expected to fail")
         self.options['fail_timeout'] = (None, "Maximum execution time for tests expected to fail")
         self.options['skip_tests'] = (None, "Names of tests to be skipped")
         self.options['max_num_tests'] = (None, "Maximum number of tests to run")
+        self.options['test_list'] = (None, "List of tests to run, default is all")
+        self.options['allocate_cmd'] = (None, "Command to use for allocating nodes from the resource manager")
+        self.options['deallocate_cmd'] = (None, "Command to use for deallocating nodes from the resource manager")
         return
 
 
@@ -78,6 +91,9 @@ class OpenMPI(LauncherMTTTool):
         return
 
     def execute(self, log, keyvals, testDef):
+
+        midpath = False
+
         testDef.logger.verbose_print("OpenMPI Launcher")
         # check the log for the title so we can
         # see if this is setting our default behavior
@@ -147,24 +163,29 @@ class OpenMPI(LauncherMTTTool):
                             if midlog['location'] is not None:
                                 # prepend that location to our paths
                                 try:
-                                    path = os.environ['PATH']
-                                    pieces = path.split(':')
+                                    oldbinpath = os.environ['PATH']
+                                    pieces = oldbinpath.split(':')
                                 except KeyError:
+                                    oldbinpath = ""
                                     pieces = []
                                 bindir = os.path.join(midlog['location'], "bin")
                                 pieces.insert(0, bindir)
                                 newpath = ":".join(pieces)
                                 os.environ['PATH'] = newpath
-                                # prepend the libdir path as well
+                                # prepend the loadable lib path
                                 try:
-                                    path = os.environ['LD_LIBRARY_PATH']
-                                    pieces = path.split(':')
+                                    oldldlibpath = os.environ['LD_LIBRARY_PATH']
+                                    pieces = oldldlibpath.split(':')
                                 except KeyError:
+                                    oldldlibpath = ""
                                     pieces = []
                                 bindir = os.path.join(midlog['location'], "lib")
                                 pieces.insert(0, bindir)
                                 newpath = ":".join(pieces)
                                 os.environ['LD_LIBRARY_PATH'] = newpath
+
+                                # mark that this was done
+                                midpath = True
                         except KeyError:
                             # if it was already installed, then no location would be provided
                             pass
@@ -204,23 +225,34 @@ class OpenMPI(LauncherMTTTool):
         # did they give us a list of specific directories where the desired
         # tests to be executed reside?
         tests = []
-        try:
-            if cmds['test_dir'] is not None:
-                # pick up the executables from the specified directories
-                dirs = cmds['test_dir'].split()
-                for dr in dirs:
-                    dr = dr.strip()
-                    # remove any commas and quotes
-                    dr = dr.replace('\"','')
-                    dr = dr.replace(',','')
-                    for dirName, subdirList, fileList in os.walk(dr):
+        if cmds['test_list'] is None:
+            try:
+                if cmds['test_dir'] is not None:
+                    # pick up the executables from the specified directories
+                    dirs = cmds['test_dir'].split()
+                    for dr in dirs:
+                        dr = dr.strip()
+                        # remove any commas and quotes
+                        dr = dr.replace('\"','')
+                        dr = dr.replace(',','')
+                        for dirName, subdirList, fileList in os.walk(dr):
+                            for fname in fileList:
+                                # see if this is an executable
+                                filename = os.path.abspath(os.path.join(dirName,fname))
+                                if os.path.isfile(filename) and os.access(filename, os.X_OK):
+                                    # add this file to our list of tests to execute
+                                    tests.append(filename)
+                else:
+                    # get the list of executables from this directory and any
+                    # subdirectories beneath it
+                    for dirName, subdirList, fileList in os.walk("."):
                         for fname in fileList:
                             # see if this is an executable
                             filename = os.path.abspath(os.path.join(dirName,fname))
                             if os.path.isfile(filename) and os.access(filename, os.X_OK):
                                 # add this file to our list of tests to execute
                                 tests.append(filename)
-            else:
+            except KeyError:
                 # get the list of executables from this directory and any
                 # subdirectories beneath it
                 for dirName, subdirList, fileList in os.walk("."):
@@ -230,16 +262,25 @@ class OpenMPI(LauncherMTTTool):
                         if os.path.isfile(filename) and os.access(filename, os.X_OK):
                             # add this file to our list of tests to execute
                             tests.append(filename)
-        except KeyError:
-            # get the list of executables from this directory and any
-            # subdirectories beneath it
-            for dirName, subdirList, fileList in os.walk("."):
-                for fname in fileList:
-                    # see if this is an executable
-                    filename = os.path.abspath(os.path.join(dirName,fname))
-                    if os.path.isfile(filename) and os.access(filename, os.X_OK):
-                        # add this file to our list of tests to execute
-                        tests.append(filename)
+        # If list of tests is provided, use list rather than grabbing all tests
+        else:
+            if cmds['test_dir'] is not None:
+                dirs = cmds['test_dir'].split()
+            else:
+                dirs = ['.']
+            for dr in dirs:
+                dr = dr.strip()
+                dr = dr.replace('\"','')
+                dr = dr.replace(',','')
+                for dirName, subdirList, fileList in os.walk(dr):
+                    for fname in cmds['test_list'].split(","):
+                        fname = fname.strip()
+                        if fname not in fileList:
+                            continue
+                        filename = os.path.abspath(os.path.join(dirName,fname))
+                        if os.path.isfile(filename) and os.access(filename, os.X_OK):
+                            tests.append(filename)
+
         # check that we found something
         if not tests:
             log['status'] = 1
@@ -250,16 +291,19 @@ class OpenMPI(LauncherMTTTool):
         skipStatus = int(cmds['skipped'])
         # assemble the command
         cmdargs = cmds['command'].split()
-        if ['np'] is not None:
+        if cmds['np'] is not None:
             cmdargs.append("-np")
             cmdargs.append(cmds['np'])
+        if cmds['ppn'] is not None:
+            cmdargs.append("-N")
+            cmdargs.append(cmds['ppn'])
         if cmds['hostfile'] is not None:
             cmdargs.append("-hostfile")
             cmdargs.append(cmds['hostfile'])
         # cycle thru the list of tests and execute each of them
         log['testresults'] = []
         finalStatus = 0
-        finalError = None
+        finalError = ""
         numTests = 0
         numPass = 0
         numSkip = 0
@@ -268,28 +312,109 @@ class OpenMPI(LauncherMTTTool):
             maxTests = int(cmds['max_num_tests'])
         else:
             maxTests = 10000000
+
+        fail_tests = cmds['fail_tests']
+        if fail_tests is not None:
+            fail_tests = [t.strip() for t in fail_tests.split(",")]
+        else:
+            fail_tests = []
+        for i,t in enumerate(fail_tests):
+            for t2 in tests:
+                if t2.split("/")[-1] == t:
+                    fail_tests[i] = t2
+        fail_returncodes = cmds['fail_returncodes']
+        if fail_returncodes is not None:
+            fail_returncodes = [int(t.strip()) for t in fail_returncodes.split(",")]
+
+        if fail_tests is None:
+            expected_returncodes = {test:0 for test in tests}
+        else:
+            if fail_returncodes is None:
+                expected_returncodes = {test:(None if test in fail_tests else 0) for test in tests}
+            else:
+                fail_returncodes = {test:rtncode for test,rtncode in zip(fail_tests,fail_returncodes)}
+                expected_returncodes = {test:(fail_returncodes[test] if test in fail_returncodes else 0) for test in tests}
+
+        # Allocate cluster
+        allocated = False
+        if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None:
+            allocate_cmdargs = shlex.split(cmds['allocate_cmd'])
+            _status,_stdout,_stderr,_time = testDef.execmd.execute(cmds, allocate_cmdargs, testDef)
+            if 0 != _status:
+                log['status'] = _status
+                log['stderr'] = _stderr
+                os.chdir(cwd)
+                return
+            allocated = True
+
         for test in tests:
+            # Skip tests that are in "skip_tests" ini input
+            if cmds['skip_tests'] is not None and test.split('/')[-1] in [st.strip() for st in cmds['skip_tests'].split()]:
+                numTests += 1
+                numSkip += 1
+                if numTests == maxTests:
+                    break
+                continue
             testLog = {'test':test}
             cmdargs.append(test)
             testLog['cmd'] = " ".join(cmdargs)
-            status,stdout,stderr = testDef.execmd.execute(cmds, cmdargs, testDef)
-            testLog['status'] = status
-            if 0 != status and skipStatus != status and 0 == finalStatus:
-                finalStatus = status
+
+            harass_exec_ids = testDef.harasser.start(testLog, testDef)
+
+            harass_check = testDef.harasser.check(harass_exec_ids, testLog, testDef)
+            if harass_check is not None:
+                testLog['stderr'] = 'Not all harasser scripts started. These failed to start: ' \
+                                + ','.join([h_info[1]['start_script'] for h_info in harass_check[0]])
+                testLog['time'] = sum([r_info[3] for r_info in harass_check[1]])
+                testLog['status'] = 1
+                finalStatus = 1
+                finalError = testLog['stderr']
+                numFail = numFail + 1
+                testDef.harasser.stop(harass_exec_ids, testLog, testDef)
+                continue
+
+            status,stdout,stderr,time = testDef.execmd.execute(cmds, cmdargs, testDef)
+
+            testDef.harasser.stop(harass_exec_ids, testLog, testDef)
+
+            if ((expected_returncodes[test] is None and 0 == status) or (expected_returncodes[test] is not None and expected_returncodes[test] != status)) and skipStatus != status and 0 == finalStatus:
+                if expected_returncodes[test] == 0:
+                    finalStatus = status
+                else:
+                    finalStatus = 1
                 finalError = stderr
-            if 0 == status:
+            if (expected_returncodes[test] is None and 0 != status) or (expected_returncodes[test] == status):
                 numPass = numPass + 1
             elif skipStatus == status:
                 numSkip = numSkip + 1
             else:
                 numFail = numFail + 1
+            if expected_returncodes[test] == 0:
+                testLog['status'] = status
+            else:
+                if status == expected_returncodes[test]:
+                    testLog['status'] = 0
+                else:
+                    testLog['status'] = 1
             testLog['stdout'] = stdout
             testLog['stderr'] = stderr
+            testLog['time'] = time
             log['testresults'].append(testLog)
             cmdargs = cmdargs[:-1]
             numTests = numTests + 1
             if numTests == maxTests:
                 break
+
+        # Deallocate cluster
+        if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None and allocated:
+            deallocate_cmdargs = shlex.split(cmds['deallocate_cmd'])
+            _status,_stdout,_stderr,_time = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)
+            if 0 != _status:
+                log['status'] = _status
+                log['stderr'] = _stderr
+                os.chdir(cwd)
+                return
+
         log['status'] = finalStatus
         log['stderr'] = finalError
         log['numTests'] = numTests
@@ -300,5 +425,11 @@ class OpenMPI(LauncherMTTTool):
             log['np'] = cmds['np']
         except KeyError:
             log['np'] = None
+
+        # if we added middleware to the paths, remove it
+        if midpath:
+            os.environ['PATH'] = oldbinpath
+            os.environ['LD_LIBRARY_PATH'] = oldldlibpath
+
         os.chdir(cwd)
         return

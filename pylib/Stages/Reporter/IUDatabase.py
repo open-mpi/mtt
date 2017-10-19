@@ -1,6 +1,7 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
 # Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
+# Copyright (c) 2017      IBM Corporation.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -20,21 +21,24 @@ from requests.auth import HTTPBasicAuth
 
 from ReporterMTTStage import *
 
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
 ## @addtogroup Stages
 # @{
 # @addtogroup Reporter
 # @section IUDatabase
-# @param username   Username to be used for submitting data
-# @param debug_filename      Debug output file for server interaction information
-# @param keep_debug_files    Retain reporter debug output after execution
-# @param realm               Database name
-# @param url                 URL of the database server
-# @param hostname            Name of the hosts involved in the tests (may be regular expression)
-# @param email               Email to which errors are to be sent
-# @param platform            Name of the platform (cluster) upon which the tests were run
-# @param pwfile              File where password can be found
-# @param password            Password for that username
-# @param debug_server        Ask the server to return its debug output as well
+# @param realm              Database name
+# @param username           Username to be used for submitting data
+# @param password           Password for that username
+# @param pwfile             File where password can be found
+# @param platform           Name of the platform (cluster) upon which the tests were run
+# @param hostname           Name of the hosts involved in the tests (may be regular expression)
+# @param url                URL of the database server
+# @param debug_filename     Debug output file for server interaction information
+# @param keep_debug_files   Retain reporter debug output after execution
+# @param debug_server       Ask the server to return its debug output as well
+# @param email              Email to which errors are to be sent
 # @}
 class IUDatabase(ReporterMTTStage):
 
@@ -131,7 +135,7 @@ class IUDatabase(ReporterMTTStage):
         profile = testDef.logger.getLog('Profile:Installed')
         metadata = {}
         metadata['client_serial'] = client_serial
-        metadata['hostname'] = profile['profile']['nodeName']
+        metadata['hostname'] = "\n".join(profile['profile']['nodeName'])
         metadata['http_username'] = cmds['username']
         metadata['local_username'] = pwd.getpwuid(os.getuid()).pw_name
         metadata['mtt_client_version'] = '4.0a1'
@@ -191,6 +195,7 @@ class IUDatabase(ReporterMTTStage):
                                       logger.getLog(self._extract_param(logger, lg['section'], 'parent')),
                                       metadata,
                                       s, url, httpauth)
+
         if test_info is None:
             return None
 
@@ -212,8 +217,7 @@ class IUDatabase(ReporterMTTStage):
         # and all of the tests that follow are from that test_build
         common_data['test_build_id'] = test_info['test_build_id']
 
-
-        for trun in lg['testresults']:
+        for trun in (lg['testresults'] if 'testresults' in lg else [lg]):
             data = {}
 
             #data['mpi_install_id'] = common_data['mpi_install_id']
@@ -224,16 +228,25 @@ class IUDatabase(ReporterMTTStage):
             except KeyError:
                 data['launcher'] = None
 
-            data['test_name'] = trun['test'].split('/')[-1]
+            if 'testresults' in lg:
+                data['test_name'] = trun['test'].split('/')[-1]
+            else:
+                data['test_name'] = trun['options']['command'].split('/')[-1]
 
             # Number of processes field
 
             try:
-                data['np'] = lg['np']
+                if 'testresults' in lg:
+                    data['np'] = lg['np']
+                else:
+                    data['np'] = 1
             except KeyError:
                 data['np'] = None
 
-            data['command'] = trun['cmd']
+            if 'testresults' in lg:
+                data['command'] = trun['cmd']
+            else:
+                data['command'] = trun['options']['command']
 
             # For now just mark the time when submitted
             data['start_timestamp'] = datetime.utcnow().strftime("%c")
@@ -278,6 +291,8 @@ class IUDatabase(ReporterMTTStage):
                             data['exit_value'] = int(lgerr.split("[Errno ")[1].split("]")[0])
                         except:
                             data['exit_value'] = -1
+                    else:
+                        data['exit_value'] = -1
                 else:
                     data['exit_value'] = -1
 
@@ -300,7 +315,64 @@ class IUDatabase(ReporterMTTStage):
             # data['bandwidth_max'] = None
 
             # data['description'] = None
+            data['description'] = self._extract_param(logger, 'MTTDefaults', 'description')
             # data['environment'] = None
+            environment = {}
+            for lgentry in logger.getLog(None):
+                if 'environ' in lgentry:
+                    environment.update(lgentry['environ'])
+            data['environment'] = "\n".join([str(k) + "=" + str(v) for k,v in environment.items()])
+
+
+            # BIOS table
+            bios = {}
+            for lgentry in logger.getLog(None):
+                if 'bios' in lgentry:
+                    bios.update(lgentry['bios'])
+            try:
+                data['bios_nodelist'] = bios['nodelist']
+                data['bios_params'] = bios['params']
+                data['bios_values'] = bios['values']
+            except KeyError:
+                pass
+
+            # Firmware table (TODO: may want to grab whole cfg file)
+            firmware = {}
+            for lgentry in logger.getLog(None):
+                if 'firmware' in lgentry:
+                    firmware.update(lgentry['firmware'])
+            try:
+                data['flashupdt_cfg'] = firmware['flashupdt_cfg']
+                data['firmware_nodelist'] = firmware['nodelist']
+            except KeyError:
+                pass
+
+            # Provision table
+            provisioning = {}
+            for lgentry in logger.getLog(None):
+                if 'provisioning' in lgentry:
+                    provisioning.update(lgentry['provisioning'])
+            try:
+                data['targets'] = provisioning['target']
+                data['image'] = provisioning['image']
+                data['controllers'] = provisioning['controller']
+                data['bootstrap'] = provisioning['bootstrap']
+            except KeyError:
+                pass
+
+            # Harasser table
+            harasser = {}
+            for lgentry in logger.getLog(None):
+                if 'harasser' in lgentry:
+                    harasser.update(lgentry['harasser'])
+            try:
+                data['harasser_seed'] = harasser['seed']
+                data['inject_script'] = harasser['inject_script']
+                data['cleanup_script'] = harasser['cleanup_script']
+                data['check_script'] = harasser['check_script']
+            except KeyError:
+                pass
+
 
             try:
                 if options['merge_stdout_stderr']:
@@ -311,18 +383,15 @@ class IUDatabase(ReporterMTTStage):
                 data['merge_stdout_stderr'] = None
 
             try:
-                if type(trun['stdout']) is list:
-                    data['result_stdout'] = '\n'.join(trun['stdout'])
-                else:
-                    data['result_stdout'] = trun(['stdout'])
+                data['result_stdout'] = '\n'.join(trun['stdout'] if trun['stdout'] is not None else "")
             except KeyError:
                 data['result_stdout'] = None
 
             try:
                 if type(trun['stderr']) is list:
-                    data['result_stderr'] = '\n'.join(trun['stderr'])
+                    data['result_stderr'] = '\n'.join(trun['stderr'] if trun['stderr'] is not None else "")
                 else:
-                    data['result_stderr'] = trun['stderr']
+                    data['result_stderr'] = (trun['stderr'] if trun['stderr'] is not None else "")
             except KeyError:
                 data['result_stderr'] = None
 
@@ -374,12 +443,14 @@ class IUDatabase(ReporterMTTStage):
 
         try:
             data['compiler_name'] = lg['compiler']['compiler']
+#            data['compiler_version'] = "\n".join(lg['compiler']['version'])
             data['compiler_version'] = lg['compiler']['version']
         except KeyError:
             full_log = logger.getLog(None)
             for entry in full_log:
                 if 'compiler' in entry:
                     data['compiler_name'] = entry['compiler']['compiler']
+#                    data['compiler_version'] = "\n".join(entry['compiler']['version'])
                     data['compiler_version'] = entry['compiler']['version']
                     break
             else:
@@ -416,6 +487,8 @@ class IUDatabase(ReporterMTTStage):
                         data['exit_value'] = int(lgerr.split("[Errno ")[1].split("]")[0])
                     except:
                         data['exit_value'] = -1
+                else:
+                    data['exit_value'] = -1
             else:
                 data['exit_value'] = -1
         else:
@@ -435,6 +508,8 @@ class IUDatabase(ReporterMTTStage):
                         data['exit_value'] = int(lgerr.split("[Errno ")[1].split("]")[0])
                     except:
                         data['exit_value'] = -1
+                else:
+                    data['exit_value'] = -1
             else:
                 data['exit_value'] = -1
 
@@ -443,7 +518,13 @@ class IUDatabase(ReporterMTTStage):
 
         #data['exit_signal'] = None
         #data['description'] = None
+        data['description'] = self._extract_param(logger, 'MTTDefaults', 'description')
         #data['environment'] = None
+        environment = {}
+        for lgentry in logger.getLog(None):
+            if 'environ' in lgentry:
+                environment.update(lgentry['environ'])
+        data['environment'] = "\n".join([str(k) + "=" + str(v) for k,v in environment.items()])
 
         try:
             if options['merge_stdout_stderr']:
@@ -454,10 +535,7 @@ class IUDatabase(ReporterMTTStage):
             data['merge_stdout_stderr'] = None
 
         try:
-            if type(lg['stdout']) is list:
-                data['result_stdout'] = '\n'.join(lg['stdout'])
-            else:
-                data['result_stdout'] = lg['stdout']
+            data['result_stdout'] = '\n'.join(lg['stdout'])
         except KeyError:
             data['result_stdout'] = None
 
@@ -468,7 +546,6 @@ class IUDatabase(ReporterMTTStage):
                 data['result_stderr'] = lg['stderr']
         except KeyError:
             data['result_stderr'] = None
-
 
         #
         # Submit
@@ -505,6 +582,7 @@ class IUDatabase(ReporterMTTStage):
         options = None
 
         # get the system profile
+
         profile = logger.getLog('Profile:Installed')['profile']
         if profile is None:
             print("Error: Failed to get 'profile'")
@@ -518,33 +596,35 @@ class IUDatabase(ReporterMTTStage):
         metadata['phase'] = 'MPI Install'
 
         try:
-            data['platform_hardware'] = profile['machineName']
+            data['platform_hardware'] = "\n".join(profile['machineName'])
         except KeyError:
             data['platform_hardware'] = None
 
         try:
-            data['platform_type'] = profile['processorType']
+            data['platform_type'] = "\n".join(profile['processorType'])
         except KeyError:
             data['platform_type'] = None
 
         try:
-            data['os_name'] = profile['kernelName']
+            data['os_name'] = "\n".join(profile['kernelName'])
         except KeyError:
             data['os_name'] = None
 
         try:
-            data['os_version'] = profile['kernelRelease']
+            data['os_version'] = "\n".join(profile['kernelRelease'])
         except KeyError:
             data['os_version'] = None
 
         try:
             data['compiler_name'] = lg['compiler']['compiler']
+#            data['compiler_version'] = "\n".join(lg['compiler']['version'])
             data['compiler_version'] = lg['compiler']['version']
         except KeyError:
             full_log = logger.getLog(None)
             for entry in full_log:
                 if 'compiler' in entry:
                     data['compiler_name'] = entry['compiler']['compiler']
+#                    data['compiler_version'] = "\n".join(entry['compiler']['version'])
                     data['compiler_version'] = entry['compiler']['version']
                     break
             else:
@@ -567,7 +647,7 @@ class IUDatabase(ReporterMTTStage):
 
         try:
             data['configure_arguments'] = logger.getLog(lg['middleware'])['configure_options']
-        except KeyError:
+        except (KeyError, TypeError):
             data['configure_arguments'] = None
 
         # For now just mark the time when submitted
@@ -598,6 +678,8 @@ class IUDatabase(ReporterMTTStage):
                         data['exit_value'] = int(lgerr.split("[Errno ")[1].split("]")[0])
                     except:
                         data['exit_value'] = -1
+                else:
+                    data['exit_value'] = -1
             else:
                 data['exit_value'] = -1
         else:
@@ -617,6 +699,8 @@ class IUDatabase(ReporterMTTStage):
                         data['exit_value'] = int(lgerr.split("[Errno ")[1].split("]")[0])
                     except:
                         data['exit_value'] = -1
+                else:
+                    data['exit_value'] = -1
             else:
                 data['exit_value'] = -1
 
@@ -629,7 +713,13 @@ class IUDatabase(ReporterMTTStage):
 
         #data['exit_signal'] = None
         #data['description'] = None
+        data['description'] = self._extract_param(logger, 'MTTDefaults', 'description')
         #data['environment'] = None
+        environment = {}
+        for lgentry in logger.getLog(None):
+            if 'environ' in lgentry:
+                environment.update(lgentry['environ'])
+        data['environment'] = "\n".join([str(k) + "=" + str(v) for k,v in environment.items()])
 
         try:
             if options is not None and options['merge_stdout_stderr']:
@@ -640,10 +730,7 @@ class IUDatabase(ReporterMTTStage):
             data['merge_stdout_stderr'] = None
 
         try:
-            if type(lg['stdout']) is list:
-                data['result_stdout'] = '\n'.join(lg['stdout'])
-            else:
-                data['result_stdout'] = lg['stdout']
+            data['result_stdout'] = '\n'.join(lg['stdout'])
         except KeyError:
             data['result_stdout'] = None
 

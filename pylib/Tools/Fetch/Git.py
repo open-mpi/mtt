@@ -1,6 +1,6 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
-# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2017 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -20,13 +20,14 @@ from distutils.spawn import find_executable
 # @{
 # @addtogroup Fetch
 # @section Git
-# @param username    Username required for accessing the repository
-# @param pr          Pull request to be downloaded
-# @param url         URL to access the repository
 # @param module      Modules (or lmod modules) to be loaded for accessing this package
-# @param branch      Branch (if not master) to be downloaded
-# @param pwfile      File where password can be found
+# @param url         URL to access the repository
+# @param username    Username required for accessing the repository
 # @param password    Password required for that user to access the repository
+# @param pwfile      File where password can be found
+# @param branch      Branch (if not master) to be downloaded
+# @param pr          Pull request to be downloaded
+# @param subdir      Subdirectory of interest in repository
 # @}
 class Git(FetchMTTTool):
 
@@ -198,8 +199,17 @@ class Git(FetchMTTTool):
                 return
         # record our current location
         cwd = os.getcwd()
+
+        dst = os.path.join(testDef.options['scratchdir'], log['section'].replace(":","_"))
+        try:
+            if not os.path.exists(dst): os.mkdir(dst)
+        except:
+            log['status'] = 1
+            log['stderr'] = "Unable to create " + dst
+            return
+
         # change to the scratch directory
-        os.chdir(testDef.options['scratchdir'])
+        os.chdir(dst)
         # see if this software has already been cloned
         if os.path.exists(repo):
             if not os.path.isdir(repo):
@@ -225,19 +235,20 @@ class Git(FetchMTTTool):
                     stderr = None
             except KeyError:
                 # since it already exists, let's just update it
-                status, stdout, stderr = testDef.execmd.execute(cmds, ["git", "pull"], testDef)
+                status, stdout, stderr, _ = testDef.execmd.execute(cmds, ["git", "pull"], testDef)
         else:
             # clone it
             if branch is not None:
-                status, stdout, stderr = testDef.execmd.execute(cmds, ["git", "clone", "-b", branch, url], testDef)
+                status, stdout, stderr, _ = testDef.execmd.execute(cmds, ["git", "clone", "-b", branch, url], testDef)
             else:
-                status, stdout, stderr = testDef.execmd.execute(cmds, ["git", "clone", url], testDef)
+                status, stdout, stderr, _ = testDef.execmd.execute(cmds, ["git", "clone", url], testDef)
             # move into it
             os.chdir(repo)
         # record the result
         log['status'] = status
         log['stdout'] = stdout
         log['stderr'] = stderr
+
         # log our absolute location so others can find it
         log['location'] = os.getcwd()
         # if they indicated that a specific subdirectory was
@@ -250,8 +261,6 @@ class Git(FetchMTTTool):
             pass
         # track that we serviced this one
         self.done[repo] = (status, log['location'])
-        # change back to the original directory
-        os.chdir(cwd)
         if usedModule:
             # unload the modules before returning
             status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules'], testDef)
@@ -259,4 +268,7 @@ class Git(FetchMTTTool):
                 log['status'] = status
                 log['stderr'] = stderr
                 return
+        # change back to the original directory
+        os.chdir(cwd)
+
         return

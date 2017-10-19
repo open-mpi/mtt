@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2016      Intel, Inc. All rights reserved.
+# Copyright (c) 2016-2017 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -10,7 +10,10 @@
 
 import os
 import sys
-import Queue
+try:
+    from Queue import *
+except:
+    from queue import *
 import threading
 from CNCMTTTool import *
 
@@ -53,7 +56,7 @@ class workerThread(threading.Thread):
                         ntries = 0
                         while True:
                             ++ntries
-                            status,stdout,stderr = self.testDef.execmd.execute(None, task['cmd'], testDef)
+                            status,stdout,stderr,_ = self.testDef.execmd.execute(None, task['cmd'], self.testDef)
                             if 0 == status or ntries == task['maxtries']:
                                 self.testDef.logger.verbose_print("IPMITool: node " + task['target'] + " is back")
                                 break
@@ -92,7 +95,7 @@ class workerThread(threading.Thread):
                                 continue
                             # send it off to ipmitool to execute
                             self.testDef.logger.verbose_print("IPMITool: " + ' '.join(task['cmd']))
-                            st,stdout,stderr = self.testDef.execmd.execute(None, task['cmd'], testDef)
+                            st,stdout,stderr,_ = self.testDef.execmd.execute(None, task['cmd'], self.testDef)
                             self.lock.acquire()
                             self.status.append((st, ' '.join(task['cmd']), stderr))
                             try:
@@ -130,15 +133,16 @@ class workerThread(threading.Thread):
 # @{
 # @addtogroup CNC
 # @section IPMITool
-# @param username      Remote session username
-# @param dryrun        Dryrun - print out commands but do not execute
 # @param target        List of remote host names or LAN interfaces to monitor during reset operations
-# @param numthreads    Number of worker threads to use
 # @param controller    List of IP addresses of remote node controllers/BMCs
-# @param command       Command to be sent
-# @param pwfile        File containing remote session password
+# @param username      Remote session username
 # @param password      Remote session password
+# @param pwfile        File containing remote session password
+# @param command       Command to be sent
 # @param maxtries      Max number of times to ping each host before declaring reset to fail
+# @param numthreads    Number of worker threads to use
+# @param dryrun        Dryrun - print out commands but do not execute
+# @param sudo          Use sudo to exeute privilaged comands
 # @}
 class IPMITool(CNCMTTTool):
     def __init__(self):
@@ -251,16 +255,17 @@ class IPMITool(CNCMTTTool):
         # the node, then we need to double it so we can execute the loop of
         # "ping" commands to detect node restart
         if reset:
-            ipmiQueue = Queue.Queue(2 * len(controllers))
+            ipmiQueue = Queue(2 * len(controllers))
         else:
-            ipmiQueue = Queue.Queue(len(controllers))
+            ipmiQueue = Queue(len(controllers))
 
         # Fill the queue
         self.lock.acquire()
         for n in range(0, len(controllers)):
             # construct the cmd
             cmd = {}
-            ipmicmd = cmds['command'].split()
+            ipmicmd = cmds['command']
+            ipmicmd.insert(0, "chassis")
             ipmicmd.insert(0, "ipmitool")
             if cmds['sudo']:
                 ipmicmd.insert(0, "sudo")
@@ -272,6 +277,21 @@ class IPMITool(CNCMTTTool):
             if cmds['password'] is not None:
                 ipmicmd.append("-P")
                 ipmicmd.append(cmds['password'])
+            try:
+                if cmds['pwfile'] is not None:
+                    if os.path.exists(cmds['pwfile']):
+                        f = open(cmds['pwfile'], 'r')
+                        password = f.readline().strip()
+                        ipmicmd.append("-P")
+                        ipmicmd.append(password)
+                        f.close()
+                    else:
+                        log['stdout'] = None
+                        log['status'] = 1;
+                        log['stderr'] = "Password file " + cmds['pwfile'] + " does not exist"
+                        return
+            except KeyError:
+                pass
             cmd['cmd'] = ipmicmd
             if reset:
                 cmd['target'] = targets[n]

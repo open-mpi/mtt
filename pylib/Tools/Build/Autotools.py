@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2017 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -13,28 +13,32 @@ import os
 import re
 import string
 import sys
+import shlex
 from BuildMTTTool import *
 
 ## @addtogroup Tools
 # @{
 # @addtogroup Build
 # @section Autotools
-# @param merge_stdout_stderr       Merge stdout and stderr into one output stream
-# @param make_options              Options to be passed to the make command
+# @param middleware                Middleware stage that these tests are to be built against
 # @param parent                    Section that precedes this one in the dependency tree
-# @param build_in_place            Build tests in current location (no prefix or install)
-# @param stdout_save_lines         Number of lines of stdout to save
-# @param modules                   Modules to load
-# @param configure_options         Options to be passed to configure. Note that the prefix will be automatically set and need not be provided here
-# @param save_stdout_on_success    Save stdout even if build succeeds
 # @param autogen_cmd               Command to be executed to setup the configure script, usually called autogen.sh or autogen.pl
+# @param configure_options         Options to be passed to configure. Note that the prefix will be automatically set and need not be provided here
+# @param make_options              Options to be passed to the make command
+# @param build_in_place            Build tests in current location (no prefix or install)
+# @param merge_stdout_stderr       Merge stdout and stderr into one output stream
+# @param stdout_save_lines         Number of lines of stdout to save
 # @param stderr_save_lines         Number of lines of stderr to save
+# @param save_stdout_on_success    Save stdout even if build succeeds
+# @param modules                   Modules to load
+# @param modules_unload            Modules to unload
 # @}
 class Autotools(BuildMTTTool):
     def __init__(self):
         BuildMTTTool.__init__(self)
         self.activated = False
         self.options = {}
+        self.options['middleware'] = (None, "Middleware stage that these tests are to be built against")
         self.options['parent'] = (None, "Section that precedes this one in the dependency tree")
         self.options['autogen_cmd'] = (None, "Command to be executed to setup the configure script, usually called autogen.sh or autogen.pl")
         self.options['configure_options'] = (None, "Options to be passed to configure. Note that the prefix will be automatically set and need not be provided here")
@@ -45,6 +49,7 @@ class Autotools(BuildMTTTool):
         self.options['stderr_save_lines'] = (-1, "Number of lines of stderr to save")
         self.options['save_stdout_on_success'] = (False, "Save stdout even if build succeeds")
         self.options['modules'] = (None, "Modules to load")
+        self.options['modules_unload'] = (None, "Modules to unload")
         self.exclude = set(string.punctuation)
         return
 
@@ -71,6 +76,7 @@ class Autotools(BuildMTTTool):
         return
 
     def execute(self, log, keyvals, testDef):
+
         testDef.logger.verbose_print("Autotools Execute")
         # parse any provided options - these will override the defaults
         cmds = {}
@@ -105,6 +111,18 @@ class Autotools(BuildMTTTool):
         inPlace = False
         # check to see if they specified a module to use
         # where the autotools can be found
+        usedModuleUnload = False
+        try:
+            if cmds['modules_unload'] is not None:
+                status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules_unload'], testDef)
+                if 0 != status:
+                    log['status'] = status
+                    log['stderr'] = stderr
+                    return
+                usedModuleUnload = True
+        except KeyError:
+            # not required to provide a module to unload
+            pass
         usedModule = False
         try:
             if cmds['modules'] is not None:
@@ -162,8 +180,7 @@ class Autotools(BuildMTTTool):
                 inPlace = True
             else:
                 # create the prefix path where this build result will be placed
-                section = ''.join(ch for ch in keyvals['section'] if ch not in self.exclude)
-                pfx = os.path.join(testDef.options['scratchdir'], "build", section)
+                pfx = os.path.join(testDef.options['scratchdir'], log['section'].replace(':','_'))
                 # convert it to an absolute path
                 pfx = os.path.abspath(pfx)
                 # record this location for any follow-on steps
@@ -171,8 +188,7 @@ class Autotools(BuildMTTTool):
                 prefix = "--prefix={0}".format(pfx)
         except KeyError:
             # create the prefix path where this build result will be placed
-            section = ''.join(ch for ch in keyvals['section'] if ch not in self.exclude)
-            pfx = os.path.join(testDef.options['scratchdir'], "build", section)
+            pfx = os.path.join(testDef.options['scratchdir'], log['section'].replace(':','_'))
             # convert it to an absolute path
             pfx = os.path.abspath(pfx)
             # record this location for any follow-on steps
@@ -205,6 +221,88 @@ class Autotools(BuildMTTTool):
             log['status'] = 0
             return
 
+        # check if we need to point to middleware
+        midpath = False
+        try:
+            if cmds['middleware'] is not None:
+                # pass it down
+                log['middleware'] = cmds['middleware']
+                # get the log entry of its location
+                midlog = testDef.logger.getLog(cmds['middleware'])
+                if midlog is not None:
+                    # get the location of the middleware
+                    try:
+                        if midlog['location'] is not None:
+                            # prepend that location to our paths
+                            try:
+                                oldbinpath = os.environ['PATH']
+                                pieces = oldbinpath.split(':')
+                            except KeyError:
+                                oldbinpath = ""
+                                pieces = []
+                            bindir = os.path.join(midlog['location'], "bin")
+                            pieces.insert(0, bindir)
+                            newpath = ":".join(pieces)
+                            os.environ['PATH'] = newpath
+                            # prepend the loadable lib path
+                            try:
+                                oldldlibpath = os.environ['LD_LIBRARY_PATH']
+                                pieces = oldldlibpath.split(':')
+                            except KeyError:
+                                oldldlibpath = ""
+                                pieces = []
+                            bindir = os.path.join(midlog['location'], "lib")
+                            pieces.insert(0, bindir)
+                            newpath = ":".join(pieces)
+                            os.environ['LD_LIBRARY_PATH'] = newpath
+                            # prepend the include path 
+                            try:
+                                oldcpath = os.environ['CPATH']
+                                pieces = oldcpath.split(':')
+                            except KeyError:
+                                oldcpath = ""
+                                pieces = []
+                            bindir = os.path.join(midlog['location'], "include")
+                            pieces.insert(0, bindir)
+                            newpath = ":".join(pieces)
+                            os.environ['CPATH'] = newpath
+                            # prepend the lib path 
+                            try:
+                                oldlibpath = os.environ['LIBRARY_PATH']
+                                pieces = oldlibpath.split(':')
+                            except KeyError:
+                                oldlibpath = ""
+                                pieces = []
+                            bindir = os.path.join(midlog['location'], "lib")
+                            pieces.insert(0, bindir)
+                            newpath = ":".join(pieces)
+                            os.environ['LIBRARY_PATH'] = newpath
+
+                            # mark that this was done
+                            midpath = True
+                    except KeyError:
+                        pass
+                    # check for modules required by the middleware
+                    try:
+                        if midlog['parameters'] is not None:
+                            for md in midlog['parameters']:
+                                if "modules" == md[0]:
+                                    try:
+                                        if cmds['modules'] is not None:
+                                            # append these modules to those
+                                            mods = md[1].split(',')
+                                            newmods = modules.split(',')
+                                            for md in newmods:
+                                                mods.append(md)
+                                            cmds['modules'] = ','.join(mods)
+                                    except KeyError:
+                                        cmds['modules'] = md[1]
+                                    break
+                    except KeyError:
+                        pass
+        except KeyError:
+            pass
+
         # save the current directory so we can return to it
         cwd = os.getcwd()
         # now move to the package location
@@ -216,7 +314,7 @@ class Autotools(BuildMTTTool):
                 args = cmds['autogen_cmd'].split()
                 for arg in args:
                     agargs.append(arg.strip())
-                status, stdout, stderr = testDef.execmd.execute(cmds, agargs, testDef)
+                status, stdout, stderr, _ = testDef.execmd.execute(cmds, agargs, testDef)
                 if 0 != status:
                     log['status'] = status
                     log['stdout'] = stdout
@@ -227,6 +325,15 @@ class Autotools(BuildMTTTool):
                         if 0 != status:
                             log['status'] = status
                             log['stderr'] = stderr
+                            os.chdir(cwd)
+                            return
+                    if usedModuleUnload:
+                        status,stdout,stderr = testDef.modcmd.loadModules(cmds['modules_unload'], testDef)
+                        if 0 != status:
+                            log['status'] = status
+                            log['stderr'] = stderr
+                            os.chdir(cwd)
+                            return
                     # return to original location
                     os.chdir(cwd)
                     return
@@ -247,12 +354,12 @@ class Autotools(BuildMTTTool):
         # if they gave us any configure args, add them
         try:
             if cmds['configure_options'] is not None:
-                args = cmds['configure_options'].split()
+                args = shlex.split(cmds['configure_options'])
                 for arg in args:
                     cfgargs.append(arg.strip())
         except KeyError:
             pass
-        status, stdout, stderr = testDef.execmd.execute(cmds, cfgargs, testDef)
+        status, stdout, stderr, _ = testDef.execmd.execute(cmds, cfgargs, testDef)
         if 0 != status:
             log['status'] = status
             log['stdout'] = stdout
@@ -286,7 +393,7 @@ class Autotools(BuildMTTTool):
                 bldargs.append(arg.strip())
         # step thru the process, starting with "clean"
         bldargs.append("clean")
-        status, stdout, stderr = testDef.execmd.execute(cmds, bldargs, testDef)
+        status, stdout, stderr, _ = testDef.execmd.execute(cmds, bldargs, testDef)
         if 0 != status:
             log['status'] = status
             log['stdout'] = stdout
@@ -307,7 +414,7 @@ class Autotools(BuildMTTTool):
         # now execute "make all"
         bldargs = bldargs[0:-1]
         bldargs.append("all")
-        status, stdout, stderr = testDef.execmd.execute(cmds, bldargs, testDef)
+        status, stdout, stderr, _ = testDef.execmd.execute(cmds, bldargs, testDef)
         if 0 != status:
             log['status'] = status
             log['stdout'] = stdout
@@ -329,7 +436,7 @@ class Autotools(BuildMTTTool):
         if prefix is not None:
             bldargs = bldargs[0:-1]
             bldargs.append("install")
-            status, stdout, stderr = testDef.execmd.execute(cmds, bldargs, testDef)
+            status, stdout, stderr, _ = testDef.execmd.execute(cmds, bldargs, testDef)
         # this is the end of the operation, so the status is our
         # overall status
         log['status'] = status
@@ -341,6 +448,14 @@ class Autotools(BuildMTTTool):
             if 0 != status:
                 log['status'] = status
                 log['stderr'] = stderr
+
+        # if we added middleware to the paths, remove it
+        if midpath:
+            os.environ['PATH'] = oldbinpath
+            os.environ['LD_LIBRARY_PATH'] = oldldlibpath
+            os.environ['CPATH'] = oldcpath
+            os.environ['LIBRARY_PATH'] = oldlibpath
+
         # return home
         os.chdir(cwd)
 

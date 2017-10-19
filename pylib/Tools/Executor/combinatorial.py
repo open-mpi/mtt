@@ -72,6 +72,8 @@ class CombinatorialEx(ExecutorMTTTool):
         writeOption.optionxform = str
         # Sort base .ini sections and write to temp files 
         for section in self.baseIniFile.sections():
+            if section == "ENV":
+                continue
             if section.startswith("SKIP") or section.startswith("skip"):
                 # users often want to temporarily ignore a section
                 # of their test definition file, but don't want to
@@ -167,6 +169,7 @@ class CombinatorialEx(ExecutorMTTTool):
 
     def execute(self, testDef):
         testDef.logger.verbose_print("ExecuteCombinatorial")
+        status = 0
         self.createIniLog(testDef)
         try:
             if not self.runLog:
@@ -177,9 +180,13 @@ class CombinatorialEx(ExecutorMTTTool):
                     print("Test .ini file not found!: " + nextFile)
                     sys.exit(1)
                 testDef.configNewTest(self.runLog[nextFile])
-                testDef.executeTest()
+                sequential_status = testDef.executeTest()
+                if sequential_status != 0: 
+                    status = 1
             # clean up temporary files
         finally:
             shutil.rmtree(self.tempDir)
+  
+        return status
         
             

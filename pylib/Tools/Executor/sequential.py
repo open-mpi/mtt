@@ -63,9 +63,11 @@ class SequentialEx(ExecutorMTTTool):
 
     def execute(self, testDef):
         testDef.logger.verbose_print("ExecuteSequential")
+        status = 0
         for step in testDef.loader.stageOrder:
             for title in testDef.config.sections():
-                if step not in title:
+                if (":" in title and step not in title.split(":")[0]) or \
+                   (":" not in title and step not in title):
                     continue
                 # see if this is a step we are to execute
                 if title not in testDef.actives:
@@ -227,9 +229,19 @@ class SequentialEx(ExecutorMTTTool):
                         continue
 
                 # execute the provided test description and capture the result
+                testDef.logger.stage_start_print(title, plugin.print_name())
                 plugin.execute(stageLog, keyvals, testDef)
+                testDef.logger.stage_end_print(title, plugin.print_name(), stageLog)
                 testDef.logger.logResults(title, stageLog)
                 if testDef.options['stop_on_fail'] is not False and stageLog['status'] != 0:
                     print("Section " + stageLog['section'] + ": Status " + str(stageLog['status']))
+                    try:
+                        print("Section " + stageLog['section'] + ": Stderr " + str(stageLog['stderr']))
+                    except KeyError:
+                        pass
                     sys.exit(1)
-        return
+         
+                # Set flag if any stage failed so that a return code can be passed back up
+                if stageLog['status'] != 0:
+                    status = 1
+        return status

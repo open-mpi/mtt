@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2017 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -11,21 +11,27 @@
 from __future__ import print_function
 import os
 import re
+import shlex
 from BuildMTTTool import *
 
 ## @addtogroup Tools
 # @{
 # @addtogroup Build
 # @section Shell
-# @param merge_stdout_stderr       Merge stdout and stderr into one output stream
+# @param middleware                Middleware stage that these tests are to be built against
+# @param command                   Command to execute
 # @param parent                    Section that precedes this one in the dependency tree
-# @param modules_unload            Modules to unload
+# @param merge_stdout_stderr       Merge stdout and stderr into one output stream
 # @param stdout_save_lines         Number of lines of stdout to save
-# @param modules                   Modules to load
 # @param stderr_save_lines         Number of lines of stderr to save
 # @param save_stdout_on_success    Save stdout even if build succeeds
-# @param command                   Command to execute
-# @param middleware                Middleware stage that these tests are to be built against
+# @param modules                   Modules to load
+# @param modules_unload            Modules to unload
+# @param fail_test                 Specifies whether this test is expected to fail (value=None means test is expected to succeed)
+# @param fail_returncode           Specifies the expected failure returncode of this test
+# @param allocate_cmd              Command to use for allocating nodes from the resource manager
+# @param deallocate_cmd            Command to use for deallocating nodes from the resource manager
+# @param asis_target                    Specifies name of asis_target being built. This is used with \"ASIS\" keyword to determine whether to do anything.
 # @}
 class Shell(BuildMTTTool):
     def __init__(self):
@@ -41,6 +47,11 @@ class Shell(BuildMTTTool):
         self.options['save_stdout_on_success'] = (False, "Save stdout even if build succeeds")
         self.options['modules'] = (None, "Modules to load")
         self.options['modules_unload'] = (None, "Modules to unload")
+        self.options['fail_test'] = (None, "Specifies whether this test is expected to fail (value=None means test is expected to succeed)")
+        self.options['fail_returncode'] = (None, "Specifies the expected failure returncode of this test")
+        self.options['allocate_cmd'] = (None, "Command to use for allocating nodes from the resource manager")
+        self.options['deallocate_cmd'] = (None, "Command to use for deallocating nodes from the resource manager")
+        self.options['asis_target'] = (None, "Specifies name of asis_target being built. This is used with \"ASIS\" keyword to determine whether to do anything.")
         return
 
     def activate(self):
@@ -65,6 +76,35 @@ class Shell(BuildMTTTool):
             print(prefix + line)
         return
 
+    def allocate(self, log, cmds, testDef):
+        self.allocated = False
+        if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None:
+            allocate_cmdargs = shlex.split(cmds['allocate_cmd'])
+            status,stdout,stderr,time = testDef.execmd.execute(cmds, allocate_cmdargs, testDef)
+            if 0 != status:
+                log['status'] = status
+                if log['stderr']:
+                    log['stderr'].extend(stderr)
+                else:
+                    log['stderr'] = stderr
+                return False
+            self.allocated = True
+        return True
+
+    def deallocate(self, log, cmds, testDef):
+        if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None and self.allocated == True:
+            deallocate_cmdargs = shlex.split(cmds['deallocate_cmd'])
+            status,stdout,stderr,time = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)
+            self.allocated = False
+            if 0 != status:
+                log['status'] = status
+                if log['stderr']:
+                    log['stderr'].extend(stderr)
+                else:
+                    log['stderr'] = stderr
+                return False
+        return True
+
     def execute(self, log, keyvals, testDef):
         testDef.logger.verbose_print("Shell Execute")
         # parse any provided options - these will override the defaults
@@ -82,6 +122,7 @@ class Shell(BuildMTTTool):
             return
 
         # get the location of the software we are to build
+        parentlog = None
         try:
             if cmds['parent'] is not None:
                 # we have to retrieve the log entry from
@@ -93,26 +134,60 @@ class Shell(BuildMTTTool):
                     log['status'] = 1
                     log['stderr'] = "Parent",cmds['parent'],"log not found"
                     return
-            else:
-                log['status'] = 1
-                log['stderr'] = "Parent log not recorded"
-                return
-
         except KeyError:
             log['status'] = 1
             log['stderr'] = "Parent not specified"
             return
         try:
-            location = parentlog['location']
+            parentloc = os.path.join(os.getcwd(),log['options']['scratch'])
+            location = parentloc
         except KeyError:
             log['status'] = 1
-            log['stderr'] = "Location of package to build was not specified in parent stage"
+            log['stderr'] = "No scratch directory in log"
             return
+        if parentlog is not None:
+            try:
+                parentloc = parentlog['location']
+                location = parentloc
+            except KeyError:
+                log['status'] = 1
+                log['stderr'] = "Location of package to build was not specified in parent stage"
+                return
+        else:
+            try:
+                if log['section'].startswith("TestGet:") or log['section'].startswith("MiddlewareGet:"):
+                    location = os.path.join(parentloc,log['section'].replace(":","_"))
+            except KeyError:
+                log['status'] = 1
+                log['stderr'] = "No section in log"
+                return
         # check to see if this is a dryrun
         if testDef.options['dryrun']:
             # just log success and return
             log['status'] = 0
             return
+
+        # Check to see if this needs to be ran if ASIS is specified
+        try:
+            if cmds['asis']:
+                if cmds['asis_target'] is not None:
+                    if os.path.exists(os.path.join(parentloc,cmds['asis_target'])):
+                        testDef.logger.verbose_print("asis_target " + os.path.join(parentloc,cmds['asis_target']) + " exists. Skipping...")
+                        log['location'] = location
+                        log['status'] = 0
+                        return
+                    else:
+                        testDef.logger.verbose_print("asis_target " + os.path.join(parentloc,cmds['asis_target']) + " does not exist. Continuing...")
+                else: # no asis target, default to check for directory
+                    if os.path.exists(location):
+                        testDef.logger.verbose_print("directory " + location + " exists. Skipping...")
+                        log['location'] = location
+                        log['status'] = 0
+                        return
+                    else:
+                        testDef.logger.verbose_print("directory " + location + " does not exist. Continuing...")
+        except KeyError:
+            pass
 
         # check if we need to point to middleware
         midpath = False
@@ -137,9 +212,31 @@ class Shell(BuildMTTTool):
                             pieces.insert(0, bindir)
                             newpath = ":".join(pieces)
                             os.environ['PATH'] = newpath
-                            # prepend the libdir path as well
+                            # prepend the loadable lib path
                             try:
-                                oldlibpath = os.environ['LD_LIBRARY_PATH']
+                                oldldlibpath = os.environ['LD_LIBRARY_PATH']
+                                pieces = oldldlibpath.split(':')
+                            except KeyError:
+                                oldldlibpath = ""
+                                pieces = []
+                            bindir = os.path.join(midlog['location'], "lib")
+                            pieces.insert(0, bindir)
+                            newpath = ":".join(pieces)
+                            os.environ['LD_LIBRARY_PATH'] = newpath
+                            # prepend the include path 
+                            try:
+                                oldcpath = os.environ['CPATH']
+                                pieces = oldcpath.split(':')
+                            except KeyError:
+                                oldcpath = ""
+                                pieces = []
+                            bindir = os.path.join(midlog['location'], "include")
+                            pieces.insert(0, bindir)
+                            newpath = ":".join(pieces)
+                            os.environ['CPATH'] = newpath
+                            # prepend the lib path 
+                            try:
+                                oldlibpath = os.environ['LIBRARY_PATH']
                                 pieces = oldlibpath.split(':')
                             except KeyError:
                                 oldlibpath = ""
@@ -147,7 +244,8 @@ class Shell(BuildMTTTool):
                             bindir = os.path.join(midlog['location'], "lib")
                             pieces.insert(0, bindir)
                             newpath = ":".join(pieces)
-                            os.environ['LD_LIBRARY_PATH'] = newpath
+                            os.environ['LIBRARY_PATH'] = newpath
+
                             # mark that this was done
                             midpath = True
                     except KeyError:
@@ -175,18 +273,6 @@ class Shell(BuildMTTTool):
 
         # check to see if they specified a module to use
         # where the compiler can be found
-        usedModule = False
-        try:
-            if cmds['modules'] is not None:
-                status,stdout,stderr = testDef.modcmd.loadModules(cmds['modules'], testDef)
-                if 0 != status:
-                    log['status'] = status
-                    log['stderr'] = stderr
-                    return
-                usedModule = True
-        except KeyError:
-            # not required to provide a module
-            pass
         usedModuleUnload = False
         try:
             if cmds['modules_unload'] is not None:
@@ -198,6 +284,18 @@ class Shell(BuildMTTTool):
                 usedModuleUnload = True
         except KeyError:
             # not required to provide a module to unload
+            pass
+        usedModule = False
+        try:
+            if cmds['modules'] is not None:
+                status,stdout,stderr = testDef.modcmd.loadModules(cmds['modules'], testDef)
+                if 0 != status:
+                    log['status'] = status
+                    log['stderr'] = stderr
+                    return
+                usedModule = True
+        except KeyError:
+            # not required to provide a module
             pass
 
         # sense and record the compiler being used
@@ -216,36 +314,75 @@ class Shell(BuildMTTTool):
             log['compiler'] = compilerLog
 
         # Find MPI information for IUDatabase plugin
-        plugin = None
-        availUtil = list(testDef.loader.utilities.keys())
-        for util in availUtil:
-            for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
-                if "MPIVersion" == pluginInfo.plugin_object.print_name():
-                    plugin = pluginInfo.plugin_object
-                    break
-        if plugin is None:
-            log['mpi_info'] = {'name' : 'unknown', 'version' : 'unknown'}
-        else:
-            mpi_info = {}
-            plugin.execute(mpi_info, testDef)
-            log['mpi_info'] = mpi_info
+        if log['section'].startswith("TestBuild:") or log['section'].startswith("MiddlewareBuild:"):
+            plugin = None
+            availUtil = list(testDef.loader.utilities.keys())
+            for util in availUtil:
+                for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
+                    if "MPIVersion" == pluginInfo.plugin_object.print_name():
+                        plugin = pluginInfo.plugin_object
+                        break
+            if plugin is None:
+                log['mpi_info'] = {'name' : 'unknown', 'version' : 'unknown'}
+            else:
+                mpi_info = {}
+                plugin.execute(mpi_info, testDef)
+                log['mpi_info'] = mpi_info
 
         # save the current directory so we can return to it
         cwd = os.getcwd()
         # now move to the package location
+        if not os.path.exists(location):
+            os.makedirs(location)
         os.chdir(location)
         # execute the specified command
-        cfgargs = cmds['command'].split()
-        status, stdout, stderr = testDef.execmd.execute(cmds, cfgargs, testDef)
-        if 0 != status:
+        # Use shlex.split() for correct tokenization for args
+
+        # Allocate cluster
+        if False == self.allocate(log, cmds, testDef):
+            return
+
+        cfgargs = shlex.split(cmds['command'])
+
+        if 'TestRun' in log['section'].split(":")[0]:
+            harass_exec_ids = testDef.harasser.start(log, testDef)
+
+            harass_check = testDef.harasser.check(harass_exec_ids, log, testDef)
+            if harass_check is not None:
+                log['stderr'] = 'Not all harasser scripts started. These failed to start: ' \
+                                + ','.join([h_info[1]['start_script'] for h_info in harass_check[0]])
+                log['time'] = sum([r_info[3] for r_info in harass_check[1]])
+                log['status'] = 1
+                self.deallocate(log, cmds, testDef)
+                return
+
+        status, stdout, stderr, time = testDef.execmd.execute(cmds, cfgargs, testDef)
+
+        if 'TestRun' in log['section'].split(":")[0]:
+            testDef.harasser.stop(harass_exec_ids, log, testDef)
+
+        # Deallocate cluster
+        if False == self.deallocate(log, cmds, testDef):
+            return
+
+        if (cmds['fail_test'] is None and 0 != status) \
+                or (cmds['fail_test'] is not None and cmds['fail_returncode'] is None and 0 == status) \
+                or (cmds['fail_test'] is not None and cmds['fail_returncode'] is not None and int(cmds['fail_returncode']) != status):
             # return to original location
             os.chdir(cwd)
-            log['status'] = status
+            if log['status'] == 0:
+                log['status'] = 1
+            else:
+                log['status'] = status
             log['stdout'] = stdout
             log['stderr'] = stderr
+            log['time'] = time
             return
         log['status'] = 0
         log['stdout'] = stdout
+        log['time'] = time
+        if cmds['fail_test'] == True:
+            log['stderr'] = stderr
         # record this location for any follow-on steps
         log['location'] = location
         if usedModule:
@@ -266,7 +403,9 @@ class Shell(BuildMTTTool):
         # if we added middleware to the paths, remove it
         if midpath:
             os.environ['PATH'] = oldbinpath
-            os.environ['LD_LIBRARY_PATH'] = oldlibpath
+            os.environ['LD_LIBRARY_PATH'] = oldldlibpath
+            os.environ['CPATH'] = oldcpath
+            os.environ['LIBRARY_PATH'] = oldlibpath
 
         # return to original location
         os.chdir(cwd)

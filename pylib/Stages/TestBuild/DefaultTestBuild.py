@@ -16,15 +16,15 @@ from TestBuildMTTStage import *
 # @{
 # @addtogroup TestBuild
 # @section DefaultTestBuild
-# @param merge_stdout_stderr       Merge stdout and stderr into one output stream
-# @param make_options              Options to be passed to the make command
+# @param middleware                Middleware stage that these tests are to be built against
 # @param build_in_place            Build tests in current location (no prefix or install)
+# @param merge_stdout_stderr       Merge stdout and stderr into one output stream
 # @param stdout_save_lines         Number of lines of stdout to save
 # @param stderr_save_lines         Number of lines of stderr to save
-# @param configure_options         Options to be passed to configure. Note that the prefix will be automatically set and need not be provided here
-# @param save_stdout_on_success    Save stdout even if build succeeds
 # @param autogen_cmd               Command to be executed to setup the configure script, usually called autogen.sh or autogen.pl
-# @param middleware                Middleware stage that these tests are to be built against
+# @param configure_options         Options to be passed to configure. Note that the prefix will be automatically set and need not be provided here
+# @param make_options              Options to be passed to the make command
+# @param save_stdout_on_success    Save stdout even if build succeeds
 # @}
 class DefaultTestBuild(TestBuildMTTStage):
 
@@ -99,10 +99,10 @@ class DefaultTestBuild(TestBuildMTTStage):
                             os.environ['PATH'] = newpath
                             # prepend the libdir path as well
                             try:
-                                oldlibpath = os.environ['LD_LIBRARY_PATH']
-                                pieces = oldlibpath.split(':')
+                                oldldlibpath = os.environ['LD_LIBRARY_PATH']
+                                pieces = oldldlibpath.split(':')
                             except KeyError:
-                                oldlibpath = ""
+                                oldldlibpath = ""
                                 pieces = []
                             bindir = os.path.join(midlog['location'], "lib")
                             pieces.insert(0, bindir)
@@ -146,5 +146,5 @@ class DefaultTestBuild(TestBuildMTTStage):
         # if we added middleware to the paths, remove it
         if midpath:
             os.environ['PATH'] = oldbinpath
-            os.environ['LD_LIBRARY_PATH'] = oldlibpath
+            os.environ['LD_LIBRARY_PATH'] = oldldlibpath
         return

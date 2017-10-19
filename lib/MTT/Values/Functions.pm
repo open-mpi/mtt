@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2017 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
 # Copyright (c) 2010      Oracle and/or its affiliates.  All rights reserved.
 # $COPYRIGHT$
@@ -1073,6 +1073,12 @@ sub test_executable {
     Debug("&test_executable returning: $MTT::Test::Run::test_executable\n");
 
     return $MTT::Test::Run::test_executable;
+}
+
+sub test_build_dir {
+    Debug("&test_build_dir returning: $MTT::Test::Run::test_build_dir\n");
+
+    return $MTT::Test::Run::test_build_dir;
 }
 
 sub test_executable_dir {

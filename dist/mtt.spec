@@ -53,6 +53,13 @@ Requires: mtt-common, perl, perl-libwww-perl
 %description perlclient 
 This is the MPI Testing Tool (MTT) software package for the perl client.
 
+%package bat
+Summary: BAT Tests
+Group: Development/Libraries
+Requires: mtt-common
+%description bat
+This is the MPI Testing Tool (MTT) software package for Basic Acceptance (BAT) Tests.
+
 %prep
 %setup -n %{baseName}-%{version}
 
@@ -94,5 +101,10 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{install_path}
 %{install_path}/client
 %{install_path}/lib
+
+%files bat
+%defattr(-,root,root)
+%dir %{install_path}
+%{install_path}/tests
 
 %changelog

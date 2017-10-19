@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2014 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2017 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007-2008 Sun Microsystems, Inc.  All rights reserved.
 # Copyright (c) 2008      Mellanox Technologies.  All rights reserved.
 # $COPYRIGHT$
@@ -222,6 +222,7 @@ sub RunEngine {
         $run->{test_build_simple_section_name} = $test_build->{simple_section_name};
 
         # Setup some globals
+        $MTT::Test::Run::test_build_dir = $test_build->{srcdir};
         $MTT::Test::Run::test_executable = $run->{executable};
 
         my $test_exe_abs = File::Spec->rel2abs($run->{executable});

@@ -24,6 +24,8 @@ from yapsy.PluginManager import PluginManager
 import datetime
 from distutils.spawn import find_executable
 
+is_py2 = sys.version[0] == '2'
+
 # The Test Definition class is mostly a storage construct
 # to make it easier when passing values across stages and
 # tools.
@@ -59,6 +61,7 @@ class TestDef(object):
         self.logger = None
         self.modcmd = None
         self.execmd = None
+        self.harasser = None
         self.config = None
         self.stages = None
         self.tools = None
@@ -83,8 +86,6 @@ class TestDef(object):
         elif type(opt) is bool:
             if type(inval) is bool:
                 return 0, inval
-            elif type(inval) is unicode:
-                return 0, int(inval)
             elif type(inval) is str:
                 if inval.lower() in ['true', '1', 't', 'y', 'yes']:
                     return 0, True
@@ -95,6 +96,8 @@ class TestDef(object):
                     return 0, False
                 else:
                     return 0, True
+            elif is_py2 and type(inval) is unicode:
+                return 0, int(inval)
             else:
                 # unknown conversion required
                 print("Unknown conversion required for " + inval)
@@ -200,7 +203,7 @@ class TestDef(object):
         # now go thru in the reverse direction to see
         # if any keyvals they provided aren't supported
         # as this would be an error
-        stderr = []
+        unsupported_options = []
         for kvkey in kvkeys:
             # ignore some standard keys
             if kvkey in ['section', 'plugin']:
@@ -213,15 +216,12 @@ class TestDef(object):
                 if kvkey in ['parent', 'asis']:
                     target[kvkey] = keyvals[kvkey]
                 else:
-                    stderr.append("Option " + kvkey + " is not supported")
-        if stderr:
-            # mark the log with an error status
-            log['status'] = 1
-            # pass the errors back
-            log['stderr'] = stderr
-        else:
-            log['status'] = 0
-            log['options'] = target
+                    unsupported_options.append(kvkey)
+        if unsupported_options:
+            sys.exit("ERROR: Unsupported options for section [%s]: %s" % (log['section'], ",".join(unsupported_options)))
+
+        log['status'] = 0
+        log['options'] = target
         return
 
     def loadPlugins(self, basedir, topdir):
@@ -332,6 +332,17 @@ class TestDef(object):
             print("ExecuteCmd plugin was not found")
             print("This is a basic capability required")
             print("for MTT operations - cannot continue")
+            sys.exit(1)
+        print(self.tools.getPluginsOfCategory("Harasser"))
+        for pluginInfo in self.tools.getPluginsOfCategory("Harasser"):
+            print(pluginInfo.plugin_object.print_name())
+            if "Harasser" == pluginInfo.plugin_object.print_name():
+                self.harasser = pluginInfo.plugin_object
+                break
+        if self.harasser is None:
+            print("Harasser plugin was not found")
+            print("This is required for all TestRun plugins")
+            print("cannot continue")
             sys.exit(1)
         # similarly, capture the highest priority defaults stage here
         pri = -1
@@ -501,9 +512,16 @@ class TestDef(object):
 
     def configTest(self):
         # setup the configuration parser
-        self.config = configparser.ConfigParser()
+        self.config = configparser.SafeConfigParser(interpolation=configparser.ExtendedInterpolation())
+
         # Set the config parser to make option names case sensitive.
         self.config.optionxform = str
+
+        # fill ENV section with environemt variables
+        self.config.add_section('ENV')
+        for k,v in os.environ.items():
+            self.config.set('ENV', k, v.replace("$","$$"))
+
         # log the list of files - note that the argument parser
         # puts the input files in a list, with the first member
         # being the list of input files
@@ -526,6 +544,29 @@ class TestDef(object):
                 print("Test description file",testFile,"not found!")
                 sys.exit(1)
             self.config.read(self.log['inifiles'])
+
+        # Check for ENV input
+        required_env = []
+        all_file_contents = []
+        for testFile in self.log['inifiles']:
+            file_contents = open(testFile, "r").read()
+            file_contents = "\n".join(["%s %d: %s" % (testFile.split("/")[-1],i,l) for i,l in enumerate(file_contents.split("\n")) if not l.lstrip().startswith("#")])
+            all_file_contents.append(file_contents)
+            if "${ENV:" in file_contents:
+                required_env.extend([s.split("}")[0] for s in file_contents.split("${ENV:")[1:]])
+        env_not_found = set([e for e in required_env if e not in os.environ.keys()])
+        lines_with_env_not_found = []
+        for file_contents in all_file_contents:
+            lines_with_env_not_found.extend(["%s: %s"%(",".join([e for e in env_not_found if "${ENV:%s}"%e in l]),l) \
+                                             for l in file_contents.split("\n") \
+                                             if sum(["${ENV:%s}"%e in l for e in env_not_found])])
+        if lines_with_env_not_found:
+            print("ERROR: Not all required environment variables are defined.")
+            print("ERROR: Still need:")
+            for l in lines_with_env_not_found:
+                print("ERROR: %s"%l)
+            sys.exit(1)
+
         for section in self.config.sections():
             if section.startswith("SKIP") or section.startswith("skip"):
                 # users often want to temporarily ignore a section
@@ -590,8 +631,8 @@ class TestDef(object):
         self.tools.activatePluginByName("sequential", "Executor")
         # execute the provided test description
         executor = self.tools.getPluginByName("sequential", "Executor")
-        executor.plugin_object.execute(self)
-        return
+        status = executor.plugin_object.execute(self)
+        return status
 
     def executeCombinatorial(self):
         if not self.tools.getPluginByName("combinatorial", "Executor"):
@@ -601,9 +642,9 @@ class TestDef(object):
         self.tools.activatePluginByName("combinatorial", "Executor")
         # execute the provided test description
         executor = self.tools.getPluginByName("combinatorial", "Executor")
-        executor.plugin_object.execute(self)
-        return
-
+        status = executor.plugin_object.execute(self)
+        return status
+  
     def printOptions(self, options):
         # if the options are empty, report that
         if not options:
@@ -693,7 +734,7 @@ class TestDef(object):
             try:
                 availStages = list(self.loader.stages.keys())
                 for stage in availStages:
-                    for pluginInfo in testDef.stages.getPluginsOfCategory(stage):
+                    for pluginInfo in self.stages.getPluginsOfCategory(stage):
                         if name == pluginInfo.plugin_object.print_name():
                             return pluginInfo.plugin_object
                 # didn't find it
@@ -704,7 +745,7 @@ class TestDef(object):
             try:
                 availTools = list(self.loader.tools.keys())
                 for tool in availTools:
-                    for pluginInfo in testDef.tools.getPluginsOfCategory(tool):
+                    for pluginInfo in self.tools.getPluginsOfCategory(tool):
                         if name == pluginInfo.plugin_object.print_name():
                             return pluginInfo.plugin_object
                 # didn't find it
@@ -715,7 +756,7 @@ class TestDef(object):
             try:
                 availUtils = list(self.loader.utilities.keys())
                 for util in availUtils:
-                    for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
+                    for pluginInfo in self.utilities.getPluginsOfCategory(util):
                         if name == pluginInfo.plugin_object.print_name():
                             return pluginInfo.plugin_object
                 # didn't find it

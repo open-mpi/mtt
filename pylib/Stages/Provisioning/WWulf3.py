@@ -1,6 +1,6 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
-# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2017 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -10,19 +10,22 @@
 
 from __future__ import print_function
 from ProvisionMTTStage import *
+import shlex
 
 ## @addtogroup Stages
 # @{
 # @addtogroup Provision
 # @section WWulf3
-# @param username      Remote controller username
-# @param sudo          Use sudo to execute privileged commands
-# @param target        List of remote host names or LAN interfaces to be provisioned
-# @param image         Name of image to be instantiated
-# @param bootstrap     Name of bootstrap to be used
-# @param controller    List of IP addresses of remote node controllers/BMCs
-# @param pwfile        File containing remote controller password
-# @param password      Remote controller password
+# @param target           List of remote host names or LAN interfaces to be provisioned
+# @param image            Name of image to be instantiated
+# @param bootstrap        Name of bootstrap to be used
+# @param controller       List of IP addresses of remote node controllers/BMCs
+# @param username         Remote controller username
+# @param password         Remote controller password
+# @param pwfile           File containing remote controller password
+# @param sudo             Use sudo to execute privileged commands
+# @param allocate_cmd     Command to use for allocating nodes from the resource manager
+# @param deallocate_cmd   Command to use for deallocating nodes from the resource manager
 # @}
 class WWulf3(ProvisionMTTStage):
 
@@ -38,6 +41,8 @@ class WWulf3(ProvisionMTTStage):
         self.options['password'] = (None, "Remote controller password")
         self.options['pwfile'] = (None, "File containing remote controller password")
         self.options['sudo'] = (False, "Use sudo to execute privileged commands")
+        self.options['allocate_cmd'] = (None, "Command to use for allocating nodes from the resource manager")
+        self.options['deallocate_cmd'] = (None, "Command to use for deallocating nodes from the resource manager")
         return
 
 
@@ -61,12 +66,52 @@ class WWulf3(ProvisionMTTStage):
             print(prefix + line)
         return
 
+    def allocate(self, log, cmds, testDef):
+        self.allocated = False
+        if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None:
+            allocate_cmdargs = shlex.split(cmds['allocate_cmd'])
+            status,stdout,stderr,time = testDef.execmd.execute(cmds, allocate_cmdargs, testDef)
+            if 0 != status:
+                log['status'] = status
+                if log['stderr']:
+                    log['stderr'].extend(stderr)
+                else:
+                    log['stderr'] = stderr
+                return False
+            self.allocated = True
+        return True
+
+    def deallocate(self, log, cmds, testDef):
+        if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None and self.allocated == True:
+            deallocate_cmdargs = shlex.split(cmds['deallocate_cmd'])
+            status,stdout,stderr,time = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)
+            self.allocated = False
+            if 0 != status:
+                log['status'] = status
+                if log['stderr']:
+                    log['stderr'].extend(stderr)
+                else:
+                    log['stderr'] = stderr
+                return False
+        return True
 
     def execute(self, log, keyvals, testDef):
         testDef.logger.verbose_print("Warewulf 3 Provisioner")
         # parse what we were given against our defined options
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
+
+        mylog = {}
+        if cmds['target']:
+            mylog['target'] = cmds['target']
+        if cmds['image']:
+            mylog['image'] = cmds['image']
+        if cmds['controller']:
+            mylog['controller'] = cmds['controller']
+        if cmds['bootstrap']:
+            mylog['bootstrap'] = cmds['bootstrap']
+        log['provisioning'] = mylog
+
         # they had to at least give us one target node and controller
         try:
             if cmds['target'] is None:
@@ -108,33 +153,35 @@ class WWulf3(ProvisionMTTStage):
         wwcmd = ["wwsh", "node", "list"]
         if cmds['sudo']:
             wwcmd.insert(0, "sudo")
-        status,stdout,stderr = testDef.execmd.execute(cmds, wwcmd, testDef)
+        status,stdout,stderr,_ = testDef.execmd.execute(cmds, wwcmd, testDef)
         if 0 != status or stdout is None:
             log['status'] = status
             log['stderr'] = "Node list was not obtained"
             return
-        # parse stdout for the node names - start by splitting
-        # it back into a list of lines
-        lines = stdout.split('\n')
         # skip first two lines as they are headers
-        del lines[0:2]
+        del stdout[0:2]
         # parse each line to collect out the individual nodes
         nodes = []
-        for line in lines:
+        for line in stdout:
             # node name is at the front, ended by a space
             nodes.append(line[0:line.find(' ')])
         # now check that each target is in the list of nodes - no
         # way around just a big double-loop, i fear
         for tgt in targets:
-            found = false
+            found = False
             for node in nodes:
                 if tgt == node:
-                    found = true
+                    found = True
                     break
             if not found:
                 log['status'] = 1
                 log['stderr'] = "Target " + tgt + " is not included in Warewulf node table"
                 return
+
+        # Allocate cluster
+        if False == self.allocate(log, cmds, testDef):
+            return
+
         # if we get here, then all the targets are known!
         # so cycle thru the targets and update the provisioning
         # database for each of them
@@ -144,11 +191,14 @@ class WWulf3(ProvisionMTTStage):
                 wwcmd.insert(0, "sudo")
             wwcmd.append(tgt)
             wwcmd.append("--vnfs=" + cmds['image'])
+            if cmds['bootstrap']:
+               wwcmd.append("--bootstrap=" + cmds['bootstrap'])
             # update the provisioning database to the new image
-            status,stdout,stderr = testDef.execmd.execute(cmds, wwcmd, testDef)
+            status,stdout,stderr,_ = testDef.execmd.execute(cmds, wwcmd, testDef)
             if 0 != status:
                 log['status'] = status
                 log['stderr'] = stderr
+                self.deallocate(log, cmds, testDef)
                 return
         # assemble command to power cycle each node. Note that
         # we will be passing a set of keyvals down, so we can
@@ -167,14 +217,20 @@ class WWulf3(ProvisionMTTStage):
         if ipmitool is None:
             log['status'] = 1
             log['stderr'] = "IPMITool was not found"
+            self.deallocate(log, cmds, testDef)
             return
         # execute the request
         ipmilog = {}
         ipmitool.execute(ipmilog, ipmicmd, testDef)
+
         # update our results to reflect the overall status
         log['status'] = ipmilog['status']
-        if impilog['stdout'] is not None:
+        if ipmilog['stdout'] is not None:
             log['stdout'] = ipmilog['stdout']
-        if impilog['stderr'] is not None:
+        if ipmilog['stderr'] is not None:
             log['stderr'] = ipmilog['stderr']
+
+        # Deallocate cluster
+        self.deallocate(log, cmds, testDef)
+
         return

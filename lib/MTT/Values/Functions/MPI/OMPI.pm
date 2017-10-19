@@ -7,9 +7,9 @@
 # Copyright (c) 2015      Research Organization for Information Science
 #                         and Technology (RIST). All rights reserved.
 # $COPYRIGHT$
-# 
+#
 # Additional copyrights may follow
-# 
+#
 # $HEADER$
 #
 
@@ -103,7 +103,7 @@ sub find_network {
 
     # To safely use this string in a regexp
     # we must escape all non-word characters
-    $final = quotemeta($final); 
+    $final = quotemeta($final);
 
     # Ignore everything beyond $final
     $str =~ s/^(.+)\s*$final.+$/\1/;
@@ -165,16 +165,21 @@ sub find_network {
 sub get_version {
     my $bindir = shift;
 
-    open INFO, "$bindir/ompi_info --parsable|";
+    my $match = qr/ompi:version:full:(.*)$/;
 
-    while (<INFO>) {
-        if (/ompi:version:full:(.*)$/) {
+    my @out = `$bindir/ompi_info --parsable`;
+    if ($? >> 8) {
+        @out = `$bindir/ompi_info -V`;
+        $match = qr/Open\s+MPI\s+(.*)$/;
+    }
+
+    for (@out) {
+        if (/$match/) {
             Debug(">> " . (caller(0))[3] . " returning $1\n");
-            close(INFO);
             return $1;
         }
     }
-    close(INFO);
+
     return undef;
 }
 

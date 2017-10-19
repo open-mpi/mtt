@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2005-2006 The Trustees of Indiana University.
 #                         All rights reserved.
-# Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
+# Copyright (c) 2006-2017 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007-2009 Sun Microsystems, Inc.  All rights reserved.
 # Copyright (c) 2008      Mellanox Technologies.  All rights reserved.
 # $COPYRIGHT$
@@ -234,6 +234,34 @@ sub Run {
 
 #--------------------------------------------------------------------------
 
+# Helper to look for an MPI details section
+sub _find_mpi_details_section {
+    my $mpi_details_section_name = shift;
+    my $test_run_simple_section = shift;
+    my $phase = shift;
+    my $ini = shift;
+
+    my $search = lc($mpi_details_section_name);
+    Debug("*** Found mpi_details [$search] in $phase [$test_run_simple_section]\n");
+    foreach my $s ($ini->Sections()) {
+        Debug("*** Section name from INI file: $s\n");
+        if ($s =~ /^\s*mpi details\s*:/) {
+            my $mpi_details_simple = GetSimpleSection($s);
+            Debug("*** Found an MPI details: [$mpi_details_simple]\n");
+            if ($search eq $mpi_details_simple) {
+                $MTT::Globals::Internals->{mpi_details_name} = $s;
+                $MTT::Globals::Internals->{mpi_details_simple_name} = $mpi_details_simple;
+                Debug("*** We have a match: [$mpi_details_simple]\n");
+                return 1;
+            }
+        }
+    }
+
+    return 0;
+}
+
+#--------------------------------------------------------------------------
+
 sub _do_run {
     my ($ini, $section, $test_build, $mpi_get, $mpi_install, $install_dir, 
         $runs_data_dir, $force, $count_total_tests_number) = @_;
@@ -261,25 +289,24 @@ sub _do_run {
     Verbose(">> Running with [$mpi_install->{mpi_get_simple_section_name}] / [$mpi_install->{mpi_version}] / [$mpi_install->{simple_section_name}]\n");
     # Find an MPI details section for this MPI
 
-    # First: see if there is an mpi_details field in our MPI install
+    # First: see if there is an mpi_details field in our Test Run
     # section with a corresponding MPI Details section
     my $match = 0;
+    my $test_run_mpi_details = MTT::Values::Value($ini, $section,
+                                                 "mpi_details");
+    if (defined($test_run_mpi_details)) {
+        $match = _find_mpi_details_section($test_run_mpi_details,
+                                           $simple_section, "Test Run",
+                                           $ini);
+    }
+
+    # Next: see if there is an mpi_details field in our MPI install
+    # section with a corresponding MPI Details section
     my $mpi_install_simple = $mpi_install->{simple_section_name};
-    if (defined($mpi_install->{mpi_details})) {
-        my $search = lc($mpi_install->{mpi_details});
-        Debug("Found mpi_details [$search] in MPI install [$mpi_install_simple]\n");
-        foreach my $s ($ini->Sections()) {
-            if ($s =~ /^\s*mpi details:/) {
-                my $mpi_details_simple = GetSimpleSection($s);
-                Debug("Found MPI details: [$mpi_details_simple]\n");
-                if ($search eq $mpi_details_simple) {
-                    $match = 1;
-                    $MTT::Globals::Internals->{mpi_details_name} = $s;
-                    $MTT::Globals::Internals->{mpi_details_simple_name} = $mpi_details_simple;
-                    last;
-                }
-            }
-        }
+    if (!$match && defined($mpi_install->{mpi_details})) {
+        $match = _find_mpi_details_section($mpi_install_simple,
+                                           $simple_section, "MPI Install",
+                                           $ini);
     }
 
     # Next: see if there is an mpi_details field in our MPI get
@@ -291,19 +318,9 @@ sub _do_run {
     push(@keys, "mpi_details");
     my $val = does_hash_key_exist($MTT::MPI::sources, @keys);
     if (!$match && defined($val)) {
-        my $search = lc($val);
-        Debug("Found mpi_details [$search] in MPI get [$mpi_install->{mpi_get_simple_section_name}]\n");
-        foreach my $s ($ini->Sections()) {
-            if ($s =~ /^\s*mpi details:/) {
-                my $mpi_details_simple = GetSimpleSection($s);
-                Debug("Found MPI details: [$mpi_details_simple]\n");
-                if ($search eq $mpi_details_simple) {
-                    $match = 1;
-                    $MTT::Globals::Internals->{mpi_details_name} = $s;
-                    last;
-                }
-            }
-        }
+        $match = _find_mpi_details_section($val,
+                                           $simple_section, "MPI Get",
+                                           $ini);
     }
 
     # Next: see if there is an mpi_install field in an MPI Details

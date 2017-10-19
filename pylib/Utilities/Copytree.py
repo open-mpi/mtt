@@ -11,6 +11,7 @@ from builtins import str
 #
 
 import shutil
+import distutils.dir_util
 import os
 from BaseMTTUtility import *
 
@@ -40,6 +41,7 @@ class Copytree(BaseMTTUtility):
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
         # if they didn't provide a src, then we can't do anything
+
         try:
             if cmds['src'] is None:
                 log['status'] = 1
@@ -50,17 +52,30 @@ class Copytree(BaseMTTUtility):
             log['stderr'] = "Src directory not specified"
             return
         # define the dst directory
-        dst = os.path.join(testDef.options['scratchdir'], log['section'])
+        dst = os.path.join(testDef.options['scratchdir'], log['section'].replace(":","_"))
         # record the location
         log['location'] = dst
+        # Check if already exists to skip if ASIS is set
+        try:
+            if cmds['asis'] and os.path.exists(dst) and os.path.isdir(dst):
+                testDef.logger.verbose_print("As-Is location " + dst + " exists and is a directory")
+                log['status'] = 0
+                return
+        except KeyError:
+            pass
         # perform the copy
         try:
             # Cleanup the target directory if it exists
             if os.path.exists(dst):
                 shutil.rmtree(dst)
-            shutil.copytree(cmds['src'], dst, symlinks=False)
+            os.mkdir(dst)
+            for srcpath in cmds['src'].split(','):
+                srcpath = srcpath.strip()
+                reload(distutils.dir_util)
+                distutils.dir_util.copy_tree(srcpath, dst)
             log['status'] = 0
-        except (os.error, shutil.Error) as e:
+        except (os.error, shutil.Error, \
+                distutils.errors.DistutilsFileError) as e:
             log['status'] = 1
             log['stderr'] = str(e)
         return

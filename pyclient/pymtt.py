@@ -77,11 +77,11 @@ execGroup.add_argument("--ignore-loadpath-errors", action="store_true", dest="ig
 execGroup.add_argument("--scratch-dir", dest="scratchdir", default="./mttscratch",
                      help="Specify the DIRECTORY under which scratch files are to be stored", metavar="DIRECTORY")
 execGroup.add_argument("--print-section-time", dest="sectime",
-                      action="store_true", default=False,
-                      help="Display the amount of time taken in each section")
+                      action="store_true", default=True,
+                      help="Display section timestamps and execution time")
 execGroup.add_argument("--print-cmd-time", dest="cmdtime",
                      action="store_true", default=False,
-                     help="Display the amount of time taken by each command")
+                     help="Display stdout/stderr timestamps and cmd execution time")
 execGroup.add_argument("--timestamp", dest="time",
                      action="store_true", default=False,
                      help="Alias for --print-section-time --print-cmd-time")
@@ -114,6 +114,9 @@ debugGroup.add_argument("-d", "--debug", dest="debug",
 debugGroup.add_argument("--verbose",
                       action="store_true", dest="verbose", default=False,
                       help="Output some status/verbose messages while processing")
+debugGroup.add_argument("--extraverbose",
+                      action="store_true", dest="extraverbose", default=False,
+                      help="Output timestamps with every verbose message")
 debugGroup.add_argument("--dryrun",
                       action="store_true", dest="dryrun", default=False,
                       help="Show commands, but do not execute them")
@@ -233,7 +236,7 @@ testDef.printInfo()
 
 # if they didn't specify any files, then there is nothing
 # for us to do
-if not args.ini_files:
+if not args.ini_files or not args.ini_files[0]:
     sys.exit('MTT requires at least one test-specification file')
 
 # sanity check a couple of options
@@ -252,23 +255,30 @@ testDef.configTest()
 if(args.executor is not None):
     if(args.executor == "sequential" or args.executor == "Sequential"):
         testDef.config.set('MTTDefaults', 'executor', 'sequential')
-        testDef.executeTest()
+        status = testDef.executeTest()
     elif(args.executor == "combinatorial" or args.executor == "Combinatorial"):
         testDef.config.set('MTTDefaults', 'executor', 'combinatorial')
-        testDef.executeCombinatorial()
+        status = testDef.executeCombinatorial()
     else:
         print("Specified executor ", args.executor, " not found!")
         sys.exit(1)
+    # All done!
+    sys.exit(status)
+
 elif(testDef.config.has_option('MTTDefaults', 'executor')):
     if (testDef.config.get('MTTDefaults', 'executor') == "sequential" or testDef.config.get('MTTDefaults', 'executor') == "Sequential"):
-        testDef.executeTest()
+        status = testDef.executeTest()
     elif (testDef.config.get('MTTDefaults', 'executor') == "combinatorial" or testDef.config.get('MTTDefaults', 'executor') == "Combinatorial"):
-        testDef.executeCombinatorial()
+        status = testDef.executeCombinatorial()
     else:
         print("Specified executor ", testDef.config.get('MTTDefaults', 'executor'), " not found!")
         sys.exit(1)  
+    # All done!
+    sys.exit(status)
+
 # If no executor is specified default to sequential
 else:
     testDef.config.set('MTTDefaults', 'executor', 'sequential')
-    testDef.executeTest()  
+    status = testDef.executeTest()  
 # All done!
+    sys.exit(status)

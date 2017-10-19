@@ -222,6 +222,13 @@ get_linux_type()
                         #distro=${distro_brand}_${distro_version}
                         distro=${distro_brand}
 
+                # Welcome to Amazon Linux (x86-64) - Kernel \r (\l)
+                elif [ -f /etc/os-release ] && [ -n "`egrep 'Amazon Linux AMI' /etc/os-release`" ]; then
+                        source /etc/os-release
+                        distro_brand="${ID}"
+                        distro_version="${VERSION}"
+                        distro=${distro_brand}_${distro_version}
+
                 elif [ -f /etc/redhat-release -a -n "`egrep 'Red Hat Enterprise Linux ([a-zA-Z]+) release [0-9]*' /etc/redhat-release`" ]; then
                         distro_brand=rhel
                         distro_version=`grep 'Red Hat' /etc/redhat-release | sed -e 's/Red Hat Enterprise Linux \([a-zA-Z]*\) release \([0-9]*\).*/\2/' `

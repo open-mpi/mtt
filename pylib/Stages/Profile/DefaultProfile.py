@@ -1,6 +1,6 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
-# Copyright (c) 2015-2016 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2017 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -16,12 +16,12 @@ from ProfileMTTStage import *
 # @{
 # @addtogroup Profile
 # @section DefaultProfile
-# @param kernelVersion    Kernel version string
-# @param nodeName         Node name
+# @param kernelName       Kernel name
 # @param kernelRelease    Kernel release string
+# @param kernelVersion    Kernel version string
 # @param machineName      Machine name
 # @param processorType    Processor type
-# @param kernelName       Kernel name
+# @param nodeName         Node name
 # @}
 class DefaultProfile(ProfileMTTStage):
 
@@ -67,11 +67,12 @@ class DefaultProfile(ProfileMTTStage):
         opts = self.options.keys()
         for key in keys:
             if cmds[key] and key in opts:
-                status, stdout, stderr = testDef.execmd.execute(cmds, self.options[key][2], testDef)
+                status, stdout, stderr, time = testDef.execmd.execute(cmds, self.options[key][2], testDef)
                 if 0 != status:
                     log['status'] = status
                     log['stdout'] = stdout
                     log['stderr'] = stderr
+                    # ignore the execution time, if collected
                     return
                 myLog[key] = stdout
         # add our log to the system log

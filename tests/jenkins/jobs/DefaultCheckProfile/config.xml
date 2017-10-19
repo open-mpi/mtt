@@ -1,0 +1,80 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>Default Check Profile BAT Test</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <jenkins.model.BuildDiscarderProperty>
+      <strategy class="hudson.tasks.LogRotator">
+        <daysToKeep>-1</daysToKeep>
+        <numToKeep>15</numToKeep>
+        <artifactDaysToKeep>-1</artifactDaysToKeep>
+        <artifactNumToKeep>-1</artifactNumToKeep>
+      </strategy>
+    </jenkins.model.BuildDiscarderProperty>
+    <org.jenkins.plugins.lockableresources.RequiredResourcesProperty plugin="lockable-resources@1.10">
+      <resourceNames>COMPUTE_NODE_NAMES_VAR</resourceNames>
+      <resourceNamesVar>COMPUTE_HOSTS</resourceNamesVar>
+      <resourceNumber>SLAVE_NODE_NUM_COMPUTES_VAR</resourceNumber>
+    </org.jenkins.plugins.lockableresources.RequiredResourcesProperty>
+    <com.sonyericsson.jenkins.plugins.externalresource.dispatcher.SelectionCriteria plugin="externalresource-dispatcher@1.1.0">
+      <selectionEnabled>false</selectionEnabled>
+      <resourceSelectionList>
+        <com.sonyericsson.jenkins.plugins.externalresource.dispatcher.selection.StringResourceSelection>
+          <name>computehosts.node</name>
+          <value>13</value>
+        </com.sonyericsson.jenkins.plugins.externalresource.dispatcher.selection.StringResourceSelection>
+      </resourceSelectionList>
+    </com.sonyericsson.jenkins.plugins.externalresource.dispatcher.SelectionCriteria>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <assignedNode>SLAVE_NODE_NAME_VAR</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <customWorkspace>SLAVE_NODE_EXEC_DIR_VAR</customWorkspace>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash -ex
+
+source /etc/profile.d/lmod.sh
+
+export KERNEL_VERSION="Change this to match your system's kernel version (uname -r)"
+export TEST_DIR=$WORKSPACE/mtt_exec
+
+mkdir -p $TEST_DIR
+
+cd &quot;$TEST_DIR&quot; || exit 1
+/opt/mtt/pyclient/pymtt.py --base-dir=/opt/mtt/pylib/ --verbose /opt/mtt/tests/bat/default_check_profile.ini
+
+STATUS=$?
+exit $STATUS
+
+</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.tasks.junit.JUnitResultArchiver plugin="junit@1.19">
+      <testResults>mtt_exec/default_check_profile.xml</testResults>
+      <keepLongStdio>false</keepLongStdio>
+      <healthScaleFactor>1.0</healthScaleFactor>
+      <allowEmptyResults>false</allowEmptyResults>
+    </hudson.tasks.junit.JUnitResultArchiver>
+  </publishers>
+  <buildWrappers>
+    <hudson.plugins.build__timeout.BuildTimeoutWrapper plugin="build-timeout@1.18">
+      <strategy class="hudson.plugins.build_timeout.impl.AbsoluteTimeOutStrategy">
+        <timeoutMinutes>5</timeoutMinutes>
+      </strategy>
+      <operationList/>
+    </hudson.plugins.build__timeout.BuildTimeoutWrapper>
+    <EnvInjectPasswordWrapper plugin="envinject@1.93.1">
+      <injectGlobalPasswords>false</injectGlobalPasswords>
+      <maskPasswordParameters>true</maskPasswordParameters>
+      <passwordEntries/>
+    </EnvInjectPasswordWrapper>
+  </buildWrappers>
+</project>

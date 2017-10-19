@@ -19,8 +19,8 @@ from ReporterMTTStage import *
 # @{
 # @addtogroup Reporter
 # @section JunitXML
-# @param textwrap    Max line length before wrapping
 # @param filename    Name of the file into which the report is to be written
+# @param textwrap    Max line length before wrapping
 # @}
 class JunitXML(ReporterMTTStage):
 
@@ -80,6 +80,10 @@ class JunitXML(ReporterMTTStage):
                 stderr = lg['stderr']
             except KeyError:
                 stderr = None
+            try:
+                time = lg['time']
+            except KeyError:
+                time = 0
             tc = TestCase(lg['section'], classname, time, stdout, stderr)
             try:
                 if 0 != lg['status']:

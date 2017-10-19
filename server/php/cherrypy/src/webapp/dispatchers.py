@@ -28,6 +28,9 @@ from configobj import ConfigObj
 from validate import Validator
 
 from webapp.db_pgv3 import DatabaseV3
+import webapp.db_pgv3 as db_pgv3
+
+FIELD_DESCRIPTIONS = {d["disp"]: d["desc"] for d in db_pgv3.FIELD_INFO.values()}
 
 #
 # JSON serialization of datetime objects
@@ -138,7 +141,7 @@ class Root(_ServerResourceBase):
     #
     @cherrypy.tools.json_out()
     def GET(self, **kwargs):
-        prefix = '[GET /]'
+        prefix = 'Root [GET /]'
         self.logger.debug(prefix)
 
         rtn = {}
@@ -153,7 +156,7 @@ class Root(_ServerResourceBase):
     @cherrypy.tools.json_out()
     @cherrypy.tools.json_in()
     def POST(self, cmd, **kwargs):
-        prefix = '[POST /%s]' % str(cmd)
+        prefix = 'Root [POST /%s]' % str(cmd)
         self.logger.debug(prefix)
 
         rtn = {}
@@ -181,7 +184,7 @@ class Submit(_ServerResourceBase):
     _phase_test_run    = 2
 
     def _validate_metadata(self, metadata):
-        prefix = "validate_metadata"
+        prefix = "Submit validate_metadata"
         # "client_serial": "1347384",
         # "hostname": "flux.cs.uwlax.edu",
         # "http_username": "mtt",
@@ -210,7 +213,7 @@ class Submit(_ServerResourceBase):
         return None
 
     def _validate_submit(self, metadata):
-        prefix = "validate_submit"
+        prefix = "Submit validate_submit"
         allfields = self._db.get_fields_for_submit()
         for field in allfields['required']:
             if field not in metadata.keys():
@@ -220,7 +223,7 @@ class Submit(_ServerResourceBase):
         return None
 
     def _validate_mpi_install(self, submit_id, metadata, data):
-        prefix = "validate_mpi_install"
+        prefix = "Submit validate_mpi_install"
         allfields = self._db.get_fields_for_mpi_install()
 
         for field in allfields['required']:
@@ -231,7 +234,7 @@ class Submit(_ServerResourceBase):
         return None
 
     def _validate_test_build(self, submit_id, metadata, data):
-        prefix = "validate_test_build"
+        prefix = "Submit validate_test_build"
         allfields = self._db.get_fields_for_test_build()
 
         for field in allfields['required']:
@@ -242,7 +245,7 @@ class Submit(_ServerResourceBase):
         return None
 
     def _validate_test_run(self, submit_id, metadata, data):
-        prefix = "validate_test_run"
+        prefix = "Submit validate_test_run"
         allfields = self._db.get_fields_for_test_run()
 
         for field in allfields['required']:
@@ -252,12 +255,26 @@ class Submit(_ServerResourceBase):
         return None
 
     #
+    # GET / : Server status
+    #
+    @cherrypy.tools.json_out()
+    def GET(self, **kwargs):
+        prefix = 'Root [GET /submit/]'
+        self.logger.debug(prefix)
+
+        rtn = {}
+        rtn['status'] = 0
+        rtn['status_message'] = 'Success (submit)'
+
+        return rtn
+
+    #
     # POST /submit/
     #
     @cherrypy.tools.json_out()
     @cherrypy.tools.json_in()
     def POST(self, **kwargs):
-        prefix = '[POST /submit/]'
+        prefix = 'Submit [POST /submit/]'
         self.logger.debug(prefix)
 
         if not hasattr(cherrypy.request, "json"):
@@ -386,3 +403,386 @@ class Submit(_ServerResourceBase):
             return self._phase_test_run
         else:
             return self._phase_unknown
+
+
+########################################################
+# GenericQuery
+########################################################
+class GenericQuery(_ServerResourceBase):
+
+    def _validate_metadata(self, metadata):
+        prefix = "GenericQuery validate_metadata"
+
+        required_fields = ["http_username"]
+
+        for field in required_fields:
+            if field not in metadata.keys():
+                return self._return_error(prefix, -1,
+                                          "%s No field '%s' in 'metadata' portion of json data" % (prefix, field))
+
+        return None
+
+    def _validate(self, data):
+        return None
+
+    def execute_query(self, data):
+        return None
+
+    def execute(self, prefix):
+        self.logger.debug(prefix)
+
+        if not hasattr(cherrypy.request, "json"):
+            self.logger.error(prefix + " No json data sent")
+            raise cherrypy.HTTPError(400)
+
+        data = cherrypy.request.json
+        #if 'metadata' not in data.keys():
+        #    self.logger.error(prefix + " No 'metadata' in json data")
+        #    raise cherrypy.HTTPError(400)
+
+        self.logger.debug( "----------------------- All Data JSON (Start) ------------------ " )
+        self.logger.debug( json.dumps( data, \
+                                       sort_keys=True, \
+                                       indent=4, \
+                                       separators=(',', ': ') ) )
+        self.logger.debug( "----------------------- All Data JSON (End  ) ------------------ " )
+
+        data['metadata'] = {}
+        data['metadata']['http_username'] = self._extract_http_username(cherrypy.request.headers['Authorization'])
+        self.logger.debug(prefix + " Append to metadata 'http_username' = '" + data['metadata']['http_username'] + "'")
+        
+        rtn = self._validate_metadata(data['metadata'])
+        if rtn is not None:
+            return rtn
+
+        rtn = self._validate(data)
+        if rtn is not None:
+            return rtn
+
+        query_data = self.execute_query(data)
+
+        if query_data is None:
+            self.logger.error(prefix)
+            return self._return_error(prefix, -1, "%s Query Failed" % (prefix))
+
+        rtn = {}
+        rtn['query_data'] = query_data
+
+        rtn['status'] = 0
+        rtn['status_message'] = 'Success'
+
+
+        self.logger.debug( "----------------------- Return Values JSON (Start) ------------------ " )
+        self.logger.debug( json.dumps( rtn, \
+                                       sort_keys=True, \
+                                       indent=4, \
+                                       separators=(',', ': ') ) )
+        self.logger.debug( "----------------------- Return Values JSON (End  ) ------------------ " )
+
+
+        return rtn
+    
+
+    @cherrypy.tools.json_out()
+    @cherrypy.tools.json_in()
+    def POST(self, **kwargs):
+        return self.execute('generic_query')
+
+########################################################
+# Fields
+########################################################
+class Fields(GenericQuery):
+
+    def execute_query(self, data):
+        rtn = {}
+
+        rtn['fields'] = FIELD_DESCRIPTIONS
+
+        return rtn
+
+    #
+    # POST /fields/
+    #
+    @cherrypy.tools.json_out()
+    @cherrypy.tools.json_in()
+    def POST(self, **kwargs):
+        return self.execute('POST /fields/')
+ 
+########################################################
+# Summary
+########################################################
+class Summary(GenericQuery):
+
+    def _validate_phase(self, phase):
+        prefix = "Summary validate_phase"
+        valid_phases = ["install", "test_build", "test_run"]
+        if phase not in valid_phases:
+            return self._return_error(prefix, -1,
+                                      "%s Phase '%s' is not a valid phase" % (prefix, phase))
+        return None
+
+    def _validate_columns(self, columns):
+        prefix = "Summary validate_columns"
+        valid_columns = FIELD_DESCRIPTIONS.keys()
+        for col in columns:
+            if col not in valid_columns:
+                return self._return_error(prefix, -1,
+                                          "%s Column '%s' in 'columns' is not a valid column" % (prefix, col))
+
+    def _validate_search(self, search):
+        prefix = "Summary validate_search"
+        valid_keys = FIELD_DESCRIPTIONS.keys()
+        for key in search.keys():
+            if key not in valid_keys:
+                return self._return_error(prefix, -1,
+                                          "%s Search key '%s' in 'search' is not a valid key" % (prefix, key))
+
+    def validate_options(self, options):
+        prefix = "Summary validate_options"
+        valid_options = ["count_only", "limit", "offset"]
+        for op in options.keys():
+            if op not in valid_options:
+                return self._return_error(prefix, -1,
+                                          "%s Option '%s' in 'options' is not a valid option" % (prefix, key))
+            if op == "count_only":
+                if int(options[op]) < 0 or int(options[op] > 1):
+                    return self._return_error(prefix, -1,
+                                              "%s Option 'count_only' in 'options' must be 0 or 1. It is instead %d" % (prefix, int(options[op])))
+            if op == "limit":
+                if int(options[op]) < 0:
+                    return self._return_error(prefix, -1,
+                                              "%s Option 'limit' in 'options' must be >= 0. It is instead %d" % (prefix, int(options[op])))
+            if op == "offset":
+                if int(options[op]) < 0:
+                    return self._return_error(prefix, -1,
+                                              "%s Option 'offset' in 'options' must be >= 0. It is instead %d" % (prefix, int(options[op])))
+
+    def _validate(self, data):
+        prefix = "Summary validate"
+
+        required_fields = ["metadata", "phase", "columns", "search"]
+
+        for field in required_fields:
+            if field not in data.keys():
+                return self._return_error(prefix, -1,
+                                          "%s No field '%s' in 'metadata' portion of json data" % (prefix, field))
+
+        rtn = self._validate_phase(data['phase'])
+        if rtn is not None:
+            return rtn
+
+        rtn = self._validate_columns(data['columns'])
+        if rtn is not None:
+            return rtn
+
+        rtn = self._validate_search(data['search'])
+        if rtn is not None:
+            return rtn
+
+        return None
+
+    def execute_query(self, data):
+        return self._db._summary(data['phase'], data['columns'],
+                                 data['search'], options=data['options'] if 'options' in data else {})
+
+    #
+    # POST /summary
+    #
+    @cherrypy.tools.json_out()
+    @cherrypy.tools.json_in()
+    def POST(self, **kwargs):
+        return self.execute('[POST /summary/]')
+
+
+########################################################
+# Detail
+########################################################
+class Detail(GenericQuery):
+
+    def _validate_phase(self, phase):
+        prefix = "Detail validate_phase"
+        valid_phases = ["install", "test_build", "test_run"]
+        if phase not in valid_phases:
+            return self._return_error(prefix, -1,
+                                      "%s Phase '%s' is not a valid phase" % (prefix, phase))
+        return None
+
+    def _validate_columns(self, columns):
+        prefix = "Detail validate_columns"
+        valid_columns = FIELD_DESCRIPTIONS.keys()
+        for col in columns:
+            if col not in valid_columns:
+                return self._return_error(prefix, -1,
+                                          "%s Column '%s' in 'columns' is not a valid column" % (prefix, col))
+
+    def _validate_search(self, search):
+        prefix = "Detail validate_search"
+        valid_keys = FIELD_DESCRIPTIONS.keys()
+        for key in search.keys():
+            if key not in valid_keys:
+                return self._return_error(prefix, -1,
+                                          "%s Search key '%s' in 'search' is not a valid key" % (prefix, key))
+
+    def validate_options(self, options):
+        prefix = "Detail validate_options"
+        valid_options = ["count_only", "limit", "offset"]
+        for op in options.keys():
+            if op not in valid_options:
+                return self._return_error(prefix, -1,
+                                          "%s Option '%s' in 'options' is not a valid option" % (prefix, key))
+            if op == "count_only":
+                if int(options[op]) < 0 or int(options[op] > 1):
+                    return self._return_error(prefix, -1,
+                                              "%s Option 'count_only' in 'options' must be 0 or 1. It is instead %d" % (prefix, int(options[op])))
+            if op == "limit":
+                if int(options[op]) < 0:
+                    return self._return_error(prefix, -1,
+                                              "%s Option 'limit' in 'options' must be >= 0. It is instead %d" % (prefix, int(options[op])))
+            if op == "offset":
+                if int(options[op]) < 0:
+                    return self._return_error(prefix, -1,
+                                              "%s Option 'offset' in 'options' must be >= 0. It is instead %d" % (prefix, int(options[op])))
+
+    def _validate(self, data):
+        prefix = "Detail validate"
+
+        required_fields = ["metadata", "phase", "columns", "search"]
+
+        for field in required_fields:
+            if field not in data.keys():
+                return self._return_error(prefix, -1,
+                                          "%s No field '%s' in 'metadata' portion of json data" % (prefix, field))
+
+        rtn = self._validate_phase(data['phase'])
+        if rtn is not None:
+            return rtn
+
+        rtn = self._validate_columns(data['columns'])
+        if rtn is not None:
+            return rtn
+
+        rtn = self._validate_search(data['search'])
+        if rtn is not None:
+            return rtn
+
+        return None
+
+    def execute_query(self, data):
+        return self._db._detail(data['phase'], data['columns'],
+                                data['search'], options=data['options'] if 'options' in data else {})
+
+    #
+    # POST /detail
+    #
+    @cherrypy.tools.json_out()
+    @cherrypy.tools.json_in()
+    def POST(self, **kwargs):
+        return self.execute('[POST /detail/]')
+
+class InfoTestsuite(GenericQuery):
+
+    def _validate_search(self, search):
+        prefix = "InfoTestsuite validate_search"
+        valid_keys = FIELD_DESCRIPTIONS.keys()
+        for key in search.keys():
+            if key not in valid_keys:
+                return self._return_error(prefix, -1,
+                                          "%s Search key '%s' in 'search' is not a valid key" % (prefix, key))
+        if 'sest_suite_name' not in search.keys():
+            return self._return_error(prefix, -1,
+                                      "%s Search key 'test_suite_name' is not found in 'search'" % (prefix))
+
+    def _validate(self, data):
+        prefix = "InfoTestsuite validate"
+
+        required_fields = ["metadata", "search"]
+
+        for field in required_fields:
+            if field not in data.keys():
+                return self._return_error(prefix, -1,
+                                          "%s No field '%s' in 'metadata' portion of json data" % (prefix, field))
+
+        rtn = self._validate_search(data['search'])
+        if rtn is not None:
+            return rtn
+
+        return None
+
+
+    def execute_query(self, data):
+        return self._db._info_testsuite(data['search'])
+
+
+    #
+    # POST /info/testsuite
+    #
+    @cherrypy.tools.json_out()
+    @cherrypy.tools.json_in()
+    def POST(self, **kwargs):
+        return self.execute('[POST /info/testsuite/]')
+
+class InfoRuntime(GenericQuery):
+
+    def _validate_phase(self, phase):
+        prefix = "InfoRuntime validate_phase"
+        valid_phases = ["install", "test_build", "test_run"]
+        if phase not in valid_phases:
+            return self._return_error(prefix, -1,
+                                      "%s Phase '%s' is not a valid phase" % (prefix, phase))
+        return None
+
+    def _validate_search(self, search, phase):
+        prefix = "InfoRuntime validate_search"
+        valid_keys = FIELD_DESCRIPTIONS.keys()
+        for key in search.keys():
+            if key not in valid_keys:
+                return self._return_error(prefix, -1,
+                                          "%s Search key '%s' in 'search' is not a valid key" % (prefix, key))
+
+        if "install" in phase:
+            if not ("mpi_name" in search.keys() or "mpi_version" in search.keys()):
+                return self._return_error(prefix, -1,
+                                          "%s Neither field 'mpi_name' nor 'mpi_version' is present in install phase" % (prefix))
+
+        if "test_build" in phase:
+            if "test_suite_name" not in search.keys():
+                return self._return_error(prefix, -1,
+                                          "%s Field 'test_suite_name' not present in test_build phase" % (prefix))
+
+        if "test_run" in phase:
+            if "test_name" not in search.keys(): 
+                return self._return_error(prefix, -1,
+                                          "%s Field 'test_name' not present in test_run phase" % (prefix))
+
+    def _validate(self, data):
+        prefix = "InfoRuntime validate"
+
+        required_fields = ["metadata", "search"]
+
+        for field in required_fields:
+            if field not in data.keys():
+                return self._return_error(prefix, -1,
+                                          "%s No field '%s' in 'metadata' portion of json data" % (prefix, field))
+
+        rtn = self._validate_phase(data['phase'])
+        if rtn is not None:
+            return rtn
+
+        rtn = self._validate_search(data['search'], data['phase'])
+        if rtn is not None:
+            return rtn
+
+        return None
+
+
+    def execute_query(self, data):
+        return self._db._info_runtime(data['phase'], data['search'])
+
+    #
+    # POST /info/runtime
+    #
+    @cherrypy.tools.json_out()
+    @cherrypy.tools.json_in()
+    def POST(self, **kwargs):
+        return self.execute('[POST /info/runtime/]')
+
