@@ -68,6 +68,7 @@ class TestDef(object):
         self.utilities = None
         self.defaults = None
         self.log = {}
+        self.watchdog = None
 
     def setOptions(self, args):
         self.options = vars(args)
@@ -323,7 +324,9 @@ class TestDef(object):
                     self.modcmd = pluginInfo.plugin_object
                     # initialize this module
                     self.modcmd.setCommand(self.options)
-                if self.execmd is not None and self.modcmd is not None:
+                elif "Watchdog" == pluginInfo.plugin_object.print_name():
+                    self.watchdog = pluginInfo.plugin_object
+                if self.execmd is not None and self.modcmd is not None and self.watchdog is not None:
                     break
         if self.execmd is None:
             print("ExecuteCmd plugin was not found")
@@ -613,7 +616,7 @@ class TestDef(object):
                 self.logger.verbose_print("SECTION: " + section)
                 self.logger.verbose_print(self.config.items(section))
         return
- 
+
     def executeTest(self):
         if not self.loaded:
             print("Plugins have not been loaded - cannot execute test")
