@@ -23,8 +23,6 @@ import shlex
 # @param command                   Command for executing the application
 # @param np                        Number of processes to run
 # @param ppn                       Number of processes per node to run
-# @param save_stdout_on_pass       Whether or not to save stdout on passed tests
-# @param report_after_n_results    Number of tests to run before updating the reporter
 # @param timeout                   Maximum execution time - terminate a test if it exceeds this time
 # @param options                   Comma-delimited sets of command line options that shall be used on each test
 # @param skipped                   Exit status of a test that declares it was skipped
@@ -51,8 +49,6 @@ class OpenMPI(LauncherMTTTool):
         self.options['command'] = ("mpirun", "Command for executing the application")
         self.options['np'] = (None, "Number of processes to run")
         self.options['ppn'] = (None, "Number of processes per node to run")
-        self.options['save_stdout_on_pass'] = (False, "Whether or not to save stdout on passed tests")
-        self.options['report_after_n_results'] = (None, "Number of tests to run before updating the reporter")
         self.options['timeout'] = (None, "Maximum execution time - terminate a test if it exceeds this time")
         self.options['options'] = (None, "Comma-delimited sets of command line options that shall be used on each test")
         self.options['skipped'] = ("77", "Exit status of a test that declares it was skipped")

@@ -17,12 +17,9 @@ from MTTDefaultsMTTStage import *
 # @{
 # @addtogroup MTTDefaults
 # @section DefaultMTTDefaults
-# @param force                 Honestly don't remember
 # @param trial                 Use when testing your MTT client setup; results that are generated and submitted to the database are marked as \"trials\" and are not included in normal reporting.
 # @param scratch               Specify the DIRECTORY under which scratch files are to be stored
-# @param logfile               Log all output to FILE (defaults to stdout)
 # @param description           Provide a brief title/description to be included in the log for this test
-# @param submit_group_results  Report results from each test section as it is completed
 # @param platform              Name of the system under test
 # @param organization          Name of the organization running the test
 # @param merge_stdout_stderr   Merge stdout and stderr into one output stream
@@ -37,12 +34,9 @@ class DefaultMTTDefaults(MTTDefaultsMTTStage):
         # initialise parent class
         MTTDefaultsMTTStage.__init__(self)
         self.options = {}
-        self.options['force'] = (False, "Honestly don't remember")
         self.options['trial'] = (False, "Use when testing your MTT client setup; results that are generated and submitted to the database are marked as \"trials\" and are not included in normal reporting.")
         self.options['scratch'] = ("./mttscratch", "Specify the DIRECTORY under which scratch files are to be stored")
-        self.options['logfile'] = (None, "Log all output to FILE (defaults to stdout)")
         self.options['description'] = (None, "Provide a brief title/description to be included in the log for this test")
-        self.options['submit_group_results'] = (True, "Report results from each test section as it is completed")
         self.options['platform'] = (None, "Name of the system under test")
         self.options['organization'] = (None, "Name of the organization running the test")
         self.options['merge_stdout_stderr'] = (False, "Merge stdout and stderr into one output stream")
