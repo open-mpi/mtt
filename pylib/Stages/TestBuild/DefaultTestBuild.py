@@ -24,7 +24,6 @@ from TestBuildMTTStage import *
 # @param autogen_cmd               Command to be executed to setup the configure script, usually called autogen.sh or autogen.pl
 # @param configure_options         Options to be passed to configure. Note that the prefix will be automatically set and need not be provided here
 # @param make_options              Options to be passed to the make command
-# @param save_stdout_on_success    Save stdout even if build succeeds
 # @}
 class DefaultTestBuild(TestBuildMTTStage):
 
@@ -40,7 +39,6 @@ class DefaultTestBuild(TestBuildMTTStage):
         self.options['autogen_cmd'] = (None, "Command to be executed to setup the configure script, usually called autogen.sh or autogen.pl")
         self.options['configure_options'] = (None, "Options to be passed to configure. Note that the prefix will be automatically set and need not be provided here")
         self.options['make_options'] = (None, "Options to be passed to the make command")
-        self.options['save_stdout_on_success'] = (False, "Save stdout even if build succeeds")
 
     def activate(self):
         # get the automatic procedure from IPlugin

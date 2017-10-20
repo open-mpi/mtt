@@ -29,7 +29,6 @@ from BuildMTTTool import *
 # @param merge_stdout_stderr       Merge stdout and stderr into one output stream
 # @param stdout_save_lines         Number of lines of stdout to save
 # @param stderr_save_lines         Number of lines of stderr to save
-# @param save_stdout_on_success    Save stdout even if build succeeds
 # @param modules                   Modules to load
 # @param modules_unload            Modules to unload
 # @}
@@ -47,7 +46,6 @@ class Autotools(BuildMTTTool):
         self.options['merge_stdout_stderr'] = (False, "Merge stdout and stderr into one output stream")
         self.options['stdout_save_lines'] = (-1, "Number of lines of stdout to save")
         self.options['stderr_save_lines'] = (-1, "Number of lines of stderr to save")
-        self.options['save_stdout_on_success'] = (False, "Save stdout even if build succeeds")
         self.options['modules'] = (None, "Modules to load")
         self.options['modules_unload'] = (None, "Modules to unload")
         self.exclude = set(string.punctuation)
