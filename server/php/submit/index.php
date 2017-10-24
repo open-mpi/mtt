@@ -2044,7 +2044,10 @@ function setup_post() {
         $out_to_log  = "--------------------------------------- gzip failed...\n";
         $out_to_log .= "Date: ".$date."\n";
         $out_to_log .= "gunzip failed (in gzopen). Please check tmp dir for overflow.\n";
+        $out_to_log .= "Filename: ".$filename."\n";
         error_log($out_to_log, 3, $mtt_err_log_file);
+        fclose($fp);
+        unlink($temp_filename);
         mtt_abort(400, "gunzip failed. Contact MTT Admins for help!");
         exit(1);
         #return null;
