@@ -114,6 +114,7 @@ use MTT::Values;
 use MTT::Timer;
 use MTT::Util;
 use MTT::Hooks;
+use MTT::EnvModule;
 use Filesys::DiskFree;
 
 our @file_arg;
@@ -556,6 +557,14 @@ foreach my $hash (@ini_list) {
     $config->{append_path} = Value($ini, "mtt", "append_path");
     my @save_env;
     ProcessEnvKeys($config, \@save_env);
+
+    # load global env module(s)
+    my $global_env_modules = Value($ini, "mtt", "env_module");
+    if ($global_env_modules) {
+        my @env_modules = MTT::Util::split_comma_list($global_env_modules);
+        MTT::EnvModule::unload(@env_modules);
+        MTT::EnvModule::load(@env_modules);
+    }
 
     # Set the logfile, if specified
 
