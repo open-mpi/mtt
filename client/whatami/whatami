@@ -181,6 +181,9 @@ get_linux_type()
                 x86_64)
                         hardware=x86_64
                         ;;
+                aarch64)
+                        hardware=aarch64
+                        ;;
                 *)
                         hardware=unknown_hardware_please_send_us_a_patch
                         ;;
@@ -307,6 +310,9 @@ get_linux_type()
 
                 elif [ -n "`egrep 'SUSE 10\.3' /etc/issue`" ]; then
                         distro=suse_10.3
+
+                elif [ -n "`egrep 'SUSE Leap 42\.2' /etc/issue`" ]; then
+                        distro=suse_Leap_42.2
 
                 elif [ -n "`egrep 'Tao Linux release 1 ' /etc/issue`" ]; then
                         distro=tao_1.0
