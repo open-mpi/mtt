@@ -161,6 +161,7 @@ class Compilers(BaseMTTUtility):
             status, vsn = self.check_version("cpp", "--version", testDef)
 
         else:
+            vsn = [""]
             status = 1;
             compiler = "None"
             version = "Unknown"
