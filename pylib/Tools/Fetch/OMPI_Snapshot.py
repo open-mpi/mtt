@@ -78,11 +78,29 @@ class OMPI_Snapshot(FetchMTTTool):
         snapshot_url = url + '/latest_snapshot.txt'
         try:
             snapshot_req = requests.get(snapshot_url)
+#           Assumes the error is HTTPError
+#           Then raise HTTP status error response
             snapshot_req.raise_for_status()
-        except requests.exceptions.HTTPError:
+        except requests.exceptions.HTTPError as error:
+            testDef.logger.verbose_print("HTTP Error: ",error)
             log['status'] = 1
-            log['stderr'] = "HTTP Get of " + snapshot_url + "FAILED"
-            return
+            log['stderr'] = "HTTP error"
+            sys.exit(-1)
+        except requests.exceptions.ConnectionError as connection_error:
+            testDef.logger.verbose_print("Error connecting: ", connection_error)
+            log['status'] = 1
+            log['stderr'] = "Error connecting"
+            sys.exit(-1)
+        except requests.exceptions.Timeout:
+            testDef.logger.verbose_print("Timeout error ")
+            log['status'] = 1
+            log['stderr'] = "Timeout error"
+            sys.exit(-1)
+        except requests.exceptions.RequestException as base_class_error:
+            testDef.logger.verbose_print("Oops, an error occured: ", base_class_error)
+            log['status'] = 1
+            log['stderr'] = "Ooops, an error occured"
+            sys.exit(-1)
         # build the tarball name, using a base and then full name
         tarball_base_name = 'openmpi-' + snapshot_req.text
         tarball_name = tarball_base_name + '.tar.gz'
