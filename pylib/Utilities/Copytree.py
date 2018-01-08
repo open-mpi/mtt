@@ -27,6 +27,7 @@ class Copytree(BaseMTTUtility):
         self.options = {}
         self.options['src'] = (None, "The top directory of the tree to be copied")
         self.options['preserve_symlinks'] = ("0", "Preserve symlinks instead of copying the contents")
+        self.options['preserve_directory'] = ("0", "Copies directory instead of contents")
 
     def print_name(self):
         return "Copytree"
@@ -74,7 +75,14 @@ class Copytree(BaseMTTUtility):
             for srcpath in cmds['src'].split(','):
                 srcpath = srcpath.strip()
                 reload(distutils.dir_util)
-                distutils.dir_util.copy_tree(srcpath, dst, preserve_symlinks=int(cmds['preserve_symlinks']))
+                if cmds['preserve_directory'] != "0":
+                    subdst = os.path.join(dst,os.path.basename(os.path.dirname(srcpath)))
+                    if os.path.exists(subdst):
+                        shutil.rmtree(subdst)
+                    os.mkdir(subdst)
+                    distutils.dir_util.copy_tree(srcpath, subdst, preserve_symlinks=int(cmds['preserve_symlinks']))
+                else:
+                    distutils.dir_util.copy_tree(srcpath, dst, preserve_symlinks=int(cmds['preserve_symlinks']))
             log['status'] = 0
         except (os.error, shutil.Error, \
                 distutils.errors.DistutilsFileError) as e:
