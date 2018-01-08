@@ -427,7 +427,7 @@ class DatabaseV3():
         legal_search = {k:v for k,v in search.items() if k in COMMON_FIELDS \
                              or FIELDS_TABLE[FIELD_NAMES_MAPPING[k]] == phase_name \
                              or self._is_a_parent([phase_name], FIELDS_TABLE[FIELD_NAMES_MAPPING[k]])}
-        legal_search_columnnames = {"%s.%s" % (phase_name if k in COMMON_FIELDS else FIELDS_TABLE[FIELD_NAMES_MAPPING[k]],k):v for k,v in legal_search.items()}
+        legal_search_columnnames = {"%s.%s" % (phase_name if k in COMMON_FIELDS else FIELDS_TABLE[FIELD_NAMES_MAPPING[k]],FIELD_NAMES_MAPPING[k]):v for k,v in legal_search.items()}
         legal_search_keys = set(legal_search.keys())
 
         tables = set([FIELDS_TABLE[FIELD_NAMES_MAPPING[f]] for f in list(legal_columns) if f not in COMMON_FIELDS] + \
@@ -439,7 +439,7 @@ class DatabaseV3():
 
         self._logger.debug("DEBUG (table_order): %s" % (str(table_order)))
 
-        select_stmt =  "SELECT %s " % (", ".join(legal_columns))
+        select_stmt =  "SELECT %s " % (", ".join([FIELD_NAMES_MAPPING[f] for f in legal_columns]))
         select_stmt += "FROM %s " % (phase_name)
         select_stmt += "%s " % (" ".join(["INNER JOIN %s ON %s.%s = %s.%s " % (t,t,TABLE_TREE[t]["key"], self._select_item_in(TABLE_TREE[t]["parents"], [phase_name] + table_order[:i]), TABLE_TREE[t]["foreign_key"]) for i,t in enumerate(table_order)]))
 
