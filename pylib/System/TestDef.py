@@ -510,6 +510,21 @@ class TestDef(object):
         self.logger.open(self)
         return
 
+    def fill_log_interpolation(self, basestr, sublog):
+        if isinstance(sublog, str):
+            self.config.set("LOG", basestr, sublog.replace("$","$$"))
+        elif isinstance(sublog, dict):
+            for k,v in sublog.items():
+                self.fill_log_interpolation("%s.%s" % (basestr, k), v)
+        elif isinstance(sublog, list):
+            if sum([((isinstance(t, list) or isinstance(t, tuple)) and len(t) == 2) for t in sublog]) == len(sublog):
+                self.fill_log_interpolation(basestr, {k:v for k,v in sublog})
+            else:
+                for i,v in enumerate(sublog):
+                    self.fill_log_interpolation("%s.%d" % (basestr, i), v)
+        else:
+            self.fill_log_interpolation(basestr, str(sublog))
+
     def configTest(self):
         # setup the configuration parser
         self.config = configparser.SafeConfigParser(interpolation=configparser.ExtendedInterpolation())
@@ -521,6 +536,12 @@ class TestDef(object):
         self.config.add_section('ENV')
         for k,v in os.environ.items():
             self.config.set('ENV', k, v.replace("$","$$"))
+
+        # Add LOG section filled with log results of stages
+        self.config.add_section('LOG')
+        thefulllog = self.logger.getLog(None)
+        for e in thefulllog:
+            self.fill_log_interpolation(e['section'].replace(":","_"), e)
 
         # log the list of files - note that the argument parser
         # puts the input files in a list, with the first member
@@ -589,9 +610,6 @@ class TestDef(object):
                     takeus = False
             if takeus:
                 self.actives.append(section)
-            if self.logger is not None:
-                self.logger.verbose_print("SECTION: " + section)
-                self.logger.verbose_print(self.config.items(section))
         if sections is not None and 0 != len(sections) and not skip:
             print("ERROR: sections were specified for execution and not found:",sections)
             sys.exit(1)

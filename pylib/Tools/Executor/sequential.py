@@ -88,6 +88,11 @@ class SequentialEx(ExecutorMTTTool):
                     stage = stage.strip()
                 else:
                     stage = title
+
+                testDef.configTest()
+                testDef.logger.verbose_print("OPTIONS FOR SECTION: %s" % title)
+                testDef.logger.verbose_print(testDef.config.items(title))
+
                 # setup the log
                 stageLog = {'section':title}
                 # get the key-value tuples output by the configuration parser
