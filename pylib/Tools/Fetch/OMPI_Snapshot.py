@@ -1,7 +1,7 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
 # Copyright (c) 2015-2017 Intel, Inc.  All rights reserved.
-# Copyright (c) 2017      Los Alamos National Security, LLC. All rights
+# Copyright (c) 2017-2018 Los Alamos National Security, LLC. All rights
 #                         reserved.
 # $COPYRIGHT$
 #
@@ -97,17 +97,40 @@ class OMPI_Snapshot(FetchMTTTool):
             log['stderr'] = "Timeout error"
             sys.exit(-1)
         except requests.exceptions.RequestException as base_class_error:
-            testDef.logger.verbose_print("Oops, an error occured: ", base_class_error)
+            testDef.logger.verbose_print("An error occured: ", base_class_error)
             log['status'] = 1
-            log['stderr'] = "Ooops, an error occured"
+            log['stderr'] = "An error occured"
             sys.exit(-1)
+
+        # check to see if we have already processed this tarball
+        try:
+            if self.options['version_file'] is not None:
+                if os.path.exists(cmds['version_file']):
+                    try:
+                        f = open(cmds['version_file'], 'r')
+                        last_version = f.readline().strip()
+                        f.close()
+                        if last_version == snapshot_req.text.strip():
+                            log['status'] = 1
+                            log['stderr'] = "No new tarballs to test"
+                            # track that we serviced this one
+                            return
+                    except IOError:
+                        log['status'] = 1
+                        log['stderr'] = "An error occurred reading version file: " + cmds['version_file']
+                        testDef.logger.verbose_print("An error occurred reading version file: " + cmds['version_file'])
+                        return
+                else:
+                    testDef.logger.verbose_print("Version file does not exist")
+                    pass
+        except KeyError:
+            pass
+
         # build the tarball name, using a base and then full name
         tarball_base_name = 'openmpi-' + snapshot_req.text
         tarball_name = tarball_base_name + '.tar.gz'
         download_url = url + '/' + tarball_name
 
-        # check to see if we have already processed this tarball
-        # TODO: need to check version file
         try:
             if self.done[tarball_base_name] is not None:
                 log['status'] = self.done[tarball_base_name][0]
@@ -167,6 +190,19 @@ class OMPI_Snapshot(FetchMTTTool):
                 log['status'] = 1
                 log['stderr'] = "untar of tarball " + tarball_name + "FAILED"
                 return
+            # update version file if we're using one
+            try:
+                if self.options['version_file'] is not None:
+                    try:
+                        f = open(cmds['version_file'], 'w')
+                        print(snapshot_req.text.strip(), file=f);
+                    except:
+                        log['status'] = 1
+                        log['stderr'] = "Failed to update version file"
+                        testDef.logger.verbose_print("Failed to update version file")
+                        return
+            except KeyError:
+                pass
             # move into the resulting directory
             os.chdir(tarball_base_name)
         # record the result
