@@ -20,6 +20,7 @@ from BaseMTTUtility import *
 # @section Copytree
 # @param  src                 The top directory of the tree to be copied
 # @param  preserve_symlinks   Preserve symlinks instead of copying the contents
+# @param  preserve_directory  Copies directory instead of contents
 # @}
 class Copytree(BaseMTTUtility):
     def __init__(self):
