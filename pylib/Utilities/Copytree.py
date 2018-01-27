@@ -77,7 +77,7 @@ class Copytree(BaseMTTUtility):
                 srcpath = srcpath.strip()
                 reload(distutils.dir_util)
                 if cmds['preserve_directory'] != "0":
-                    subdst = os.path.join(dst,os.path.basename(os.path.dirname(srcpath)))
+                    subdst = os.path.join(dst,os.path.basename(srcpath))
                     if os.path.exists(subdst):
                         shutil.rmtree(subdst)
                     os.mkdir(subdst)
