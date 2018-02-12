@@ -29,6 +29,7 @@ class Harasser(HarasserMTTTool):
         HarasserMTTTool.__init__(self)
         self.activated = False
         self.execution_counter = 0
+        self.testDef = None
         self.running_harassers = {}
         self.options = {}
         self.options['trigger_scripts'] = (None, "Scripts to run to launch harassers")
@@ -58,6 +59,10 @@ class Harasser(HarasserMTTTool):
         if self.activated:
             IPlugin.deactivate(self)
             self.activated = False
+            if self.execution_counter > 0:
+                self.testDef.logger.verbose_print("Harasser plugin stopped while harassers were running. Cleaning up harassers...")
+                self.stop(self.running_harassers.keys(), self.testDef)
+                self.testDef.logger.verbose_print("Harassers were cleaned up.")
         return
 
     def print_name(self):
@@ -81,7 +86,7 @@ class Harasser(HarasserMTTTool):
         """
         status,stdout,stderr,time = testDef.execmd.execute(cmds, cmdargs, testDef)
 
-    def start(self, log, testDef):
+    def start(self, testDef):
         """Harassment is started on the system
         """
         # Parse input for lists of scripts to run
@@ -121,7 +126,7 @@ class Harasser(HarasserMTTTool):
 
         return exec_ids
 
-    def check(self, exec_ids, log, testDef):
+    def check(self, exec_ids, testDef):
         """A check to see if harassers are working properly
         """
         dead_processes = []
@@ -130,11 +135,11 @@ class Harasser(HarasserMTTTool):
                 and self.running_harassers[exec_id][0].exitcode != 0:
                 dead_processes.append(self.running_harassers[exec_id])
         if dead_processes:
-            process_run_info = self.stop(exec_ids, log, testDef)
+            process_run_info = self.stop(exec_ids, testDef)
             return dead_processes, process_run_info
         return None
 
-    def stop(self, exec_ids, log, testDef):
+    def stop(self, exec_ids, testDef):
         """Calls the stop-scripts provided with harasser scripts to stop and clean up harassment
         """
         process_info = [self.running_harassers[exec_id] for exec_id in exec_ids]
@@ -153,12 +158,16 @@ class Harasser(HarasserMTTTool):
             elif status == 1:
                 process.terminate()
 
+            self.execution_counter -= 1
+
         return return_info
 
     def execute(self, log, keyvals, testDef):
         """Configure the harasser plugin on whether to run and what to run
         """
         testDef.logger.verbose_print("Harasser Execute")
+
+        self.testDef = testDef
 
         try:
             if log['section'] is not None:

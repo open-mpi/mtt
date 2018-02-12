@@ -343,9 +343,9 @@ class Shell(BuildMTTTool):
         cfgargs = shlex.split(cmds['command'])
 
         if 'TestRun' in log['section'].split(":")[0]:
-            harass_exec_ids = testDef.harasser.start(log, testDef)
+            harass_exec_ids = testDef.harasser.start(testDef)
 
-            harass_check = testDef.harasser.check(harass_exec_ids, log, testDef)
+            harass_check = testDef.harasser.check(harass_exec_ids, testDef)
             if harass_check is not None:
                 log['stderr'] = 'Not all harasser scripts started. These failed to start: ' \
                                 + ','.join([h_info[1]['start_script'] for h_info in harass_check[0]])
@@ -357,7 +357,7 @@ class Shell(BuildMTTTool):
         status, stdout, stderr, time = testDef.execmd.execute(cmds, cfgargs, testDef)
 
         if 'TestRun' in log['section'].split(":")[0]:
-            testDef.harasser.stop(harass_exec_ids, log, testDef)
+            testDef.harasser.stop(harass_exec_ids, testDef)
 
         # Deallocate cluster
         if False == self.deallocate(log, cmds, testDef):
