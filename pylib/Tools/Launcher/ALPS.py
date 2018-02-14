@@ -420,9 +420,9 @@ class ALPS(LauncherMTTTool):
             cmdargs.append(test)
             testLog['cmd'] = " ".join(cmdargs)
 
-            harass_exec_ids = testDef.harasser.start(testLog, testDef)
+            harass_exec_ids = testDef.harasser.start(testDef)
 
-            harass_check = testDef.harasser.check(harass_exec_ids, testLog, testDef)
+            harass_check = testDef.harasser.check(harass_exec_ids, testDef)
             if harass_check is not None:
                 testLog['stderr'] = 'Not all harasser scripts started. These failed to start: ' \
                                 + ','.join([h_info[1]['start_script'] for h_info in harass_check[0]])
@@ -431,12 +431,12 @@ class ALPS(LauncherMTTTool):
                 finalStatus = 1
                 finalError = testLog['stderr']
                 numFail = numFail + 1
-                testDEef.harasser.stop(harass_exec_ids, testLog, testDef)
+                testDef.harasser.stop(harass_exec_ids, testDef)
                 continue
 
             status,stdout,stderr,time = testDef.execmd.execute(cmds, cmdargs, testDef)
 
-            testDef.harasser.stop(harass_exec_ids, testLog, testDef)
+            testDef.harasser.stop(harass_exec_ids, testDef)
 
             if 0 != status and skipStatus != status and 0 == finalStatus:
                 if expected_returncodes[test] == 0:
