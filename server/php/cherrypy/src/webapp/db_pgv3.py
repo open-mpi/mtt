@@ -585,6 +585,8 @@ class DatabaseV3():
                 else:
                     select_stmt = select_stmt + " AND "
                 select_stmt = select_stmt + field + " = %s"
+            else:
+                self._logger.debug("WARNING: _select_insert field %s not in table %s" % (field, table))
             count += 1
 
         select_stmt = select_stmt + "\n ORDER BY " + table_id + " ASC LIMIT 1"
