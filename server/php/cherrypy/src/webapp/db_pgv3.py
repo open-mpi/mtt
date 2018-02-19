@@ -559,39 +559,55 @@ class DatabaseV3():
     def _select_insert(self, table, table_id, stmt_fields, stmt_values):
         found_id = -1
 
+        cursor = self.get_cursor()
+
+        cursor.execute("SELECT * FROM %s LIMIT 0" % table)
+        all_fields_for_table = [d[0] for d in cursor.description]
+
         #
         # Build the SELECT and INSERT statements
         #
         select_stmt = "\nSELECT %s FROM %s \n"  % (table_id, table)
         insert_stmt = "\nINSERT INTO %s \n (%s" % (table, table_id)
+        insert_stmt_values = []
 
+        #
+        # we filter because the client may have sent us stuff our database has
+        # no clue about
+        #
         count = 0
         for field in stmt_fields:
-            insert_stmt = insert_stmt + ", " + field
-
-            if count == 0:
-                select_stmt = select_stmt + " WHERE "
+            if field in all_fields_for_table:
+                insert_stmt = insert_stmt + ", " + field
+                insert_stmt_values.append(stmt_values[count])
+                if count == 0:
+                    select_stmt = select_stmt + " WHERE "
+                else:
+                    select_stmt = select_stmt + " AND "
+                select_stmt = select_stmt + field + " = %s"
             else:
-                select_stmt = select_stmt + " AND "
-            select_stmt = select_stmt + field + " = %s"
+                self._logger.debug("WARNING: _select_insert field %s not in table %s" % (field, table))
             count += 1
 
         select_stmt = select_stmt + "\n ORDER BY " + table_id + " ASC LIMIT 1"
 
         insert_stmt = insert_stmt + ") \nVALUES ("
         insert_stmt = insert_stmt + " %s"
-        for value in stmt_values:
-            insert_stmt = insert_stmt + ", %s"
+        for field in stmt_fields:
+            if field in all_fields_for_table:
+                insert_stmt = insert_stmt + ", %s"
         insert_stmt = insert_stmt + ")"
 
         #
         # Try the select to see if we need to insert
         #
         #self._logger.debug(select_stmt)
+        #self._logger.debug(insert_stmt)
+        #self._logger.debug(str(insert_stmt_values))
 
         cursor = self.get_cursor()
 
-        values = tuple(stmt_values)
+        values = tuple(insert_stmt_values)
         cursor.execute( select_stmt, values )
         rows = cursor.fetchone()
         if rows is not None:
@@ -607,8 +623,8 @@ class DatabaseV3():
         self._logger.debug( ", ".join(str(x) for x in values) )
         found_id = self._get_nextval( "%s_%s_seq" % (table, table_id))
 
-        stmt_values.insert(0, found_id)
-        values = tuple(stmt_values)
+        insert_stmt_values.insert(0, found_id)
+        values = tuple(insert_stmt_values)
         cursor.execute( insert_stmt, values )
         # Make sure to commit after every INSERT
         self._connection.commit()
