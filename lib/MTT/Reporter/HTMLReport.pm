@@ -5,9 +5,9 @@
 # Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 # $COPYRIGHT$
-# 
+#
 # Additional copyrights may follow
-# 
+#
 # $HEADER$
 #
 
@@ -56,32 +56,32 @@ my $domain;
 
 #--------------------------------------------------------------------------
 
-sub Init 
+sub Init
 {
     ($ini, $section) = @_;
 
-    $header = Value($ini, $section, "header") . "\n"; 
-    $footer = Value($ini, $section, "footer") . "\n"; 
-    $filename       = Value($ini, $section, "textfile_filename"); 
-    $dirname        = Value($ini, $section, "textfile_dirname"); 
-	$domain         = Value($ini, "mtt", "web_url");
-	if(!defined($domain))
-	{
-		$domain  = Value($ini, $section, "web_url");
-	}
+    $header = Value($ini, $section, "header") . "\n";
+    $footer = Value($ini, $section, "footer") . "\n";
+    $filename       = Value($ini, $section, "textfile_filename");
+    $dirname        = Value($ini, $section, "textfile_dirname");
+    $domain         = Value($ini, "mtt", "web_url");
+    if(!defined($domain))
+    {
+        $domain  = Value($ini, $section, "web_url");
+    }
 
     # Make it an absolute filename, because there's oodles of
     # chdir()'s within the testing.  Whack the file if it's already
     # there.
 
-    if ($filename ne "-") 
-	{
-        if ($filename !~ /\//) 
-		{
+    if ($filename ne "-")
+    {
+        if ($filename !~ /\//)
+        {
             $dirname = MTT::DoCommand::cwd();
             $filename = "$filename";
-        } else 
-		{
+        } else
+        {
             $dirname = dirname($filename) if (! defined($dirname));
             $filename = basename($filename);
         }
@@ -90,17 +90,17 @@ sub Init
         MTT::Files::safe_mkdir("$dirname/html");
 
         Debug("File reporter initialized ($dirname/$filename)\n");
-    } else 
-	{
+    } else
+    {
         Debug("File reporter initialized (<stdout>)\n");
     }
 
     $to = Value($ini, $section, "email_to");
-    if ($to) 
-	{
+    if ($to)
+    {
         my $agent = Value($ini, $section, "email_agent");
-        if (!MTT::Mail::Init($agent)) 
-		{
+        if (!MTT::Mail::Init($agent))
+        {
             Debug("Failed to setup TextFileEmail reporter\n");
             return 0;
         }
@@ -111,47 +111,47 @@ sub Init
 }
 #--------------------------------------------------------------------------
 
-sub Finalize 
+sub Finalize
 {
-	my $flush_mode = undef;
-	if ($MTT::Globals::Values->{save_intermediate_report})
-	{
-		$flush_mode = "finalize";
-	}
+    my $flush_mode = undef;
+    if ($MTT::Globals::Values->{save_intermediate_report})
+    {
+        $flush_mode = "finalize";
+    }
     # Print a roll-up report
     _summary_report(\@results, $flush_mode)
         if (@results);
-	undef $dirname;
-	undef $filename;
-	undef $written_files;
+    undef $dirname;
+    undef $filename;
+    undef $written_files;
 }
 
 #--------------------------------------------------------------------------
 
 sub Flush
 {
-	my ($info, $entries) = @_;
-	my @results_to_flush = @results;
-	push(@results_to_flush, $entries) if $entries;
-	_summary_report(\@results_to_flush, "yes")
-        if (@results_to_flush);	
-        
+    my ($info, $entries) = @_;
+    my @results_to_flush = @results;
+    push(@results_to_flush, $entries) if $entries;
+    _summary_report(\@results_to_flush, "yes")
+        if (@results_to_flush);
+
     _detail_report($info, $entries, "yes");
 }
 
 #--------------------------------------------------------------------------
 
-sub Submit 
+sub Submit
 {
     my ($info, $entries) = @_;
     Debug("File reporter\n");
 
     push(@results, $entries);
 
-	if ($MTT::Globals::Values->{save_intermediate_report})
-	{
-		return;
-	}
+    if ($MTT::Globals::Values->{save_intermediate_report})
+    {
+        return;
+    }
 
     # Do a detail report
     _detail_report($info, $entries);
@@ -160,51 +160,51 @@ sub Submit
 
 #--------------------------------------------------------------------------
 
-sub _summary_report 
+sub _summary_report
 {
     my $results_arr = shift;
-	my $flush_mode = shift;
+    my $flush_mode = shift;
 
-#	if (!$flush_mode || $flush_mode eq "finalize")
-#	{
-#    	print("\nMTT Results Summary" . $MTT::Globals::Values->{description} . ", started at: " . $MTT::Globals::Values->{start_time} . " report generated at: " . localtime() . "\n");
-#	    print $header;
+#    if (!$flush_mode || $flush_mode eq "finalize")
+#    {
+#        print("\nMTT Results Summary" . $MTT::Globals::Values->{description} . ", started at: " . $MTT::Globals::Values->{start_time} . " report generated at: " . localtime() . "\n");
+#        print $header;
 #    }
     my ($total_fail, $total_succ, $total_duration, $html_table_content) = (0,0,0,"");
-    foreach my $results (@$results_arr) 
-	{
-        foreach my $phase (keys %$results) 
-		{
+    foreach my $results (@$results_arr)
+    {
+        foreach my $phase (keys %$results)
+        {
             my $phase_obj = $results->{$phase};
 
-            foreach my $section (keys %{$phase_obj}) 
-			{
+            foreach my $section (keys %{$phase_obj})
+            {
                 my $section_obj = $results->{$phase}{$section};
                 my ($per_mpiver) = ();
 
-                foreach my $results_hash (@$section_obj) 
-				{
+                foreach my $results_hash (@$section_obj)
+                {
 
                     my $mpi_version = $results_hash->{mpi_version};
-                    if ($results_hash->{test_result} eq MTT::Values::PASS) 
-					{
+                    if ($results_hash->{test_result} eq MTT::Values::PASS)
+                    {
                         $per_mpiver->{$mpi_version}{pass}++;
                         $total_succ++;
                     }
-					elsif ($results_hash->{test_result} eq MTT::Values::FAIL) 
-					{
+                    elsif ($results_hash->{test_result} eq MTT::Values::FAIL)
+                    {
                         $per_mpiver->{$mpi_version}{fail}++;
                         $total_fail++;
-                    } elsif ($results_hash->{test_result} eq MTT::Values::TIMED_OUT) 
-					{
+                    } elsif ($results_hash->{test_result} eq MTT::Values::TIMED_OUT)
+                    {
                         $per_mpiver->{$mpi_version}{timed}++;
                         $total_fail++;
-                    } elsif ($results_hash->{test_result} eq MTT::Values::SKIPPED) 
-					{
+                    } elsif ($results_hash->{test_result} eq MTT::Values::SKIPPED)
+                    {
                         $per_mpiver->{$mpi_version}{skipped}++;
                     }
-                    if ( defined($results_hash->{duration}) ) 
-					{
+                    if ( defined($results_hash->{duration}) )
+                    {
                         my $one_test_duration = $results_hash->{duration};
                         $one_test_duration =~ s/(\d+).+/$1/g;
                         $per_mpiver->{$mpi_version}{duration} += $one_test_duration;
@@ -213,8 +213,8 @@ sub _summary_report
                     $per_mpiver->{$mpi_version}{report} = $results_hash;
                 }
 
-                foreach my $mpi_version (keys %{$per_mpiver}) 
-				{
+                foreach my $mpi_version (keys %{$per_mpiver})
+                {
                     my $mpi_stat        = $per_mpiver->{$mpi_version};
                     my $report          = $mpi_stat->{report};
                     my $rep_file        = basename(_get_filename($report, $section));
@@ -247,62 +247,62 @@ sub _summary_report
     $html_body =~ s/%TOTALS%/$html_totals/g;
     my $html_filename = "All_phase-summary.html";
     my $html_file = "$dirname/" . MTT::Files::make_safe_filename("$html_filename");
-    
-	_output_results($html_file, $html_body,$flush_mode);
 
-	if (!$flush_mode || $flush_mode eq "finalize")
-	{
-	    if ( $to ) 
-		{
+    _output_results($html_file, $html_body,$flush_mode);
 
-		my $send_succ_threshold = Value($ini, $section, "min_succ");
-		if (defined $send_succ_threshold and ($total_succ <= $send_succ_threshold)) {
-			Verbose(">> Skipping email: $total_succ <= $send_succ_threshold\n");
-			return 1;
-		}
-	        # Evaluate the email subject header and from
-			my ($subject, $body_footer);
-	        my $subject_tmpl = Value($ini, $section, "email_subject");
-	        my $body_footer_tmpl = Value($ini, $section, "email_footer");
-	        if ($MTT::Globals::Values->{extra_subject})
-			{
-	        	$subject_tmpl = $subject_tmpl."$MTT::Globals::Values->{extra_subject}";
-	        }
+    if (!$flush_mode || $flush_mode eq "finalize")
+    {
+        if ( $to )
+        {
+
+        my $send_succ_threshold = Value($ini, $section, "min_succ");
+        if (defined $send_succ_threshold and ($total_succ <= $send_succ_threshold)) {
+            Verbose(">> Skipping email: $total_succ <= $send_succ_threshold\n");
+            return 1;
+        }
+            # Evaluate the email subject header and from
+            my ($subject, $body_footer);
+            my $subject_tmpl = Value($ini, $section, "email_subject");
+            my $body_footer_tmpl = Value($ini, $section, "email_footer");
+            if ($MTT::Globals::Values->{extra_subject})
+            {
+                $subject_tmpl = $subject_tmpl."$MTT::Globals::Values->{extra_subject}";
+            }
 
             if ($MTT::Globals::Values->{extra_footer})
-			{
+            {
                 $body_footer_tmpl = $body_footer_tmpl."\n\n$MTT::Globals::Values->{extra_footer}";
             }
-	        my $from = Value($ini, $section, "email_from");
-	        my $detailed_report = Logical($ini, $section, "email_detailed_report");
-	
-	        my $overall_mtt_status = "success";
-	        if ( $total_fail > 0 ) 
-			{
-	            $overall_mtt_status = "failed";
-	        }
-	        my $str = "\$body_footer = \"$body_footer_tmpl\"";
-	        eval $str;
-	
-			my $str = "\$subject = \"$subject_tmpl\"";
-			eval $str;
+            my $from = Value($ini, $section, "email_from");
+            my $detailed_report = Logical($ini, $section, "email_detailed_report");
+
+            my $overall_mtt_status = "success";
+            if ( $total_fail > 0 )
+            {
+                $overall_mtt_status = "failed";
+            }
+            my $str = "\$body_footer = \"$body_footer_tmpl\"";
+            eval $str;
+
+            my $str = "\$subject = \"$subject_tmpl\"";
+            eval $str;
 
             $subject =~ s/[\n\r]//g;
-			Verbose(">> Subject: $subject\n");
-			Verbose(">> To: $to\n");
-			Verbose(">> Body: $html_body\n");
+            Verbose(">> Subject: $subject\n");
+            Verbose(">> To: $to\n");
+            Verbose(">> Body: $html_body\n");
 
             # todo: Use Mail.pm, need to fix it first to accept "type"
-			open MAIL, "|mutt -e \"set content_type=text/html\"  -s \"$subject\" --  $to" || die "Could not open pipe to output e-mail\n";
-			print MAIL $html_body;
-			close MAIL;
+            open MAIL, "|mutt -e \"set content_type=text/html\"  -s \"$subject\" --  $to" || die "Could not open pipe to output e-mail\n";
+            print MAIL $html_body;
+            close MAIL;
 
 
-			#}
-	
-	        Verbose(">> Reported to e-mail: $to\n");
-	    }
-	}
+            #}
+
+            Verbose(">> Reported to e-mail: $to\n");
+        }
+    }
     return 1;
 }
 
@@ -310,8 +310,8 @@ sub is_result_failed
 {
     my ($key) = @_;
     my $failed = 0;
-    if (($key ne "Success") and ($key ne "Passed") and ($key ne "Skipped")) 
-	{
+    if (($key ne "Success") and ($key ne "Passed") and ($key ne "Skipped"))
+    {
         $failed = 1;
     }
     $failed;
@@ -325,7 +325,7 @@ sub _bystatus
 }
 
 # Show individual test outputs
-sub _detail_report 
+sub _detail_report
 {
     my ($info, $entries, $flush_mode) = @_;
     my $file;
@@ -333,31 +333,31 @@ sub _detail_report
     my $separator = { " " => " " };
     my %existing_report_file = ();
 
-    foreach my $phase (keys(%$entries)) 
-	{
+    foreach my $phase (keys(%$entries))
+    {
         my $phase_obj = $entries->{$phase};
 
-        foreach my $section (keys(%$phase_obj)) 
-		{
+        foreach my $section (keys(%$phase_obj))
+        {
             my $section_obj = $phase_obj->{$section};
             my $multi_line;
             my $html_table = "";
 
-            # Put fields that are identical all the way through in 
+            # Put fields that are identical all the way through in
             # the title
             my $title = _get_replicated_fields($section_obj);
 
             # Make timestamps human-readable
-           	$title = _convert_timestamps($title);
+               $title = _convert_timestamps($title);
 
-			_add_to_tables(\$html_table, $title, undef);
+            _add_to_tables(\$html_table, $title, undef);
 
-            foreach my $report (sort _bystatus @$section_obj) 
-			{
-				$file   = _get_filename($report, $section);
-				$report = _convert_timestamps($report);
-				$report = _convert_array_refs($report);
-				_add_to_tables(\$html_table, $report, $title);
+            foreach my $report (sort _bystatus @$section_obj)
+            {
+                $file   = _get_filename($report, $section);
+                $report = _convert_timestamps($report);
+                $report = _convert_array_refs($report);
+                _add_to_tables(\$html_table, $report, $title);
             }
 
             # Write the report to a file (or stdout)
@@ -365,25 +365,25 @@ sub _detail_report
             $html_file    =~  s/\.txt/\.html/g;
 
             my $html_body = "";
-            if (not defined $existing_report_file{$html_file}) 
-			{
+            if (not defined $existing_report_file{$html_file})
+            {
                 $existing_report_file{$html_file} = 1;
                 my $html_start = get_html_phase_report_template_start();
                 Verbose(">> html: adding css $html_file\n");
                 $html_body = $html_start;
-            } else 
-			{
+            } else
+            {
                 Verbose(">> html: not adding report css, already exists: $html_file\n");
             }
             $html_body .= $html_table;
- 
-           	_output_results($html_file, $html_body, $flush_mode);
+
+               _output_results($html_file, $html_body, $flush_mode);
 
         }
-        foreach my $rep_file (keys %existing_report_file) 
-		{
+        foreach my $rep_file (keys %existing_report_file)
+        {
             my $close_report_html = get_html_phase_report_template_stop();
-            	_output_results($rep_file, $close_report_html);
+                _output_results($rep_file, $close_report_html);
         }
     }
 }
@@ -397,10 +397,10 @@ sub _get_replicated_fields {
 
     # Iterate through the array of hashes (each one is an
     # individual test result)
-    foreach my $results_hash (@$section_obj) 
-	{
-        foreach my $key (keys %$results_hash) 
-		{
+    foreach my $results_hash (@$section_obj)
+    {
+        foreach my $key (keys %$results_hash)
+        {
             $title->{$key}->{$results_hash->{$key}} = 1;
         }
     }
@@ -428,7 +428,7 @@ sub _get_replicated_fields {
 
 # Add rows to the TabularDisplay object
 # (exclude_hash items will not be added)
-sub _add_to_tables 
+sub _add_to_tables
 {
     my($htable_ref, $include_hash, $exclude_hash) = @_;
 
@@ -446,8 +446,8 @@ sub _add_to_tables
     my $strClass = "Passed";
     if ( !$include_hash->{"result_message"} and !$include_hash->{"test_result"}) {
         $strClass = "Error";
-    } elsif ( ($include_hash->{"result_message"} ne "Success") and 
-        ($include_hash->{"result_message"} ne "Passed") and 
+    } elsif ( ($include_hash->{"result_message"} ne "Success") and
+        ($include_hash->{"result_message"} ne "Passed") and
         ($include_hash->{"result_message"} ne "Skipped")) {
         $strClass = "Error";
     }
@@ -457,12 +457,12 @@ sub _add_to_tables
         # Skip over frivolous data
         next if ($key =~ /$frivolous/);
 
-        if (! defined($exclude_hash->{$key})) 
-		{
-            if (defined $htable_ref) 
-			{
-                if (!$has_result ) 
-				{
+        if (! defined($exclude_hash->{$key}))
+        {
+            if (defined $htable_ref)
+            {
+                if (!$has_result )
+                {
                     $$htable_ref .= get_html_phase_report_table_start_template();
                     $has_result++;
                 }
@@ -471,27 +471,27 @@ sub _add_to_tables
 
                 # can be too big, browser hangs, save it as a href
                 if ($key eq "result_stdout") {
-                	if (!$MTT::Globals::Values->{save_intermediate_report})
-					{
-                		$include_hash->{saved_to}=undef;
-                	}
-                	if (!$include_hash->{saved_to})
-					{
-						my $tmp = new File::Temp(UNLINK => 0, SUFFIX => '.txt', TEMPLATE=>'test_stdout_XXXXXX', DIR=>"$dirname/html");
-						my $fname = $tmp->filename;
-						close $tmp;
-						_output_results($fname, $val);
-						$include_hash->{saved_to} = $fname;
-                	}
-                	 my $fname_base = basename($include_hash->{saved_to});
-                	$$htable_ref .= "<tr valign='top' class='$strClass'><td>$key</td><td><a href='html/$fname_base'>$fname_base</a></td></tr>\n";
-                } elsif ( $key eq "result_message") 
-				{
+                    if (!$MTT::Globals::Values->{save_intermediate_report})
+                    {
+                        $include_hash->{saved_to}=undef;
+                    }
+                    if (!$include_hash->{saved_to})
+                    {
+                        my $tmp = new File::Temp(UNLINK => 0, SUFFIX => '.txt', TEMPLATE=>'test_stdout_XXXXXX', DIR=>"$dirname/html");
+                        my $fname = $tmp->filename;
+                        close $tmp;
+                        _output_results($fname, $val);
+                        $include_hash->{saved_to} = $fname;
+                    }
+                     my $fname_base = basename($include_hash->{saved_to});
+                    $$htable_ref .= "<tr valign='top' class='$strClass'><td>$key</td><td><a href='html/$fname_base'>$fname_base</a></td></tr>\n";
+                } elsif ( $key eq "result_message")
+                {
                     $val =~ s/\n/<br>/g;
                     $val =~ s/[ ]/&nbsp;/g;
                     $$htable_ref .= "<tr valign='top' class='$strClass'><td>$key</td><td>$val</td></tr>\n";
-                } else 
-				{
+                } else
+                {
                     $val =~ s/\n/<br>/g;
                     $val =~ s/[ ]/&nbsp;/g;
                     $$htable_ref .= "<tr valign='top' class='Passed'><td>$key</td><td>$val</td></tr>\n";
@@ -499,14 +499,14 @@ sub _add_to_tables
             }
         }
     }
-    if ($has_result && defined $htable_ref) 
-	{
+    if ($has_result && defined $htable_ref)
+    {
         $$htable_ref .= get_html_phase_report_table_stop_template();
     }
 }
 
-# Output results to a file or 
-sub _output_results 
+# Output results to a file or
+sub _output_results
 {
     my ($file, $str, $clear) = @_;
 
@@ -515,57 +515,57 @@ sub _output_results
     # If we have not yet written to the file in this run,
     # then whack the file.
 
-	if ($clear){
-		unlink($file);
-	} elsif (!exists($written_files->{$file})) {
+    if ($clear){
+        unlink($file);
+    } elsif (!exists($written_files->{$file})) {
         unlink($file);
     }
 
     # Write to stdout or append to the file
 
-    if ($file eq "-") 
-	{
+    if ($file eq "-")
+    {
         print $str;
         Verbose(">> Reported to stdout\n")
             if (!exists($written_files->{$file}));
-    } else 
-	{
-    	if ($clear)
-		{
-    		MTT::Files::SafeWrite(1, $file, $str, ">");
-    	} else 
-		{
-        	MTT::Files::SafeWrite(1, $file, $str, ">>");
-    	}
+    } else
+    {
+        if ($clear)
+        {
+            MTT::Files::SafeWrite(1, $file, $str, ">");
+        } else
+        {
+            MTT::Files::SafeWrite(1, $file, $str, ">>");
+        }
         Verbose(">> Reported to text file $file\n")
             if (!exists($written_files->{$file}));
     }
     $written_files->{$file} = 1;
 }
 
-sub _get_report_filenames 
+sub _get_report_filenames
 {
     my $results_arr = shift;
     my @files = ();
 
-    foreach my $results (@$results_arr) 
-	{
+    foreach my $results (@$results_arr)
+    {
 
-        foreach my $phase (keys %$results) 
-		{
+        foreach my $phase (keys %$results)
+        {
             my $phase_obj = $results->{$phase};
 
-            foreach my $section (keys %{$phase_obj}) 
-			{
+            foreach my $section (keys %{$phase_obj})
+            {
                 my $section_obj = $phase_obj->{$section};
 
-                foreach my $report (@$section_obj) 
-				{
+                foreach my $report (@$section_obj)
+                {
                     my $rep_file = _get_filename($report, $section);
                     unshift(@files, $rep_file);
-		        }
-	        }
-	    }
+                }
+            }
+        }
     }
 
     return @files;
@@ -581,26 +581,26 @@ sub _get_filename {
     my $mpi_install_section_name = $report->{mpi_install_section_name};
     my $mpi_version = $report->{mpi_version};
     my $phase = $report->{phase};
-	my $suffix = "";
+    my $suffix = "";
     my $ret;
 
 
-	if ($mpi_install_section_name) {
-		$suffix = "-$mpi_install_section_name"
-	}
+    if ($mpi_install_section_name) {
+        $suffix = "-$mpi_install_section_name"
+    }
 
     # Hardcoded filename
     my $basename = MTT::Files::make_safe_filename("$phase-$section-$mpi_name-$mpi_version" . $suffix . ".txt");
 
     # Use an absolute path
-    $ret = "$dirname/$basename"; 
+    $ret = "$dirname/$basename";
 
 #    Debug("_get_filename returning $ret\n");
     return $ret;
 }
 
 # Stringify any array references
-sub _convert_array_refs 
+sub _convert_array_refs
 {
     my $report = shift;
 
@@ -615,14 +615,14 @@ sub _convert_array_refs
 }
 
 # Make timestamps human-readable
-sub _convert_timestamps 
+sub _convert_timestamps
 {
     my $report = shift;
 
-    foreach my $key (keys(%$report)) 
-	{
-        if ($key =~ /timestamp/ && $report->{$key} =~ /\d+/ && !($key =~ /human/)) 
-		{
+    foreach my $key (keys(%$report))
+    {
+        if ($key =~ /timestamp/ && $report->{$key} =~ /\d+/ && !($key =~ /human/))
+        {
             $report->{$key . "_human"} = gmtime($report->{$key});
         }
     }
@@ -663,7 +663,7 @@ sub add_tr
     my $trClass;
     if ($fail or $timed) {
         $trClass = 'font-weight:bold; color:red;';
-    } 
+    }
 
     my $tr = "<tr style=\"background:\#eeeee0; $trClass\"  valign='top'>\n";
     $tr .= "<td ><a href='$domain/$dir/$rep_file_url'>$phase</a></td><td>$section</td><td>$mpi_version</td><td >$duration_human</td><td>$pass</td><td>$fail</td><td>$timed</td><td>$skipped</td>\n</tr>\n";
@@ -732,37 +732,37 @@ sub get_css_template
 
 sub get_html_summary_report_template
 {
-	my $values_replace = {};
-	$values_replace->{'REPORT_DATE'} =  `date +%F` ." ". `date +%k:%M:%S`;
-	$values_replace->{'OFED_VERSION'} = `ofed_info -s`;
-	$values_replace->{'CLUSTER_NAME'} = MTT::Values::Functions::cluster_name();
-	
-	my $helpper_hash = {};
-	
-	my $ini = $MTT::Globals::Internals->{ini};
-	my @sects = $ini->Sections();
-	my $product_version;
-	my $skip_section;
-	if ($MTT::Globals::Values->{shuffle_tests}->{sections})
-	{
-		MTT::Util::shuffle(\@sects);	
-	}
-	foreach my $section (@sects) 
-	{
-		print("text reporter: section  $section\n");
-		if ($section =~ /^\s*mpi install:/) 
-		{
-			my $sim_sec_name = GetSimpleSection($section);
-			$product_version =  MTT::Values::Value($ini, "mpi install: $sim_sec_name",'product_version');
-			$skip_section = MTT::Values::Value($ini, "mpi install: $sim_sec_name",'skip_section');
-			if(!defined($helpper_hash->{$product_version}) && $skip_section == 0)
-			{
-				$values_replace->{'PRODUCT'} .= $product_version . " ";
-				$helpper_hash->{$product_version} = 1;
-			}
-		}
-	}
-	
+    my $values_replace = {};
+    $values_replace->{'REPORT_DATE'} =  `date +%F` ." ". `date +%k:%M:%S`;
+    $values_replace->{'OFED_VERSION'} = `ofed_info -s`;
+    $values_replace->{'CLUSTER_NAME'} = MTT::Values::Functions::cluster_name();
+
+    my $helpper_hash = {};
+
+    my $ini = $MTT::Globals::Internals->{ini};
+    my @sects = $ini->Sections();
+    my $product_version;
+    my $skip_section;
+    if ($MTT::Globals::Values->{shuffle_tests}->{sections})
+    {
+        MTT::Util::shuffle(\@sects);
+    }
+    foreach my $section (@sects)
+    {
+        print("text reporter: section  $section\n");
+        if ($section =~ /^\s*mpi install:/)
+        {
+            my $sim_sec_name = GetSimpleSection($section);
+            $product_version =  MTT::Values::Value($ini, "mpi install: $sim_sec_name",'product_version');
+            $skip_section = MTT::Values::Value($ini, "mpi install: $sim_sec_name",'skip_section');
+            if(!defined($helpper_hash->{$product_version}) && $skip_section == 0)
+            {
+                $values_replace->{'PRODUCT'} .= $product_version . " ";
+                $helpper_hash->{$product_version} = 1;
+            }
+        }
+    }
+
     my $tmpl = '
     <html>
     <title>MTT Results: Summary</title>
@@ -800,12 +800,12 @@ sub get_html_summary_report_template
     </body>
     </html>
     ';
-	my $tmp2;
-	foreach my $key (keys %{$values_replace})
-	{
-		$tmp2 = $values_replace->{$key};
-		$tmpl =~ s/%$key%/$tmp2/;
-	}
+    my $tmp2;
+    foreach my $key (keys %{$values_replace})
+    {
+        $tmp2 = $values_replace->{$key};
+        $tmpl =~ s/%$key%/$tmp2/;
+    }
     return $tmpl;
 }
 
@@ -829,7 +829,7 @@ sub get_html_phase_report_table_stop_template
 }
 sub get_html_phase_report_template_start
 {
-	my $css = get_css_template();
+    my $css = get_css_template();
     my $tmpl = '
     <title>Phase report</title>
     <h1>MTT Report for single phase execution</h1>
