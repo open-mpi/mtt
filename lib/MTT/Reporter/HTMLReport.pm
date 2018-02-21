@@ -118,9 +118,13 @@ sub Finalize
     {
         $flush_mode = "finalize";
     }
+
+    my $report_no_results = Value($ini, $section, 'report_no_results');
+
     # Print a roll-up report
     _summary_report(\@results, $flush_mode)
-        if (@results);
+        if (@results or $report_no_results);
+
     undef $dirname;
     undef $filename;
     undef $written_files;
@@ -238,11 +242,24 @@ sub _summary_report
 
     ";
 
+    my $ignore_min_succ = 0;
+    my $extra_info = "";
+    if (not $total_tests) {
+        $extra_info = "<h2>Extra info</h2><span style='color:red'>No tests were executed.</span>";
+        if (MTT::Util::time_to_terminate()) {
+            $extra_info .= "\n<span>Terminate file found.</span>";
+        }
+
+        my $report_no_results = Value($ini, $section, 'report_no_results');
+        $ignore_min_succ = 1 if $report_no_results;
+    }
+
     # Wrte html report to a file
     my $html_body = get_html_summary_report_template();
     $html_body =~ s/%TESTS_RESULTS%/$html_table_content/g;
     $html_body =~ s/%FOOTER%/$footer/g;
     $html_body =~ s/%HEADER%/$header/g;
+    $html_body =~ s/%EXTRA_INFO%/$extra_info/ if $extra_info;
     my $html_totals = "<td style=\"background:#eeeee0;\"  >$total_tests</td><td style=\"background:#eeeee0;\"  >$total_fail</td><td style=\"background:#eeeee0;\"  >$total_succ</td><td style=\"background:#eeeee0;\"  >$total_duration_human</td>\n";
     $html_body =~ s/%TOTALS%/$html_totals/g;
     my $html_filename = "All_phase-summary.html";
@@ -256,7 +273,7 @@ sub _summary_report
         {
 
         my $send_succ_threshold = Value($ini, $section, "min_succ");
-        if (defined $send_succ_threshold and ($total_succ <= $send_succ_threshold)) {
+        if (defined $send_succ_threshold and ($total_succ <= $send_succ_threshold) and !$ignore_min_succ) {
             Verbose(">> Skipping email: $total_succ <= $send_succ_threshold\n");
             return 1;
         }
@@ -770,6 +787,7 @@ sub get_html_summary_report_template
     <h1>MTT Results</h1>
     %HEADER%
     <hr size="1">
+    %EXTRA_INFO%
     <h2>Additional info</h2>
     <table border="0" cellpadding="5" cellspacing="2" width="95%">
     <tbody><tr style="font-weight: bold; text-align:left; background:#a6caf0;"  valign="top">
