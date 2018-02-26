@@ -650,6 +650,9 @@ class TestDef(object):
         # execute the provided test description
         executor = self.tools.getPluginByName("sequential", "Executor")
         status = executor.plugin_object.execute(self)
+        if status == 0 and self.options['clean_after'] and os.path.isdir(self.options['scratchdir']):
+            self.logger.verbose_print("Cleaning up scratchdir after successful run")
+            shutil.rmtree(self.options['scratchdir'])
         return status
 
     def executeCombinatorial(self):
