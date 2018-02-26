@@ -243,15 +243,20 @@ sub _summary_report
     ";
 
     my $ignore_min_succ = 0;
-    my $extra_info = "";
-    if (not $total_tests) {
-        $extra_info = "<h2>Extra info</h2><span style='color:red'>No tests were executed.</span>";
-        if (MTT::Util::time_to_terminate()) {
-            $extra_info .= "\n<span>Terminate file found.</span>";
-        }
+    my $report_no_results = Value($ini, $section, 'report_no_results');
+    $ignore_min_succ = 1 if $report_no_results;
 
-        my $report_no_results = Value($ini, $section, 'report_no_results');
-        $ignore_min_succ = 1 if $report_no_results;
+    my @extra_info_parts;
+    if (not $total_tests) {
+        push @extra_info_parts, "<span style='color:red'>No tests were executed.</span>";
+    }
+    if (MTT::Util::time_to_terminate()) {
+        push @extra_info_parts, "<span>Terminate file found.</span>";
+    }
+
+    my $extra_info = "";
+    if (@extra_info_parts) {
+        $extra_info = "<h2>Extra info</h2>" . join("\n", @extra_info_parts);
     }
 
     # Wrte html report to a file
