@@ -264,7 +264,7 @@ sub _summary_report
     $html_body =~ s/%TESTS_RESULTS%/$html_table_content/g;
     $html_body =~ s/%FOOTER%/$footer/g;
     $html_body =~ s/%HEADER%/$header/g;
-    $html_body =~ s/%EXTRA_INFO%/$extra_info/ if $extra_info;
+    $html_body =~ s/%EXTRA_INFO%/$extra_info/;
     my $html_totals = "<td style=\"background:#eeeee0;\"  >$total_tests</td><td style=\"background:#eeeee0;\"  >$total_fail</td><td style=\"background:#eeeee0;\"  >$total_succ</td><td style=\"background:#eeeee0;\"  >$total_duration_human</td>\n";
     $html_body =~ s/%TOTALS%/$html_totals/g;
     my $html_filename = "All_phase-summary.html";
