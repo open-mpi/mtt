@@ -23,6 +23,7 @@ import imp
 from yapsy.PluginManager import PluginManager
 import datetime
 from distutils.spawn import find_executable
+from threading import Semaphore
 
 is_py2 = sys.version[0] == '2'
 
@@ -69,6 +70,7 @@ class TestDef(object):
         self.defaults = None
         self.log = {}
         self.watchdog = None
+        self.plugin_trans_sem = Semaphore()
 
     def setOptions(self, args):
         self.options = vars(args)

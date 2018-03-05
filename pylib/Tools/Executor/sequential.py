@@ -66,16 +66,24 @@ class SequentialEx(ExecutorMTTTool):
         status = 0
         only_reporter = False
         stageOrder = testDef.loader.stageOrder
+
+        # Holding a semaphore while in transition between plugins
+        # so async threads don't interrupt in the wrong context
+        testDef.plugin_trans_sem.acquire()
+
         for step in testDef.loader.stageOrder:
             for title in testDef.config.sections():
                 if only_reporter and step != "Reporter":
                     continue
                 try:
+                    testDef.plugin_trans_sem.release()
                     if (":" in title and step not in title.split(":")[0]) or \
                        (":" not in title and step not in title):
+                        testDef.plugin_trans_sem.acquire()
                         continue
                     # see if this is a step we are to execute
                     if title not in testDef.actives:
+                        testDef.plugin_trans_sem.acquire()
                         continue
                     testDef.logger.verbose_print(title)
                     # if they provided the STOP section, that means we
@@ -86,6 +94,7 @@ class SequentialEx(ExecutorMTTTool):
                     # if they included the "SKIP" qualifier, then we skip
                     # this section
                     if "SKIP" in title:
+                        testDef.plugin_trans_sem.acquire()
                         continue
                     # extract the stage and stage name from the title
                     if ":" in title:
@@ -134,6 +143,7 @@ class SequentialEx(ExecutorMTTTool):
                                 stageLog['status'] = 1
                                 stageLog['stderr'] = "Prior dependent step did not record a log"
                                 testDef.logger.logResults(title, stageLog)
+                                testDef.plugin_trans_sem.acquire()
                                 continue
                             try:
                                 if bldlog['status'] != 0:
@@ -142,12 +152,14 @@ class SequentialEx(ExecutorMTTTool):
                                     stageLog['status'] = bldlog['status']
                                     stageLog['stderr'] = "Prior dependent step failed - cannot proceed"
                                     testDef.logger.logResults(title, stageLog)
+                                    testDef.plugin_trans_sem.acquire()
                                     continue
                             except KeyError:
                                 # if it didn't report a status, we shouldn't rely on it
                                 stageLog['status'] = 1
                                 stageLog['stderr'] = "Prior dependent step failed to provide a status"
                                 testDef.logger.logResults(title, stageLog)
+                                testDef.plugin_trans_sem.acquire()
                                 continue
                     except KeyError:
                         pass
@@ -188,6 +200,7 @@ class SequentialEx(ExecutorMTTTool):
                                     stageLog['status'] = 1
                                     stageLog['stderr'] = "Specified plugin",module,"does not exist in stage",stage,"or in the available tools and utilities"
                                     testDef.logger.logResults(title, stageLog)
+                                    testDef.plugin_trans_sem.acquire()
                                     continue
                                 else:
                                     # activate the specified plugin
@@ -219,6 +232,7 @@ class SequentialEx(ExecutorMTTTool):
                                 stageLog['status'] = 1
                                 stageLog['stderr'] = "Specified plugin",module,"does not exist in stage",stage,"or in the available tools and utilities"
                                 testDef.logger.logResults(title, stageLog)
+                                testDef.plugin_trans_sem.acquire()
                                 continue
                             else:
                                 # activate the specified plugin
@@ -236,7 +250,12 @@ class SequentialEx(ExecutorMTTTool):
                             stageLog['status'] = 1
                             stageLog['stderr'] = "Plugin for stage",stage,"was not specified, and no default is available"
                             testDef.logger.logResults(title, stageLog)
+                            testDef.plugin_trans_sem.acquire()
                             continue
+
+                    # Make sure that the plugin was activated
+                    if not plugin.is_activated:
+                        plugin.activate()
 
                     # execute the provided test description and capture the result
                     testDef.logger.stage_start_print(title, plugin.print_name())
@@ -254,6 +273,10 @@ class SequentialEx(ExecutorMTTTool):
                     # Set flag if any stage failed so that a return code can be passed back up
                     if stageLog['status'] != 0:
                         status = 1
+
+                    # sem for exclusive access while outside exception-catching-zone
+                    testDef.plugin_trans_sem.acquire()
+
                 except BaseException as e:
                     for p in testDef.stages.getAllPlugins() \
                            + testDef.tools.getAllPlugins() \
@@ -267,4 +290,11 @@ class SequentialEx(ExecutorMTTTool):
                     status = 1
                     only_reporter = True
                     continue
+
+        for p in testDef.stages.getAllPlugins() \
+               + testDef.tools.getAllPlugins() \
+               + testDef.utilities.getAllPlugins():
+            if p._getIsActivated():
+                p.plugin_object.deactivate()
+
         return status
