@@ -141,7 +141,7 @@ class IUDatabase(ReporterMTTStage):
         metadata['mtt_client_version'] = '4.0a1'
         metadata['platform_name'] = self._extract_param(testDef.logger, 'MTTDefaults', 'platform')
         trl = self._extract_param(testDef.logger, 'MTTDefaults', 'trial')
-        if trl:
+        if trl and trl.lower() != "false":
             metadata['trial'] = 1
         else:
             metadata['trial'] = 0
