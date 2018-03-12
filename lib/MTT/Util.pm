@@ -76,11 +76,8 @@ sub split_comma_list {
 my @_terminate_files;
 my @_pause_files;
 my $df_handle;
-sub time_to_terminate {
-    # If we previously found a terminate file, just return
-    return 1
-        if ($MTT::Globals::Values->{time_to_terminate});
 
+sub find_terminate_file {
     # If we have not yet filled in the @_terminate_files and
     # @_pause_files arrays, do so
     if (-1 == $#_terminate_files) {
@@ -103,12 +100,23 @@ sub time_to_terminate {
 
     # Check to see if any of the files exist
     foreach my $f (@_terminate_files) {
-        if (-f $f) {
-            Verbose("--> Found terminate file: $f\n");
-            Verbose("    Exiting...\n");
-            $MTT::Globals::Values->{time_to_terminate} = 1;
-            return 1;
-        }
+        return $f if -f $f
+    }
+
+    return
+}
+
+sub time_to_terminate {
+    # If we previously found a terminate file, just return
+    return 1
+        if ($MTT::Globals::Values->{time_to_terminate});
+
+    my $term_file = find_terminate_file();
+    if (defined $term_file) {
+        Verbose("--> Found terminate file: $term_file\n");
+        Verbose("    Exiting...\n");
+        $MTT::Globals::Values->{time_to_terminate} = 1;
+        return 1;
     }
 
     # If we find a pause file, sleep and see if it disappears.  If it
