@@ -43,6 +43,10 @@ class WWulf3(ProvisionMTTStage):
         self.options['sudo'] = (False, "Use sudo to execute privileged commands")
         self.options['allocate_cmd'] = (None, "Command to use for allocating nodes from the resource manager")
         self.options['deallocate_cmd'] = (None, "Command to use for deallocating nodes from the resource manager")
+
+        self.allocated = False
+        self.testDef = None
+        self.cmds = None
         return
 
 
@@ -54,7 +58,8 @@ class WWulf3(ProvisionMTTStage):
 
     def deactivate(self):
         IPlugin.deactivate(self)
-
+        if self.allocated and self.testDef and self.cmds:
+            self.deallocate({}, self.cmds, self.testDef)
 
     def print_name(self):
         return "WWulf3"
@@ -85,7 +90,6 @@ class WWulf3(ProvisionMTTStage):
         if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None and self.allocated == True:
             deallocate_cmdargs = shlex.split(cmds['deallocate_cmd'])
             status,stdout,stderr,time = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)
-            self.allocated = False
             if 0 != status:
                 log['status'] = status
                 if log['stderr']:
@@ -93,6 +97,7 @@ class WWulf3(ProvisionMTTStage):
                 else:
                     log['stderr'] = stderr
                 return False
+            self.allocated = False
         return True
 
     def execute(self, log, keyvals, testDef):

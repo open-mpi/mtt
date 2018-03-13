@@ -637,7 +637,8 @@ class TestDef(object):
                 self.logger.verbose_print(self.config.items(section))
         return
 
-    def executeTest(self):
+    def executeTest(self, enable_loop=True):
+
         if not self.loaded:
             print("Plugins have not been loaded - cannot execute test")
             exit(1)
@@ -655,6 +656,11 @@ class TestDef(object):
         if status == 0 and self.options['clean_after'] and os.path.isdir(self.options['scratchdir']):
             self.logger.verbose_print("Cleaning up scratchdir after successful run")
             shutil.rmtree(self.options['scratchdir'])
+
+        if enable_loop and self.options['loopforever']:
+            while True:
+                self.logger.reset()
+                self.executeTest(enable_loop=False)
         return status
 
     def executeCombinatorial(self):

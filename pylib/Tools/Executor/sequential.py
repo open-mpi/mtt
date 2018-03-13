@@ -71,6 +71,15 @@ class SequentialEx(ExecutorMTTTool):
         # so async threads don't interrupt in the wrong context
         testDef.plugin_trans_sem.acquire()
 
+        # If --duration switch is used, activate watchdog timer
+        if testDef.options['duration']:
+           try:
+               testDef.watchdog.__init__(timeout=int(testDef.options['duration']))
+               testDef.watchdog.activate()
+               testDef.watchdog.start()
+           except ValueError:
+               sys.exit("Incorrect input %d for --duration switch" % testDef.options['duration'])
+
         for step in testDef.loader.stageOrder:
             for title in testDef.config.sections():
                 if only_reporter and step != "Reporter":
@@ -277,6 +286,24 @@ class SequentialEx(ExecutorMTTTool):
                     # sem for exclusive access while outside exception-catching-zone
                     testDef.plugin_trans_sem.acquire()
 
+                except KeyboardInterrupt as e:
+                    for p in testDef.stages.getAllPlugins() \
+                           + testDef.tools.getAllPlugins() \
+                           + testDef.utilities.getAllPlugins():
+                        if not p._getIsActivated():
+                            continue
+                        p.plugin_object.deactivate()
+                    stageLog['status'] = 0
+                    stageLog['stderr'] = "Exception was raised: %s %s" % (type(e), str(e))
+                    testDef.logger.logResults(title, stageLog)
+                    testDef.logger.verbose_print("=======================================")
+                    testDef.logger.verbose_print("KeyboardInterrupt exception was raised: %s %s" \
+                                % (type(e), str(e)))
+                    testDef.logger.verbose_print("=======================================")
+                    status = 0
+                    only_reporter = True
+                    continue
+
                 except BaseException as e:
                     for p in testDef.stages.getAllPlugins() \
                            + testDef.tools.getAllPlugins() \
@@ -287,14 +314,21 @@ class SequentialEx(ExecutorMTTTool):
                     stageLog['status'] = 1
                     stageLog['stderr'] = "Exception was raised: %s %s" % (type(e), str(e))
                     testDef.logger.logResults(title, stageLog)
+                    testDef.logger.verbose_print("=======================================")
+                    testDef.logger.verbose_print("Exception was raised: %s %s" \
+                                % (type(e), str(e)))
+                    testDef.logger.verbose_print("=======================================")
                     status = 1
                     only_reporter = True
                     continue
+
 
         for p in testDef.stages.getAllPlugins() \
                + testDef.tools.getAllPlugins() \
                + testDef.utilities.getAllPlugins():
             if p._getIsActivated():
                 p.plugin_object.deactivate()
+
+        testDef.plugin_trans_sem.release()
 
         return status
