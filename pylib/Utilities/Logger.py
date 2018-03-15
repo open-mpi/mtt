@@ -31,6 +31,10 @@ class Logger(BaseMTTUtility):
         self.timestampeverything = False
         self.stage_start = {}
 
+    def reset(self):
+        self.results = []
+        self.stage_start = {}
+
     def print_name(self):
         return "Logger"
 

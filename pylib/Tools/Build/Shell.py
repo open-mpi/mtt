@@ -50,6 +50,10 @@ class Shell(BuildMTTTool):
         self.options['allocate_cmd'] = (None, "Command to use for allocating nodes from the resource manager")
         self.options['deallocate_cmd'] = (None, "Command to use for deallocating nodes from the resource manager")
         self.options['asis_target'] = (None, "Specifies name of asis_target being built. This is used with \"ASIS\" keyword to determine whether to do anything.")
+
+        self.allocated = False
+        self.testDef = None
+        self.cmds = None
         return
 
     def activate(self):
@@ -63,6 +67,8 @@ class Shell(BuildMTTTool):
         if self.activated:
             IPlugin.deactivate(self)
             self.activated = False
+            if self.allocated and self.cmds and self.testDef:
+                self.deallocate({}, self.cmds, self.testDef)
         return
 
     def print_name(self):
@@ -77,23 +83,23 @@ class Shell(BuildMTTTool):
     def allocate(self, log, cmds, testDef):
         self.allocated = False
         if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None:
+            self.allocated = True
             allocate_cmdargs = shlex.split(cmds['allocate_cmd'])
             status,stdout,stderr,time = testDef.execmd.execute(cmds, allocate_cmdargs, testDef)
             if 0 != status:
+                self.allocated = False
                 log['status'] = status
                 if log['stderr']:
                     log['stderr'].extend(stderr)
                 else:
                     log['stderr'] = stderr
                 return False
-            self.allocated = True
         return True
 
     def deallocate(self, log, cmds, testDef):
         if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None and self.allocated == True:
             deallocate_cmdargs = shlex.split(cmds['deallocate_cmd'])
             status,stdout,stderr,time = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)
-            self.allocated = False
             if 0 != status:
                 log['status'] = status
                 if log['stderr']:
@@ -101,13 +107,18 @@ class Shell(BuildMTTTool):
                 else:
                     log['stderr'] = stderr
                 return False
+            self.allocated = False
         return True
 
     def execute(self, log, keyvals, testDef):
+
+        self.testDef = testDef
+
         testDef.logger.verbose_print("Shell Execute")
         # parse any provided options - these will override the defaults
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
+        self.cmds = cmds
         # if they didn't give us a shell command to execute, then error
         try:
             if cmds['command'] is None:

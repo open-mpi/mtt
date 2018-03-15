@@ -62,6 +62,10 @@ class ALPS(LauncherMTTTool):
         self.options['test_list'] = (None, "List of tests to run, default is all")
         self.options['allocate_cmd'] = (None, "Command to use for allocating nodes from the resource manager")
         self.options['deallocate_cmd'] = (None, "Command to use for deallocating nodes from the resource manager")
+
+        self.allocated = False
+        self.testDef = None
+        self.cmds = None
         return
 
 
@@ -73,6 +77,10 @@ class ALPS(LauncherMTTTool):
 
     def deactivate(self):
         IPlugin.deactivate(self)
+        if self.allocated and self.testDef and self.cmds:
+            deallocate_cmdargs = shlex.split(self.cmds['deallocate_cmd'])
+            _status,_stdout,_stderr,_time = self.testDef.execmd.execute(self.cmds, deallocate_cmdargs, self.testDef)
+            self.allocated = False
 
 
     def print_name(self):
@@ -85,6 +93,8 @@ class ALPS(LauncherMTTTool):
         return
 
     def execute(self, log, keyvals, testDef):
+
+        self.testDef = testDef
 
         midpath = False
 
@@ -239,6 +249,7 @@ class ALPS(LauncherMTTTool):
         # parse any provided options - these will override the defaults
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
+        self.cmds = cmds
 
         # Check if command is correct
         if cmds['command'] != "aprun":
@@ -396,8 +407,9 @@ class ALPS(LauncherMTTTool):
                 expected_returncodes = {test:(fail_returncodes[test] if test in fail_returncodes else 0) for test in tests}
 
         # Allocate cluster
-        allocated = False
+        self.allocated = False
         if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None:
+            self.allocated = True
             allocate_cmdargs = shlex.split(cmds['allocate_cmd'])
             _status,_stdout,_stderr,_time = testDef.execmd.execute(cmds, allocate_cmdargs, testDef)
             if 0 != _status:
@@ -405,7 +417,6 @@ class ALPS(LauncherMTTTool):
                 log['stderr'] = _stderr
                 os.chdir(cwd)
                 return
-            allocated = True
 
         # For test in tests
         for test in tests:
@@ -467,7 +478,7 @@ class ALPS(LauncherMTTTool):
                 break
 
         # Deallocate cluster
-        if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None and allocated:
+        if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None and self.allocated:
             deallocate_cmdargs = shlex.split(cmds['deallocate_cmd'])
             _status,_stdout,_stderr,_time = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)
             if 0 != _status:
@@ -475,6 +486,7 @@ class ALPS(LauncherMTTTool):
                 log['stderr'] = _stderr
                 os.chdir(cwd)
                 return
+            self.allocated = False
 
         log['status'] = finalStatus
         log['stderr'] = finalError

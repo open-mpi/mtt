@@ -109,6 +109,12 @@ execGroup.add_argument("--env-module-wrapper", dest="env_module_wrapper", defaul
 execGroup.add_argument("--stop-on-fail", dest="stop_on_fail",
                      action="store_true", default=False,
                      help="If a stage fails, exit and issue a non-zero return code")
+execGroup.add_argument("--duration",
+                     dest="duration", default=None,
+                     help="Add a maximum duration for test before interrupting.")
+execGroup.add_argument("--loopforever", dest="loopforever",
+                     action="store_true", default=False,
+                     help="Causes MTT to continue to loop forever running same set of tests. Use this in conjunction with --duration switch to loop for a specific amount of time.")
 
 debugGroup = parser.add_argument_group('debugGroup', 'Debug Options')
 debugGroup.add_argument("-d", "--debug", dest="debug",
