@@ -73,12 +73,10 @@ class SequentialEx(ExecutorMTTTool):
 
         # If --duration switch is used, activate watchdog timer
         if testDef.options['duration']:
-           try:
-               testDef.watchdog.__init__(timeout=int(testDef.options['duration']))
-               testDef.watchdog.activate()
-               testDef.watchdog.start()
-           except ValueError:
-               sys.exit("Incorrect input %d for --duration switch" % testDef.options['duration'])
+            testDef.watchdog.__init__(timeout=testDef.options['duration'],
+                                      testDef=testDef)
+            testDef.watchdog.activate()
+            testDef.watchdog.start()
 
         for step in testDef.loader.stageOrder:
             for title in testDef.config.sections():
