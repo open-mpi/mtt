@@ -110,9 +110,11 @@ class SequentialEx(ExecutorMTTTool):
                     else:
                         stage = title
 
-                    testDef.configTest()
-                    testDef.logger.verbose_print("OPTIONS FOR SECTION: %s" % title)
-                    testDef.logger.verbose_print(testDef.config.items(title))
+                    # Refresh test options if not running combinatorial plugin
+                    if testDef.options['executor'] != "combinatorial":
+                        testDef.configTest()
+                        testDef.logger.verbose_print("OPTIONS FOR SECTION: %s" % title)
+                        testDef.logger.verbose_print(testDef.config.items(title))
 
                     # setup the log
                     stageLog = {'section':title}
