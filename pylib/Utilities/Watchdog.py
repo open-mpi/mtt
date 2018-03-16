@@ -17,6 +17,7 @@ import os
 from threading import Timer
 from BaseMTTUtility import *
 import signal
+import datetime
 
 ## @addtogroup Utilities
 # @{
@@ -24,12 +25,15 @@ import signal
 # @param  timeout  Time in seconds before generating exception
 # @}
 class Watchdog(BaseMTTUtility):
+
     def __init__(self, timeout=360, testDef=None):
+
         BaseMTTUtility.__init__(self)
         self.options = {}
-        self.options['timeout'] = (str(timeout), "Time in seconds before generating exception")
+        timeout = self.convert_to_timeout(timeout)
+        self.options['timeout'] = (timeout, "Time in seconds before generating exception")
         self.timer = None
-        self.timeout = int(timeout)
+        self.timeout = timeout
         self.testDef = testDef
         self.activated = False
 
@@ -45,7 +49,8 @@ class Watchdog(BaseMTTUtility):
     # Start the watchdog timer
     def start(self):
         if not self.timer or not self.timer.is_alive():
-            self.timer = Timer(self.timeout, self.defaultHandler)
+            self.timer = Timer(int(self.timeout.total_seconds()),
+                               self.defaultHandler)
             self.timer.start()
 
     # Stop the watchdog timer
@@ -77,6 +82,23 @@ class Watchdog(BaseMTTUtility):
         if self.testDef: self.testDef.plugin_trans_sem.acquire()
         os.kill(os.getpid(), signal.SIGINT)
 
+    def convert_to_timeout(self, timeout):
+        if isinstance(timeout, int):
+            return datetime.timedelta(0, timeout)
+        if isinstance(timeout, basestring):
+            timeparts = timeout.split(":")
+            secs = 0
+            days = 0
+            try:
+                secs = int(timeparts[-1])
+                secs += int(timeparts[-2])*60
+                secs += int(timeparts[-3])*60*60
+                days = int(timeparts[-4])
+            except IndexError:
+                pass
+            return datetime.timedelta(days, secs)
+        return None
+
     # Start execution of the plugin from an INI file
     def execute(self, log, keyvals, testDef):
         testDef.logger.verbose_print("Watchdog Execute")
@@ -84,10 +106,15 @@ class Watchdog(BaseMTTUtility):
         testDef.parseOptions(log, self.options, keyvals, cmds)
         self.testDef = testDef
         try:
-            self.timeout = int(cmds['timeout'])
+            self.timeout = self.convert_to_timeout(cmds['timeout'])
+            if self.timeout is None:
+                log['status'] = 1
+                log['stderr'] = "Could not parse time input from ini file for Watchdog"
+                return
         except ValueError:
             log['status'] = 1
             log['stderr'] = "Could not parse time input from ini file for Watchdog"
+            return
         self.start()
         log['status'] = 0
         return
