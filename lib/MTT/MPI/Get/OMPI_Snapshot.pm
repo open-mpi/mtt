@@ -154,37 +154,42 @@ sub Get {
     Abort ("Could not download tarball -- aborting\n")
         if (! -f $tarball_name and ! $MTT::DoCommand::no_execute);
     MTT::DoCommand::Chdir($data_dir);
+
+# Disable the md5 and sha1 checks since Amazon S3 cannot support these files
+# in a way that doesn't expose a timing hole which can cause the tarball to
+# download with an old md5. So for now disable the checks, which are likely
+# not needed.
         
     # get the checksums
-    unlink($md5_checksums);
-    MTT::Files::http_get("$url/$md5_checksums");
+#     unlink($md5_checksums);
+#     MTT::Files::http_get("$url/$md5_checksums");
     
-    unlink($sha1_checksums);
-    MTT::Files::http_get("$url/$sha1_checksums");
+#     unlink($sha1_checksums);
+#     MTT::Files::http_get("$url/$sha1_checksums");
 
     # compare the md5sum
-    my $md5_file = `fgrep $ret->{version}.tar.gz $md5_checksums | cut -d\\  -f1`;
-    chomp($md5_file);
-    my $md5_actual = MTT::Files::md5sum("$tarball_dir/$tarball_name");
-    if ($md5_actual) {
-        Abort("md5sum from checksum file does not match actual ($md5_file != $md5_actual)")
-            if ($md5_file ne $md5_actual);
-        Debug(">> Good md5sum\n");
-    } else {
-        Warning("MD5 message digests were not compared because the md5sum executable was not found\n");
-    }
+#     my $md5_file = `fgrep $ret->{version}.tar.gz $md5_checksums | cut -d\\  -f1`;
+#     chomp($md5_file);
+#     my $md5_actual = MTT::Files::md5sum("$tarball_dir/$tarball_name");
+#     if ($md5_actual) {
+#         Abort("md5sum from checksum file does not match actual ($md5_file != $md5_actual)")
+#             if ($md5_file ne $md5_actual);
+#         Debug(">> Good md5sum\n");
+#     } else {
+#         Warning("MD5 message digests were not compared because the md5sum executable was not found\n");
+#     }
 
     # compare the sha1sum
-    my $sha1_file = `fgrep $ret->{version}.tar.gz $sha1_checksums | cut -d\\  -f1`;
-    chomp($sha1_file);
-    my $sha1_actual = MTT::Files::sha1sum("$tarball_dir/$tarball_name");
-    if ($sha1_actual) {
-        Abort("sha1sum from checksum file does not match actual ($sha1_file != $sha1_actual)")
-            if ($sha1_file ne $sha1_actual);
-        Debug(">> Good sha1sum\n");
-    } else {
-        Warning("SHA1 message digests were not compared because the sha1sum executable was not found\n");
-    }
+#     my $sha1_file = `fgrep $ret->{version}.tar.gz $sha1_checksums | cut -d\\  -f1`;
+#     chomp($sha1_file);
+#     my $sha1_actual = MTT::Files::sha1sum("$tarball_dir/$tarball_name");
+#     if ($sha1_actual) {
+#         Abort("sha1sum from checksum file does not match actual ($sha1_file != $sha1_actual)")
+#             if ($sha1_file ne $sha1_actual);
+#         Debug(">> Good sha1sum\n");
+#     } else {
+#         Warning("SHA1 message digests were not compared because the sha1sum executable was not found\n");
+#     }
 
     # now adjust the tarball name to be absolute
     $ret->{module_data}->{tarball} = "$tarball_dir/$tarball_name";
