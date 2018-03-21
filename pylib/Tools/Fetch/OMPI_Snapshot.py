@@ -127,7 +127,7 @@ class OMPI_Snapshot(FetchMTTTool):
             pass
 
         # build the tarball name, using a base and then full name
-        tarball_base_name = 'openmpi-' + snapshot_req.text
+        tarball_base_name = 'openmpi-' + snapshot_req.text.strip()
         tarball_name = tarball_base_name + '.tar.gz'
         download_url = url + '/' + tarball_name
 
