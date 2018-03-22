@@ -150,20 +150,29 @@ class Autotools(BuildMTTTool):
             log['compiler'] = compilerLog
         testDef.logger.verbose_print(log['compiler'])
 
-        # Find MPI information for IUDatabase plugin
-        plugin = None
-        availUtil = list(testDef.loader.utilities.keys())
-        for util in availUtil:
-            for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
-                if "MPIVersion" == pluginInfo.plugin_object.print_name():
-                    plugin = pluginInfo.plugin_object
-                    break
-        if plugin is None:
-            log['mpi_info'] = {'name' : 'unknown', 'version' : 'unknown'}
+        # Find MPI information for IUDatabase plugin if
+        # mpi_info is not already set
+        fullLog = testDef.logger.getLog(None)
+        mpi_info_found = False
+        for lg in fullLog:
+            if 'mpi_info' in lg:
+                mpi_info_found = True
+        if mpi_info_found is False:
+            plugin = None
+            availUtil = list(testDef.loader.utilities.keys())
+            for util in availUtil:
+                for pluginInfo in testDef.utilities.getPluginsOfCategory(util):
+                    if "MPIVersion" == pluginInfo.plugin_object.print_name():
+                        plugin = pluginInfo.plugin_object
+                        break
+            if plugin is None:
+                log['mpi_info'] = {'name' : 'unknown', 'version' : 'unknown'}
+            else:
+                mpi_info = {}
+                plugin.execute(mpi_info, testDef)
+                log['mpi_info'] = mpi_info
         else:
-            mpi_info = {}
-            plugin.execute(mpi_info, testDef)
-            log['mpi_info'] = mpi_info
+            testDef.logger.verbose_print("mpi_info already in log so skipping MPIVersion")
 
         # Add configure options to log for IUDatabase plugin
         try:
