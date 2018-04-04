@@ -250,8 +250,16 @@ sub _summary_report
     if (not $total_tests) {
         push @extra_info_parts, "<span style='color:red'>No tests were executed.</span>";
     }
-    if (MTT::Util::time_to_terminate()) {
-        push @extra_info_parts, "<span>Terminate file found.</span>";
+
+    my $term_file = MTT::Util::find_terminate_file();
+    if (defined $term_file) {
+        my $prefix = Value($ini, $section, 'terminate_file_url');
+        if ($prefix) {
+            my $path = $prefix . '/' . basename($term_file);
+            push @extra_info_parts, "<span>Terminate <a href='$term_file'>file</a> found.</span>";
+        } else {
+            push @extra_info_parts, "<span>Terminate file found.</span>";
+        }
     }
 
     my $extra_info = "";
