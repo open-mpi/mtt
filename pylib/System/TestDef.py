@@ -335,6 +335,7 @@ class TestDef(object):
             print("This is a basic capability required")
             print("for MTT operations - cannot continue")
             sys.exit(1)
+        # Configure harasser plugin
         print(self.tools.getPluginsOfCategory("Harasser"))
         for pluginInfo in self.tools.getPluginsOfCategory("Harasser"):
             print(pluginInfo.plugin_object.print_name())
@@ -637,7 +638,7 @@ class TestDef(object):
                 self.logger.verbose_print(self.config.items(section))
         return
 
-    def executeTest(self, enable_loop=True):
+    def executeTest(self, enable_loop=True, executor="sequential"):
 
         if not self.loaded:
             print("Plugins have not been loaded - cannot execute test")
@@ -645,34 +646,26 @@ class TestDef(object):
         if self.config is None:
             print("No test definition file was parsed - cannot execute test")
             exit(1)
-        if not self.tools.getPluginByName("sequential" , "Executor"):
-            print("Specified executor sequential not found")
+        if not self.tools.getPluginByName(executor, "Executor"):
+            print("Specified executor %s not found" % executor)
             exit(1)
         # activate the specified plugin
-        self.tools.activatePluginByName("sequential", "Executor")
+        self.tools.activatePluginByName(executor, "Executor")
         # execute the provided test description
-        executor = self.tools.getPluginByName("sequential", "Executor")
+        executor = self.tools.getPluginByName(executor, "Executor")
         status = executor.plugin_object.execute(self)
         if status == 0 and self.options['clean_after'] and os.path.isdir(self.options['scratchdir']):
             self.logger.verbose_print("Cleaning up scratchdir after successful run")
             shutil.rmtree(self.options['scratchdir'])
-
+        # Loop forever if specified
         if enable_loop and self.options['loopforever']:
             while True:
                 self.logger.reset()
-                self.executeTest(enable_loop=False)
+                self.executeTest(enable_loop=False, executor=executor)
         return status
 
-    def executeCombinatorial(self):
-        if not self.tools.getPluginByName("combinatorial", "Executor"):
-            print("Specified executor combinatorial not found")
-            exit(1)
-        # activate the specified plugin
-        self.tools.activatePluginByName("combinatorial", "Executor")
-        # execute the provided test description
-        executor = self.tools.getPluginByName("combinatorial", "Executor")
-        status = executor.plugin_object.execute(self)
-        return status
+    def executeCombinatorial(self, enable_loop=True):
+        return self.executeTest(enable_loop=enable_loop, executor="combinatorial")
   
     def printOptions(self, options):
         # if the options are empty, report that
