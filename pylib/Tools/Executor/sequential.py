@@ -78,6 +78,17 @@ class SequentialEx(ExecutorMTTTool):
             testDef.watchdog.activate()
             testDef.watchdog.start()
 
+        # Start harasser
+        if testDef.options["harass_trigger_scripts"] is not None:
+            stageLog = {'section':"DefaultHarasser"}
+            testDef.harasser.execute(stageLog,{"trigger_scripts": testDef.options["harass_trigger_scripts"],
+                                  "stop_scripts": testDef.options["harass_stop_scripts"],
+                                  "join_timeout": testDef.options["harass_join_timeout"]}, testDef)
+            if stageLog['status'] != 0:
+                status = 1
+                only_reporter = True
+            testDef.logger.logResults("DefaultHarasser", stageLog)
+
         for step in testDef.loader.stageOrder:
             for title in testDef.config.sections():
                 if only_reporter and step != "Reporter":
@@ -321,7 +332,6 @@ class SequentialEx(ExecutorMTTTool):
                     status = 1
                     only_reporter = True
                     continue
-
 
         for p in testDef.stages.getAllPlugins() \
                + testDef.tools.getAllPlugins() \

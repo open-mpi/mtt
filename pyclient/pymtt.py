@@ -115,6 +115,15 @@ execGroup.add_argument("--duration",
 execGroup.add_argument("--loopforever", dest="loopforever",
                      action="store_true", default=False,
                      help="Causes MTT to continue to loop forever running same set of tests. Use this in conjunction with --duration switch to loop for a specific amount of time.")
+execGroup.add_argument("--harass_trigger",
+                     dest="harass_trigger_scripts", default=None,
+                     help="Paths to scripts that are run to harass the system while the test is running.")
+execGroup.add_argument("--harass_stop",
+                     dest="harass_stop_scripts", default=None,
+                     help="Paths to scripts that are run to stop harassing the system after the test finishes.")
+execGroup.add_argument("--harass_join_timeout",
+                     dest="harass_join_timeout", default=None,
+                     help="Number of seconds to wait while ending harass scripts. Default is infinity.")
 
 debugGroup = parser.add_argument_group('debugGroup', 'Debug Options')
 debugGroup.add_argument("-d", "--debug", dest="debug",
