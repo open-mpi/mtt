@@ -13,7 +13,7 @@
 
 package MTT::MPI::Get::OMPI_Snapshot;
 
-use JSON;
+use JSON::JSON;
 use strict;
 use MTT::DoCommand;
 use File::Basename;
