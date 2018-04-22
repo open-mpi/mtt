@@ -256,7 +256,7 @@ sub _summary_report
         my $prefix = Value($ini, $section, 'terminate_file_url');
         if ($prefix) {
             my $path = $prefix . '/' . basename($term_file);
-            push @extra_info_parts, "<span>Terminate <a href='$term_file'>file</a> found.</span>";
+            push @extra_info_parts, "<span>Terminate <a href='$path'>file</a> found.</span>";
         } else {
             push @extra_info_parts, "<span>Terminate file found.</span>";
         }
