@@ -243,12 +243,12 @@ sub _summary_report
     ";
 
     my $ignore_min_succ = 0;
-    my $report_no_results = Value($ini, $section, 'report_no_results');
-    $ignore_min_succ = 1 if $report_no_results;
-
     my @extra_info_parts;
     if (not $total_tests) {
         push @extra_info_parts, "<span style='color:red'>No tests were executed.</span>";
+
+        my $report_no_results = Value($ini, $section, 'report_no_results');
+        $ignore_min_succ = 1 if $report_no_results;
     }
 
     my $term_file = MTT::Util::find_terminate_file();
