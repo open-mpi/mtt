@@ -243,12 +243,12 @@ sub _summary_report
     ";
 
     my $ignore_min_succ = 0;
-    my $report_no_results = Value($ini, $section, 'report_no_results');
-    $ignore_min_succ = 1 if $report_no_results;
-
     my @extra_info_parts;
     if (not $total_tests) {
         push @extra_info_parts, "<span style='color:red'>No tests were executed.</span>";
+
+        my $report_no_results = Value($ini, $section, 'report_no_results');
+        $ignore_min_succ = 1 if $report_no_results;
     }
 
     my $term_file = MTT::Util::find_terminate_file();
@@ -256,7 +256,7 @@ sub _summary_report
         my $prefix = Value($ini, $section, 'terminate_file_url');
         if ($prefix) {
             my $path = $prefix . '/' . basename($term_file);
-            push @extra_info_parts, "<span>Terminate <a href='$term_file'>file</a> found.</span>";
+            push @extra_info_parts, "<span>Terminate <a href='$path'>file</a> found.</span>";
         } else {
             push @extra_info_parts, "<span>Terminate file found.</span>";
         }
