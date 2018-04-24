@@ -147,4 +147,6 @@ class ExecuteCmd(BaseMTTUtility):
         except OSError as e:
             return (1, None, str(e), elapsed_secs)
 
+        p.wait()
+
         return (p.returncode, stdout[stdoutlines:], stderr[stderrlines:], elapsed_secs)
