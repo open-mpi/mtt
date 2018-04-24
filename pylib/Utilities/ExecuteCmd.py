@@ -110,24 +110,32 @@ class ExecuteCmd(BaseMTTUtility):
                 reads = [p.stdout.fileno(), p.stderr.fileno()]
                 ret = select.select(reads, [], [])
 
+                stdout_done = True
+                stderr_done = True
+
                 for fd in ret[0]:
                     # if the data
                     if fd == p.stdout.fileno():
-                        read = p.stdout.readline().rstrip()
+                        read = p.stdout.readline()
                         if read:
+                            read = read.rstrip()
                             testDef.logger.verbose_print('stdout: ' + read.decode("utf-8", errors='replace'))
                             if merge:
                                 stderr.append(read.decode("utf-8", errors='replace'))
                             else:
                                 stdout.append(read.decode("utf-8", errors='replace'))
+                            stdout_done = False
                     elif fd == p.stderr.fileno():
-                        read = p.stderr.readline().rstrip()
+                        read = p.stderr.readline()
                         if read:
+                            read = read.rstrip()
                             testDef.logger.verbose_print('stderr: ' + read.decode("utf-8", errors='replace'))
                             stderr.append(read.decode("utf-8", errors='replace'))
+                            stderr_done = False
 
-                if p.poll() != None:
+                if stdout_done and stderr_done:
                     break
+
             if time_exec:
                 endtime = datetime.datetime.now()
                 elapsed_datetime = endtime - starttime
