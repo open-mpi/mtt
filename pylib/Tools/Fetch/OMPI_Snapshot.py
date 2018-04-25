@@ -26,6 +26,7 @@ import sys
 # @section OMPI_Snapshot
 # @param url            URL to access the OMPI nightly tarball (e.g. https://www.open-mpi.org/nightly/v2.x)
 # @param version_file   optional file containing name of most recent tarball version tested
+# @param mpi_name       optional name for the OMPI snapshot tarball
 # @}
 class OMPI_Snapshot(FetchMTTTool):
 
@@ -39,6 +40,7 @@ class OMPI_Snapshot(FetchMTTTool):
         self.options = {}
         self.options['url'] = (None, "URL to access the repository")
         self.options['version_file'] = (None, "File containing name of most recent tarball version tested")
+        self.options['mpi_name'] = (None, "Name of OMPI tarball being tested")
         return
 
     def activate(self):
@@ -209,6 +211,8 @@ class OMPI_Snapshot(FetchMTTTool):
         log['status'] = status
         log['stdout'] = stdout
         log['stderr'] = stderr
+        log['mpi_info'] = {'name' : cmds['mpi_name'], 'version' : snapshot_req.text.strip()}
+        testDef.logger.verbose_print("setting mpi_info to " + str(log.get('mpi_info')))
 
         # log our absolute location so others can find it
         log['location'] = os.getcwd()
