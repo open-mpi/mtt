@@ -213,7 +213,7 @@ class Hostfile(BuildMTTTool):
             idle_hosts = [h for h in hosts if node_status[h] == cmds['idle_status_string']]
             nonidle_hosts = [h for h in hosts if node_status[h] != cmds['idle_status_string']]
             num_nodes = int(math.ceil(float(len(hosts))*ratio))
-            if len(idle_hosts) <= num_nodes:
+            if num_nodes <= len(idle_hosts):
                 hosts = idle_hosts[:num_nodes]
             else:
                 hosts = idle_hosts + nonidle_hosts[:num_nodes - len(idle_hosts)]
