@@ -306,6 +306,9 @@ class OpenMPI(LauncherMTTTool):
         if cmds['hostfile'] is not None:
             cmdargs.append("-hostfile")
             cmdargs.append(cmds['hostfile'])
+        if cmds['timeout'] is not None:
+            cmdargs.append("--timeout")
+            cmdargs.append(cmds['timeout'])
         # cycle thru the list of tests and execute each of them
         log['testresults'] = []
         finalStatus = 0
