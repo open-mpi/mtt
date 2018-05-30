@@ -73,11 +73,11 @@ class JunitXML(ReporterMTTStage):
         time = 0
         for lg in fullLog:
             try:
-                stdout = lg['stdout']
+                stdout = "\n".join(lg['stdout'])
             except KeyError:
                 stdout = None
             try:
-                stderr = lg['stderr']
+                stderr = "\n".join(lg['stderr'])
             except KeyError:
                 stderr = None
             try:
