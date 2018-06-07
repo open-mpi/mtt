@@ -1,0 +1,36 @@
+# Prepare the database on OpenShift
+
+- Log in your Open Shift console
+- Ensure you are within the correct project
+- Click on "Add to project" ->"Browse Catalog"
+- Click on "Data Stores"
+- Click on "PostgreSQL (Persistent)
+- In "PostgreSQL Connection Username", enter "mtt"
+- In "PostgreSQL Connection Password", enter "mttuser"
+- In "PostgreSQL Database name", enter "mtt"
+- Add a new environment variable "POSTGRESQL_ADMIN_PASSWORD" with "mttornl" as value
+- Click on "Create"
+Now, a pod should be running
+- Click on "Applications"->"Pods"
+- Find the running POD that has a name similar to "postgresql-X-Y"
+- Click on the name
+- Note that IP. Set the OPENSHIFT_MTT_DB_IP to the IP
+- Set the MTTDBPWD env variable to your database password (it will be used by the following script)
+- Run the server/docker/mtt_openshift_initdb.sh script from a shell on the host
+- Now we need to run the yearly-table-update.pl script (note that this script needs to be executed for every new year, otherwise required tables will not be there):
+        * ./yearly-table-update.pl <YEAR>
+        * Forward ports so that your running POD can be accessed from your desktop:
+                - oc login <name of openshift cluster>
+                - Switch to the correct project: oc project <PROJECT_NAME>
+                - Fund your POD: oc get pods
+                - Forward the ports (note that the command is blocking): oc port-forward <POD_NAME> 5432:5432
+        * The script will give you a series of commands to execute, do not execute them as is, instead run commands such as (as of Oct-2017); note that some of the scripts will report errors, those are expected:
+                - PGPASSWORD="*******" psql mtt -U mtt -h $OPENSHIFT_MTT_DB_IP -f tmp/<YEAR>-mpi-install.sql
+                - PGPASSWORD="*******" psql mtt -U mtt -h $OPENSHIFT_MTT_DB_IP -f tmp/<YEAR>-test-build.sql
+                - PGPASSWORD="*******" psql mtt -U mtt -h $OPENSHIFT_MTT_DB_IP -f tmp/<YEAR>-test-run.sql
+                - PGPASSWORD="*******" psql mtt -U mtt -h $OPENSHIFT_MTT_DB_IP -f tmp/<YEAR>-indexes.sql
+                - PGPASSWORD="*******" psql mtt -U mtt -h $OPENSHIFT_MTT_DB_IP -f tmp/<YEAR>-triggers.sql
+
+Now, the MTT database is running and ready to be used.
+
+Note: you may want to assign a static IP address for the db using NodePorts to prevent the IP of the POD to be changed over time and always accessible under the same IP to the PHP frontend.
