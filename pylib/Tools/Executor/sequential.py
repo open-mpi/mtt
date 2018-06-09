@@ -13,6 +13,7 @@ from future import standard_library
 standard_library.install_aliases()
 import os
 import sys
+import traceback
 import configparser
 import importlib
 import logging
@@ -328,6 +329,10 @@ class SequentialEx(ExecutorMTTTool):
                     testDef.logger.verbose_print("=======================================")
                     testDef.logger.verbose_print("Exception was raised: %s %s" \
                                 % (type(e), str(e)))
+                    testDef.logger.verbose_print("=======================================")
+                    type_, value_, traceback_ = sys.exc_info()
+                    ex = traceback.format_exception(type_, value_, traceback_)
+                    testDef.logger.verbose_print("\n".join(ex))
                     testDef.logger.verbose_print("=======================================")
                     status = 1
                     only_reporter = True

@@ -154,7 +154,10 @@ class Harasser(HarasserMTTTool):
 
         for (process,ops,starttime),(status,stdout,stderr,time) in zip(process_info,return_info):
             if status == 0:
-                process.join(int(self.options['join_timeout'][0]))
+                if self.options['join_timeout'][0] is None:
+                    process.join()
+                else:
+                    process.join(int(self.options['join_timeout'][0]))
             elif status == 1:
                 process.terminate()
 
