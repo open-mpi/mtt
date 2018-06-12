@@ -72,17 +72,17 @@ class JunitXML(ReporterMTTStage):
         # TODO: ain't nobody got time for that.  8-).
         time = 0
         for lg in fullLog:
-            try:
+            if 'stdout' in lg and lg['stdout'] is not None:
                 stdout = "\n".join(lg['stdout'])
-            except KeyError:
+            else:
                 stdout = None
-            try:
+            if 'stderr' in lg and lg['stderr'] is not None:
                 stderr = "\n".join(lg['stderr'])
-            except KeyError:
+            else:
                 stderr = None
-            try:
+            if 'time' in lg and lg['time'] is not None:
                 time = lg['time']
-            except KeyError:
+            else:
                 time = 0
             tc = TestCase(lg['section'], classname, time, stdout, stderr)
             try:
