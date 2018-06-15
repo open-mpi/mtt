@@ -173,17 +173,17 @@ class Compilers(BaseMTTUtility):
 
     def check_compile(self, testDef, macro, c_code, compiler):
         # write out a little test program
-        fh = open("spastic", 'w')
+        fh = open("spastic.c", 'w')
         for ln in c_code:
             print(ln, file=fh)
         fh.close()
 
         # Attempt to compile it
-        mycmdargs = [compiler, "-c", "spastic"]
+        mycmdargs = [compiler, "-c", "spastic.c"]
         status, stdout, stderr, _ = testDef.execmd.execute(None, mycmdargs, testDef)
 
         # cleanup the test
-        os.remove("spastic")
+        os.remove("spastic.c")
 
         if 0 == status:
             return True
