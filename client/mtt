@@ -4,6 +4,7 @@
 #                         All rights reserved.
 # Copyright (c) 2006-2008 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2006-2008 Sun Microsystems, Inc. All rights reserved.
+# Copyright (c) 2018      Intel, Inc. All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -115,7 +116,7 @@ use MTT::Timer;
 use MTT::Util;
 use MTT::Hooks;
 use MTT::EnvModule;
-use Filesys::DiskFree;
+use Filesys::Df;
 
 our @file_arg;
 our $stdin_arg;

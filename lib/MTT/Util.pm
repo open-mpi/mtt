@@ -3,10 +3,11 @@
 # Copyright (c) 2007-2008 Cisco, Inc.  All rights reserved.
 # Copyright (c) 2007 Sun Microsystems, Inc.  All rights reserved.
 # Copyright (c) 2016      IBM Corporation.  All rights reserved.
+# Copyright (c) 2018      Intel, Inc. All rights reserved.
 # $COPYRIGHT$
-# 
+#
 # Additional copyrights may follow
-# 
+#
 # $HEADER$
 #
 
@@ -38,7 +39,7 @@ use MTT::Messages;
 use MTT::Values;
 use MTT::DoCommand;
 use Data::Dumper;
-use Filesys::DiskFree;
+use Filesys::Df;
 
 #--------------------------------------------------------------------------
 
@@ -94,8 +95,6 @@ sub find_terminate_file {
                 push(@_pause_files, MTT::Values::EvaluateString($f));
             }
         }
-
-        $df_handle = new Filesys::DiskFree;
     }
 
     # Check to see if any of the files exist
@@ -133,7 +132,7 @@ sub time_to_terminate {
                     my $now = localtime;
                     Verbose("    Sleeping for 30 seconds ($now)...\n");
                     sleep(30);
-                    last 
+                    last
                         if (! -f $f);
                 }
                 last;
@@ -146,17 +145,13 @@ sub time_to_terminate {
         ($MTT::Globals::Values->{min_disk_free} ne "0")) {
         my $c = MTT::DoCommand::cwd();
         my $min_disk_free;
-        $df_handle->df();
+        $df_handle = df(MTT::DoCommand::cwd());
 
         # compute min_disk_free *of this partition* in bytes if it was
         # specified as a percentage
         if ($MTT::Globals::Values->{min_disk_free} =~ m/([0-9]{1,2})\s*\%/) {
-            my $val = $1;
-            $val /= 100.0;
-            $val *= $df_handle->total(MTT::DoCommand::cwd());
-            $val = int($val);
-            $min_disk_free = $val;
-        } 
+            $min_disk_free = 100.0 - $df_handle->{per};
+        }
         # Or look for a number folloed by k, m, or g (kilobyte,
         # megabyte, gigabyte)
         elsif ($MTT::Globals::Values->{min_disk_free} =~ m/^\s*([0-9]+)([kmg])\s*$/i) {
@@ -168,16 +163,17 @@ sub time_to_terminate {
             } elsif (lc($2) eq "g") {
                 $min_disk_free *= 1073741824;
             }
-        } 
+        }
         # Otherwise just take the number
         else {
             $min_disk_free = $MTT::Globals::Values->{min_disk_free};
         }
 
         Debug("Global min free specified as: $MTT::Globals::Values->{min_disk_free}, resolved as $min_disk_free\n");
-        if ($df_handle->avail($c) < $min_disk_free) {
-            Warning("Disk free is less than minimum (" . 
-                    $df_handle->avail($c) .
+        $df_handle = df($c);
+        if ($df_handle->{bfree}*1024 < $min_disk_free) {
+            Warning("Disk free is less than minimum (" .
+                    $df_handle->{bfree}*1024 .
                     " bytes < $min_disk_free bytes)\n");
             Warning("Waiting for up to $MTT::Globals::Values->{min_disk_free_wait} minutes to see if the situation resolves itself\n")
                 if ($MTT::Globals::Values->{min_disk_free_wait} > 0);
@@ -185,8 +181,8 @@ sub time_to_terminate {
             my $i = 0;
             while ($i < 2 * $MTT::Globals::Values->{min_disk_free_wait}) {
                 sleep(30);
-                $df_handle->df();
-                if ($df_handle->avail($c) > $min_disk_free) {
+                $df_handle = df($c);
+                if ($df_handle->{bfree}*1024 > $min_disk_free) {
                     last;
                 }
                 ++$i;
@@ -282,7 +278,7 @@ sub is_valid_in_array {
         }
         return 0;
     }
-    
+
     # Yep; it's valid
     return 1;
 }
@@ -311,7 +307,7 @@ sub delete_matches_from_array {
 
     my @ret;
     foreach my $elem (@arr) {
-        if ($elem !~ /$pattern/) { 
+        if ($elem !~ /$pattern/) {
             push(@ret, $elem);
         }
     }
@@ -462,7 +458,7 @@ sub term_handler{
 
 	Verbose("\n\nexecuting on_kill\n\n");
 	my $cmd = $ini->val("mtt", "on_kill");
-	if ( defined $cmd ) 
+	if ( defined $cmd )
 	{
 		my $x = MTT::DoCommand::RunStep(1, $cmd, -1, $ini, "mtt", "on_kill");
 		Verbose("  Output: $x->{result_stdout}\n")
