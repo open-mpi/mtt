@@ -12,5 +12,7 @@ virtualenvwrapper==4.7.1
 wheel==0.26.0
 Yapsy==1.11.223
 junit_xml==1.6
+pathlib==1.0.1
+python-hostlist==1.17
 future
 configparser

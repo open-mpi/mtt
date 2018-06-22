@@ -24,6 +24,7 @@ from yapsy.PluginManager import PluginManager
 import datetime
 from distutils.spawn import find_executable
 from threading import Semaphore
+from pathlib import Path
 
 is_py2 = sys.version[0] == '2'
 
@@ -257,19 +258,17 @@ class TestDef(object):
                 # class definition
                 plugindirs.insert(0, y)
 
-        # Traverse the plugin directory tree and add all
-        # the class definitions we can find
+        # Load plugins from each of the specified plugin dirs
         for dirPath in plugindirs:
+            if not Path(dirPath).exists():
+                print("Attempted to load plugins from non-existent path:", dirPath)
+                continue
             try:
-                filez = os.listdir(dirPath)
-                for file in filez:
-                    file = os.path.join(dirPath, file)
-                    if os.path.isdir(file):
-                        self.loader.load(file)
-            except:
-                if not self.options['ignoreloadpatherrs']:
-                    print("Plugin directory",dirPath,"not found")
-                    sys.exit(1)
+                self.loader.load(dirPath)
+            except Exception as e:
+                print("Exception caught while loading plugins:")
+                print(e)
+                sys.exit(1)
 
         # Build the stages plugin manager
         self.stages = PluginManager()
