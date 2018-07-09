@@ -34,7 +34,7 @@ dist: trusty
 language: python
 git:
   depth: 1000
-before_install: 
+before_install:
 addons:
   apt:
     packages:
@@ -46,15 +46,29 @@ addons:
 install:
   - pip install -r pyenv.txt
 script:
+  - export TRAVIS_BUILD_DIR=$(pwd)
+  - export KERNEL_VERSION=4.4.0-101-generic
+
+  # symlink so BAT w/ hardcoded paths still run
+  - mkdir -p /opt/mtt/tests/
+  - ln -s $TRAVIS_BUILD_DIR/tests/bat /opt/mtt/tests/bat
+
+  # single-node BAT [order matters for last two]
+  - $TRAVIS_BUILD_DIR/pyclient/pymtt.py --verbose --base-dir=$TRAVIS_BUILD_DIR/pylib $TRAVIS_BUILD_DIR/tests/bat/negative.ini
+  - $TRAVIS_BUILD_DIR/pyclient/pymtt.py --verbose --base-dir=$TRAVIS_BUILD_DIR/pylib $TRAVIS_BUILD_DIR/tests/bat/default_collect_profile.ini
+  - $TRAVIS_BUILD_DIR/pyclient/pymtt.py --verbose --base-dir=$TRAVIS_BUILD_DIR/pylib $TRAVIS_BUILD_DIR/tests/bat/default_check_profile.ini
+
+before_deploy:
   - cd docs && doxygen Doxyfile
 deploy:
   provider: pages
   skip_cleanup: true
   github_token: $GITHUB_TOKEN
-  local_dir: $TRAVIS_BUILD_DIR/docs/html
+  local_dir: docs/
+  keep-history: true
   on:
     branch: master
-after_success: 
+after_success:
 env:
   matrix:
     secure: Nc4e0xLPCOkuF7qI56GQPvtBZb3d7yWToopwBisXfmuAWda9UkQu1oq23RBAaUKUygwImAuNMnC2UF1HVxa8+NauMZbr09nxqA0uPGvFWDs3H8bhzOUs1JGFaZrSqv0ntCZSyNwwmTSLX6ctM2shcEfTj1+4MfDeToMMLF59Ie4mUZArRgrJF596eM13oHLB6ZFNHP15OlN4WAZujmUAkKchSrOkNubETTk05TdGUA6gC6vNFtVhv7G8maM3I8TE0RdLmeAs9v1kFnz4zVo9HRTsGKGOjy3V3o38uYBOqL8ye4B6Q1OnMEPvGSMSAoM8/cc4XSfJslh8xLgcSMRqeqjx1JNDQRQqxyCt/lM856VNHhhfd14gy4eQdHuZNpXilqiYKeVmA6euGA9pJyFWgBEb4XQ96uD41LOgcHcRLse8NW8t8V+Acv/62fmYN/Rg3xhMZdwKlz01eZVOmsDI7JjyL+t9vvPeY3Mvr/h0Q19iN7JJKXcK6tbAzaFQkG0pBQnytrSkWx8z1C20ZSDH9+VncsDRJ33voAhGiD2H/8jPWeoooKSraPcM0Io1CMw0Qz9klGjDTWYbrWvs/LCfBiqqBwfYw7qQNszn/WzZRJxk4DhxnFkzJOa7K2WM+Aa3fLpAfhvcvymaxEVfCCQBFNlKZhylCA2+UohOblw2cQY=
