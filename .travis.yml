@@ -36,7 +36,6 @@ git:
   depth: 1000
 before_install:
 addons:
-  hostname: mtt_host
   apt:
     packages:
       - doxygen
@@ -44,15 +43,6 @@ addons:
       - doxygen-latex
       - doxygen-gui
       - graphviz
-
-      # install MPI libs
-      - openmpi-bin
-      - mpich
-      - libmpich-dev
-      - libopenmpi-dev
-
-      # install SLURM
-      - slurm-llnl
 install:
   - pip install -r pyenv.txt
 script:
