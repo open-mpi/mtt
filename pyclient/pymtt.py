@@ -270,21 +270,14 @@ testDef.openLogger()
 # Read the input test definition file(s)
 testDef.configTest()
 
-# Set of allowed executors
-allowed_executors = {"sequential", "combinatorial"}
-
 # Cli specified executor takes precedent over INI
-executor = args.executor or testDef.config.get('MTTDefaults', 'executor', fallback=None)
+# If there is nothing defined in either use fallback
+fallback = "sequential"
+executor = args.executor or testDef.config.get('MTTDefaults', 'executor', fallback=fallback)
 
-# Verify specified executor and set it
-if executor:
-    if executor.lower() in alllowed_executors:
-        testDef.config.set('MTTDefaults', 'executor', executor.lower())
-    else:
-        print("Specified executor ", executor, " not found!")
-        sys.exit(1)
-else:
-    testDef.config.set('MTTDefaults', 'executor', 'sequential')
+# Do not verify that executor exists now
+# When the executor is loaded it ensures it exists
+testDef.config.set('MTTDefaults', 'executor', executor.lower())
 
 status = testDef.executeTest()
 sys.exit(status)
