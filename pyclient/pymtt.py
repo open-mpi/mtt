@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
 # Copyright (c) 2015-2018 Intel, Inc. All rights reserved.
+# Copyright (c) 2018 Cisco Systems, Inc. All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -269,34 +270,21 @@ testDef.openLogger()
 # Read the input test definition file(s)
 testDef.configTest()
 
-# Determine executor to use
-if(args.executor is not None):
-    if(args.executor == "sequential" or args.executor == "Sequential"):
-        testDef.config.set('MTTDefaults', 'executor', 'sequential')
-        status = testDef.executeTest()
-    elif(args.executor == "combinatorial" or args.executor == "Combinatorial"):
-        testDef.config.set('MTTDefaults', 'executor', 'combinatorial')
-        status = testDef.executeCombinatorial()
+# Set of allowed executors
+allowed_executors = {"sequential", "combinatorial"}
+
+# Cli specified executor takes precedent over INI
+executor = args.executor or testDef.config.get('MTTDefaults', 'executor', fallback=None)
+
+# Verify specified executor and set it
+if executor:
+    if executor.lower() in alllowed_executors:
+        testDef.config.set('MTTDefaults', 'executor', executor.lower())
     else:
-        print("Specified executor ", args.executor, " not found!")
+        print("Specified executor ", executor, " not found!")
         sys.exit(1)
-    # All done!
-    sys.exit(status)
-
-elif(testDef.config.has_option('MTTDefaults', 'executor')):
-    if (testDef.config.get('MTTDefaults', 'executor') == "sequential" or testDef.config.get('MTTDefaults', 'executor') == "Sequential"):
-        status = testDef.executeTest()
-    elif (testDef.config.get('MTTDefaults', 'executor') == "combinatorial" or testDef.config.get('MTTDefaults', 'executor') == "Combinatorial"):
-        status = testDef.executeCombinatorial()
-    else:
-        print("Specified executor ", testDef.config.get('MTTDefaults', 'executor'), " not found!")
-        sys.exit(1)  
-    # All done!
-    sys.exit(status)
-
-# If no executor is specified default to sequential
 else:
     testDef.config.set('MTTDefaults', 'executor', 'sequential')
-    status = testDef.executeTest()  
-# All done!
-    sys.exit(status)
+
+status = testDef.executeTest()
+sys.exit(status)
