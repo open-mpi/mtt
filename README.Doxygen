@@ -1,0 +1,59 @@
+This README explains how to build a documentation with Doxygen.
+
+1.Install Doxygen, graphviz, and Doxypy
+
+Doxygen link: http://www.stack.nl/~dimitri/doxygen/download.html
+
+Doxypy link: http://code.foosel.org/doxypy
+
+Doxypy is a filter that processes Python docstrings to create the input
+Doxygen expects. Doxygen can process Python files directly, but without
+knowing about Python objects and documentation conventions, it just
+copies the comments and markup to the html or latex file.
+You need to add the path to doxypy to your PYTHONPATH environment variable
+
+Graphviz: http://graphviz.org/
+
+Graphviz is optional but recommended. It creates the class inheritance
+diagrams that make complex architectures more tractable. On my SUSE machine,
+I was able to just "sudo zypper install graphviz"
+
+2. Configure Doxygen
+
+To create a documentation for your code with Doxygen, you will need to create
+a configuration file. Doxygen will create a template file for you with the
+command: doxygen -g <name-of-config> 
+If <name-of-config> is left blank, it's automatically named to Doxyfile
+
+The following configuration options need to be changed or Doxygen may
+not work the way you want it to:
+	PROJECT_NAME		#name of project
+	PROJECT_BRIEF		#a one line description of project
+	OUTPUT_DIRECTORY	#a path where documentation should go
+	INPUT			#where your source files are
+	FILE_PATTERNS		#what kind of source files are they
+	RECURSIVE		#search down the directory tree
+	INPUT_FILTER		#where does Doxypy live
+	FILTER_SOURCE_FILES	#use Doxypy to filter your source code
+
+The following configuration options are recommended to make the
+output documentation look nicer:
+	EXTRACT_ALL = YES
+	EXTRACT_STATIC = YES
+	SOURCE_BROWSER = YES
+	HTML_DYNAMIC_SECTIONS = YES
+	USE_MATHJAX = YES
+	PAPER_TYPE = paper		#when generating a latex doc
+	HIDE_UNDOC_RELATIONS = NO
+	HAVE_DOT = YES
+	CALL_GRAPH = YES
+	CALLER_GRAPH = YES
+
+The configuration option:  GENERATE_LATEX is default to YES, if you do not
+wish to generate a latex documentation, set this option to NO
+
+3. Generate documentation
+After configurating Doxyfile, you are ready to make the documentation.
+The command: doxygen Doxyfile
+will generate a documentation in a file called "html", the main page will 
+be labeled as "index.html"

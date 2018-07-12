@@ -1,0 +1,14 @@
+<map id="Stages" name="Stages">
+<area shape="rect" id="node1" href="$group__LauncherDefaults.html" title="ordering 490 " alt="" coords="118,5,242,32"/>
+<area shape="rect" id="node2" href="$group__MiddlewareGet.html" title="ordering 300 " alt="" coords="125,56,235,83"/>
+<area shape="rect" id="node3" href="$group__Reporter.html" title="ordering 600 " alt="" coords="144,107,216,133"/>
+<area shape="rect" id="node5" href="$group__Provision.html" title="ordering 200 " alt="" coords="142,157,218,184"/>
+<area shape="rect" id="node6" href="$group__TestBuild.html" title="ordering 475 " alt="" coords="141,208,219,235"/>
+<area shape="rect" id="node7" href="$group__Profile.html" title="ordering 210 " alt="" coords="151,259,209,285"/>
+<area shape="rect" id="node8" href="$group__Firmware.html" title="ordering 100 " alt="" coords="142,309,218,336"/>
+<area shape="rect" id="node9" href="$group__MTTDefaults.html" title="ordering 0 " alt="" coords="131,360,229,387"/>
+<area shape="rect" id="node10" href="$group__MiddlewareBuild.html" title="ordering 400 " alt="" coords="121,411,239,437"/>
+<area shape="rect" id="node11" href="$group__BIOS.html" title="ordering 50 " alt="" coords="153,461,207,488"/>
+<area shape="rect" id="node12" href="$group__TestGet.html" title="ordering 450 " alt="" coords="145,512,215,539"/>
+<area shape="rect" id="node13" href="$group__TestRun.html" title="ordering 500 " alt="" coords="144,563,216,589"/>
+</map>
