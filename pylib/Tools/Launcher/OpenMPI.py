@@ -19,6 +19,7 @@ import shlex
 # @{
 # @addtogroup Launcher
 # @section OpenMPI
+# Plugin for using the Open MPI mpirun launch tool
 # @param hostfile                  The hostfile for OpenMPI to use
 # @param command                   Command for executing the application
 # @param np                        Number of processes to run

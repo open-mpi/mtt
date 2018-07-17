@@ -29,6 +29,7 @@ MTTPyClientGreek = "a1"
 # @{
 # @addtogroup Version
 # @section MTTVersionPlugin
+# A simple plugin for returning the MTT Version
 # @}
 class MTTVersionPlugin(VersionMTTTool):
 

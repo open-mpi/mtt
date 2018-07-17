@@ -18,6 +18,7 @@ from BaseMTTUtility import *
 ## @addtogroup Utilities
 # @{
 # @section Copytree
+# Copy a directory tree from source to the same relative loation under the MTT scratch directory
 # @param  src                 The top directory of the tree to be copied
 # @param  preserve_symlinks   Preserve symlinks instead of copying the contents
 # @param  preserve_directory  Copies directory instead of contents

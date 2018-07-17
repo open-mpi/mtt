@@ -14,7 +14,7 @@ from yapsy.IPlugin import IPlugin
 ## @addtogroup Stages
 # @{
 # @addtogroup Provision
-# ordering 200
+# [Ordering 200] Provisioning stage
 # @}
 class ProvisionMTTStage(IPlugin):
     def __init__(self):

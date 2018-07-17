@@ -17,6 +17,7 @@ from distutils.spawn import find_executable
 # @{
 # @addtogroup Fetch
 # @section AlreadyInstalled
+# No-op plugin for using existing middleware installation
 # @param exec      Executable that should be in path
 # @param module    Modules (or lmod modules) to be loaded for accessing this package
 # @}

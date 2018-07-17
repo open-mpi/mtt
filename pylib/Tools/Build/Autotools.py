@@ -20,6 +20,7 @@ from BuildMTTTool import *
 # @{
 # @addtogroup Build
 # @section Autotools
+# Run typical autotools commands to configure and build a software package
 # @param middleware                Middleware stage that these tests are to be built against
 # @param parent                    Section that precedes this one in the dependency tree
 # @param autogen_cmd               Command to be executed to setup the configure script, usually called autogen.sh or autogen.pl

@@ -20,6 +20,7 @@ from BaseMTTUtility import *
 ## @addtogroup Utilities
 # @{
 # @section ModuleCmd
+# Load/Unload an environmental module
 # @}
 class ModuleCmd(BaseMTTUtility):
     def __init__(self):

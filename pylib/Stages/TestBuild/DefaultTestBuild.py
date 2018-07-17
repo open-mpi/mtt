@@ -16,6 +16,7 @@ from TestBuildMTTStage import *
 # @{
 # @addtogroup TestBuild
 # @section DefaultTestBuild
+# Build tools using Autotools plus an installed middleware version
 # @param middleware                Middleware stage that these tests are to be built against
 # @param build_in_place            Build tests in current location (no prefix or install)
 # @param merge_stdout_stderr       Merge stdout and stderr into one output stream

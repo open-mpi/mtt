@@ -133,6 +133,7 @@ class workerThread(threading.Thread):
 # @{
 # @addtogroup CNC
 # @section IPMITool
+# Interface to the ipmitool cmd line
 # @param target        List of remote host names or LAN interfaces to monitor during reset operations
 # @param controller    List of IP addresses of remote node controllers/BMCs
 # @param username      Remote session username

@@ -14,7 +14,7 @@ from yapsy.IPlugin import IPlugin
 ## @addtogroup Stages
 # @{
 # @addtogroup MiddlewareBuild
-# ordering 400
+# [Ordering 400] Stage for building middleware such as MPI
 # @}
 class MiddlewareBuildMTTStage(IPlugin):
     def __init__(self):

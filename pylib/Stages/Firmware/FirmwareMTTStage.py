@@ -14,7 +14,7 @@ from yapsy.IPlugin import IPlugin
 ## @addtogroup Stages
 # @{
 # @addtogroup Firmware
-# ordering 100
+# [Ordering 100] Firmware flash and query stage
 # @}
 class FirmwareMTTStage(IPlugin):
     def __init__(self):

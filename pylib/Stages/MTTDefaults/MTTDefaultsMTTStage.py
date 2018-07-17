@@ -14,7 +14,7 @@ from yapsy.IPlugin import IPlugin
 ## @addtogroup Stages
 # @{
 # @addtogroup MTTDefaults
-# ordering 0
+# [Ordering 0] Set MTT defaults for this test definition
 # @}
 class MTTDefaultsMTTStage(IPlugin):
     def __init__(self):

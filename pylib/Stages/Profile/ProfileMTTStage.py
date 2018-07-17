@@ -14,7 +14,7 @@ from yapsy.IPlugin import IPlugin
 ## @addtogroup Stages
 # @{
 # @addtogroup Profile
-# ordering 210
+# [Ordering 210] Stage for profiling the system upon which the tests will be conducted
 # @}
 class ProfileMTTStage(IPlugin):
     def __init__(self):

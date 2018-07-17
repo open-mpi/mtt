@@ -36,6 +36,7 @@ from ExecutorMTTTool import *
 # @{
 # @addtogroup Executor
 # @section SequentialEx
+# Sequential execution executor
 # @}
 class SequentialEx(ExecutorMTTTool):
 

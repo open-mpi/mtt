@@ -20,6 +20,7 @@ import math
 # @{
 # @addtogroup Build
 # @section Hostfile
+# Builds a hostfile based on a nodelist
 # @param parent      Section that precedes this one in the dependency tree
 # @param nodelist    list of nodes to create hostfile from
 # @param hostfile    name of hostfile to generate

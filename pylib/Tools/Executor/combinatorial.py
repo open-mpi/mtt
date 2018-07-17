@@ -28,6 +28,7 @@ from ExecutorMTTTool import *
 # @{
 # @addtogroup Executor
 # @section CombinatorialEx
+# Combinatorial execution executor
 # @}
 class CombinatorialEx(ExecutorMTTTool):
 

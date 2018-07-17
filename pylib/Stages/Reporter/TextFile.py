@@ -17,6 +17,7 @@ from ReporterMTTStage import *
 # @{
 # @addtogroup Reporter
 # @section TextFile
+# File reporter plugin
 # @param filename          Name of the file into which the report is to be written
 # @param summary_footer    Footer to be placed at bottom of summary
 # @param detail_header     Header to be put at top of detail report

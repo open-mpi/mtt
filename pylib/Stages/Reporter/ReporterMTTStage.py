@@ -14,7 +14,7 @@ from yapsy.IPlugin import IPlugin
 ## @addtogroup Stages
 # @{
 # @addtogroup Reporter
-# ordering 600
+# [Ordering 600] Report tests results stage
 # @}
 class ReporterMTTStage(IPlugin):
     def __init__(self):

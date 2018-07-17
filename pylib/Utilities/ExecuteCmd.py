@@ -20,6 +20,7 @@ from BaseMTTUtility import *
 ## @addtogroup Utilities
 # @{
 # @section ExecuteCmd
+# Execute a command and capture its stdout and stderr
 # @}
 class ExecuteCmd(BaseMTTUtility):
     def __init__(self):
