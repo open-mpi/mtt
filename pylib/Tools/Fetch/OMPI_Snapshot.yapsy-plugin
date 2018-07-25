@@ -1,0 +1,18 @@
+#
+# Copyright (c) 2018 Cisco Systems, Inc. All rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
+
+[Core]
+Name = OMPI_Snapshot Plugin
+Module = OMPI_Snapshot
+
+[Documentation]
+Author = Howard Pritchard
+Version = 0.1
+Website = N/A
+Description = Plugin for getting software via OMPI Nightly tarballs
