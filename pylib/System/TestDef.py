@@ -515,8 +515,6 @@ class TestDef(object):
     def fill_log_interpolation(self, basestr, sublog):
         if isinstance(sublog, str):
             self.config.set("LOG", basestr, sublog.replace("$","$$"))
-        elif isinstance(sublog, unicode):
-            self.fill_log_interpolation(basestr, sublog.encode("utf-8", "ignore"))
         elif isinstance(sublog, dict):
             for k,v in sublog.items():
                 self.fill_log_interpolation("%s.%s" % (basestr, k), v)
