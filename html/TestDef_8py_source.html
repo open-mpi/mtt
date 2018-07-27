@@ -606,285 +606,283 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00515"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a1eef52449af7cd41049963ccbd8699c8">  515</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classTestDef_1_1TestDef.html#a1eef52449af7cd41049963ccbd8699c8">fill_log_interpolation</a>(self, basestr, sublog):</div>
 <div class="line"><a name="l00516"></a><span class="lineno">  516</span>&#160;        <span class="keywordflow">if</span> isinstance(sublog, str):</div>
 <div class="line"><a name="l00517"></a><span class="lineno">  517</span>&#160;            self.config.set(<span class="stringliteral">&quot;LOG&quot;</span>, basestr, sublog.replace(<span class="stringliteral">&quot;$&quot;</span>,<span class="stringliteral">&quot;$$&quot;</span>))</div>
-<div class="line"><a name="l00518"></a><span class="lineno">  518</span>&#160;        <span class="keywordflow">elif</span> isinstance(sublog, unicode):</div>
-<div class="line"><a name="l00519"></a><span class="lineno">  519</span>&#160;            self.<a class="code" href="classTestDef_1_1TestDef.html#a1eef52449af7cd41049963ccbd8699c8">fill_log_interpolation</a>(basestr, sublog.encode(<span class="stringliteral">&quot;utf-8&quot;</span>, <span class="stringliteral">&quot;ignore&quot;</span>))</div>
-<div class="line"><a name="l00520"></a><span class="lineno">  520</span>&#160;        <span class="keywordflow">elif</span> isinstance(sublog, dict):</div>
-<div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160;            <span class="keywordflow">for</span> k,v <span class="keywordflow">in</span> sublog.items():</div>
-<div class="line"><a name="l00522"></a><span class="lineno">  522</span>&#160;                self.<a class="code" href="classTestDef_1_1TestDef.html#a1eef52449af7cd41049963ccbd8699c8">fill_log_interpolation</a>(<span class="stringliteral">&quot;%s.%s&quot;</span> % (basestr, k), v)</div>
-<div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160;        <span class="keywordflow">elif</span> isinstance(sublog, list):</div>
-<div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;            <span class="keywordflow">if</span> sum([((isinstance(t, list) <span class="keywordflow">or</span> isinstance(t, tuple)) <span class="keywordflow">and</span> len(t) == 2) <span class="keywordflow">for</span> t <span class="keywordflow">in</span> sublog]) == len(sublog):</div>
-<div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160;                self.<a class="code" href="classTestDef_1_1TestDef.html#a1eef52449af7cd41049963ccbd8699c8">fill_log_interpolation</a>(basestr, {k:v <span class="keywordflow">for</span> k,v <span class="keywordflow">in</span> sublog})</div>
-<div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160;            <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;                <span class="keywordflow">for</span> i,v <span class="keywordflow">in</span> enumerate(sublog):</div>
-<div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160;                    self.<a class="code" href="classTestDef_1_1TestDef.html#a1eef52449af7cd41049963ccbd8699c8">fill_log_interpolation</a>(<span class="stringliteral">&quot;%s.%d&quot;</span> % (basestr, i), v)</div>
-<div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160;        <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00530"></a><span class="lineno">  530</span>&#160;            self.<a class="code" href="classTestDef_1_1TestDef.html#a1eef52449af7cd41049963ccbd8699c8">fill_log_interpolation</a>(basestr, str(sublog))</div>
-<div class="line"><a name="l00531"></a><span class="lineno">  531</span>&#160;</div>
-<div class="line"><a name="l00532"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a2a10cd354fb5b287a8e6fa8a2d5e1915">  532</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classTestDef_1_1TestDef.html#a2a10cd354fb5b287a8e6fa8a2d5e1915">configTest</a>(self):</div>
-<div class="line"><a name="l00533"></a><span class="lineno">  533</span>&#160;        <span class="comment"># setup the configuration parser</span></div>
-<div class="line"><a name="l00534"></a><span class="lineno">  534</span>&#160;        self.<a class="code" href="classTestDef_1_1TestDef.html#a85a2e1fffeda060f750494dd4082594d">config</a> = configparser.SafeConfigParser(interpolation=configparser.ExtendedInterpolation())</div>
-<div class="line"><a name="l00535"></a><span class="lineno">  535</span>&#160;</div>
-<div class="line"><a name="l00536"></a><span class="lineno">  536</span>&#160;        <span class="comment"># Set the config parser to make option names case sensitive.</span></div>
-<div class="line"><a name="l00537"></a><span class="lineno">  537</span>&#160;        self.config.optionxform = str</div>
-<div class="line"><a name="l00538"></a><span class="lineno">  538</span>&#160;</div>
-<div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160;        <span class="comment"># fill ENV section with environemt variables</span></div>
-<div class="line"><a name="l00540"></a><span class="lineno">  540</span>&#160;        self.config.add_section(<span class="stringliteral">&#39;ENV&#39;</span>)</div>
-<div class="line"><a name="l00541"></a><span class="lineno">  541</span>&#160;        <span class="keywordflow">for</span> k,v <span class="keywordflow">in</span> os.environ.items():</div>
-<div class="line"><a name="l00542"></a><span class="lineno">  542</span>&#160;            self.config.set(<span class="stringliteral">&#39;ENV&#39;</span>, k, v.replace(<span class="stringliteral">&quot;$&quot;</span>,<span class="stringliteral">&quot;$$&quot;</span>))</div>
-<div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160;</div>
-<div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;        <span class="comment"># Add LOG section filled with log results of stages</span></div>
-<div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160;        self.config.add_section(<span class="stringliteral">&#39;LOG&#39;</span>)</div>
-<div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160;        thefulllog = self.logger.getLog(<span class="keywordtype">None</span>)</div>
-<div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160;        <span class="keywordflow">for</span> e <span class="keywordflow">in</span> thefulllog:</div>
-<div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;            self.<a class="code" href="classTestDef_1_1TestDef.html#a1eef52449af7cd41049963ccbd8699c8">fill_log_interpolation</a>(e[<span class="stringliteral">&#39;section&#39;</span>].replace(<span class="stringliteral">&quot;:&quot;</span>,<span class="stringliteral">&quot;_&quot;</span>), e)</div>
-<div class="line"><a name="l00549"></a><span class="lineno">  549</span>&#160;</div>
-<div class="line"><a name="l00550"></a><span class="lineno">  550</span>&#160;        <span class="comment"># log the list of files - note that the argument parser</span></div>
-<div class="line"><a name="l00551"></a><span class="lineno">  551</span>&#160;        <span class="comment"># puts the input files in a list, with the first member</span></div>
-<div class="line"><a name="l00552"></a><span class="lineno">  552</span>&#160;        <span class="comment"># being the list of input files</span></div>
-<div class="line"><a name="l00553"></a><span class="lineno">  553</span>&#160;        self.<a class="code" href="classTestDef_1_1TestDef.html#a50bbc74a64733e7dbec613bbfe3a519d">log</a>[<span class="stringliteral">&#39;inifiles&#39;</span>] = self.args.ini_files[0]</div>
-<div class="line"><a name="l00554"></a><span class="lineno">  554</span>&#160;        <span class="comment"># initialize the list of active sections</span></div>
-<div class="line"><a name="l00555"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a1eb766274fa9869e6b04e612e6d169b0">  555</a></span>&#160;        self.<a class="code" href="classTestDef_1_1TestDef.html#a1eb766274fa9869e6b04e612e6d169b0">actives</a> = []</div>
-<div class="line"><a name="l00556"></a><span class="lineno">  556</span>&#160;        <span class="comment"># if they specified a list to execute, then use it</span></div>
-<div class="line"><a name="l00557"></a><span class="lineno">  557</span>&#160;        sections = []</div>
-<div class="line"><a name="l00558"></a><span class="lineno">  558</span>&#160;        <span class="keywordflow">if</span> self.args.section:</div>
-<div class="line"><a name="l00559"></a><span class="lineno">  559</span>&#160;            sections = self.args.section.split(<span class="stringliteral">&quot;,&quot;</span>)</div>
-<div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;            skip = <span class="keyword">False</span></div>
-<div class="line"><a name="l00561"></a><span class="lineno">  561</span>&#160;        <span class="keywordflow">elif</span> self.args.skipsections:</div>
-<div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160;            sections = self.args.skipsections.split(<span class="stringliteral">&quot;,&quot;</span>)</div>
-<div class="line"><a name="l00563"></a><span class="lineno">  563</span>&#160;            skip = <span class="keyword">True</span></div>
-<div class="line"><a name="l00564"></a><span class="lineno">  564</span>&#160;        <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00565"></a><span class="lineno">  565</span>&#160;            sections = <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00566"></a><span class="lineno">  566</span>&#160;        <span class="comment"># cycle thru the input files</span></div>
-<div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160;        <span class="keywordflow">for</span> testFile <span class="keywordflow">in</span> self.<a class="code" href="classTestDef_1_1TestDef.html#a50bbc74a64733e7dbec613bbfe3a519d">log</a>[<span class="stringliteral">&#39;inifiles&#39;</span>]:</div>
-<div class="line"><a name="l00568"></a><span class="lineno">  568</span>&#160;            <span class="keywordflow">if</span> <span class="keywordflow">not</span> os.path.isfile(testFile):</div>
-<div class="line"><a name="l00569"></a><span class="lineno">  569</span>&#160;                print(<span class="stringliteral">&quot;Test description file&quot;</span>,testFile,<span class="stringliteral">&quot;not found!&quot;</span>)</div>
-<div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160;                sys.exit(1)</div>
-<div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;            self.config.read(self.<a class="code" href="classTestDef_1_1TestDef.html#a50bbc74a64733e7dbec613bbfe3a519d">log</a>[<span class="stringliteral">&#39;inifiles&#39;</span>])</div>
-<div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160;</div>
-<div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;        <span class="comment"># Check for ENV input</span></div>
-<div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;        required_env = []</div>
-<div class="line"><a name="l00575"></a><span class="lineno">  575</span>&#160;        all_file_contents = []</div>
-<div class="line"><a name="l00576"></a><span class="lineno">  576</span>&#160;        <span class="keywordflow">for</span> testFile <span class="keywordflow">in</span> self.<a class="code" href="classTestDef_1_1TestDef.html#a50bbc74a64733e7dbec613bbfe3a519d">log</a>[<span class="stringliteral">&#39;inifiles&#39;</span>]:</div>
-<div class="line"><a name="l00577"></a><span class="lineno">  577</span>&#160;            file_contents = open(testFile, <span class="stringliteral">&quot;</span><span class="stringliteral">r&quot;).read()</span></div>
-<div class="line"><a name="l00578"></a><span class="lineno">  578</span>&#160;<span class="stringliteral">            file_contents = </span><span class="stringliteral">&quot;\n&quot;</span>.join([<span class="stringliteral">&quot;%s %d: %s&quot;</span> % (testFile.split(<span class="stringliteral">&quot;/&quot;</span>)[-1],i,l) <span class="keywordflow">for</span> i,l <span class="keywordflow">in</span> enumerate(file_contents.split(<span class="stringliteral">&quot;\n&quot;</span>)) <span class="keywordflow">if</span> <span class="keywordflow">not</span> l.lstrip().startswith(<span class="stringliteral">&quot;#&quot;</span>)])</div>
-<div class="line"><a name="l00579"></a><span class="lineno">  579</span>&#160;            all_file_contents.append(file_contents)</div>
-<div class="line"><a name="l00580"></a><span class="lineno">  580</span>&#160;            <span class="keywordflow">if</span> <span class="stringliteral">&quot;${ENV:&quot;</span> <span class="keywordflow">in</span> file_contents:</div>
-<div class="line"><a name="l00581"></a><span class="lineno">  581</span>&#160;                required_env.extend([s.split(<span class="stringliteral">&quot;}&quot;</span>)[0] <span class="keywordflow">for</span> s <span class="keywordflow">in</span> file_contents.split(<span class="stringliteral">&quot;${ENV:&quot;</span>)[1:]])</div>
-<div class="line"><a name="l00582"></a><span class="lineno">  582</span>&#160;        env_not_found = set([e <span class="keywordflow">for</span> e <span class="keywordflow">in</span> required_env <span class="keywordflow">if</span> e <span class="keywordflow">not</span> <span class="keywordflow">in</span> os.environ.keys()])</div>
-<div class="line"><a name="l00583"></a><span class="lineno">  583</span>&#160;        lines_with_env_not_found = []</div>
-<div class="line"><a name="l00584"></a><span class="lineno">  584</span>&#160;        <span class="keywordflow">for</span> file_contents <span class="keywordflow">in</span> all_file_contents:</div>
-<div class="line"><a name="l00585"></a><span class="lineno">  585</span>&#160;            lines_with_env_not_found.extend([<span class="stringliteral">&quot;%s: %s&quot;</span>%(<span class="stringliteral">&quot;,&quot;</span>.join([e <span class="keywordflow">for</span> e <span class="keywordflow">in</span> env_not_found <span class="keywordflow">if</span> <span class="stringliteral">&quot;${ENV:%s}&quot;</span>%e <span class="keywordflow">in</span> l]),l) \</div>
-<div class="line"><a name="l00586"></a><span class="lineno">  586</span>&#160;                                             <span class="keywordflow">for</span> l <span class="keywordflow">in</span> file_contents.split(<span class="stringliteral">&quot;\n&quot;</span>) \</div>
-<div class="line"><a name="l00587"></a><span class="lineno">  587</span>&#160;                                             <span class="keywordflow">if</span> sum([<span class="stringliteral">&quot;${ENV:%s}&quot;</span>%e <span class="keywordflow">in</span> l <span class="keywordflow">for</span> e <span class="keywordflow">in</span> env_not_found])])</div>
-<div class="line"><a name="l00588"></a><span class="lineno">  588</span>&#160;        <span class="keywordflow">if</span> lines_with_env_not_found:</div>
-<div class="line"><a name="l00589"></a><span class="lineno">  589</span>&#160;            print(<span class="stringliteral">&quot;ERROR: Not all required environment variables are defined.&quot;</span>)</div>
-<div class="line"><a name="l00590"></a><span class="lineno">  590</span>&#160;            print(<span class="stringliteral">&quot;ERROR: Still need:&quot;</span>)</div>
-<div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160;            <span class="keywordflow">for</span> l <span class="keywordflow">in</span> lines_with_env_not_found:</div>
-<div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160;                print(<span class="stringliteral">&quot;ERROR: %s&quot;</span>%l)</div>
-<div class="line"><a name="l00593"></a><span class="lineno">  593</span>&#160;            sys.exit(1)</div>
-<div class="line"><a name="l00594"></a><span class="lineno">  594</span>&#160;</div>
-<div class="line"><a name="l00595"></a><span class="lineno">  595</span>&#160;        <span class="keywordflow">for</span> section <span class="keywordflow">in</span> self.config.sections():</div>
-<div class="line"><a name="l00596"></a><span class="lineno">  596</span>&#160;            <span class="keywordflow">if</span> section.startswith(<span class="stringliteral">&quot;SKIP&quot;</span>) <span class="keywordflow">or</span> section.startswith(<span class="stringliteral">&quot;skip&quot;</span>):</div>
-<div class="line"><a name="l00597"></a><span class="lineno">  597</span>&#160;                <span class="comment"># users often want to temporarily ignore a section</span></div>
-<div class="line"><a name="l00598"></a><span class="lineno">  598</span>&#160;                <span class="comment"># of their test definition file, but don&#39;t want to</span></div>
-<div class="line"><a name="l00599"></a><span class="lineno">  599</span>&#160;                <span class="comment"># remove it lest they forget what it did. So let</span></div>
-<div class="line"><a name="l00600"></a><span class="lineno">  600</span>&#160;                <span class="comment"># them just mark the section as &quot;skip&quot; to be ignored</span></div>
-<div class="line"><a name="l00601"></a><span class="lineno">  601</span>&#160;                <span class="keywordflow">continue</span></div>
-<div class="line"><a name="l00602"></a><span class="lineno">  602</span>&#160;            <span class="comment"># if we are to filter the sections, then do so</span></div>
-<div class="line"><a name="l00603"></a><span class="lineno">  603</span>&#160;            takeus = <span class="keyword">True</span></div>
-<div class="line"><a name="l00604"></a><span class="lineno">  604</span>&#160;            <span class="keywordflow">if</span> sections <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00605"></a><span class="lineno">  605</span>&#160;                found = <span class="keyword">False</span></div>
-<div class="line"><a name="l00606"></a><span class="lineno">  606</span>&#160;                <span class="keywordflow">for</span> sec <span class="keywordflow">in</span> sections:</div>
-<div class="line"><a name="l00607"></a><span class="lineno">  607</span>&#160;                    <span class="keywordflow">if</span> sec == section:</div>
-<div class="line"><a name="l00608"></a><span class="lineno">  608</span>&#160;                        found = <span class="keyword">True</span></div>
-<div class="line"><a name="l00609"></a><span class="lineno">  609</span>&#160;                        sections.remove(sec)</div>
-<div class="line"><a name="l00610"></a><span class="lineno">  610</span>&#160;                        <span class="keywordflow">if</span> skip:</div>
-<div class="line"><a name="l00611"></a><span class="lineno">  611</span>&#160;                            takeus = <span class="keyword">False</span></div>
-<div class="line"><a name="l00612"></a><span class="lineno">  612</span>&#160;                        <span class="keywordflow">break</span></div>
-<div class="line"><a name="l00613"></a><span class="lineno">  613</span>&#160;                <span class="keywordflow">if</span> <span class="keywordflow">not</span> found <span class="keywordflow">and</span> <span class="keywordflow">not</span> skip:</div>
-<div class="line"><a name="l00614"></a><span class="lineno">  614</span>&#160;                    takeus = <span class="keyword">False</span></div>
-<div class="line"><a name="l00615"></a><span class="lineno">  615</span>&#160;            <span class="keywordflow">if</span> takeus:</div>
-<div class="line"><a name="l00616"></a><span class="lineno">  616</span>&#160;                self.actives.append(section)</div>
-<div class="line"><a name="l00617"></a><span class="lineno">  617</span>&#160;        <span class="keywordflow">if</span> sections <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> 0 != len(sections) <span class="keywordflow">and</span> <span class="keywordflow">not</span> skip:</div>
-<div class="line"><a name="l00618"></a><span class="lineno">  618</span>&#160;            print(<span class="stringliteral">&quot;ERROR: sections were specified for execution and not found:&quot;</span>,sections)</div>
-<div class="line"><a name="l00619"></a><span class="lineno">  619</span>&#160;            sys.exit(1)</div>
-<div class="line"><a name="l00620"></a><span class="lineno">  620</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00621"></a><span class="lineno">  621</span>&#160;</div>
-<div class="line"><a name="l00622"></a><span class="lineno">  622</span>&#160;    <span class="comment"># Used with combinatorial executor, loads next .ini file to be run with the</span></div>
-<div class="line"><a name="l00623"></a><span class="lineno">  623</span>&#160;    <span class="comment"># sequential executor</span></div>
-<div class="line"><a name="l00624"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a480ed48dbd7cf34cb2cbd8219999aaad">  624</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classTestDef_1_1TestDef.html#a480ed48dbd7cf34cb2cbd8219999aaad">configNewTest</a>(self, file):</div>
-<div class="line"><a name="l00625"></a><span class="lineno">  625</span>&#160;        <span class="comment"># clear the configuration parser</span></div>
-<div class="line"><a name="l00626"></a><span class="lineno">  626</span>&#160;        <span class="keywordflow">for</span> section <span class="keywordflow">in</span> self.config.sections():</div>
-<div class="line"><a name="l00627"></a><span class="lineno">  627</span>&#160;            self.config.remove_section(section)</div>
-<div class="line"><a name="l00628"></a><span class="lineno">  628</span>&#160;        <span class="comment"># read in the file</span></div>
-<div class="line"><a name="l00629"></a><span class="lineno">  629</span>&#160;        self.config.read(file)</div>
-<div class="line"><a name="l00630"></a><span class="lineno">  630</span>&#160;        <span class="keywordflow">for</span> section <span class="keywordflow">in</span> self.config.sections():</div>
-<div class="line"><a name="l00631"></a><span class="lineno">  631</span>&#160;            <span class="keywordflow">if</span> section.startswith(<span class="stringliteral">&quot;SKIP&quot;</span>) <span class="keywordflow">or</span> section.startswith(<span class="stringliteral">&quot;skip&quot;</span>):</div>
-<div class="line"><a name="l00632"></a><span class="lineno">  632</span>&#160;                <span class="comment"># users often want to temporarily ignore a section</span></div>
-<div class="line"><a name="l00633"></a><span class="lineno">  633</span>&#160;                <span class="comment"># of their test definition file, but don&#39;t want to</span></div>
-<div class="line"><a name="l00634"></a><span class="lineno">  634</span>&#160;                <span class="comment"># remove it lest they forget what it did. So let</span></div>
-<div class="line"><a name="l00635"></a><span class="lineno">  635</span>&#160;                <span class="comment"># them just mark the section as &quot;skip&quot; to be ignored</span></div>
-<div class="line"><a name="l00636"></a><span class="lineno">  636</span>&#160;                <span class="keywordflow">continue</span></div>
-<div class="line"><a name="l00637"></a><span class="lineno">  637</span>&#160;            <span class="keywordflow">if</span> self.<a class="code" href="classTestDef_1_1TestDef.html#a2ec3a5ec20bb6ba539d68c3c5a40ca5d">logger</a> <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00638"></a><span class="lineno">  638</span>&#160;                self.logger.verbose_print(<span class="stringliteral">&quot;SECTION: &quot;</span> + section)</div>
-<div class="line"><a name="l00639"></a><span class="lineno">  639</span>&#160;                self.logger.verbose_print(self.config.items(section))</div>
-<div class="line"><a name="l00640"></a><span class="lineno">  640</span>&#160;        <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00518"></a><span class="lineno">  518</span>&#160;        <span class="keywordflow">elif</span> isinstance(sublog, dict):</div>
+<div class="line"><a name="l00519"></a><span class="lineno">  519</span>&#160;            <span class="keywordflow">for</span> k,v <span class="keywordflow">in</span> sublog.items():</div>
+<div class="line"><a name="l00520"></a><span class="lineno">  520</span>&#160;                self.<a class="code" href="classTestDef_1_1TestDef.html#a1eef52449af7cd41049963ccbd8699c8">fill_log_interpolation</a>(<span class="stringliteral">&quot;%s.%s&quot;</span> % (basestr, k), v)</div>
+<div class="line"><a name="l00521"></a><span class="lineno">  521</span>&#160;        <span class="keywordflow">elif</span> isinstance(sublog, list):</div>
+<div class="line"><a name="l00522"></a><span class="lineno">  522</span>&#160;            <span class="keywordflow">if</span> sum([((isinstance(t, list) <span class="keywordflow">or</span> isinstance(t, tuple)) <span class="keywordflow">and</span> len(t) == 2) <span class="keywordflow">for</span> t <span class="keywordflow">in</span> sublog]) == len(sublog):</div>
+<div class="line"><a name="l00523"></a><span class="lineno">  523</span>&#160;                self.<a class="code" href="classTestDef_1_1TestDef.html#a1eef52449af7cd41049963ccbd8699c8">fill_log_interpolation</a>(basestr, {k:v <span class="keywordflow">for</span> k,v <span class="keywordflow">in</span> sublog})</div>
+<div class="line"><a name="l00524"></a><span class="lineno">  524</span>&#160;            <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00525"></a><span class="lineno">  525</span>&#160;                <span class="keywordflow">for</span> i,v <span class="keywordflow">in</span> enumerate(sublog):</div>
+<div class="line"><a name="l00526"></a><span class="lineno">  526</span>&#160;                    self.<a class="code" href="classTestDef_1_1TestDef.html#a1eef52449af7cd41049963ccbd8699c8">fill_log_interpolation</a>(<span class="stringliteral">&quot;%s.%d&quot;</span> % (basestr, i), v)</div>
+<div class="line"><a name="l00527"></a><span class="lineno">  527</span>&#160;        <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00528"></a><span class="lineno">  528</span>&#160;            self.<a class="code" href="classTestDef_1_1TestDef.html#a1eef52449af7cd41049963ccbd8699c8">fill_log_interpolation</a>(basestr, str(sublog))</div>
+<div class="line"><a name="l00529"></a><span class="lineno">  529</span>&#160;</div>
+<div class="line"><a name="l00530"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a2a10cd354fb5b287a8e6fa8a2d5e1915">  530</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classTestDef_1_1TestDef.html#a2a10cd354fb5b287a8e6fa8a2d5e1915">configTest</a>(self):</div>
+<div class="line"><a name="l00531"></a><span class="lineno">  531</span>&#160;        <span class="comment"># setup the configuration parser</span></div>
+<div class="line"><a name="l00532"></a><span class="lineno">  532</span>&#160;        self.<a class="code" href="classTestDef_1_1TestDef.html#a85a2e1fffeda060f750494dd4082594d">config</a> = configparser.SafeConfigParser(interpolation=configparser.ExtendedInterpolation())</div>
+<div class="line"><a name="l00533"></a><span class="lineno">  533</span>&#160;</div>
+<div class="line"><a name="l00534"></a><span class="lineno">  534</span>&#160;        <span class="comment"># Set the config parser to make option names case sensitive.</span></div>
+<div class="line"><a name="l00535"></a><span class="lineno">  535</span>&#160;        self.config.optionxform = str</div>
+<div class="line"><a name="l00536"></a><span class="lineno">  536</span>&#160;</div>
+<div class="line"><a name="l00537"></a><span class="lineno">  537</span>&#160;        <span class="comment"># fill ENV section with environemt variables</span></div>
+<div class="line"><a name="l00538"></a><span class="lineno">  538</span>&#160;        self.config.add_section(<span class="stringliteral">&#39;ENV&#39;</span>)</div>
+<div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160;        <span class="keywordflow">for</span> k,v <span class="keywordflow">in</span> os.environ.items():</div>
+<div class="line"><a name="l00540"></a><span class="lineno">  540</span>&#160;            self.config.set(<span class="stringliteral">&#39;ENV&#39;</span>, k, v.replace(<span class="stringliteral">&quot;$&quot;</span>,<span class="stringliteral">&quot;$$&quot;</span>))</div>
+<div class="line"><a name="l00541"></a><span class="lineno">  541</span>&#160;</div>
+<div class="line"><a name="l00542"></a><span class="lineno">  542</span>&#160;        <span class="comment"># Add LOG section filled with log results of stages</span></div>
+<div class="line"><a name="l00543"></a><span class="lineno">  543</span>&#160;        self.config.add_section(<span class="stringliteral">&#39;LOG&#39;</span>)</div>
+<div class="line"><a name="l00544"></a><span class="lineno">  544</span>&#160;        thefulllog = self.logger.getLog(<span class="keywordtype">None</span>)</div>
+<div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160;        <span class="keywordflow">for</span> e <span class="keywordflow">in</span> thefulllog:</div>
+<div class="line"><a name="l00546"></a><span class="lineno">  546</span>&#160;            self.<a class="code" href="classTestDef_1_1TestDef.html#a1eef52449af7cd41049963ccbd8699c8">fill_log_interpolation</a>(e[<span class="stringliteral">&#39;section&#39;</span>].replace(<span class="stringliteral">&quot;:&quot;</span>,<span class="stringliteral">&quot;_&quot;</span>), e)</div>
+<div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160;</div>
+<div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;        <span class="comment"># log the list of files - note that the argument parser</span></div>
+<div class="line"><a name="l00549"></a><span class="lineno">  549</span>&#160;        <span class="comment"># puts the input files in a list, with the first member</span></div>
+<div class="line"><a name="l00550"></a><span class="lineno">  550</span>&#160;        <span class="comment"># being the list of input files</span></div>
+<div class="line"><a name="l00551"></a><span class="lineno">  551</span>&#160;        self.<a class="code" href="classTestDef_1_1TestDef.html#a50bbc74a64733e7dbec613bbfe3a519d">log</a>[<span class="stringliteral">&#39;inifiles&#39;</span>] = self.args.ini_files[0]</div>
+<div class="line"><a name="l00552"></a><span class="lineno">  552</span>&#160;        <span class="comment"># initialize the list of active sections</span></div>
+<div class="line"><a name="l00553"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a1eb766274fa9869e6b04e612e6d169b0">  553</a></span>&#160;        self.<a class="code" href="classTestDef_1_1TestDef.html#a1eb766274fa9869e6b04e612e6d169b0">actives</a> = []</div>
+<div class="line"><a name="l00554"></a><span class="lineno">  554</span>&#160;        <span class="comment"># if they specified a list to execute, then use it</span></div>
+<div class="line"><a name="l00555"></a><span class="lineno">  555</span>&#160;        sections = []</div>
+<div class="line"><a name="l00556"></a><span class="lineno">  556</span>&#160;        <span class="keywordflow">if</span> self.args.section:</div>
+<div class="line"><a name="l00557"></a><span class="lineno">  557</span>&#160;            sections = self.args.section.split(<span class="stringliteral">&quot;,&quot;</span>)</div>
+<div class="line"><a name="l00558"></a><span class="lineno">  558</span>&#160;            skip = <span class="keyword">False</span></div>
+<div class="line"><a name="l00559"></a><span class="lineno">  559</span>&#160;        <span class="keywordflow">elif</span> self.args.skipsections:</div>
+<div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;            sections = self.args.skipsections.split(<span class="stringliteral">&quot;,&quot;</span>)</div>
+<div class="line"><a name="l00561"></a><span class="lineno">  561</span>&#160;            skip = <span class="keyword">True</span></div>
+<div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160;        <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00563"></a><span class="lineno">  563</span>&#160;            sections = <span class="keywordtype">None</span></div>
+<div class="line"><a name="l00564"></a><span class="lineno">  564</span>&#160;        <span class="comment"># cycle thru the input files</span></div>
+<div class="line"><a name="l00565"></a><span class="lineno">  565</span>&#160;        <span class="keywordflow">for</span> testFile <span class="keywordflow">in</span> self.<a class="code" href="classTestDef_1_1TestDef.html#a50bbc74a64733e7dbec613bbfe3a519d">log</a>[<span class="stringliteral">&#39;inifiles&#39;</span>]:</div>
+<div class="line"><a name="l00566"></a><span class="lineno">  566</span>&#160;            <span class="keywordflow">if</span> <span class="keywordflow">not</span> os.path.isfile(testFile):</div>
+<div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160;                print(<span class="stringliteral">&quot;Test description file&quot;</span>,testFile,<span class="stringliteral">&quot;not found!&quot;</span>)</div>
+<div class="line"><a name="l00568"></a><span class="lineno">  568</span>&#160;                sys.exit(1)</div>
+<div class="line"><a name="l00569"></a><span class="lineno">  569</span>&#160;            self.config.read(self.<a class="code" href="classTestDef_1_1TestDef.html#a50bbc74a64733e7dbec613bbfe3a519d">log</a>[<span class="stringliteral">&#39;inifiles&#39;</span>])</div>
+<div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160;</div>
+<div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;        <span class="comment"># Check for ENV input</span></div>
+<div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160;        required_env = []</div>
+<div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;        all_file_contents = []</div>
+<div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;        <span class="keywordflow">for</span> testFile <span class="keywordflow">in</span> self.<a class="code" href="classTestDef_1_1TestDef.html#a50bbc74a64733e7dbec613bbfe3a519d">log</a>[<span class="stringliteral">&#39;inifiles&#39;</span>]:</div>
+<div class="line"><a name="l00575"></a><span class="lineno">  575</span>&#160;            file_contents = open(testFile, <span class="stringliteral">&quot;</span><span class="stringliteral">r&quot;).read()</span></div>
+<div class="line"><a name="l00576"></a><span class="lineno">  576</span>&#160;<span class="stringliteral">            file_contents = </span><span class="stringliteral">&quot;\n&quot;</span>.join([<span class="stringliteral">&quot;%s %d: %s&quot;</span> % (testFile.split(<span class="stringliteral">&quot;/&quot;</span>)[-1],i,l) <span class="keywordflow">for</span> i,l <span class="keywordflow">in</span> enumerate(file_contents.split(<span class="stringliteral">&quot;\n&quot;</span>)) <span class="keywordflow">if</span> <span class="keywordflow">not</span> l.lstrip().startswith(<span class="stringliteral">&quot;#&quot;</span>)])</div>
+<div class="line"><a name="l00577"></a><span class="lineno">  577</span>&#160;            all_file_contents.append(file_contents)</div>
+<div class="line"><a name="l00578"></a><span class="lineno">  578</span>&#160;            <span class="keywordflow">if</span> <span class="stringliteral">&quot;${ENV:&quot;</span> <span class="keywordflow">in</span> file_contents:</div>
+<div class="line"><a name="l00579"></a><span class="lineno">  579</span>&#160;                required_env.extend([s.split(<span class="stringliteral">&quot;}&quot;</span>)[0] <span class="keywordflow">for</span> s <span class="keywordflow">in</span> file_contents.split(<span class="stringliteral">&quot;${ENV:&quot;</span>)[1:]])</div>
+<div class="line"><a name="l00580"></a><span class="lineno">  580</span>&#160;        env_not_found = set([e <span class="keywordflow">for</span> e <span class="keywordflow">in</span> required_env <span class="keywordflow">if</span> e <span class="keywordflow">not</span> <span class="keywordflow">in</span> os.environ.keys()])</div>
+<div class="line"><a name="l00581"></a><span class="lineno">  581</span>&#160;        lines_with_env_not_found = []</div>
+<div class="line"><a name="l00582"></a><span class="lineno">  582</span>&#160;        <span class="keywordflow">for</span> file_contents <span class="keywordflow">in</span> all_file_contents:</div>
+<div class="line"><a name="l00583"></a><span class="lineno">  583</span>&#160;            lines_with_env_not_found.extend([<span class="stringliteral">&quot;%s: %s&quot;</span>%(<span class="stringliteral">&quot;,&quot;</span>.join([e <span class="keywordflow">for</span> e <span class="keywordflow">in</span> env_not_found <span class="keywordflow">if</span> <span class="stringliteral">&quot;${ENV:%s}&quot;</span>%e <span class="keywordflow">in</span> l]),l) \</div>
+<div class="line"><a name="l00584"></a><span class="lineno">  584</span>&#160;                                             <span class="keywordflow">for</span> l <span class="keywordflow">in</span> file_contents.split(<span class="stringliteral">&quot;\n&quot;</span>) \</div>
+<div class="line"><a name="l00585"></a><span class="lineno">  585</span>&#160;                                             <span class="keywordflow">if</span> sum([<span class="stringliteral">&quot;${ENV:%s}&quot;</span>%e <span class="keywordflow">in</span> l <span class="keywordflow">for</span> e <span class="keywordflow">in</span> env_not_found])])</div>
+<div class="line"><a name="l00586"></a><span class="lineno">  586</span>&#160;        <span class="keywordflow">if</span> lines_with_env_not_found:</div>
+<div class="line"><a name="l00587"></a><span class="lineno">  587</span>&#160;            print(<span class="stringliteral">&quot;ERROR: Not all required environment variables are defined.&quot;</span>)</div>
+<div class="line"><a name="l00588"></a><span class="lineno">  588</span>&#160;            print(<span class="stringliteral">&quot;ERROR: Still need:&quot;</span>)</div>
+<div class="line"><a name="l00589"></a><span class="lineno">  589</span>&#160;            <span class="keywordflow">for</span> l <span class="keywordflow">in</span> lines_with_env_not_found:</div>
+<div class="line"><a name="l00590"></a><span class="lineno">  590</span>&#160;                print(<span class="stringliteral">&quot;ERROR: %s&quot;</span>%l)</div>
+<div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160;            sys.exit(1)</div>
+<div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160;</div>
+<div class="line"><a name="l00593"></a><span class="lineno">  593</span>&#160;        <span class="keywordflow">for</span> section <span class="keywordflow">in</span> self.config.sections():</div>
+<div class="line"><a name="l00594"></a><span class="lineno">  594</span>&#160;            <span class="keywordflow">if</span> section.startswith(<span class="stringliteral">&quot;SKIP&quot;</span>) <span class="keywordflow">or</span> section.startswith(<span class="stringliteral">&quot;skip&quot;</span>):</div>
+<div class="line"><a name="l00595"></a><span class="lineno">  595</span>&#160;                <span class="comment"># users often want to temporarily ignore a section</span></div>
+<div class="line"><a name="l00596"></a><span class="lineno">  596</span>&#160;                <span class="comment"># of their test definition file, but don&#39;t want to</span></div>
+<div class="line"><a name="l00597"></a><span class="lineno">  597</span>&#160;                <span class="comment"># remove it lest they forget what it did. So let</span></div>
+<div class="line"><a name="l00598"></a><span class="lineno">  598</span>&#160;                <span class="comment"># them just mark the section as &quot;skip&quot; to be ignored</span></div>
+<div class="line"><a name="l00599"></a><span class="lineno">  599</span>&#160;                <span class="keywordflow">continue</span></div>
+<div class="line"><a name="l00600"></a><span class="lineno">  600</span>&#160;            <span class="comment"># if we are to filter the sections, then do so</span></div>
+<div class="line"><a name="l00601"></a><span class="lineno">  601</span>&#160;            takeus = <span class="keyword">True</span></div>
+<div class="line"><a name="l00602"></a><span class="lineno">  602</span>&#160;            <span class="keywordflow">if</span> sections <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
+<div class="line"><a name="l00603"></a><span class="lineno">  603</span>&#160;                found = <span class="keyword">False</span></div>
+<div class="line"><a name="l00604"></a><span class="lineno">  604</span>&#160;                <span class="keywordflow">for</span> sec <span class="keywordflow">in</span> sections:</div>
+<div class="line"><a name="l00605"></a><span class="lineno">  605</span>&#160;                    <span class="keywordflow">if</span> sec == section:</div>
+<div class="line"><a name="l00606"></a><span class="lineno">  606</span>&#160;                        found = <span class="keyword">True</span></div>
+<div class="line"><a name="l00607"></a><span class="lineno">  607</span>&#160;                        sections.remove(sec)</div>
+<div class="line"><a name="l00608"></a><span class="lineno">  608</span>&#160;                        <span class="keywordflow">if</span> skip:</div>
+<div class="line"><a name="l00609"></a><span class="lineno">  609</span>&#160;                            takeus = <span class="keyword">False</span></div>
+<div class="line"><a name="l00610"></a><span class="lineno">  610</span>&#160;                        <span class="keywordflow">break</span></div>
+<div class="line"><a name="l00611"></a><span class="lineno">  611</span>&#160;                <span class="keywordflow">if</span> <span class="keywordflow">not</span> found <span class="keywordflow">and</span> <span class="keywordflow">not</span> skip:</div>
+<div class="line"><a name="l00612"></a><span class="lineno">  612</span>&#160;                    takeus = <span class="keyword">False</span></div>
+<div class="line"><a name="l00613"></a><span class="lineno">  613</span>&#160;            <span class="keywordflow">if</span> takeus:</div>
+<div class="line"><a name="l00614"></a><span class="lineno">  614</span>&#160;                self.actives.append(section)</div>
+<div class="line"><a name="l00615"></a><span class="lineno">  615</span>&#160;        <span class="keywordflow">if</span> sections <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> 0 != len(sections) <span class="keywordflow">and</span> <span class="keywordflow">not</span> skip:</div>
+<div class="line"><a name="l00616"></a><span class="lineno">  616</span>&#160;            print(<span class="stringliteral">&quot;ERROR: sections were specified for execution and not found:&quot;</span>,sections)</div>
+<div class="line"><a name="l00617"></a><span class="lineno">  617</span>&#160;            sys.exit(1)</div>
+<div class="line"><a name="l00618"></a><span class="lineno">  618</span>&#160;        <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00619"></a><span class="lineno">  619</span>&#160;</div>
+<div class="line"><a name="l00620"></a><span class="lineno">  620</span>&#160;    <span class="comment"># Used with combinatorial executor, loads next .ini file to be run with the</span></div>
+<div class="line"><a name="l00621"></a><span class="lineno">  621</span>&#160;    <span class="comment"># sequential executor</span></div>
+<div class="line"><a name="l00622"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a480ed48dbd7cf34cb2cbd8219999aaad">  622</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classTestDef_1_1TestDef.html#a480ed48dbd7cf34cb2cbd8219999aaad">configNewTest</a>(self, file):</div>
+<div class="line"><a name="l00623"></a><span class="lineno">  623</span>&#160;        <span class="comment"># clear the configuration parser</span></div>
+<div class="line"><a name="l00624"></a><span class="lineno">  624</span>&#160;        <span class="keywordflow">for</span> section <span class="keywordflow">in</span> self.config.sections():</div>
+<div class="line"><a name="l00625"></a><span class="lineno">  625</span>&#160;            self.config.remove_section(section)</div>
+<div class="line"><a name="l00626"></a><span class="lineno">  626</span>&#160;        <span class="comment"># read in the file</span></div>
+<div class="line"><a name="l00627"></a><span class="lineno">  627</span>&#160;        self.config.read(file)</div>
+<div class="line"><a name="l00628"></a><span class="lineno">  628</span>&#160;        <span class="keywordflow">for</span> section <span class="keywordflow">in</span> self.config.sections():</div>
+<div class="line"><a name="l00629"></a><span class="lineno">  629</span>&#160;            <span class="keywordflow">if</span> section.startswith(<span class="stringliteral">&quot;SKIP&quot;</span>) <span class="keywordflow">or</span> section.startswith(<span class="stringliteral">&quot;skip&quot;</span>):</div>
+<div class="line"><a name="l00630"></a><span class="lineno">  630</span>&#160;                <span class="comment"># users often want to temporarily ignore a section</span></div>
+<div class="line"><a name="l00631"></a><span class="lineno">  631</span>&#160;                <span class="comment"># of their test definition file, but don&#39;t want to</span></div>
+<div class="line"><a name="l00632"></a><span class="lineno">  632</span>&#160;                <span class="comment"># remove it lest they forget what it did. So let</span></div>
+<div class="line"><a name="l00633"></a><span class="lineno">  633</span>&#160;                <span class="comment"># them just mark the section as &quot;skip&quot; to be ignored</span></div>
+<div class="line"><a name="l00634"></a><span class="lineno">  634</span>&#160;                <span class="keywordflow">continue</span></div>
+<div class="line"><a name="l00635"></a><span class="lineno">  635</span>&#160;            <span class="keywordflow">if</span> self.<a class="code" href="classTestDef_1_1TestDef.html#a2ec3a5ec20bb6ba539d68c3c5a40ca5d">logger</a> <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
+<div class="line"><a name="l00636"></a><span class="lineno">  636</span>&#160;                self.logger.verbose_print(<span class="stringliteral">&quot;SECTION: &quot;</span> + section)</div>
+<div class="line"><a name="l00637"></a><span class="lineno">  637</span>&#160;                self.logger.verbose_print(self.config.items(section))</div>
+<div class="line"><a name="l00638"></a><span class="lineno">  638</span>&#160;        <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00639"></a><span class="lineno">  639</span>&#160;</div>
+<div class="line"><a name="l00640"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a3eeef61386a154552981676b1893e59e">  640</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classTestDef_1_1TestDef.html#a3eeef61386a154552981676b1893e59e">executeTest</a>(self, enable_loop=True, executor=&quot;sequential&quot;):</div>
 <div class="line"><a name="l00641"></a><span class="lineno">  641</span>&#160;</div>
-<div class="line"><a name="l00642"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a3eeef61386a154552981676b1893e59e">  642</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classTestDef_1_1TestDef.html#a3eeef61386a154552981676b1893e59e">executeTest</a>(self, enable_loop=True, executor=&quot;sequential&quot;):</div>
-<div class="line"><a name="l00643"></a><span class="lineno">  643</span>&#160;</div>
-<div class="line"><a name="l00644"></a><span class="lineno">  644</span>&#160;        <span class="keywordflow">if</span> <span class="keywordflow">not</span> self.<a class="code" href="classTestDef_1_1TestDef.html#a21764cc1b70626946a708b7a0f003b38">loaded</a>:</div>
-<div class="line"><a name="l00645"></a><span class="lineno">  645</span>&#160;            print(<span class="stringliteral">&quot;Plugins have not been loaded - cannot execute test&quot;</span>)</div>
-<div class="line"><a name="l00646"></a><span class="lineno">  646</span>&#160;            exit(1)</div>
-<div class="line"><a name="l00647"></a><span class="lineno">  647</span>&#160;        <span class="keywordflow">if</span> self.<a class="code" href="classTestDef_1_1TestDef.html#a85a2e1fffeda060f750494dd4082594d">config</a> <span class="keywordflow">is</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00648"></a><span class="lineno">  648</span>&#160;            print(<span class="stringliteral">&quot;No test definition file was parsed - cannot execute test&quot;</span>)</div>
-<div class="line"><a name="l00649"></a><span class="lineno">  649</span>&#160;            exit(1)</div>
-<div class="line"><a name="l00650"></a><span class="lineno">  650</span>&#160;        <span class="keywordflow">if</span> <span class="keywordflow">not</span> self.tools.getPluginByName(executor, <span class="stringliteral">&quot;Executor&quot;</span>):</div>
-<div class="line"><a name="l00651"></a><span class="lineno">  651</span>&#160;            print(<span class="stringliteral">&quot;Specified executor %s not found&quot;</span> % executor)</div>
-<div class="line"><a name="l00652"></a><span class="lineno">  652</span>&#160;            exit(1)</div>
-<div class="line"><a name="l00653"></a><span class="lineno">  653</span>&#160;        <span class="comment"># activate the specified plugin</span></div>
-<div class="line"><a name="l00654"></a><span class="lineno">  654</span>&#160;        self.tools.activatePluginByName(executor, <span class="stringliteral">&quot;Executor&quot;</span>)</div>
-<div class="line"><a name="l00655"></a><span class="lineno">  655</span>&#160;        <span class="comment"># execute the provided test description</span></div>
-<div class="line"><a name="l00656"></a><span class="lineno">  656</span>&#160;        executor = self.tools.getPluginByName(executor, <span class="stringliteral">&quot;Executor&quot;</span>)</div>
-<div class="line"><a name="l00657"></a><span class="lineno">  657</span>&#160;        status = executor.plugin_object.execute(self)</div>
-<div class="line"><a name="l00658"></a><span class="lineno">  658</span>&#160;        <span class="keywordflow">if</span> status == 0 <span class="keywordflow">and</span> self.<a class="code" href="classTestDef_1_1TestDef.html#a7c7d587995154a9f31607dc4726d3a2a">options</a>[<span class="stringliteral">&#39;clean_after&#39;</span>] <span class="keywordflow">and</span> os.path.isdir(self.<a class="code" href="classTestDef_1_1TestDef.html#a7c7d587995154a9f31607dc4726d3a2a">options</a>[<span class="stringliteral">&#39;scratchdir&#39;</span>]):</div>
-<div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160;            self.logger.verbose_print(<span class="stringliteral">&quot;Cleaning up scratchdir after successful run&quot;</span>)</div>
-<div class="line"><a name="l00660"></a><span class="lineno">  660</span>&#160;            shutil.rmtree(self.<a class="code" href="classTestDef_1_1TestDef.html#a7c7d587995154a9f31607dc4726d3a2a">options</a>[<span class="stringliteral">&#39;scratchdir&#39;</span>])</div>
-<div class="line"><a name="l00661"></a><span class="lineno">  661</span>&#160;        <span class="comment"># Loop forever if specified</span></div>
-<div class="line"><a name="l00662"></a><span class="lineno">  662</span>&#160;        <span class="keywordflow">if</span> enable_loop <span class="keywordflow">and</span> self.<a class="code" href="classTestDef_1_1TestDef.html#a7c7d587995154a9f31607dc4726d3a2a">options</a>[<span class="stringliteral">&#39;loopforever&#39;</span>]:</div>
-<div class="line"><a name="l00663"></a><span class="lineno">  663</span>&#160;            <span class="keywordflow">while</span> <span class="keyword">True</span>:</div>
-<div class="line"><a name="l00664"></a><span class="lineno">  664</span>&#160;                self.logger.reset()</div>
-<div class="line"><a name="l00665"></a><span class="lineno">  665</span>&#160;                self.<a class="code" href="classTestDef_1_1TestDef.html#a3eeef61386a154552981676b1893e59e">executeTest</a>(enable_loop=<span class="keyword">False</span>, executor=executor)</div>
-<div class="line"><a name="l00666"></a><span class="lineno">  666</span>&#160;        <span class="keywordflow">return</span> status</div>
-<div class="line"><a name="l00667"></a><span class="lineno">  667</span>&#160;</div>
-<div class="line"><a name="l00668"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a052b17251fd618f9a98197bcf9805511">  668</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classTestDef_1_1TestDef.html#a052b17251fd618f9a98197bcf9805511">executeCombinatorial</a>(self, enable_loop=True):</div>
-<div class="line"><a name="l00669"></a><span class="lineno">  669</span>&#160;        <span class="keywordflow">return</span> self.<a class="code" href="classTestDef_1_1TestDef.html#a3eeef61386a154552981676b1893e59e">executeTest</a>(enable_loop=enable_loop, executor=<span class="stringliteral">&quot;combinatorial&quot;</span>)</div>
-<div class="line"><a name="l00670"></a><span class="lineno">  670</span>&#160;  </div>
-<div class="line"><a name="l00671"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a02bd5283e28743c874846f1c4c6bdf08">  671</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classTestDef_1_1TestDef.html#a02bd5283e28743c874846f1c4c6bdf08">printOptions</a>(self, options):</div>
-<div class="line"><a name="l00672"></a><span class="lineno">  672</span>&#160;        <span class="comment"># if the options are empty, report that</span></div>
-<div class="line"><a name="l00673"></a><span class="lineno">  673</span>&#160;        <span class="keywordflow">if</span> <span class="keywordflow">not</span> options:</div>
-<div class="line"><a name="l00674"></a><span class="lineno">  674</span>&#160;            lines = [<span class="stringliteral">&quot;None&quot;</span>]</div>
-<div class="line"><a name="l00675"></a><span class="lineno">  675</span>&#160;            <span class="keywordflow">return</span> lines</div>
-<div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160;        <span class="comment"># create the list of options</span></div>
-<div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;        opts = []</div>
-<div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;        vals = list(options.keys())</div>
-<div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;        <span class="keywordflow">for</span> val <span class="keywordflow">in</span> vals:</div>
-<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;            opts.append(val)</div>
-<div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160;            <span class="keywordflow">if</span> options[val][0] <span class="keywordflow">is</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00682"></a><span class="lineno">  682</span>&#160;                opts.append(<span class="stringliteral">&quot;None&quot;</span>)</div>
-<div class="line"><a name="l00683"></a><span class="lineno">  683</span>&#160;            <span class="keywordflow">elif</span> isinstance(options[val][0], bool):</div>
-<div class="line"><a name="l00684"></a><span class="lineno">  684</span>&#160;                <span class="keywordflow">if</span> options[val][0]:</div>
-<div class="line"><a name="l00685"></a><span class="lineno">  685</span>&#160;                    opts.append(<span class="stringliteral">&quot;True&quot;</span>)</div>
-<div class="line"><a name="l00686"></a><span class="lineno">  686</span>&#160;                <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00687"></a><span class="lineno">  687</span>&#160;                    opts.append(<span class="stringliteral">&quot;False&quot;</span>)</div>
-<div class="line"><a name="l00688"></a><span class="lineno">  688</span>&#160;            <span class="keywordflow">elif</span> isinstance(options[val][0], list):</div>
-<div class="line"><a name="l00689"></a><span class="lineno">  689</span>&#160;                opts.append(<span class="stringliteral">&quot; &quot;</span>.join(options[val][0]))</div>
-<div class="line"><a name="l00690"></a><span class="lineno">  690</span>&#160;            <span class="keywordflow">elif</span> isinstance(options[val][0], int):</div>
-<div class="line"><a name="l00691"></a><span class="lineno">  691</span>&#160;                opts.append(str(options[val][0]))</div>
-<div class="line"><a name="l00692"></a><span class="lineno">  692</span>&#160;            <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00693"></a><span class="lineno">  693</span>&#160;                opts.append(options[val][0])</div>
-<div class="line"><a name="l00694"></a><span class="lineno">  694</span>&#160;            opts.append(options[val][1])</div>
-<div class="line"><a name="l00695"></a><span class="lineno">  695</span>&#160;        <span class="comment"># print the options, their default value, and</span></div>
-<div class="line"><a name="l00696"></a><span class="lineno">  696</span>&#160;        <span class="comment"># the help description in 3 column format</span></div>
-<div class="line"><a name="l00697"></a><span class="lineno">  697</span>&#160;        max1 = 0</div>
-<div class="line"><a name="l00698"></a><span class="lineno">  698</span>&#160;        max2 = 0</div>
-<div class="line"><a name="l00699"></a><span class="lineno">  699</span>&#160;        <span class="keywordflow">for</span> i <span class="keywordflow">in</span> range(0,len(opts),3):</div>
-<div class="line"><a name="l00700"></a><span class="lineno">  700</span>&#160;            <span class="comment"># we want all the columns to line up</span></div>
-<div class="line"><a name="l00701"></a><span class="lineno">  701</span>&#160;            <span class="comment"># and left-justify, so first find out</span></div>
-<div class="line"><a name="l00702"></a><span class="lineno">  702</span>&#160;            <span class="comment"># the max len of each of the first two</span></div>
-<div class="line"><a name="l00703"></a><span class="lineno">  703</span>&#160;            <span class="comment"># column entries</span></div>
-<div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160;            <span class="keywordflow">if</span> len(opts[i]) &gt; max1:</div>
-<div class="line"><a name="l00705"></a><span class="lineno">  705</span>&#160;                max1 = len(opts[i])</div>
-<div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160;            <span class="keywordflow">if</span> type(opts[i+1]) <span class="keywordflow">is</span> <span class="keywordflow">not</span> str:</div>
-<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;                optout = str(opts[i+1])</div>
-<div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;            <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160;                optout = opts[i+1]</div>
-<div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;            <span class="keywordflow">if</span> len(optout) &gt; max2:</div>
-<div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;                max2 = len(optout)</div>
-<div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160;        <span class="comment"># provide some spacing</span></div>
-<div class="line"><a name="l00713"></a><span class="lineno">  713</span>&#160;        max1 = max1 + 4</div>
-<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;        max2 = max2 + 4</div>
-<div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;        <span class="comment"># cycle thru again, padding each entry to</span></div>
-<div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160;        <span class="comment"># align the columns</span></div>
-<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;        lines = []</div>
-<div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160;        sp = <span class="stringliteral">&quot; &quot;</span></div>
-<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;        <span class="keywordflow">for</span> i <span class="keywordflow">in</span> range(0,len(opts),3):</div>
-<div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;            line = opts[i] + (max1-len(opts[i]))*sp</div>
-<div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160;            <span class="keywordflow">if</span> type(opts[i+1]) <span class="keywordflow">is</span> <span class="keywordflow">not</span> str:</div>
-<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;                optout = str(opts[i+1])</div>
-<div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160;            <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;                optout = opts[i+1]</div>
-<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;            line = line + optout + (max2-len(optout))*sp</div>
-<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;            <span class="comment"># to make this more readable, we will wrap the line at</span></div>
-<div class="line"><a name="l00727"></a><span class="lineno">  727</span>&#160;            <span class="comment"># 130 characters. First, see if the line is going to be</span></div>
-<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;            <span class="comment"># too long</span></div>
-<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;            <span class="keywordflow">if</span> 130 &lt; (len(line) + len(opts[i+2])):</div>
-<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;                <span class="comment"># split the remaining column into individual words</span></div>
-<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;                words = opts[i+2].split()</div>
-<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;                first = <span class="keyword">True</span></div>
-<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;                <span class="keywordflow">for</span> word <span class="keywordflow">in</span> words:</div>
-<div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;                    <span class="keywordflow">if</span> (len(line) + len(word)) &lt; 130:</div>
-<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;                        <span class="keywordflow">if</span> first:</div>
-<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;                            line = line + word</div>
-<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;                            first = <span class="keyword">False</span></div>
-<div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160;                        <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160;                            line = line + <span class="stringliteral">&quot; &quot;</span> + word</div>
-<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;                    <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160;                        lines.append(line)</div>
-<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;                        line = (max1 + max2)*sp + word</div>
-<div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;                <span class="keywordflow">if</span> 0 &lt; len(line):</div>
-<div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160;                    lines.append(line)</div>
-<div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160;            <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;                <span class="comment"># the line is fine - so just add the last piece</span></div>
-<div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160;                line = line + opts[i+2]</div>
-<div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;                <span class="comment"># append the result</span></div>
-<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;                lines.append(line)</div>
-<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;        <span class="comment"># add one blank line</span></div>
-<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;        lines.append(<span class="stringliteral">&quot;&quot;</span>)</div>
-<div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;        <span class="keywordflow">return</span> lines</div>
-<div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160;</div>
-<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;</div>
-<div class="line"><a name="l00755"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a2b517830435062cfa6c859ddce85ea81">  755</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classTestDef_1_1TestDef.html#a2b517830435062cfa6c859ddce85ea81">selectPlugin</a>(self, name, category):</div>
-<div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160;        <span class="keywordflow">if</span> category == <span class="stringliteral">&quot;stage&quot;</span>:</div>
-<div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160;            <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160;                availStages = list(self.loader.stages.keys())</div>
-<div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;                <span class="keywordflow">for</span> stage <span class="keywordflow">in</span> availStages:</div>
-<div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160;                    <span class="keywordflow">for</span> pluginInfo <span class="keywordflow">in</span> self.stages.getPluginsOfCategory(stage):</div>
-<div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;                        <span class="keywordflow">if</span> name == pluginInfo.plugin_object.print_name():</div>
-<div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;                            <span class="keywordflow">return</span> pluginInfo.plugin_object</div>
-<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;                <span class="comment"># didn&#39;t find it</span></div>
+<div class="line"><a name="l00642"></a><span class="lineno">  642</span>&#160;        <span class="keywordflow">if</span> <span class="keywordflow">not</span> self.<a class="code" href="classTestDef_1_1TestDef.html#a21764cc1b70626946a708b7a0f003b38">loaded</a>:</div>
+<div class="line"><a name="l00643"></a><span class="lineno">  643</span>&#160;            print(<span class="stringliteral">&quot;Plugins have not been loaded - cannot execute test&quot;</span>)</div>
+<div class="line"><a name="l00644"></a><span class="lineno">  644</span>&#160;            exit(1)</div>
+<div class="line"><a name="l00645"></a><span class="lineno">  645</span>&#160;        <span class="keywordflow">if</span> self.<a class="code" href="classTestDef_1_1TestDef.html#a85a2e1fffeda060f750494dd4082594d">config</a> <span class="keywordflow">is</span> <span class="keywordtype">None</span>:</div>
+<div class="line"><a name="l00646"></a><span class="lineno">  646</span>&#160;            print(<span class="stringliteral">&quot;No test definition file was parsed - cannot execute test&quot;</span>)</div>
+<div class="line"><a name="l00647"></a><span class="lineno">  647</span>&#160;            exit(1)</div>
+<div class="line"><a name="l00648"></a><span class="lineno">  648</span>&#160;        <span class="keywordflow">if</span> <span class="keywordflow">not</span> self.tools.getPluginByName(executor, <span class="stringliteral">&quot;Executor&quot;</span>):</div>
+<div class="line"><a name="l00649"></a><span class="lineno">  649</span>&#160;            print(<span class="stringliteral">&quot;Specified executor %s not found&quot;</span> % executor)</div>
+<div class="line"><a name="l00650"></a><span class="lineno">  650</span>&#160;            exit(1)</div>
+<div class="line"><a name="l00651"></a><span class="lineno">  651</span>&#160;        <span class="comment"># activate the specified plugin</span></div>
+<div class="line"><a name="l00652"></a><span class="lineno">  652</span>&#160;        self.tools.activatePluginByName(executor, <span class="stringliteral">&quot;Executor&quot;</span>)</div>
+<div class="line"><a name="l00653"></a><span class="lineno">  653</span>&#160;        <span class="comment"># execute the provided test description</span></div>
+<div class="line"><a name="l00654"></a><span class="lineno">  654</span>&#160;        executor = self.tools.getPluginByName(executor, <span class="stringliteral">&quot;Executor&quot;</span>)</div>
+<div class="line"><a name="l00655"></a><span class="lineno">  655</span>&#160;        status = executor.plugin_object.execute(self)</div>
+<div class="line"><a name="l00656"></a><span class="lineno">  656</span>&#160;        <span class="keywordflow">if</span> status == 0 <span class="keywordflow">and</span> self.<a class="code" href="classTestDef_1_1TestDef.html#a7c7d587995154a9f31607dc4726d3a2a">options</a>[<span class="stringliteral">&#39;clean_after&#39;</span>] <span class="keywordflow">and</span> os.path.isdir(self.<a class="code" href="classTestDef_1_1TestDef.html#a7c7d587995154a9f31607dc4726d3a2a">options</a>[<span class="stringliteral">&#39;scratchdir&#39;</span>]):</div>
+<div class="line"><a name="l00657"></a><span class="lineno">  657</span>&#160;            self.logger.verbose_print(<span class="stringliteral">&quot;Cleaning up scratchdir after successful run&quot;</span>)</div>
+<div class="line"><a name="l00658"></a><span class="lineno">  658</span>&#160;            shutil.rmtree(self.<a class="code" href="classTestDef_1_1TestDef.html#a7c7d587995154a9f31607dc4726d3a2a">options</a>[<span class="stringliteral">&#39;scratchdir&#39;</span>])</div>
+<div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160;        <span class="comment"># Loop forever if specified</span></div>
+<div class="line"><a name="l00660"></a><span class="lineno">  660</span>&#160;        <span class="keywordflow">if</span> enable_loop <span class="keywordflow">and</span> self.<a class="code" href="classTestDef_1_1TestDef.html#a7c7d587995154a9f31607dc4726d3a2a">options</a>[<span class="stringliteral">&#39;loopforever&#39;</span>]:</div>
+<div class="line"><a name="l00661"></a><span class="lineno">  661</span>&#160;            <span class="keywordflow">while</span> <span class="keyword">True</span>:</div>
+<div class="line"><a name="l00662"></a><span class="lineno">  662</span>&#160;                self.logger.reset()</div>
+<div class="line"><a name="l00663"></a><span class="lineno">  663</span>&#160;                self.<a class="code" href="classTestDef_1_1TestDef.html#a3eeef61386a154552981676b1893e59e">executeTest</a>(enable_loop=<span class="keyword">False</span>, executor=executor)</div>
+<div class="line"><a name="l00664"></a><span class="lineno">  664</span>&#160;        <span class="keywordflow">return</span> status</div>
+<div class="line"><a name="l00665"></a><span class="lineno">  665</span>&#160;</div>
+<div class="line"><a name="l00666"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a052b17251fd618f9a98197bcf9805511">  666</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classTestDef_1_1TestDef.html#a052b17251fd618f9a98197bcf9805511">executeCombinatorial</a>(self, enable_loop=True):</div>
+<div class="line"><a name="l00667"></a><span class="lineno">  667</span>&#160;        <span class="keywordflow">return</span> self.<a class="code" href="classTestDef_1_1TestDef.html#a3eeef61386a154552981676b1893e59e">executeTest</a>(enable_loop=enable_loop, executor=<span class="stringliteral">&quot;combinatorial&quot;</span>)</div>
+<div class="line"><a name="l00668"></a><span class="lineno">  668</span>&#160;  </div>
+<div class="line"><a name="l00669"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a02bd5283e28743c874846f1c4c6bdf08">  669</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classTestDef_1_1TestDef.html#a02bd5283e28743c874846f1c4c6bdf08">printOptions</a>(self, options):</div>
+<div class="line"><a name="l00670"></a><span class="lineno">  670</span>&#160;        <span class="comment"># if the options are empty, report that</span></div>
+<div class="line"><a name="l00671"></a><span class="lineno">  671</span>&#160;        <span class="keywordflow">if</span> <span class="keywordflow">not</span> options:</div>
+<div class="line"><a name="l00672"></a><span class="lineno">  672</span>&#160;            lines = [<span class="stringliteral">&quot;None&quot;</span>]</div>
+<div class="line"><a name="l00673"></a><span class="lineno">  673</span>&#160;            <span class="keywordflow">return</span> lines</div>
+<div class="line"><a name="l00674"></a><span class="lineno">  674</span>&#160;        <span class="comment"># create the list of options</span></div>
+<div class="line"><a name="l00675"></a><span class="lineno">  675</span>&#160;        opts = []</div>
+<div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160;        vals = list(options.keys())</div>
+<div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;        <span class="keywordflow">for</span> val <span class="keywordflow">in</span> vals:</div>
+<div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;            opts.append(val)</div>
+<div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;            <span class="keywordflow">if</span> options[val][0] <span class="keywordflow">is</span> <span class="keywordtype">None</span>:</div>
+<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;                opts.append(<span class="stringliteral">&quot;None&quot;</span>)</div>
+<div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160;            <span class="keywordflow">elif</span> isinstance(options[val][0], bool):</div>
+<div class="line"><a name="l00682"></a><span class="lineno">  682</span>&#160;                <span class="keywordflow">if</span> options[val][0]:</div>
+<div class="line"><a name="l00683"></a><span class="lineno">  683</span>&#160;                    opts.append(<span class="stringliteral">&quot;True&quot;</span>)</div>
+<div class="line"><a name="l00684"></a><span class="lineno">  684</span>&#160;                <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00685"></a><span class="lineno">  685</span>&#160;                    opts.append(<span class="stringliteral">&quot;False&quot;</span>)</div>
+<div class="line"><a name="l00686"></a><span class="lineno">  686</span>&#160;            <span class="keywordflow">elif</span> isinstance(options[val][0], list):</div>
+<div class="line"><a name="l00687"></a><span class="lineno">  687</span>&#160;                opts.append(<span class="stringliteral">&quot; &quot;</span>.join(options[val][0]))</div>
+<div class="line"><a name="l00688"></a><span class="lineno">  688</span>&#160;            <span class="keywordflow">elif</span> isinstance(options[val][0], int):</div>
+<div class="line"><a name="l00689"></a><span class="lineno">  689</span>&#160;                opts.append(str(options[val][0]))</div>
+<div class="line"><a name="l00690"></a><span class="lineno">  690</span>&#160;            <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00691"></a><span class="lineno">  691</span>&#160;                opts.append(options[val][0])</div>
+<div class="line"><a name="l00692"></a><span class="lineno">  692</span>&#160;            opts.append(options[val][1])</div>
+<div class="line"><a name="l00693"></a><span class="lineno">  693</span>&#160;        <span class="comment"># print the options, their default value, and</span></div>
+<div class="line"><a name="l00694"></a><span class="lineno">  694</span>&#160;        <span class="comment"># the help description in 3 column format</span></div>
+<div class="line"><a name="l00695"></a><span class="lineno">  695</span>&#160;        max1 = 0</div>
+<div class="line"><a name="l00696"></a><span class="lineno">  696</span>&#160;        max2 = 0</div>
+<div class="line"><a name="l00697"></a><span class="lineno">  697</span>&#160;        <span class="keywordflow">for</span> i <span class="keywordflow">in</span> range(0,len(opts),3):</div>
+<div class="line"><a name="l00698"></a><span class="lineno">  698</span>&#160;            <span class="comment"># we want all the columns to line up</span></div>
+<div class="line"><a name="l00699"></a><span class="lineno">  699</span>&#160;            <span class="comment"># and left-justify, so first find out</span></div>
+<div class="line"><a name="l00700"></a><span class="lineno">  700</span>&#160;            <span class="comment"># the max len of each of the first two</span></div>
+<div class="line"><a name="l00701"></a><span class="lineno">  701</span>&#160;            <span class="comment"># column entries</span></div>
+<div class="line"><a name="l00702"></a><span class="lineno">  702</span>&#160;            <span class="keywordflow">if</span> len(opts[i]) &gt; max1:</div>
+<div class="line"><a name="l00703"></a><span class="lineno">  703</span>&#160;                max1 = len(opts[i])</div>
+<div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160;            <span class="keywordflow">if</span> type(opts[i+1]) <span class="keywordflow">is</span> <span class="keywordflow">not</span> str:</div>
+<div class="line"><a name="l00705"></a><span class="lineno">  705</span>&#160;                optout = str(opts[i+1])</div>
+<div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160;            <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;                optout = opts[i+1]</div>
+<div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;            <span class="keywordflow">if</span> len(optout) &gt; max2:</div>
+<div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160;                max2 = len(optout)</div>
+<div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;        <span class="comment"># provide some spacing</span></div>
+<div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;        max1 = max1 + 4</div>
+<div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160;        max2 = max2 + 4</div>
+<div class="line"><a name="l00713"></a><span class="lineno">  713</span>&#160;        <span class="comment"># cycle thru again, padding each entry to</span></div>
+<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;        <span class="comment"># align the columns</span></div>
+<div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;        lines = []</div>
+<div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160;        sp = <span class="stringliteral">&quot; &quot;</span></div>
+<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;        <span class="keywordflow">for</span> i <span class="keywordflow">in</span> range(0,len(opts),3):</div>
+<div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160;            line = opts[i] + (max1-len(opts[i]))*sp</div>
+<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;            <span class="keywordflow">if</span> type(opts[i+1]) <span class="keywordflow">is</span> <span class="keywordflow">not</span> str:</div>
+<div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;                optout = str(opts[i+1])</div>
+<div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160;            <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;                optout = opts[i+1]</div>
+<div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160;            line = line + optout + (max2-len(optout))*sp</div>
+<div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;            <span class="comment"># to make this more readable, we will wrap the line at</span></div>
+<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;            <span class="comment"># 130 characters. First, see if the line is going to be</span></div>
+<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;            <span class="comment"># too long</span></div>
+<div class="line"><a name="l00727"></a><span class="lineno">  727</span>&#160;            <span class="keywordflow">if</span> 130 &lt; (len(line) + len(opts[i+2])):</div>
+<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;                <span class="comment"># split the remaining column into individual words</span></div>
+<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;                words = opts[i+2].split()</div>
+<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;                first = <span class="keyword">True</span></div>
+<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;                <span class="keywordflow">for</span> word <span class="keywordflow">in</span> words:</div>
+<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;                    <span class="keywordflow">if</span> (len(line) + len(word)) &lt; 130:</div>
+<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;                        <span class="keywordflow">if</span> first:</div>
+<div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;                            line = line + word</div>
+<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;                            first = <span class="keyword">False</span></div>
+<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;                        <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;                            line = line + <span class="stringliteral">&quot; &quot;</span> + word</div>
+<div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160;                    <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160;                        lines.append(line)</div>
+<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;                        line = (max1 + max2)*sp + word</div>
+<div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160;                <span class="keywordflow">if</span> 0 &lt; len(line):</div>
+<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;                    lines.append(line)</div>
+<div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;            <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160;                <span class="comment"># the line is fine - so just add the last piece</span></div>
+<div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160;                line = line + opts[i+2]</div>
+<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;                <span class="comment"># append the result</span></div>
+<div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160;                lines.append(line)</div>
+<div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;        <span class="comment"># add one blank line</span></div>
+<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;        lines.append(<span class="stringliteral">&quot;&quot;</span>)</div>
+<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;        <span class="keywordflow">return</span> lines</div>
+<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;</div>
+<div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;</div>
+<div class="line"><a name="l00753"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a2b517830435062cfa6c859ddce85ea81">  753</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classTestDef_1_1TestDef.html#a2b517830435062cfa6c859ddce85ea81">selectPlugin</a>(self, name, category):</div>
+<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;        <span class="keywordflow">if</span> category == <span class="stringliteral">&quot;stage&quot;</span>:</div>
+<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;            <span class="keywordflow">try</span>:</div>
+<div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160;                availStages = list(self.loader.stages.keys())</div>
+<div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160;                <span class="keywordflow">for</span> stage <span class="keywordflow">in</span> availStages:</div>
+<div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160;                    <span class="keywordflow">for</span> pluginInfo <span class="keywordflow">in</span> self.stages.getPluginsOfCategory(stage):</div>
+<div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;                        <span class="keywordflow">if</span> name == pluginInfo.plugin_object.print_name():</div>
+<div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160;                            <span class="keywordflow">return</span> pluginInfo.plugin_object</div>
+<div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;                <span class="comment"># didn&#39;t find it</span></div>
+<div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
+<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;            <span class="keywordflow">except</span>:</div>
 <div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;            <span class="keywordflow">except</span>:</div>
-<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;        <span class="keywordflow">elif</span> category == <span class="stringliteral">&quot;tool&quot;</span>:</div>
-<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;            <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;                availTools = list(self.loader.tools.keys())</div>
-<div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160;                <span class="keywordflow">for</span> tool <span class="keywordflow">in</span> availTools:</div>
-<div class="line"><a name="l00771"></a><span class="lineno">  771</span>&#160;                    <span class="keywordflow">for</span> pluginInfo <span class="keywordflow">in</span> self.tools.getPluginsOfCategory(tool):</div>
-<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160;                        <span class="keywordflow">if</span> name == pluginInfo.plugin_object.print_name():</div>
-<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160;                            <span class="keywordflow">return</span> pluginInfo.plugin_object</div>
-<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160;                <span class="comment"># didn&#39;t find it</span></div>
+<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;        <span class="keywordflow">elif</span> category == <span class="stringliteral">&quot;tool&quot;</span>:</div>
+<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;            <span class="keywordflow">try</span>:</div>
+<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;                availTools = list(self.loader.tools.keys())</div>
+<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;                <span class="keywordflow">for</span> tool <span class="keywordflow">in</span> availTools:</div>
+<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;                    <span class="keywordflow">for</span> pluginInfo <span class="keywordflow">in</span> self.tools.getPluginsOfCategory(tool):</div>
+<div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160;                        <span class="keywordflow">if</span> name == pluginInfo.plugin_object.print_name():</div>
+<div class="line"><a name="l00771"></a><span class="lineno">  771</span>&#160;                            <span class="keywordflow">return</span> pluginInfo.plugin_object</div>
+<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160;                <span class="comment"># didn&#39;t find it</span></div>
+<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
+<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160;            <span class="keywordflow">except</span>:</div>
 <div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160;            <span class="keywordflow">except</span>:</div>
-<div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;        <span class="keywordflow">elif</span> category == <span class="stringliteral">&quot;utility&quot;</span>:</div>
-<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160;            <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160;                availUtils = list(self.loader.utilities.keys())</div>
-<div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;                <span class="keywordflow">for</span> util <span class="keywordflow">in</span> availUtils:</div>
-<div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160;                    <span class="keywordflow">for</span> pluginInfo <span class="keywordflow">in</span> self.utilities.getPluginsOfCategory(util):</div>
-<div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160;                        <span class="keywordflow">if</span> name == pluginInfo.plugin_object.print_name():</div>
-<div class="line"><a name="l00784"></a><span class="lineno">  784</span>&#160;                            <span class="keywordflow">return</span> pluginInfo.plugin_object</div>
-<div class="line"><a name="l00785"></a><span class="lineno">  785</span>&#160;                <span class="comment"># didn&#39;t find it</span></div>
+<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160;        <span class="keywordflow">elif</span> category == <span class="stringliteral">&quot;utility&quot;</span>:</div>
+<div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160;            <span class="keywordflow">try</span>:</div>
+<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;                availUtils = list(self.loader.utilities.keys())</div>
+<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160;                <span class="keywordflow">for</span> util <span class="keywordflow">in</span> availUtils:</div>
+<div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160;                    <span class="keywordflow">for</span> pluginInfo <span class="keywordflow">in</span> self.utilities.getPluginsOfCategory(util):</div>
+<div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;                        <span class="keywordflow">if</span> name == pluginInfo.plugin_object.print_name():</div>
+<div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160;                            <span class="keywordflow">return</span> pluginInfo.plugin_object</div>
+<div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160;                <span class="comment"># didn&#39;t find it</span></div>
+<div class="line"><a name="l00784"></a><span class="lineno">  784</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
+<div class="line"><a name="l00785"></a><span class="lineno">  785</span>&#160;            <span class="keywordflow">except</span>:</div>
 <div class="line"><a name="l00786"></a><span class="lineno">  786</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00787"></a><span class="lineno">  787</span>&#160;            <span class="keywordflow">except</span>:</div>
-<div class="line"><a name="l00788"></a><span class="lineno">  788</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00789"></a><span class="lineno">  789</span>&#160;        <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00790"></a><span class="lineno">  790</span>&#160;            print(<span class="stringliteral">&quot;Unrecognized category:&quot;</span>,category)</div>
-<div class="line"><a name="l00791"></a><span class="lineno">  791</span>&#160;            <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
-<div class="ttc" id="classTestDef_1_1TestDef_html_a052b17251fd618f9a98197bcf9805511"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a052b17251fd618f9a98197bcf9805511">TestDef.TestDef.executeCombinatorial</a></div><div class="ttdeci">def executeCombinatorial</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00668">TestDef.py:668</a></div></div>
+<div class="line"><a name="l00787"></a><span class="lineno">  787</span>&#160;        <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00788"></a><span class="lineno">  788</span>&#160;            print(<span class="stringliteral">&quot;Unrecognized category:&quot;</span>,category)</div>
+<div class="line"><a name="l00789"></a><span class="lineno">  789</span>&#160;            <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
+<div class="ttc" id="classTestDef_1_1TestDef_html_a052b17251fd618f9a98197bcf9805511"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a052b17251fd618f9a98197bcf9805511">TestDef.TestDef.executeCombinatorial</a></div><div class="ttdeci">def executeCombinatorial</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00666">TestDef.py:666</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_ac4a745e8b2151d1eed56e04770562eb9"><div class="ttname"><a href="classTestDef_1_1TestDef.html#ac4a745e8b2151d1eed56e04770562eb9">TestDef.TestDef.plugin_trans_sem</a></div><div class="ttdeci">plugin_trans_sem</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00074">TestDef.py:74</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_aa3ffe5befea4becaad6a8c5f13446039"><div class="ttname"><a href="classTestDef_1_1TestDef.html#aa3ffe5befea4becaad6a8c5f13446039">TestDef.TestDef.execmd</a></div><div class="ttdeci">execmd</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00065">TestDef.py:65</a></div></div>
 <div class="ttc" id="namespacepymtt_html_a17f658b5d141d51664bb3ede8830c4c0"><div class="ttname"><a href="namespacepymtt.html#a17f658b5d141d51664bb3ede8830c4c0">pymtt.cls</a></div><div class="ttdeci">tuple cls</div><div class="ttdef"><b>Definition:</b> <a href="pymtt_8py_source.html#l00240">pymtt.py:240</a></div></div>
-<div class="ttc" id="classTestDef_1_1TestDef_html_a1eb766274fa9869e6b04e612e6d169b0"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a1eb766274fa9869e6b04e612e6d169b0">TestDef.TestDef.actives</a></div><div class="ttdeci">actives</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00555">TestDef.py:555</a></div></div>
+<div class="ttc" id="classTestDef_1_1TestDef_html_a1eb766274fa9869e6b04e612e6d169b0"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a1eb766274fa9869e6b04e612e6d169b0">TestDef.TestDef.actives</a></div><div class="ttdeci">actives</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00553">TestDef.py:553</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_a30e459036991de30822f267f1d882d44"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a30e459036991de30822f267f1d882d44">TestDef.TestDef.args</a></div><div class="ttdeci">args</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00056">TestDef.py:56</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_a7c7d587995154a9f31607dc4726d3a2a"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a7c7d587995154a9f31607dc4726d3a2a">TestDef.TestDef.options</a></div><div class="ttdeci">options</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00055">TestDef.py:55</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_a1dc633e4dd69542c5eb07e880d7ea401"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a1dc633e4dd69542c5eb07e880d7ea401">TestDef.TestDef.harasser</a></div><div class="ttdeci">harasser</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00066">TestDef.py:66</a></div></div>
@@ -892,10 +890,10 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="ttc" id="classTestDef_1_1TestDef_html_a2ed090ffdc5882b9855a22a6ec408185"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a2ed090ffdc5882b9855a22a6ec408185">TestDef.TestDef.__convert_value</a></div><div class="ttdeci">def __convert_value</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00086">TestDef.py:86</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_a9e15c13bd0cc9b1567c94f847118432e"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a9e15c13bd0cc9b1567c94f847118432e">TestDef.TestDef.stages</a></div><div class="ttdeci">stages</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00068">TestDef.py:68</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_a0b9ea6f06c02401ad62e06c4cfd80bd2"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a0b9ea6f06c02401ad62e06c4cfd80bd2">TestDef.TestDef.utilities</a></div><div class="ttdeci">utilities</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00070">TestDef.py:70</a></div></div>
-<div class="ttc" id="classTestDef_1_1TestDef_html_a02bd5283e28743c874846f1c4c6bdf08"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a02bd5283e28743c874846f1c4c6bdf08">TestDef.TestDef.printOptions</a></div><div class="ttdeci">def printOptions</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00671">TestDef.py:671</a></div></div>
+<div class="ttc" id="classTestDef_1_1TestDef_html_a02bd5283e28743c874846f1c4c6bdf08"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a02bd5283e28743c874846f1c4c6bdf08">TestDef.TestDef.printOptions</a></div><div class="ttdeci">def printOptions</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00669">TestDef.py:669</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_ae25d1dd3e674e2b0c2b1970e653ecfec"><div class="ttname"><a href="classTestDef_1_1TestDef.html#ae25d1dd3e674e2b0c2b1970e653ecfec">TestDef.TestDef.loadPlugins</a></div><div class="ttdeci">def loadPlugins</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00230">TestDef.py:230</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_a96d72418702f22844fc2fd5d774c7291"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a96d72418702f22844fc2fd5d774c7291">TestDef.TestDef.defaults</a></div><div class="ttdeci">defaults</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00071">TestDef.py:71</a></div></div>
-<div class="ttc" id="classTestDef_1_1TestDef_html_a2b517830435062cfa6c859ddce85ea81"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a2b517830435062cfa6c859ddce85ea81">TestDef.TestDef.selectPlugin</a></div><div class="ttdeci">def selectPlugin</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00755">TestDef.py:755</a></div></div>
+<div class="ttc" id="classTestDef_1_1TestDef_html_a2b517830435062cfa6c859ddce85ea81"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a2b517830435062cfa6c859ddce85ea81">TestDef.TestDef.selectPlugin</a></div><div class="ttdeci">def selectPlugin</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00753">TestDef.py:753</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_a3685bd47cb3be226c09d6737107dba04"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a3685bd47cb3be226c09d6737107dba04">TestDef.TestDef.openLogger</a></div><div class="ttdeci">def openLogger</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00504">TestDef.py:504</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_a65ffa863be5ebac4c4e6789e60377311"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a65ffa863be5ebac4c4e6789e60377311">TestDef.TestDef.setOptions</a></div><div class="ttdeci">def setOptions</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00076">TestDef.py:76</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_a21764cc1b70626946a708b7a0f003b38"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a21764cc1b70626946a708b7a0f003b38">TestDef.TestDef.loaded</a></div><div class="ttdeci">loaded</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00060">TestDef.py:60</a></div></div>
@@ -904,16 +902,16 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="ttc" id="classTestDef_1_1TestDef_html_a1eef52449af7cd41049963ccbd8699c8"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a1eef52449af7cd41049963ccbd8699c8">TestDef.TestDef.fill_log_interpolation</a></div><div class="ttdeci">def fill_log_interpolation</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00515">TestDef.py:515</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_a40da46aa95507cffa798cb152fa69e27"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a40da46aa95507cffa798cb152fa69e27">TestDef.TestDef.watchdog</a></div><div class="ttdeci">watchdog</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00073">TestDef.py:73</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_a85a2e1fffeda060f750494dd4082594d"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a85a2e1fffeda060f750494dd4082594d">TestDef.TestDef.config</a></div><div class="ttdeci">config</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00067">TestDef.py:67</a></div></div>
-<div class="ttc" id="classTestDef_1_1TestDef_html_a480ed48dbd7cf34cb2cbd8219999aaad"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a480ed48dbd7cf34cb2cbd8219999aaad">TestDef.TestDef.configNewTest</a></div><div class="ttdeci">def configNewTest</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00624">TestDef.py:624</a></div></div>
+<div class="ttc" id="classTestDef_1_1TestDef_html_a480ed48dbd7cf34cb2cbd8219999aaad"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a480ed48dbd7cf34cb2cbd8219999aaad">TestDef.TestDef.configNewTest</a></div><div class="ttdeci">def configNewTest</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00622">TestDef.py:622</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_a35094bb7b74996ba7536ba5ec4df516b"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a35094bb7b74996ba7536ba5ec4df516b">TestDef.TestDef.parseOptions</a></div><div class="ttdeci">def parseOptions</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00154">TestDef.py:154</a></div></div>
-<div class="ttc" id="classTestDef_1_1TestDef_html_a3eeef61386a154552981676b1893e59e"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a3eeef61386a154552981676b1893e59e">TestDef.TestDef.executeTest</a></div><div class="ttdeci">def executeTest</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00642">TestDef.py:642</a></div></div>
+<div class="ttc" id="classTestDef_1_1TestDef_html_a3eeef61386a154552981676b1893e59e"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a3eeef61386a154552981676b1893e59e">TestDef.TestDef.executeTest</a></div><div class="ttdeci">def executeTest</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00640">TestDef.py:640</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_af6c1e9ceaf9d8e747bbb57af3bd33198"><div class="ttname"><a href="classTestDef_1_1TestDef.html#af6c1e9ceaf9d8e747bbb57af3bd33198">TestDef.TestDef.modcmd</a></div><div class="ttdeci">modcmd</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00064">TestDef.py:64</a></div></div>
 <div class="ttc" id="namespaceTestDef_html_a0f44619ec0fe932324e50d8cf706d647"><div class="ttname"><a href="namespaceTestDef.html#a0f44619ec0fe932324e50d8cf706d647">TestDef._mkdir_recursive</a></div><div class="ttdeci">def _mkdir_recursive</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00035">TestDef.py:35</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_a8726684b78fbeb50a85915c6ff70050a"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a8726684b78fbeb50a85915c6ff70050a">TestDef.TestDef.__init__</a></div><div class="ttdeci">def __init__</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00053">TestDef.py:53</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html"><div class="ttname"><a href="classTestDef_1_1TestDef.html">TestDef.TestDef</a></div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00052">TestDef.py:52</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_a07a19e8ffafc926b0732d466a837b13b"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a07a19e8ffafc926b0732d466a837b13b">TestDef.TestDef.loader</a></div><div class="ttdeci">loader</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00245">TestDef.py:245</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_a50bbc74a64733e7dbec613bbfe3a519d"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a50bbc74a64733e7dbec613bbfe3a519d">TestDef.TestDef.log</a></div><div class="ttdeci">log</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00072">TestDef.py:72</a></div></div>
-<div class="ttc" id="classTestDef_1_1TestDef_html_a2a10cd354fb5b287a8e6fa8a2d5e1915"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a2a10cd354fb5b287a8e6fa8a2d5e1915">TestDef.TestDef.configTest</a></div><div class="ttdeci">def configTest</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00532">TestDef.py:532</a></div></div>
+<div class="ttc" id="classTestDef_1_1TestDef_html_a2a10cd354fb5b287a8e6fa8a2d5e1915"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a2a10cd354fb5b287a8e6fa8a2d5e1915">TestDef.TestDef.configTest</a></div><div class="ttdeci">def configTest</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00530">TestDef.py:530</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
