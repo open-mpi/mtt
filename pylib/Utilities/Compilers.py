@@ -184,6 +184,8 @@ class Compilers(BaseMTTUtility):
 
         # cleanup the test
         os.remove("spastic.c")
+        if os.path.exists("spastic.o"):
+            os.remove("spastic.o")
 
         if 0 == status:
             return True
