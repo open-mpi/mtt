@@ -116,19 +116,19 @@ class ExecuteCmd(BaseMTTUtility):
                     if fd == p.stdout.fileno():
                         read = p.stdout.readline()
                         if read:
-                            read = read.rstrip()
-                            testDef.logger.verbose_print('stdout: ' + read.decode("utf-8", errors='replace'))
+                            read = read.decode('utf-8').rstrip()
+                            testDef.logger.verbose_print('stdout: ' + read)
                             if merge:
-                                stderr.append(read.decode("utf-8", errors='replace'))
+                                stderr.append(read)
                             else:
-                                stdout.append(read.decode("utf-8", errors='replace'))
+                                stdout.append(read)
                             stdout_done = False
                     elif fd == p.stderr.fileno():
                         read = p.stderr.readline()
                         if read:
-                            read = read.rstrip()
-                            testDef.logger.verbose_print('stderr: ' + read.decode("utf-8", errors='replace'))
-                            stderr.append(read.decode("utf-8", errors='replace'))
+                            read = read.decode('utf-8').rstrip()
+                            testDef.logger.verbose_print('stderr: ' + read)
+                            stderr.append(read)
                             stderr_done = False
 
                 if stdout_done and stderr_done:
