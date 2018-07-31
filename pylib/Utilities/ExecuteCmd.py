@@ -38,11 +38,9 @@ class ExecuteCmd(BaseMTTUtility):
 
     def execute(self, options, cmdargs, testDef):
         # if this is a dryrun, just declare success
-        try:
-            if testDef.options['dryrun']:
-                return (0, None, None)
-        except KeyError:
-            pass
+        if 'dryrun' in testDef.options and testDef.options['dryrun']:
+            return (0, None, None, 0)
+
         #  check the options for a directive to merge
         # stdout into stderr
         try:
