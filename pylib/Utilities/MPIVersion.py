@@ -97,12 +97,10 @@ class MPIVersion(BaseMTTUtility):
 #include <mpi.h>
 #include <stdio.h>
 int main(int argc, char **argv) {
-    MPI_Init(NULL, NULL);
     char version[3000];
     int resultlen;
     MPI_Get_library_version(version, &resultlen);
-    printf("%s", version);
-    MPI_Finalize();
+    printf("%s\\n", version);
     return 0;
 }""")
             fh.close()
