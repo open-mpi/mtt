@@ -90,6 +90,7 @@ class ExecuteCmd(BaseMTTUtility):
 
         # it is possible that the command doesn't exist or
         # isn't in our path, so protect us
+        p = None
         try:
             if time_exec:
                 starttime = datetime.datetime.now()
@@ -142,9 +143,11 @@ class ExecuteCmd(BaseMTTUtility):
             testDef.logger.verbose_print("ExecuteCmd done%s" % (": elapsed=%s"%elapsed_datetime if time_exec else ""), \
                                          timestamp=endtime if time_exec else None)
 
-        except OSError as e:
-            return (1, None, str(e), elapsed_secs)
+            p.wait()
 
-        p.wait()
+        except OSError as e:
+            if p:
+                p.wait()
+            return (1, None, str(e), elapsed_secs)
 
         return (p.returncode, stdout[stdoutlines:], stderr[stderrlines:], elapsed_secs)
