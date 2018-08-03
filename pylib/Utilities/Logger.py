@@ -104,13 +104,13 @@ class Logger(BaseMTTUtility):
         self.stage_start[stagename] = datetime.datetime.now()
         if self.printout:
             print(("%sStart executing [%s] plugin=%s" % ("%s "%self.stage_start[stagename] if self.sectimestamp else "",
-                                                            stagename, pluginname)).encode("utf-8"), file=self.fh)
+                                                            stagename, pluginname)), file=self.fh)
 
     def stage_end_print(self, stagename, pluginname, log):
         stage_end = datetime.datetime.now()
         if self.printout:
             print(("%sDone executing [%s] plugin=%s elapsed=%s" % ("%s "%stage_end if self.sectimestamp else "",
-                                                           stagename, pluginname, stage_end-self.stage_start[stagename])).encode("utf-8"), file=self.fh)
+                                                           stagename, pluginname, stage_end-self.stage_start[stagename])), file=self.fh)
         log['time'] = (stage_end-self.stage_start[stagename]).total_seconds()
         log['time_start'] = self.stage_start[stagename]
         log['time_end'] = stage_end
@@ -118,7 +118,7 @@ class Logger(BaseMTTUtility):
     def verbose_print(self, string, timestamp=None):
         if self.printout:
             print(("%s%s" % ("%s "%(datetime.datetime.now() if timestamp is None else timestamp) \
-                            if (self.timestampeverything or timestamp) else "", string)).encode("utf-8"), file=self.fh)
+                            if (self.timestampeverything or timestamp) else "", string)), file=self.fh)
         return
 
     def timestamp(self):

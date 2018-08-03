@@ -36,45 +36,45 @@ class ExecuteCmd(BaseMTTUtility):
             print(prefix + line)
         return
 
+    def _bool_option(self, options, name):
+        if options and name in options:
+            val = options[name]
+            if type(val) is bool:
+                return val
+            elif type(val) is str:
+                val = val.strip().lower()
+                return val in ['y', 'yes', 't', 'true', '1']
+            else:
+                return val > 0
+
+        return False
+
+    def _positive_int_option(self, options, name):
+        val = None
+        if options and name in options:
+            val = options[name]
+        if val is None or val < 0:
+            return 0
+        return int(val)
+
     def execute(self, options, cmdargs, testDef):
         # if this is a dryrun, just declare success
-        try:
-            if testDef.options['dryrun']:
-                return (0, None, None)
-        except KeyError:
-            pass
+        if 'dryrun' in testDef.options and testDef.options['dryrun']:
+            return (0, None, None, 0)
+
         #  check the options for a directive to merge
         # stdout into stderr
-        try:
-            if options['merge_stdout_stderr']:
-                merge = True
-            else:
-                merge = False
-        except:
-            merge = False
+        merge = self._bool_option(options, 'merge_stdout_stderr')
+
         # check for line limits
-        try:
-            if options['stdout_save_lines'] is None or options['stdout_save_lines'] < 0:
-                stdoutlines = 0
-            else:
-                stdoutlines = -1 * int(options['stdout_save_lines'])
-        except:
-            stdoutlines = 0
-        try:
-            if options['stderr_save_lines'] is None or options['stderr_save_lines'] < 0:
-                stderrlines = 0
-            else:
-                stderrlines = -1 * int(options['stderr_save_lines'])
-        except:
-            stderrlines = 0
+        stdoutlines = self._positive_int_option(options, 'stdout_save_lines')
+        stderrlines = self._positive_int_option(options, 'stderr_save_lines')
+
         # check for timing request
-        try:
-            if options['cmdtime'] or options['time']:
-                time_exec = True
-            else:
-                time_exec = False
-        except:
-            time_exec = False
+        t1 = self._bool_option(options, 'cmdtime')
+        t2 = self._bool_option(options, 'time')
+        time_exec = t1 or t2
+
         elapsed_secs = -1
         elapsed_datetime = None
 
@@ -92,6 +92,7 @@ class ExecuteCmd(BaseMTTUtility):
 
         # it is possible that the command doesn't exist or
         # isn't in our path, so protect us
+        p = None
         try:
             if time_exec:
                 starttime = datetime.datetime.now()
@@ -118,19 +119,19 @@ class ExecuteCmd(BaseMTTUtility):
                     if fd == p.stdout.fileno():
                         read = p.stdout.readline()
                         if read:
-                            read = read.rstrip()
-                            testDef.logger.verbose_print('stdout: ' + read.decode("utf-8", errors='replace'))
+                            read = read.decode('utf-8').rstrip()
+                            testDef.logger.verbose_print('stdout: ' + read)
                             if merge:
-                                stderr.append(read.decode("utf-8", errors='replace'))
+                                stderr.append(read)
                             else:
-                                stdout.append(read.decode("utf-8", errors='replace'))
+                                stdout.append(read)
                             stdout_done = False
                     elif fd == p.stderr.fileno():
                         read = p.stderr.readline()
                         if read:
-                            read = read.rstrip()
-                            testDef.logger.verbose_print('stderr: ' + read.decode("utf-8", errors='replace'))
-                            stderr.append(read.decode("utf-8", errors='replace'))
+                            read = read.decode('utf-8').rstrip()
+                            testDef.logger.verbose_print('stderr: ' + read)
+                            stderr.append(read)
                             stderr_done = False
 
                 if stdout_done and stderr_done:
@@ -144,9 +145,14 @@ class ExecuteCmd(BaseMTTUtility):
             testDef.logger.verbose_print("ExecuteCmd done%s" % (": elapsed=%s"%elapsed_datetime if time_exec else ""), \
                                          timestamp=endtime if time_exec else None)
 
+            p.wait()
+
         except OSError as e:
+            if p:
+                p.wait()
             return (1, None, str(e), elapsed_secs)
 
-        p.wait()
-
-        return (p.returncode, stdout[stdoutlines:], stderr[stderrlines:], elapsed_secs)
+        return (p.returncode,
+                stdout[-1 * stdoutlines:],
+                stderr[-1 * stderrlines:],
+                elapsed_secs)

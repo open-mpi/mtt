@@ -99,7 +99,7 @@ class JunitXML(ReporterMTTStage):
         # TODO:  Pull in the resource manager jobid.
         jobid = "job1"
         ts = TestSuite(jobid, testCases)
-        print(TestSuite.to_xml_string([ts]).encode('utf-8'), file=self.fh)
+        print(TestSuite.to_xml_string([ts]), file=self.fh)
 
         if cmds['filename'] is not None:
             self.fh.close()
