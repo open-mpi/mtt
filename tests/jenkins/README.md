@@ -10,7 +10,7 @@ This console is a Jenkins instance that runs through a Docker container. The Doc
 2. Pull official Jenkins Docker image
 ```
 $ docker pull jenkins
-``` 
+```
 
 ##### Building the image
 
@@ -44,9 +44,15 @@ Assumptions in these instructions:
 
 1. Type this into terminal:
 ```
-docker run -d -p 8070:8080 --name mttconsolerun mttconsole
+docker run -d -p 8070:8080 --name mttconsolerun -v mttconsole:/home/jenkins mttconsole
 ```
 2. Access the console at <host_ip>:8070 from your web browser
+
+##### To find the volume on the docker host
+```
+docker volume inspect mttconsole
+```
+The Mountpoint path is the location where the volume is mounted, anything in here will survive a contain stop and removal.  Use `docker volume rm mttconsole` to clear it.
 
 ##### Securing console
 
@@ -78,3 +84,21 @@ The console starts up with one user. This user has username "admin" and password
 7. Click "Save"
 8. The test can now be run on the main page of Jenkins by pressing the green-arrow-clock button by the test name
 9. For the test to run successfully, MTT must be installed on the slave node.
+
+##### Jenkins Logs
+To view the jenkins logs from the running container
+```
+docker logs mttconsole
+```
+
+To tail the jenkins logs
+```
+docker logs -f mttconsole
+```
+
+##### To tear it all down
+```
+docker stop mttconsole
+docker rm mttconsole
+docker volume rm mttconsole
+```
