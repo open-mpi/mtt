@@ -56,6 +56,12 @@ class TextFile(ReporterMTTStage):
             print(prefix + line)
         return
 
+    def _print_stderr_block(self, name, lines, tabs=1):
+        if lines:
+            print("\t"*tabs,"ERROR ({name})".format(name=name), file=self.fh)
+            for l in lines:
+                print("\t"*(tabs),"   ",l, file=self.fh)
+
     def execute(self, log, keyvals, testDef):
         testDef.logger.verbose_print("TextFile Reporter")
         # pickup the options
@@ -88,13 +94,10 @@ class TextFile(ReporterMTTStage):
                 except KeyError:
                     pass
                 if 0 != lg['status']:
-                    try:
-                        print("\tERROR:",lg['stderr'], file=self.fh)
-                    except KeyError:
-                        try:
-                            print("\tERROR:",lg['stdout'], file=self.fh)
-                        except KeyError:
-                            pass
+                    if "stderr" in lg:
+                        self._print_stderr_block("stderr", lg['stderr'], tabs=1)
+                    if "stdout" in lg:
+                        self._print_stderr_block("stdout", lg['stdout'], tabs=1)
             except KeyError:
                 pass
             try:
@@ -135,7 +138,10 @@ class TextFile(ReporterMTTStage):
                         tname = os.path.basename(test['test'])
                         print("\t\t",tname,"  Status:",test['status'], file=self.fh)
                         if 0 != test['status']:
-                            print("\t\t\t","Stderr:",test['stderr'], file=self.fh)
+                            if "stderr" in test:
+                                self._print_error_block("stderr", test['stderr'], tabs=3)
+                            if "stdout" in test:
+                                self._print_error_block("stdout", test['stdout'], tabs=3)
             except KeyError:
                 pass
             print(file=self.fh)

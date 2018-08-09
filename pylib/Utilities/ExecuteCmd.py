@@ -61,7 +61,7 @@ class ExecuteCmd(BaseMTTUtility):
     def execute(self, options, cmdargs, testDef):
         # if this is a dryrun, just declare success
         if 'dryrun' in testDef.options and testDef.options['dryrun']:
-            return (0, None, None, 0)
+            return (0, [], [], 0)
 
         #  check the options for a directive to merge
         # stdout into stderr
@@ -89,7 +89,7 @@ class ExecuteCmd(BaseMTTUtility):
 
         if not mycmdargs:
             testDef.logger.verbose_print("ExecuteCmd error: no cmdargs")
-            return (1, None, "MTT ExecuteCmd error: no cmdargs", 0)
+            return (1, [], ["MTT ExecuteCmd error: no cmdargs"], 0)
 
         # it is possible that the command doesn't exist or
         # isn't in our path, so protect us
@@ -151,7 +151,7 @@ class ExecuteCmd(BaseMTTUtility):
         except OSError as e:
             if p:
                 p.wait()
-            return (1, None, str(e), elapsed_secs)
+            return (1, [], [str(e)], elapsed_secs)
 
         return (p.returncode,
                 stdout[-1 * stdoutlines:],
