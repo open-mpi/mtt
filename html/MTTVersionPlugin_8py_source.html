@@ -37,9 +37,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="namespaces.html"><span>Packages</span></a></li>
-      <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
       <li>
         <div id="MSearchBox" class="MSearchBoxInactive">
@@ -62,7 +60,6 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow2" class="tabs2">
     <ul class="tablist">
       <li><a href="files.html"><span>File&#160;List</span></a></li>
-      <li><a href="globals.html"><span>File&#160;Members</span></a></li>
     </ul>
   </div>
 <!-- window showing the filter options -->
@@ -70,7 +67,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&#160;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&#160;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&#160;</span>Variables</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(6)"><span class="SelectionMark">&#160;</span>Groups</a></div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Files</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -89,81 +86,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="title">MTTVersionPlugin.py</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="MTTVersionPlugin_8py.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno"><a class="line" href="namespaceMTTVersionPlugin.html">    1</a></span>&#160;<span class="comment"># -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment"># Copyright (c) 2015-2018 Intel, Inc. All rights reserved.</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment"># $COPYRIGHT$</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment"># Additional copyrights may follow</span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment"># $HEADER$</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">from</span> __future__ <span class="keyword">import</span> print_function</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">from</span> VersionMTTTool <span class="keyword">import</span> *</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="comment"># Major and minor version number of the MTT</span></div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;</div>
-<div class="line"><a name="l00017"></a><span class="lineno"><a class="line" href="namespaceMTTVersionPlugin.html#af9e75ea5f854bed820d4cb64fa455124">   17</a></span>&#160;MTTMajor = <span class="stringliteral">&quot;4&quot;</span>;</div>
-<div class="line"><a name="l00018"></a><span class="lineno"><a class="line" href="namespaceMTTVersionPlugin.html#ad80f82936d1bc7547278d4ce2ea3a275">   18</a></span>&#160;MTTMinor = <span class="stringliteral">&quot;0&quot;</span>;</div>
-<div class="line"><a name="l00019"></a><span class="lineno"><a class="line" href="namespaceMTTVersionPlugin.html#a9d8e0707641b9a16174563aacdc82407">   19</a></span>&#160;MTTRelease = <span class="stringliteral">&quot;0&quot;</span>;</div>
-<div class="line"><a name="l00020"></a><span class="lineno"><a class="line" href="namespaceMTTVersionPlugin.html#ac27a9d2aec2e835e6f4dc27c68382f38">   20</a></span>&#160;MTTGreek = <span class="stringliteral">&quot;a1&quot;</span>;</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="comment"># Major and minor version number of the Python MTT Client</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno"><a class="line" href="namespaceMTTVersionPlugin.html#a51adbd87756e59f2189831112aad767e">   23</a></span>&#160;MTTPyClientMajor = <span class="stringliteral">&quot;1&quot;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno"><a class="line" href="namespaceMTTVersionPlugin.html#aa431ead037b1e7329d119bc1e4017ced">   24</a></span>&#160;MTTPyClientMinor = <span class="stringliteral">&quot;0&quot;</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno"><a class="line" href="namespaceMTTVersionPlugin.html#ae6cedc84f8ae714487299ccdc4403a10">   25</a></span>&#160;MTTPyClientRelease = <span class="stringliteral">&quot;0&quot;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno"><a class="line" href="namespaceMTTVersionPlugin.html#a6df21a21318661784dcabdb81450ff48">   26</a></span>&#160;MTTPyClientGreek = <span class="stringliteral">&quot;a1&quot;</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="comment">## @addtogroup Tools</span></div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="comment"># @{</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="comment"># @addtogroup Version</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="comment"># @section MTTVersionPlugin</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="comment"># @}</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="classMTTVersionPlugin_1_1MTTVersionPlugin.html">   33</a></span>&#160;<span class="keyword">class </span><a class="code" href="classMTTVersionPlugin_1_1MTTVersionPlugin.html">MTTVersionPlugin</a>(<a class="code" href="classVersionMTTTool_1_1VersionMTTTool.html">VersionMTTTool</a>):</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;</div>
-<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#ac0154c5878b4d9428f25bd81041a7001">   35</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#ac0154c5878b4d9428f25bd81041a7001">__init__</a>(self):</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        <span class="comment"># initialise parent class</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        VersionMTTTool.__init__(self)</div>
-<div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#a95c4231c332e3aa0af05703aa9858c8c">   38</a></span>&#160;        self.<a class="code" href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#a95c4231c332e3aa0af05703aa9858c8c">options</a> = {}</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;</div>
-<div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#a226b355e9ac12c9ff72acdb0caed743f">   41</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#a226b355e9ac12c9ff72acdb0caed743f">activate</a>(self):</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="comment"># get the automatic procedure from IPlugin</span></div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        IPlugin.activate(self)</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;</div>
-<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#a8b2f6a214a6b2aa86edb153ef202cae2">   47</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#a8b2f6a214a6b2aa86edb153ef202cae2">deactivate</a>(self):</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        IPlugin.deactivate(self)</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;</div>
-<div class="line"><a name="l00051"></a><span class="lineno"><a class="line" href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#a99e7df2f04fea79f772d940de9bb734e">   51</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#a99e7df2f04fea79f772d940de9bb734e">print_name</a>(self):</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <span class="keywordflow">return</span> <span class="stringliteral">&quot;MTTVersion&quot;</span></div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;</div>
-<div class="line"><a name="l00054"></a><span class="lineno"><a class="line" href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#af46b74be44c27d532b1d542c8fafef8e">   54</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#af46b74be44c27d532b1d542c8fafef8e">print_options</a>(self, testDef, prefix):</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        lines = testDef.printOptions(self.<a class="code" href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#a95c4231c332e3aa0af05703aa9858c8c">options</a>)</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <span class="keywordflow">for</span> line <span class="keywordflow">in</span> lines:</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            print(prefix + line)</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;</div>
-<div class="line"><a name="l00060"></a><span class="lineno"><a class="line" href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#ad1be874bcc65f8cf6262403e414ce8e8">   60</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#ad1be874bcc65f8cf6262403e414ce8e8">getVersion</a>(self):</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        <span class="keywordflow">return</span> <span class="stringliteral">&#39;{}.{}.{}{}&#39;</span>.format(MTTMajor, MTTMinor, MTTRelease, MTTGreek)</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;</div>
-<div class="line"><a name="l00063"></a><span class="lineno"><a class="line" href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#a8352904d6605d8c47b3c98b92a304ec7">   63</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#a8352904d6605d8c47b3c98b92a304ec7">getClientVersion</a>(self):</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <span class="keywordflow">return</span> <span class="stringliteral">&#39;{}.{}.{}{}&#39;</span>.format(MTTPyClientMajor, MTTPyClientMinor, MTTPyClientRelease, MTTPyClientGreek)</div>
-<div class="ttc" id="classMTTVersionPlugin_1_1MTTVersionPlugin_html_ac0154c5878b4d9428f25bd81041a7001"><div class="ttname"><a href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#ac0154c5878b4d9428f25bd81041a7001">MTTVersionPlugin.MTTVersionPlugin.__init__</a></div><div class="ttdeci">def __init__</div><div class="ttdef"><b>Definition:</b> <a href="MTTVersionPlugin_8py_source.html#l00035">MTTVersionPlugin.py:35</a></div></div>
-<div class="ttc" id="classMTTVersionPlugin_1_1MTTVersionPlugin_html_a99e7df2f04fea79f772d940de9bb734e"><div class="ttname"><a href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#a99e7df2f04fea79f772d940de9bb734e">MTTVersionPlugin.MTTVersionPlugin.print_name</a></div><div class="ttdeci">def print_name</div><div class="ttdef"><b>Definition:</b> <a href="MTTVersionPlugin_8py_source.html#l00051">MTTVersionPlugin.py:51</a></div></div>
-<div class="ttc" id="classMTTVersionPlugin_1_1MTTVersionPlugin_html_af46b74be44c27d532b1d542c8fafef8e"><div class="ttname"><a href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#af46b74be44c27d532b1d542c8fafef8e">MTTVersionPlugin.MTTVersionPlugin.print_options</a></div><div class="ttdeci">def print_options</div><div class="ttdef"><b>Definition:</b> <a href="MTTVersionPlugin_8py_source.html#l00054">MTTVersionPlugin.py:54</a></div></div>
-<div class="ttc" id="classMTTVersionPlugin_1_1MTTVersionPlugin_html_ad1be874bcc65f8cf6262403e414ce8e8"><div class="ttname"><a href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#ad1be874bcc65f8cf6262403e414ce8e8">MTTVersionPlugin.MTTVersionPlugin.getVersion</a></div><div class="ttdeci">def getVersion</div><div class="ttdef"><b>Definition:</b> <a href="MTTVersionPlugin_8py_source.html#l00060">MTTVersionPlugin.py:60</a></div></div>
-<div class="ttc" id="classMTTVersionPlugin_1_1MTTVersionPlugin_html_a226b355e9ac12c9ff72acdb0caed743f"><div class="ttname"><a href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#a226b355e9ac12c9ff72acdb0caed743f">MTTVersionPlugin.MTTVersionPlugin.activate</a></div><div class="ttdeci">def activate</div><div class="ttdef"><b>Definition:</b> <a href="MTTVersionPlugin_8py_source.html#l00041">MTTVersionPlugin.py:41</a></div></div>
-<div class="ttc" id="classMTTVersionPlugin_1_1MTTVersionPlugin_html_a8352904d6605d8c47b3c98b92a304ec7"><div class="ttname"><a href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#a8352904d6605d8c47b3c98b92a304ec7">MTTVersionPlugin.MTTVersionPlugin.getClientVersion</a></div><div class="ttdeci">def getClientVersion</div><div class="ttdef"><b>Definition:</b> <a href="MTTVersionPlugin_8py_source.html#l00063">MTTVersionPlugin.py:63</a></div></div>
-<div class="ttc" id="classVersionMTTTool_1_1VersionMTTTool_html"><div class="ttname"><a href="classVersionMTTTool_1_1VersionMTTTool.html">VersionMTTTool.VersionMTTTool</a></div><div class="ttdef"><b>Definition:</b> <a href="VersionMTTTool_8py_source.html#l00018">VersionMTTTool.py:18</a></div></div>
-<div class="ttc" id="classMTTVersionPlugin_1_1MTTVersionPlugin_html_a95c4231c332e3aa0af05703aa9858c8c"><div class="ttname"><a href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#a95c4231c332e3aa0af05703aa9858c8c">MTTVersionPlugin.MTTVersionPlugin.options</a></div><div class="ttdeci">options</div><div class="ttdef"><b>Definition:</b> <a href="MTTVersionPlugin_8py_source.html#l00038">MTTVersionPlugin.py:38</a></div></div>
-<div class="ttc" id="classMTTVersionPlugin_1_1MTTVersionPlugin_html"><div class="ttname"><a href="classMTTVersionPlugin_1_1MTTVersionPlugin.html">MTTVersionPlugin.MTTVersionPlugin</a></div><div class="ttdef"><b>Definition:</b> <a href="MTTVersionPlugin_8py_source.html#l00033">MTTVersionPlugin.py:33</a></div></div>
-<div class="ttc" id="classMTTVersionPlugin_1_1MTTVersionPlugin_html_a8b2f6a214a6b2aa86edb153ef202cae2"><div class="ttname"><a href="classMTTVersionPlugin_1_1MTTVersionPlugin.html#a8b2f6a214a6b2aa86edb153ef202cae2">MTTVersionPlugin.MTTVersionPlugin.deactivate</a></div><div class="ttdeci">def deactivate</div><div class="ttdef"><b>Definition:</b> <a href="MTTVersionPlugin_8py_source.html#l00047">MTTVersionPlugin.py:47</a></div></div>
-</div><!-- fragment --></div><!-- contents -->
+<a href="MTTVersionPlugin_8py.html">Go to the documentation of this file.</a><div class="fragment"></div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

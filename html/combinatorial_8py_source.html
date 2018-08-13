@@ -37,9 +37,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="namespaces.html"><span>Packages</span></a></li>
-      <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
       <li>
         <div id="MSearchBox" class="MSearchBoxInactive">
@@ -62,7 +60,6 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow2" class="tabs2">
     <ul class="tablist">
       <li><a href="files.html"><span>File&#160;List</span></a></li>
-      <li><a href="globals.html"><span>File&#160;Members</span></a></li>
     </ul>
   </div>
 <!-- window showing the filter options -->
@@ -70,7 +67,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&#160;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&#160;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&#160;</span>Variables</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(6)"><span class="SelectionMark">&#160;</span>Groups</a></div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Files</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -89,214 +86,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="title">combinatorial.py</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="combinatorial_8py.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno"><a class="line" href="namespacecombinatorial.html">    1</a></span>&#160;<span class="comment"># -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment"># Copyright (c) 2015-2018 Intel, Inc. All rights reserved.</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment"># $COPYRIGHT$</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment"># Additional copyrights may follow</span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment"># $HEADER$</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">from</span> __future__ <span class="keyword">import</span> print_function</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">from</span> future <span class="keyword">import</span> standard_library</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;standard_library.install_aliases()</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keyword">import</span> os</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">import</span> sys</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keyword">import</span> configparser</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="keyword">import</span> importlib</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="keyword">import</span> logging</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="keyword">import</span> imp</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="keyword">import</span> datetime</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="keyword">import</span> tempfile</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="keyword">import</span> shutil</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="keyword">from</span> yapsy.PluginManager <span class="keyword">import</span> PluginManager</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keyword">from</span> ExecutorMTTTool <span class="keyword">import</span> *</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="comment">## @addtogroup Tools</span></div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="comment"># @{</span></div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="comment"># @addtogroup Executor</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="comment"># @section CombinatorialEx</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="comment"># @}</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="classcombinatorial_1_1CombinatorialEx.html">   32</a></span>&#160;<span class="keyword">class </span><a class="code" href="classcombinatorial_1_1CombinatorialEx.html">CombinatorialEx</a>(<a class="code" href="classExecutorMTTTool_1_1ExecutorMTTTool.html">ExecutorMTTTool</a>):</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;</div>
-<div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="classcombinatorial_1_1CombinatorialEx.html#a9a4fbfcf64b1204c14509d348dd23b5d">   34</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a9a4fbfcf64b1204c14509d348dd23b5d">__init__</a>(self):</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        <span class="comment"># initialise parent class</span></div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        ExecutorMTTTool.__init__(self)</div>
-<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="classcombinatorial_1_1CombinatorialEx.html#a20eda525b3947495bb6084c560dcca27">   37</a></span>&#160;        self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a20eda525b3947495bb6084c560dcca27">options</a> = {}</div>
-<div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="classcombinatorial_1_1CombinatorialEx.html#ab5c27fece8991a34f47e85870637fc91">   38</a></span>&#160;        self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#ab5c27fece8991a34f47e85870637fc91">parser</a> = configparser.ConfigParser()</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        self.parser.optionxform = str</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <span class="comment"># Create temp directory to hold .ini files</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="classcombinatorial_1_1CombinatorialEx.html#a24b3bc621a8380e406bade192bc371d4">   41</a></span>&#160;        self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a24b3bc621a8380e406bade192bc371d4">tempDir</a> = tempfile.mkdtemp()</div>
-<div class="line"><a name="l00042"></a><span class="lineno"><a class="line" href="classcombinatorial_1_1CombinatorialEx.html#a68e6ac6cba4ab4161dd854323e549afd">   42</a></span>&#160;        self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a68e6ac6cba4ab4161dd854323e549afd">baseIniFile</a> = <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00043"></a><span class="lineno"><a class="line" href="classcombinatorial_1_1CombinatorialEx.html#a3de3f7da4c201525da8452258df0bc7b">   43</a></span>&#160;        self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a3de3f7da4c201525da8452258df0bc7b">runLog</a> = {}</div>
-<div class="line"><a name="l00044"></a><span class="lineno"><a class="line" href="classcombinatorial_1_1CombinatorialEx.html#a961a46d05fda7be52ea74a5f69df57e2">   44</a></span>&#160;        self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a961a46d05fda7be52ea74a5f69df57e2">iniLog</a> = {}</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;</div>
-<div class="line"><a name="l00046"></a><span class="lineno"><a class="line" href="classcombinatorial_1_1CombinatorialEx.html#a8d0b7c0da355183d8124871bee76b0bd">   46</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a8d0b7c0da355183d8124871bee76b0bd">activate</a>(self):</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <span class="comment"># use the automatic procedure from IPlugin</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        IPlugin.activate(self)</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;</div>
-<div class="line"><a name="l00051"></a><span class="lineno"><a class="line" href="classcombinatorial_1_1CombinatorialEx.html#ad53efcff93773cce7ed9cfc2fef38ab3">   51</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classcombinatorial_1_1CombinatorialEx.html#ad53efcff93773cce7ed9cfc2fef38ab3">deactivate</a>(self):</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        IPlugin.deactivate(self)</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;</div>
-<div class="line"><a name="l00055"></a><span class="lineno"><a class="line" href="classcombinatorial_1_1CombinatorialEx.html#a19f6321bf42ab92280c5e3b0a3af89d0">   55</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a19f6321bf42ab92280c5e3b0a3af89d0">print_name</a>(self):</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <span class="keywordflow">return</span> <span class="stringliteral">&quot;Combinatorial executor&quot;</span></div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;</div>
-<div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="classcombinatorial_1_1CombinatorialEx.html#ae802ad33a050ada42292e7c80fb3e486">   58</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classcombinatorial_1_1CombinatorialEx.html#ae802ad33a050ada42292e7c80fb3e486">print_options</a>(self, testDef, prefix):</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        lines = testDef.printOptions(self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a20eda525b3947495bb6084c560dcca27">options</a>)</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <span class="keywordflow">for</span> line <span class="keywordflow">in</span> lines:</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;            print(prefix + line)</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="comment"># Create .ini files for each combination to be run</span></div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="comment"># BaseIniFile created by TestDef ConfigTest()</span></div>
-<div class="line"><a name="l00067"></a><span class="lineno"><a class="line" href="classcombinatorial_1_1CombinatorialEx.html#ac0216f0d0041c35a91e01ac9dafd49da">   67</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classcombinatorial_1_1CombinatorialEx.html#ac0216f0d0041c35a91e01ac9dafd49da">createIniLog</a>(self, testDef):</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a68e6ac6cba4ab4161dd854323e549afd">baseIniFile</a> = testDef.config</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        tempSpecialSection = {}</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <span class="comment"># configParser object to write individual options to files</span></div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        writeOption = configparser.ConfigParser()</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        writeOption.optionxform = str</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        <span class="comment"># Sort base .ini sections and write to temp files </span></div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <span class="keywordflow">for</span> section <span class="keywordflow">in</span> self.baseIniFile.sections():</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;            <span class="keywordflow">if</span> section == <span class="stringliteral">&quot;ENV&quot;</span>:</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;                <span class="keywordflow">continue</span></div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            <span class="keywordflow">if</span> section.startswith(<span class="stringliteral">&quot;SKIP&quot;</span>) <span class="keywordflow">or</span> section.startswith(<span class="stringliteral">&quot;skip&quot;</span>):</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;                <span class="comment"># users often want to temporarily ignore a section</span></div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;                <span class="comment"># of their test definition file, but don&#39;t want to</span></div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;                <span class="comment"># remove it lest they forget what it did. So let</span></div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;                <span class="comment"># them just mark the section as &quot;skip&quot; to be ignored</span></div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;                <span class="keywordflow">continue</span></div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            self.parser.add_section(section)</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            <span class="keywordflow">for</span> option <span class="keywordflow">in</span> self.baseIniFile.options(section):</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;                self.parser.set(section, option, self.baseIniFile.get(section, option))</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;            <span class="comment"># TODO: FIX Getting temp file in tmp dir that is not being removed</span></div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;            fd, fileName = tempfile.mkstemp(suffix=<span class="stringliteral">&quot;.ini&quot;</span>, dir = self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a24b3bc621a8380e406bade192bc371d4">tempDir</a>)</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;            with open(fileName, <span class="stringliteral">&#39;w&#39;</span>) <span class="keyword">as</span> configfile:</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;                self.parser.write(configfile)</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            <span class="comment"># Clear out parser for next section</span></div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            self.parser.remove_section(section)</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            <span class="keywordflow">if</span> <span class="stringliteral">&quot;MiddlewareGet&quot;</span> <span class="keywordflow">in</span> section:</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;                self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a3de3f7da4c201525da8452258df0bc7b">runLog</a>[section] = fileName</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;            <span class="keywordflow">elif</span> <span class="stringliteral">&quot;TestRun&quot;</span> <span class="keywordflow">in</span> section:</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;                tempSpecialSection[section] = fileName</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;            <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;                self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a961a46d05fda7be52ea74a5f69df57e2">iniLog</a>[section] = fileName</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        <span class="comment"># Combine TestRun and MiddlewareGet files</span></div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        tempList = {}</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        <span class="keywordflow">for</span> section <span class="keywordflow">in</span> self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a3de3f7da4c201525da8452258df0bc7b">runLog</a>:</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;            self.parser.read(self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a3de3f7da4c201525da8452258df0bc7b">runLog</a>[section])</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;            <span class="keywordflow">for</span> id <span class="keywordflow">in</span> tempSpecialSection:</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;                self.parser.read(tempSpecialSection[id])</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;                fd, fileName = tempfile.mkstemp(suffix = <span class="stringliteral">&quot;.ini&quot;</span>, dir = self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a24b3bc621a8380e406bade192bc371d4">tempDir</a>)</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;                with open(fileName, <span class="stringliteral">&#39;w&#39;</span>) <span class="keyword">as</span> configfile:</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;                    self.parser.write(configfile)</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;                self.parser.remove_section(id)</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                tempList[fd] = fileName</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;            self.parser.remove_section(section)</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        self.runLog.clear()</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a3de3f7da4c201525da8452258df0bc7b">runLog</a> = tempList</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        <span class="comment"># Sort sections for comma separated values to be parsed</span></div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        optionsCSV = {}</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        <span class="keywordflow">for</span> section <span class="keywordflow">in</span> self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a961a46d05fda7be52ea74a5f69df57e2">iniLog</a>:</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;            writeOption.read(self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a961a46d05fda7be52ea74a5f69df57e2">iniLog</a>[section])</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            <span class="keywordflow">for</span> option <span class="keywordflow">in</span> writeOption.options(section):</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;                <span class="keywordflow">if</span> <span class="stringliteral">&#39;,&#39;</span> <span class="keywordflow">in</span> writeOption.get(section, option):</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;                    <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;                        <span class="keywordflow">if</span> optionsCSV[section] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;                            <span class="keywordflow">pass</span></div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;                    <span class="keywordflow">except</span> KeyError:</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;                        optionsCSV[section] = []</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;                    optionsCSV[section].append(option)</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;                <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;                    <span class="comment"># write option to base run files</span></div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;                    <span class="keywordflow">for</span> fd <span class="keywordflow">in</span> self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a3de3f7da4c201525da8452258df0bc7b">runLog</a>:</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;                        <span class="comment"># set up parser to write to each file</span></div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;                        self.parser.read(self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a3de3f7da4c201525da8452258df0bc7b">runLog</a>[fd])</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;                        <span class="keywordflow">if</span> <span class="keywordflow">not</span> self.parser.has_section(section):</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;                            self.parser.add_section(section)</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;                        self.parser.set(section, option, writeOption.get(section, option))</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;                        <span class="comment"># Want to overwrite file with new parser contents</span></div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;                        with open(self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a3de3f7da4c201525da8452258df0bc7b">runLog</a>[fd], <span class="stringliteral">&#39;w&#39;</span>) <span class="keyword">as</span> configfile:</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;                            self.parser.write(configfile)</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;                        <span class="comment"># clear parser for next file</span></div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;                        <span class="keywordflow">for</span> sect <span class="keywordflow">in</span> self.parser.sections():</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;                            self.parser.remove_section(sect)       </div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;            writeOption.remove_section(section)</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;        <span class="comment"># Process CSV options</span></div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;        <span class="keywordflow">for</span> section <span class="keywordflow">in</span> optionsCSV:</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;            self.parser.read(self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a961a46d05fda7be52ea74a5f69df57e2">iniLog</a>[section])</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;            <span class="keywordflow">for</span> option <span class="keywordflow">in</span> optionsCSV[section]:</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;                <span class="comment"># Get clean list of CSV&#39;s</span></div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;                rawList = self.parser.get(section, option)</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;                splitList = rawList.split(<span class="stringliteral">&#39;,&#39;</span>)</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;                optionList = []</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;                <span class="keywordflow">for</span> item <span class="keywordflow">in</span> splitList:</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;                    optionList.append(item.strip())</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;                newList = {}</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;                <span class="keywordflow">for</span> fd <span class="keywordflow">in</span> self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a3de3f7da4c201525da8452258df0bc7b">runLog</a>:</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;                    writeOption.read(self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a3de3f7da4c201525da8452258df0bc7b">runLog</a>[fd])</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;                    <span class="keywordflow">for</span> nextOpt <span class="keywordflow">in</span> optionList:</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;                        <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;                            <span class="keywordflow">if</span> writeOption.has_section(section):</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;                                <span class="keywordflow">pass</span></div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;                        <span class="keywordflow">except</span> KeyError:</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;                            writeOption.add_section(section)</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;                        writeOption.set(section, option, nextOpt)</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;                        fd, fileName = tempfile.mkstemp(suffix=<span class="stringliteral">&quot;.ini&quot;</span>, dir = self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a24b3bc621a8380e406bade192bc371d4">tempDir</a>)</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;                        with open(fileName, <span class="stringliteral">&#39;w&#39;</span>) <span class="keyword">as</span> configfile:</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;                            writeOption.write(configfile)</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;                        newList[fd] = fileName</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;                    <span class="keywordflow">for</span> sect <span class="keywordflow">in</span> writeOption.sections():</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;                        writeOption.remove_section(sect)</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;                <span class="comment"># Update runLog for next pass</span></div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;                self.runLog.clear()</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;                self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a3de3f7da4c201525da8452258df0bc7b">runLog</a> = newList</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;            self.parser.remove_section(section)</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;</div>
-<div class="line"><a name="l00170"></a><span class="lineno"><a class="line" href="classcombinatorial_1_1CombinatorialEx.html#a5a5fbd1692c100374ee458e4babc9832">  170</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a5a5fbd1692c100374ee458e4babc9832">execute</a>(self, testDef):</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;        testDef.logger.verbose_print(<span class="stringliteral">&quot;ExecuteCombinatorial&quot;</span>)</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;        status = 0</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;        self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#ac0216f0d0041c35a91e01ac9dafd49da">createIniLog</a>(testDef)</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;        <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;            <span class="keywordflow">if</span> <span class="keywordflow">not</span> self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a3de3f7da4c201525da8452258df0bc7b">runLog</a>:</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;                print(<span class="stringliteral">&quot;Error, empty run log, combinatorial executor failed&quot;</span>)</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;                sys.exit(1)</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;            <span class="keywordflow">for</span> nextFile <span class="keywordflow">in</span> self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a3de3f7da4c201525da8452258df0bc7b">runLog</a>:</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;                <span class="keywordflow">if</span> <span class="keywordflow">not</span> os.path.isfile(self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a3de3f7da4c201525da8452258df0bc7b">runLog</a>[nextFile]):</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;                    print(<span class="stringliteral">&quot;Test .ini file not found!: &quot;</span> + nextFile)</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;                    sys.exit(1)</div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;                testDef.configNewTest(self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a3de3f7da4c201525da8452258df0bc7b">runLog</a>[nextFile])</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;                sequential_status = testDef.executeTest()</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;                <span class="keywordflow">if</span> sequential_status != 0: </div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;                    status = 1</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;            <span class="comment"># clean up temporary files</span></div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;        <span class="keywordflow">finally</span>:</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;            shutil.rmtree(self.<a class="code" href="classcombinatorial_1_1CombinatorialEx.html#a24b3bc621a8380e406bade192bc371d4">tempDir</a>)</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;  </div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;        <span class="keywordflow">return</span> status</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;        </div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;            </div>
-<div class="ttc" id="classcombinatorial_1_1CombinatorialEx_html_a5a5fbd1692c100374ee458e4babc9832"><div class="ttname"><a href="classcombinatorial_1_1CombinatorialEx.html#a5a5fbd1692c100374ee458e4babc9832">combinatorial.CombinatorialEx.execute</a></div><div class="ttdeci">def execute</div><div class="ttdef"><b>Definition:</b> <a href="combinatorial_8py_source.html#l00170">combinatorial.py:170</a></div></div>
-<div class="ttc" id="classcombinatorial_1_1CombinatorialEx_html_a24b3bc621a8380e406bade192bc371d4"><div class="ttname"><a href="classcombinatorial_1_1CombinatorialEx.html#a24b3bc621a8380e406bade192bc371d4">combinatorial.CombinatorialEx.tempDir</a></div><div class="ttdeci">tempDir</div><div class="ttdef"><b>Definition:</b> <a href="combinatorial_8py_source.html#l00041">combinatorial.py:41</a></div></div>
-<div class="ttc" id="classcombinatorial_1_1CombinatorialEx_html_a68e6ac6cba4ab4161dd854323e549afd"><div class="ttname"><a href="classcombinatorial_1_1CombinatorialEx.html#a68e6ac6cba4ab4161dd854323e549afd">combinatorial.CombinatorialEx.baseIniFile</a></div><div class="ttdeci">baseIniFile</div><div class="ttdef"><b>Definition:</b> <a href="combinatorial_8py_source.html#l00042">combinatorial.py:42</a></div></div>
-<div class="ttc" id="classcombinatorial_1_1CombinatorialEx_html_ae802ad33a050ada42292e7c80fb3e486"><div class="ttname"><a href="classcombinatorial_1_1CombinatorialEx.html#ae802ad33a050ada42292e7c80fb3e486">combinatorial.CombinatorialEx.print_options</a></div><div class="ttdeci">def print_options</div><div class="ttdef"><b>Definition:</b> <a href="combinatorial_8py_source.html#l00058">combinatorial.py:58</a></div></div>
-<div class="ttc" id="classcombinatorial_1_1CombinatorialEx_html_ad53efcff93773cce7ed9cfc2fef38ab3"><div class="ttname"><a href="classcombinatorial_1_1CombinatorialEx.html#ad53efcff93773cce7ed9cfc2fef38ab3">combinatorial.CombinatorialEx.deactivate</a></div><div class="ttdeci">def deactivate</div><div class="ttdef"><b>Definition:</b> <a href="combinatorial_8py_source.html#l00051">combinatorial.py:51</a></div></div>
-<div class="ttc" id="classcombinatorial_1_1CombinatorialEx_html_a3de3f7da4c201525da8452258df0bc7b"><div class="ttname"><a href="classcombinatorial_1_1CombinatorialEx.html#a3de3f7da4c201525da8452258df0bc7b">combinatorial.CombinatorialEx.runLog</a></div><div class="ttdeci">runLog</div><div class="ttdef"><b>Definition:</b> <a href="combinatorial_8py_source.html#l00043">combinatorial.py:43</a></div></div>
-<div class="ttc" id="classcombinatorial_1_1CombinatorialEx_html_ab5c27fece8991a34f47e85870637fc91"><div class="ttname"><a href="classcombinatorial_1_1CombinatorialEx.html#ab5c27fece8991a34f47e85870637fc91">combinatorial.CombinatorialEx.parser</a></div><div class="ttdeci">parser</div><div class="ttdef"><b>Definition:</b> <a href="combinatorial_8py_source.html#l00038">combinatorial.py:38</a></div></div>
-<div class="ttc" id="classcombinatorial_1_1CombinatorialEx_html_a8d0b7c0da355183d8124871bee76b0bd"><div class="ttname"><a href="classcombinatorial_1_1CombinatorialEx.html#a8d0b7c0da355183d8124871bee76b0bd">combinatorial.CombinatorialEx.activate</a></div><div class="ttdeci">def activate</div><div class="ttdef"><b>Definition:</b> <a href="combinatorial_8py_source.html#l00046">combinatorial.py:46</a></div></div>
-<div class="ttc" id="classcombinatorial_1_1CombinatorialEx_html_a20eda525b3947495bb6084c560dcca27"><div class="ttname"><a href="classcombinatorial_1_1CombinatorialEx.html#a20eda525b3947495bb6084c560dcca27">combinatorial.CombinatorialEx.options</a></div><div class="ttdeci">options</div><div class="ttdef"><b>Definition:</b> <a href="combinatorial_8py_source.html#l00037">combinatorial.py:37</a></div></div>
-<div class="ttc" id="classcombinatorial_1_1CombinatorialEx_html_ac0216f0d0041c35a91e01ac9dafd49da"><div class="ttname"><a href="classcombinatorial_1_1CombinatorialEx.html#ac0216f0d0041c35a91e01ac9dafd49da">combinatorial.CombinatorialEx.createIniLog</a></div><div class="ttdeci">def createIniLog</div><div class="ttdef"><b>Definition:</b> <a href="combinatorial_8py_source.html#l00067">combinatorial.py:67</a></div></div>
-<div class="ttc" id="classcombinatorial_1_1CombinatorialEx_html_a961a46d05fda7be52ea74a5f69df57e2"><div class="ttname"><a href="classcombinatorial_1_1CombinatorialEx.html#a961a46d05fda7be52ea74a5f69df57e2">combinatorial.CombinatorialEx.iniLog</a></div><div class="ttdeci">iniLog</div><div class="ttdef"><b>Definition:</b> <a href="combinatorial_8py_source.html#l00044">combinatorial.py:44</a></div></div>
-<div class="ttc" id="classcombinatorial_1_1CombinatorialEx_html_a9a4fbfcf64b1204c14509d348dd23b5d"><div class="ttname"><a href="classcombinatorial_1_1CombinatorialEx.html#a9a4fbfcf64b1204c14509d348dd23b5d">combinatorial.CombinatorialEx.__init__</a></div><div class="ttdeci">def __init__</div><div class="ttdef"><b>Definition:</b> <a href="combinatorial_8py_source.html#l00034">combinatorial.py:34</a></div></div>
-<div class="ttc" id="classExecutorMTTTool_1_1ExecutorMTTTool_html"><div class="ttname"><a href="classExecutorMTTTool_1_1ExecutorMTTTool.html">ExecutorMTTTool.ExecutorMTTTool</a></div><div class="ttdef"><b>Definition:</b> <a href="ExecutorMTTTool_8py_source.html#l00019">ExecutorMTTTool.py:19</a></div></div>
-<div class="ttc" id="classcombinatorial_1_1CombinatorialEx_html"><div class="ttname"><a href="classcombinatorial_1_1CombinatorialEx.html">combinatorial.CombinatorialEx</a></div><div class="ttdef"><b>Definition:</b> <a href="combinatorial_8py_source.html#l00032">combinatorial.py:32</a></div></div>
-<div class="ttc" id="classcombinatorial_1_1CombinatorialEx_html_a19f6321bf42ab92280c5e3b0a3af89d0"><div class="ttname"><a href="classcombinatorial_1_1CombinatorialEx.html#a19f6321bf42ab92280c5e3b0a3af89d0">combinatorial.CombinatorialEx.print_name</a></div><div class="ttdeci">def print_name</div><div class="ttdef"><b>Definition:</b> <a href="combinatorial_8py_source.html#l00055">combinatorial.py:55</a></div></div>
-</div><!-- fragment --></div><!-- contents -->
+<a href="combinatorial_8py.html">Go to the documentation of this file.</a><div class="fragment"></div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

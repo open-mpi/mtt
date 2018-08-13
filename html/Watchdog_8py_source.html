@@ -37,9 +37,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="namespaces.html"><span>Packages</span></a></li>
-      <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
       <li>
         <div id="MSearchBox" class="MSearchBoxInactive">
@@ -62,7 +60,6 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow2" class="tabs2">
     <ul class="tablist">
       <li><a href="files.html"><span>File&#160;List</span></a></li>
-      <li><a href="globals.html"><span>File&#160;Members</span></a></li>
     </ul>
   </div>
 <!-- window showing the filter options -->
@@ -70,7 +67,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&#160;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&#160;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&#160;</span>Variables</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(6)"><span class="SelectionMark">&#160;</span>Groups</a></div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Files</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -89,145 +86,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="title">Watchdog.py</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="Watchdog_8py.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno"><a class="line" href="namespaceWatchdog.html">    1</a></span>&#160;<span class="keyword">from</span> __future__ <span class="keyword">import</span> print_function</div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="keyword">from</span> builtins <span class="keyword">import</span> str</div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment">#!/usr/bin/env python</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment"># Copyright (c) 2015-2018 Intel, Inc. All rights reserved.</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment"># Copyright (c) 2018      Los Alamos National Security, LLC. </span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment">#                         All rights reserved.</span></div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment"># $COPYRIGHT$</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="comment"># Additional copyrights may follow</span></div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="comment"># $HEADER$</span></div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">import</span> shutil</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keyword">import</span> os</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="keyword">from</span> threading <span class="keyword">import</span> Timer</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="keyword">from</span> BaseMTTUtility <span class="keyword">import</span> *</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="keyword">import</span> signal</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="keyword">import</span> datetime</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="comment">## @addtogroup Utilities</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="comment"># @{</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="comment"># @section Watchdog</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="comment"># @param  timeout  Time in seconds before generating exception</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="comment"># @}</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno"><a class="line" href="classWatchdog_1_1Watchdog.html">   27</a></span>&#160;<span class="keyword">class </span><a class="code" href="classWatchdog_1_1Watchdog.html">Watchdog</a>(<a class="code" href="classBaseMTTUtility_1_1BaseMTTUtility.html">BaseMTTUtility</a>):</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;</div>
-<div class="line"><a name="l00029"></a><span class="lineno"><a class="line" href="classWatchdog_1_1Watchdog.html#aa1f4dbdbd309300a402765a051ec0a53">   29</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classWatchdog_1_1Watchdog.html#aa1f4dbdbd309300a402765a051ec0a53">__init__</a>(self, timeout=360, testDef=None):</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        BaseMTTUtility.__init__(self)</div>
-<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="classWatchdog_1_1Watchdog.html#a5ceb06fde29b89623d7a230ae080abe6">   32</a></span>&#160;        self.<a class="code" href="classWatchdog_1_1Watchdog.html#a5ceb06fde29b89623d7a230ae080abe6">options</a> = {}</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        timeout = self.<a class="code" href="classWatchdog_1_1Watchdog.html#ad7d2edaf53bf4fa24061d88448fea058">convert_to_timeout</a>(timeout)</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        self.<a class="code" href="classWatchdog_1_1Watchdog.html#a5ceb06fde29b89623d7a230ae080abe6">options</a>[<span class="stringliteral">&#39;timeout&#39;</span>] = (timeout, <span class="stringliteral">&quot;Time in seconds before generating exception&quot;</span>)</div>
-<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="classWatchdog_1_1Watchdog.html#ae03efeba550ed8039ab79a8414b8be82">   35</a></span>&#160;        self.<a class="code" href="classWatchdog_1_1Watchdog.html#ae03efeba550ed8039ab79a8414b8be82">timer</a> = <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00036"></a><span class="lineno"><a class="line" href="classWatchdog_1_1Watchdog.html#a62dc7dad113fcda93fe4f8855ac037db">   36</a></span>&#160;        self.<a class="code" href="classWatchdog_1_1Watchdog.html#a62dc7dad113fcda93fe4f8855ac037db">timeout</a> = timeout</div>
-<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="classWatchdog_1_1Watchdog.html#abc547688f9ff2ab9350b028c6f122997">   37</a></span>&#160;        self.<a class="code" href="classWatchdog_1_1Watchdog.html#abc547688f9ff2ab9350b028c6f122997">testDef</a> = testDef</div>
-<div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="classWatchdog_1_1Watchdog.html#ab78c4b2339ad2efec784a3df0a5f37d6">   38</a></span>&#160;        self.<a class="code" href="classWatchdog_1_1Watchdog.html#ab78c4b2339ad2efec784a3df0a5f37d6">activated</a> = <span class="keyword">False</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;</div>
-<div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="classWatchdog_1_1Watchdog.html#a9b6386067421696fd9ff0f3aea52c9a4">   40</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classWatchdog_1_1Watchdog.html#a9b6386067421696fd9ff0f3aea52c9a4">print_name</a>(self):</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        <span class="keywordflow">return</span> <span class="stringliteral">&quot;Watchdog&quot;</span></div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;</div>
-<div class="line"><a name="l00043"></a><span class="lineno"><a class="line" href="classWatchdog_1_1Watchdog.html#a5368c099a18a43a367ca38191d7286f7">   43</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classWatchdog_1_1Watchdog.html#a5368c099a18a43a367ca38191d7286f7">print_options</a>(self, testDef, prefix):</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        lines = testDef.printOptions(self.<a class="code" href="classWatchdog_1_1Watchdog.html#a5ceb06fde29b89623d7a230ae080abe6">options</a>)</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <span class="keywordflow">for</span> line <span class="keywordflow">in</span> lines:</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;            print(prefix + line)</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="comment"># Start the watchdog timer</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="classWatchdog_1_1Watchdog.html#a0ddb7a85fbdad4cff3af0fe3628098f7">   50</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classWatchdog_1_1Watchdog.html#a0ddb7a85fbdad4cff3af0fe3628098f7">start</a>(self):</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <span class="keywordflow">if</span> <span class="keywordflow">not</span> self.<a class="code" href="classWatchdog_1_1Watchdog.html#ae03efeba550ed8039ab79a8414b8be82">timer</a> <span class="keywordflow">or</span> <span class="keywordflow">not</span> self.timer.is_alive():</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;            self.<a class="code" href="classWatchdog_1_1Watchdog.html#ae03efeba550ed8039ab79a8414b8be82">timer</a> = Timer(int(self.timeout.total_seconds()),</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;                               self.<a class="code" href="classWatchdog_1_1Watchdog.html#ac8a0d09157f34dc021ffc0753750cfc9">defaultHandler</a>)</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;            self.timer.start()</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="comment"># Stop the watchdog timer</span></div>
-<div class="line"><a name="l00057"></a><span class="lineno"><a class="line" href="classWatchdog_1_1Watchdog.html#af56d743f19894122322a238de2bb36c7">   57</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classWatchdog_1_1Watchdog.html#af56d743f19894122322a238de2bb36c7">stop</a>(self):</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        <span class="keywordflow">if</span> self.<a class="code" href="classWatchdog_1_1Watchdog.html#ae03efeba550ed8039ab79a8414b8be82">timer</a>:</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;            self.timer.cancel()</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;            self.<a class="code" href="classWatchdog_1_1Watchdog.html#ae03efeba550ed8039ab79a8414b8be82">timer</a> = <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="comment"># Reset the watchdog timer</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno"><a class="line" href="classWatchdog_1_1Watchdog.html#ae4c28ad104e774e68874a3129762ae8c">   63</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classWatchdog_1_1Watchdog.html#ae4c28ad104e774e68874a3129762ae8c">reset</a>(self):</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        self.<a class="code" href="classWatchdog_1_1Watchdog.html#af56d743f19894122322a238de2bb36c7">stop</a>()</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        self.<a class="code" href="classWatchdog_1_1Watchdog.html#a0ddb7a85fbdad4cff3af0fe3628098f7">start</a>()</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;</div>
-<div class="line"><a name="l00067"></a><span class="lineno"><a class="line" href="classWatchdog_1_1Watchdog.html#a3d832cad81328a1c259015e8c68c16d9">   67</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classWatchdog_1_1Watchdog.html#a3d832cad81328a1c259015e8c68c16d9">activate</a>(self):</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <span class="keywordflow">if</span> <span class="keywordflow">not</span> self.<a class="code" href="classWatchdog_1_1Watchdog.html#ab78c4b2339ad2efec784a3df0a5f37d6">activated</a>:</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            IPlugin.activate(self)</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;            self.<a class="code" href="classWatchdog_1_1Watchdog.html#ab78c4b2339ad2efec784a3df0a5f37d6">activated</a> = <span class="keyword">True</span></div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="comment"># Catch when deactivated to stop the timer thread</span></div>
-<div class="line"><a name="l00073"></a><span class="lineno"><a class="line" href="classWatchdog_1_1Watchdog.html#a2d1d443fe10d34903950dabb8d54ca67">   73</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classWatchdog_1_1Watchdog.html#a2d1d443fe10d34903950dabb8d54ca67">deactivate</a>(self):</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <span class="keywordflow">if</span> self.<a class="code" href="classWatchdog_1_1Watchdog.html#ab78c4b2339ad2efec784a3df0a5f37d6">activated</a>:</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;            IPlugin.deactivate(self)</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;            self.<a class="code" href="classWatchdog_1_1Watchdog.html#af56d743f19894122322a238de2bb36c7">stop</a>()</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            self.<a class="code" href="classWatchdog_1_1Watchdog.html#ab78c4b2339ad2efec784a3df0a5f37d6">activated</a> = <span class="keyword">False</span></div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="comment"># This function is called when timer runs out of time!</span></div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="comment"># Give a SIGINT to parent process to stop execution</span></div>
-<div class="line"><a name="l00081"></a><span class="lineno"><a class="line" href="classWatchdog_1_1Watchdog.html#ac8a0d09157f34dc021ffc0753750cfc9">   81</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classWatchdog_1_1Watchdog.html#ac8a0d09157f34dc021ffc0753750cfc9">defaultHandler</a>(self):</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        <span class="keywordflow">if</span> self.<a class="code" href="classWatchdog_1_1Watchdog.html#abc547688f9ff2ab9350b028c6f122997">testDef</a>: self.testDef.plugin_trans_sem.acquire()</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        os.kill(os.getpid(), signal.SIGINT)</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;</div>
-<div class="line"><a name="l00085"></a><span class="lineno"><a class="line" href="classWatchdog_1_1Watchdog.html#ad7d2edaf53bf4fa24061d88448fea058">   85</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classWatchdog_1_1Watchdog.html#ad7d2edaf53bf4fa24061d88448fea058">convert_to_timeout</a>(self, timeout):</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        <span class="keywordflow">if</span> isinstance(timeout, int):</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;            <span class="keywordflow">return</span> datetime.timedelta(0, timeout)</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <span class="keywordflow">if</span> isinstance(timeout, basestring):</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            timeparts = timeout.split(<span class="stringliteral">&quot;:&quot;</span>)</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            secs = 0</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            days = 0</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;                secs = int(timeparts[-1])</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;                secs += int(timeparts[-2])*60</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;                secs += int(timeparts[-3])*60*60</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;                days = int(timeparts[-4])</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;            <span class="keywordflow">except</span> IndexError:</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;                <span class="keywordflow">pass</span></div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;            <span class="keywordflow">return</span> datetime.timedelta(days, secs)</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    <span class="comment"># Start execution of the plugin from an INI file</span></div>
-<div class="line"><a name="l00103"></a><span class="lineno"><a class="line" href="classWatchdog_1_1Watchdog.html#a2d051635bc61c3f75ea7c2fbeed426b5">  103</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classWatchdog_1_1Watchdog.html#a2d051635bc61c3f75ea7c2fbeed426b5">execute</a>(self, log, keyvals, testDef):</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        testDef.logger.verbose_print(<span class="stringliteral">&quot;Watchdog Execute&quot;</span>)</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;        cmds = {}</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;        testDef.parseOptions(log, self.<a class="code" href="classWatchdog_1_1Watchdog.html#a5ceb06fde29b89623d7a230ae080abe6">options</a>, keyvals, cmds)</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;        self.<a class="code" href="classWatchdog_1_1Watchdog.html#abc547688f9ff2ab9350b028c6f122997">testDef</a> = testDef</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;            self.<a class="code" href="classWatchdog_1_1Watchdog.html#a62dc7dad113fcda93fe4f8855ac037db">timeout</a> = self.<a class="code" href="classWatchdog_1_1Watchdog.html#ad7d2edaf53bf4fa24061d88448fea058">convert_to_timeout</a>(cmds[<span class="stringliteral">&#39;timeout&#39;</span>])</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;            <span class="keywordflow">if</span> self.<a class="code" href="classWatchdog_1_1Watchdog.html#a62dc7dad113fcda93fe4f8855ac037db">timeout</a> <span class="keywordflow">is</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;                log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;Could not parse time input from ini file for Watchdog&quot;</span></div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;                <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        <span class="keywordflow">except</span> ValueError:</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;            log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;Could not parse time input from ini file for Watchdog&quot;</span></div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;            <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        self.<a class="code" href="classWatchdog_1_1Watchdog.html#a0ddb7a85fbdad4cff3af0fe3628098f7">start</a>()</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        log[<span class="stringliteral">&#39;status&#39;</span>] = 0</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="ttc" id="classWatchdog_1_1Watchdog_html_a3d832cad81328a1c259015e8c68c16d9"><div class="ttname"><a href="classWatchdog_1_1Watchdog.html#a3d832cad81328a1c259015e8c68c16d9">Watchdog.Watchdog.activate</a></div><div class="ttdeci">def activate</div><div class="ttdef"><b>Definition:</b> <a href="Watchdog_8py_source.html#l00067">Watchdog.py:67</a></div></div>
-<div class="ttc" id="classWatchdog_1_1Watchdog_html_ae03efeba550ed8039ab79a8414b8be82"><div class="ttname"><a href="classWatchdog_1_1Watchdog.html#ae03efeba550ed8039ab79a8414b8be82">Watchdog.Watchdog.timer</a></div><div class="ttdeci">timer</div><div class="ttdef"><b>Definition:</b> <a href="Watchdog_8py_source.html#l00035">Watchdog.py:35</a></div></div>
-<div class="ttc" id="classWatchdog_1_1Watchdog_html_a2d1d443fe10d34903950dabb8d54ca67"><div class="ttname"><a href="classWatchdog_1_1Watchdog.html#a2d1d443fe10d34903950dabb8d54ca67">Watchdog.Watchdog.deactivate</a></div><div class="ttdeci">def deactivate</div><div class="ttdef"><b>Definition:</b> <a href="Watchdog_8py_source.html#l00073">Watchdog.py:73</a></div></div>
-<div class="ttc" id="classWatchdog_1_1Watchdog_html_a5ceb06fde29b89623d7a230ae080abe6"><div class="ttname"><a href="classWatchdog_1_1Watchdog.html#a5ceb06fde29b89623d7a230ae080abe6">Watchdog.Watchdog.options</a></div><div class="ttdeci">options</div><div class="ttdef"><b>Definition:</b> <a href="Watchdog_8py_source.html#l00032">Watchdog.py:32</a></div></div>
-<div class="ttc" id="classWatchdog_1_1Watchdog_html_a62dc7dad113fcda93fe4f8855ac037db"><div class="ttname"><a href="classWatchdog_1_1Watchdog.html#a62dc7dad113fcda93fe4f8855ac037db">Watchdog.Watchdog.timeout</a></div><div class="ttdeci">timeout</div><div class="ttdef"><b>Definition:</b> <a href="Watchdog_8py_source.html#l00036">Watchdog.py:36</a></div></div>
-<div class="ttc" id="classWatchdog_1_1Watchdog_html_ae4c28ad104e774e68874a3129762ae8c"><div class="ttname"><a href="classWatchdog_1_1Watchdog.html#ae4c28ad104e774e68874a3129762ae8c">Watchdog.Watchdog.reset</a></div><div class="ttdeci">def reset</div><div class="ttdef"><b>Definition:</b> <a href="Watchdog_8py_source.html#l00063">Watchdog.py:63</a></div></div>
-<div class="ttc" id="classWatchdog_1_1Watchdog_html_a5368c099a18a43a367ca38191d7286f7"><div class="ttname"><a href="classWatchdog_1_1Watchdog.html#a5368c099a18a43a367ca38191d7286f7">Watchdog.Watchdog.print_options</a></div><div class="ttdeci">def print_options</div><div class="ttdef"><b>Definition:</b> <a href="Watchdog_8py_source.html#l00043">Watchdog.py:43</a></div></div>
-<div class="ttc" id="classWatchdog_1_1Watchdog_html"><div class="ttname"><a href="classWatchdog_1_1Watchdog.html">Watchdog.Watchdog</a></div><div class="ttdef"><b>Definition:</b> <a href="Watchdog_8py_source.html#l00027">Watchdog.py:27</a></div></div>
-<div class="ttc" id="classWatchdog_1_1Watchdog_html_ac8a0d09157f34dc021ffc0753750cfc9"><div class="ttname"><a href="classWatchdog_1_1Watchdog.html#ac8a0d09157f34dc021ffc0753750cfc9">Watchdog.Watchdog.defaultHandler</a></div><div class="ttdeci">def defaultHandler</div><div class="ttdef"><b>Definition:</b> <a href="Watchdog_8py_source.html#l00081">Watchdog.py:81</a></div></div>
-<div class="ttc" id="classWatchdog_1_1Watchdog_html_ad7d2edaf53bf4fa24061d88448fea058"><div class="ttname"><a href="classWatchdog_1_1Watchdog.html#ad7d2edaf53bf4fa24061d88448fea058">Watchdog.Watchdog.convert_to_timeout</a></div><div class="ttdeci">def convert_to_timeout</div><div class="ttdef"><b>Definition:</b> <a href="Watchdog_8py_source.html#l00085">Watchdog.py:85</a></div></div>
-<div class="ttc" id="classWatchdog_1_1Watchdog_html_a2d051635bc61c3f75ea7c2fbeed426b5"><div class="ttname"><a href="classWatchdog_1_1Watchdog.html#a2d051635bc61c3f75ea7c2fbeed426b5">Watchdog.Watchdog.execute</a></div><div class="ttdeci">def execute</div><div class="ttdef"><b>Definition:</b> <a href="Watchdog_8py_source.html#l00103">Watchdog.py:103</a></div></div>
-<div class="ttc" id="classBaseMTTUtility_1_1BaseMTTUtility_html"><div class="ttname"><a href="classBaseMTTUtility_1_1BaseMTTUtility.html">BaseMTTUtility.BaseMTTUtility</a></div><div class="ttdef"><b>Definition:</b> <a href="BaseMTTUtility_8py_source.html#l00014">BaseMTTUtility.py:14</a></div></div>
-<div class="ttc" id="classWatchdog_1_1Watchdog_html_a9b6386067421696fd9ff0f3aea52c9a4"><div class="ttname"><a href="classWatchdog_1_1Watchdog.html#a9b6386067421696fd9ff0f3aea52c9a4">Watchdog.Watchdog.print_name</a></div><div class="ttdeci">def print_name</div><div class="ttdef"><b>Definition:</b> <a href="Watchdog_8py_source.html#l00040">Watchdog.py:40</a></div></div>
-<div class="ttc" id="classWatchdog_1_1Watchdog_html_ab78c4b2339ad2efec784a3df0a5f37d6"><div class="ttname"><a href="classWatchdog_1_1Watchdog.html#ab78c4b2339ad2efec784a3df0a5f37d6">Watchdog.Watchdog.activated</a></div><div class="ttdeci">activated</div><div class="ttdef"><b>Definition:</b> <a href="Watchdog_8py_source.html#l00038">Watchdog.py:38</a></div></div>
-<div class="ttc" id="classWatchdog_1_1Watchdog_html_abc547688f9ff2ab9350b028c6f122997"><div class="ttname"><a href="classWatchdog_1_1Watchdog.html#abc547688f9ff2ab9350b028c6f122997">Watchdog.Watchdog.testDef</a></div><div class="ttdeci">testDef</div><div class="ttdef"><b>Definition:</b> <a href="Watchdog_8py_source.html#l00037">Watchdog.py:37</a></div></div>
-<div class="ttc" id="classWatchdog_1_1Watchdog_html_af56d743f19894122322a238de2bb36c7"><div class="ttname"><a href="classWatchdog_1_1Watchdog.html#af56d743f19894122322a238de2bb36c7">Watchdog.Watchdog.stop</a></div><div class="ttdeci">def stop</div><div class="ttdef"><b>Definition:</b> <a href="Watchdog_8py_source.html#l00057">Watchdog.py:57</a></div></div>
-<div class="ttc" id="classWatchdog_1_1Watchdog_html_a0ddb7a85fbdad4cff3af0fe3628098f7"><div class="ttname"><a href="classWatchdog_1_1Watchdog.html#a0ddb7a85fbdad4cff3af0fe3628098f7">Watchdog.Watchdog.start</a></div><div class="ttdeci">def start</div><div class="ttdef"><b>Definition:</b> <a href="Watchdog_8py_source.html#l00050">Watchdog.py:50</a></div></div>
-<div class="ttc" id="classWatchdog_1_1Watchdog_html_aa1f4dbdbd309300a402765a051ec0a53"><div class="ttname"><a href="classWatchdog_1_1Watchdog.html#aa1f4dbdbd309300a402765a051ec0a53">Watchdog.Watchdog.__init__</a></div><div class="ttdeci">def __init__</div><div class="ttdef"><b>Definition:</b> <a href="Watchdog_8py_source.html#l00029">Watchdog.py:29</a></div></div>
-</div><!-- fragment --></div><!-- contents -->
+<a href="Watchdog_8py.html">Go to the documentation of this file.</a><div class="fragment"></div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

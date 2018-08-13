@@ -37,9 +37,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="namespaces.html"><span>Packages</span></a></li>
-      <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
       <li>
         <div id="MSearchBox" class="MSearchBoxInactive">
@@ -62,7 +60,6 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow2" class="tabs2">
     <ul class="tablist">
       <li><a href="files.html"><span>File&#160;List</span></a></li>
-      <li><a href="globals.html"><span>File&#160;Members</span></a></li>
     </ul>
   </div>
 <!-- window showing the filter options -->
@@ -70,7 +67,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&#160;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&#160;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&#160;</span>Variables</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(6)"><span class="SelectionMark">&#160;</span>Groups</a></div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Files</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -89,38 +86,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="title">LauncherDefaultsMTTStage.py</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="LauncherDefaultsMTTStage_8py.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno"><a class="line" href="namespaceLauncherDefaultsMTTStage.html">    1</a></span>&#160;<span class="comment">#!/usr/bin/env python</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment"># Copyright (c) 2015-2018 Intel, Inc. All rights reserved.</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment"># $COPYRIGHT$</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment"># Additional copyrights may follow</span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment"># $HEADER$</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">from</span> __future__ <span class="keyword">import</span> print_function</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">from</span> yapsy.IPlugin <span class="keyword">import</span> IPlugin</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="comment">## @addtogroup Stages</span></div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="comment"># @{</span></div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="comment"># @addtogroup LauncherDefaults</span></div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment"># ordering 490</span></div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment"># @}</span></div>
-<div class="line"><a name="l00019"></a><span class="lineno"><a class="line" href="classLauncherDefaultsMTTStage_1_1LauncherDefaultsMTTStage.html">   19</a></span>&#160;<span class="keyword">class </span><a class="code" href="classLauncherDefaultsMTTStage_1_1LauncherDefaultsMTTStage.html">LauncherDefaultsMTTStage</a>(IPlugin):</div>
-<div class="line"><a name="l00020"></a><span class="lineno"><a class="line" href="classLauncherDefaultsMTTStage_1_1LauncherDefaultsMTTStage.html#a3210162653ca613c61633efb3ed4e573">   20</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classLauncherDefaultsMTTStage_1_1LauncherDefaultsMTTStage.html#a3210162653ca613c61633efb3ed4e573">__init__</a>(self):</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;        <span class="comment"># initialise parent class</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;        IPlugin.__init__(self)</div>
-<div class="line"><a name="l00023"></a><span class="lineno"><a class="line" href="classLauncherDefaultsMTTStage_1_1LauncherDefaultsMTTStage.html#a9358965c1e1bf813dd350a79eaf234de">   23</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classLauncherDefaultsMTTStage_1_1LauncherDefaultsMTTStage.html#a9358965c1e1bf813dd350a79eaf234de">print_name</a>(self):</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;        print(<span class="stringliteral">&quot;Allow a user to set default values for a specific launcher&quot;</span>)</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;</div>
-<div class="line"><a name="l00026"></a><span class="lineno"><a class="line" href="classLauncherDefaultsMTTStage_1_1LauncherDefaultsMTTStage.html#a11c3a5f1ae358d7af699440261ab163d">   26</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classLauncherDefaultsMTTStage_1_1LauncherDefaultsMTTStage.html#a11c3a5f1ae358d7af699440261ab163d">ordering</a>(self):</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;        <span class="keywordflow">return</span> 490</div>
-<div class="ttc" id="classLauncherDefaultsMTTStage_1_1LauncherDefaultsMTTStage_html_a3210162653ca613c61633efb3ed4e573"><div class="ttname"><a href="classLauncherDefaultsMTTStage_1_1LauncherDefaultsMTTStage.html#a3210162653ca613c61633efb3ed4e573">LauncherDefaultsMTTStage.LauncherDefaultsMTTStage.__init__</a></div><div class="ttdeci">def __init__</div><div class="ttdef"><b>Definition:</b> <a href="LauncherDefaultsMTTStage_8py_source.html#l00020">LauncherDefaultsMTTStage.py:20</a></div></div>
-<div class="ttc" id="classLauncherDefaultsMTTStage_1_1LauncherDefaultsMTTStage_html"><div class="ttname"><a href="classLauncherDefaultsMTTStage_1_1LauncherDefaultsMTTStage.html">LauncherDefaultsMTTStage.LauncherDefaultsMTTStage</a></div><div class="ttdef"><b>Definition:</b> <a href="LauncherDefaultsMTTStage_8py_source.html#l00019">LauncherDefaultsMTTStage.py:19</a></div></div>
-<div class="ttc" id="classLauncherDefaultsMTTStage_1_1LauncherDefaultsMTTStage_html_a11c3a5f1ae358d7af699440261ab163d"><div class="ttname"><a href="classLauncherDefaultsMTTStage_1_1LauncherDefaultsMTTStage.html#a11c3a5f1ae358d7af699440261ab163d">LauncherDefaultsMTTStage.LauncherDefaultsMTTStage.ordering</a></div><div class="ttdeci">def ordering</div><div class="ttdef"><b>Definition:</b> <a href="LauncherDefaultsMTTStage_8py_source.html#l00026">LauncherDefaultsMTTStage.py:26</a></div></div>
-<div class="ttc" id="classLauncherDefaultsMTTStage_1_1LauncherDefaultsMTTStage_html_a9358965c1e1bf813dd350a79eaf234de"><div class="ttname"><a href="classLauncherDefaultsMTTStage_1_1LauncherDefaultsMTTStage.html#a9358965c1e1bf813dd350a79eaf234de">LauncherDefaultsMTTStage.LauncherDefaultsMTTStage.print_name</a></div><div class="ttdeci">def print_name</div><div class="ttdef"><b>Definition:</b> <a href="LauncherDefaultsMTTStage_8py_source.html#l00023">LauncherDefaultsMTTStage.py:23</a></div></div>
-</div><!-- fragment --></div><!-- contents -->
+<a href="LauncherDefaultsMTTStage_8py.html">Go to the documentation of this file.</a><div class="fragment"></div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

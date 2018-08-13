@@ -37,9 +37,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="namespaces.html"><span>Packages</span></a></li>
-      <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
       <li>
         <div id="MSearchBox" class="MSearchBoxInactive">
@@ -62,7 +60,6 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow2" class="tabs2">
     <ul class="tablist">
       <li><a href="files.html"><span>File&#160;List</span></a></li>
-      <li><a href="globals.html"><span>File&#160;Members</span></a></li>
     </ul>
   </div>
 <!-- window showing the filter options -->
@@ -70,7 +67,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&#160;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&#160;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&#160;</span>Variables</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(6)"><span class="SelectionMark">&#160;</span>Groups</a></div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Files</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -89,97 +86,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="title">DefaultProfile.py</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="DefaultProfile_8py.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno"><a class="line" href="namespaceDefaultProfile.html">    1</a></span>&#160;<span class="comment"># -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment"># Copyright (c) 2015-2018 Intel, Inc.  All rights reserved.</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment"># $COPYRIGHT$</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment"># Additional copyrights may follow</span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment"># $HEADER$</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">from</span> __future__ <span class="keyword">import</span> print_function</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">import</span> os</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">from</span> ProfileMTTStage <span class="keyword">import</span> *</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="comment">## @addtogroup Stages</span></div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="comment"># @{</span></div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment"># @addtogroup Profile</span></div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment"># @section DefaultProfile</span></div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="comment"># @param kernelName       Kernel name</span></div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="comment"># @param kernelRelease    Kernel release string</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="comment"># @param kernelVersion    Kernel version string</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="comment"># @param machineName      Machine name</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="comment"># @param processorType    Processor type</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="comment"># @param nodeName         Node name</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="comment"># @}</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno"><a class="line" href="classDefaultProfile_1_1DefaultProfile.html">   26</a></span>&#160;<span class="keyword">class </span><a class="code" href="classDefaultProfile_1_1DefaultProfile.html">DefaultProfile</a>(<a class="code" href="classProfileMTTStage_1_1ProfileMTTStage.html">ProfileMTTStage</a>):</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;</div>
-<div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="classDefaultProfile_1_1DefaultProfile.html#a7949e8f2a3632585e38d952b43afd205">   28</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classDefaultProfile_1_1DefaultProfile.html#a7949e8f2a3632585e38d952b43afd205">__init__</a>(self):</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        <span class="comment"># initialise parent class</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;        ProfileMTTStage.__init__(self)</div>
-<div class="line"><a name="l00031"></a><span class="lineno"><a class="line" href="classDefaultProfile_1_1DefaultProfile.html#ad8d29967f62501f4638fe09ee7686d08">   31</a></span>&#160;        self.<a class="code" href="classDefaultProfile_1_1DefaultProfile.html#ad8d29967f62501f4638fe09ee7686d08">options</a> = {}</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        self.<a class="code" href="classDefaultProfile_1_1DefaultProfile.html#ad8d29967f62501f4638fe09ee7686d08">options</a>[<span class="stringliteral">&#39;kernelName&#39;</span>] = (<span class="keyword">True</span>, <span class="stringliteral">&quot;Kernel name&quot;</span>, [<span class="stringliteral">&quot;uname&quot;</span>, <span class="stringliteral">&quot;-s&quot;</span>])</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        self.<a class="code" href="classDefaultProfile_1_1DefaultProfile.html#ad8d29967f62501f4638fe09ee7686d08">options</a>[<span class="stringliteral">&#39;kernelRelease&#39;</span>] = (<span class="keyword">True</span>, <span class="stringliteral">&quot;Kernel release string&quot;</span>, [<span class="stringliteral">&quot;uname&quot;</span>, <span class="stringliteral">&quot;-r&quot;</span>])</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        self.<a class="code" href="classDefaultProfile_1_1DefaultProfile.html#ad8d29967f62501f4638fe09ee7686d08">options</a>[<span class="stringliteral">&#39;kernelVersion&#39;</span>] = (<span class="keyword">True</span>, <span class="stringliteral">&quot;Kernel version string&quot;</span>, [<span class="stringliteral">&quot;uname&quot;</span>, <span class="stringliteral">&quot;-v&quot;</span>])</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        self.<a class="code" href="classDefaultProfile_1_1DefaultProfile.html#ad8d29967f62501f4638fe09ee7686d08">options</a>[<span class="stringliteral">&#39;machineName&#39;</span>] = (<span class="keyword">True</span>, <span class="stringliteral">&quot;Machine name&quot;</span>, [<span class="stringliteral">&quot;uname&quot;</span>, <span class="stringliteral">&quot;-m&quot;</span>])</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        self.<a class="code" href="classDefaultProfile_1_1DefaultProfile.html#ad8d29967f62501f4638fe09ee7686d08">options</a>[<span class="stringliteral">&#39;processorType&#39;</span>] = (<span class="keyword">True</span>, <span class="stringliteral">&quot;Processor type&quot;</span>, [<span class="stringliteral">&quot;uname&quot;</span>, <span class="stringliteral">&quot;-p&quot;</span>])</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        self.<a class="code" href="classDefaultProfile_1_1DefaultProfile.html#ad8d29967f62501f4638fe09ee7686d08">options</a>[<span class="stringliteral">&#39;nodeName&#39;</span>] = (<span class="keyword">True</span>, <span class="stringliteral">&quot;Node name&quot;</span>, [<span class="stringliteral">&quot;uname&quot;</span>, <span class="stringliteral">&quot;-n&quot;</span>])</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;</div>
-<div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="classDefaultProfile_1_1DefaultProfile.html#a03edede0b46fe544777421da40d7d628">   40</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classDefaultProfile_1_1DefaultProfile.html#a03edede0b46fe544777421da40d7d628">activate</a>(self):</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        <span class="comment"># get the automatic procedure from IPlugin</span></div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        IPlugin.activate(self)</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;</div>
-<div class="line"><a name="l00046"></a><span class="lineno"><a class="line" href="classDefaultProfile_1_1DefaultProfile.html#ad9bcbf0a5b927314bcba17f4f143cbc2">   46</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classDefaultProfile_1_1DefaultProfile.html#ad9bcbf0a5b927314bcba17f4f143cbc2">deactivate</a>(self):</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        IPlugin.deactivate(self)</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;</div>
-<div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="classDefaultProfile_1_1DefaultProfile.html#a74a0484b938f567fc3337f9bdd68b68a">   50</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classDefaultProfile_1_1DefaultProfile.html#a74a0484b938f567fc3337f9bdd68b68a">print_name</a>(self):</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <span class="keywordflow">return</span> <span class="stringliteral">&quot;DefaultProfile&quot;</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;</div>
-<div class="line"><a name="l00053"></a><span class="lineno"><a class="line" href="classDefaultProfile_1_1DefaultProfile.html#a4267f84edfc874a41a7f0558d51f4086">   53</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classDefaultProfile_1_1DefaultProfile.html#a4267f84edfc874a41a7f0558d51f4086">print_options</a>(self, testDef, prefix):</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        lines = testDef.printOptions(self.<a class="code" href="classDefaultProfile_1_1DefaultProfile.html#ad8d29967f62501f4638fe09ee7686d08">options</a>)</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <span class="keywordflow">for</span> line <span class="keywordflow">in</span> lines:</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;            print(prefix + line)</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;</div>
-<div class="line"><a name="l00059"></a><span class="lineno"><a class="line" href="classDefaultProfile_1_1DefaultProfile.html#a83a3eb62e7f08a18eb6b783f73f1d68b">   59</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classDefaultProfile_1_1DefaultProfile.html#a83a3eb62e7f08a18eb6b783f73f1d68b">execute</a>(self, log, keyvals, testDef):</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        testDef.logger.verbose_print(<span class="stringliteral">&quot;Collect system profile&quot;</span>)</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        <span class="comment"># collect general information on the system</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        myLog = {}</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <span class="comment"># see what they want us to collect</span></div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        cmds = {}</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        testDef.parseOptions(log, self.<a class="code" href="classDefaultProfile_1_1DefaultProfile.html#ad8d29967f62501f4638fe09ee7686d08">options</a>, keyvals, cmds)</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        keys = list(cmds.keys())</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        opts = self.options.keys()</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <span class="keywordflow">for</span> key <span class="keywordflow">in</span> keys:</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            <span class="keywordflow">if</span> cmds[key] <span class="keywordflow">and</span> key <span class="keywordflow">in</span> opts:</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;                status, stdout, stderr, time = testDef.execmd.execute(cmds, self.<a class="code" href="classDefaultProfile_1_1DefaultProfile.html#ad8d29967f62501f4638fe09ee7686d08">options</a>[key][2], testDef)</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;                <span class="keywordflow">if</span> 0 != status:</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;                    log[<span class="stringliteral">&#39;status&#39;</span>] = status</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;                    log[<span class="stringliteral">&#39;stdout&#39;</span>] = stdout</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;                    log[<span class="stringliteral">&#39;stderr&#39;</span>] = stderr</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;                    <span class="comment"># ignore the execution time, if collected</span></div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;                    <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;                myLog[key] = stdout</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <span class="comment"># add our log to the system log</span></div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        log[<span class="stringliteral">&#39;profile&#39;</span>] = myLog</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        log[<span class="stringliteral">&#39;status&#39;</span>] = 0</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="ttc" id="classDefaultProfile_1_1DefaultProfile_html_a7949e8f2a3632585e38d952b43afd205"><div class="ttname"><a href="classDefaultProfile_1_1DefaultProfile.html#a7949e8f2a3632585e38d952b43afd205">DefaultProfile.DefaultProfile.__init__</a></div><div class="ttdeci">def __init__</div><div class="ttdef"><b>Definition:</b> <a href="DefaultProfile_8py_source.html#l00028">DefaultProfile.py:28</a></div></div>
-<div class="ttc" id="classProfileMTTStage_1_1ProfileMTTStage_html"><div class="ttname"><a href="classProfileMTTStage_1_1ProfileMTTStage.html">ProfileMTTStage.ProfileMTTStage</a></div><div class="ttdef"><b>Definition:</b> <a href="ProfileMTTStage_8py_source.html#l00019">ProfileMTTStage.py:19</a></div></div>
-<div class="ttc" id="classDefaultProfile_1_1DefaultProfile_html_a74a0484b938f567fc3337f9bdd68b68a"><div class="ttname"><a href="classDefaultProfile_1_1DefaultProfile.html#a74a0484b938f567fc3337f9bdd68b68a">DefaultProfile.DefaultProfile.print_name</a></div><div class="ttdeci">def print_name</div><div class="ttdef"><b>Definition:</b> <a href="DefaultProfile_8py_source.html#l00050">DefaultProfile.py:50</a></div></div>
-<div class="ttc" id="classDefaultProfile_1_1DefaultProfile_html_a03edede0b46fe544777421da40d7d628"><div class="ttname"><a href="classDefaultProfile_1_1DefaultProfile.html#a03edede0b46fe544777421da40d7d628">DefaultProfile.DefaultProfile.activate</a></div><div class="ttdeci">def activate</div><div class="ttdef"><b>Definition:</b> <a href="DefaultProfile_8py_source.html#l00040">DefaultProfile.py:40</a></div></div>
-<div class="ttc" id="classDefaultProfile_1_1DefaultProfile_html"><div class="ttname"><a href="classDefaultProfile_1_1DefaultProfile.html">DefaultProfile.DefaultProfile</a></div><div class="ttdef"><b>Definition:</b> <a href="DefaultProfile_8py_source.html#l00026">DefaultProfile.py:26</a></div></div>
-<div class="ttc" id="classDefaultProfile_1_1DefaultProfile_html_ad9bcbf0a5b927314bcba17f4f143cbc2"><div class="ttname"><a href="classDefaultProfile_1_1DefaultProfile.html#ad9bcbf0a5b927314bcba17f4f143cbc2">DefaultProfile.DefaultProfile.deactivate</a></div><div class="ttdeci">def deactivate</div><div class="ttdef"><b>Definition:</b> <a href="DefaultProfile_8py_source.html#l00046">DefaultProfile.py:46</a></div></div>
-<div class="ttc" id="classDefaultProfile_1_1DefaultProfile_html_a4267f84edfc874a41a7f0558d51f4086"><div class="ttname"><a href="classDefaultProfile_1_1DefaultProfile.html#a4267f84edfc874a41a7f0558d51f4086">DefaultProfile.DefaultProfile.print_options</a></div><div class="ttdeci">def print_options</div><div class="ttdef"><b>Definition:</b> <a href="DefaultProfile_8py_source.html#l00053">DefaultProfile.py:53</a></div></div>
-<div class="ttc" id="classDefaultProfile_1_1DefaultProfile_html_ad8d29967f62501f4638fe09ee7686d08"><div class="ttname"><a href="classDefaultProfile_1_1DefaultProfile.html#ad8d29967f62501f4638fe09ee7686d08">DefaultProfile.DefaultProfile.options</a></div><div class="ttdeci">options</div><div class="ttdef"><b>Definition:</b> <a href="DefaultProfile_8py_source.html#l00031">DefaultProfile.py:31</a></div></div>
-<div class="ttc" id="classDefaultProfile_1_1DefaultProfile_html_a83a3eb62e7f08a18eb6b783f73f1d68b"><div class="ttname"><a href="classDefaultProfile_1_1DefaultProfile.html#a83a3eb62e7f08a18eb6b783f73f1d68b">DefaultProfile.DefaultProfile.execute</a></div><div class="ttdeci">def execute</div><div class="ttdef"><b>Definition:</b> <a href="DefaultProfile_8py_source.html#l00059">DefaultProfile.py:59</a></div></div>
-</div><!-- fragment --></div><!-- contents -->
+<a href="DefaultProfile_8py.html">Go to the documentation of this file.</a><div class="fragment"></div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

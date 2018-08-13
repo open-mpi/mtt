@@ -37,9 +37,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="namespaces.html"><span>Packages</span></a></li>
-      <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
       <li>
         <div id="MSearchBox" class="MSearchBoxInactive">
@@ -62,7 +60,6 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow2" class="tabs2">
     <ul class="tablist">
       <li><a href="files.html"><span>File&#160;List</span></a></li>
-      <li><a href="globals.html"><span>File&#160;Members</span></a></li>
     </ul>
   </div>
 <!-- window showing the filter options -->
@@ -70,7 +67,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&#160;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&#160;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&#160;</span>Variables</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(6)"><span class="SelectionMark">&#160;</span>Groups</a></div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Files</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -89,175 +86,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="title">ModuleCmd.py</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="ModuleCmd_8py.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno"><a class="line" href="namespaceModuleCmd.html">    1</a></span>&#160;<span class="comment">#!/usr/bin/env python</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment"># Copyright (c) 2015-2018 Intel, Inc. All rights reserved.</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment"># $COPYRIGHT$</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment"># Additional copyrights may follow</span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment"># $HEADER$</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">from</span> __future__ <span class="keyword">import</span> print_function</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">from</span> future <span class="keyword">import</span> standard_library</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;standard_library.install_aliases()</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keyword">import</span> sys</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">import</span> select</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keyword">import</span> os</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="keyword">from</span> io <span class="keyword">import</span> StringIO</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="keyword">from</span> BaseMTTUtility <span class="keyword">import</span> *</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="comment">## @addtogroup Utilities</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="comment"># @{</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="comment"># @section ModuleCmd</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="comment"># @}</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno"><a class="line" href="classModuleCmd_1_1ModuleCmd.html">   24</a></span>&#160;<span class="keyword">class </span><a class="code" href="classModuleCmd_1_1ModuleCmd.html">ModuleCmd</a>(<a class="code" href="classBaseMTTUtility_1_1BaseMTTUtility.html">BaseMTTUtility</a>):</div>
-<div class="line"><a name="l00025"></a><span class="lineno"><a class="line" href="classModuleCmd_1_1ModuleCmd.html#afc2639b024f0254c9a1e4db7c0e890cf">   25</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classModuleCmd_1_1ModuleCmd.html#afc2639b024f0254c9a1e4db7c0e890cf">__init__</a>(self):</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;        BaseMTTUtility.__init__(self)</div>
-<div class="line"><a name="l00027"></a><span class="lineno"><a class="line" href="classModuleCmd_1_1ModuleCmd.html#ae60edec82191b5a7a1830495b1ca2e3e">   27</a></span>&#160;        self.<a class="code" href="classModuleCmd_1_1ModuleCmd.html#ae60edec82191b5a7a1830495b1ca2e3e">env_module_wrapper</a> = <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="classModuleCmd_1_1ModuleCmd.html#a1b4a34e278600fe59cd55bb0d56baa61">   28</a></span>&#160;        self.<a class="code" href="classModuleCmd_1_1ModuleCmd.html#a1b4a34e278600fe59cd55bb0d56baa61">env_module_link</a> = <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00029"></a><span class="lineno"><a class="line" href="classModuleCmd_1_1ModuleCmd.html#a981a0fc879a722b76faa16b4289ab953">   29</a></span>&#160;        self.<a class="code" href="classModuleCmd_1_1ModuleCmd.html#a981a0fc879a722b76faa16b4289ab953">options</a> = {}</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;</div>
-<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="classModuleCmd_1_1ModuleCmd.html#ae44917ee5bdcc85a4b1675f82a2f03b3">   32</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classModuleCmd_1_1ModuleCmd.html#ae44917ee5bdcc85a4b1675f82a2f03b3">print_name</a>(self):</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <span class="keywordflow">return</span> <span class="stringliteral">&quot;ModuleCmd&quot;</span></div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;</div>
-<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="classModuleCmd_1_1ModuleCmd.html#a731bb50ac44c88e49675b9790740a9af">   35</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classModuleCmd_1_1ModuleCmd.html#a731bb50ac44c88e49675b9790740a9af">print_options</a>(self, testDef, prefix):</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        lines = testDef.printOptions(self.<a class="code" href="classModuleCmd_1_1ModuleCmd.html#a981a0fc879a722b76faa16b4289ab953">options</a>)</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        <span class="keywordflow">for</span> line <span class="keywordflow">in</span> lines:</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;            print(prefix + line)</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;</div>
-<div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="classModuleCmd_1_1ModuleCmd.html#aafcfb3f7b8d445df29c888c938c932fd">   41</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classModuleCmd_1_1ModuleCmd.html#aafcfb3f7b8d445df29c888c938c932fd">setCommand</a>(self, options):</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="comment"># Check first if the --env-module-wrapper switch was used.  If not, then check for the LMOD_PKG environment variable.</span></div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="keywordflow">if</span> options[<span class="stringliteral">&#39;env_module_wrapper&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;            self.<a class="code" href="classModuleCmd_1_1ModuleCmd.html#ae60edec82191b5a7a1830495b1ca2e3e">env_module_wrapper</a> = options[<span class="stringliteral">&#39;env_module_wrapper&#39;</span>]</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;            <span class="keywordflow">if</span> <span class="keywordflow">not</span> os.path.isfile(self.<a class="code" href="classModuleCmd_1_1ModuleCmd.html#ae60edec82191b5a7a1830495b1ca2e3e">env_module_wrapper</a>):</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;                <span class="keywordflow">if</span> options[<span class="stringliteral">&#39;verbose&#39;</span>] <span class="keywordflow">or</span> options[<span class="stringliteral">&#39;debug&#39;</span>] :</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;                    print(<span class="stringliteral">&quot;Environment module python wrapper not found: &quot;</span> + self.<a class="code" href="classModuleCmd_1_1ModuleCmd.html#ae60edec82191b5a7a1830495b1ca2e3e">env_module_wrapper</a>)</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;                <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;            <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;                mod_pkg = os.environ[<span class="stringliteral">&#39;MODULESHOME&#39;</span>]</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;                <span class="keywordflow">if</span> os.path.isfile(os.path.join(mod_pkg, <span class="stringliteral">&quot;init/env_modules_python.py&quot;</span>)) :</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;                   self.<a class="code" href="classModuleCmd_1_1ModuleCmd.html#ae60edec82191b5a7a1830495b1ca2e3e">env_module_wrapper</a> = os.path.join(mod_pkg, <span class="stringliteral">&quot;init/env_modules_python.py&quot;</span>)</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;                <span class="keywordflow">elif</span> os.path.isfile(os.path.join(mod_pkg, <span class="stringliteral">&quot;init/python.py&quot;</span>)) :</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;                   self.<a class="code" href="classModuleCmd_1_1ModuleCmd.html#ae60edec82191b5a7a1830495b1ca2e3e">env_module_wrapper</a> = os.path.join(mod_pkg, <span class="stringliteral">&quot;init/python.py&quot;</span>)</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;                <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;                   <span class="keywordflow">if</span> options[<span class="stringliteral">&#39;verbose&#39;</span>] <span class="keywordflow">or</span> options[<span class="stringliteral">&#39;debug&#39;</span>] :</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;                       print(<span class="stringliteral">&quot;The --env-module-wrapper switch was not used and module python support via os.environ[&#39;MODULESHOME&#39;]/init/env_modules_python.py was not found&quot;</span>)</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;                   <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;            <span class="keywordflow">except</span> KeyError:</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;                <span class="keywordflow">if</span> options[<span class="stringliteral">&#39;verbose&#39;</span>] <span class="keywordflow">or</span> options[<span class="stringliteral">&#39;debug&#39;</span>] :</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;                    print(<span class="stringliteral">&quot;The --env-module-wrapper switch was not used and module python support via os.environ[&#39;MODULESHOME&#39;] was not found&quot;</span>)</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;                <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;            <span class="comment"># scratchdir defaults to mttscratch if not set</span></div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;            self.<a class="code" href="classModuleCmd_1_1ModuleCmd.html#a1b4a34e278600fe59cd55bb0d56baa61">env_module_link</a> = os.path.join(options[<span class="stringliteral">&#39;scratchdir&#39;</span>], <span class="stringliteral">&quot;env_modules_python.py&quot;</span>)</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;            <span class="keywordflow">if</span> os.path.isfile(self.<a class="code" href="classModuleCmd_1_1ModuleCmd.html#a1b4a34e278600fe59cd55bb0d56baa61">env_module_link</a>):</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;                os.remove(self.<a class="code" href="classModuleCmd_1_1ModuleCmd.html#a1b4a34e278600fe59cd55bb0d56baa61">env_module_link</a>)</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            <span class="comment"># create a soft link that includes the .py extension; the tcl python module file does not include this</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;            os.symlink(self.<a class="code" href="classModuleCmd_1_1ModuleCmd.html#ae60edec82191b5a7a1830495b1ca2e3e">env_module_wrapper</a>, self.<a class="code" href="classModuleCmd_1_1ModuleCmd.html#a1b4a34e278600fe59cd55bb0d56baa61">env_module_link</a>)</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="keywordflow">except</span>:</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;            print(<span class="stringliteral">&quot;Unable to link to &quot;</span> + self.<a class="code" href="classModuleCmd_1_1ModuleCmd.html#ae60edec82191b5a7a1830495b1ca2e3e">env_module_wrapper</a>)</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;            print(<span class="stringliteral">&quot;Since we are unable to meet this basic user directive,&quot;</span>)</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;            print(<span class="stringliteral">&quot;we will now abort&quot;</span>)</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;            sys.exit(1)</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;</div>
-<div class="line"><a name="l00078"></a><span class="lineno"><a class="line" href="classModuleCmd_1_1ModuleCmd.html#acb50720c70196a40e3bde85f79fea3cb">   78</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classModuleCmd_1_1ModuleCmd.html#acb50720c70196a40e3bde85f79fea3cb">loadModules</a>(self, modules, testDef):</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="comment"># Logging of results from the environment modules usage is the responsibility of the plugin that is making use of this utility.</span></div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <span class="keywordflow">if</span> self.<a class="code" href="classModuleCmd_1_1ModuleCmd.html#ae60edec82191b5a7a1830495b1ca2e3e">env_module_wrapper</a> <span class="keywordflow">is</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            <span class="comment"># cannot perform this operation</span></div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            <span class="keywordflow">return</span> (1, <span class="keywordtype">None</span>, <span class="stringliteral">&quot;Module capability was not found&quot;</span>)</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        <span class="comment"># Load the lmod python module() definition</span></div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        sys.path.insert(0, os.path.dirname(self.<a class="code" href="classModuleCmd_1_1ModuleCmd.html#a1b4a34e278600fe59cd55bb0d56baa61">env_module_link</a>))</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;            <span class="keyword">from</span> env_modules_python <span class="keyword">import</span> module</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <span class="keywordflow">except</span>:</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            <span class="keywordflow">return</span> (1, <span class="keywordtype">None</span>, <span class="stringliteral">&quot;No module named env_modules_python found&quot;</span>)</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        <span class="comment"># We have to run this in the same python context for it to take effect and be propagated to future children</span></div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;        <span class="comment"># Redirect the sys.stdout and sys.stderr for the module loads and unloads.</span></div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        saved_stdout = sys.stdout</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        saved_stderr = sys.stderr</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        load_stdout = sys.stdout = StringIO()</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        load_stderr = sys.stderr = StringIO()</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        modules = modules.split()</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        <span class="keywordflow">for</span> mod <span class="keywordflow">in</span> modules:</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;            mod = mod.strip()</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;            <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;                <a class="code" href="namespacedeveloper.html#a2b87fdf0293735256891d21cd3fdf1c4">module</a>(<span class="stringliteral">&quot;load&quot;</span>, mod)</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;            <span class="keywordflow">except</span>:</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;                <span class="comment"># If a module name is not found the module python flow will trigger this exception.</span></div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;                <span class="keywordflow">return</span> (1, <span class="keywordtype">None</span>, <span class="stringliteral">&quot;Attempt to load environment module &quot;</span> + mod + <span class="stringliteral">&quot; failed&quot;</span>)</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;        <span class="comment"># Restore sys.stdout and sys.stderr</span></div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        sys.stdout = saved_stdout</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;        sys.stderr = saved_stderr</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        status = load_stderr.seek(0, os.SEEK_END)</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        stdout = load_stdout.getvalue()</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        stderr = load_stderr.getvalue()</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        load_stdout.close()</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        load_stderr.close()</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        <span class="keywordflow">return</span> (status, stdout, stderr)</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;</div>
-<div class="line"><a name="l00118"></a><span class="lineno"><a class="line" href="classModuleCmd_1_1ModuleCmd.html#a93a6a59db499c50ffb9ffe8e043a4733">  118</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classModuleCmd_1_1ModuleCmd.html#a93a6a59db499c50ffb9ffe8e043a4733">unloadModules</a>(self, modules, testDef):</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        <span class="keywordflow">if</span> self.<a class="code" href="classModuleCmd_1_1ModuleCmd.html#ae60edec82191b5a7a1830495b1ca2e3e">env_module_wrapper</a> <span class="keywordflow">is</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;            <span class="comment"># cannot perform this operation</span></div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            <span class="keywordflow">return</span> (1, <span class="keywordtype">None</span>, <span class="stringliteral">&quot;Module capability was not found&quot;</span>)</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;        <span class="comment"># Load the lmod python module() definition</span></div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;        sys.path.insert(0, os.path.dirname(self.<a class="code" href="classModuleCmd_1_1ModuleCmd.html#a1b4a34e278600fe59cd55bb0d56baa61">env_module_link</a>))</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;            <span class="keyword">from</span> env_modules_python <span class="keyword">import</span> module</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;        <span class="keywordflow">except</span>:</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;            <span class="keywordflow">return</span> (1, <span class="keywordtype">None</span>, <span class="stringliteral">&quot;No module named env_modules_python found&quot;</span>)</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;        <span class="comment"># We have to run this in the same python context for it to take effect and be propagated to future children</span></div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;        <span class="comment"># Redirect the sys.stdout and sys.stderr for the module loads and unloads.</span></div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;        saved_stdout = sys.stdout</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;        saved_stderr = sys.stderr</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;        unload_stdout = sys.stdout = StringIO()</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;        unload_stderr = sys.stderr = StringIO()</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;        modules = modules.split()</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;        <span class="keywordflow">for</span> mod <span class="keywordflow">in</span> modules:</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;            mod = mod.strip()</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;            <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;                <a class="code" href="namespacedeveloper.html#a2b87fdf0293735256891d21cd3fdf1c4">module</a>(<span class="stringliteral">&quot;unload&quot;</span>, mod)</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;            <span class="keywordflow">except</span>:</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;                <span class="comment"># Unlike the load, the module python flow will not cause an exception if the module can not be found.</span></div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;                <span class="comment"># Add this to catch any other unexpected exceptions.</span></div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;                <span class="keywordflow">return</span> (1, <span class="keywordtype">None</span>, <span class="stringliteral">&quot;Attempt to unload environment module &quot;</span> + mod + <span class="stringliteral">&quot; failed&quot;</span>)</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;        <span class="comment"># Restore sys.stdout and sys.stderr</span></div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;        sys.stdout = saved_stdout</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;        sys.stderr = saved_stderr</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;        status = unload_stderr.seek(0, os.SEEK_END)</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;        stdout = unload_stdout.getvalue()</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;        stderr = unload_stderr.getvalue()</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;        unload_stdout.close()</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;        unload_stderr.close()</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        <span class="keywordflow">return</span> (status, stdout, stderr)</div>
-<div class="ttc" id="classModuleCmd_1_1ModuleCmd_html_a93a6a59db499c50ffb9ffe8e043a4733"><div class="ttname"><a href="classModuleCmd_1_1ModuleCmd.html#a93a6a59db499c50ffb9ffe8e043a4733">ModuleCmd.ModuleCmd.unloadModules</a></div><div class="ttdeci">def unloadModules</div><div class="ttdef"><b>Definition:</b> <a href="ModuleCmd_8py_source.html#l00118">ModuleCmd.py:118</a></div></div>
-<div class="ttc" id="classModuleCmd_1_1ModuleCmd_html_a981a0fc879a722b76faa16b4289ab953"><div class="ttname"><a href="classModuleCmd_1_1ModuleCmd.html#a981a0fc879a722b76faa16b4289ab953">ModuleCmd.ModuleCmd.options</a></div><div class="ttdeci">options</div><div class="ttdef"><b>Definition:</b> <a href="ModuleCmd_8py_source.html#l00029">ModuleCmd.py:29</a></div></div>
-<div class="ttc" id="classModuleCmd_1_1ModuleCmd_html"><div class="ttname"><a href="classModuleCmd_1_1ModuleCmd.html">ModuleCmd.ModuleCmd</a></div><div class="ttdef"><b>Definition:</b> <a href="ModuleCmd_8py_source.html#l00024">ModuleCmd.py:24</a></div></div>
-<div class="ttc" id="classModuleCmd_1_1ModuleCmd_html_afc2639b024f0254c9a1e4db7c0e890cf"><div class="ttname"><a href="classModuleCmd_1_1ModuleCmd.html#afc2639b024f0254c9a1e4db7c0e890cf">ModuleCmd.ModuleCmd.__init__</a></div><div class="ttdeci">def __init__</div><div class="ttdef"><b>Definition:</b> <a href="ModuleCmd_8py_source.html#l00025">ModuleCmd.py:25</a></div></div>
-<div class="ttc" id="classBaseMTTUtility_1_1BaseMTTUtility_html"><div class="ttname"><a href="classBaseMTTUtility_1_1BaseMTTUtility.html">BaseMTTUtility.BaseMTTUtility</a></div><div class="ttdef"><b>Definition:</b> <a href="BaseMTTUtility_8py_source.html#l00014">BaseMTTUtility.py:14</a></div></div>
-<div class="ttc" id="classModuleCmd_1_1ModuleCmd_html_ae60edec82191b5a7a1830495b1ca2e3e"><div class="ttname"><a href="classModuleCmd_1_1ModuleCmd.html#ae60edec82191b5a7a1830495b1ca2e3e">ModuleCmd.ModuleCmd.env_module_wrapper</a></div><div class="ttdeci">env_module_wrapper</div><div class="ttdef"><b>Definition:</b> <a href="ModuleCmd_8py_source.html#l00027">ModuleCmd.py:27</a></div></div>
-<div class="ttc" id="classModuleCmd_1_1ModuleCmd_html_a1b4a34e278600fe59cd55bb0d56baa61"><div class="ttname"><a href="classModuleCmd_1_1ModuleCmd.html#a1b4a34e278600fe59cd55bb0d56baa61">ModuleCmd.ModuleCmd.env_module_link</a></div><div class="ttdeci">env_module_link</div><div class="ttdef"><b>Definition:</b> <a href="ModuleCmd_8py_source.html#l00028">ModuleCmd.py:28</a></div></div>
-<div class="ttc" id="classModuleCmd_1_1ModuleCmd_html_aafcfb3f7b8d445df29c888c938c932fd"><div class="ttname"><a href="classModuleCmd_1_1ModuleCmd.html#aafcfb3f7b8d445df29c888c938c932fd">ModuleCmd.ModuleCmd.setCommand</a></div><div class="ttdeci">def setCommand</div><div class="ttdef"><b>Definition:</b> <a href="ModuleCmd_8py_source.html#l00041">ModuleCmd.py:41</a></div></div>
-<div class="ttc" id="classModuleCmd_1_1ModuleCmd_html_acb50720c70196a40e3bde85f79fea3cb"><div class="ttname"><a href="classModuleCmd_1_1ModuleCmd.html#acb50720c70196a40e3bde85f79fea3cb">ModuleCmd.ModuleCmd.loadModules</a></div><div class="ttdeci">def loadModules</div><div class="ttdef"><b>Definition:</b> <a href="ModuleCmd_8py_source.html#l00078">ModuleCmd.py:78</a></div></div>
-<div class="ttc" id="classModuleCmd_1_1ModuleCmd_html_a731bb50ac44c88e49675b9790740a9af"><div class="ttname"><a href="classModuleCmd_1_1ModuleCmd.html#a731bb50ac44c88e49675b9790740a9af">ModuleCmd.ModuleCmd.print_options</a></div><div class="ttdeci">def print_options</div><div class="ttdef"><b>Definition:</b> <a href="ModuleCmd_8py_source.html#l00035">ModuleCmd.py:35</a></div></div>
-<div class="ttc" id="classModuleCmd_1_1ModuleCmd_html_ae44917ee5bdcc85a4b1675f82a2f03b3"><div class="ttname"><a href="classModuleCmd_1_1ModuleCmd.html#ae44917ee5bdcc85a4b1675f82a2f03b3">ModuleCmd.ModuleCmd.print_name</a></div><div class="ttdeci">def print_name</div><div class="ttdef"><b>Definition:</b> <a href="ModuleCmd_8py_source.html#l00032">ModuleCmd.py:32</a></div></div>
-<div class="ttc" id="namespacedeveloper_html_a2b87fdf0293735256891d21cd3fdf1c4"><div class="ttname"><a href="namespacedeveloper.html#a2b87fdf0293735256891d21cd3fdf1c4">developer.module</a></div><div class="ttdeci">module</div><div class="ttdef"><b>Definition:</b> <a href="developer_8ini_source.html#l00058">developer.ini:58</a></div></div>
-</div><!-- fragment --></div><!-- contents -->
+<a href="ModuleCmd_8py.html">Go to the documentation of this file.</a><div class="fragment"></div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">
