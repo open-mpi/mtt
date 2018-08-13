@@ -15,6 +15,12 @@ import distutils.dir_util
 import os
 from BaseMTTUtility import *
 
+from sys import version_info
+if version_info[0] == 3:
+  if version_info[1] <= 3:
+    from imp import reload
+  else :
+    from importlib import reload
 ## @addtogroup Utilities
 # @{
 # @section Copytree
