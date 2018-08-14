@@ -14,7 +14,7 @@ from yapsy.IPlugin import IPlugin
 ## @addtogroup Stages
 # @{
 # @addtogroup TestGet
-# ordering 450
+# [Ordering 450] Get test software package
 # @}
 class TestGetMTTStage(IPlugin):
     def __init__(self):

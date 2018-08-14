@@ -28,6 +28,7 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 # @{
 # @addtogroup Reporter
 # @section IUDatabase
+# MTT Database reporter plugin for the legacy IU submission server
 # @param realm              Database name
 # @param username           Username to be used for submitting data
 # @param password           Password for that username

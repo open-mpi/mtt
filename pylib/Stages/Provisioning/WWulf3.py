@@ -16,6 +16,7 @@ import shlex
 # @{
 # @addtogroup Provision
 # @section WWulf3
+# Plugin for provisioning nodes using the Warewulf v3 image manager
 # @param target           List of remote host names or LAN interfaces to be provisioned
 # @param image            Name of image to be instantiated
 # @param bootstrap        Name of bootstrap to be used

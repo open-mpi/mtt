@@ -14,7 +14,7 @@ from yapsy.IPlugin import IPlugin
 ## @addtogroup Stages
 # @{
 # @addtogroup LauncherDefaults
-# ordering 490
+# [Ordering 490] Allow a user to set default values for a specific launcher
 # @}
 class LauncherDefaultsMTTStage(IPlugin):
     def __init__(self):

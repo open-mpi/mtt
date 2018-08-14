@@ -17,6 +17,7 @@ from BaseMTTUtility import *
 ## @addtogroup Utilities
 # @{
 # @section Logger
+# Log results and provide debug output when directed
 # @}
 class Logger(BaseMTTUtility):
     def __init__(self):

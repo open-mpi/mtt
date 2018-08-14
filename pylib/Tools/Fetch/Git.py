@@ -20,6 +20,7 @@ from distutils.spawn import find_executable
 # @{
 # @addtogroup Fetch
 # @section Git
+# Plugin for getting software via Git
 # @param module      Modules (or lmod modules) to be loaded for accessing this package
 # @param url         URL to access the repository
 # @param username    Username required for accessing the repository

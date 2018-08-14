@@ -16,6 +16,7 @@ import shlex
 ## @addtogroup Utilities
 # @{
 # @section MPIVersion
+# Identify the name and version of MPI in-use
 # @}
 class MPIVersion(BaseMTTUtility):
     def __init__(self):

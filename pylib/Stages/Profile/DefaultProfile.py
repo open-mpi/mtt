@@ -16,6 +16,7 @@ from ProfileMTTStage import *
 # @{
 # @addtogroup Profile
 # @section DefaultProfile
+# Collect hardware and software profile of the system
 # @param kernelName       Kernel name
 # @param kernelRelease    Kernel release string
 # @param kernelVersion    Kernel version string

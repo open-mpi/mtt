@@ -18,6 +18,7 @@ from BuildMTTTool import *
 # @{
 # @addtogroup Build
 # @section Shell
+# Run shell commands to configure and build a software package
 # @param middleware                Middleware stage that these tests are to be built against
 # @param command                   Command to execute
 # @param parent                    Section that precedes this one in the dependency tree

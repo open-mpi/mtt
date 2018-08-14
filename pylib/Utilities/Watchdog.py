@@ -22,6 +22,7 @@ import datetime
 ## @addtogroup Utilities
 # @{
 # @section Watchdog
+# Generate and exception after a given amount of time
 # @param  timeout  Time in seconds before generating exception
 # @}
 class Watchdog(BaseMTTUtility):

@@ -17,6 +17,7 @@ import shlex
 # @{
 # @addtogroup Launcher
 # @section ALPS
+# Plugin for using ALPS to launch tests
 # @param hostfile                  The hostfile for OpenMPI to use
 # @param command                   Command for executing the application
 # @param np                        Number of processes to run

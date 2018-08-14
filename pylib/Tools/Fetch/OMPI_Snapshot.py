@@ -24,6 +24,7 @@ import sys
 # @{
 # @addtogroup Fetch
 # @section OMPI_Snapshot
+# Plugin for getting software via OMPI Nightly tarballs
 # @param url            URL to access the OMPI nightly tarball (e.g. https://www.open-mpi.org/nightly/v2.x)
 # @param version_file   optional file containing name of most recent tarball version tested
 # @param mpi_name       optional name for the OMPI snapshot tarball

@@ -17,6 +17,7 @@ from MTTDefaultsMTTStage import *
 # @{
 # @addtogroup MTTDefaults
 # @section DefaultMTTDefaults
+# Store any provided default MTT settings
 # @param trial                 Use when testing your MTT client setup; results that are generated and submitted to the database are marked as \"trials\" and are not included in normal reporting.
 # @param scratch               Specify the DIRECTORY under which scratch files are to be stored
 # @param description           Provide a brief title/description to be included in the log for this test

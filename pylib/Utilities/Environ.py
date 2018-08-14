@@ -16,6 +16,7 @@ from BaseMTTUtility import *
 ## @addtogroup Utilities
 # @{
 # @section Environ
+# Set environment variables
 # @}
 class Environ(BaseMTTUtility):
     def __init__(self):

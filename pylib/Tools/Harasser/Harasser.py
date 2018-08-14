@@ -20,6 +20,7 @@ import sys
 # @{
 # @addtogroup Harasser
 # @section Harasser
+# Run harasser scripts while test-content is running
 # @param trigger_scripts      Scripts to run to launch harassers
 # @param stop_scripts         Scripts to run to stop and clean-up harassers
 # @param join_timeout         Seconds to wait for process to finish

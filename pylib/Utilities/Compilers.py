@@ -15,6 +15,7 @@ from BaseMTTUtility import *
 ## @addtogroup Utilities
 # @{
 # @section Compilers
+# Identify the type and version of compilers in-use
 # @}
 class Compilers(BaseMTTUtility):
     def __init__(self):

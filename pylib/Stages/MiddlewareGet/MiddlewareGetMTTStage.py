@@ -14,7 +14,7 @@ from yapsy.IPlugin import IPlugin
 ## @addtogroup Stages
 # @{
 # @addtogroup MiddlewareGet
-# ordering 300
+# [Ordering 300] Stage for getting middleware source code
 # @}
 class MiddlewareGetMTTStage(IPlugin):
     def __init__(self):

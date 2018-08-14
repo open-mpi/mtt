@@ -14,7 +14,7 @@ from yapsy.IPlugin import IPlugin
 ## @addtogroup Stages
 # @{
 # @addtogroup BIOS
-# ordering 50
+# [Ordering 50] BIOS flash and query stage
 # @}
 class BIOSMTTStage(IPlugin):
     def __init__(self):

@@ -15,4 +15,4 @@ Module = DefaultProfile
 Author = Ralph Castain
 Version = 0.1
 Website = N/A
-Description = Collect hardware ands software profile of the system
+Description = Collect hardware and software profile of the system
