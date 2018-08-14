@@ -37,9 +37,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="namespaces.html"><span>Packages</span></a></li>
-      <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
       <li>
         <div id="MSearchBox" class="MSearchBoxInactive">
@@ -62,7 +60,6 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow2" class="tabs2">
     <ul class="tablist">
       <li><a href="files.html"><span>File&#160;List</span></a></li>
-      <li><a href="globals.html"><span>File&#160;Members</span></a></li>
     </ul>
   </div>
 <!-- window showing the filter options -->
@@ -70,7 +67,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&#160;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&#160;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&#160;</span>Variables</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(6)"><span class="SelectionMark">&#160;</span>Groups</a></div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Files</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -86,8 +83,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div><!-- top -->
 <div class="header">
   <div class="summary">
-<a href="#namespaces">Namespaces</a> &#124;
-<a href="#var-members">Variables</a>  </div>
+<a href="#namespaces">Namespaces</a>  </div>
   <div class="headertitle">
 <div class="title">pymtt.py File Reference</div>  </div>
 </div><!--header-->
@@ -99,47 +95,6 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 Namespaces</h2></td></tr>
 <tr class="memitem:namespacepymtt"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepymtt.html">pymtt</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
-Variables</h2></td></tr>
-<tr class="memitem:a95d54fdad48aac280be9d57cf81dee68"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepymtt.html#a95d54fdad48aac280be9d57cf81dee68">pymtt.parser</a> = argparse.ArgumentParser(description=&quot;usage: %prog [options] testfile1 testfile2 ...&quot;)</td></tr>
-<tr class="separator:a95d54fdad48aac280be9d57cf81dee68"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a99ad2929ecc4e17f97670bed44f08c35"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepymtt.html#a99ad2929ecc4e17f97670bed44f08c35">pymtt.infoGroup</a> = parser.add_argument_group('InfoGroup','Informational Options')</td></tr>
-<tr class="separator:a99ad2929ecc4e17f97670bed44f08c35"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5ee564a034624d925bb8dc823d11c522"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepymtt.html#a5ee564a034624d925bb8dc823d11c522">pymtt.action</a> = &quot;store_true&quot;</td></tr>
-<tr class="separator:a5ee564a034624d925bb8dc823d11c522"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a21e88c39af91deb569da20633d245b09"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepymtt.html#a21e88c39af91deb569da20633d245b09">pymtt.help</a> = &quot;Print version&quot;</td></tr>
-<tr class="separator:a21e88c39af91deb569da20633d245b09"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0f52dbd5d46583e466305a708dea64a1"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepymtt.html#a0f52dbd5d46583e466305a708dea64a1">pymtt.execGroup</a> = parser.add_argument_group('execGroup', &quot;Execution Options&quot;)</td></tr>
-<tr class="separator:a0f52dbd5d46583e466305a708dea64a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9ecea46ee6082edb9bbdd8393829e18e"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepymtt.html#a9ecea46ee6082edb9bbdd8393829e18e">pymtt.dest</a> = &quot;duration&quot;</td></tr>
-<tr class="separator:a9ecea46ee6082edb9bbdd8393829e18e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af066a010075617c13a5595243ceb9041"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepymtt.html#af066a010075617c13a5595243ceb9041">pymtt.debugGroup</a> = parser.add_argument_group('debugGroup', 'Debug Options')</td></tr>
-<tr class="separator:af066a010075617c13a5595243ceb9041"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adec79fec8fbc6630a3a485916f342683"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepymtt.html#adec79fec8fbc6630a3a485916f342683">pymtt.args</a> = parser.parse_args()</td></tr>
-<tr class="separator:adec79fec8fbc6630a3a485916f342683"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a968aa7c33a2106380483390a0fa2a045"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepymtt.html#a968aa7c33a2106380483390a0fa2a045">pymtt.basedir</a> = args.basedir</td></tr>
-<tr class="separator:a968aa7c33a2106380483390a0fa2a045"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac564eaf8be3f93d5dd5703b3d919902b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepymtt.html#ac564eaf8be3f93d5dd5703b3d919902b">pymtt.topdir</a> = basedir</td></tr>
-<tr class="separator:ac564eaf8be3f93d5dd5703b3d919902b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a574a50dd90d5a2f46fcb0e27b43a7af9"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepymtt.html#a574a50dd90d5a2f46fcb0e27b43a7af9">pymtt.chkdir</a> = os.path.join(args.basedir, &quot;System&quot;)</td></tr>
-<tr class="separator:a574a50dd90d5a2f46fcb0e27b43a7af9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a79ea4ff472e24c5d543c6a30968b21e6"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepymtt.html#a79ea4ff472e24c5d543c6a30968b21e6">pymtt.path</a> = os.path.dirname(sys.argv[0])</td></tr>
-<tr class="separator:a79ea4ff472e24c5d543c6a30968b21e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab13a60c31fa69917ce06c1a2631aaf02"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepymtt.html#ab13a60c31fa69917ce06c1a2631aaf02">pymtt.m</a> = imp.load_source(&quot;TestDef&quot;, os.path.join(basedir, &quot;TestDef.py&quot;))</td></tr>
-<tr class="separator:ab13a60c31fa69917ce06c1a2631aaf02"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a17f658b5d141d51664bb3ede8830c4c0"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepymtt.html#a17f658b5d141d51664bb3ede8830c4c0">pymtt.cls</a> = getattr(m, &quot;TestDef&quot;)</td></tr>
-<tr class="separator:a17f658b5d141d51664bb3ede8830c4c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a55825c16c4bd231f7ffbd0fe52407e3f"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepymtt.html#a55825c16c4bd231f7ffbd0fe52407e3f">pymtt.a</a> = cls()</td></tr>
-<tr class="separator:a55825c16c4bd231f7ffbd0fe52407e3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afebe539e6104da8ebd3d06b7a0e77fe7"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepymtt.html#afebe539e6104da8ebd3d06b7a0e77fe7">pymtt.testDef</a> = a.__class__()</td></tr>
-<tr class="separator:afebe539e6104da8ebd3d06b7a0e77fe7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5d5ee597f85e5c40ec6a923a4398c291"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepymtt.html#a5d5ee597f85e5c40ec6a923a4398c291">pymtt.fallback</a> = &quot;sequential&quot;</td></tr>
-<tr class="separator:a5d5ee597f85e5c40ec6a923a4398c291"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a283715e769294f7b1362c85498cdf2a3"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepymtt.html#a283715e769294f7b1362c85498cdf2a3">pymtt.executor</a> = args.executorortestDef.config.get('MTTDefaults', 'executor', fallback=fallback)</td></tr>
-<tr class="separator:a283715e769294f7b1362c85498cdf2a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1a2fd13626c1c2d248cedc138e8660ec"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepymtt.html#a1a2fd13626c1c2d248cedc138e8660ec">pymtt.status</a> = testDef.executeTest()</td></tr>
-<tr class="separator:a1a2fd13626c1c2d248cedc138e8660ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 <!-- start footer part -->

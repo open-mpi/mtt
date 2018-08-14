@@ -1,8 +1,0 @@
-<map id="Watchdog.Watchdog.reset" name="Watchdog.Watchdog.reset">
-<area shape="rect" id="node2" href="$classHarasser_1_1Harasser.html#aad6ad8458a1afbb7ca4859f6d8b9d803" title="Calls the stop&#45;scripts provided with harasser scripts to stop and clean up harassment. " alt="" coords="239,5,401,32"/>
-<area shape="rect" id="node3" href="$classWatchdog_1_1Watchdog.html#af56d743f19894122322a238de2bb36c7" title="Watchdog.Watchdog.stop" alt="" coords="233,56,407,83"/>
-<area shape="rect" id="node4" href="$classHarasser_1_1Harasser.html#aed32fb178974a05a4f4be00957599c67" title="Harassment is started on the system. " alt="" coords="239,107,401,133"/>
-<area shape="rect" id="node6" href="$classWatchdog_1_1Watchdog.html#a0ddb7a85fbdad4cff3af0fe3628098f7" title="Watchdog.Watchdog.start" alt="" coords="233,161,407,188"/>
-<area shape="rect" id="node5" href="$classHarasser_1_1Harasser.html#a02afcd1243832ad692db3ecbf8b83950" title="This function is passed into multiprocessing as a target. " alt="" coords="461,95,638,137"/>
-<area shape="rect" id="node7" href="$classWatchdog_1_1Watchdog.html#ac8a0d09157f34dc021ffc0753750cfc9" title="Watchdog.Watchdog.default\lHandler" alt="" coords="456,161,643,202"/>
-</map>
