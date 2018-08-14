@@ -176,11 +176,22 @@ if not os.path.exists(topdir) or not os.path.isdir(topdir):
     sys.exit(1)
 
 # set basedir and check for existence
-basedir = os.path.join(mtthome, "pylib", "System")
+if args.basedir and not os.path.isabs(args.basedir):
+    print("The basedir cmd line option is not an absolute path:")
+    print("   ", args.basedir)
+    print("Please correct")
+    sys.exit(1)
+
+basedir = args.basedir or os.path.join(mtthome, "pylib", "System")
 if not os.path.exists(basedir) or not os.path.isdir(basedir):
-    print("MTT_HOME points to a location that does not\ninclude the \"pylib/System\" subdirectory:")
-    print("   ", basedir)
-    print("does not exist. Please correct")
+    if basedir == args.basedir:
+        print("The basedir cmd line option points to a location that does not exist:")
+        print("   ", basedir)
+        print("Please correct")
+    else:
+        print("MTT_HOME points to a location that does not\ninclude the \"pylib/System\" subdirectory:")
+        print("   ", basedir)
+        print("does not exist. Please correct")
     sys.exit(1)
 
 # if they want debug, set the logging level
