@@ -1,12 +1,14 @@
 ---
 ---
+@import "{{ site.theme }}";
+
 body {
   font:14px/22px 'Quattrocento Sans', "Helvetica Neue", Helvetica, Arial, sans-serif;
   color:#666;
   font-weight:300;
   margin: 0px;
   padding:0px 0 20px 0px;
-  background: url(../images/body-background.png) #eae6d1;
+  background: #fff;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -85,9 +87,10 @@ code {
   color:#efefef;
   text-shadow: 0px 1px 0px #000;
   margin: 0 4px;
-  padding: 2px 6px;
+  padding: 5px 10px;
   background: #333;
   border-radius: 2px;
+
 }
 
 pre {
@@ -141,15 +144,15 @@ dt {
 }
 
 header {
-  padding: 25px 20px 40px 20px;
-  margin: 0;
-  position: fixed;
+  padding: 40px 20px 40px 20px;
+  margin: 40px 0px 0px 0px;
+  position: relative;
   top: 0;
   left:0;
   right:0;
   width: 100%;
   text-align: center;
-  background: url(../images/background.png) #4276b6;
+  background: #286282;
   box-shadow: 1px 0px 2px rgba(0,0,0,.75);
   z-index:99;
   -webkit-font-smoothing:antialiased;
@@ -157,8 +160,8 @@ header {
 
   h1 {
     font: 40px/48px 'Copse', "Helvetica Neue", Helvetica, Arial, sans-serif;
-    color: #f3f3f3;
-    text-shadow: 0px 2px 0px #235796;
+    color: #fff;
+    text-shadow: 0px 2px 0px #17384a;
     margin: 0px;
     white-space: nowrap;
     overflow: hidden;
@@ -167,144 +170,147 @@ header {
     -ms-text-overflow: ellipsis;
   }
 
-  p {
-    color: #d8d8d8;
+  p{
+    color: #fff;
     text-shadow:rgba(#000, 0.2) 0 1px 0;
     font-size: 18px;
     margin: 0px;
   }
 }
 
-#banner {
-  z-index: 100;
-  left:0;
-  right:50%;
-  height: 50px;
-  margin-right:-382px;
+.navbar {
   position: fixed;
-  top: 115px;
-  background: #ffcc00;
-  border: 1px solid #f0b500;
-  box-shadow: 0px 1px 3px rgba(0,0,0,.25);
-  border-radius: 0px 2px 2px 0px;
-  padding-right: 10px;
+  z-index: 100;
+  top: 0;
+  width: 100%;
+  overflow: hidden;
+  background-color: #fff;
+  padding: 0;
+  box-shadow: 1px 0px 5px rgba(0,0,0,.75);
+}
 
-  .button {
-    border: 1px solid #dba500;
-    /* To change button color, overwrite this line in other button classes*/
-    background: linear-gradient(rgb(255, 231, 136), rgb(255, 206, 56));
-    border-radius: 2px;
-    box-shadow: inset 0px 1px 0px rgba(255,255,255,.4), 0px 1px 1px rgba(0,0,0,.1);
-    background-color: #FFE788;
-    margin-left: 5px;
-    padding: 10px 12px;
-    margin-top: 6px;
-    line-height:14px;
-    font-size:14px;
-    color:#333;
-    font-weight: bold;
-    display:inline-block;
-    text-align:center;
+.navbar ul {
+  list-style: none;
+  text-align: center;
+  margin: 0;
+  width: 100%;
+  padding: 0;
+  max-height: 40px;
+
+  li {
+  display: inline-block;
+  font-size: 20px;
+  color: white;
+  padding: 0px 10px;
+  text-decoration: none;
+  }
+}
+
+.navbar a {
+  float: left;
+  font-size: 20px;
+  color: #333;
+  text-align: center;
+  padding: 10px;
+  text-decoration: none;
+
+  &:hover {
+    background-color: #F2973C;
+  }
+}
+
+
+.dropdown {
+  float: left;
+  overflow: hidden;
+
+  &:hover {
+    background-color: #ddd;
+  }
+}
+
+.dropdown button {
+  float: left;
+  font-size: 20px;
+  border: none;
+  outline: none;
+  color: #333;
+  padding: 10px 10px 10px 10px;
+  background-color: inherit;
+  font-family: inherit;
+  margin: 0;
+
+  &:hover {
+    background-color: #F2973C;       
+  }
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #333;
+  z-index: 102;
+}
+
+.dropdown-content a {
+  background-color: #333;
+  color: white;
+  padding: 60px 10px 60px 10px;
+  text-decoration: none;
+  display: block;
+  text-align: center;
+
+  &:hover {
+    background-color: #666;
+  }
+}
+
+.dropdown-content .block {
+  background-color: inherit;
+  color: white;
+  text-decoration: none;
+  text-align: center;
+  display: block;
+  float: left;
+  min-width: 200px;
+  padding: 10px 0px;
+
+  span {
+    // text-decoration: underline;
+    color: #7acdf6;
+  }
+
+  a {
+    background-color: inherit;
+    color: white;
+    display: block;
+    float: none;
+    padding: 10px;
+    font-size: 16px;
 
     &:hover {
-      background: linear-gradient(rgb(255, 231, 136), rgb(255, 231, 136));
-      background-color: #ffeca0;
+      color: #53bbf0;
     }
   }
+}
 
-  .fork {
-    float:left;
-    left:50%;
-    margin-left:0px;
-    padding: 10px 12px;
-    margin-top: 6px;
-    line-height:14px;
-    font-size:14px;
-    background-color: #FFE788;
-    border: 1px solid #dba500;
-  }
-
-  .codeview {
-    float:left;
-    left:50%;
-    margin-left:155px;
-    padding: 10px 12px;
-    margin-top: 6px;
-    line-height:14px;
-    font-size:14px;
-    background-color: #FFE788;
-    border: 1px solid #dba500;
-  }
-
-
-  .doxygen {
-    float:left;
-    left:50%;
-    margin-left:10px;
-    padding: 10px 12px;
-    margin-top: 6px;
-    line-height:14px;
-    font-size:14px;
-    background-color: #FFE788;
-  }
-
-  .codeinfo {
-    position:fixed;
-    left:50%;
-    margin-left:-340px;
-  }
-
-  .downloads {
-    float: right;
-    margin:0 45px 0 0;
-
-    span {
-      float:left;
-      line-height:52px;
-      font-size:90%;
-      color:#9d7f0d;
-      text-transform:uppercase;
-      text-shadow:rgba(#fff, 0.2) 0 1px 0;
-    }
-  }
-
-  ul {
-    list-style:none;
-    height:40px;
-    padding:0;
-    float: left;
-    margin-left:10px;
-
-    li {
-      display:inline;
-
-      a.button {
-        background-color: #FFE788;
-      }
-    }
-  }
-
-  #logo {
-    position:absolute;
-    height: 36px;
-    width: 36px;
-    right:7px;
-    top:7px;
-    display: block;
-    background: url(../images/octocat-logo.svg);
-  }
+.dropdown:hover .dropdown-content {
+  position: fixed;
+  display: block;
+  margin: 40px 0px;
+  box-shadow: 0px 1px 3px rgba(0,0,0,.75);
 }
 
 section {
   width:590px;
   padding: 30px 30px 50px 30px;
   margin: 20px 0;
-  margin-top: 190px;
+  margin-top: 20px;
   position:relative;
-  background: #fbfbfb;
+  background: #fff;
   border-radius: 3px;
-  border: 1px solid #cbcbcb;
-  box-shadow: 0px 1px 2px rgba(0,0,0,.09), inset 0px 0px 2px 2px rgba(255,255,255,.5), inset 0 0 5px 5px rgba(255,255,255,.4);
+  border: none;
+  box-shadow: none;
 }
 
 small {
@@ -314,10 +320,13 @@ small {
 nav {
   width: 230px;
   position: fixed;
-  top: 220px;
+  top: 245px;
   left:50%;
   margin-left:-580px;
   text-align: right;
+  background: #fff;
+  max-height: 300px;
+  overflow-y: auto;
 
   ul {
     list-style: none;
@@ -399,29 +408,9 @@ footer {
     }
   }
 
-  #banner {
-    width: 100%;
-
-    .downloads {
-        margin-right: 60px;
-      }
-
-    //.fork {
-    //}
-
-    .codeinfo {
-    }
-
-    #logo {
-      margin-right: 15px;
-    }
-  }
-
   section {
-    border:1px solid #e5e5e5;
-    border-width:1px 0;
-    padding:20px auto;
-    margin: 190px auto 20px;
+    padding:20px;
+    margin: 20px auto 20px;
     max-width: 600px;
   }
 
@@ -441,7 +430,7 @@ footer {
   }
 
   header {
-    padding:20px 20px;
+    padding:80px 20px 0px 20px;
     margin: 0;
 
     h1 {
@@ -456,28 +445,8 @@ footer {
     p { display: none;}
   }
 
-  #banner {
-    top: 80px;
-
-    .codeinfo {
-        display: inline-block;
-        margin-left: 0px;
-        position:fixed;
-        left:20px;
-    }
-
-    /*.fork {
-      float: left;
-      display: inline-block;
-      margin-left: 0px;
-      // position:fixed;
-      left:20px;
-     }*/
-
-  }
-
   section {
-    margin-top: 130px;
+    margin-top: 30px;
     margin-bottom: 0px;
     width: auto;
   }
@@ -491,9 +460,8 @@ footer {
   body {
   }
 
-  header{
-    position: relative;
-    padding: 5px 0px;
+  header {
+    padding: 10px 0px, 0px, 0px;
     min-height: 0px;
 
     h1 {
@@ -512,6 +480,16 @@ footer {
   #banner { display: none;}
   header ul {
     display:none;
+  }
+}
+
+@media print, screen and (max-width: 480px) {
+  body {
+  }
+
+  header {
+    padding: 40px 20px 10px 20px;
+    min-height: 0px;
   }
 }
 
@@ -540,6 +518,10 @@ footer {
     display: none;
   }
 
+  header {
+
+  }
+
   footer {
     text-align: center;
     margin: 20px auto;
@@ -549,7 +531,4 @@ footer {
     width:auto;
   }
 }
-
-@import "{{ site.theme }}";
-
 
