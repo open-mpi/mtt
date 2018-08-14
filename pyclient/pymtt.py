@@ -153,6 +153,13 @@ except KeyError:
     print("to the top-level directory of your MTT installation")
     sys.exit(1)
 
+# check to see if it is an absolute path, as we require
+if not os.path.isabs(mtthome):
+    print("MTT_HOME environment variable:")
+    print("    ", mtthome)
+    print("is not an absolute path")
+    sys.exit(1)
+
 # check to see if MTT_HOME exists
 if not os.path.exists(mtthome):
     print("MTT_HOME points to a non-existent location:")
