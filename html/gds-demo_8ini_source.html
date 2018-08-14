@@ -37,7 +37,9 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
+      <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="namespaces.html"><span>Packages</span></a></li>
+      <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
       <li>
         <div id="MSearchBox" class="MSearchBoxInactive">
@@ -60,6 +62,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow2" class="tabs2">
     <ul class="tablist">
       <li><a href="files.html"><span>File&#160;List</span></a></li>
+      <li><a href="globals.html"><span>File&#160;Members</span></a></li>
     </ul>
   </div>
 <!-- window showing the filter options -->
@@ -67,7 +70,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Files</a></div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&#160;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&#160;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&#160;</span>Variables</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(6)"><span class="SelectionMark">&#160;</span>Groups</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -86,7 +89,221 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="title">gds-demo.ini</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="gds-demo_8ini.html">Go to the documentation of this file.</a><div class="fragment"></div><!-- fragment --></div><!-- contents -->
+<a href="gds-demo_8ini.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno"><a class="line" href="namespacegds-demo.html">    1</a></span>&#160;[MTT]</div>
+<div class="line"><a name="l00002"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a021b9480541541d7ed577ad25eddf802">    2</a></span>&#160;hostlist = &amp;create_hostlist(<span class="stringliteral">&quot;witch[21-22]&quot;</span>, 4)</div>
+<div class="line"><a name="l00003"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a8ce383223449cab9f79575209d7dff2a">    3</a></span>&#160;description = @hostlist@</div>
+<div class="line"><a name="l00004"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#afef42fececa25d4cb15454b29b84e89b">    4</a></span>&#160;logfile =  &amp;scratch_root()/mtt_output.log</div>
+<div class="line"><a name="l00005"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a62244f93362dda6490422a8beb98d7c6">    5</a></span>&#160;submit_group_results=1</div>
+<div class="line"><a name="l00006"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a87264971a99b7a376dc48ab3d1cd7469">    6</a></span>&#160;drain_timeout=5</div>
+<div class="line"><a name="l00007"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a18c78141084f23069438c080ec110e3c">    7</a></span>&#160;min_disk_free=0</div>
+<div class="line"><a name="l00008"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#aa7b4ee1aa52c894100818af632edc7dc">    8</a></span>&#160;ompi_ver=1.3.3</div>
+<div class="line"><a name="l00009"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#adc1de3305ccc0c692368fda2622c819f">    9</a></span>&#160;web_url=https://hpc_head.voltaire.com</div>
+<div class="line"><a name="l00010"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#aa8573740e3b2e7a32c35d743695d3748">   10</a></span>&#160;web_root=&amp;preg_replace(&amp;getenv(<span class="stringliteral">&quot;HOME&quot;</span>),<span class="stringliteral">&quot;~&quot;</span> . &amp;getenv(<span class="stringliteral">&quot;USER&quot;</span>), &amp;scratch_root())</div>
+<div class="line"><a name="l00011"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a825b45a7f6cfdf6119a766e9938fbd38">   11</a></span>&#160;scratch_url=@web_url@/@web_root@</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="comment"># Contact Jeff to get username/password to access GDS</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#aa9c2bc4e0238cad5803c9b33aace1e59">   14</a></span>&#160;gds_user=&amp;shell(<span class="stringliteral">&quot;head -1 ~/.mtt_auth&quot;</span>)</div>
+<div class="line"><a name="l00015"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#ae8f847cfa457e3ef0c5fa370200cf06c">   15</a></span>&#160;gds_pw=&amp;shell(<span class="stringliteral">&quot;tail -1 ~/.mtt_auth&quot;</span>)</div>
+<div class="line"><a name="l00016"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a9d1bc7e10684b9a35809bd57826a72eb">   16</a></span>&#160;gds_url=http://open-mpi-mtt.appspot.com/</div>
+<div class="line"><a name="l00017"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a89bef1abf605d724804682af1e5a0fb4">   17</a></span>&#160;gds_tag=osu_&amp;getenv(<span class="stringliteral">&quot;USER&quot;</span>)</div>
+<div class="line"><a name="l00018"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a46212fa747c3d30872b524a4c5c62084">   18</a></span>&#160;gds_email=&amp;getenv(<span class="stringliteral">&quot;USER&quot;</span>)@voltaire.com</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;</div>
+<div class="line"><a name="l00020"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a843952a47656e27f99b11351112482cc">   20</a></span>&#160;after_mtt_start_exec = &lt;&lt;EOT</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="comment">#!/bin/bash</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;@PROGRAM_DIR@/bquery.pl -u @gds_user@ -p @gds_pw@ --server=@gds_url@ --query --gqls=<span class="stringliteral">&quot;select * from TestRunPhase where tag=&#39;@gds_tag@&#39; and test_name=&#39;osu_latency&#39;&quot;</span> --dir=&amp;scratch_root()/@gds_tag@</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;@PROGRAM_DIR@/breport.pl --dir=&amp;scratch_root()/@gds_tag@ --dest=@gds_tag@.xls --title=<span class="stringliteral">&quot;@gds_tag@&quot;</span> --axis_x=data_message_size --axis_y=data_latency_avg --legend=<span class="stringliteral">&#39;$test_name-$test_case-$custom_my_dynamic_gds_field&#39;</span> -e @gds_email@</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;EOT</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;[VBench]</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="comment"># place to keep yaml files for mtt results</span></div>
+<div class="line"><a name="l00029"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a963db84d8e885972e94d04061614763f">   29</a></span>&#160;repository_tempdir=&amp;scratch_root()/gds_data</div>
+<div class="line"><a name="l00030"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a2840f90f55bf220489772c7ec78979da">   30</a></span>&#160;repository_dirname_prefix=gds</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;[MPI Details: Open MPI]</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;</div>
+<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a860b0b1622e13aba647a797f1e3335cb">   35</a></span>&#160;exec            = &amp;test_prefix_pretty()/bin/mpirun @hosts@ -np &amp;test_np() @mca@ &amp;test_executable_abspath() &amp;test_argv()</div>
+<div class="line"><a name="l00036"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a5d35655c0d94700bdf5cd1c850d5629f">   36</a></span>&#160;hosts           = &amp;if(&amp;have_hostfile(), <span class="stringliteral">&quot;--hostfile &quot;</span> . &amp;<a class="code" href="namespaceompi-core-template.html#aed8287cfdf838bf38fe4e39ae97c2e9c">hostfile</a>(),&amp;if(&amp;have_hostlist(), <span class="stringliteral">&quot;--host &quot;</span> . &amp;<a class="code" href="namespacegds-demo.html#a021b9480541541d7ed577ad25eddf802">hostlist</a>(), <span class="stringliteral">&quot;&quot;</span>))</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="comment"># Example: how to save in GDS custom field (custom_my_dynamic_gds_field) in the TestResultPhase object</span></div>
+<div class="line"><a name="l00039"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#aeadba89193ad7b62e80b8c3a321f46d2">   39</a></span>&#160;btl_openib      = -mca btl openib,sm,self -x custom_my_dynamic_gds_field=ic-ib</div>
+<div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a1a98caf64f4d8ec3980fda04116bb978">   40</a></span>&#160;btl_eth1g       = -mca btl tcp,sm,self -x custom_my_dynamic_gds_field=ic-eth1g</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;</div>
+<div class="line"><a name="l00042"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#ae28af619e6658a48dc7674284fbde2e0">   42</a></span>&#160;mca = &amp;enumerate(\</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="stringliteral">&quot;@btl_openib@ -mca mpi_paffinity_alone 1&quot;</span>,\</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <span class="stringliteral">&quot;@btl_openib@&quot;</span>,\</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <span class="stringliteral">&quot;@btl_eth1g@ -mca mpi_paffinity_alone 1&quot;</span>,\</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        <span class="stringliteral">&quot;@btl_eth1g@&quot;</span>,\</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        )</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="comment">#======================================================================</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="comment"># Open MPI Vanilla</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="comment">#======================================================================</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;[MPI get: Open MPI Vanilla]</div>
+<div class="line"><a name="l00055"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a9dc2cdce477d3c17556857b0fd695d01">   55</a></span>&#160;mpi_details = Open MPI</div>
+<div class="line"><a name="l00056"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#afb50f91266d15d79ce91d59cd80b8369">   56</a></span>&#160;module = AlreadyInstalled</div>
+<div class="line"><a name="l00057"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a7d7eb3eb651697eb48935ef101d672b3">   57</a></span>&#160;alreadyinstalled_dir = /opt/openmpi/&amp;get_ini_val(<span class="stringliteral">&quot;MTT&quot;</span>,<span class="stringliteral">&quot;ompi_ver&quot;</span>)</div>
+<div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a7446952915af641c8b9627f3e310e818">   58</a></span>&#160;alreadyinstalled_mpi_type = OMPI</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;[MPI install: openmpi-vanilla]</div>
+<div class="line"><a name="l00062"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#ae15a0b4fe34cdb90324a9fccefa74d54">   62</a></span>&#160;mpi_get = Open MPI Vanilla</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;module = Analyze::OMPI</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;description = Voltaire already installed MPI</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="comment">#======================================================================</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="comment"># Test get phase</span></div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="comment">#======================================================================</span></div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;[Test get: dummy]</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;module = Noop</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;[Test get: osu]</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;module = Download</div>
+<div class="line"><a name="l00075"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a36280178b5a910db19b6220529c58159">   75</a></span>&#160;download_url = http://mvapich.cse.ohio-state.edu/benchmarks/OMB-3.1.1.tgz</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;[Test get: imb]</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;module = Download</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;download_url = http://software.intel.com/file/18632</div>
+<div class="line"><a name="l00080"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a8fcb550711ba106cd90629961428d4d2">   80</a></span>&#160;tarball_name = IMB_3.2.tgz.tgz</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;[Test get: trivial]</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;module = Trivial</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;<span class="comment">#======================================================================</span></div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;<span class="comment"># Test build phase</span></div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<span class="comment">#======================================================================</span></div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;[Test build: dummy]</div>
+<div class="line"><a name="l00090"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a78e16fa54810a3de508ccdce748d9d01">   90</a></span>&#160;test_get = dummy</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;module = Noop</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;[Test build: osu]</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;test_get = osu</div>
+<div class="line"><a name="l00095"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a24caa146e72b64ae967de159484d1ab0">   95</a></span>&#160;save_stdout_on_success = 1</div>
+<div class="line"><a name="l00096"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a63b96d5e04e7011c1bd63a5a9a862199">   96</a></span>&#160;merge_stdout_stderr = 1</div>
+<div class="line"><a name="l00097"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#ae2556946a1f4a30ed436e2abf70e10cc">   97</a></span>&#160;stderr_save_lines = 100</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;module = Shell</div>
+<div class="line"><a name="l00100"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a77a09eb94a2a16900f19882d658a9e7c">  100</a></span>&#160;shell_build_command = &lt;&lt;EOT</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;make CC=&amp;test_prefix_pretty()/bin/mpicc</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;EOT</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;[Test build: imb]</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;test_get = imb</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;save_stdout_on_success = 1</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;merge_stdout_stderr = 1</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;stderr_save_lines = 100</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;module = Shell</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;shell_build_command = &lt;&lt;EOT</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;cd src</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;make -f make_ict CC=&amp;test_prefix_pretty()/bin/mpicc clean IMB-MPI1</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;EOT</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;[Test build: trivial]</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;test_get = trivial</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;module = Trivial</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;<span class="comment">#======================================================================</span></div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;<span class="comment"># Test Run phase</span></div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;<span class="comment">#======================================================================</span></div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;[Test run]</div>
+<div class="line"><a name="l00127"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a2d77898a9444a8c560ccf30fc053569e">  127</a></span>&#160;<span class="keywordflow">pass</span> = &amp;and(&amp;cmd_wifexited(), &amp;eq(&amp;cmd_wexitstatus(), 0))</div>
+<div class="line"><a name="l00128"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a27ea9d5cc2fbb766234415c706092c57">  128</a></span>&#160;timeout = 60:00</div>
+<div class="line"><a name="l00129"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a1722e1d7e83a472b8e35a9dcf5e25e0b">  129</a></span>&#160;save_stdout_on_pass = 1</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;merge_stdout_stderr = 1</div>
+<div class="line"><a name="l00131"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a4ddff33e8b6b2a311784d75fa21f6f1c">  131</a></span>&#160;stdout_save_lines = 100</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;stderr_save_lines = 100</div>
+<div class="line"><a name="l00133"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a0195deda33cf9eb85895034c9b8e1088">  133</a></span>&#160;np = &amp;env_max_procs()</div>
+<div class="line"><a name="l00134"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a00e203a3795e52b29fff3a6502553b9c">  134</a></span>&#160;specify_module = Simple</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;[Test run: trivial]</div>
+<div class="line"><a name="l00137"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a05285f89342c69f06e7095d725a598a9">  137</a></span>&#160;include_section = Test run</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;</div>
+<div class="line"><a name="l00139"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#abd6703039114d65bab135fc23457905a">  139</a></span>&#160;test_build = trivial</div>
+<div class="line"><a name="l00140"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a09c460047a7a72cd72b03a892e16804b">  140</a></span>&#160;skipped = 0</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;specify_module = Simple</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;simple_first:tests = &amp;find_executables(<span class="stringliteral">&quot;.&quot;</span>)</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;vbench:tag = &lt;&lt;EOT</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;&amp;stringify(@INI_SECTION_NAME@,&amp;getenv(<span class="stringliteral">&quot;USER&quot;</span>))</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;@INI_SECTION_NAME@</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;EOT</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;[Test run: osu]</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;include_section = Test run</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;test_build = osu</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;simple_pass:tests = osu_bw osu_latency osu_bibw</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;np = 2</div>
+<div class="line"><a name="l00155"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#adedb86c1208d06a5408c0c8266f63670">  155</a></span>&#160;analyze_module = OSU</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;vbench:tag = &lt;&lt;EOT</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;&amp;stringify(@INI_SECTION_NAME@,<span class="stringliteral">&#39;_&#39;</span>,&amp;getenv(<span class="stringliteral">&quot;USER&quot;</span>))</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;@INI_SECTION_NAME@</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;EOT</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;[Test run: imb]</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;include_section = Test run</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;test_build = imb</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;<span class="keywordflow">pass</span> = &amp;eq(&amp;cmd_wexitstatus(), 0)</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;<span class="comment"># Ensure to leave this value as &quot;-1&quot;, or performance results could be lost!</span></div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;stdout_save_lines = -1</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;simple_pass:tests = src/IMB-MPI1</div>
+<div class="line"><a name="l00168"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#ac0172e0836a56b7aaec9bb9d5a697bcd">  168</a></span>&#160;argv = -npmin &amp;test_np() </div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;analyze_module = IMB</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;vbench:tag = &lt;&lt;EOT</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;&amp;stringify(@INI_SECTION_NAME@,&amp;getenv(<span class="stringliteral">&quot;USER&quot;</span>))</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;@INI_SECTION_NAME@</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;EOT</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;<span class="comment">#======================================================================</span></div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;<span class="comment"># Reporter phase</span></div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;<span class="comment">#======================================================================</span></div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;[Reporter: text file backup]</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;module = TextFile</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;</div>
+<div class="line"><a name="l00183"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a210b065329c1196c2b4205f4e4e8db53">  183</a></span>&#160;textfile_filename = $phase-$section-$mpi_name-$mpi_version.txt</div>
+<div class="line"><a name="l00184"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a211b7a2e48808f11b61bcb2bae18d23f">  184</a></span>&#160;textfile_summary_header = &lt;&lt;EOT</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;hostname: &amp;shell(<span class="stringliteral">&quot;hostname&quot;</span>)</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;uname: &amp;shell(<span class="stringliteral">&quot;uname -a&quot;</span>)</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;Detailed report at &amp;get_ini_val(<span class="stringliteral">&quot;mtt&quot;</span>,<span class="stringliteral">&quot;scratch_url&quot;</span>)/All_phase-summary.html</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;EOT</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;</div>
+<div class="line"><a name="l00191"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a7791b144751668f4a2bd3aabde7ec607">  191</a></span>&#160;textfile_summary_footer =</div>
+<div class="line"><a name="l00192"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a58b62d7de4b3e126d25d88e6cdb438cf">  192</a></span>&#160;textfile_detail_header =</div>
+<div class="line"><a name="l00193"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a7b2740aecad3e48a8252e41b8e4e0aac">  193</a></span>&#160;textfile_detail_footer =</div>
+<div class="line"><a name="l00194"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#aaaa191ed09a9a9150e323f1f49713812">  194</a></span>&#160;textfile_textwrap = 78</div>
+<div class="line"><a name="l00195"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a758502074a250507a71dd1afdd3cf50c">  195</a></span>&#160;email_to = &amp;get_ini_val(<span class="stringliteral">&quot;mtt&quot;</span>,<span class="stringliteral">&quot;gds_email&quot;</span>)</div>
+<div class="line"><a name="l00196"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a772ba8c6d51a7d3574b66d2dfd4194a5">  196</a></span>&#160;email_subject = MTT test has completed, status: $overall_mtt_status</div>
+<div class="line"><a name="l00197"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a131b88d6f8596699cad6b6501edee00e">  197</a></span>&#160;email_footer = &lt;&lt;EOT</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;</div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;Test Scratch Directory <span class="keywordflow">is</span> &amp;get_ini_val(<span class="stringliteral">&quot;mtt&quot;</span>,<span class="stringliteral">&quot;scratch_url&quot;</span>)/All_phase-summary.html</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;Test Scratch web url: &amp;get_ini_val(<span class="stringliteral">&quot;mtt&quot;</span>,<span class="stringliteral">&quot;scratch_url&quot;</span>)/</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;EOT</div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;[Reporter: YAML output]</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;module = MTTGDS</div>
+<div class="line"><a name="l00205"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#af97c95f0978e6f297cd4893962369a06">  205</a></span>&#160;mttdatabase_realm = OMPI</div>
+<div class="line"><a name="l00206"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a74802c727b9ae23b038625a85efa3d73">  206</a></span>&#160;mttdatabase_username = &amp;get_ini_val(<span class="stringliteral">&quot;mtt&quot;</span>,<span class="stringliteral">&quot;gds_user&quot;</span>)</div>
+<div class="line"><a name="l00207"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#aa5503d77b2af640cee7a9cddf64d32af">  207</a></span>&#160;mttdatabase_password = &amp;get_ini_val(<span class="stringliteral">&quot;mtt&quot;</span>,<span class="stringliteral">&quot;gds_pw&quot;</span>)</div>
+<div class="line"><a name="l00208"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#a5b63d22833bd28b9d8409c376db882e4">  208</a></span>&#160;mttdatabase_platform = </div>
+<div class="line"><a name="l00209"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#aa4de05678316043e454babc3bf6f66f8">  209</a></span>&#160;mttdatabase_hostname = &amp;shell(<span class="stringliteral">&quot;hostname&quot;</span>)</div>
+<div class="line"><a name="l00210"></a><span class="lineno"><a class="line" href="namespacegds-demo.html#ad067871dce5c5a51f34693d833b0e0ef">  210</a></span>&#160;mttdatabase_url = &amp;get_ini_val(<span class="stringliteral">&quot;mtt&quot;</span>,<span class="stringliteral">&quot;gds_url&quot;</span>)</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;</div>
+<div class="ttc" id="namespaceompi-core-template_html_aed8287cfdf838bf38fe4e39ae97c2e9c"><div class="ttname"><a href="namespaceompi-core-template.html#aed8287cfdf838bf38fe4e39ae97c2e9c">ompi-core-template.hostfile</a></div><div class="ttdeci">hostfile</div><div class="ttdef"><b>Definition:</b> <a href="ompi-core-template_8ini_source.html#l00076">ompi-core-template.ini:76</a></div></div>
+<div class="ttc" id="namespacegds-demo_html_a021b9480541541d7ed577ad25eddf802"><div class="ttname"><a href="namespacegds-demo.html#a021b9480541541d7ed577ad25eddf802">gds-demo.hostlist</a></div><div class="ttdeci">tuple hostlist</div><div class="ttdef"><b>Definition:</b> <a href="gds-demo_8ini_source.html#l00002">gds-demo.ini:2</a></div></div>
+</div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

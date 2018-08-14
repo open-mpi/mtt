@@ -6,3 +6,44 @@
 \item 
 \hyperlink{namespacepymtt}{pymtt}
 \end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+tuple \hyperlink{namespacepymtt_a95d54fdad48aac280be9d57cf81dee68}{pymtt.\-parser} = argparse.\-Argument\-Parser(description=\char`\"{}usage\-: \%prog \mbox{[}options\mbox{]} testfile1 testfile2 ...\char`\"{})
+\item 
+tuple \hyperlink{namespacepymtt_a99ad2929ecc4e17f97670bed44f08c35}{pymtt.\-info\-Group} = parser.\-add\-\_\-argument\-\_\-group('Info\-Group','Informational Options')
+\item 
+string \hyperlink{namespacepymtt_a5ee564a034624d925bb8dc823d11c522}{pymtt.\-action} = \char`\"{}store\-\_\-true\char`\"{}
+\item 
+string \hyperlink{namespacepymtt_a21e88c39af91deb569da20633d245b09}{pymtt.\-help} = \char`\"{}Print version\char`\"{}
+\item 
+tuple \hyperlink{namespacepymtt_a0f52dbd5d46583e466305a708dea64a1}{pymtt.\-exec\-Group} = parser.\-add\-\_\-argument\-\_\-group('exec\-Group', \char`\"{}Execution Options\char`\"{})
+\item 
+string \hyperlink{namespacepymtt_a9ecea46ee6082edb9bbdd8393829e18e}{pymtt.\-dest} = \char`\"{}duration\char`\"{}
+\item 
+tuple \hyperlink{namespacepymtt_af066a010075617c13a5595243ceb9041}{pymtt.\-debug\-Group} = parser.\-add\-\_\-argument\-\_\-group('debug\-Group', 'Debug Options')
+\item 
+tuple \hyperlink{namespacepymtt_adec79fec8fbc6630a3a485916f342683}{pymtt.\-args} = parser.\-parse\-\_\-args()
+\item 
+\hyperlink{namespacepymtt_a968aa7c33a2106380483390a0fa2a045}{pymtt.\-basedir} = args.\-basedir
+\item 
+\hyperlink{namespacepymtt_ac564eaf8be3f93d5dd5703b3d919902b}{pymtt.\-topdir} = basedir
+\item 
+tuple \hyperlink{namespacepymtt_a574a50dd90d5a2f46fcb0e27b43a7af9}{pymtt.\-chkdir} = os.\-path.\-join(args.\-basedir, \char`\"{}System\char`\"{})
+\item 
+tuple \hyperlink{namespacepymtt_a79ea4ff472e24c5d543c6a30968b21e6}{pymtt.\-path} = os.\-path.\-dirname(sys.\-argv\mbox{[}0\mbox{]})
+\item 
+tuple \hyperlink{namespacepymtt_ab13a60c31fa69917ce06c1a2631aaf02}{pymtt.\-m} = imp.\-load\-\_\-source(\char`\"{}Test\-Def\char`\"{}, os.\-path.\-join(basedir, \char`\"{}Test\-Def.\-py\char`\"{}))
+\item 
+tuple \hyperlink{namespacepymtt_a17f658b5d141d51664bb3ede8830c4c0}{pymtt.\-cls} = getattr(m, \char`\"{}Test\-Def\char`\"{})
+\item 
+tuple \hyperlink{namespacepymtt_a55825c16c4bd231f7ffbd0fe52407e3f}{pymtt.\-a} = cls()
+\item 
+tuple \hyperlink{namespacepymtt_afebe539e6104da8ebd3d06b7a0e77fe7}{pymtt.\-test\-Def} = a.\-\_\-\-\_\-class\-\_\-\-\_\-()
+\item 
+string \hyperlink{namespacepymtt_a5d5ee597f85e5c40ec6a923a4398c291}{pymtt.\-fallback} = \char`\"{}sequential\char`\"{}
+\item 
+tuple \hyperlink{namespacepymtt_a283715e769294f7b1362c85498cdf2a3}{pymtt.\-executor} = args.\-executorortest\-Def.\-config.\-get('M\-T\-T\-Defaults', 'executor', fallback=fallback)
+\item 
+tuple \hyperlink{namespacepymtt_a1a2fd13626c1c2d248cedc138e8660ec}{pymtt.\-status} = test\-Def.\-execute\-Test()
+\end{DoxyCompactItemize}

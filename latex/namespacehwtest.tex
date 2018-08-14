@@ -1,3 +1,450 @@
 \hypertarget{namespacehwtest}{\section{hwtest Namespace Reference}
 \label{namespacehwtest}\index{hwtest@{hwtest}}
 }
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+int \hyperlink{namespacehwtest_a2974a3de34764ea05c838464d476f407}{trial\-\_\-run} = 0
+\item 
+\hyperlink{namespacehwtest_a877f35b716655c4bfeb4955018d305cb}{scratch} = /home/common/mttscratch-\/rsh
+\item 
+int \hyperlink{namespacehwtest_ae28e9902dd28944ecda9bacac16b28b5}{submit\-\_\-group\-\_\-results} = 1
+\item 
+\hyperlink{namespacehwtest_a741c9ed9ca6a98101b7fb9d19d68c869}{logfile} = /home/common/mtt-\/logfile-\/rsh.\-txt
+\item 
+\hyperlink{namespacehwtest_a29832146debe207ba418a2c34a72da74}{description} = Prototype\-H\-Wtestconfigurationfile
+\item 
+\hyperlink{namespacehwtest_afe5609741ec9bca621277528b05b63c8}{name} = Ethernet\-N\-I\-C
+\item 
+\hyperlink{namespacehwtest_acc1aaeb8f3c26bd3054520cba5b8dfe5}{module} = tplink
+\item 
+int \hyperlink{namespacehwtest_ae54fc3a5be1cdc41fa34eb22483e6909}{model} = tg-\/3269
+\item 
+float \hyperlink{namespacehwtest_a4cd2f078f70d7159e347c0a9ddd51f84}{version} = 1.\-7
+\item 
+float \hyperlink{namespacehwtest_a55a50eaac0f3463a3fc21e41b75050ab}{update\-\_\-file} = /home/common/firmware/tplink/fw1.\-7.\-18
+\item 
+\hyperlink{namespacehwtest_a5c55bb57a925e013f9ffd6f3e5ca99d7}{image} = centos7
+\item 
+\hyperlink{namespacehwtest_acb222c4c00407c64de9ba5ab1c303cec}{scm\-\_\-module} = Git
+\item 
+\hyperlink{namespacehwtest_a37abe4e88b4c1525a3b343f47dfc2862}{scm\-\_\-url} = /home/common/ompi-\/tests
+\item 
+\hyperlink{namespacehwtest_a7d494d98bb3aaabad59bf16dd7c4c9d2}{scm\-\_\-subdir} = ibm
+\item 
+string \hyperlink{namespacehwtest_a0b55d030449a5be7b3f9946712208ee4}{pre\-\_\-config\-\_\-cmd} = \char`\"{}./autogen.\-sh\char`\"{}
+\item 
+\hyperlink{namespacehwtest_a10d7a3bc8e20a9b333fb253328ca7e8c}{test\-\_\-get} = trivial
+\item 
+int \hyperlink{namespacehwtest_afffd8e55c08b72fb88423c7446b90d70}{save\-\_\-stdout\-\_\-on\-\_\-success} = 1
+\item 
+int \hyperlink{namespacehwtest_a48f78a49ff7c6103a9c7c8565ec98438}{merge\-\_\-stdout\-\_\-stderr} = 1
+\item 
+\hyperlink{namespacehwtest_ae44fdc8b804d0261bc648dc81fccf671}{target\-\_\-install} = My\-Installation
+\item 
+int \hyperlink{namespacehwtest_aa6450e0e7dfc9a867ed2a7a81477aba2}{stderr\-\_\-save\-\_\-lines} = 100
+\item 
+string \hyperlink{namespacehwtest_aae03e4589fc182736e73d50bbb74346e}{config\-\_\-cmd} = \char`\"{}./configure C\-C=mpicc C\-X\-X=mpic++ F77=mpif77\char`\"{}
+\item 
+string \hyperlink{namespacehwtest_a5378e5bba23994a3a52c3381e619b18b}{build\-\_\-cmd} = \char`\"{}make -\/j 10\char`\"{}
+\item 
+\hyperlink{namespacehwtest_a92b45acc8d45d80d6032cba2a6b6dd5e}{mpi\-\_\-install} = My\-Installation
+\item 
+\hyperlink{namespacehwtest_a6047a9d712208748ac55f9c3e2bcc0ce}{intel\-\_\-ompi\-\_\-tests\-\_\-buildfile} = all\-\_\-tests\-\_\-no\-\_\-perf
+\item 
+\hyperlink{namespacehwtest_a5ba5b6a44052b71d5033b0673947ced0}{test\-\_\-build} = Trivial
+\item 
+tuple \hyperlink{namespacehwtest_a71b9053f13108a7a4c06692c840d6308}{timeout} = max(10, \hyperlink{namespacehwtest_a91f9231befdd013bc572920c4f6320ff}{np})
+\item 
+string \hyperlink{namespacehwtest_af3c2c504aec4d3d87f8382d577e362ca}{find\-\_\-test\-\_\-dir} = \char`\"{}.\char`\"{}
+\item 
+string \hyperlink{namespacehwtest_ad08296b7abe004e90b638ec9eb5c0c30}{fail\-\_\-tests} = \char`\"{}environment/abort, environment/final\char`\"{}
+\item 
+\hyperlink{namespacehwtest_a30cc5b5edc143ffd8006c27213d903f9}{fail\-\_\-timeout} = max\-\_\-procs
+\item 
+string \hyperlink{namespacehwtest_ae1b5040a9a3c1b72300a18fc85116bc4}{skip\-\_\-tests} = \char`\"{}environment/init\-\_\-thread\-\_\-multiple,communicator/comm\-\_\-split\-\_\-f\char`\"{}
+\item 
+int \hyperlink{namespacehwtest_a91f9231befdd013bc572920c4f6320ff}{np} = 3
+\item 
+\hyperlink{namespacehwtest_a62c9c5709c2605f42860f5424551007f}{include\-\_\-section} = Testrun
+\item 
+tuple \hyperlink{namespacehwtest_aba9f32241019e8b74b8155d5fe25a326}{pass} = \&and(\&cmd\-\_\-wifexited(), \&eq(\&cmd\-\_\-wexitstatus(), 0))
+\item 
+\hyperlink{namespacehwtest_a776d2af9b2bb100b49d3709b6e256797}{specify\-\_\-module} = Simple
+\item 
+int \hyperlink{namespacehwtest_a52e9a2d299cf53080aa90654ddcaf209}{skipped} = 0
+\item 
+\hyperlink{namespacehwtest_a06dff656b8aa4743a2d09ea2a47e088b}{mttdatabase\-\_\-realm} = O\-M\-P\-I
+\item 
+\hyperlink{namespacehwtest_a78763492ac95e935dc66de47a7b24374}{mttdatabase\-\_\-username} = intel
+\item 
+tuple \hyperlink{namespacehwtest_a62683e098488d08966d4a339bb945d9c}{mttdatabase\-\_\-password} = \&stringify(\&cat(\char`\"{}/home/common/mttpwd.\-txt\char`\"{}))
+\item 
+\hyperlink{namespacehwtest_afe5c3aa0d87e5e74558741e81b9d39ce}{mttdatabase\-\_\-platform} = bend-\/rsh
+\item 
+tuple \hyperlink{namespacehwtest_a2561ee660a1987af3681c21d61bce282}{mttdatabase\-\_\-hostname} = \&env\-\_\-hosts()
+\item 
+\hyperlink{namespacehwtest_a4a582498db594ca409429642d4690a1d}{mttdatabase\-\_\-url} = https\-://mtt.\-open-\/mpi.\-org/submit/
+\item 
+\hyperlink{namespacehwtest_aaf511fc503606c1808a06d8da809263e}{mttdatabase\-\_\-debug\-\_\-filename} = mttdb\-\_\-debug\-\_\-file
+\item 
+int \hyperlink{namespacehwtest_a4038849f56dda68ae47f22d2945ddf21}{mttdatabase\-\_\-keep\-\_\-debug\-\_\-files} = 1
+\item 
+int \hyperlink{namespacehwtest_a1da4b943796a82979729d658ea0e913d}{mttdatabase\-\_\-debug\-\_\-server} = 1
+\item 
+\hyperlink{namespacehwtest_ad10ebcdde85ff5608f5b974987766b82}{textfile\-\_\-filename} = \$phase-\/\$section-\/\$mpi\-\_\-name-\/\$mpi\-\_\-version.\-txt
+\item 
+\hyperlink{namespacehwtest_a75ec114b65b92671173085f162edb84f}{textfile\-\_\-summary\-\_\-footer} =
+\item 
+\hyperlink{namespacehwtest_ae80f390eb87caf3467f8b53883932b9f}{textfile\-\_\-detail\-\_\-header} =
+\item 
+\hyperlink{namespacehwtest_acf23440e8c05d17e5b3bb0c6a6a7a12a}{textfile\-\_\-detail\-\_\-footer} =
+\item 
+int \hyperlink{namespacehwtest_ae9e1387323c72cd6970ef27480e3ea21}{textfile\-\_\-textwrap} = 78
+\end{DoxyCompactItemize}
+
+
+\subsection{Variable Documentation}
+\hypertarget{namespacehwtest_a5378e5bba23994a3a52c3381e619b18b}{\index{hwtest@{hwtest}!build\-\_\-cmd@{build\-\_\-cmd}}
+\index{build\-\_\-cmd@{build\-\_\-cmd}!hwtest@{hwtest}}
+\subsubsection[{build\-\_\-cmd}]{\setlength{\rightskip}{0pt plus 5cm}string hwtest.\-build\-\_\-cmd = \char`\"{}make -\/j 10\char`\"{}}}\label{namespacehwtest_a5378e5bba23994a3a52c3381e619b18b}
+
+
+Definition at line 135 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_aae03e4589fc182736e73d50bbb74346e}{\index{hwtest@{hwtest}!config\-\_\-cmd@{config\-\_\-cmd}}
+\index{config\-\_\-cmd@{config\-\_\-cmd}!hwtest@{hwtest}}
+\subsubsection[{config\-\_\-cmd}]{\setlength{\rightskip}{0pt plus 5cm}string hwtest.\-config\-\_\-cmd = \char`\"{}./configure C\-C=mpicc C\-X\-X=mpic++ F77=mpif77\char`\"{}}}\label{namespacehwtest_aae03e4589fc182736e73d50bbb74346e}
+
+
+Definition at line 134 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a29832146debe207ba418a2c34a72da74}{\index{hwtest@{hwtest}!description@{description}}
+\index{description@{description}!hwtest@{hwtest}}
+\subsubsection[{description}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-description = Prototype\-H\-Wtestconfigurationfile}}\label{namespacehwtest_a29832146debe207ba418a2c34a72da74}
+
+
+Definition at line 22 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_ad08296b7abe004e90b638ec9eb5c0c30}{\index{hwtest@{hwtest}!fail\-\_\-tests@{fail\-\_\-tests}}
+\index{fail\-\_\-tests@{fail\-\_\-tests}!hwtest@{hwtest}}
+\subsubsection[{fail\-\_\-tests}]{\setlength{\rightskip}{0pt plus 5cm}string hwtest.\-fail\-\_\-tests = \char`\"{}environment/abort, environment/final\char`\"{}}}\label{namespacehwtest_ad08296b7abe004e90b638ec9eb5c0c30}
+
+
+Definition at line 216 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a30cc5b5edc143ffd8006c27213d903f9}{\index{hwtest@{hwtest}!fail\-\_\-timeout@{fail\-\_\-timeout}}
+\index{fail\-\_\-timeout@{fail\-\_\-timeout}!hwtest@{hwtest}}
+\subsubsection[{fail\-\_\-timeout}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-fail\-\_\-timeout = max\-\_\-procs}}\label{namespacehwtest_a30cc5b5edc143ffd8006c27213d903f9}
+
+
+Definition at line 217 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_af3c2c504aec4d3d87f8382d577e362ca}{\index{hwtest@{hwtest}!find\-\_\-test\-\_\-dir@{find\-\_\-test\-\_\-dir}}
+\index{find\-\_\-test\-\_\-dir@{find\-\_\-test\-\_\-dir}!hwtest@{hwtest}}
+\subsubsection[{find\-\_\-test\-\_\-dir}]{\setlength{\rightskip}{0pt plus 5cm}string hwtest.\-find\-\_\-test\-\_\-dir = \char`\"{}.\char`\"{}}}\label{namespacehwtest_af3c2c504aec4d3d87f8382d577e362ca}
+
+
+Definition at line 204 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a5c55bb57a925e013f9ffd6f3e5ca99d7}{\index{hwtest@{hwtest}!image@{image}}
+\index{image@{image}!hwtest@{hwtest}}
+\subsubsection[{image}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-image = centos7}}\label{namespacehwtest_a5c55bb57a925e013f9ffd6f3e5ca99d7}
+
+
+Definition at line 59 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a62c9c5709c2605f42860f5424551007f}{\index{hwtest@{hwtest}!include\-\_\-section@{include\-\_\-section}}
+\index{include\-\_\-section@{include\-\_\-section}!hwtest@{hwtest}}
+\subsubsection[{include\-\_\-section}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-include\-\_\-section = Testrun}}\label{namespacehwtest_a62c9c5709c2605f42860f5424551007f}
+
+
+Definition at line 240 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a6047a9d712208748ac55f9c3e2bcc0ce}{\index{hwtest@{hwtest}!intel\-\_\-ompi\-\_\-tests\-\_\-buildfile@{intel\-\_\-ompi\-\_\-tests\-\_\-buildfile}}
+\index{intel\-\_\-ompi\-\_\-tests\-\_\-buildfile@{intel\-\_\-ompi\-\_\-tests\-\_\-buildfile}!hwtest@{hwtest}}
+\subsubsection[{intel\-\_\-ompi\-\_\-tests\-\_\-buildfile}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-intel\-\_\-ompi\-\_\-tests\-\_\-buildfile = all\-\_\-tests\-\_\-no\-\_\-perf}}\label{namespacehwtest_a6047a9d712208748ac55f9c3e2bcc0ce}
+
+
+Definition at line 150 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a741c9ed9ca6a98101b7fb9d19d68c869}{\index{hwtest@{hwtest}!logfile@{logfile}}
+\index{logfile@{logfile}!hwtest@{hwtest}}
+\subsubsection[{logfile}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-logfile = /home/common/mtt-\/logfile-\/rsh.\-txt}}\label{namespacehwtest_a741c9ed9ca6a98101b7fb9d19d68c869}
+
+
+Definition at line 21 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a48f78a49ff7c6103a9c7c8565ec98438}{\index{hwtest@{hwtest}!merge\-\_\-stdout\-\_\-stderr@{merge\-\_\-stdout\-\_\-stderr}}
+\index{merge\-\_\-stdout\-\_\-stderr@{merge\-\_\-stdout\-\_\-stderr}!hwtest@{hwtest}}
+\subsubsection[{merge\-\_\-stdout\-\_\-stderr}]{\setlength{\rightskip}{0pt plus 5cm}int hwtest.\-merge\-\_\-stdout\-\_\-stderr = 1}}\label{namespacehwtest_a48f78a49ff7c6103a9c7c8565ec98438}
+
+
+Definition at line 115 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_ae54fc3a5be1cdc41fa34eb22483e6909}{\index{hwtest@{hwtest}!model@{model}}
+\index{model@{model}!hwtest@{hwtest}}
+\subsubsection[{model}]{\setlength{\rightskip}{0pt plus 5cm}int hwtest.\-model = tg-\/3269}}\label{namespacehwtest_ae54fc3a5be1cdc41fa34eb22483e6909}
+
+
+Definition at line 41 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_acc1aaeb8f3c26bd3054520cba5b8dfe5}{\index{hwtest@{hwtest}!module@{module}}
+\index{module@{module}!hwtest@{hwtest}}
+\subsubsection[{module}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-module = tplink}}\label{namespacehwtest_acc1aaeb8f3c26bd3054520cba5b8dfe5}
+
+
+Definition at line 40 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a92b45acc8d45d80d6032cba2a6b6dd5e}{\index{hwtest@{hwtest}!mpi\-\_\-install@{mpi\-\_\-install}}
+\index{mpi\-\_\-install@{mpi\-\_\-install}!hwtest@{hwtest}}
+\subsubsection[{mpi\-\_\-install}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-mpi\-\_\-install = My\-Installation}}\label{namespacehwtest_a92b45acc8d45d80d6032cba2a6b6dd5e}
+
+
+Definition at line 147 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_aaf511fc503606c1808a06d8da809263e}{\index{hwtest@{hwtest}!mttdatabase\-\_\-debug\-\_\-filename@{mttdatabase\-\_\-debug\-\_\-filename}}
+\index{mttdatabase\-\_\-debug\-\_\-filename@{mttdatabase\-\_\-debug\-\_\-filename}!hwtest@{hwtest}}
+\subsubsection[{mttdatabase\-\_\-debug\-\_\-filename}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-mttdatabase\-\_\-debug\-\_\-filename = mttdb\-\_\-debug\-\_\-file}}\label{namespacehwtest_aaf511fc503606c1808a06d8da809263e}
+
+
+Definition at line 353 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a1da4b943796a82979729d658ea0e913d}{\index{hwtest@{hwtest}!mttdatabase\-\_\-debug\-\_\-server@{mttdatabase\-\_\-debug\-\_\-server}}
+\index{mttdatabase\-\_\-debug\-\_\-server@{mttdatabase\-\_\-debug\-\_\-server}!hwtest@{hwtest}}
+\subsubsection[{mttdatabase\-\_\-debug\-\_\-server}]{\setlength{\rightskip}{0pt plus 5cm}int hwtest.\-mttdatabase\-\_\-debug\-\_\-server = 1}}\label{namespacehwtest_a1da4b943796a82979729d658ea0e913d}
+
+
+Definition at line 355 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a2561ee660a1987af3681c21d61bce282}{\index{hwtest@{hwtest}!mttdatabase\-\_\-hostname@{mttdatabase\-\_\-hostname}}
+\index{mttdatabase\-\_\-hostname@{mttdatabase\-\_\-hostname}!hwtest@{hwtest}}
+\subsubsection[{mttdatabase\-\_\-hostname}]{\setlength{\rightskip}{0pt plus 5cm}tuple hwtest.\-mttdatabase\-\_\-hostname = \&env\-\_\-hosts()}}\label{namespacehwtest_a2561ee660a1987af3681c21d61bce282}
+
+
+Definition at line 351 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a4038849f56dda68ae47f22d2945ddf21}{\index{hwtest@{hwtest}!mttdatabase\-\_\-keep\-\_\-debug\-\_\-files@{mttdatabase\-\_\-keep\-\_\-debug\-\_\-files}}
+\index{mttdatabase\-\_\-keep\-\_\-debug\-\_\-files@{mttdatabase\-\_\-keep\-\_\-debug\-\_\-files}!hwtest@{hwtest}}
+\subsubsection[{mttdatabase\-\_\-keep\-\_\-debug\-\_\-files}]{\setlength{\rightskip}{0pt plus 5cm}int hwtest.\-mttdatabase\-\_\-keep\-\_\-debug\-\_\-files = 1}}\label{namespacehwtest_a4038849f56dda68ae47f22d2945ddf21}
+
+
+Definition at line 354 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a62683e098488d08966d4a339bb945d9c}{\index{hwtest@{hwtest}!mttdatabase\-\_\-password@{mttdatabase\-\_\-password}}
+\index{mttdatabase\-\_\-password@{mttdatabase\-\_\-password}!hwtest@{hwtest}}
+\subsubsection[{mttdatabase\-\_\-password}]{\setlength{\rightskip}{0pt plus 5cm}tuple hwtest.\-mttdatabase\-\_\-password = \&stringify(\&cat(\char`\"{}/home/common/mttpwd.\-txt\char`\"{}))}}\label{namespacehwtest_a62683e098488d08966d4a339bb945d9c}
+
+
+Definition at line 349 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_afe5c3aa0d87e5e74558741e81b9d39ce}{\index{hwtest@{hwtest}!mttdatabase\-\_\-platform@{mttdatabase\-\_\-platform}}
+\index{mttdatabase\-\_\-platform@{mttdatabase\-\_\-platform}!hwtest@{hwtest}}
+\subsubsection[{mttdatabase\-\_\-platform}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-mttdatabase\-\_\-platform = bend-\/rsh}}\label{namespacehwtest_afe5c3aa0d87e5e74558741e81b9d39ce}
+
+
+Definition at line 350 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a06dff656b8aa4743a2d09ea2a47e088b}{\index{hwtest@{hwtest}!mttdatabase\-\_\-realm@{mttdatabase\-\_\-realm}}
+\index{mttdatabase\-\_\-realm@{mttdatabase\-\_\-realm}!hwtest@{hwtest}}
+\subsubsection[{mttdatabase\-\_\-realm}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-mttdatabase\-\_\-realm = O\-M\-P\-I}}\label{namespacehwtest_a06dff656b8aa4743a2d09ea2a47e088b}
+
+
+Definition at line 347 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a4a582498db594ca409429642d4690a1d}{\index{hwtest@{hwtest}!mttdatabase\-\_\-url@{mttdatabase\-\_\-url}}
+\index{mttdatabase\-\_\-url@{mttdatabase\-\_\-url}!hwtest@{hwtest}}
+\subsubsection[{mttdatabase\-\_\-url}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-mttdatabase\-\_\-url = https\-://mtt.\-open-\/mpi.\-org/submit/}}\label{namespacehwtest_a4a582498db594ca409429642d4690a1d}
+
+
+Definition at line 352 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a78763492ac95e935dc66de47a7b24374}{\index{hwtest@{hwtest}!mttdatabase\-\_\-username@{mttdatabase\-\_\-username}}
+\index{mttdatabase\-\_\-username@{mttdatabase\-\_\-username}!hwtest@{hwtest}}
+\subsubsection[{mttdatabase\-\_\-username}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-mttdatabase\-\_\-username = intel}}\label{namespacehwtest_a78763492ac95e935dc66de47a7b24374}
+
+
+Definition at line 348 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_afe5609741ec9bca621277528b05b63c8}{\index{hwtest@{hwtest}!name@{name}}
+\index{name@{name}!hwtest@{hwtest}}
+\subsubsection[{name}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-name = Ethernet\-N\-I\-C}}\label{namespacehwtest_afe5609741ec9bca621277528b05b63c8}
+
+
+Definition at line 39 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a91f9231befdd013bc572920c4f6320ff}{\index{hwtest@{hwtest}!np@{np}}
+\index{np@{np}!hwtest@{hwtest}}
+\subsubsection[{np}]{\setlength{\rightskip}{0pt plus 5cm}tuple hwtest.\-np = 3}}\label{namespacehwtest_a91f9231befdd013bc572920c4f6320ff}
+
+
+Definition at line 231 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_aba9f32241019e8b74b8155d5fe25a326}{\index{hwtest@{hwtest}!pass@{pass}}
+\index{pass@{pass}!hwtest@{hwtest}}
+\subsubsection[{pass}]{\setlength{\rightskip}{0pt plus 5cm}tuple hwtest.\-pass = \&and(\&cmd\-\_\-wifexited(), \&eq(\&cmd\-\_\-wexitstatus(), 0))}}\label{namespacehwtest_aba9f32241019e8b74b8155d5fe25a326}
+
+
+Definition at line 244 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a0b55d030449a5be7b3f9946712208ee4}{\index{hwtest@{hwtest}!pre\-\_\-config\-\_\-cmd@{pre\-\_\-config\-\_\-cmd}}
+\index{pre\-\_\-config\-\_\-cmd@{pre\-\_\-config\-\_\-cmd}!hwtest@{hwtest}}
+\subsubsection[{pre\-\_\-config\-\_\-cmd}]{\setlength{\rightskip}{0pt plus 5cm}string hwtest.\-pre\-\_\-config\-\_\-cmd = \char`\"{}./autogen.\-sh\char`\"{}}}\label{namespacehwtest_a0b55d030449a5be7b3f9946712208ee4}
+
+
+Definition at line 95 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_afffd8e55c08b72fb88423c7446b90d70}{\index{hwtest@{hwtest}!save\-\_\-stdout\-\_\-on\-\_\-success@{save\-\_\-stdout\-\_\-on\-\_\-success}}
+\index{save\-\_\-stdout\-\_\-on\-\_\-success@{save\-\_\-stdout\-\_\-on\-\_\-success}!hwtest@{hwtest}}
+\subsubsection[{save\-\_\-stdout\-\_\-on\-\_\-success}]{\setlength{\rightskip}{0pt plus 5cm}int hwtest.\-save\-\_\-stdout\-\_\-on\-\_\-success = 1}}\label{namespacehwtest_afffd8e55c08b72fb88423c7446b90d70}
+
+
+Definition at line 114 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_acb222c4c00407c64de9ba5ab1c303cec}{\index{hwtest@{hwtest}!scm\-\_\-module@{scm\-\_\-module}}
+\index{scm\-\_\-module@{scm\-\_\-module}!hwtest@{hwtest}}
+\subsubsection[{scm\-\_\-module}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-scm\-\_\-module = Git}}\label{namespacehwtest_acb222c4c00407c64de9ba5ab1c303cec}
+
+
+Definition at line 72 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a7d494d98bb3aaabad59bf16dd7c4c9d2}{\index{hwtest@{hwtest}!scm\-\_\-subdir@{scm\-\_\-subdir}}
+\index{scm\-\_\-subdir@{scm\-\_\-subdir}!hwtest@{hwtest}}
+\subsubsection[{scm\-\_\-subdir}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-scm\-\_\-subdir = ibm}}\label{namespacehwtest_a7d494d98bb3aaabad59bf16dd7c4c9d2}
+
+
+Definition at line 74 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a37abe4e88b4c1525a3b343f47dfc2862}{\index{hwtest@{hwtest}!scm\-\_\-url@{scm\-\_\-url}}
+\index{scm\-\_\-url@{scm\-\_\-url}!hwtest@{hwtest}}
+\subsubsection[{scm\-\_\-url}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-scm\-\_\-url = /home/common/ompi-\/tests}}\label{namespacehwtest_a37abe4e88b4c1525a3b343f47dfc2862}
+
+
+Definition at line 73 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a877f35b716655c4bfeb4955018d305cb}{\index{hwtest@{hwtest}!scratch@{scratch}}
+\index{scratch@{scratch}!hwtest@{hwtest}}
+\subsubsection[{scratch}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-scratch = /home/common/mttscratch-\/rsh}}\label{namespacehwtest_a877f35b716655c4bfeb4955018d305cb}
+
+
+Definition at line 19 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_ae1b5040a9a3c1b72300a18fc85116bc4}{\index{hwtest@{hwtest}!skip\-\_\-tests@{skip\-\_\-tests}}
+\index{skip\-\_\-tests@{skip\-\_\-tests}!hwtest@{hwtest}}
+\subsubsection[{skip\-\_\-tests}]{\setlength{\rightskip}{0pt plus 5cm}string hwtest.\-skip\-\_\-tests = \char`\"{}environment/init\-\_\-thread\-\_\-multiple,communicator/comm\-\_\-split\-\_\-f\char`\"{}}}\label{namespacehwtest_ae1b5040a9a3c1b72300a18fc85116bc4}
+
+
+Definition at line 224 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a52e9a2d299cf53080aa90654ddcaf209}{\index{hwtest@{hwtest}!skipped@{skipped}}
+\index{skipped@{skipped}!hwtest@{hwtest}}
+\subsubsection[{skipped}]{\setlength{\rightskip}{0pt plus 5cm}int hwtest.\-skipped = 0}}\label{namespacehwtest_a52e9a2d299cf53080aa90654ddcaf209}
+
+
+Definition at line 328 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a776d2af9b2bb100b49d3709b6e256797}{\index{hwtest@{hwtest}!specify\-\_\-module@{specify\-\_\-module}}
+\index{specify\-\_\-module@{specify\-\_\-module}!hwtest@{hwtest}}
+\subsubsection[{specify\-\_\-module}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-specify\-\_\-module = Simple}}\label{namespacehwtest_a776d2af9b2bb100b49d3709b6e256797}
+
+
+Definition at line 247 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_aa6450e0e7dfc9a867ed2a7a81477aba2}{\index{hwtest@{hwtest}!stderr\-\_\-save\-\_\-lines@{stderr\-\_\-save\-\_\-lines}}
+\index{stderr\-\_\-save\-\_\-lines@{stderr\-\_\-save\-\_\-lines}!hwtest@{hwtest}}
+\subsubsection[{stderr\-\_\-save\-\_\-lines}]{\setlength{\rightskip}{0pt plus 5cm}int hwtest.\-stderr\-\_\-save\-\_\-lines = 100}}\label{namespacehwtest_aa6450e0e7dfc9a867ed2a7a81477aba2}
+
+
+Definition at line 128 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_ae28e9902dd28944ecda9bacac16b28b5}{\index{hwtest@{hwtest}!submit\-\_\-group\-\_\-results@{submit\-\_\-group\-\_\-results}}
+\index{submit\-\_\-group\-\_\-results@{submit\-\_\-group\-\_\-results}!hwtest@{hwtest}}
+\subsubsection[{submit\-\_\-group\-\_\-results}]{\setlength{\rightskip}{0pt plus 5cm}int hwtest.\-submit\-\_\-group\-\_\-results = 1}}\label{namespacehwtest_ae28e9902dd28944ecda9bacac16b28b5}
+
+
+Definition at line 20 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_ae44fdc8b804d0261bc648dc81fccf671}{\index{hwtest@{hwtest}!target\-\_\-install@{target\-\_\-install}}
+\index{target\-\_\-install@{target\-\_\-install}!hwtest@{hwtest}}
+\subsubsection[{target\-\_\-install}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-target\-\_\-install = My\-Installation}}\label{namespacehwtest_ae44fdc8b804d0261bc648dc81fccf671}
+
+
+Definition at line 117 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a5ba5b6a44052b71d5033b0673947ced0}{\index{hwtest@{hwtest}!test\-\_\-build@{test\-\_\-build}}
+\index{test\-\_\-build@{test\-\_\-build}!hwtest@{hwtest}}
+\subsubsection[{test\-\_\-build}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-test\-\_\-build = Trivial}}\label{namespacehwtest_a5ba5b6a44052b71d5033b0673947ced0}
+
+
+Definition at line 202 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a10d7a3bc8e20a9b333fb253328ca7e8c}{\index{hwtest@{hwtest}!test\-\_\-get@{test\-\_\-get}}
+\index{test\-\_\-get@{test\-\_\-get}!hwtest@{hwtest}}
+\subsubsection[{test\-\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-test\-\_\-get = trivial}}\label{namespacehwtest_a10d7a3bc8e20a9b333fb253328ca7e8c}
+
+
+Definition at line 113 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_acf23440e8c05d17e5b3bb0c6a6a7a12a}{\index{hwtest@{hwtest}!textfile\-\_\-detail\-\_\-footer@{textfile\-\_\-detail\-\_\-footer}}
+\index{textfile\-\_\-detail\-\_\-footer@{textfile\-\_\-detail\-\_\-footer}!hwtest@{hwtest}}
+\subsubsection[{textfile\-\_\-detail\-\_\-footer}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-textfile\-\_\-detail\-\_\-footer =}}\label{namespacehwtest_acf23440e8c05d17e5b3bb0c6a6a7a12a}
+
+
+Definition at line 373 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_ae80f390eb87caf3467f8b53883932b9f}{\index{hwtest@{hwtest}!textfile\-\_\-detail\-\_\-header@{textfile\-\_\-detail\-\_\-header}}
+\index{textfile\-\_\-detail\-\_\-header@{textfile\-\_\-detail\-\_\-header}!hwtest@{hwtest}}
+\subsubsection[{textfile\-\_\-detail\-\_\-header}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-textfile\-\_\-detail\-\_\-header =}}\label{namespacehwtest_ae80f390eb87caf3467f8b53883932b9f}
+
+
+Definition at line 372 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_ad10ebcdde85ff5608f5b974987766b82}{\index{hwtest@{hwtest}!textfile\-\_\-filename@{textfile\-\_\-filename}}
+\index{textfile\-\_\-filename@{textfile\-\_\-filename}!hwtest@{hwtest}}
+\subsubsection[{textfile\-\_\-filename}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-textfile\-\_\-filename = \$phase-\/\$section-\/\$mpi\-\_\-name-\/\$mpi\-\_\-version.\-txt}}\label{namespacehwtest_ad10ebcdde85ff5608f5b974987766b82}
+
+
+Definition at line 362 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a75ec114b65b92671173085f162edb84f}{\index{hwtest@{hwtest}!textfile\-\_\-summary\-\_\-footer@{textfile\-\_\-summary\-\_\-footer}}
+\index{textfile\-\_\-summary\-\_\-footer@{textfile\-\_\-summary\-\_\-footer}!hwtest@{hwtest}}
+\subsubsection[{textfile\-\_\-summary\-\_\-footer}]{\setlength{\rightskip}{0pt plus 5cm}hwtest.\-textfile\-\_\-summary\-\_\-footer =}}\label{namespacehwtest_a75ec114b65b92671173085f162edb84f}
+
+
+Definition at line 371 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_ae9e1387323c72cd6970ef27480e3ea21}{\index{hwtest@{hwtest}!textfile\-\_\-textwrap@{textfile\-\_\-textwrap}}
+\index{textfile\-\_\-textwrap@{textfile\-\_\-textwrap}!hwtest@{hwtest}}
+\subsubsection[{textfile\-\_\-textwrap}]{\setlength{\rightskip}{0pt plus 5cm}int hwtest.\-textfile\-\_\-textwrap = 78}}\label{namespacehwtest_ae9e1387323c72cd6970ef27480e3ea21}
+
+
+Definition at line 375 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a71b9053f13108a7a4c06692c840d6308}{\index{hwtest@{hwtest}!timeout@{timeout}}
+\index{timeout@{timeout}!hwtest@{hwtest}}
+\subsubsection[{timeout}]{\setlength{\rightskip}{0pt plus 5cm}int hwtest.\-timeout = max(10, {\bf np})}}\label{namespacehwtest_a71b9053f13108a7a4c06692c840d6308}
+
+
+Definition at line 203 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a2974a3de34764ea05c838464d476f407}{\index{hwtest@{hwtest}!trial\-\_\-run@{trial\-\_\-run}}
+\index{trial\-\_\-run@{trial\-\_\-run}!hwtest@{hwtest}}
+\subsubsection[{trial\-\_\-run}]{\setlength{\rightskip}{0pt plus 5cm}int hwtest.\-trial\-\_\-run = 0}}\label{namespacehwtest_a2974a3de34764ea05c838464d476f407}
+
+
+Definition at line 18 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a55a50eaac0f3463a3fc21e41b75050ab}{\index{hwtest@{hwtest}!update\-\_\-file@{update\-\_\-file}}
+\index{update\-\_\-file@{update\-\_\-file}!hwtest@{hwtest}}
+\subsubsection[{update\-\_\-file}]{\setlength{\rightskip}{0pt plus 5cm}float hwtest.\-update\-\_\-file = /home/common/firmware/tplink/fw1.\-7.\-18}}\label{namespacehwtest_a55a50eaac0f3463a3fc21e41b75050ab}
+
+
+Definition at line 43 of file hwtest.\-ini.
+
+\hypertarget{namespacehwtest_a4cd2f078f70d7159e347c0a9ddd51f84}{\index{hwtest@{hwtest}!version@{version}}
+\index{version@{version}!hwtest@{hwtest}}
+\subsubsection[{version}]{\setlength{\rightskip}{0pt plus 5cm}float hwtest.\-version = 1.\-7}}\label{namespacehwtest_a4cd2f078f70d7159e347c0a9ddd51f84}
+
+
+Definition at line 42 of file hwtest.\-ini.
+
