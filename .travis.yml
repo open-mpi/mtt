@@ -60,9 +60,10 @@ script:
   - ln -s $TRAVIS_BUILD_DIR/tests/bat /opt/mtt/tests/bat
 
   # single-node BAT [order matters for last two]
-  - $TRAVIS_BUILD_DIR/pyclient/pymtt.py --verbose --base-dir=$TRAVIS_BUILD_DIR/pylib $TRAVIS_BUILD_DIR/tests/bat/negative.ini
-  - $TRAVIS_BUILD_DIR/pyclient/pymtt.py --verbose --base-dir=$TRAVIS_BUILD_DIR/pylib $TRAVIS_BUILD_DIR/tests/bat/default_collect_profile.ini
-  - $TRAVIS_BUILD_DIR/pyclient/pymtt.py --verbose --base-dir=$TRAVIS_BUILD_DIR/pylib $TRAVIS_BUILD_DIR/tests/bat/default_check_profile.ini
+  - export MTT_HOME=$TRAVIS_BUILD_DIR
+  - $TRAVIS_BUILD_DIR/pyclient/pymtt.py --verbose $TRAVIS_BUILD_DIR/tests/bat/negative.ini
+  - $TRAVIS_BUILD_DIR/pyclient/pymtt.py --verbose $TRAVIS_BUILD_DIR/tests/bat/default_collect_profile.ini
+  - $TRAVIS_BUILD_DIR/pyclient/pymtt.py --verbose $TRAVIS_BUILD_DIR/tests/bat/default_check_profile.ini
 
 before_deploy:
   - cd docs && doxygen Doxyfile

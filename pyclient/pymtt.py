@@ -144,87 +144,55 @@ debugGroup.add_argument("--trial",
                       help="Use when testing your MTT client setup; results that are generated and submitted to the database are marked as \"trials\" and are not included in normal reporting.")
 args = parser.parse_args()
 
+# check to see if MTT_HOME has been set - we require it
+try:
+    mtthome = os.environ['MTT_HOME']
+except KeyError:
+    print("MTT_HOME could not be found in your environment")
+    print("Python client requires that this be set and point")
+    print("to the top-level directory of your MTT installation")
+    sys.exit(1)
 
-# Try to find the MTT TestDef class. Try several methods:
+# check to see if it is an absolute path, as we require
+if not os.path.isabs(mtthome):
+    print("MTT_HOME environment variable:")
+    print("    ", mtthome)
+    print("is not an absolute path")
+    sys.exit(1)
 
-# 1. If they specified the directory, check it and underneath
-#    it, if necessary
-# 2. See if we are in the MTT home directory by looking for
-#    the MTT plugin directory directly underneath us
-# 3. Check to see if MTT_HOME is set in the environment
-# 4. If $0 is a path, try seeing if that is the place.
-#
-if args.basedir:
-    basedir = args.basedir
-    topdir = basedir
-    if not os.path.exists(basedir) or not os.path.isdir(basedir):
-        print("The specified base directory",basedir,"doesn't exist")
-        sys.exit(1)
-    if not os.path.exists(os.path.join(basedir, "TestDef.py")):
-        # try adding std path to it
-        chkdir = os.path.join(args.basedir, "System")
-        if not os.path.exists(chkdir) or not os.path.isdir(chkdir):
-            # see if the pylib/System location exists
-            basedir = os.path.join(args.basedir, "pylib", "System")
-            if not os.path.exists(basedir) or not os.path.isdir(basedir):
-                print("The TestDef.py file was not found in the specified base directory,")
-                print("and no standard location under the specified base directory",basedir,"exists")
-                sys.exit(1)
-            else:
-                if not os.path.exists(os.path.join(basedir, "TestDef.py")):
-                    print("The TestDef.py file was not found in the specified base directory,")
-                    print("or any standard location under the specified base directory",basedir)
-                    sys.exit(1)
-        else:
-            if os.path.exists(os.path.join(chkdir, "TestDef.py")):
-                basedir = chkdir
-            else:
-                print("The TestDef.py file was not found in the standard location")
-                print("under the specified base directory at",chkdir)
-                sys.exit(1)
-elif os.path.exists("TestDef.py"):
-    # the class file is local to us, so use it
-    basedir = "./"
-    topdir = basedir
-elif os.path.exists("pylib"):
-    # we appear to be in the MTT home directory
-    basedir = os.path.join("./", "pylib", "System")
-    topdir = os.path.join("./", "pylib")
-    if not os.path.exists(basedir) or not os.path.isdir(basedir):
-        print("The local directory",basedir,"doesn't exist")
-        sys.exit(1)
-    if not os.path.exists(os.path.join(basedir, "TestDef.py")):
-        print("The TestDef.py file was not found in the standard location")
-        print("under the specified base directory at",basedir)
-        sys.exit(1)
-else:
-    try:
-        # try that location
-        basedir = os.path.join(os.environ['MTT_HOME'], "pylib", "System")
-        if not os.path.exists(basedir) or not os.path.isdir(basedir):
-            print("MTT_HOME points to an invalid location - please correct")
-            sys.exit(1)
-        topdir = os.path.join(os.environ['MTT_HOME'], "pylib")
-    except KeyError:
-        # didn't find MTT_HOME in the environment, so
-        # next see if $0 is an absolute path
-        if os.path.isabs(sys.argv[0]):
-            # try that location
-            path = os.path.dirname(sys.argv[0])
-            basedir = os.path.join(path, "pylib", "System")
-            topdir = os.path.join(path, "pylib")
-            if not os.path.exists(basedir) or not os.path.isdir(basedir):
-                print("A base directory for MTT was not specified, we do not appear")
-                print("to be in the MTT home directory, and MTT_HOME has not been")
-                print("set in the environment. We cannot continue as we will be")
-                print("unable to find the MTT libraries")
-                sys.exit(1)
-        else:
-            print("A base directory for MTT was not specified, we do not appear")
-            print("to be in the MTT home directory, and MTT_HOME has not been")
-            print("set in the environment. We cannot continue as we will be")
-            print("unable to find the MTT libraries")
-            sys.exit(1)
+# check to see if MTT_HOME exists
+if not os.path.exists(mtthome):
+    print("MTT_HOME points to a non-existent location:")
+    print("    ", mtthome)
+    print("Please correct")
+    sys.exit(1)
+
+# set topdir and check for existence
+topdir = os.path.join(mtthome, "pylib")
+if not os.path.exists(topdir) or not os.path.isdir(topdir):
+    print("MTT_HOME points to a location that does not\ninclude the \"pylib\" subdirectory:")
+    print("   ", topdir)
+    print("does not exist. Please correct")
+    sys.exit(1)
+
+# set basedir and check for existence
+if args.basedir and not os.path.isabs(args.basedir):
+    print("The basedir cmd line option is not an absolute path:")
+    print("   ", args.basedir)
+    print("Please correct")
+    sys.exit(1)
+
+basedir = args.basedir or os.path.join(mtthome, "pylib", "System")
+if not os.path.exists(basedir) or not os.path.isdir(basedir):
+    if basedir == args.basedir:
+        print("The basedir cmd line option points to a location that does not exist:")
+        print("   ", basedir)
+        print("Please correct")
+    else:
+        print("MTT_HOME points to a location that does not\ninclude the \"pylib/System\" subdirectory:")
+        print("   ", basedir)
+        print("does not exist. Please correct")
+    sys.exit(1)
 
 # if they want debug, set the logging level
 if (args.debug):
