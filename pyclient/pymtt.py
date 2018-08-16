@@ -201,7 +201,7 @@ if (args.debug):
 # load the "testdef" Test Definition class so we can
 # begin building this test
 try:
-    m = imp.load_source("TestDef", os.path.join(basedir, "TestDef.py"))
+    m = imp.load_source("TestDef", os.path.join(basedir, "System/TestDef.py"))
 except ImportError:
     print("ERROR: unable to load TestDef that must contain the Test Definition object")
     exit(1)

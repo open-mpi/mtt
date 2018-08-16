@@ -235,7 +235,7 @@ class TestDef(object):
 
         # find the loader utility so we can bootstrap ourselves
         try:
-            m = imp.load_source("LoadClasses", os.path.join(basedir, "LoadClasses.py"));
+            m = imp.load_source("LoadClasses", os.path.join(basedir, "System/LoadClasses.py"));
         except ImportError:
             print("ERROR: unable to load LoadClasses that must contain the class loader object")
             exit(1)
