@@ -68,7 +68,8 @@ class TextFile(ReporterMTTStage):
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
         if cmds['filename'] is not None:
-            self.fh = open(cmds['filename'], 'w')
+            self.fh = open(cmds['filename'] if os.path.isabs(cmds['filename']) \
+                           else os.path.join(cmds['scratch'],cmds['filename']), 'w')
         if testDef.options['description'] is not None:
             print(testDef.options['description'], file=self.fh)
             print(file=self.fh)
