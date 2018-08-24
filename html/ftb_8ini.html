@@ -37,7 +37,9 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
+      <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="namespaces.html"><span>Packages</span></a></li>
+      <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
       <li>
         <div id="MSearchBox" class="MSearchBoxInactive">
@@ -60,6 +62,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow2" class="tabs2">
     <ul class="tablist">
       <li><a href="files.html"><span>File&#160;List</span></a></li>
+      <li><a href="globals.html"><span>File&#160;Members</span></a></li>
     </ul>
   </div>
 <!-- window showing the filter options -->
@@ -67,7 +70,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Files</a></div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&#160;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&#160;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&#160;</span>Variables</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(6)"><span class="SelectionMark">&#160;</span>Groups</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -83,7 +86,8 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div><!-- top -->
 <div class="header">
   <div class="summary">
-<a href="#namespaces">Namespaces</a>  </div>
+<a href="#namespaces">Namespaces</a> &#124;
+<a href="#var-members">Variables</a>  </div>
   <div class="headertitle">
 <div class="title">ftb.ini File Reference</div>  </div>
 </div><!--header-->
@@ -95,6 +99,83 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 Namespaces</h2></td></tr>
 <tr class="memitem:namespaceftb"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html">ftb</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:a6e146aa10e5dfce9215588877f36147e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a6e146aa10e5dfce9215588877f36147e">ftb.min_disk_free</a> = 50000</td></tr>
+<tr class="separator:a6e146aa10e5dfce9215588877f36147e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8c62412466f196971725835c110873a2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a8c62412466f196971725835c110873a2">ftb.mpi_details</a> = FTB</td></tr>
+<tr class="separator:a8c62412466f196971725835c110873a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06ea752188762f1575ad0dd65835373a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a06ea752188762f1575ad0dd65835373a">ftb.module</a> = SCM</td></tr>
+<tr class="separator:a06ea752188762f1575ad0dd65835373a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a26a832e4479187da7d76e4b52ec65ba0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a26a832e4479187da7d76e4b52ec65ba0">ftb.scm_module</a> = SVN</td></tr>
+<tr class="separator:a26a832e4479187da7d76e4b52ec65ba0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a026e23a3b319d0b23c51013f5ef52090"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a026e23a3b319d0b23c51013f5ef52090">ftb.scm_url</a> = https://svn.mcs.anl.gov/repos/cifts/ftb/trunk/</td></tr>
+<tr class="separator:a026e23a3b319d0b23c51013f5ef52090"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d7198772f78b31a4983c1dac25046e0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a4d7198772f78b31a4983c1dac25046e0">ftb.scm_post_copy</a> = &lt;&lt;EOT</td></tr>
+<tr class="separator:a4d7198772f78b31a4983c1dac25046e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae96f515f42a6de5c342c0349668b1935"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#ae96f515f42a6de5c342c0349668b1935">ftb.download_url</a> = http://www.mcs.anl.gov/research/cifts/software/ftb-0.6</td></tr>
+<tr class="separator:ae96f515f42a6de5c342c0349668b1935"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3708045a4f84247896c658014c72ec9b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a3708045a4f84247896c658014c72ec9b">ftb.exec</a> = run-ftb-test.pl-v3</td></tr>
+<tr class="separator:a3708045a4f84247896c658014c72ec9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a398d20136ddd939bd203235b0dce9863"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a398d20136ddd939bd203235b0dce9863">ftb.mpi_get</a> = ftb-trunk</td></tr>
+<tr class="separator:a398d20136ddd939bd203235b0dce9863"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1ec5d4a20c1eb705891e7dd81a73cd7f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a1ec5d4a20c1eb705891e7dd81a73cd7f">ftb.save_stdout_on_success</a> = 1</td></tr>
+<tr class="separator:a1ec5d4a20c1eb705891e7dd81a73cd7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afd8660b1540ea079259bfe7501017590"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#afd8660b1540ea079259bfe7501017590">ftb.merge_stdout_stderr</a> = 1</td></tr>
+<tr class="separator:afd8660b1540ea079259bfe7501017590"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1812ef9e1c7b0cc8fe32bc1183e452d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#ae1812ef9e1c7b0cc8fe32bc1183e452d">ftb.ftb_vpath_mode</a> = none</td></tr>
+<tr class="separator:ae1812ef9e1c7b0cc8fe32bc1183e452d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a802fd0e9b4205267172fbff8637bc8ae"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a802fd0e9b4205267172fbff8637bc8ae">ftb.ftb_make_check</a> = 0</td></tr>
+<tr class="separator:a802fd0e9b4205267172fbff8637bc8ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac13591e7257052189dfc8d0b56084713"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#ac13591e7257052189dfc8d0b56084713">ftb.ftb_compiler_name</a> = gnu</td></tr>
+<tr class="separator:ac13591e7257052189dfc8d0b56084713"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a13bb6a052d4b7f9fcd48889879cf31e9"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a13bb6a052d4b7f9fcd48889879cf31e9">ftb.ftb_compiler_version</a> = &amp;get_gcc_version()</td></tr>
+<tr class="separator:a13bb6a052d4b7f9fcd48889879cf31e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad086734056187d957ce104223812ec44"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#ad086734056187d957ce104223812ec44">ftb.ftb_configure_arguments</a> = &lt;&lt;EOT</td></tr>
+<tr class="separator:ad086734056187d957ce104223812ec44"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac8a70036199459a6c1c0582d012b447c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#ac8a70036199459a6c1c0582d012b447c">ftb.CFLAGS</a> = -pipe</td></tr>
+<tr class="separator:ac8a70036199459a6c1c0582d012b447c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7e0cbd6a960d7a066181ef774535b781"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a7e0cbd6a960d7a066181ef774535b781">ftb.test_get</a> = ftb-test-trunk</td></tr>
+<tr class="separator:a7e0cbd6a960d7a066181ef774535b781"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae4dc745f3cad7888d7b0ec6f707dd987"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#ae4dc745f3cad7888d7b0ec6f707dd987">ftb.stderr_save_lines</a> = 100</td></tr>
+<tr class="separator:ae4dc745f3cad7888d7b0ec6f707dd987"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a52b04761ebaaf1f84781e8767994b72a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a52b04761ebaaf1f84781e8767994b72a">ftb.shell_build_command</a> = &lt;&lt;EOT</td></tr>
+<tr class="separator:a52b04761ebaaf1f84781e8767994b72a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a956fe10ace4560b67e71bd1952c74dd3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a956fe10ace4560b67e71bd1952c74dd3">ftb.test_build</a> = ftb-test-trunk</td></tr>
+<tr class="separator:a956fe10ace4560b67e71bd1952c74dd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6835e8ccf2dcf3a64662b94ab7dc21dc"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a6835e8ccf2dcf3a64662b94ab7dc21dc">ftb.pass</a> = &amp;and(&amp;cmd_wifexited(), &amp;eq(&amp;cmd_wexitstatus(), 0))</td></tr>
+<tr class="separator:a6835e8ccf2dcf3a64662b94ab7dc21dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4129b964c3298abd3b378dc8c5f5321"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#af4129b964c3298abd3b378dc8c5f5321">ftb.timeout</a> = 5</td></tr>
+<tr class="separator:af4129b964c3298abd3b378dc8c5f5321"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae7093ee70b2bbcabcc07887556559782"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#ae7093ee70b2bbcabcc07887556559782">ftb.save_stdout_on_pass</a> = 1</td></tr>
+<tr class="separator:ae7093ee70b2bbcabcc07887556559782"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0323281cbf8bed3a87bcf74ffe8a4944"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a0323281cbf8bed3a87bcf74ffe8a4944">ftb.stdout_save_lines</a> = -1</td></tr>
+<tr class="separator:a0323281cbf8bed3a87bcf74ffe8a4944"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a98d035fcaf3e0ad500d4398f3175857c"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a98d035fcaf3e0ad500d4398f3175857c">ftb.np</a> = &amp;env_max_hosts()</td></tr>
+<tr class="separator:a98d035fcaf3e0ad500d4398f3175857c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:addf629fca64be87df63ed74143701d64"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#addf629fca64be87df63ed74143701d64">ftb.specify_module</a> = Simple</td></tr>
+<tr class="separator:addf629fca64be87df63ed74143701d64"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeffc0ba718912c9454faca1507b2e327"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#aeffc0ba718912c9454faca1507b2e327">ftb.textfile_filename</a> = ftb-report-$phase-$section-$mpi_name-$mpi_version.txt</td></tr>
+<tr class="separator:aeffc0ba718912c9454faca1507b2e327"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d7d4c6685484abf921270e3427670e8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a7d7d4c6685484abf921270e3427670e8">ftb.textfile_summary_header</a> = &lt;&lt;EOT</td></tr>
+<tr class="separator:a7d7d4c6685484abf921270e3427670e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af90084a3047b905a789299e4621983f4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#af90084a3047b905a789299e4621983f4">ftb.textfile_summary_footer</a> =</td></tr>
+<tr class="separator:af90084a3047b905a789299e4621983f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1c9c073a1fdb526fd58eca74cc6012a2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a1c9c073a1fdb526fd58eca74cc6012a2">ftb.textfile_detail_header</a> = FTBDebugReport</td></tr>
+<tr class="separator:a1c9c073a1fdb526fd58eca74cc6012a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a16b758d8bc177b624ed4801c0dea55c8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a16b758d8bc177b624ed4801c0dea55c8">ftb.textfile_detail_footer</a> =</td></tr>
+<tr class="separator:a16b758d8bc177b624ed4801c0dea55c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5be38c1bd9675f6ab63cbe757193526d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a5be38c1bd9675f6ab63cbe757193526d">ftb.textfile_textwrap</a> = 78</td></tr>
+<tr class="separator:a5be38c1bd9675f6ab63cbe757193526d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af77d6a2460d34d47c8aa42d7d72c0100"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#af77d6a2460d34d47c8aa42d7d72c0100">ftb.email_to</a> = cifts-devel@googlegroups.com</td></tr>
+<tr class="separator:af77d6a2460d34d47c8aa42d7d72c0100"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a32d4c73434de192cc67e8c20def937a8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a32d4c73434de192cc67e8c20def937a8">ftb.email_subject</a> = FTBtesthascompleted,status:$overall_mtt_status</td></tr>
+<tr class="separator:a32d4c73434de192cc67e8c20def937a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0a227d10a4a01aa6ddc866a696d7b0b1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a0a227d10a4a01aa6ddc866a696d7b0b1">ftb.email_detailed_report</a> = 1</td></tr>
+<tr class="separator:a0a227d10a4a01aa6ddc866a696d7b0b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1945f3f78c2c8a76e10e5c6b6ab49edc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceftb.html#a1945f3f78c2c8a76e10e5c6b6ab49edc">ftb.email_footer</a> = &lt;&lt;EOT</td></tr>
+<tr class="separator:a1945f3f78c2c8a76e10e5c6b6ab49edc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 <!-- start footer part -->
