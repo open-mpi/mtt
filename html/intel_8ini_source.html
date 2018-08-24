@@ -37,9 +37,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="namespaces.html"><span>Packages</span></a></li>
-      <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
       <li>
         <div id="MSearchBox" class="MSearchBoxInactive">
@@ -62,7 +60,6 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow2" class="tabs2">
     <ul class="tablist">
       <li><a href="files.html"><span>File&#160;List</span></a></li>
-      <li><a href="globals.html"><span>File&#160;Members</span></a></li>
     </ul>
   </div>
 <!-- window showing the filter options -->
@@ -70,7 +67,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&#160;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&#160;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&#160;</span>Variables</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(6)"><span class="SelectionMark">&#160;</span>Groups</a></div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Files</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -89,91 +86,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="title">intel.ini</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="intel_8ini.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno"><a class="line" href="namespaceintel.html">    1</a></span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment"># Copyright (c) 2007 Sun Microystems, Inc.  All rights reserved.</span></div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment"># Copyright (c) 2009 Cisco Systems, Inc.  All rights reserved.</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;</div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment"># This INI file is an addendum to samples/perl/developer.ini (which only</span></div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment"># contains MTT, MPI, and Reporter sections).</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="comment"># Note that there are many items in this file that, while they are</span></div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="comment"># good for examples, may not work for random MTT users.  For example,</span></div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="comment"># the &quot;ompi-tests&quot; SVN repository that is used in the examples below</span></div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="comment"># is *not* a public repository (there&#39;s nothing really secret in this</span></div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="comment"># repository; it contains many publicly-available MPI tests and</span></div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="comment"># benchmarks, but we have never looked into the redistribution rights</span></div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="comment"># of these codes, so we keep the SVN repository &quot;closed&quot; to the</span></div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment"># general public and only use it internally in the Open MPI project).</span></div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="comment"># Sample usage:</span></div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="comment"># cat developer.ini intel.ini | client/mtt - alreadyinstalled_dir=/your/install</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="comment">#----------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;[Test get: intel]</div>
-<div class="line"><a name="l00026"></a><span class="lineno"><a class="line" href="namespaceintel.html#a69d4dd86ec6bbe47c3b61b1f6ff2ee90">   26</a></span>&#160;module = SVN</div>
-<div class="line"><a name="l00027"></a><span class="lineno"><a class="line" href="namespaceintel.html#a8d07e9dc296f8c50b9c97df6aaeb9093">   27</a></span>&#160;svn_url = https://svn.open-mpi.org/svn/ompi-tests/trunk/intel_tests</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="comment">#----------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;[Test build: intel]</div>
-<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="namespaceintel.html#a63ac10a6acb63df6cfdeeb2bfebcdf53">   32</a></span>&#160;test_get = intel</div>
-<div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="namespaceintel.html#aae23293ca49af13cfb800e28cb67a86b">   33</a></span>&#160;save_stdout_on_success = 1</div>
-<div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="namespaceintel.html#abcdeb2ca543c96841368e04128f5f60a">   34</a></span>&#160;merge_stdout_stderr = 1</div>
-<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="namespaceintel.html#a1d6c46c17a246ddee37c7ee9113b90c4">   35</a></span>&#160;stderr_save_lines = 100</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;module = Intel_OMPI_Tests</div>
-<div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="namespaceintel.html#a6d37e743ba16cdc0edc8c8a459e81ef1">   38</a></span>&#160;intel_ompi_tests_buildfile = all_tests_no_perf</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="comment"># I am using the g77 compiler, which needs these flags.  Your fortran</span></div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="comment"># compiler may need different flags.</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="namespaceintel.html#a2519f22774a6f062a8d9c1a0ca33f855">   41</a></span>&#160;intel_ompi_tests_fflags = -g -fugly-complex -fno-globals -Wno-globals -Isrc -I.</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="comment">#----------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;[Test run: intel]</div>
-<div class="line"><a name="l00046"></a><span class="lineno"><a class="line" href="namespaceintel.html#ae8bf5f8888540acb407bf95e166dcfc6">   46</a></span>&#160;test_build = intel</div>
-<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="namespaceintel.html#abe7eb5e3e0f0e655ca871399725225ec">   47</a></span>&#160;<span class="keywordflow">pass</span> = &amp;and(&amp;cmd_wifexited(), &amp;eq(&amp;cmd_wexitstatus(), 0))</div>
-<div class="line"><a name="l00048"></a><span class="lineno"><a class="line" href="namespaceintel.html#a0a787d49a6dd289fbd58591c9de5fbb5">   48</a></span>&#160;skipped = &amp;and(&amp;cmd_wifexited(), &amp;eq(&amp;cmd_wexitstatus(), 77))</div>
-<div class="line"><a name="l00049"></a><span class="lineno"><a class="line" href="namespaceintel.html#aeda6c693f850472a86267c93f7665d47">   49</a></span>&#160;timeout = &amp;max(30, &amp;multiply(10, &amp;test_np()))</div>
-<div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="namespaceintel.html#a842390e7e793fca2c69572646d19a7c2">   50</a></span>&#160;save_stdout_on_pass = 1</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;merge_stdout_stderr = 1</div>
-<div class="line"><a name="l00052"></a><span class="lineno"><a class="line" href="namespaceintel.html#a81a6cddb285ad15b56a91a58c0032984">   52</a></span>&#160;stdout_save_lines = 100</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="comment"># The intel tests have some hard limits at 64 processes.  We set</span></div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="comment"># the limit to 60 to be safe.</span></div>
-<div class="line"><a name="l00055"></a><span class="lineno"><a class="line" href="namespaceintel.html#a558dbc0148f5b13814f44a2d26dd4dd3">   55</a></span>&#160;np = &amp;min(60, &amp;env_max_procs())</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;</div>
-<div class="line"><a name="l00057"></a><span class="lineno"><a class="line" href="namespaceintel.html#a013bf13af420a4b19b5adc9846a18346">   57</a></span>&#160;specify_module = Simple</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="comment"># This group of tests uses the defaults from above and should all</span></div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="comment"># return an exit status of 0</span></div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;simple_pass:tests = &amp;find_executables(<span class="stringliteral">&quot;src&quot;</span>)</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="comment"># This group of tests is from the &quot;supposed_to_fail&quot; file, and is</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="comment"># exclusive from the other group (meaning that anything in this group</span></div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="comment"># should be removed from the other group).  The programs in the group</span></div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="comment"># should also have a nonzero exit status.</span></div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;simple_fail:tests = &amp;find_executables(<span class="stringliteral">&quot;src/&quot;</span> . &amp;cat(<span class="stringliteral">&quot;supposed_to_fail&quot;</span>))</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;simple_fail:<span class="keywordflow">pass</span> = &amp;and(&amp;cmd_wifexited(), &amp;ne(&amp;cmd_wexitstatus(), 0))</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="comment"># Setting &quot;exclusive&quot; to 1 means that any tests found in this group</span></div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="comment"># will be removed from all other groups.</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;simple_fail:exclusive = 1</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="comment"># These tests sleep for 90 seconds (!) before attempting to process</span></div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="comment"># any messages.  So give it a really long timeout value.</span></div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;simple_really_slow:tests = src/MPI_Isend_flood_c src/MPI_Send_flood_c</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;simple_really_slow:<span class="keywordflow">pass</span> = &amp;and(&amp;cmd_wifexited(), &amp;eq(&amp;cmd_wexitstatus(), 0))</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;simple_really_slow:exclusive = 1</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;simple_really_slow:timeout = &amp;sum(90, &amp;multiply(3, &amp;test_np()))</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="comment"># This test collectively sleeps for 26 seconds *per MCW rank*.  So</span></div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<span class="comment"># give it a really long timeout value.</span></div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;simple_coll_slow:tests = src/MPI_collective_overlap_c</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;simple_coll_slow:<span class="keywordflow">pass</span> = &amp;and(&amp;cmd_wifexited(), &amp;eq(&amp;cmd_wexitstatus(), 0))</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;simple_coll_slow:exclusive = 1</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;simple_coll_slow:timeout = &amp;multiply(30, &amp;test_np()))</div>
-</div><!-- fragment --></div><!-- contents -->
+<a href="intel_8ini.html">Go to the documentation of this file.</a><div class="fragment"></div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">
