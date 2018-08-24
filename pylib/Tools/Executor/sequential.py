@@ -317,7 +317,7 @@ class SequentialEx(ExecutorMTTTool):
                             continue
                         p.plugin_object.deactivate()
                     stageLog['status'] = 0
-                    stageLog['stderr'] = "Exception was raised: %s %s" % (type(e), str(e))
+                    stageLog['stderr'] = ["Exception was raised: %s %s" % (type(e), str(e))]
                     testDef.logger.logResults(title, stageLog)
                     testDef.logger.verbose_print("=======================================")
                     testDef.logger.verbose_print("KeyboardInterrupt exception was raised: %s %s" \
@@ -335,7 +335,7 @@ class SequentialEx(ExecutorMTTTool):
                             continue
                         p.plugin_object.deactivate()
                     stageLog['status'] = 1
-                    stageLog['stderr'] = "Exception was raised: %s %s" % (type(e), str(e))
+                    stageLog['stderr'] = ["Exception was raised: %s %s" % (type(e), str(e))]
                     testDef.logger.logResults(title, stageLog)
                     testDef.logger.verbose_print("=======================================")
                     testDef.logger.verbose_print("Exception was raised: %s %s" \
