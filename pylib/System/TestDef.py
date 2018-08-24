@@ -337,7 +337,6 @@ class TestDef(object):
         # Configure harasser plugin
         print(self.tools.getPluginsOfCategory("Harasser"))
         for pluginInfo in self.tools.getPluginsOfCategory("Harasser"):
-            print(pluginInfo.plugin_object.print_name())
             if "Harasser" == pluginInfo.plugin_object.print_name():
                 self.harasser = pluginInfo.plugin_object
                 break
