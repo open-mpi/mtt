@@ -37,7 +37,9 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
+      <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="namespaces.html"><span>Packages</span></a></li>
+      <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
       <li>
         <div id="MSearchBox" class="MSearchBoxInactive">
@@ -60,6 +62,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow2" class="tabs2">
     <ul class="tablist">
       <li><a href="files.html"><span>File&#160;List</span></a></li>
+      <li><a href="globals.html"><span>File&#160;Members</span></a></li>
     </ul>
   </div>
 <!-- window showing the filter options -->
@@ -67,7 +70,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Files</a></div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&#160;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&#160;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&#160;</span>Variables</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(6)"><span class="SelectionMark">&#160;</span>Groups</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -86,7 +89,93 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="title">developer.ini</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="developer_8ini.html">Go to the documentation of this file.</a><div class="fragment"></div><!-- fragment --></div><!-- contents -->
+<a href="developer_8ini.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno"><a class="line" href="namespacedeveloper.html">    1</a></span>&#160;<span class="comment">#</span></div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment"># Copyright (c) 2007 Sun Microystems, Inc.  All rights reserved.</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment">#</span></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;</div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment"># Template MTT configuration file for Open MPI developers.  The intent</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment"># for this template file is to establish at least some loose</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment"># guidelines for what Open MPI core developers should be running</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment"># before committing changes to the OMPI repository. This file is not</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment"># intended to be an exhaustive sample of all possible fields and</span></div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="comment"># values that MTT offers. Each developer will undoubtedly have to</span></div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="comment"># edit this template for their own needs (e.g., pick compilers to use,</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="comment"># etc.), but this file provides a baseline set of configurations that</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="comment"># we intend for you to run.</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="comment">#</span></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="comment"># Sample usage:</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="comment">#   cat developer.ini intel.ini   | client/mtt - alreadyinstalled_dir=/your/install</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">#   cat developer.ini trivial.ini | client/mtt - alreadyinstalled_dir=/your/install</span></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment">#</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;[MTT]</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="comment"># No overrides to defaults</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="comment"># Fill this field in</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno"><a class="line" href="namespacedeveloper.html#a4ae5cd1ac5f1f3c712a1356615cc4883">   24</a></span>&#160;hostlist =</div>
+<div class="line"><a name="l00025"></a><span class="lineno"><a class="line" href="namespacedeveloper.html#a13c279bb81fd7dcabc6f5d521e479aa3">   25</a></span>&#160;hostlist_max_np = 8</div>
+<div class="line"><a name="l00026"></a><span class="lineno"><a class="line" href="namespacedeveloper.html#ae3c0c16810bf766d5d343a96a25ed5f5">   26</a></span>&#160;max_np = 8</div>
+<div class="line"><a name="l00027"></a><span class="lineno"><a class="line" href="namespacedeveloper.html#a80fe514b51ced8931e7aee0e115c57fe">   27</a></span>&#160;force = 1</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="comment">#----------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;[MPI Details: Open MPI]</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;</div>
+<div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="namespacedeveloper.html#a350aecc0787354537b0c7f0c30b6ea96">   33</a></span>&#160;exec = mpirun @hosts@ -np &amp;test_np() --prefix &amp;test_prefix() &amp;test_executable() &amp;test_argv()</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;</div>
+<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="namespacedeveloper.html#a306d0b8e053855bb90f9a1e892fb95de">   35</a></span>&#160;hosts = &lt;&lt;EOT</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    &amp;if(</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        &amp;have_hostfile(),</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        &amp;stringify(<span class="stringliteral">&quot;--hostfile &quot;</span>, &amp;<a class="code" href="namespaceompi-core-template.html#aed8287cfdf838bf38fe4e39ae97c2e9c">hostfile</a>()),</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        &amp;if(</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;            &amp;have_hostlist(),</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;            &amp;stringify(<span class="stringliteral">&quot;--host &quot;</span>, &amp;<a class="code" href="namespacedeveloper.html#a4ae5cd1ac5f1f3c712a1356615cc4883">hostlist</a>()),</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;            <span class="stringliteral">&quot;&quot;</span></div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        )</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    )</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;EOT</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="comment"># Here is a good place to put any cleanup commands (e.g.,</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="comment"># kill a stale process, remove a leftover file, etc.)</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno"><a class="line" href="namespacedeveloper.html#a458db43e4dbfd00d4faf1c4190b5e108">   49</a></span>&#160;after_all_exec = &amp;shell(<span class="stringliteral">&quot;echo done.&quot;</span>)</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="comment">#----------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;[MPI get: My Installation]</div>
+<div class="line"><a name="l00054"></a><span class="lineno"><a class="line" href="namespacedeveloper.html#a0d42d665be955c321eff953fda57debe">   54</a></span>&#160;mpi_details = Open MPI</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="comment"># Leave this parameter blank to</span></div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="comment"># have MTT search your path for an MPI</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="comment"># alreadyinstalled_dir = /your/installation</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="namespacedeveloper.html#a2b87fdf0293735256891d21cd3fdf1c4">   58</a></span>&#160;module = AlreadyInstalled</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="comment">#----------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;[MPI install: My Installation]</div>
+<div class="line"><a name="l00063"></a><span class="lineno"><a class="line" href="namespacedeveloper.html#ab22b1cccdd72c1ccebf6fb0b6b2c5b12">   63</a></span>&#160;mpi_get = My Installation</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;module = Analyze::OMPI</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="comment">#----------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;[Reporter: text file backup]</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;module = TextFile</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;</div>
+<div class="line"><a name="l00071"></a><span class="lineno"><a class="line" href="namespacedeveloper.html#a62386bf6ee2885e1743404547371cb44">   71</a></span>&#160;textfile_filename = $phase-$section-$mpi_name-$mpi_version.txt</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="comment"># User-defined report headers/footers</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno"><a class="line" href="namespacedeveloper.html#ac74e1296a1651a7640f6d7148c4e8181">   74</a></span>&#160;textfile_summary_header = &lt;&lt;EOT</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;hostname: &amp;shell(<span class="stringliteral">&quot;hostname&quot;</span>)</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;uname: &amp;shell(<span class="stringliteral">&quot;uname -a&quot;</span>)</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;who am i: &amp;shell(<span class="stringliteral">&quot;who am i&quot;</span>)</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;EOT</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;</div>
+<div class="line"><a name="l00080"></a><span class="lineno"><a class="line" href="namespacedeveloper.html#a26c0369c438cb986cdf6a00bec4d4240">   80</a></span>&#160;textfile_summary_footer =</div>
+<div class="line"><a name="l00081"></a><span class="lineno"><a class="line" href="namespacedeveloper.html#ade719fb9c04af75a723b6d594610ccfc">   81</a></span>&#160;textfile_detail_header  =</div>
+<div class="line"><a name="l00082"></a><span class="lineno"><a class="line" href="namespacedeveloper.html#a99feae7126d21d7db9a97a595cbb3126">   82</a></span>&#160;textfile_detail_footer  =</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;</div>
+<div class="line"><a name="l00084"></a><span class="lineno"><a class="line" href="namespacedeveloper.html#ae83d713d6405a20cfa321847993e98bc">   84</a></span>&#160;textfile_textwrap = 78</div>
+<div class="ttc" id="namespacedeveloper_html_a4ae5cd1ac5f1f3c712a1356615cc4883"><div class="ttname"><a href="namespacedeveloper.html#a4ae5cd1ac5f1f3c712a1356615cc4883">developer.hostlist</a></div><div class="ttdeci">hostlist</div><div class="ttdef"><b>Definition:</b> <a href="developer_8ini_source.html#l00024">developer.ini:24</a></div></div>
+<div class="ttc" id="namespaceompi-core-template_html_aed8287cfdf838bf38fe4e39ae97c2e9c"><div class="ttname"><a href="namespaceompi-core-template.html#aed8287cfdf838bf38fe4e39ae97c2e9c">ompi-core-template.hostfile</a></div><div class="ttdeci">hostfile</div><div class="ttdef"><b>Definition:</b> <a href="ompi-core-template_8ini_source.html#l00076">ompi-core-template.ini:76</a></div></div>
+</div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

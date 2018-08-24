@@ -1,0 +1,9 @@
+<map id="Tools" name="Tools">
+<area shape="rect" id="node1" href="$group__Build.html" title="Build tools for test content. " alt="" coords="121,5,172,32"/>
+<area shape="rect" id="node2" href="$group__CNC.html" title="Comand and control tools for system managment. " alt="" coords="121,56,173,83"/>
+<area shape="rect" id="node4" href="$group__Launcher.html" title="Tools for launching HPC jobs. " alt="" coords="109,107,184,133"/>
+<area shape="rect" id="node5" href="$group__Executor.html" title="Executor of test description. " alt="" coords="109,157,184,184"/>
+<area shape="rect" id="node6" href="$group__Version.html" title="Tools that collect version information. " alt="" coords="113,208,180,235"/>
+<area shape="rect" id="node7" href="$group__Fetch.html" title="Tools for fetching tests. " alt="" coords="119,259,174,285"/>
+<area shape="rect" id="node8" href="$group__Harasser.html" title="Harasser tools for test content. " alt="" coords="109,309,184,336"/>
+</map>

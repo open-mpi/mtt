@@ -37,7 +37,9 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
+      <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="namespaces.html"><span>Packages</span></a></li>
+      <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
       <li>
         <div id="MSearchBox" class="MSearchBoxInactive">
@@ -60,6 +62,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow2" class="tabs2">
     <ul class="tablist">
       <li><a href="files.html"><span>File&#160;List</span></a></li>
+      <li><a href="globals.html"><span>File&#160;Members</span></a></li>
     </ul>
   </div>
 <!-- window showing the filter options -->
@@ -67,7 +70,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Files</a></div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&#160;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&#160;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&#160;</span>Variables</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(6)"><span class="SelectionMark">&#160;</span>Groups</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -86,7 +89,130 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="title">ftb.ini</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="ftb_8ini.html">Go to the documentation of this file.</a><div class="fragment"></div><!-- fragment --></div><!-- contents -->
+<a href="ftb_8ini.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno"><a class="line" href="namespaceftb.html">    1</a></span>&#160;[MTT]</div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;</div>
+<div class="line"><a name="l00003"></a><span class="lineno"><a class="line" href="namespaceftb.html#a6e146aa10e5dfce9215588877f36147e">    3</a></span>&#160;min_disk_free = 50000</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;</div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">#======================================================================</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment"># Get FTB phase</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="comment">#======================================================================</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;[MPI get: ftb-trunk]</div>
+<div class="line"><a name="l00010"></a><span class="lineno"><a class="line" href="namespaceftb.html#a8c62412466f196971725835c110873a2">   10</a></span>&#160;mpi_details = FTB</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;</div>
+<div class="line"><a name="l00012"></a><span class="lineno"><a class="line" href="namespaceftb.html#a06ea752188762f1575ad0dd65835373a">   12</a></span>&#160;module = SCM</div>
+<div class="line"><a name="l00013"></a><span class="lineno"><a class="line" href="namespaceftb.html#a26a832e4479187da7d76e4b52ec65ba0">   13</a></span>&#160;scm_module = SVN</div>
+<div class="line"><a name="l00014"></a><span class="lineno"><a class="line" href="namespaceftb.html#a026e23a3b319d0b23c51013f5ef52090">   14</a></span>&#160;scm_url = https://svn.mcs.anl.gov/repos/cifts/ftb/trunk/</div>
+<div class="line"><a name="l00015"></a><span class="lineno"><a class="line" href="namespaceftb.html#a4d7198772f78b31a4983c1dac25046e0">   15</a></span>&#160;scm_post_copy = &lt;&lt;EOT</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;./autogen.sh</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;EOT</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="comment">#----------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;[MPI get: ftb-nightly-tarball]</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;mpi_details = FTB</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;module = Download</div>
+<div class="line"><a name="l00025"></a><span class="lineno"><a class="line" href="namespaceftb.html#ae96f515f42a6de5c342c0349668b1935">   25</a></span>&#160;download_url = http://www.mcs.anl.gov/research/cifts/software/ftb-0.6.2.tgz</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="comment">#----------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;[MPI Details: FTB]</div>
+<div class="line"><a name="l00030"></a><span class="lineno"><a class="line" href="namespaceftb.html#a3708045a4f84247896c658014c72ec9b">   30</a></span>&#160;exec = run-ftb-test.pl -v 3 -np &amp;test_np() -test &amp;test_executable() -path &amp;test_executable_dir()</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="comment">#======================================================================</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="comment"># Install FTB phase</span></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="comment">#======================================================================</span></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;[MPI install: Platform]</div>
+<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="namespaceftb.html#a398d20136ddd939bd203235b0dce9863">   37</a></span>&#160;mpi_get = ftb-trunk</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;mpi_details = FTB</div>
+<div class="line"><a name="l00039"></a><span class="lineno"><a class="line" href="namespaceftb.html#a1ec5d4a20c1eb705891e7dd81a73cd7f">   39</a></span>&#160;save_stdout_on_success = 1</div>
+<div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="namespaceftb.html#afd8660b1540ea079259bfe7501017590">   40</a></span>&#160;merge_stdout_stderr = 1</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;module = FTB</div>
+<div class="line"><a name="l00043"></a><span class="lineno"><a class="line" href="namespaceftb.html#ae1812ef9e1c7b0cc8fe32bc1183e452d">   43</a></span>&#160;ftb_vpath_mode = none</div>
+<div class="line"><a name="l00044"></a><span class="lineno"><a class="line" href="namespaceftb.html#a802fd0e9b4205267172fbff8637bc8ae">   44</a></span>&#160;ftb_make_check = 0</div>
+<div class="line"><a name="l00045"></a><span class="lineno"><a class="line" href="namespaceftb.html#ac13591e7257052189dfc8d0b56084713">   45</a></span>&#160;ftb_compiler_name = gnu</div>
+<div class="line"><a name="l00046"></a><span class="lineno"><a class="line" href="namespaceftb.html#a13bb6a052d4b7f9fcd48889879cf31e9">   46</a></span>&#160;ftb_compiler_version = &amp;get_gcc_version()</div>
+<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="namespaceftb.html#ad086734056187d957ce104223812ec44">   47</a></span>&#160;ftb_configure_arguments = &lt;&lt;EOT</div>
+<div class="line"><a name="l00048"></a><span class="lineno"><a class="line" href="namespaceftb.html#ac8a70036199459a6c1c0582d012b447c">   48</a></span>&#160;CFLAGS=-pipe</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;EOT</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="comment">#======================================================================</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="comment"># Test get phase</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="comment">#======================================================================</span></div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;[Test get: ftb-test-trunk]</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;module = SCM</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;scm_module = SVN</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;scm_url = https://svn.mcs.anl.gov/repos/cifts/ftb/trunk/</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;scm_post_copy = &lt;&lt;EOT</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;./autogen.sh</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;EOT</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="comment">#======================================================================</span></div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="comment"># Test build phase</span></div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="comment">#======================================================================</span></div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;[Test build: ftb-test-trunk]</div>
+<div class="line"><a name="l00068"></a><span class="lineno"><a class="line" href="namespaceftb.html#a7e0cbd6a960d7a066181ef774535b781">   68</a></span>&#160;test_get = ftb-test-trunk</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;save_stdout_on_success = 1</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;merge_stdout_stderr = 1</div>
+<div class="line"><a name="l00071"></a><span class="lineno"><a class="line" href="namespaceftb.html#ae4dc745f3cad7888d7b0ec6f707dd987">   71</a></span>&#160;stderr_save_lines = 100</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;module = Shell</div>
+<div class="line"><a name="l00074"></a><span class="lineno"><a class="line" href="namespaceftb.html#a52b04761ebaaf1f84781e8767994b72a">   74</a></span>&#160;shell_build_command = &lt;&lt;EOT</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;./configure --with-ftb=&amp;test_prefix_pretty()</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;make</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;EOT</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="comment">#======================================================================</span></div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<span class="comment"># Test Run phase</span></div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;<span class="comment">#======================================================================</span></div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;[Test run: ftb-test-trunk-examples]</div>
+<div class="line"><a name="l00084"></a><span class="lineno"><a class="line" href="namespaceftb.html#a956fe10ace4560b67e71bd1952c74dd3">   84</a></span>&#160;test_build = ftb-test-trunk</div>
+<div class="line"><a name="l00085"></a><span class="lineno"><a class="line" href="namespaceftb.html#a6835e8ccf2dcf3a64662b94ab7dc21dc">   85</a></span>&#160;<span class="keywordflow">pass</span> = &amp;and(&amp;cmd_wifexited(), &amp;eq(&amp;cmd_wexitstatus(), 0))</div>
+<div class="line"><a name="l00086"></a><span class="lineno"><a class="line" href="namespaceftb.html#af4129b964c3298abd3b378dc8c5f5321">   86</a></span>&#160;timeout = 5:00</div>
+<div class="line"><a name="l00087"></a><span class="lineno"><a class="line" href="namespaceftb.html#ae7093ee70b2bbcabcc07887556559782">   87</a></span>&#160;save_stdout_on_pass = 1</div>
+<div class="line"><a name="l00088"></a><span class="lineno"><a class="line" href="namespaceftb.html#a0323281cbf8bed3a87bcf74ffe8a4944">   88</a></span>&#160;stdout_save_lines = -1</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;merge_stdout_stderr = 1</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;</div>
+<div class="line"><a name="l00091"></a><span class="lineno"><a class="line" href="namespaceftb.html#a98d035fcaf3e0ad500d4398f3175857c">   91</a></span>&#160;np = &amp;env_max_hosts()</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;</div>
+<div class="line"><a name="l00093"></a><span class="lineno"><a class="line" href="namespaceftb.html#addf629fca64be87df63ed74143701d64">   93</a></span>&#160;specify_module = Simple</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="comment">#analyze_module = FTB</span></div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;simple_pass:tests = ftb_multiplecomp</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;<span class="comment">#----------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="comment"># This reporter writes results to a local text file</span></div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;[Reporter: text file backup]</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;module = TextFile</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;</div>
+<div class="line"><a name="l00103"></a><span class="lineno"><a class="line" href="namespaceftb.html#aeffc0ba718912c9454faca1507b2e327">  103</a></span>&#160;textfile_filename = ftb-report-$phase-$section-$mpi_name-$mpi_version.txt</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;</div>
+<div class="line"><a name="l00105"></a><span class="lineno"><a class="line" href="namespaceftb.html#a7d7d4c6685484abf921270e3427670e8">  105</a></span>&#160;textfile_summary_header = &lt;&lt;EOT</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;hostname: &amp;shell(<span class="stringliteral">&quot;hostname&quot;</span>)</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;uname: &amp;shell(<span class="stringliteral">&quot;uname -a&quot;</span>)</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;user: &amp;shell(<span class="stringliteral">&quot;whoami&quot;</span>)</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;EOT</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;</div>
+<div class="line"><a name="l00111"></a><span class="lineno"><a class="line" href="namespaceftb.html#af90084a3047b905a789299e4621983f4">  111</a></span>&#160;textfile_summary_footer =</div>
+<div class="line"><a name="l00112"></a><span class="lineno"><a class="line" href="namespaceftb.html#a1c9c073a1fdb526fd58eca74cc6012a2">  112</a></span>&#160;textfile_detail_header = FTB Debug Report</div>
+<div class="line"><a name="l00113"></a><span class="lineno"><a class="line" href="namespaceftb.html#a16b758d8bc177b624ed4801c0dea55c8">  113</a></span>&#160;textfile_detail_footer =</div>
+<div class="line"><a name="l00114"></a><span class="lineno"><a class="line" href="namespaceftb.html#a5be38c1bd9675f6ab63cbe757193526d">  114</a></span>&#160;textfile_textwrap = 78</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;<span class="comment"># Send digested summary of mtt execution by email</span></div>
+<div class="line"><a name="l00117"></a><span class="lineno"><a class="line" href="namespaceftb.html#af77d6a2460d34d47c8aa42d7d72c0100">  117</a></span>&#160;email_to = cifts-devel@googlegroups.com</div>
+<div class="line"><a name="l00118"></a><span class="lineno"><a class="line" href="namespaceftb.html#a32d4c73434de192cc67e8c20def937a8">  118</a></span>&#160;email_subject = FTB test has completed, status: $overall_mtt_status</div>
+<div class="line"><a name="l00119"></a><span class="lineno"><a class="line" href="namespaceftb.html#a0a227d10a4a01aa6ddc866a696d7b0b1">  119</a></span>&#160;email_detailed_report = 1</div>
+<div class="line"><a name="l00120"></a><span class="lineno"><a class="line" href="namespaceftb.html#a1945f3f78c2c8a76e10e5c6b6ab49edc">  120</a></span>&#160;email_footer = &lt;&lt;EOT</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;Test Scratch Directory <span class="keywordflow">is</span> &amp;scratch_root()</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;EOT</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;</div>
+</div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">
