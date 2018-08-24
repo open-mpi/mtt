@@ -23,6 +23,11 @@ from yapsy.PluginManager import PluginManager
 
 from ExecutorMTTTool import *
 
+try:
+    basestring
+except:
+    basestring = str
+
 # Theory of Operation
 #
 # The sequential executor executes a single, ordered pass thru the
@@ -163,7 +168,7 @@ class SequentialEx(ExecutorMTTTool):
                             if bldlog is None:
                                 # couldn't find the parent's log - cannot continue
                                 stageLog['status'] = 1
-                                stageLog['stderr'] = "Prior dependent step did not record a log"
+                                stageLog['stderr'] = ["Prior dependent step did not record a log"]
                                 testDef.logger.logResults(title, stageLog)
                                 testDef.plugin_trans_sem.acquire()
                                 continue
@@ -172,14 +177,14 @@ class SequentialEx(ExecutorMTTTool):
                                     # the parent step failed, and so we
                                     # cannot proceed here either
                                     stageLog['status'] = bldlog['status']
-                                    stageLog['stderr'] = "Prior dependent step failed - cannot proceed"
+                                    stageLog['stderr'] = ["Prior dependent step failed - cannot proceed"]
                                     testDef.logger.logResults(title, stageLog)
                                     testDef.plugin_trans_sem.acquire()
                                     continue
                             except KeyError:
                                 # if it didn't report a status, we shouldn't rely on it
                                 stageLog['status'] = 1
-                                stageLog['stderr'] = "Prior dependent step failed to provide a status"
+                                stageLog['stderr'] = ["Prior dependent step failed to provide a status"]
                                 testDef.logger.logResults(title, stageLog)
                                 testDef.plugin_trans_sem.acquire()
                                 continue
@@ -282,6 +287,11 @@ class SequentialEx(ExecutorMTTTool):
                     # execute the provided test description and capture the result
                     testDef.logger.stage_start_print(title, plugin.print_name())
                     plugin.execute(stageLog, keyvals, testDef)
+                    # Make sure stdout and stderr are properly formatted
+                    if 'stdout' in stageLog and isinstance(stageLog['stdout'], basestring):
+                        stageLog['stdout'] = stageLog['stdout'].split("\n")
+                    if 'stderr' in stageLog and isinstance(stageLog['stderr'], basestring):
+                        stageLog['stderr'] = stageLog['stderr'].split("\n")
                     testDef.logger.stage_end_print(title, plugin.print_name(), stageLog)
                     testDef.logger.logResults(title, stageLog)
                     if testDef.options['stop_on_fail'] is not False and stageLog['status'] != 0:
