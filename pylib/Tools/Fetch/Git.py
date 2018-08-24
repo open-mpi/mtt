@@ -254,7 +254,8 @@ class Git(FetchMTTTool):
         log['location'] = os.getcwd()
         # if they indicated that a specific subdirectory was
         # the target, then modify the location accordingly
-        print("CMDS",cmds)
+        cmdlog = 'Fetch CMD: ' + ' '.join(cmds)
+        testDef.logger.verbose_print(cmdlog)
         try:
             if cmds['subdir'] is not None:
                 log['location'] = os.path.join(log['location'], cmds['subdir'])
