@@ -37,9 +37,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="namespaces.html"><span>Packages</span></a></li>
-      <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
       <li>
         <div id="MSearchBox" class="MSearchBoxInactive">
@@ -62,7 +60,6 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow2" class="tabs2">
     <ul class="tablist">
       <li><a href="files.html"><span>File&#160;List</span></a></li>
-      <li><a href="globals.html"><span>File&#160;Members</span></a></li>
     </ul>
   </div>
 <!-- window showing the filter options -->
@@ -70,7 +67,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&#160;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&#160;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&#160;</span>Variables</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(6)"><span class="SelectionMark">&#160;</span>Groups</a></div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Files</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -89,262 +86,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="title">oshmem.ini</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="oshmem_8ini.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno"><a class="line" href="namespaceoshmem.html">    1</a></span>&#160;[MTT]</div>
-<div class="line"><a name="l00002"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#ac804c2050f1631747356112f02a6fa05">    2</a></span>&#160;scratch = &amp;getenv(<span class="stringliteral">&quot;HOME&quot;</span>)/mtt-scratch</div>
-<div class="line"><a name="l00003"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a0dd8ce9816b9130b80561197098590a2">    3</a></span>&#160;logfile =  &amp;scratch_root()/mtt_output.log</div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;</div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;[MPI Details: oshmem]</div>
-<div class="line"><a name="l00006"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#ab8b5930fba684193f3e00879ebb696b4">    6</a></span>&#160;params = -mca btl_openib_warn_default_gid_prefix 0 -mca spml yoda -mca pml ob1</div>
-<div class="line"><a name="l00007"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a024aa040d2607b8bd6fb76522b0978c3">    7</a></span>&#160;exec = &lt;&lt;EOF</div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;export OSHMEM_HOME=&amp;test_prefix()</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;export EXE=&amp;test_executable_abspath()</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;set -x</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;$OSHMEM_HOME/bin/shmemrun -np &amp;test_np() @params@ $EXE &amp;test_argv()</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;EOF</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="comment">#======================================================================</span></div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="comment"># MPI get phase</span></div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="comment">#======================================================================</span></div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;[MPI get: oshmem]</div>
-<div class="line"><a name="l00019"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#aeba1fd4df4f5814da0588fb749d7acfa">   19</a></span>&#160;mpi_details = oshmem</div>
-<div class="line"><a name="l00020"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a9406859c141622f8f2f7210af080e99c">   20</a></span>&#160;module = SCM</div>
-<div class="line"><a name="l00021"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#ab8796141a8629f1cfaedd19737a327c4">   21</a></span>&#160;scm_module = SVN</div>
-<div class="line"><a name="l00022"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a6be12ee0b0ec67ddd588e8fe63960fa9">   22</a></span>&#160;scm_url = http://svn.open-mpi.org/svn/ompi/trunk</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="comment">#======================================================================</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="comment"># Install MPI phase</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="comment">#======================================================================</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;[MPI Install: oshmem_gcc]</div>
-<div class="line"><a name="l00029"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a4426807cb10649f44b732f4360d67069">   29</a></span>&#160;mpi_get = oshmem</div>
-<div class="line"><a name="l00030"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a1ba136fa8004e20e4cebfc4fc401869f">   30</a></span>&#160;ompi_compiler_name = gnu</div>
-<div class="line"><a name="l00031"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a475fb23b33601f8274529d037c5f5ccc">   31</a></span>&#160;ompi_configure_arguments = --enable-mpirun-prefix-by-default --enable-orterun-prefix-by-default --with-openib --with-pmi --enable-oshmem --with-oshmem-param-check</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;module = OMPI</div>
-<div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a81040e875d1354d954835bd3fb1639d2">   33</a></span>&#160;ompi_make_all_arguments = -j &amp;get_processor_count()</div>
-<div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a44a772104c935ce09c4ddfd8a449cad3">   34</a></span>&#160;ompi_autogen = 1</div>
-<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#aa4302b1909a7fd535f1aed0eafc49776">   35</a></span>&#160;save_stdout_on_success = 1</div>
-<div class="line"><a name="l00036"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a54bae833e0060c0baf9bc9574845aea8">   36</a></span>&#160;merge_stdout_stderr = 1</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="comment">#======================================================================</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="comment"># Test get phase</span></div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="comment">#======================================================================</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;[Test get: oshmem_test_suite]</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;module = SCM</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;scm_module = SVN</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;scm_url = https://svn.open-mpi.org/svn/ompi-tests/trunk/openshmem-release-1.0d/</div>
-<div class="line"><a name="l00046"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#ae0365fee7a20801ce1c88902720271c8">   46</a></span>&#160;scm_clone_all = 1</div>
-<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a74a6a6021515def86f7d1b88ee967a42">   47</a></span>&#160;scm_username = ...put <span class="keywordflow">in</span> your username here...</div>
-<div class="line"><a name="l00048"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#ae1917e76294cc8388c1a9077bf49f9a1">   48</a></span>&#160;scm_password = ...put <span class="keywordflow">in</span> your password here...</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="comment">#======================================================================</span></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="comment"># Test build phase</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="comment">#======================================================================</span></div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;[Test build: oshmem_test_suite]</div>
-<div class="line"><a name="l00055"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a2e03864a75569dd951a19041adcf74d7">   55</a></span>&#160;include_files = openshmem_tests_patch.ini</div>
-<div class="line"><a name="l00056"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#aeaeee2752ca66a1f9aad1ec10e9f62e7">   56</a></span>&#160;test_get = oshmem_test_suite</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;save_stdout_on_success = 1</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;merge_stdout_stderr = 1</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;module = Shell</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;</div>
-<div class="line"><a name="l00061"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a2ef497db87796e4c84881171f8ba69bc">   61</a></span>&#160;shell_build_command = &lt;&lt;EOT</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;cd examples</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;cat &lt;&lt;EOTT &gt; ./patch</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;&amp;get_ini_val(<span class="stringliteral">&#39;Test build: oshmem_test_suite&#39;</span>,<span class="stringliteral">&#39;shmem_2dheat_patch&#39;</span>)</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;EOTT</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;patch shmem_2dheat.c ./patch</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;sed -i <span class="stringliteral">&#39;s/#include &lt;stdio.h&gt;/#include &lt;stdio.h&gt;\n#include &lt;sys\/time.h&gt;\n/g&#39;</span> ./shmem_daxpy.c</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;cd ../feature_tests/C</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;cat &lt;&lt;EOTT &gt; ./patch</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;&amp;get_ini_val(<span class="stringliteral">&#39;Test build: oshmem_test_suite&#39;</span>,<span class="stringliteral">&#39;shmem_zeroget_patch&#39;</span>)</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;EOTT</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;patch test_shmem_zero_get.c ./patch</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;sed -i <span class="stringliteral">&#39;s/#include &lt;stdio.h&gt;/#include &lt;stdio.h&gt;\n#include &lt;sys\/time.h&gt;\n/g&#39;</span> ./test_shmem_synchronization.c</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;cd performance_tests/micro_benchmarks</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;sed -i <span class="stringliteral">&#39;s/#include &lt;stdio.h&gt;/#include &lt;stdio.h&gt;\n#include &lt;sys\/time.h&gt;\n/g&#39;</span> ./barrier_performance.c</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;cd ../../</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;make examples CC=&amp;test_prefix_pretty()/bin/shmemcc</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;make C_feature_tests CC=&amp;test_prefix_pretty()/bin/shmemcc</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;make micro_bench CC=&amp;test_prefix_pretty()/bin/shmemcc</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;make F_feature_tests SHMEM_F90=&amp;test_prefix_pretty()/bin/shmemfort</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;EOT</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;<span class="comment">#======================================================================</span></div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;<span class="comment"># Test Run phase</span></div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<span class="comment">#======================================================================</span></div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;[Test run]</div>
-<div class="line"><a name="l00092"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a55c6b6069fadec2aed57554bce164cee">   92</a></span>&#160;<span class="keywordflow">pass</span> = &amp;and(&amp;cmd_wifexited(), &amp;eq(&amp;cmd_wexitstatus(), 0))</div>
-<div class="line"><a name="l00093"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a6f6a354853c6118a9f077a4eeb448f4c">   93</a></span>&#160;specify_module = Simple</div>
-<div class="line"><a name="l00094"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a5141543366545b98e6ec82d73505edf1">   94</a></span>&#160;save_stdout_on_pass = 1</div>
-<div class="line"><a name="l00095"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a4cdc6e4a0db8e6530f255ad825827e18">   95</a></span>&#160;stdout_save_lines = -1</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;merge_stdout_stderr = 1</div>
-<div class="line"><a name="l00097"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a26fdec706a8cb58b216928c30a41db44">   97</a></span>&#160;np = &amp;env_max_procs()</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;[oshmem_test_suite_common]</div>
-<div class="line"><a name="l00100"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a085f8f03de29586da15a246776960091">  100</a></span>&#160;test_build = oshmem_test_suite</div>
-<div class="line"><a name="l00101"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a33c00c89fab31d942544e8f99f86736d">  101</a></span>&#160;include_section = Test run</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;np = 2</div>
-<div class="line"><a name="l00103"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#ae7496075a50f44287b21e26d8862972b">  103</a></span>&#160;timeout = 00:02:00</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;[Test run: oshmem_test_suite_examples]</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;include_section = Test run</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;test_build = oshmem_test_suite</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;simple_first:tests = &amp;find_executables(<span class="stringliteral">&quot;examples/&quot;</span>)</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;simple_first:argv = &amp;enumerate(<span class="stringliteral">&quot;10 10&quot;</span>)</div>
-<div class="line"><a name="l00110"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#ac95f6ffc4fc812c485f85e0cf7f14108">  110</a></span>&#160;skipped = 0</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;np = 4</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;timeout = 00:02:00</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;[Test run: oshmem_test_suite_C_feature_tests]</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;simple_first:tests = &amp;find_executables(<span class="stringliteral">&quot;feature_tests/C/&quot;</span>)</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;[Test run: oshmem_test_suite_Fortran_accessibility]</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;.*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/accessibility&quot;</span>)</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;[Test run: oshmem_test_suite_Fortran_alloc]</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;.*shpalloc_0[^3].*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/alloc&quot;</span>)</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;[Test run: oshmem_test_suite_Fortran_atomic_add]</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;add_0[^45].*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/atomic&quot;</span>)</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;[Test run: oshmem_test_suite_Fortran_atomic_cswap]</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;cswap_0[^45].*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/atomic&quot;</span>)</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;[Test run: oshmem_test_suite_Fortran_atomic_fadd]</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;test_shmem_fadd.*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/atomic&quot;</span>)</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;[Test run: oshmem_test_suite_Fortran_atomic_finc]</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;finc_0[^45].*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/atomic&quot;</span>)</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;[Test run: oshmem_test_suite_Fortran_atomic_inc]</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;inc_0[^45].*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/atomic&quot;</span>)</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;[Test run: oshmem_test_suite_Fortran_atomic_swap]</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;swap_0[^45].*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/atomic&quot;</span>)</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;[Test run: oshmem_test_suite_Fortran_barrier]</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;.*barrier.*_0[^3].*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/barrier&quot;</span>)</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;[Test run: oshmem_test_suite_Fortran_collect]</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;.*collect_0[^4].*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/collect&quot;</span>)</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;[Test run: oshmem_test_suite_Fortran_reductions]</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;.*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/reductions&quot;</span>)</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;[Test run: oshmem_test_suite_Fortran_transfer]</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;test_shmem_[^pi][^ug].*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/transfer&quot;</span>)</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;</div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;[Test run: oshmem_test_suite_Fortran_transfer_put]</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;put_0[^45].*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/atomic&quot;</span>)</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;[Test run: oshmem_test_suite_Fortran_transfer_iget]</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;iget_0[^45].*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/atomic&quot;</span>)</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;[Test run: oshmem_test_suite_Fortran_synchronization]</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;(test_shmem_lock.x)|(test_shmem_synchronization.x)&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran&quot;</span>)</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;[Test run: oshmem_test_suite_Fortran_alloc_fail]</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;<span class="keywordflow">pass</span> = &amp;and(&amp;cmd_wifexited(), &amp;eq(&amp;cmd_wexitstatus(), 255))</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;.*shpalloc_03.*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/alloc&quot;</span>)</div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;[Test run: oshmem_test_suite_Fortran_atomic_add_fail]</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;<span class="keywordflow">pass</span> = &amp;and(&amp;cmd_wifexited(), &amp;eq(&amp;cmd_wexitstatus(), 255))</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;add_0(4|5).*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/atomic&quot;</span>)</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;[Test run: oshmem_test_suite_Fortran_atomic_cswap_fail]</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;<span class="keywordflow">pass</span> = &amp;and(&amp;cmd_wifexited(), &amp;eq(&amp;cmd_wexitstatus(), 255))</div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;cswap_0(4|5).*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/atomic&quot;</span>)</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;[Test run: oshmem_test_suite_Fortran_atomic_finc_fail]</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;<span class="keywordflow">pass</span> = &amp;and(&amp;cmd_wifexited(), &amp;eq(&amp;cmd_wexitstatus(), 255))</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;finc_0(4|5).*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/atomic&quot;</span>)</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;[Test run: oshmem_test_suite_Fortran_atomic_inc_fail]</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;<span class="keywordflow">pass</span> = &amp;and(&amp;cmd_wifexited(), &amp;eq(&amp;cmd_wexitstatus(), 255))</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;inc_0(4|5).*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/atomic&quot;</span>)</div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;</div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;[Test run: oshmem_test_suite_Fortran_atomic_swap_fail]</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;<span class="keywordflow">pass</span> = &amp;and(&amp;cmd_wifexited(), &amp;eq(&amp;cmd_wexitstatus(), 255))</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;swap_0(4|5).*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/atomic&quot;</span>)</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;[Test run: oshmem_test_suite_Fortran_transfer_put_fail]</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;<span class="keywordflow">pass</span> = &amp;and(&amp;cmd_wifexited(), &amp;eq(&amp;cmd_wexitstatus(), 255))</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;put_0(4|5).*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/atomic&quot;</span>)</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;[Test run: oshmem_test_suite_Fortran_transfer_iget_fail]</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;<span class="keywordflow">pass</span> = &amp;and(&amp;cmd_wifexited(), &amp;eq(&amp;cmd_wexitstatus(), 255))</div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;iget_0(4|5).*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/atomic&quot;</span>)</div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;[Test run: oshmem_test_suite_Fortran_barrier_timeout]</div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;.*barrier.*_03.*[.]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/barrier&quot;</span>)</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;[Test run: oshmem_test_suite_Fortran_collect_timeout]</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;.*collect_04.*[,]x$&#39;</span>, <span class="stringliteral">&quot;feature_tests/Fortran/collect&quot;</span>)</div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;include_section = oshmem_test_suite_common</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;[Test run: oshmem_test_suite_performance_tests]</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;include_section = Test run</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;test_build = oshmem_test_suite</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;simple_first:tests = &amp;find_executables_regexp(<span class="stringliteral">&#39;(.*barrier.*)|(.*broadcast.*)|(.*get.*)|(.*put.*)&#39;</span>,<span class="stringliteral">&quot;performance_tests/micro_benchmarks/&quot;</span>)</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;skipped = 0</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;timeout = 00:10:00</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;<span class="comment">#======================================================================</span></div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;<span class="comment"># Reporter phase</span></div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;<span class="comment">#======================================================================</span></div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;[Reporter: text file backup]</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;module = TextFile</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;</div>
-<div class="line"><a name="l00240"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#ab7bec292d903dc1e22f6dd1610ac9aad">  240</a></span>&#160;textfile_filename = $phase-$section-$mpi_name-$mpi_version.txt</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;</div>
-<div class="line"><a name="l00242"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a145ad9a14eac762c5d8f46b444299ef9">  242</a></span>&#160;textfile_summary_header = &lt;&lt;EOT</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;Hostname: &amp;shell(<span class="stringliteral">&quot;hostname&quot;</span>)</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;uname: &amp;shell(<span class="stringliteral">&quot;uname -a&quot;</span>)</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;Username: &amp;shell(<span class="stringliteral">&quot;who am i&quot;</span>)</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;EOT</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;</div>
-<div class="line"><a name="l00248"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#a8aad4aa9999524970a03dbaac95ee861">  248</a></span>&#160;textfile_summary_footer = &lt;&lt;EOT</div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;Detailed report at &amp;get_ini_val(<span class="stringliteral">&quot;mtt&quot;</span>,<span class="stringliteral">&quot;scratch_root&quot;</span>)</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;EOT</div>
-<div class="line"><a name="l00251"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#ae5a0095596c3624c7f19ae771452c5d3">  251</a></span>&#160;textfile_detail_header = oshmem <span class="keyword">from</span> ompi trunk</div>
-<div class="line"><a name="l00252"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#aec7f6285615e309f4d179fde03e40d8e">  252</a></span>&#160;textfile_detail_footer =</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;</div>
-<div class="line"><a name="l00254"></a><span class="lineno"><a class="line" href="namespaceoshmem.html#ab50c730a64d291ffba94c5a3258e7e2d">  254</a></span>&#160;textfile_textwrap = 78</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;</div>
-</div><!-- fragment --></div><!-- contents -->
+<a href="oshmem_8ini.html">Go to the documentation of this file.</a><div class="fragment"></div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">
