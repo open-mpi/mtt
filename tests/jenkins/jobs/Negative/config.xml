@@ -42,6 +42,7 @@
 
 export TEST_USER=test
 export TEST_DIR=$WORKSPACE/mtt_exec
+export MTT_HOME=/opt/mtt
 
 mkdir -p $TEST_DIR
 chown -R $TEST_USER: &quot;$TEST_DIR&quot;
@@ -53,7 +54,7 @@ cat &lt;&lt; EOF &gt; /tmp/mtt_negative
 source /etc/profile.d/lmod.sh
 
 cd &quot;$TEST_DIR&quot; || exit 1
-/opt/mtt/pyclient/pymtt.py --base-dir=/opt/mtt/pylib/ --verbose  /opt/mtt/tests/bat/negative.ini
+$MTT_HOME/pyclient/pymtt.py --verbose  /opt/mtt/tests/bat/negative.ini
 
 EOF
 
