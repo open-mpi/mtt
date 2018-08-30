@@ -67,14 +67,13 @@ script:
 
 before_deploy:
   - cd docs && doxygen Doxyfile
+
 deploy:
-  provider: pages
-  skip_cleanup: true
-  github-token: $GH_TOKEN
-  local_dir: docs/
-  keep-history: true
+  provider: script
+  script: ./scripts/deploy.sh
   on:
     branch: master
+
 after_success:
 env:
   matrix:
