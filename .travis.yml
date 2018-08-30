@@ -70,7 +70,7 @@ before_deploy:
 
 deploy:
   provider: script
-  script: ls -l ..
+  script: ls -al ..
   skip_cleanup: true
   on:
     branch: master
