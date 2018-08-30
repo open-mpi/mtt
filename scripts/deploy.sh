@@ -1,5 +1,8 @@
 #!/bin/sh
 
+set -x
+
+echo THIS IS THE DEPLOY SCRIPT
 
 git show remote
 git show remote origin
