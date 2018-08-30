@@ -70,7 +70,7 @@ before_deploy:
 
 deploy:
   provider: script
-  script: /bin/sh scripts/deploy.sh
+  script: ls -l
   skip_cleanup: true
   on:
     branch: master
