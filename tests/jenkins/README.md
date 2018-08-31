@@ -33,8 +33,11 @@ docker build \
 --build-arg slave_node_exec_dir=\\/home\\/test\\/jenkins \
 --build-arg master_num_executors=2 \
 --build-arg compute_node_names="node1 node2 node3 node4" \
+--build-arg installplugins=yes \
 -t mttconsole .
 ```
+
+* If you have problems building with the plugins, sometime their downloading times out, you can **remove** the `--build-arg installplugins=yes` or **set it to** `no`
 
 ##### Running the console
 
