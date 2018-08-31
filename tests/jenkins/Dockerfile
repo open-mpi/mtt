@@ -12,6 +12,7 @@ ARG slave_node_ssh_username
 ARG slave_node_exec_dir
 ARG master_num_executors
 ARG compute_node_names
+ARG installplugins=no
 
 ENV JAVA_OPTS "-Dhttp.proxyHost=${proxy_server} -Dhttp.proxyPort=${proxy_port} -Dhttps.proxyHost=${proxy_server} -Dhttps.proxyPort=${proxy_port} -Djenkins.install.runSetupWizard=false"
 
@@ -37,8 +38,8 @@ RUN echo $TIMEZONE > /etc/timezone &&\
 RUN mkdir -p $JENKINS_HOME &&\
     chown -R jenkins:jenkins $JENKINS_HOME
 
-# Install jenkins plugins
-RUN /usr/local/bin/install-plugins.sh ant:1.4 antisamy-markup-formatter:1.5 bouncycastle-api:2.16.0 branch-api:1.11.1 build-flow-plugin:0.20 build-user-vars-plugin:1.5 cloudbees-folder:5.14 conditional-buildstep:1.3.5 credentials:2.1.10 cvs:2.12 display-url-api:0.5 durable-task:1.12 email-ext:2.52 envinject:1.93.1 extended-read-permission:2.0 external-monitor-job:1.6 externalresource-dispatcher:1.1.0 git-client:2.1.0 git-server:1.7 git:3.0.1 github-api:1.80 github-branch-source:1.10.1 github:1.25.0 greenballs:1.15 handlebars:1.1.1 icon-shim:2.0.3 javadoc:1.4 job-import-plugin:1.6 jobConfigHistory:2.15 jquery-detached:1.2.1 junit:1.19 ldap:1.13 lockable-resources:1.10 mailer:1.18 mapdb-api:1.0.9.0 matrix-auth:1.4 matrix-project:1.7.1 maven-plugin:2.14 metadata:1.1.0b momentjs:1.1.1 multiple-scms:0.6 pam-auth:1.3 parameterized-trigger:2.32 build-timeout:1.18 plain-credentials:1.3 plugin-usage-plugin:0.3 role-strategy:2.3.2 run-condition:1.0 scm-api:1.3 script-security:1.24 ssh-credentials:1.12 ssh-slaves:1.12 structs:1.5 subversion:2.7.1 tap:2.0.1 test-results-analyzer:0.3.4 token-macro:2.0 translation:1.15 view-job-filters:1.27 windows-slaves:1.2 jenkins-multijob-plugin:1.23
+# Install jenkins plugins if ARG plugins=install
+RUN if [ "$installplugins" != "no" ] ; then /usr/local/bin/install-plugins.sh ant:1.4 antisamy-markup-formatter:1.5 bouncycastle-api:2.16.0 branch-api:1.11.1 build-flow-plugin:0.20 build-user-vars-plugin:1.5 cloudbees-folder:5.14 conditional-buildstep:1.3.5 credentials:2.1.10 cvs:2.12 display-url-api:0.5 durable-task:1.12 email-ext:2.52 envinject:1.93.1 extended-read-permission:2.0 external-monitor-job:1.6 externalresource-dispatcher:1.1.0 git-client:2.1.0 git-server:1.7 git:3.0.1 github-api:1.80 github-branch-source:1.10.1 github:1.25.0 greenballs:1.15 handlebars:1.1.1 icon-shim:2.0.3 javadoc:1.4 job-import-plugin:1.6 jobConfigHistory:2.15 jquery-detached:1.2.1 junit:1.19 ldap:1.13 lockable-resources:1.10 mailer:1.18 mapdb-api:1.0.9.0 matrix-auth:1.4 matrix-project:1.7.1 maven-plugin:2.14 metadata:1.1.0b momentjs:1.1.1 multiple-scms:0.6 pam-auth:1.3 parameterized-trigger:2.32 build-timeout:1.18 plain-credentials:1.3 plugin-usage-plugin:0.3 role-strategy:2.3.2 run-condition:1.0 scm-api:1.3 script-security:1.24 ssh-credentials:1.12 ssh-slaves:1.12 structs:1.5 subversion:2.7.1 tap:2.0.1 test-results-analyzer:0.3.4 token-macro:2.0 translation:1.15 view-job-filters:1.27 windows-slaves:1.2 jenkins-multijob-plugin:1.23 ; fi
 
 ############################################
 # Jobs configuration step
