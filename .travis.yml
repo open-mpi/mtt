@@ -66,15 +66,16 @@ script:
   - $TRAVIS_BUILD_DIR/pyclient/pymtt.py --verbose $TRAVIS_BUILD_DIR/tests/bat/default_check_profile.ini
 
 before_deploy:
-  - cd docs && doxygen Doxyfile
+  - cd docs && doxygen Doxyfile && cd ..
+
 deploy:
-  provider: pages
+  provider: script
+  script: sh scripts/deploy.sh
   skip_cleanup: true
-  github-token: $GH_TOKEN
-  local_dir: docs/
-  keep-history: true
   on:
     branch: master
+    python: 2.7
+
 after_success:
 env:
   matrix:
