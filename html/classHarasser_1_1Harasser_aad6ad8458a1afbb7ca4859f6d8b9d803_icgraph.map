@@ -1,0 +1,6 @@
+<map id="Harasser.Harasser.stop" name="Harasser.Harasser.stop">
+<area shape="rect" id="node2" href="$classHarasser_1_1Harasser.html#a2a588949b62a2b366f37994e71fb2fb1" title="Deactivates plugin. " alt="" coords="222,5,418,32"/>
+<area shape="rect" id="node3" href="$classHarasser_1_1Harasser.html#ab5ea4c244f800d83bcffabca0c2f0177" title="A check to see if harassers are working properly. " alt="" coords="235,56,405,83"/>
+<area shape="rect" id="node4" href="$classWatchdog_1_1Watchdog.html#ae4c28ad104e774e68874a3129762ae8c" title="Watchdog.Watchdog.reset" alt="" coords="231,107,409,133"/>
+<area shape="rect" id="node5" href="$classWatchdog_1_1Watchdog.html#a2d1d443fe10d34903950dabb8d54ca67" title="Watchdog.Watchdog.deactivate" alt="" coords="216,157,424,184"/>
+</map>

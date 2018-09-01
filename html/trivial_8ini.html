@@ -37,7 +37,9 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
+      <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="namespaces.html"><span>Packages</span></a></li>
+      <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
       <li>
         <div id="MSearchBox" class="MSearchBoxInactive">
@@ -60,6 +62,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow2" class="tabs2">
     <ul class="tablist">
       <li><a href="files.html"><span>File&#160;List</span></a></li>
+      <li><a href="globals.html"><span>File&#160;Members</span></a></li>
     </ul>
   </div>
 <!-- window showing the filter options -->
@@ -67,7 +70,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Files</a></div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Classes</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Namespaces</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&#160;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(4)"><span class="SelectionMark">&#160;</span>Functions</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(5)"><span class="SelectionMark">&#160;</span>Variables</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(6)"><span class="SelectionMark">&#160;</span>Groups</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -83,7 +86,8 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div><!-- top -->
 <div class="header">
   <div class="summary">
-<a href="#namespaces">Namespaces</a>  </div>
+<a href="#namespaces">Namespaces</a> &#124;
+<a href="#var-members">Variables</a>  </div>
   <div class="headertitle">
 <div class="title">trivial.ini File Reference</div>  </div>
 </div><!--header-->
@@ -95,6 +99,33 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 Namespaces</h2></td></tr>
 <tr class="memitem:namespacetrivial"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetrivial.html">trivial</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:a3e713ea5d6e77bf165eeaafc02275430"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetrivial.html#a3e713ea5d6e77bf165eeaafc02275430">trivial.module</a> = Trivial</td></tr>
+<tr class="separator:a3e713ea5d6e77bf165eeaafc02275430"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afe75cace659f04749ee3f7c818152b7b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetrivial.html#afe75cace659f04749ee3f7c818152b7b">trivial.test_get</a> = trivial</td></tr>
+<tr class="separator:afe75cace659f04749ee3f7c818152b7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af272dc5ab194f706f77eeb74de7b8c97"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetrivial.html#af272dc5ab194f706f77eeb74de7b8c97">trivial.save_stdout_on_success</a> = 1</td></tr>
+<tr class="separator:af272dc5ab194f706f77eeb74de7b8c97"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8c1d5357654e053cf4d0b8a7f48ff13b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetrivial.html#a8c1d5357654e053cf4d0b8a7f48ff13b">trivial.merge_stdout_stderr</a> = 1</td></tr>
+<tr class="separator:a8c1d5357654e053cf4d0b8a7f48ff13b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af6ee4456e84c354e7845aae7ea24d022"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetrivial.html#af6ee4456e84c354e7845aae7ea24d022">trivial.stderr_save_lines</a> = 100</td></tr>
+<tr class="separator:af6ee4456e84c354e7845aae7ea24d022"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa612b0f8daffd666959f885b6ba54cd0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetrivial.html#aa612b0f8daffd666959f885b6ba54cd0">trivial.test_build</a> = trivial</td></tr>
+<tr class="separator:aa612b0f8daffd666959f885b6ba54cd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65b4003f52ce4fa5d324695f54c1e3b3"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetrivial.html#a65b4003f52ce4fa5d324695f54c1e3b3">trivial.pass</a> = &amp;and(&amp;cmd_wifexited(), &amp;eq(&amp;cmd_wexitstatus(), 0))</td></tr>
+<tr class="separator:a65b4003f52ce4fa5d324695f54c1e3b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ce5c7e487f1c21edda391cc47830f5e"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetrivial.html#a8ce5c7e487f1c21edda391cc47830f5e">trivial.timeout</a> = &amp;test_np()</td></tr>
+<tr class="separator:a8ce5c7e487f1c21edda391cc47830f5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aefbe39eb9fcb8a58d4e04dd980e35062"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetrivial.html#aefbe39eb9fcb8a58d4e04dd980e35062">trivial.save_stdout_on_pass</a> = 1</td></tr>
+<tr class="separator:aefbe39eb9fcb8a58d4e04dd980e35062"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aee208868790b8c2d6d9f48ad238aa6c5"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetrivial.html#aee208868790b8c2d6d9f48ad238aa6c5">trivial.stdout_save_lines</a> = 100</td></tr>
+<tr class="separator:aee208868790b8c2d6d9f48ad238aa6c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adfe4da0e2d8f3078b198c0f76ee394dd"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetrivial.html#adfe4da0e2d8f3078b198c0f76ee394dd">trivial.np</a> = &amp;env_max_procs()</td></tr>
+<tr class="separator:adfe4da0e2d8f3078b198c0f76ee394dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af5dae1522345f303cfb4527587cd5361"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetrivial.html#af5dae1522345f303cfb4527587cd5361">trivial.specify_module</a> = Simple</td></tr>
+<tr class="separator:af5dae1522345f303cfb4527587cd5361"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 <!-- start footer part -->
