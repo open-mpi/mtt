@@ -1,0 +1,24 @@
+name: condaEnv
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - django=1.11.10
+  - pathlib=1.0.1
+  - pbr=4.2.0
+  - pip=10.0.1
+  - psycopg2=2.7.5
+  - requests=2.19.1
+  - six=1.11.0
+  - virtualenv=16.0.0
+  - wheel=0.31.1
+  - pip:
+    - doxypy==0.4.1
+    - junit-xml==1.8
+    - python-hostlist==1.18
+    - stevedore==1.29.0
+    - yapsy==1.11.223
+    - configparser==3.5.0
+    - django-enumfields==0.10.0
+    - future==0.16.0
+

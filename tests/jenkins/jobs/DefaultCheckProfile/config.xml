@@ -40,15 +40,10 @@
     <hudson.tasks.Shell>
       <command>#!/bin/bash -ex
 
-source /etc/profile.d/lmod.sh
-
 export KERNEL_VERSION="Change this to match your system's kernel version (uname -r)"
-export TEST_DIR=$WORKSPACE/mtt_exec
+export MTT_HOME=/opt/mtt
 
-mkdir -p $TEST_DIR
-
-cd &quot;$TEST_DIR&quot; || exit 1
-/opt/mtt/pyclient/pymtt.py --base-dir=/opt/mtt/pylib/ --verbose /opt/mtt/tests/bat/default_check_profile.ini
+${MTT_HOME}/pyclient/pymtt.py --verbose /opt/mtt/tests/bat/default_check_profile.ini
 
 STATUS=$?
 exit $STATUS
@@ -58,7 +53,7 @@ exit $STATUS
   </builders>
   <publishers>
     <hudson.tasks.junit.JUnitResultArchiver plugin="junit@1.19">
-      <testResults>mtt_exec/default_check_profile.xml</testResults>
+      <testResults>mttscratch/default_check_profile.xml</testResults>
       <keepLongStdio>false</keepLongStdio>
       <healthScaleFactor>1.0</healthScaleFactor>
       <allowEmptyResults>false</allowEmptyResults>

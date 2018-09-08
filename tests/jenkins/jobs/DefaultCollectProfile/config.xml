@@ -40,14 +40,9 @@
     <hudson.tasks.Shell>
       <command>#!/bin/bash -ex
 
-source /etc/profile.d/lmod.sh
+export MTT_HOME=/opt/mtt
 
-export TEST_DIR=$WORKSPACE/mtt_exec
-
-mkdir -p $TEST_DIR
-
-cd &quot;$TEST_DIR&quot; || exit 1
-/opt/mtt/pyclient/pymtt.py --base-dir=/opt/mtt/pylib/ --verbose /opt/mtt/tests/bat/default_collect_profile.ini
+${MTT_HOME}/pyclient/pymtt.py --verbose /opt/mtt/tests/bat/default_collect_profile.ini
 
 STATUS=$?
 exit $STATUS
@@ -66,7 +61,7 @@ exit $STATUS
       </threshold>
     </hudson.tasks.BuildTrigger>
     <hudson.tasks.junit.JUnitResultArchiver plugin="junit@1.19">
-      <testResults>mtt_exec/default_collect_profile.xml</testResults>
+      <testResults>mttscratch/default_collect_profile.xml</testResults>
       <keepLongStdio>false</keepLongStdio>
       <healthScaleFactor>1.0</healthScaleFactor>
       <allowEmptyResults>false</allowEmptyResults>
