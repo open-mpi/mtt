@@ -149,9 +149,9 @@ class TextFile(ReporterMTTStage):
             except KeyError:
                 pass
             print(file=self.fh)
-        if cmds['filename'] is not None:
-            self.fh.close()
         print("Num sections pass:",num_secs_pass,"/",len(fullLog),"sections", file=self.fh)
         print("Percentage sections pass:",100*float(num_secs_pass)/float(len(fullLog)), file=self.fh)
+        if cmds['filename'] is not None:
+            self.fh.close()
         log['status'] = 0
         return
