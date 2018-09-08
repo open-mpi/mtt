@@ -48,10 +48,12 @@ class Watchdog(BaseMTTUtility):
         return
 
     # Start the watchdog timer
-    def start(self):
+    def start(self, handler=None):
+        if handler is None:
+            handler = self.defaultHandler
         if not self.timer or not self.timer.is_alive():
             self.timer = Timer(int(self.timeout.total_seconds()),
-                               self.defaultHandler)
+                               handler)
             self.timer.start()
 
     # Stop the watchdog timer
