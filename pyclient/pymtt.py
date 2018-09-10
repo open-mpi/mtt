@@ -28,7 +28,14 @@ import argparse
 #    sys.exit('MTT usage error: add -h for help')
 
 # define the cmd line arguments
-parser = argparse.ArgumentParser(description="usage: %prog [options] testfile1 testfile2 ...")
+parser = argparse.ArgumentParser(
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    description='''\
+Environment Variables:
+  MTT_HOME - this must be set to the top-level directory of your MTT installation.
+  MTT_ARGS - list of commandline arguments that you want set for each invocation.
+    Example: export MTT_ARGS="--verbose --log=/tmp/out.log"
+''')
 
 parser.add_argument('ini_files', action='append', metavar='FILE', nargs='*', help = ".ini file to be used")
 
@@ -143,6 +150,13 @@ debugGroup.add_argument("--trial",
                       action="store_true", dest="trial", default=False,
                       help="Use when testing your MTT client setup; results that are generated and submitted to the database are marked as \"trials\" and are not included in normal reporting.")
 args = parser.parse_args()
+
+# get any arguments set in MTT_ARGS environment variable and combine them with
+# any set on the command line.  Environment will override the commandline.
+mttArgs = []
+if 'MTT_ARGS' in os.environ and os.environ.get('MTT_ARGS') != None:
+    mttArgs = os.environ['MTT_ARGS'].split()
+    args = parser.parse_args(sys.argv[1:] + mttArgs)
 
 # check to see if MTT_HOME has been set - we require it
 try:
