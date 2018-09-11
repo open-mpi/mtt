@@ -1,6 +1,3 @@
-^lib/Config.*
-^lib/Env.*
-^lib/Text.*
 .*\.svn.*
 \.rej$
 \.bak$
@@ -9,7 +6,6 @@ diff.out$
 log.txt$
 flow.txt
 ^docs/.*
-^client/whatami
 .*.gz$
 ^server/php/jpgraph.*
 ^server/tools.*
