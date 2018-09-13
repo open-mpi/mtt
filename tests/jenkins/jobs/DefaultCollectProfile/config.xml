@@ -43,12 +43,11 @@
 source /etc/profile.d/lmod.sh
 
 export TEST_DIR=$WORKSPACE/mtt_exec
-export MTT_HOME=/opt/mtt
 
 mkdir -p $TEST_DIR
 
 cd &quot;$TEST_DIR&quot; || exit 1
-${MTT_HOME}/pyclient/pymtt.py --verbose /opt/mtt/tests/bat/default_collect_profile.ini
+/opt/mtt/pyclient/pymtt.py --base-dir=/opt/mtt/pylib/ --verbose /opt/mtt/tests/bat/default_collect_profile.ini
 
 STATUS=$?
 exit $STATUS
