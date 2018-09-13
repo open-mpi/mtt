@@ -117,7 +117,7 @@ class CheckProfile(ProfileMTTStage):
                 for check in keyvals[key].split(","):
                     testDef.logger.verbose_print("Checking: " + check)
                     kind, op, gigs = check.split()
-                    gigsNeeded = int(gigs.split('G')[0])
+                    gigsNeeded = float(gigs.split('G')[0])
 
                     cmd = self.memoryTotalCmd[2]
                     if kind == 'free':
@@ -135,7 +135,7 @@ class CheckProfile(ProfileMTTStage):
                         # ignore the execution time, if collected
                         return
 
-                    gigsAvail = int(stdout[0].split('G')[0])
+                    gigsAvail = float(stdout[0].split('G')[0])
                     myLog['memory '+kind] = stdout
 
                     testDef.logger.verbose_print("checking: " + kind \
