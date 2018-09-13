@@ -1,0 +1,18 @@
+#
+# Copyright (c) 2015-2018 Intel, Inc. All rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
+
+[Core]
+Name = CheckProfile Plugin
+Module = CheckProfile
+
+[Documentation]
+Author = Bill Weide
+Version = 0.1
+Website = N/A
+Description = Collect and check profile values of the system, abort if the check fails
