@@ -727,7 +727,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00636"></a><span class="lineno">  636</span>&#160;                self.logger.verbose_print(self.config.items(section))</div>
 <div class="line"><a name="l00637"></a><span class="lineno">  637</span>&#160;        <span class="keywordflow">return</span></div>
 <div class="line"><a name="l00638"></a><span class="lineno">  638</span>&#160;</div>
-<div class="line"><a name="l00639"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a3eeef61386a154552981676b1893e59e">  639</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classTestDef_1_1TestDef.html#a3eeef61386a154552981676b1893e59e">executeTest</a>(self, enable_loop=True, executor=&quot;sequential&quot;):</div>
+<div class="line"><a name="l00639"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a3eeef61386a154552981676b1893e59e">  639</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classTestDef_1_1TestDef.html#a3eeef61386a154552981676b1893e59e">executeTest</a>(self, executor=&quot;sequential&quot;):</div>
 <div class="line"><a name="l00640"></a><span class="lineno">  640</span>&#160;</div>
 <div class="line"><a name="l00641"></a><span class="lineno">  641</span>&#160;        <span class="keywordflow">if</span> <span class="keywordflow">not</span> self.<a class="code" href="classTestDef_1_1TestDef.html#a21764cc1b70626946a708b7a0f003b38">loaded</a>:</div>
 <div class="line"><a name="l00642"></a><span class="lineno">  642</span>&#160;            print(<span class="stringliteral">&quot;Plugins have not been loaded - cannot execute test&quot;</span>)</div>
@@ -746,138 +746,133 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00655"></a><span class="lineno">  655</span>&#160;        <span class="keywordflow">if</span> status == 0 <span class="keywordflow">and</span> self.<a class="code" href="classTestDef_1_1TestDef.html#a7c7d587995154a9f31607dc4726d3a2a">options</a>[<span class="stringliteral">&#39;clean_after&#39;</span>] <span class="keywordflow">and</span> os.path.isdir(self.<a class="code" href="classTestDef_1_1TestDef.html#a7c7d587995154a9f31607dc4726d3a2a">options</a>[<span class="stringliteral">&#39;scratchdir&#39;</span>]):</div>
 <div class="line"><a name="l00656"></a><span class="lineno">  656</span>&#160;            self.logger.verbose_print(<span class="stringliteral">&quot;Cleaning up scratchdir after successful run&quot;</span>)</div>
 <div class="line"><a name="l00657"></a><span class="lineno">  657</span>&#160;            shutil.rmtree(self.<a class="code" href="classTestDef_1_1TestDef.html#a7c7d587995154a9f31607dc4726d3a2a">options</a>[<span class="stringliteral">&#39;scratchdir&#39;</span>])</div>
-<div class="line"><a name="l00658"></a><span class="lineno">  658</span>&#160;        <span class="comment"># Loop forever if specified</span></div>
-<div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160;        <span class="keywordflow">if</span> enable_loop <span class="keywordflow">and</span> self.<a class="code" href="classTestDef_1_1TestDef.html#a7c7d587995154a9f31607dc4726d3a2a">options</a>[<span class="stringliteral">&#39;loopforever&#39;</span>]:</div>
-<div class="line"><a name="l00660"></a><span class="lineno">  660</span>&#160;            <span class="keywordflow">while</span> <span class="keyword">True</span>:</div>
-<div class="line"><a name="l00661"></a><span class="lineno">  661</span>&#160;                self.logger.reset()</div>
-<div class="line"><a name="l00662"></a><span class="lineno">  662</span>&#160;                self.<a class="code" href="classTestDef_1_1TestDef.html#a3eeef61386a154552981676b1893e59e">executeTest</a>(enable_loop=<span class="keyword">False</span>, executor=executor)</div>
-<div class="line"><a name="l00663"></a><span class="lineno">  663</span>&#160;        <span class="keywordflow">return</span> status</div>
-<div class="line"><a name="l00664"></a><span class="lineno">  664</span>&#160;</div>
-<div class="line"><a name="l00665"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a052b17251fd618f9a98197bcf9805511">  665</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classTestDef_1_1TestDef.html#a052b17251fd618f9a98197bcf9805511">executeCombinatorial</a>(self, enable_loop=True):</div>
-<div class="line"><a name="l00666"></a><span class="lineno">  666</span>&#160;        <span class="keywordflow">return</span> self.<a class="code" href="classTestDef_1_1TestDef.html#a3eeef61386a154552981676b1893e59e">executeTest</a>(enable_loop=enable_loop, executor=<span class="stringliteral">&quot;combinatorial&quot;</span>)</div>
-<div class="line"><a name="l00667"></a><span class="lineno">  667</span>&#160;  </div>
-<div class="line"><a name="l00668"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a02bd5283e28743c874846f1c4c6bdf08">  668</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classTestDef_1_1TestDef.html#a02bd5283e28743c874846f1c4c6bdf08">printOptions</a>(self, options):</div>
-<div class="line"><a name="l00669"></a><span class="lineno">  669</span>&#160;        <span class="comment"># if the options are empty, report that</span></div>
-<div class="line"><a name="l00670"></a><span class="lineno">  670</span>&#160;        <span class="keywordflow">if</span> <span class="keywordflow">not</span> options:</div>
-<div class="line"><a name="l00671"></a><span class="lineno">  671</span>&#160;            lines = [<span class="stringliteral">&quot;None&quot;</span>]</div>
-<div class="line"><a name="l00672"></a><span class="lineno">  672</span>&#160;            <span class="keywordflow">return</span> lines</div>
-<div class="line"><a name="l00673"></a><span class="lineno">  673</span>&#160;        <span class="comment"># create the list of options</span></div>
-<div class="line"><a name="l00674"></a><span class="lineno">  674</span>&#160;        opts = []</div>
-<div class="line"><a name="l00675"></a><span class="lineno">  675</span>&#160;        vals = list(options.keys())</div>
-<div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160;        <span class="keywordflow">for</span> val <span class="keywordflow">in</span> vals:</div>
-<div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;            opts.append(val)</div>
-<div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;            <span class="keywordflow">if</span> options[val][0] <span class="keywordflow">is</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;                opts.append(<span class="stringliteral">&quot;None&quot;</span>)</div>
-<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;            <span class="keywordflow">elif</span> isinstance(options[val][0], bool):</div>
-<div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160;                <span class="keywordflow">if</span> options[val][0]:</div>
-<div class="line"><a name="l00682"></a><span class="lineno">  682</span>&#160;                    opts.append(<span class="stringliteral">&quot;True&quot;</span>)</div>
-<div class="line"><a name="l00683"></a><span class="lineno">  683</span>&#160;                <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00684"></a><span class="lineno">  684</span>&#160;                    opts.append(<span class="stringliteral">&quot;False&quot;</span>)</div>
-<div class="line"><a name="l00685"></a><span class="lineno">  685</span>&#160;            <span class="keywordflow">elif</span> isinstance(options[val][0], list):</div>
-<div class="line"><a name="l00686"></a><span class="lineno">  686</span>&#160;                opts.append(<span class="stringliteral">&quot; &quot;</span>.join(options[val][0]))</div>
-<div class="line"><a name="l00687"></a><span class="lineno">  687</span>&#160;            <span class="keywordflow">elif</span> isinstance(options[val][0], int):</div>
-<div class="line"><a name="l00688"></a><span class="lineno">  688</span>&#160;                opts.append(str(options[val][0]))</div>
-<div class="line"><a name="l00689"></a><span class="lineno">  689</span>&#160;            <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00690"></a><span class="lineno">  690</span>&#160;                opts.append(options[val][0])</div>
-<div class="line"><a name="l00691"></a><span class="lineno">  691</span>&#160;            opts.append(options[val][1])</div>
-<div class="line"><a name="l00692"></a><span class="lineno">  692</span>&#160;        <span class="comment"># print the options, their default value, and</span></div>
-<div class="line"><a name="l00693"></a><span class="lineno">  693</span>&#160;        <span class="comment"># the help description in 3 column format</span></div>
-<div class="line"><a name="l00694"></a><span class="lineno">  694</span>&#160;        max1 = 0</div>
-<div class="line"><a name="l00695"></a><span class="lineno">  695</span>&#160;        max2 = 0</div>
-<div class="line"><a name="l00696"></a><span class="lineno">  696</span>&#160;        <span class="keywordflow">for</span> i <span class="keywordflow">in</span> range(0,len(opts),3):</div>
-<div class="line"><a name="l00697"></a><span class="lineno">  697</span>&#160;            <span class="comment"># we want all the columns to line up</span></div>
-<div class="line"><a name="l00698"></a><span class="lineno">  698</span>&#160;            <span class="comment"># and left-justify, so first find out</span></div>
-<div class="line"><a name="l00699"></a><span class="lineno">  699</span>&#160;            <span class="comment"># the max len of each of the first two</span></div>
-<div class="line"><a name="l00700"></a><span class="lineno">  700</span>&#160;            <span class="comment"># column entries</span></div>
-<div class="line"><a name="l00701"></a><span class="lineno">  701</span>&#160;            <span class="keywordflow">if</span> len(opts[i]) &gt; max1:</div>
-<div class="line"><a name="l00702"></a><span class="lineno">  702</span>&#160;                max1 = len(opts[i])</div>
-<div class="line"><a name="l00703"></a><span class="lineno">  703</span>&#160;            <span class="keywordflow">if</span> type(opts[i+1]) <span class="keywordflow">is</span> <span class="keywordflow">not</span> str:</div>
-<div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160;                optout = str(opts[i+1])</div>
-<div class="line"><a name="l00705"></a><span class="lineno">  705</span>&#160;            <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160;                optout = opts[i+1]</div>
-<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;            <span class="keywordflow">if</span> len(optout) &gt; max2:</div>
-<div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;                max2 = len(optout)</div>
-<div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160;        <span class="comment"># provide some spacing</span></div>
-<div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;        max1 = max1 + 4</div>
-<div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;        max2 = max2 + 4</div>
-<div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160;        <span class="comment"># cycle thru again, padding each entry to</span></div>
-<div class="line"><a name="l00713"></a><span class="lineno">  713</span>&#160;        <span class="comment"># align the columns</span></div>
-<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;        lines = []</div>
-<div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;        sp = <span class="stringliteral">&quot; &quot;</span></div>
-<div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160;        <span class="keywordflow">for</span> i <span class="keywordflow">in</span> range(0,len(opts),3):</div>
-<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;            line = opts[i] + (max1-len(opts[i]))*sp</div>
-<div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160;            <span class="keywordflow">if</span> type(opts[i+1]) <span class="keywordflow">is</span> <span class="keywordflow">not</span> str:</div>
-<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;                optout = str(opts[i+1])</div>
-<div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;            <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160;                optout = opts[i+1]</div>
-<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;            line = line + optout + (max2-len(optout))*sp</div>
-<div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160;            <span class="comment"># to make this more readable, we will wrap the line at</span></div>
-<div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;            <span class="comment"># 130 characters. First, see if the line is going to be</span></div>
-<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;            <span class="comment"># too long</span></div>
-<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;            <span class="keywordflow">if</span> 130 &lt; (len(line) + len(opts[i+2])):</div>
-<div class="line"><a name="l00727"></a><span class="lineno">  727</span>&#160;                <span class="comment"># split the remaining column into individual words</span></div>
-<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;                words = opts[i+2].split()</div>
-<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;                first = <span class="keyword">True</span></div>
-<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;                <span class="keywordflow">for</span> word <span class="keywordflow">in</span> words:</div>
-<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;                    <span class="keywordflow">if</span> (len(line) + len(word)) &lt; 130:</div>
-<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;                        <span class="keywordflow">if</span> first:</div>
-<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;                            line = line + word</div>
-<div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;                            first = <span class="keyword">False</span></div>
-<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;                        <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;                            line = line + <span class="stringliteral">&quot; &quot;</span> + word</div>
-<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;                    <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160;                        lines.append(line)</div>
-<div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160;                        line = (max1 + max2)*sp + word</div>
-<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;                <span class="keywordflow">if</span> 0 &lt; len(line):</div>
-<div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160;                    lines.append(line)</div>
-<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;            <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;                <span class="comment"># the line is fine - so just add the last piece</span></div>
-<div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160;                line = line + opts[i+2]</div>
-<div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160;                <span class="comment"># append the result</span></div>
-<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;                lines.append(line)</div>
-<div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160;        <span class="comment"># add one blank line</span></div>
-<div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;        lines.append(<span class="stringliteral">&quot;&quot;</span>)</div>
-<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;        <span class="keywordflow">return</span> lines</div>
-<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;</div>
-<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;</div>
-<div class="line"><a name="l00752"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a2b517830435062cfa6c859ddce85ea81">  752</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classTestDef_1_1TestDef.html#a2b517830435062cfa6c859ddce85ea81">selectPlugin</a>(self, name, category):</div>
-<div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160;        <span class="keywordflow">if</span> category == <span class="stringliteral">&quot;stage&quot;</span>:</div>
-<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;            <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;                availStages = list(self.loader.stages.keys())</div>
-<div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160;                <span class="keywordflow">for</span> stage <span class="keywordflow">in</span> availStages:</div>
-<div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160;                    <span class="keywordflow">for</span> pluginInfo <span class="keywordflow">in</span> self.stages.getPluginsOfCategory(stage):</div>
-<div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160;                        <span class="keywordflow">if</span> name == pluginInfo.plugin_object.print_name():</div>
-<div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;                            <span class="keywordflow">return</span> pluginInfo.plugin_object</div>
-<div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160;                <span class="comment"># didn&#39;t find it</span></div>
-<div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;            <span class="keywordflow">except</span>:</div>
-<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;        <span class="keywordflow">elif</span> category == <span class="stringliteral">&quot;tool&quot;</span>:</div>
-<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;            <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;                availTools = list(self.loader.tools.keys())</div>
-<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;                <span class="keywordflow">for</span> tool <span class="keywordflow">in</span> availTools:</div>
-<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;                    <span class="keywordflow">for</span> pluginInfo <span class="keywordflow">in</span> self.tools.getPluginsOfCategory(tool):</div>
-<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;                        <span class="keywordflow">if</span> name == pluginInfo.plugin_object.print_name():</div>
-<div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160;                            <span class="keywordflow">return</span> pluginInfo.plugin_object</div>
-<div class="line"><a name="l00771"></a><span class="lineno">  771</span>&#160;                <span class="comment"># didn&#39;t find it</span></div>
-<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160;            <span class="keywordflow">except</span>:</div>
-<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160;        <span class="keywordflow">elif</span> category == <span class="stringliteral">&quot;utility&quot;</span>:</div>
-<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160;            <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160;                availUtils = list(self.loader.utilities.keys())</div>
-<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;                <span class="keywordflow">for</span> util <span class="keywordflow">in</span> availUtils:</div>
-<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160;                    <span class="keywordflow">for</span> pluginInfo <span class="keywordflow">in</span> self.utilities.getPluginsOfCategory(util):</div>
-<div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160;                        <span class="keywordflow">if</span> name == pluginInfo.plugin_object.print_name():</div>
-<div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;                            <span class="keywordflow">return</span> pluginInfo.plugin_object</div>
-<div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160;                <span class="comment"># didn&#39;t find it</span></div>
-<div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00784"></a><span class="lineno">  784</span>&#160;            <span class="keywordflow">except</span>:</div>
-<div class="line"><a name="l00785"></a><span class="lineno">  785</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00786"></a><span class="lineno">  786</span>&#160;        <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00787"></a><span class="lineno">  787</span>&#160;            print(<span class="stringliteral">&quot;Unrecognized category:&quot;</span>,category)</div>
-<div class="line"><a name="l00788"></a><span class="lineno">  788</span>&#160;            <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
-<div class="ttc" id="classTestDef_1_1TestDef_html_a052b17251fd618f9a98197bcf9805511"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a052b17251fd618f9a98197bcf9805511">TestDef.TestDef.executeCombinatorial</a></div><div class="ttdeci">def executeCombinatorial</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00665">TestDef.py:665</a></div></div>
+<div class="line"><a name="l00658"></a><span class="lineno">  658</span>&#160;        <span class="keywordflow">return</span> status</div>
+<div class="line"><a name="l00659"></a><span class="lineno">  659</span>&#160;</div>
+<div class="line"><a name="l00660"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a052b17251fd618f9a98197bcf9805511">  660</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classTestDef_1_1TestDef.html#a052b17251fd618f9a98197bcf9805511">executeCombinatorial</a>(self):</div>
+<div class="line"><a name="l00661"></a><span class="lineno">  661</span>&#160;        <span class="keywordflow">return</span> self.<a class="code" href="classTestDef_1_1TestDef.html#a3eeef61386a154552981676b1893e59e">executeTest</a>(executor=<span class="stringliteral">&quot;combinatorial&quot;</span>)</div>
+<div class="line"><a name="l00662"></a><span class="lineno">  662</span>&#160;  </div>
+<div class="line"><a name="l00663"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a02bd5283e28743c874846f1c4c6bdf08">  663</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classTestDef_1_1TestDef.html#a02bd5283e28743c874846f1c4c6bdf08">printOptions</a>(self, options):</div>
+<div class="line"><a name="l00664"></a><span class="lineno">  664</span>&#160;        <span class="comment"># if the options are empty, report that</span></div>
+<div class="line"><a name="l00665"></a><span class="lineno">  665</span>&#160;        <span class="keywordflow">if</span> <span class="keywordflow">not</span> options:</div>
+<div class="line"><a name="l00666"></a><span class="lineno">  666</span>&#160;            lines = [<span class="stringliteral">&quot;None&quot;</span>]</div>
+<div class="line"><a name="l00667"></a><span class="lineno">  667</span>&#160;            <span class="keywordflow">return</span> lines</div>
+<div class="line"><a name="l00668"></a><span class="lineno">  668</span>&#160;        <span class="comment"># create the list of options</span></div>
+<div class="line"><a name="l00669"></a><span class="lineno">  669</span>&#160;        opts = []</div>
+<div class="line"><a name="l00670"></a><span class="lineno">  670</span>&#160;        vals = list(options.keys())</div>
+<div class="line"><a name="l00671"></a><span class="lineno">  671</span>&#160;        <span class="keywordflow">for</span> val <span class="keywordflow">in</span> vals:</div>
+<div class="line"><a name="l00672"></a><span class="lineno">  672</span>&#160;            opts.append(val)</div>
+<div class="line"><a name="l00673"></a><span class="lineno">  673</span>&#160;            <span class="keywordflow">if</span> options[val][0] <span class="keywordflow">is</span> <span class="keywordtype">None</span>:</div>
+<div class="line"><a name="l00674"></a><span class="lineno">  674</span>&#160;                opts.append(<span class="stringliteral">&quot;None&quot;</span>)</div>
+<div class="line"><a name="l00675"></a><span class="lineno">  675</span>&#160;            <span class="keywordflow">elif</span> isinstance(options[val][0], bool):</div>
+<div class="line"><a name="l00676"></a><span class="lineno">  676</span>&#160;                <span class="keywordflow">if</span> options[val][0]:</div>
+<div class="line"><a name="l00677"></a><span class="lineno">  677</span>&#160;                    opts.append(<span class="stringliteral">&quot;True&quot;</span>)</div>
+<div class="line"><a name="l00678"></a><span class="lineno">  678</span>&#160;                <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00679"></a><span class="lineno">  679</span>&#160;                    opts.append(<span class="stringliteral">&quot;False&quot;</span>)</div>
+<div class="line"><a name="l00680"></a><span class="lineno">  680</span>&#160;            <span class="keywordflow">elif</span> isinstance(options[val][0], list):</div>
+<div class="line"><a name="l00681"></a><span class="lineno">  681</span>&#160;                opts.append(<span class="stringliteral">&quot; &quot;</span>.join(options[val][0]))</div>
+<div class="line"><a name="l00682"></a><span class="lineno">  682</span>&#160;            <span class="keywordflow">elif</span> isinstance(options[val][0], int):</div>
+<div class="line"><a name="l00683"></a><span class="lineno">  683</span>&#160;                opts.append(str(options[val][0]))</div>
+<div class="line"><a name="l00684"></a><span class="lineno">  684</span>&#160;            <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00685"></a><span class="lineno">  685</span>&#160;                opts.append(options[val][0])</div>
+<div class="line"><a name="l00686"></a><span class="lineno">  686</span>&#160;            opts.append(options[val][1])</div>
+<div class="line"><a name="l00687"></a><span class="lineno">  687</span>&#160;        <span class="comment"># print the options, their default value, and</span></div>
+<div class="line"><a name="l00688"></a><span class="lineno">  688</span>&#160;        <span class="comment"># the help description in 3 column format</span></div>
+<div class="line"><a name="l00689"></a><span class="lineno">  689</span>&#160;        max1 = 0</div>
+<div class="line"><a name="l00690"></a><span class="lineno">  690</span>&#160;        max2 = 0</div>
+<div class="line"><a name="l00691"></a><span class="lineno">  691</span>&#160;        <span class="keywordflow">for</span> i <span class="keywordflow">in</span> range(0,len(opts),3):</div>
+<div class="line"><a name="l00692"></a><span class="lineno">  692</span>&#160;            <span class="comment"># we want all the columns to line up</span></div>
+<div class="line"><a name="l00693"></a><span class="lineno">  693</span>&#160;            <span class="comment"># and left-justify, so first find out</span></div>
+<div class="line"><a name="l00694"></a><span class="lineno">  694</span>&#160;            <span class="comment"># the max len of each of the first two</span></div>
+<div class="line"><a name="l00695"></a><span class="lineno">  695</span>&#160;            <span class="comment"># column entries</span></div>
+<div class="line"><a name="l00696"></a><span class="lineno">  696</span>&#160;            <span class="keywordflow">if</span> len(opts[i]) &gt; max1:</div>
+<div class="line"><a name="l00697"></a><span class="lineno">  697</span>&#160;                max1 = len(opts[i])</div>
+<div class="line"><a name="l00698"></a><span class="lineno">  698</span>&#160;            <span class="keywordflow">if</span> type(opts[i+1]) <span class="keywordflow">is</span> <span class="keywordflow">not</span> str:</div>
+<div class="line"><a name="l00699"></a><span class="lineno">  699</span>&#160;                optout = str(opts[i+1])</div>
+<div class="line"><a name="l00700"></a><span class="lineno">  700</span>&#160;            <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00701"></a><span class="lineno">  701</span>&#160;                optout = opts[i+1]</div>
+<div class="line"><a name="l00702"></a><span class="lineno">  702</span>&#160;            <span class="keywordflow">if</span> len(optout) &gt; max2:</div>
+<div class="line"><a name="l00703"></a><span class="lineno">  703</span>&#160;                max2 = len(optout)</div>
+<div class="line"><a name="l00704"></a><span class="lineno">  704</span>&#160;        <span class="comment"># provide some spacing</span></div>
+<div class="line"><a name="l00705"></a><span class="lineno">  705</span>&#160;        max1 = max1 + 4</div>
+<div class="line"><a name="l00706"></a><span class="lineno">  706</span>&#160;        max2 = max2 + 4</div>
+<div class="line"><a name="l00707"></a><span class="lineno">  707</span>&#160;        <span class="comment"># cycle thru again, padding each entry to</span></div>
+<div class="line"><a name="l00708"></a><span class="lineno">  708</span>&#160;        <span class="comment"># align the columns</span></div>
+<div class="line"><a name="l00709"></a><span class="lineno">  709</span>&#160;        lines = []</div>
+<div class="line"><a name="l00710"></a><span class="lineno">  710</span>&#160;        sp = <span class="stringliteral">&quot; &quot;</span></div>
+<div class="line"><a name="l00711"></a><span class="lineno">  711</span>&#160;        <span class="keywordflow">for</span> i <span class="keywordflow">in</span> range(0,len(opts),3):</div>
+<div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160;            line = opts[i] + (max1-len(opts[i]))*sp</div>
+<div class="line"><a name="l00713"></a><span class="lineno">  713</span>&#160;            <span class="keywordflow">if</span> type(opts[i+1]) <span class="keywordflow">is</span> <span class="keywordflow">not</span> str:</div>
+<div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;                optout = str(opts[i+1])</div>
+<div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;            <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160;                optout = opts[i+1]</div>
+<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;            line = line + optout + (max2-len(optout))*sp</div>
+<div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160;            <span class="comment"># to make this more readable, we will wrap the line at</span></div>
+<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;            <span class="comment"># 130 characters. First, see if the line is going to be</span></div>
+<div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;            <span class="comment"># too long</span></div>
+<div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160;            <span class="keywordflow">if</span> 130 &lt; (len(line) + len(opts[i+2])):</div>
+<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;                <span class="comment"># split the remaining column into individual words</span></div>
+<div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160;                words = opts[i+2].split()</div>
+<div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;                first = <span class="keyword">True</span></div>
+<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;                <span class="keywordflow">for</span> word <span class="keywordflow">in</span> words:</div>
+<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;                    <span class="keywordflow">if</span> (len(line) + len(word)) &lt; 130:</div>
+<div class="line"><a name="l00727"></a><span class="lineno">  727</span>&#160;                        <span class="keywordflow">if</span> first:</div>
+<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;                            line = line + word</div>
+<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;                            first = <span class="keyword">False</span></div>
+<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;                        <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;                            line = line + <span class="stringliteral">&quot; &quot;</span> + word</div>
+<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;                    <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;                        lines.append(line)</div>
+<div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;                        line = (max1 + max2)*sp + word</div>
+<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;                <span class="keywordflow">if</span> 0 &lt; len(line):</div>
+<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;                    lines.append(line)</div>
+<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;            <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160;                <span class="comment"># the line is fine - so just add the last piece</span></div>
+<div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160;                line = line + opts[i+2]</div>
+<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;                <span class="comment"># append the result</span></div>
+<div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160;                lines.append(line)</div>
+<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;        <span class="comment"># add one blank line</span></div>
+<div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;        lines.append(<span class="stringliteral">&quot;&quot;</span>)</div>
+<div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160;        <span class="keywordflow">return</span> lines</div>
+<div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160;</div>
+<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;</div>
+<div class="line"><a name="l00747"></a><span class="lineno"><a class="line" href="classTestDef_1_1TestDef.html#a2b517830435062cfa6c859ddce85ea81">  747</a></span>&#160;    <span class="keyword">def </span><a class="code" href="classTestDef_1_1TestDef.html#a2b517830435062cfa6c859ddce85ea81">selectPlugin</a>(self, name, category):</div>
+<div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;        <span class="keywordflow">if</span> category == <span class="stringliteral">&quot;stage&quot;</span>:</div>
+<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;            <span class="keywordflow">try</span>:</div>
+<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;                availStages = list(self.loader.stages.keys())</div>
+<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;                <span class="keywordflow">for</span> stage <span class="keywordflow">in</span> availStages:</div>
+<div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;                    <span class="keywordflow">for</span> pluginInfo <span class="keywordflow">in</span> self.stages.getPluginsOfCategory(stage):</div>
+<div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160;                        <span class="keywordflow">if</span> name == pluginInfo.plugin_object.print_name():</div>
+<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;                            <span class="keywordflow">return</span> pluginInfo.plugin_object</div>
+<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;                <span class="comment"># didn&#39;t find it</span></div>
+<div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
+<div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160;            <span class="keywordflow">except</span>:</div>
+<div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
+<div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;        <span class="keywordflow">elif</span> category == <span class="stringliteral">&quot;tool&quot;</span>:</div>
+<div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160;            <span class="keywordflow">try</span>:</div>
+<div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;                availTools = list(self.loader.tools.keys())</div>
+<div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;                <span class="keywordflow">for</span> tool <span class="keywordflow">in</span> availTools:</div>
+<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;                    <span class="keywordflow">for</span> pluginInfo <span class="keywordflow">in</span> self.tools.getPluginsOfCategory(tool):</div>
+<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;                        <span class="keywordflow">if</span> name == pluginInfo.plugin_object.print_name():</div>
+<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;                            <span class="keywordflow">return</span> pluginInfo.plugin_object</div>
+<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;                <span class="comment"># didn&#39;t find it</span></div>
+<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
+<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;            <span class="keywordflow">except</span>:</div>
+<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
+<div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160;        <span class="keywordflow">elif</span> category == <span class="stringliteral">&quot;utility&quot;</span>:</div>
+<div class="line"><a name="l00771"></a><span class="lineno">  771</span>&#160;            <span class="keywordflow">try</span>:</div>
+<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160;                availUtils = list(self.loader.utilities.keys())</div>
+<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160;                <span class="keywordflow">for</span> util <span class="keywordflow">in</span> availUtils:</div>
+<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160;                    <span class="keywordflow">for</span> pluginInfo <span class="keywordflow">in</span> self.utilities.getPluginsOfCategory(util):</div>
+<div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160;                        <span class="keywordflow">if</span> name == pluginInfo.plugin_object.print_name():</div>
+<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160;                            <span class="keywordflow">return</span> pluginInfo.plugin_object</div>
+<div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160;                <span class="comment"># didn&#39;t find it</span></div>
+<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
+<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160;            <span class="keywordflow">except</span>:</div>
+<div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
+<div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;        <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160;            print(<span class="stringliteral">&quot;Unrecognized category:&quot;</span>,category)</div>
+<div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160;            <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
+<div class="ttc" id="classTestDef_1_1TestDef_html_a052b17251fd618f9a98197bcf9805511"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a052b17251fd618f9a98197bcf9805511">TestDef.TestDef.executeCombinatorial</a></div><div class="ttdeci">def executeCombinatorial</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00660">TestDef.py:660</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_ac4a745e8b2151d1eed56e04770562eb9"><div class="ttname"><a href="classTestDef_1_1TestDef.html#ac4a745e8b2151d1eed56e04770562eb9">TestDef.TestDef.plugin_trans_sem</a></div><div class="ttdeci">plugin_trans_sem</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00074">TestDef.py:74</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_aa3ffe5befea4becaad6a8c5f13446039"><div class="ttname"><a href="classTestDef_1_1TestDef.html#aa3ffe5befea4becaad6a8c5f13446039">TestDef.TestDef.execmd</a></div><div class="ttdeci">execmd</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00065">TestDef.py:65</a></div></div>
 <div class="ttc" id="namespacepymtt_html_a17f658b5d141d51664bb3ede8830c4c0"><div class="ttname"><a href="namespacepymtt.html#a17f658b5d141d51664bb3ede8830c4c0">pymtt.cls</a></div><div class="ttdeci">tuple cls</div><div class="ttdef"><b>Definition:</b> <a href="pymtt_8py_source.html#l00208">pymtt.py:208</a></div></div>
@@ -889,10 +884,10 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="ttc" id="classTestDef_1_1TestDef_html_a2ed090ffdc5882b9855a22a6ec408185"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a2ed090ffdc5882b9855a22a6ec408185">TestDef.TestDef.__convert_value</a></div><div class="ttdeci">def __convert_value</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00086">TestDef.py:86</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_a9e15c13bd0cc9b1567c94f847118432e"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a9e15c13bd0cc9b1567c94f847118432e">TestDef.TestDef.stages</a></div><div class="ttdeci">stages</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00068">TestDef.py:68</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_a0b9ea6f06c02401ad62e06c4cfd80bd2"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a0b9ea6f06c02401ad62e06c4cfd80bd2">TestDef.TestDef.utilities</a></div><div class="ttdeci">utilities</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00070">TestDef.py:70</a></div></div>
-<div class="ttc" id="classTestDef_1_1TestDef_html_a02bd5283e28743c874846f1c4c6bdf08"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a02bd5283e28743c874846f1c4c6bdf08">TestDef.TestDef.printOptions</a></div><div class="ttdeci">def printOptions</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00668">TestDef.py:668</a></div></div>
+<div class="ttc" id="classTestDef_1_1TestDef_html_a02bd5283e28743c874846f1c4c6bdf08"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a02bd5283e28743c874846f1c4c6bdf08">TestDef.TestDef.printOptions</a></div><div class="ttdeci">def printOptions</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00663">TestDef.py:663</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_ae25d1dd3e674e2b0c2b1970e653ecfec"><div class="ttname"><a href="classTestDef_1_1TestDef.html#ae25d1dd3e674e2b0c2b1970e653ecfec">TestDef.TestDef.loadPlugins</a></div><div class="ttdeci">def loadPlugins</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00230">TestDef.py:230</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_a96d72418702f22844fc2fd5d774c7291"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a96d72418702f22844fc2fd5d774c7291">TestDef.TestDef.defaults</a></div><div class="ttdeci">defaults</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00071">TestDef.py:71</a></div></div>
-<div class="ttc" id="classTestDef_1_1TestDef_html_a2b517830435062cfa6c859ddce85ea81"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a2b517830435062cfa6c859ddce85ea81">TestDef.TestDef.selectPlugin</a></div><div class="ttdeci">def selectPlugin</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00752">TestDef.py:752</a></div></div>
+<div class="ttc" id="classTestDef_1_1TestDef_html_a2b517830435062cfa6c859ddce85ea81"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a2b517830435062cfa6c859ddce85ea81">TestDef.TestDef.selectPlugin</a></div><div class="ttdeci">def selectPlugin</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00747">TestDef.py:747</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_a3685bd47cb3be226c09d6737107dba04"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a3685bd47cb3be226c09d6737107dba04">TestDef.TestDef.openLogger</a></div><div class="ttdeci">def openLogger</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00503">TestDef.py:503</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_a65ffa863be5ebac4c4e6789e60377311"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a65ffa863be5ebac4c4e6789e60377311">TestDef.TestDef.setOptions</a></div><div class="ttdeci">def setOptions</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00076">TestDef.py:76</a></div></div>
 <div class="ttc" id="classTestDef_1_1TestDef_html_a21764cc1b70626946a708b7a0f003b38"><div class="ttname"><a href="classTestDef_1_1TestDef.html#a21764cc1b70626946a708b7a0f003b38">TestDef.TestDef.loaded</a></div><div class="ttdeci">loaded</div><div class="ttdef"><b>Definition:</b> <a href="TestDef_8py_source.html#l00060">TestDef.py:60</a></div></div>

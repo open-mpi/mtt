@@ -27,5 +27,6 @@ var searchData=
   ['download_5fversion',['download_version',['../namespaceompi-core-perf-testing.html#a74b2c9b82adde122ece307aaf00bff28',1,'ompi-core-perf-testing']]],
   ['drain_5ftimeout',['drain_timeout',['../namespacegds-demo.html#a87264971a99b7a376dc48ab3d1cd7469',1,'gds-demo.drain_timeout()'],['../namespaceompi-core-template.html#a9b0a0d844979f7c5b1aa019aa4ddf2f1',1,'ompi-core-template.drain_timeout()']]],
   ['dummy_5fexec_5ftime',['DUMMY_EXEC_TIME',['../namespaceharasser.html#a3663429ea3884044eef5813de2c88893',1,'harasser']]],
-  ['dummy_5fharass_5ftime',['DUMMY_HARASS_TIME',['../namespaceharasser.html#a5335f316caefd7dcb9a59e1541f56a10',1,'harasser']]]
+  ['dummy_5fharass_5ftime',['DUMMY_HARASS_TIME',['../namespaceharasser.html#a5335f316caefd7dcb9a59e1541f56a10',1,'harasser']]],
+  ['durationtimeouthandler',['durationTimeoutHandler',['../classsequential_1_1SequentialEx.html#aba3b7114b70e05ba8980e5fede23fab5',1,'sequential::SequentialEx']]]
 ];
