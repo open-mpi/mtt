@@ -64,6 +64,7 @@ class TextFile(ReporterMTTStage):
 
     def execute(self, log, keyvals, testDef):
         testDef.logger.verbose_print("TextFile Reporter")
+        num_secs_pass = 0
         # pickup the options
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
@@ -99,6 +100,8 @@ class TextFile(ReporterMTTStage):
                         self._print_stderr_block("stderr", lg['stderr'], tabs=1)
                     if "stdout" in lg:
                         self._print_stderr_block("stdout", lg['stdout'], tabs=1)
+                else:
+                    num_secs_pass += 1
             except KeyError:
                 pass
             try:
@@ -146,6 +149,8 @@ class TextFile(ReporterMTTStage):
             except KeyError:
                 pass
             print(file=self.fh)
+        print("Num sections pass:",num_secs_pass,"/",len(fullLog),"sections", file=self.fh)
+        print("Percentage sections pass:",100*float(num_secs_pass)/float(len(fullLog)), file=self.fh)
         if cmds['filename'] is not None:
             self.fh.close()
         log['status'] = 0
