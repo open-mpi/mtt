@@ -56,7 +56,7 @@ a small {
 }
 
 ul{
-  list-style-image:url('../images/bullet.png');
+  list-style-image: none;
 }
 
 strong {
@@ -134,7 +134,6 @@ hr {
   border: 0;
   outline: none;
   height: 11px;
-  background: transparent url('../images/hr.gif') center center repeat-x;
   margin: 0 0 20px;
 }
 
