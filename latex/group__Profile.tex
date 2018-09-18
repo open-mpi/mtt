@@ -14,7 +14,15 @@ Collaboration diagram for Profile\-:
 \includegraphics[width=208pt]{group__Profile}
 \end{center}
 \end{figure}
-\mbox{[}Ordering 210\mbox{]} Stage for profiling the system upon which the tests will be conducted \hypertarget{group__Profile_DefaultProfile}{}\subsection{Default\-Profile}\label{group__Profile_DefaultProfile}
+\mbox{[}Ordering 210\mbox{]} Stage for profiling the system upon which the tests will be conducted \hypertarget{group__Profile_CheckProfile}{}\subsection{Check\-Profile}\label{group__Profile_CheckProfile}
+Check hardware and software profile value of the system against a threshold 
+\begin{DoxyParams}{Parameters}
+{\em disk\-Space} & check a disks \% avail (/opt $>$= 10\%) \\
+\hline
+{\em memory} & check free, used or total memory value in G (free $>$= 5\-G)\\
+\hline
+\end{DoxyParams}
+\hypertarget{group__Profile_DefaultProfile}{}\subsection{Default\-Profile}\label{group__Profile_DefaultProfile}
 Collect hardware and software profile of the system 
 \begin{DoxyParams}{Parameters}
 {\em kernel\-Name} & Kernel name \\
