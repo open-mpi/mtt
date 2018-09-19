@@ -114,10 +114,11 @@ class OMPI_Snapshot(FetchMTTTool):
                         last_version = f.readline().strip()
                         f.close()
                         if last_version == snapshot_req.text.strip():
-                            log['status'] = 1
-                            log['stderr'] = "No new tarballs to test"
-                            # track that we serviced this one
-                            return
+                            status = 1
+                            stderr = "No new tarballs to test"
+                            stdout = None
+                            testDef.logger.verbose_print("No new tarballs to test")
+                            sys.exit(0)
                     except IOError:
                         log['status'] = 1
                         log['stderr'] = "An error occurred reading version file: " + cmds['version_file']
