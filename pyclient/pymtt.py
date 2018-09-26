@@ -261,5 +261,5 @@ executor = args.executor or testDef.config.get('MTTDefaults', 'executor', fallba
 # When the executor is loaded it ensures it exists
 testDef.config.set('MTTDefaults', 'executor', executor.lower())
 
-status = testDef.executeTest()
+status = testDef.executeTest(executor=executor.lower())
 sys.exit(status)
