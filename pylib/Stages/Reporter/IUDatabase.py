@@ -58,6 +58,7 @@ class IUDatabase(ReporterMTTStage):
         self.options['keep_debug_files'] = (False, "Retain reporter debug output after execution")
         self.options['debug_server'] = (False, "Ask the server to return its debug output as well")
         self.options['email'] = (None, "Email to which errors are to be sent")
+        self.options['debug_screen'] = (False, "Print debug output to screen")
 
     def activate(self):
         # get the automatic procedure from IPlugin
@@ -158,16 +159,20 @@ class IUDatabase(ReporterMTTStage):
 
         # get the entire log of results
         fullLog = testDef.logger.getLog(None)
-        pp = pprint.PrettyPrinter(indent=4)
 
         #
         # Dump the entire log
         #
-        print("<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>")
-        for lg in fullLog:
-            print("----------------- Section (%s) " % (lg['section']))
-            pp.pprint(lg)
-        print("<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        try:
+            pp = pprint.PrettyPrinter(indent=4)
+            if cmds['debug_screen']:
+                print("<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                for lg in fullLog:
+                    print("----------------- Section (%s) " % (lg['section']))
+                    pp.pprint(lg)
+                print("<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        except:
+            pass;
 
         #
         # Process the test run sections
@@ -186,10 +191,13 @@ class IUDatabase(ReporterMTTStage):
         return z
 
     def _submit_test_run(self, logger, lg, metadata, s, url, httpauth=None):
-        print("----------------- Test Run (%s) " % (lg['section']))
-
-        pp = pprint.PrettyPrinter(indent=4)
-        pp.pprint(lg)
+        try:
+            if cmds['debug_screen']:
+                print("----------------- Test Run (%s) " % (lg['section']))
+                pp = pprint.PrettyPrinter(indent=4)
+                pp.pprint(lg)
+        except:
+            pass
 
         # Find 'parent' Test Build - submit
         test_info = self._submit_test_build(logger,
@@ -412,10 +420,13 @@ class IUDatabase(ReporterMTTStage):
         return True
 
     def _submit_test_build(self, logger, lg, metadata, s, url, httpauth=None):
-        print("----------------- Test Build (%s) " % (lg['section']))
-
-        pp = pprint.PrettyPrinter(indent=4)
-        pp.pprint(lg)
+        try:
+            if cmds['debug_screen']:
+                print("----------------- Test Build (%s) " % (lg['section']))
+                pp = pprint.PrettyPrinter(indent=4)
+                pp.pprint(lg)
+        except:
+            pass
 
         # Find 'parent' Test Get (not needed)
         # Find 'middleware' MiddlewareBuild (MPI Install)
@@ -567,9 +578,13 @@ class IUDatabase(ReporterMTTStage):
 
     def _submit_install(self, logger, lg, metadata, s, url, httpauth=None):
 
-        print("----------------- MPI Install (%s) " % (lg['section']))
-        pp = pprint.PrettyPrinter(indent=4)
-        pp.pprint(lg)
+        try:
+            if cmds['debug_screen']:
+                print("----------------- MPI Install (%s) " % (lg['section']))
+                pp = pprint.PrettyPrinter(indent=4)
+                pp.pprint(lg)
+        except:
+            pass
 
         # Find 'parent' MiddlewareGet (MPI Get) (not needed?)
 
@@ -763,9 +778,13 @@ class IUDatabase(ReporterMTTStage):
         headers = {}
         headers['content-type'] = 'application/json'
 
-        print("<<<<<<<---------------- Payload (Start) -------------------------->>>>>>")
-        print(json.dumps(payload, sort_keys=True, indent=4, separators=(',',': ')))
-        print("<<<<<<<---------------- Payload (End  ) -------------------------->>>>>>")
+        try:
+            if cmds['debug_screen']:
+                print("<<<<<<<---------------- Payload (Start) -------------------------->>>>>>")
+                print(json.dumps(payload, sort_keys=True, indent=4, separators=(',',': ')))
+                print("<<<<<<<---------------- Payload (End  ) -------------------------->>>>>>")
+        except:
+            pass
 
         r = s.post(url,
                    data=json.dumps(payload),
@@ -773,13 +792,17 @@ class IUDatabase(ReporterMTTStage):
                    auth=httpauth,
                    verify=False)
 
-        print("<<<<<<<---------------- Response -------------------------->>>>>>")
-        print("Result: %d: %s" % (r.status_code, r.headers['content-type']))
-        print(r.headers)
-        print(r.reason)
-        print("<<<<<<<---------------- Raw Output (Start) ---------------->>>>>>")
-        print(r.text)
-        print("<<<<<<<---------------- Raw Output (End  ) ---------------->>>>>>")
+        try:
+            if cmds['debug_screen']:
+                print("<<<<<<<---------------- Response -------------------------->>>>>>")
+                print("Result: %d: %s" % (r.status_code, r.headers['content-type']))
+                print(r.headers)
+                print(r.reason)
+                print("<<<<<<<---------------- Raw Output (Start) ---------------->>>>>>")
+                print(r.text)
+                print("<<<<<<<---------------- Raw Output (End  ) ---------------->>>>>>")
+        except:
+            pass
 
         if r.status_code != 200:
             return None
