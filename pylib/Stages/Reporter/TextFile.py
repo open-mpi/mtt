@@ -143,9 +143,9 @@ class TextFile(ReporterMTTStage):
                         print("\t\t",tname,"  Status:",test['status'], file=self.fh)
                         if 0 != test['status']:
                             if "stderr" in test:
-                                self._print_error_block("stderr", test['stderr'], tabs=3)
+                                self._print_stderr_block("stderr", test['stderr'], tabs=3)
                             if "stdout" in test:
-                                self._print_error_block("stdout", test['stdout'], tabs=3)
+                                self._print_stderr_block("stdout", test['stdout'], tabs=3)
             except KeyError:
                 pass
             print(file=self.fh)
