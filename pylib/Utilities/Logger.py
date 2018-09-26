@@ -118,9 +118,13 @@ class Logger(BaseMTTUtility):
 
     def verbose_print(self, string, timestamp=None):
         if self.printout:
-            print(("%s%s" % ("%s "%(datetime.datetime.now() if timestamp is None else timestamp) \
+            try:
+                print(("%s%s" % ("%s "%(datetime.datetime.now() if timestamp is None else timestamp) \
                             if (self.timestampeverything or timestamp) else "", string)), file=self.fh)
-        return
+            except UnicodeEncodeError as e:
+                print("Error: Could not verbose print due to a UnicodeEncodeError")
+                print(e)
+            return
 
     def timestamp(self):
         if self.timestamp:
