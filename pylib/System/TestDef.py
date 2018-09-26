@@ -335,7 +335,6 @@ class TestDef(object):
             print("for MTT operations - cannot continue")
             sys.exit(1)
         # Configure harasser plugin
-        print(self.tools.getPluginsOfCategory("Harasser"))
         for pluginInfo in self.tools.getPluginsOfCategory("Harasser"):
             if "Harasser" == pluginInfo.plugin_object.print_name():
                 self.harasser = pluginInfo.plugin_object
