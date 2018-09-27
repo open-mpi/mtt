@@ -11,6 +11,7 @@ Copyright (c) 2004-2005 The Regents of the University of California.
 Copyright (c) 2006-2007 Cisco Systems, Inc.  All rights reserved.
 Copyright (c) 2006-2007 Sun Microsystems, Inc.  All rights reserved.
 Copyright (c) 2018      IBM Corporation.  All rights reserved.
+Copyright (c) 2018      Intel, Inc.  All rights reserved.
 $COPYRIGHT$
 
 Additional copyrights may follow
@@ -49,7 +50,7 @@ order to run a common set of tests against a group of MPI
 implementations that all feed into a common PostgresSQL database of
 results.
 
-The MTT client is written almost entirely in perl; the MTT server side
+The MTT client is written in Python; the MTT server side
 is written almost entirely in PHP and relies on a back-end PostgresSQL
 database.
 
@@ -145,10 +146,6 @@ setup for nightly regression testing:
 
     https://github.com/open-mpi/mtt/wiki/OMPITesting
 
-The MTT client requires a few perl packages to be installed locally,
-such as LWP::UserAgent.  Currently, the best way to determine if you
-have all the required packages is simply to try running the client and
-see if it fails due to any missing packages.
 
 Note that the INI file can be used to specify web proxies if
 necessary.  See comments in the ompi-core-template.ini file for
