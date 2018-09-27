@@ -46,13 +46,6 @@ Requires: mtt-common, httpd, php, postgresql >= 9.0, python, python-virtualenv, 
 %description server 
 This is the MPI Testing Tool (MTT) software package for the server. 
 
-%package perlclient 
-Summary: MTT Perl Client 
-Group: Development/Libraries
-Requires: mtt-common, perl, perl-libwww-perl
-%description perlclient 
-This is the MPI Testing Tool (MTT) software package for the perl client.
-
 %package bat
 Summary: BAT Tests
 Group: Development/Libraries
@@ -78,8 +71,6 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %dir %{install_path}
 %{install_path}/README
-%{install_path}/CHANGES
-%{install_path}/INSTALL
 %{install_path}/LICENSE
 %{install_path}/samples
 
@@ -95,12 +86,6 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %dir %{install_path}
 %{install_path}/server
-
-%files perlclient
-%defattr(-,root,root)
-%dir %{install_path}
-%{install_path}/client
-%{install_path}/lib
 
 %files bat
 %defattr(-,root,root)
