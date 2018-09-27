@@ -5,6 +5,5 @@ var searchData=
   ['testdef_2epy',['TestDef.py',['../TestDef_8py.html',1,'']]],
   ['testgetmttstage_2epy',['TestGetMTTStage.py',['../TestGetMTTStage_8py.html',1,'']]],
   ['testrunmttstage_2epy',['TestRunMTTStage.py',['../TestRunMTTStage_8py.html',1,'']]],
-  ['textfile_2epy',['TextFile.py',['../TextFile_8py.html',1,'']]],
-  ['trivial_2eini',['trivial.ini',['../trivial_8ini.html',1,'']]]
+  ['textfile_2epy',['TextFile.py',['../TextFile_8py.html',1,'']]]
 ];
