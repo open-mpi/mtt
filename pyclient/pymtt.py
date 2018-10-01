@@ -82,7 +82,7 @@ execGroup.add_argument("--plugin-dir", dest="plugindir",
                      help="Specify the DIRECTORY where additional plugins can be found (or comma-delimited list of DIRECTORYs)", metavar="DIRECTORY")
 execGroup.add_argument("--ignore-loadpath-errors", action="store_true", dest="ignoreloadpatherrs", default=False,
                      help="Ignore errors in plugin paths")
-execGroup.add_argument("--scratch-dir", dest="scratchdir", default="./mttscratch",
+execGroup.add_argument("--scratch-dir", dest="scratchdir", default=None,
                      help="Specify the DIRECTORY under which scratch files are to be stored", metavar="DIRECTORY")
 execGroup.add_argument("--print-section-time", dest="sectime",
                       action="store_true", default=True,
@@ -224,7 +224,6 @@ a = cls()
 
 # create the Test Definition object and set the
 # options and arguments
-# create the scratch directory
 testDef = a.__class__();
 testDef.setOptions(args)
 
