@@ -58,7 +58,7 @@ class JunitXML(ReporterMTTStage):
         testDef.parseOptions(log, self.options, keyvals, cmds)
         if cmds['filename'] is not None:
             self.fh = open(cmds['filename'] if os.path.isabs(cmds['filename']) \
-                           else os.path.join(cmds['scratch'],cmds['filename']), 'w')
+                           else os.path.join(cmds['scratchdir'],cmds['filename']), 'w')
         if testDef.options['description'] is not None:
             print(testDef.options['description'], file=self.fh)
             print(file=self.fh)

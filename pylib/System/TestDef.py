@@ -76,11 +76,6 @@ class TestDef(object):
     def setOptions(self, args):
         self.options = vars(args)
         self.args = args
-        # if they want us to clear the scratch, then do so
-        if self.options['clean'] and os.path.isdir(self.options['scratchdir']) :
-            shutil.rmtree(self.options['scratchdir'])
-        # setup the scratch directory
-        _mkdir_recursive(self.options['scratchdir'])
 
     # private function to convert values
     def __convert_value(self, opt, inval):
@@ -613,6 +608,25 @@ class TestDef(object):
         if sections is not None and 0 != len(sections) and not skip:
             print("ERROR: sections were specified for execution and not found:",sections)
             sys.exit(1)
+        # set Defaults -command line args supercede .ini args
+        try:
+            if not self.options['scratchdir']:
+                self.options['scratchdir'] = self.config.get('MTTDefaults', 'scratchdir')
+        except:
+            try:
+                self.options['scratchdir'] = self.config.get('MTTDefaults', 'scratch')
+            except:
+                self.options['scratchdir'] = './mttscratch'
+        try:    
+            if not self.options['executor']:
+                self.options['executor'] = self.config.get('MTTDefaults', 'executor')
+        except:
+            self.options['executor'] = 'sequential'        
+        # if they want us to clear the scratch, then do so
+        if self.options['clean'] and os.path.isdir(self.options['scratchdir']) :
+            shutil.rmtree(self.options['scratchdir'])
+        # setup the scratch directory
+        _mkdir_recursive(self.options['scratchdir'])
         return
 
     # Used with combinatorial executor, loads next .ini file to be run with the
