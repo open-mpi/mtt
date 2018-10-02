@@ -173,7 +173,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;                     help=<span class="stringliteral">&quot;Specify the DIRECTORY where additional plugins can be found (or comma-delimited list of DIRECTORYs)&quot;</span>, metavar=<span class="stringliteral">&quot;DIRECTORY&quot;</span>)</div>
 <div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;execGroup.add_argument(<span class="stringliteral">&quot;--ignore-loadpath-errors&quot;</span>, action=<span class="stringliteral">&quot;store_true&quot;</span>, dest=<span class="stringliteral">&quot;ignoreloadpatherrs&quot;</span>, default=<span class="keyword">False</span>,</div>
 <div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;                     help=<span class="stringliteral">&quot;Ignore errors in plugin paths&quot;</span>)</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;execGroup.add_argument(<span class="stringliteral">&quot;--scratch-dir&quot;</span>, dest=<span class="stringliteral">&quot;scratchdir&quot;</span>, default=<span class="stringliteral">&quot;./mttscratch&quot;</span>,</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;execGroup.add_argument(<span class="stringliteral">&quot;--scratch-dir&quot;</span>, dest=<span class="stringliteral">&quot;scratchdir&quot;</span>, default=<span class="keywordtype">None</span>,</div>
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;                     help=<span class="stringliteral">&quot;Specify the DIRECTORY under which scratch files are to be stored&quot;</span>, metavar=<span class="stringliteral">&quot;DIRECTORY&quot;</span>)</div>
 <div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;execGroup.add_argument(<span class="stringliteral">&quot;--print-section-time&quot;</span>, dest=<span class="stringliteral">&quot;sectime&quot;</span>,</div>
 <div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;                      action=<span class="stringliteral">&quot;store_true&quot;</span>, default=<span class="keyword">True</span>,</div>
@@ -315,45 +315,44 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;</div>
 <div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;<span class="comment"># create the Test Definition object and set the</span></div>
 <div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;<span class="comment"># options and arguments</span></div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;<span class="comment"># create the scratch directory</span></div>
-<div class="line"><a name="l00228"></a><span class="lineno"><a class="line" href="namespacepymtt.html#afebe539e6104da8ebd3d06b7a0e77fe7">  228</a></span>&#160;testDef = a.__class__();</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;testDef.setOptions(args)</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;<span class="comment"># load the plugins for this test</span></div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;testDef.loadPlugins(basedir, topdir)</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;<span class="comment"># provide an opportunity to print various requested</span></div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;<span class="comment"># outputs before starting to process the test</span></div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;testDef.printInfo()</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;<span class="comment"># if they didn&#39;t specify any files, then there is nothing</span></div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;<span class="comment"># for us to do</span></div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;<span class="keywordflow">if</span> <span class="keywordflow">not</span> args.ini_files <span class="keywordflow">or</span> <span class="keywordflow">not</span> args.ini_files[0]:</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;    sys.exit(<span class="stringliteral">&#39;MTT requires at least one test-specification file&#39;</span>)</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;<span class="comment"># sanity check a couple of options</span></div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;<span class="keywordflow">if</span> args.section <span class="keywordflow">and</span> args.skipsections:</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    print(<span class="stringliteral">&quot;ERROR: Cannot both execute specific sections and specify sections to be skipped&quot;</span>)</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    sys.exit(1)</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;<span class="comment"># open the logging file if given - otherwise, we log</span></div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;<span class="comment"># to stdout</span></div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;testDef.openLogger()</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;<span class="comment"># Read the input test definition file(s)</span></div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;testDef.configTest()</div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;<span class="comment"># Cli specified executor takes precedent over INI</span></div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;<span class="comment"># If there is nothing defined in either use fallback</span></div>
-<div class="line"><a name="l00257"></a><span class="lineno"><a class="line" href="namespacepymtt.html#a5d5ee597f85e5c40ec6a923a4398c291">  257</a></span>&#160;fallback = <span class="stringliteral">&quot;sequential&quot;</span></div>
-<div class="line"><a name="l00258"></a><span class="lineno"><a class="line" href="namespacepymtt.html#a283715e769294f7b1362c85498cdf2a3">  258</a></span>&#160;executor = args.executor <span class="keywordflow">or</span> testDef.config.get(<span class="stringliteral">&#39;MTTDefaults&#39;</span>, <span class="stringliteral">&#39;executor&#39;</span>, fallback=fallback)</div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;<span class="comment"># Do not verify that executor exists now</span></div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;<span class="comment"># When the executor is loaded it ensures it exists</span></div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;testDef.config.set(<span class="stringliteral">&#39;MTTDefaults&#39;</span>, <span class="stringliteral">&#39;executor&#39;</span>, executor.lower())</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;</div>
-<div class="line"><a name="l00264"></a><span class="lineno"><a class="line" href="namespacepymtt.html#a1a2fd13626c1c2d248cedc138e8660ec">  264</a></span>&#160;status = testDef.executeTest(executor=executor.lower())</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;sys.exit(status)</div>
+<div class="line"><a name="l00227"></a><span class="lineno"><a class="line" href="namespacepymtt.html#afebe539e6104da8ebd3d06b7a0e77fe7">  227</a></span>&#160;testDef = a.__class__();</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;testDef.setOptions(args)</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;<span class="comment"># load the plugins for this test</span></div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;testDef.loadPlugins(basedir, topdir)</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;<span class="comment"># provide an opportunity to print various requested</span></div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;<span class="comment"># outputs before starting to process the test</span></div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;testDef.printInfo()</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;<span class="comment"># if they didn&#39;t specify any files, then there is nothing</span></div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;<span class="comment"># for us to do</span></div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;<span class="keywordflow">if</span> <span class="keywordflow">not</span> args.ini_files <span class="keywordflow">or</span> <span class="keywordflow">not</span> args.ini_files[0]:</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;    sys.exit(<span class="stringliteral">&#39;MTT requires at least one test-specification file&#39;</span>)</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;<span class="comment"># sanity check a couple of options</span></div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;<span class="keywordflow">if</span> args.section <span class="keywordflow">and</span> args.skipsections:</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;    print(<span class="stringliteral">&quot;ERROR: Cannot both execute specific sections and specify sections to be skipped&quot;</span>)</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    sys.exit(1)</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;<span class="comment"># open the logging file if given - otherwise, we log</span></div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;<span class="comment"># to stdout</span></div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;testDef.openLogger()</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;<span class="comment"># Read the input test definition file(s)</span></div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;testDef.configTest()</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;<span class="comment"># Cli specified executor takes precedent over INI</span></div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;<span class="comment"># If there is nothing defined in either use fallback</span></div>
+<div class="line"><a name="l00256"></a><span class="lineno"><a class="line" href="namespacepymtt.html#a5d5ee597f85e5c40ec6a923a4398c291">  256</a></span>&#160;fallback = <span class="stringliteral">&quot;sequential&quot;</span></div>
+<div class="line"><a name="l00257"></a><span class="lineno"><a class="line" href="namespacepymtt.html#a283715e769294f7b1362c85498cdf2a3">  257</a></span>&#160;executor = args.executor <span class="keywordflow">or</span> testDef.config.get(<span class="stringliteral">&#39;MTTDefaults&#39;</span>, <span class="stringliteral">&#39;executor&#39;</span>, fallback=fallback)</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;<span class="comment"># Do not verify that executor exists now</span></div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;<span class="comment"># When the executor is loaded it ensures it exists</span></div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;testDef.config.set(<span class="stringliteral">&#39;MTTDefaults&#39;</span>, <span class="stringliteral">&#39;executor&#39;</span>, executor.lower())</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;</div>
+<div class="line"><a name="l00263"></a><span class="lineno"><a class="line" href="namespacepymtt.html#a1a2fd13626c1c2d248cedc138e8660ec">  263</a></span>&#160;status = testDef.executeTest(executor=executor.lower())</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;sys.exit(status)</div>
 <div class="ttc" id="namespacepymtt_html_a17f658b5d141d51664bb3ede8830c4c0"><div class="ttname"><a href="namespacepymtt.html#a17f658b5d141d51664bb3ede8830c4c0">pymtt.cls</a></div><div class="ttdeci">tuple cls</div><div class="ttdef"><b>Definition:</b> <a href="pymtt_8py_source.html#l00222">pymtt.py:222</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
