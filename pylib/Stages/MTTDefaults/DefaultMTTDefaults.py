@@ -19,7 +19,7 @@ from MTTDefaultsMTTStage import *
 # @section DefaultMTTDefaults
 # Store any provided default MTT settings
 # @param trial                 Use when testing your MTT client setup; results that are generated and submitted to the database are marked as \"trials\" and are not included in normal reporting.
-# @param scratch               Specify the DIRECTORY under which scratch files are to be stored
+# @param scratchdir            Specify the DIRECTORY under which scratch files are to be stored
 # @param description           Provide a brief title/description to be included in the log for this test
 # @param platform              Name of the system under test
 # @param organization          Name of the organization running the test
@@ -36,7 +36,7 @@ class DefaultMTTDefaults(MTTDefaultsMTTStage):
         MTTDefaultsMTTStage.__init__(self)
         self.options = {}
         self.options['trial'] = (False, "Use when testing your MTT client setup; results that are generated and submitted to the database are marked as \"trials\" and are not included in normal reporting.")
-        self.options['scratch'] = ("./mttscratch", "Specify the DIRECTORY under which scratch files are to be stored")
+        self.options['scratchdir'] = ("./mttscratch", "Specify the DIRECTORY under which scratch files are to be stored")
         self.options['description'] = (None, "Provide a brief title/description to be included in the log for this test")
         self.options['platform'] = (None, "Name of the system under test")
         self.options['organization'] = (None, "Name of the organization running the test")
@@ -72,6 +72,12 @@ class DefaultMTTDefaults(MTTDefaultsMTTStage):
     def execute(self, log, keyvals, testDef):
         testDef.logger.verbose_print("Set MTT Defaults")
         cmds = {}
+        try:
+            if keyvals['scratch']:
+                keyvals['scratchdir'] = keyvals['scratch']
+                del keyvals['scratch']
+        except KeyError:
+            pass
         # the parseOptions function will record status for us
         testDef.parseOptions(log, self.options, keyvals, cmds)
         # we need to record the results into our options so

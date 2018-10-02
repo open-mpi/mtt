@@ -103,7 +103,7 @@ class Hostfile(BuildMTTTool):
             log['stderr'] = "Parent not specified"
             return
         try:
-            parentloc = os.path.join(os.getcwd(),log['options']['scratch'])
+            parentloc = os.path.join(os.getcwd(),log['options']['scratchdir'])
             location = parentloc
         except KeyError:
             log['status'] = 1
