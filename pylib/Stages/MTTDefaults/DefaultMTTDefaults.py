@@ -78,6 +78,17 @@ class DefaultMTTDefaults(MTTDefaultsMTTStage):
                 del keyvals['scratch']
         except KeyError:
             pass
+
+        # overlaying ini defaults with command line arguments
+        for option in testDef.options:
+            if option in self.options and option in testDef.options:
+                keyvals[option] = testDef.options[option]
+
+        # setting unset command line arguments with ini defaults
+        for keyval in keyvals:
+            if keyval not in testDef.options:
+                testDef.options[keyval] = keyvals[keyval]
+
         # the parseOptions function will record status for us
         testDef.parseOptions(log, self.options, keyvals, cmds)
         # we need to record the results into our options so

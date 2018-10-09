@@ -62,22 +62,17 @@ class ModuleCmd(BaseMTTUtility):
                 if options['verbose'] or options['debug'] :
                     print("The --env-module-wrapper switch was not used and module python support via os.environ['MODULESHOME'] was not found")
                 return
-        try:
-            # scratchdir defaults to mttscratch if not set
-            self.env_module_link = os.path.join(options['scratchdir'], "env_modules_python.py")
-            if os.path.isfile(self.env_module_link) or os.path.islink(self.env_module_link):
-                os.remove(self.env_module_link)
-            # create a soft link that includes the .py extension; the tcl python module file does not include this
-            os.symlink(self.env_module_wrapper, self.env_module_link)
-        except:
-            print("Unable to link to " + self.env_module_wrapper)
-            print("Since we are unable to meet this basic user directive,")
-            print("we will now abort")
-            sys.exit(1)
+
+        # setting the link variable to the wrapper as we use it in other places
+        self.env_module_link = self.env_module_wrapper
+        if options['verbose'] or options['debug']:
+            print("Using env module wrapper:", self.env_module_link)
+
         return
 
     def loadModules(self, modules, testDef):
-        # Logging of results from the environment modules usage is the responsibility of the plugin that is making use of this utility.
+        # Logging of results from the environment modules usage is the responsibility
+        # of the plugin that is making use of this utility.
         if self.env_module_wrapper is None:
             # cannot perform this operation
             return (1, None, "Module capability was not found")
