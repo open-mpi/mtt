@@ -61,7 +61,14 @@ script:
 
   # single-node BAT [order matters for last two]
   - export MTT_HOME=$TRAVIS_BUILD_DIR
+
+  # test default scratchdir
+  - $TRAVIS_BUILD_DIR/pyclient/pymtt.py --verbose $TRAVIS_BUILD_DIR/tests/bat/default_scratchdir.ini
+  # test ini defined scratchdir
   - $TRAVIS_BUILD_DIR/pyclient/pymtt.py --verbose $TRAVIS_BUILD_DIR/tests/bat/negative.ini
+  # test commandline defined --scratchdir
+  - $TRAVIS_BUILD_DIR/pyclient/pymtt.py --verbose --scratch-dir="mttscratch2" $TRAVIS_BUILD_DIR/tests/bat/negative.ini
+  #
   - $TRAVIS_BUILD_DIR/pyclient/pymtt.py --verbose $TRAVIS_BUILD_DIR/tests/bat/default_collect_profile.ini
   - $TRAVIS_BUILD_DIR/pyclient/pymtt.py --verbose $TRAVIS_BUILD_DIR/tests/bat/default_check_profile.ini
 
