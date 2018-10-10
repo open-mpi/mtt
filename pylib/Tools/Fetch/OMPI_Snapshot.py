@@ -106,8 +106,9 @@ class OMPI_Snapshot(FetchMTTTool):
             sys.exit(-1)
 
         # check to see if we have already processed this tarball
+        # Fail and exit if requested version matches version file
         try:
-            if self.options['version_file'] is not None:
+            if cmds['version_file'] is not None:
                 if os.path.exists(cmds['version_file']):
                     try:
                         f = open(cmds['version_file'], 'r')
@@ -115,14 +116,14 @@ class OMPI_Snapshot(FetchMTTTool):
                         f.close()
                         if last_version == snapshot_req.text.strip():
                             log['status'] = 1
-                            log['stderr'] = "No new tarballs to test"
-                            # track that we serviced this one
-                            return
+                            log['stderr'] = "No new tarballs to test, exiting MTT"
+                            testDef.logger.verbose_print("Version file matches requested target, exiting MTT")
+                            sys.exit(1)
                     except IOError:
                         log['status'] = 1
                         log['stderr'] = "An error occurred reading version file: " + cmds['version_file']
-                        testDef.logger.verbose_print("An error occurred reading version file: " + cmds['version_file'])
-                        return
+                        testDef.logger.verbose_print("An error occurred reading version file: " + cmds['version_file'] + " exiting MTT")
+                        sys.exit(1)
                 else:
                     testDef.logger.verbose_print("Version file does not exist")
                     pass
@@ -167,12 +168,14 @@ class OMPI_Snapshot(FetchMTTTool):
                 log['stderr'] = "Cannot update requested OMPI tarball as a file of that name already exists".format(tarball_base_name)
                 # track that we serviced this one
                 self.done.append((tarball_base_name, 1))
+                os.chdir(cwd)
                 return
-            # move to that location
+            # if directory exists move to that location
             os.chdir(tarball_base_name)
             # if they want us to leave it as-is, then we are done
             try:
                 if cmds['asis']:
+                    testDef.logger.verbose_print("Requested Tarball exists - no download performed")
                     status = 0
                     stdout = None
                     stderr = None
@@ -195,7 +198,7 @@ class OMPI_Snapshot(FetchMTTTool):
                 return
             # update version file if we're using one
             try:
-                if self.options['version_file'] is not None:
+                if cmds['version_file'] is not None:
                     try:
                         f = open(cmds['version_file'], 'w')
                         print(snapshot_req.text.strip(), file=f);
