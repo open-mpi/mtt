@@ -19,6 +19,7 @@ from FetchMTTTool import *
 from distutils.spawn import find_executable
 import requests
 import sys
+import shutil
 
 ## @addtogroup Tools
 # @{
@@ -107,7 +108,7 @@ class OMPI_Snapshot(FetchMTTTool):
 
         # check to see if we have already processed this tarball
         try:
-            if self.options['version_file'] is not None:
+            if cmds['version_file'] is not None:
                 if os.path.exists(cmds['version_file']):
                     try:
                         f = open(cmds['version_file'], 'r')
@@ -116,7 +117,7 @@ class OMPI_Snapshot(FetchMTTTool):
                         if last_version == snapshot_req.text.strip():
                             log['status'] = 1
                             log['stderr'] = "No new tarballs to test"
-                            # track that we serviced this one
+                            testDef.logger.verbose_print("No new tarballs to test")
                             return
                     except IOError:
                         log['status'] = 1
@@ -168,16 +169,29 @@ class OMPI_Snapshot(FetchMTTTool):
                 # track that we serviced this one
                 self.done.append((tarball_base_name, 1))
                 return
-            # move to that location
-            os.chdir(tarball_base_name)
             # if they want us to leave it as-is, then we are done
             try:
                 if cmds['asis']:
                     status = 0
                     stdout = None
                     stderr = None
+            # If not as-is clear directory and download the tarball
             except KeyError:
-                pass
+                shutil.rmtree(tarball_base_name)
+                # download the tarball - TODO probably need to do a try on these
+                testDef.logger.verbose_print("downloading tarball " + tarball_name + "url: " + download_url)
+                status, stdout, stderr, _ = testDef.execmd.execute(None, ["curl", "-o", tarball_name, download_url], testDef)
+                if 0 != status:
+                    log['status'] = 1
+                    log['stderr'] = "download for tarball " + tarball_name + "url: " + download_url + "FAILED"
+                    return
+                # untar the tarball
+                testDef.logger.verbose_print("untarring tarball " + tarball_name)
+                status, stdout, stderr, _ = testDef.execmd.execute(None, ["tar", "-zxf", tarball_name], testDef)
+                if 0 != status:
+                    log['status'] = 1
+                    log['stderr'] = "untar of tarball " + tarball_name + "FAILED"
+                    return
         else:
             # download the tarball - TODO probably need to do a try on these
             testDef.logger.verbose_print("downloading tarball " + tarball_name + "url: " + download_url)
@@ -193,21 +207,8 @@ class OMPI_Snapshot(FetchMTTTool):
                 log['status'] = 1
                 log['stderr'] = "untar of tarball " + tarball_name + "FAILED"
                 return
-            # update version file if we're using one
-            try:
-                if self.options['version_file'] is not None:
-                    try:
-                        f = open(cmds['version_file'], 'w')
-                        print(snapshot_req.text.strip(), file=f);
-                    except:
-                        log['status'] = 1
-                        log['stderr'] = "Failed to update version file"
-                        testDef.logger.verbose_print("Failed to update version file")
-                        return
-            except KeyError:
-                pass
-            # move into the resulting directory
-            os.chdir(tarball_base_name)
+        # move into the resulting directory
+        os.chdir(tarball_base_name)
         # record the result
         log['status'] = status
         log['stdout'] = stdout
@@ -219,6 +220,19 @@ class OMPI_Snapshot(FetchMTTTool):
         log['location'] = os.getcwd()
         # track that we serviced this one
         self.done[tarball_base_name] = (status, log['location'])
+        # update version file if we're using one
+        try:
+            if cmds['version_file'] is not None:
+                try:
+                    f = open(cmds['version_file'], 'w')
+                    print(snapshot_req.text.strip(), file=f)
+                except:
+                    log['status'] = 1
+                    log['stderr'] = "Failed to update version file"
+                    testDef.logger.verbose_print("Failed to update version file")
+                    return
+        except KeyError:
+            pass
         # change back to the original directory
         os.chdir(cwd)
 
