@@ -116,11 +116,19 @@ class SequentialEx(ExecutorMTTTool):
                     else:
                         stage = title
 
+                    # Print that section is now starting
+                    testDef.logger.stage_start_print(disp_title)
+
                     # Refresh test options if not running combinatorial plugin
                     if testDef.options['executor'] != "combinatorial":
                         testDef.configTest()
                         testDef.logger.verbose_print("OPTIONS FOR SECTION: %s" % disp_title)
-                        testDef.logger.verbose_print(testDef.config.items(title))
+                        strs_to_print = testDef.logger.get_tuplelist_contents(testDef.config.items(title))
+                        if strs_to_print:
+                            for s in strs_to_print:
+                                testDef.logger.verbose_print("  %s" % s)
+                        else:
+                            testDef.logger.verbose_print("  No options provided for section")
 
                     # setup the log
                     stageLog = {'section':disp_title}
@@ -275,15 +283,22 @@ class SequentialEx(ExecutorMTTTool):
                         plugin.activate()
 
                     # execute the provided test description and capture the result
-                    testDef.logger.stage_start_print(disp_title, plugin.print_name())
+                    testDef.logger.verbose_print("Executing plugin %s" % plugin.print_name())
                     plugin.execute(stageLog, keyvals, testDef)
+
+
                     # Make sure stdout and stderr are properly formatted
                     if 'stdout' in stageLog and isinstance(stageLog['stdout'], basestring):
                         stageLog['stdout'] = stageLog['stdout'].split("\n")
                     if 'stderr' in stageLog and isinstance(stageLog['stderr'], basestring):
                         stageLog['stderr'] = stageLog['stderr'].split("\n")
-                    testDef.logger.stage_end_print(disp_title, plugin.print_name(), stageLog)
+
+                    # Log results for section
                     testDef.logger.logResults(disp_title, stageLog)
+
+                    # Print end of section
+                    testDef.logger.stage_end_print(disp_title, stageLog)
+
                     if testDef.options['stop_on_fail'] is not False and stageLog['status'] != 0:
                         print("Section " + stageLog['section'] + ": Status " + str(stageLog['status']))
                         try:
@@ -307,13 +322,13 @@ class SequentialEx(ExecutorMTTTool):
                         if not p._getIsActivated():
                             continue
                         p.plugin_object.deactivate()
-                    stageLog['status'] = 0
-                    stageLog['stderr'] = ["Exception was raised: %s %s" % (type(e), str(e))]
                     testDef.logger.logResults(disp_title, stageLog)
                     testDef.logger.verbose_print("=======================================")
                     testDef.logger.verbose_print("KeyboardInterrupt exception was raised: %s %s" \
                                 % (type(e), str(e)))
                     testDef.logger.verbose_print("=======================================")
+                    stageLog['status'] = 0
+                    stageLog['stderr'] = ["Exception was raised: %s %s" % (type(e), str(e))]
                     self.status = 0
                     self.only_reporter = True
                     continue
@@ -326,9 +341,6 @@ class SequentialEx(ExecutorMTTTool):
                         if not p._getIsActivated():
                             continue
                         p.plugin_object.deactivate()
-                    stageLog['status'] = 1
-                    stageLog['stderr'] = ["Exception was raised: %s %s" % (type(e), str(e))]
-                    testDef.logger.logResults(disp_title, stageLog)
                     testDef.logger.verbose_print("=======================================")
                     testDef.logger.verbose_print("Exception was raised: %s %s" \
                                 % (type(e), str(e)))
@@ -337,6 +349,9 @@ class SequentialEx(ExecutorMTTTool):
                     ex = traceback.format_exception(type_, value_, traceback_)
                     testDef.logger.verbose_print("\n".join(ex))
                     testDef.logger.verbose_print("=======================================")
+                    stageLog['status'] = 1
+                    stageLog['stderr'] = ["Exception was raised: %s %s" % (type(e), str(e))]
+                    testDef.logger.logResults(disp_title, stageLog)
                     self.status = 1
                     self.only_reporter = True
                     continue

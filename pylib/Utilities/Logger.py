@@ -28,7 +28,6 @@ class Logger(BaseMTTUtility):
         self.printout = False
         self.timestamp = False
         self.cmdtimestamp = False
-        self.sectimestamp = False
         self.timestampeverything = False
         self.stage_start = {}
 
@@ -64,7 +63,6 @@ class Logger(BaseMTTUtility):
             if testDef.options['extraverbose']:
                 self.printout = True
                 self.timestamp = True
-                self.sectimestamp = True
                 self.cmdtimestamp = True
                 self.timestampeverything = True
         except KeyError:
@@ -81,12 +79,6 @@ class Logger(BaseMTTUtility):
             pass
         # define the time flags
         try:
-            if testDef.options['sectime']:
-                self.timestamp = True
-                self.sectimestamp = True
-        except KeyError:
-            pass
-        try:
             if testDef.options['cmdtime']:
                 self.timestamp = True
                 self.cmdtimestamp = True
@@ -96,22 +88,47 @@ class Logger(BaseMTTUtility):
             if testDef.options['time']:
                 self.timestamp = True
                 self.cmdtimestamp = True
-                self.sectimestamp = True
         except KeyError:
             pass
         return
 
-    def stage_start_print(self, stagename, pluginname):
+    def get_dict_contents(self, dic):
+        return self.get_tuplelist_contents(dic.items())
+
+    def get_tuplelist_contents(self, tuplelist):
+        if not tuplelist:
+            return []
+        max_keylen = max([len(key) for key,_ in tuplelist])
+        return ["%s = %s" % (k.rjust(max_keylen), o) for k,o in tuplelist]
+
+    def print_cmdline_args(self, testDef):
+        if not (testDef and testDef.options):
+            print("Error: print_cmdline_args was called too soon. Continuing...")
+            return
+        header_to_print = "CMDLINE_ARGS"
+        strs_to_print = self.get_dict_contents(testDef.options)
+        self.verbose_print("="*max([len(header_to_print),len(strs_to_print[0])]))
+        self.verbose_print(header_to_print)
+        self.verbose_print("="*max([len(header_to_print),len(strs_to_print[0])]))
+        for s in strs_to_print:
+            self.verbose_print(s)
+        self.verbose_print("")
+
+    def stage_start_print(self, stagename):
         self.stage_start[stagename] = datetime.datetime.now()
         if self.printout:
-            print(("%sStart executing [%s] plugin=%s" % ("%s "%self.stage_start[stagename] if self.sectimestamp else "",
-                                                            stagename, pluginname)), file=self.fh)
+            to_print="START EXECUTING [%s] start_time=%s" % (stagename, self.stage_start[stagename])
+            self.verbose_print("")
+            self.verbose_print("="*len(to_print))
+            self.verbose_print(to_print)
+            self.verbose_print("="*len(to_print))
 
-    def stage_end_print(self, stagename, pluginname, log):
+    def stage_end_print(self, stagename, log):
         stage_end = datetime.datetime.now()
         if self.printout:
-            print(("%sDone executing [%s] plugin=%s elapsed=%s" % ("%s "%stage_end if self.sectimestamp else "",
-                                                           stagename, pluginname, stage_end-self.stage_start[stagename])), file=self.fh)
+            to_print="DONE EXECUTING [%s] end_time=%s, elapsed=%s" % (stagename, stage_end, stage_end-self.stage_start[stagename])
+            self.verbose_print(to_print)
+            self.verbose_print("")
         log['time'] = (stage_end-self.stage_start[stagename]).total_seconds()
         log['time_start'] = self.stage_start[stagename]
         log['time_end'] = stage_end

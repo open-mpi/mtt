@@ -519,6 +519,7 @@ class TestDef(object):
             self.fill_log_interpolation(basestr, str(sublog))
 
     def configTest(self):
+
         # setup the configuration parser
         self.config = configparser.SafeConfigParser(interpolation=configparser.ExtendedInterpolation())
 
@@ -648,6 +649,8 @@ class TestDef(object):
         return
 
     def executeTest(self, executor="sequential"):
+        self.logger.print_cmdline_args(self)
+
         if not self.loaded:
             print("Plugins have not been loaded - cannot execute test")
             sys.exit(1)
