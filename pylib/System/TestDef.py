@@ -225,7 +225,7 @@ class TestDef(object):
     def loadPlugins(self, basedir, topdir):
         if self.loaded:
             print("Cannot load plugins multiple times")
-            exit(1)
+            sys.exit(1)
         self.loaded = True
 
         # find the loader utility so we can bootstrap ourselves
@@ -233,7 +233,7 @@ class TestDef(object):
             m = imp.load_source("LoadClasses", os.path.join(basedir, "LoadClasses.py"));
         except ImportError:
             print("ERROR: unable to load LoadClasses that must contain the class loader object")
-            exit(1)
+            sys.exit(1)
         cls = getattr(m, "LoadClasses")
         a = cls()
         # setup the loader object
@@ -265,10 +265,12 @@ class TestDef(object):
                 print(e)
                 sys.exit(1)
 
+        # Build plugin managers,
+        # class yapsy.PluginManager.PluginManager(categories_filter=None,
+        #           directories_list=None, plugin_info_ext=None, plugin_locator=None)
+
         # Build the stages plugin manager
-        self.stages = PluginManager()
-        # set the location
-        self.stages.setPluginPlaces(plugindirs)
+        self.stages = PluginManager(None, plugindirs, None, None)
         # Get a list of all the categories - this corresponds to
         # the MTT stages that have been defined. Note that we
         # don't need to formally define the stages here - anyone
@@ -285,9 +287,7 @@ class TestDef(object):
         # depending on the environment, and sometimes several ways to
         # start jobs even within one environment (e.g., mpirun vs
         # direct launch).
-        self.tools = PluginManager()
-        # location is the same
-        self.tools.setPluginPlaces(plugindirs)
+        self.tools = PluginManager(None, plugindirs, None, None)
         # Get the list of tools - not every tool will be capable
         # of executing. For example, a tool that supports direct launch
         # against a specific resource manager cannot be used on a
@@ -301,9 +301,7 @@ class TestDef(object):
         # environment
 
         # Build the utilities plugins
-        self.utilities = PluginManager()
-        # set the location
-        self.utilities.setPluginPlaces(plugindirs)
+        self.utilities = PluginManager(None, plugindirs, None, None)
         # Get the list of available utilities.
         self.utilities.setCategoriesFilter(self.loader.utilities)
         # Load all the utility plugins
@@ -355,7 +353,7 @@ class TestDef(object):
             # print them in the default order of execution
             for stage in self.loader.stageOrder:
                 print("    " + stage)
-            exit(0)
+            sys.exit(0)
 
         # Print the detected plugins for a given stage
         if self.options['listplugins']:
@@ -373,7 +371,7 @@ class TestDef(object):
                 except KeyError:
                     print("    Invalid stage name " + section)
                 print()
-            exit(1)
+            sys.exit(1)
 
         # Print the options for a given plugin
         if self.options['liststageoptions']:
@@ -392,7 +390,7 @@ class TestDef(object):
                 except KeyError:
                     print("    Invalid stage name " + section)
                 print()
-            exit(1)
+            sys.exit(1)
 
         # Print the available MTT tools out, if requested
         if self.options['listtools']:
@@ -400,7 +398,7 @@ class TestDef(object):
             availTools = list(self.loader.tools.keys())
             for tool in availTools:
                 print("    " + tool)
-            exit(0)
+            sys.exit(0)
 
         # Print the detected tool plugins for a given tool type
         if self.options['listtoolmodules']:
@@ -419,7 +417,7 @@ class TestDef(object):
                 except KeyError:
                     print("    Invalid tool type name",tool)
                 print()
-            exit(1)
+            sys.exit(1)
 
         # Print the options for a given plugin
         if self.options['listtooloptions']:
@@ -438,7 +436,7 @@ class TestDef(object):
                 except KeyError:
                     print("    Invalid tool type name " + tool)
                 print()
-            exit(1)
+            sys.exit(1)
 
         # Print the available MTT utilities out, if requested
         if self.options['listutils']:
@@ -446,7 +444,7 @@ class TestDef(object):
             availUtils = list(self.loader.utilities.keys())
             for util in availUtils:
                 print("    " + util)
-            exit(0)
+            sys.exit(0)
 
         # Print the detected utility plugins for a given tool type
         if self.options['listutilmodules']:
@@ -465,7 +463,7 @@ class TestDef(object):
                 except KeyError:
                     print("    Invalid utility type name")
                 print()
-            exit(1)
+            sys.exit(1)
 
         # Print the options for a given plugin
         if self.options['listutiloptions']:
@@ -484,7 +482,7 @@ class TestDef(object):
                 except KeyError:
                     print("    Invalid utility type name " + util)
                 print()
-            exit(1)
+            sys.exit(1)
 
 
         # if they asked for the version info, print it and exit
@@ -617,11 +615,11 @@ class TestDef(object):
                 self.options['scratchdir'] = self.config.get('MTTDefaults', 'scratch')
             except:
                 self.options['scratchdir'] = './mttscratch'
-        try:    
+        try:
             if not self.options['executor']:
                 self.options['executor'] = self.config.get('MTTDefaults', 'executor')
         except:
-            self.options['executor'] = 'sequential'        
+            self.options['executor'] = 'sequential'
         # if they want us to clear the scratch, then do so
         if self.options['clean'] and os.path.isdir(self.options['scratchdir']) :
             shutil.rmtree(self.options['scratchdir'])
@@ -650,16 +648,15 @@ class TestDef(object):
         return
 
     def executeTest(self, executor="sequential"):
-
         if not self.loaded:
             print("Plugins have not been loaded - cannot execute test")
-            exit(1)
+            sys.exit(1)
         if self.config is None:
             print("No test definition file was parsed - cannot execute test")
-            exit(1)
+            sys.exit(1)
         if not self.tools.getPluginByName(executor, "Executor"):
             print("Specified executor %s not found" % executor)
-            exit(1)
+            sys.exit(1)
         # activate the specified plugin
         self.tools.activatePluginByName(executor, "Executor")
         # execute the provided test description
@@ -670,9 +667,6 @@ class TestDef(object):
             shutil.rmtree(self.options['scratchdir'])
         return status
 
-    def executeCombinatorial(self):
-        return self.executeTest(executor="combinatorial")
-  
     def printOptions(self, options):
         # if the options are empty, report that
         if not options:
