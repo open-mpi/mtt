@@ -126,6 +126,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aa6ca87386f752414ada5cc84daa1bfd4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a009dfacca4ae352cc05a7e8307d8ecb5"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLogger_1_1Logger.html#a009dfacca4ae352cc05a7e8307d8ecb5">open</a></td></tr>
 <tr class="separator:a009dfacca4ae352cc05a7e8307d8ecb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10141d585df905bec94bedf85a8eb976"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLogger_1_1Logger.html#a10141d585df905bec94bedf85a8eb976">get_dict_contents</a></td></tr>
+<tr class="separator:a10141d585df905bec94bedf85a8eb976"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a51264c10e6b8e89921d3e9f1f803a350"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLogger_1_1Logger.html#a51264c10e6b8e89921d3e9f1f803a350">get_tuplelist_contents</a></td></tr>
+<tr class="separator:a51264c10e6b8e89921d3e9f1f803a350"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3779c396f867ec4bd7ec73864990e8de"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLogger_1_1Logger.html#a3779c396f867ec4bd7ec73864990e8de">print_cmdline_args</a></td></tr>
+<tr class="separator:a3779c396f867ec4bd7ec73864990e8de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a10165baedbbebdc49c449237e518edb8"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLogger_1_1Logger.html#a10165baedbbebdc49c449237e518edb8">stage_start_print</a></td></tr>
 <tr class="separator:a10165baedbbebdc49c449237e518edb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2f203cbc01e4de98b5eab3e5c9d9709f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLogger_1_1Logger.html#a2f203cbc01e4de98b5eab3e5c9d9709f">stage_end_print</a></td></tr>
@@ -162,8 +168,6 @@ Public Attributes</h2></td></tr>
 <tr class="separator:af1d68b73fec8eebd0abeafa3bc8fd98b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6424ebff90f965d7c6e4e8d7303bc3e2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLogger_1_1Logger.html#a6424ebff90f965d7c6e4e8d7303bc3e2">cmdtimestamp</a></td></tr>
 <tr class="separator:a6424ebff90f965d7c6e4e8d7303bc3e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9d1172c2a7abb0264b9e41368475ffe7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLogger_1_1Logger.html#a9d1172c2a7abb0264b9e41368475ffe7">sectimestamp</a></td></tr>
-<tr class="separator:a9d1172c2a7abb0264b9e41368475ffe7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6012f50ab21e5ab3b89465a972b6a99d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLogger_1_1Logger.html#a6012f50ab21e5ab3b89465a972b6a99d">timestampeverything</a></td></tr>
 <tr class="separator:a6012f50ab21e5ab3b89465a972b6a99d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a639adf5e0d4f73bdb942e9652903231f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLogger_1_1Logger.html#a639adf5e0d4f73bdb942e9652903231f">stage_start</a></td></tr>
@@ -206,7 +210,96 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Logger_8py_source.html#l00133">133</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
+<p>Definition at line <a class="el" href="Logger_8py_source.html#l00150">150</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a10141d585df905bec94bedf85a8eb976"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def Logger.Logger.get_dict_contents </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>dic</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Definition at line <a class="el" href="Logger_8py_source.html#l00095">95</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
+
+<p><div id="dynsection-2" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-2-trigger" src="closed.png" alt="+"/> Here is the call graph for this function:</div>
+<div id="dynsection-2-summary" class="dynsummary" style="display:block;">
+</div>
+<div id="dynsection-2-content" class="dyncontent" style="display:none;">
+<div class="center"><img src="classLogger_1_1Logger_a10141d585df905bec94bedf85a8eb976_cgraph.png" border="0" usemap="#classLogger_1_1Logger_a10141d585df905bec94bedf85a8eb976_cgraph" alt=""/></div>
+<map name="classLogger_1_1Logger_a10141d585df905bec94bedf85a8eb976_cgraph" id="classLogger_1_1Logger_a10141d585df905bec94bedf85a8eb976_cgraph">
+<area shape="rect" id="node2" href="classLogger_1_1Logger.html#a51264c10e6b8e89921d3e9f1f803a350" title="Logger.Logger.get_tuplelist\l_contents" alt="" coords="208,5,387,46"/></map>
+</div>
+</p>
+
+<p><div id="dynsection-3" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-3-trigger" src="closed.png" alt="+"/> Here is the caller graph for this function:</div>
+<div id="dynsection-3-summary" class="dynsummary" style="display:block;">
+</div>
+<div id="dynsection-3-content" class="dyncontent" style="display:none;">
+<div class="center"><img src="classLogger_1_1Logger_a10141d585df905bec94bedf85a8eb976_icgraph.png" border="0" usemap="#classLogger_1_1Logger_a10141d585df905bec94bedf85a8eb976_icgraph" alt=""/></div>
+<map name="classLogger_1_1Logger_a10141d585df905bec94bedf85a8eb976_icgraph" id="classLogger_1_1Logger_a10141d585df905bec94bedf85a8eb976_icgraph">
+<area shape="rect" id="node2" href="classLogger_1_1Logger.html#a3779c396f867ec4bd7ec73864990e8de" title="Logger.Logger.print\l_cmdline_args" alt="" coords="208,5,341,46"/></map>
+</div>
+</p>
+
+</div>
+</div>
+<a class="anchor" id="a51264c10e6b8e89921d3e9f1f803a350"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def Logger.Logger.get_tuplelist_contents </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>tuplelist</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Definition at line <a class="el" href="Logger_8py_source.html#l00098">98</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
+
+<p><div id="dynsection-4" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-4-trigger" src="closed.png" alt="+"/> Here is the caller graph for this function:</div>
+<div id="dynsection-4-summary" class="dynsummary" style="display:block;">
+</div>
+<div id="dynsection-4-content" class="dyncontent" style="display:none;">
+<div class="center"><img src="classLogger_1_1Logger_a51264c10e6b8e89921d3e9f1f803a350_icgraph.png" border="0" usemap="#classLogger_1_1Logger_a51264c10e6b8e89921d3e9f1f803a350_icgraph" alt=""/></div>
+<map name="classLogger_1_1Logger_a51264c10e6b8e89921d3e9f1f803a350_icgraph" id="classLogger_1_1Logger_a51264c10e6b8e89921d3e9f1f803a350_icgraph">
+<area shape="rect" id="node2" href="classLogger_1_1Logger.html#a10141d585df905bec94bedf85a8eb976" title="Logger.Logger.get_dict\l_contents" alt="" coords="232,5,387,46"/><area shape="rect" id="node3" href="classLogger_1_1Logger.html#a3779c396f867ec4bd7ec73864990e8de" title="Logger.Logger.print\l_cmdline_args" alt="" coords="435,5,568,46"/></map>
+</div>
+</p>
 
 </div>
 </div>
@@ -234,7 +327,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Logger_8py_source.html#l00159">159</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
+<p>Definition at line <a class="el" href="Logger_8py_source.html#l00176">176</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
 
 </div>
 </div>
@@ -268,13 +361,13 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Logger_8py_source.html#l00138">138</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
+<p>Definition at line <a class="el" href="Logger_8py_source.html#l00155">155</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
 
-<p><div id="dynsection-2" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
-  <img id="dynsection-2-trigger" src="closed.png" alt="+"/> Here is the call graph for this function:</div>
-<div id="dynsection-2-summary" class="dynsummary" style="display:block;">
+<p><div id="dynsection-5" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-5-trigger" src="closed.png" alt="+"/> Here is the call graph for this function:</div>
+<div id="dynsection-5-summary" class="dynsummary" style="display:block;">
 </div>
-<div id="dynsection-2-content" class="dyncontent" style="display:none;">
+<div id="dynsection-5-content" class="dyncontent" style="display:none;">
 <div class="center"><img src="classLogger_1_1Logger_a119a7a5e59e77d9cced01057bdd8d493_cgraph.png" border="0" usemap="#classLogger_1_1Logger_a119a7a5e59e77d9cced01057bdd8d493_cgraph" alt=""/></div>
 <map name="classLogger_1_1Logger_a119a7a5e59e77d9cced01057bdd8d493_cgraph" id="classLogger_1_1Logger_a119a7a5e59e77d9cced01057bdd8d493_cgraph">
 <area shape="rect" id="node2" href="classLogger_1_1Logger.html#a8c05e25fb36679fae21ab8910eb6d117" title="Logger.Logger.verbose\l_print" alt="" coords="224,5,379,46"/></map>
@@ -307,7 +400,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Logger_8py_source.html#l00048">48</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
+<p>Definition at line <a class="el" href="Logger_8py_source.html#l00047">47</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
 
 </div>
 </div>
@@ -325,7 +418,46 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Logger_8py_source.html#l00143">143</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
+<p>Definition at line <a class="el" href="Logger_8py_source.html#l00160">160</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a3779c396f867ec4bd7ec73864990e8de"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def Logger.Logger.print_cmdline_args </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>testDef</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Definition at line <a class="el" href="Logger_8py_source.html#l00104">104</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
+
+<p><div id="dynsection-6" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-6-trigger" src="closed.png" alt="+"/> Here is the call graph for this function:</div>
+<div id="dynsection-6-summary" class="dynsummary" style="display:block;">
+</div>
+<div id="dynsection-6-content" class="dyncontent" style="display:none;">
+<div class="center"><img src="classLogger_1_1Logger_a3779c396f867ec4bd7ec73864990e8de_cgraph.png" border="0" usemap="#classLogger_1_1Logger_a3779c396f867ec4bd7ec73864990e8de_cgraph" alt=""/></div>
+<map name="classLogger_1_1Logger_a3779c396f867ec4bd7ec73864990e8de_cgraph" id="classLogger_1_1Logger_a3779c396f867ec4bd7ec73864990e8de_cgraph">
+<area shape="rect" id="node2" href="classLogger_1_1Logger.html#a10141d585df905bec94bedf85a8eb976" title="Logger.Logger.get_dict\l_contents" alt="" coords="187,5,341,46"/><area shape="rect" id="node4" href="classLogger_1_1Logger.html#a8c05e25fb36679fae21ab8910eb6d117" title="Logger.Logger.verbose\l_print" alt="" coords="187,70,341,111"/><area shape="rect" id="node3" href="classLogger_1_1Logger.html#a51264c10e6b8e89921d3e9f1f803a350" title="Logger.Logger.get_tuplelist\l_contents" alt="" coords="389,5,568,46"/></map>
+</div>
+</p>
 
 </div>
 </div>
@@ -343,7 +475,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Logger_8py_source.html#l00039">39</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
+<p>Definition at line <a class="el" href="Logger_8py_source.html#l00038">38</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
 
 </div>
 </div>
@@ -377,7 +509,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Logger_8py_source.html#l00042">42</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
+<p>Definition at line <a class="el" href="Logger_8py_source.html#l00041">41</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
 
 </div>
 </div>
@@ -395,7 +527,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Logger_8py_source.html#l00035">35</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
+<p>Definition at line <a class="el" href="Logger_8py_source.html#l00034">34</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
 
 </div>
 </div>
@@ -419,12 +551,6 @@ Public Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>pluginname</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
           <td class="paramname"><em>log</em>&#160;</td>
         </tr>
         <tr>
@@ -435,7 +561,18 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Logger_8py_source.html#l00110">110</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
+<p>Definition at line <a class="el" href="Logger_8py_source.html#l00126">126</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
+
+<p><div id="dynsection-7" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-7-trigger" src="closed.png" alt="+"/> Here is the call graph for this function:</div>
+<div id="dynsection-7-summary" class="dynsummary" style="display:block;">
+</div>
+<div id="dynsection-7-content" class="dyncontent" style="display:none;">
+<div class="center"><img src="classLogger_1_1Logger_a2f203cbc01e4de98b5eab3e5c9d9709f_cgraph.png" border="0" usemap="#classLogger_1_1Logger_a2f203cbc01e4de98b5eab3e5c9d9709f_cgraph" alt=""/></div>
+<map name="classLogger_1_1Logger_a2f203cbc01e4de98b5eab3e5c9d9709f_cgraph" id="classLogger_1_1Logger_a2f203cbc01e4de98b5eab3e5c9d9709f_cgraph">
+<area shape="rect" id="node2" href="classLogger_1_1Logger.html#a8c05e25fb36679fae21ab8910eb6d117" title="Logger.Logger.verbose\l_print" alt="" coords="195,5,349,46"/></map>
+</div>
+</p>
 
 </div>
 </div>
@@ -453,13 +590,7 @@ Public Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>stagename</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>pluginname</em>&#160;</td>
+          <td class="paramname"><em>stagename</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -469,7 +600,18 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Logger_8py_source.html#l00104">104</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
+<p>Definition at line <a class="el" href="Logger_8py_source.html#l00117">117</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
+
+<p><div id="dynsection-8" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-8-trigger" src="closed.png" alt="+"/> Here is the call graph for this function:</div>
+<div id="dynsection-8-summary" class="dynsummary" style="display:block;">
+</div>
+<div id="dynsection-8-content" class="dyncontent" style="display:none;">
+<div class="center"><img src="classLogger_1_1Logger_a10165baedbbebdc49c449237e518edb8_cgraph.png" border="0" usemap="#classLogger_1_1Logger_a10165baedbbebdc49c449237e518edb8_cgraph" alt=""/></div>
+<map name="classLogger_1_1Logger_a10165baedbbebdc49c449237e518edb8_cgraph" id="classLogger_1_1Logger_a10165baedbbebdc49c449237e518edb8_cgraph">
+<area shape="rect" id="node2" href="classLogger_1_1Logger.html#a8c05e25fb36679fae21ab8910eb6d117" title="Logger.Logger.verbose\l_print" alt="" coords="195,5,349,46"/></map>
+</div>
+</p>
 
 </div>
 </div>
@@ -487,7 +629,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Logger_8py_source.html#l00129">129</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
+<p>Definition at line <a class="el" href="Logger_8py_source.html#l00146">146</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
 
 </div>
 </div>
@@ -521,16 +663,16 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Logger_8py_source.html#l00119">119</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
+<p>Definition at line <a class="el" href="Logger_8py_source.html#l00136">136</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
 
-<p><div id="dynsection-3" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
-  <img id="dynsection-3-trigger" src="closed.png" alt="+"/> Here is the caller graph for this function:</div>
-<div id="dynsection-3-summary" class="dynsummary" style="display:block;">
+<p><div id="dynsection-9" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-9-trigger" src="closed.png" alt="+"/> Here is the caller graph for this function:</div>
+<div id="dynsection-9-summary" class="dynsummary" style="display:block;">
 </div>
-<div id="dynsection-3-content" class="dyncontent" style="display:none;">
+<div id="dynsection-9-content" class="dyncontent" style="display:none;">
 <div class="center"><img src="classLogger_1_1Logger_a8c05e25fb36679fae21ab8910eb6d117_icgraph.png" border="0" usemap="#classLogger_1_1Logger_a8c05e25fb36679fae21ab8910eb6d117_icgraph" alt=""/></div>
 <map name="classLogger_1_1Logger_a8c05e25fb36679fae21ab8910eb6d117_icgraph" id="classLogger_1_1Logger_a8c05e25fb36679fae21ab8910eb6d117_icgraph">
-<area shape="rect" id="node2" href="classLogger_1_1Logger.html#a119a7a5e59e77d9cced01057bdd8d493" title="Logger.Logger.logResults" alt="" coords="208,12,379,39"/></map>
+<area shape="rect" id="node2" href="classLogger_1_1Logger.html#a3779c396f867ec4bd7ec73864990e8de" title="Logger.Logger.print\l_cmdline_args" alt="" coords="227,5,360,46"/><area shape="rect" id="node3" href="classLogger_1_1Logger.html#a10165baedbbebdc49c449237e518edb8" title="Logger.Logger.stage\l_start_print" alt="" coords="223,70,363,111"/><area shape="rect" id="node4" href="classLogger_1_1Logger.html#a2f203cbc01e4de98b5eab3e5c9d9709f" title="Logger.Logger.stage\l_end_print" alt="" coords="223,135,363,177"/><area shape="rect" id="node5" href="classLogger_1_1Logger.html#a119a7a5e59e77d9cced01057bdd8d493" title="Logger.Logger.logResults" alt="" coords="208,201,379,228"/></map>
 </div>
 </p>
 
@@ -607,20 +749,6 @@ Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a class="anchor" id="a9d1172c2a7abb0264b9e41368475ffe7"></a>
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">Logger.Logger.sectimestamp</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Definition at line <a class="el" href="Logger_8py_source.html#l00031">31</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
-
-</div>
-</div>
 <a class="anchor" id="a639adf5e0d4f73bdb942e9652903231f"></a>
 <div class="memitem">
 <div class="memproto">
@@ -631,7 +759,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Logger_8py_source.html#l00033">33</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
+<p>Definition at line <a class="el" href="Logger_8py_source.html#l00032">32</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
 
 </div>
 </div>
@@ -659,7 +787,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="Logger_8py_source.html#l00032">32</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
+<p>Definition at line <a class="el" href="Logger_8py_source.html#l00031">31</a> of file <a class="el" href="Logger_8py_source.html">Logger.py</a>.</p>
 
 </div>
 </div>
