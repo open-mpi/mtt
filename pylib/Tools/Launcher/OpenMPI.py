@@ -310,6 +310,10 @@ class OpenMPI(LauncherMTTTool):
         if cmds['timeout'] is not None:
             cmdargs.append("--timeout")
             cmdargs.append(cmds['timeout'])
+        if cmds['options'] is not None:
+            optArgs = cmds['options'].split(',')
+            for arg in optArgs:
+                cmdargs.append(arg.strip())
         # cycle thru the list of tests and execute each of them
         log['testresults'] = []
         finalStatus = 0
