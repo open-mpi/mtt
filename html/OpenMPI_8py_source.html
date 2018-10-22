@@ -401,140 +401,144 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;        <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;timeout&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
 <div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;            cmdargs.append(<span class="stringliteral">&quot;--timeout&quot;</span>)</div>
 <div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;            cmdargs.append(cmds[<span class="stringliteral">&#39;timeout&#39;</span>])</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;        <span class="comment"># cycle thru the list of tests and execute each of them</span></div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;        log[<span class="stringliteral">&#39;testresults&#39;</span>] = []</div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;        finalStatus = 0</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;        finalError = <span class="stringliteral">&quot;&quot;</span></div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;        numTests = 0</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;        numPass = 0</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;        numSkip = 0</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;        numFail = 0</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;        <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;max_num_tests&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;            maxTests = int(cmds[<span class="stringliteral">&#39;max_num_tests&#39;</span>])</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;        <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;            maxTests = 10000000</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;</div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;        fail_tests = cmds[<span class="stringliteral">&#39;fail_tests&#39;</span>]</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;        <span class="keywordflow">if</span> fail_tests <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;            fail_tests = [t.strip() <span class="keywordflow">for</span> t <span class="keywordflow">in</span> fail_tests.split(<span class="stringliteral">&quot;,&quot;</span>)]</div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;        <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;            fail_tests = []</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;        <span class="keywordflow">for</span> i,t <span class="keywordflow">in</span> enumerate(fail_tests):</div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;            <span class="keywordflow">for</span> t2 <span class="keywordflow">in</span> tests:</div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;                <span class="keywordflow">if</span> t2.split(<span class="stringliteral">&quot;/&quot;</span>)[-1] == t:</div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;                    fail_tests[i] = t2</div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;        fail_returncodes = cmds[<span class="stringliteral">&#39;fail_returncodes&#39;</span>]</div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;        <span class="keywordflow">if</span> fail_returncodes <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;            fail_returncodes = [int(t.strip()) <span class="keywordflow">for</span> t <span class="keywordflow">in</span> fail_returncodes.split(<span class="stringliteral">&quot;,&quot;</span>)]</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;        <span class="keywordflow">if</span> fail_tests <span class="keywordflow">is</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;            expected_returncodes = {test:0 <span class="keywordflow">for</span> test <span class="keywordflow">in</span> tests}</div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;        <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;            <span class="keywordflow">if</span> fail_returncodes <span class="keywordflow">is</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;                expected_returncodes = {test:(<span class="keywordtype">None</span> <span class="keywordflow">if</span> test <span class="keywordflow">in</span> fail_tests <span class="keywordflow">else</span> 0) <span class="keywordflow">for</span> test <span class="keywordflow">in</span> tests}</div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;            <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;                fail_returncodes = {test:rtncode <span class="keywordflow">for</span> test,rtncode <span class="keywordflow">in</span> zip(fail_tests,fail_returncodes)}</div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;                expected_returncodes = {test:(fail_returncodes[test] <span class="keywordflow">if</span> test <span class="keywordflow">in</span> fail_returncodes <span class="keywordflow">else</span> 0) <span class="keywordflow">for</span> test <span class="keywordflow">in</span> tests}</div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;</div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;        <span class="comment"># Allocate cluster</span></div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;        self.<a class="code" href="classOpenMPI_1_1OpenMPI.html#a9ffab4795264fde34d136269026204db">allocated</a> = <span class="keyword">False</span></div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;        <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;allocate_cmd&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> cmds[<span class="stringliteral">&#39;deallocate_cmd&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;            self.<a class="code" href="classOpenMPI_1_1OpenMPI.html#a9ffab4795264fde34d136269026204db">allocated</a> = <span class="keyword">True</span></div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;            allocate_cmdargs = shlex.split(cmds[<span class="stringliteral">&#39;allocate_cmd&#39;</span>])</div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;            _status,_stdout,_stderr,_time = testDef.execmd.execute(cmds, allocate_cmdargs, testDef)</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;            <span class="keywordflow">if</span> 0 != _status:</div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = _status</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;                log[<span class="stringliteral">&#39;stderr&#39;</span>] = _stderr</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;                os.chdir(cwd)</div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;                <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;</div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;        <span class="keywordflow">for</span> test <span class="keywordflow">in</span> tests:</div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;            <span class="comment"># Skip tests that are in &quot;skip_tests&quot; ini input</span></div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;            <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;skip_tests&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> test.split(<span class="stringliteral">&#39;/&#39;</span>)[-1] <span class="keywordflow">in</span> [st.strip() <span class="keywordflow">for</span> st <span class="keywordflow">in</span> cmds[<span class="stringliteral">&#39;skip_tests&#39;</span>].split()]:</div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;                numTests += 1</div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;                numSkip += 1</div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;                <span class="keywordflow">if</span> numTests == maxTests:</div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;                    <span class="keywordflow">break</span></div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;                <span class="keywordflow">continue</span></div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;            testLog = {<span class="stringliteral">&#39;test&#39;</span>:test}</div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;            cmdargs.append(test)</div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;            testLog[<span class="stringliteral">&#39;cmd&#39;</span>] = <span class="stringliteral">&quot; &quot;</span>.join(cmdargs)</div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;</div>
-<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;            harass_exec_ids = testDef.harasser.start(testDef)</div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;</div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;            harass_check = testDef.harasser.check(harass_exec_ids, testDef)</div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;            <span class="keywordflow">if</span> harass_check <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;                testLog[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&#39;Not all harasser scripts started. These failed to start: &#39;</span> \</div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;                                + <span class="stringliteral">&#39;,&#39;</span>.join([h_info[1][<span class="stringliteral">&#39;start_script&#39;</span>] <span class="keywordflow">for</span> h_info <span class="keywordflow">in</span> harass_check[0]])</div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;                testLog[<span class="stringliteral">&#39;time&#39;</span>] = sum([r_info[3] <span class="keywordflow">for</span> r_info <span class="keywordflow">in</span> harass_check[1]])</div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;                testLog[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;                finalStatus = 1</div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;                finalError = testLog[<span class="stringliteral">&#39;stderr&#39;</span>]</div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;                numFail = numFail + 1</div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;                testDef.harasser.stop(harass_exec_ids, testDef)</div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;                <span class="keywordflow">continue</span></div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;</div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;            status,stdout,stderr,time = testDef.execmd.execute(cmds, cmdargs, testDef)</div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;</div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;            testDef.harasser.stop(harass_exec_ids, testDef)</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;        <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;options&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;            optArgs = cmds[<span class="stringliteral">&#39;options&#39;</span>].split(<span class="stringliteral">&#39;,&#39;</span>)</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;            <span class="keywordflow">for</span> arg <span class="keywordflow">in</span> optArgs:</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;                cmdargs.append(arg.strip())</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;        <span class="comment"># cycle thru the list of tests and execute each of them</span></div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;        log[<span class="stringliteral">&#39;testresults&#39;</span>] = []</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;        finalStatus = 0</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;        finalError = <span class="stringliteral">&quot;&quot;</span></div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;        numTests = 0</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;        numPass = 0</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;        numSkip = 0</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;        numFail = 0</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;        <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;max_num_tests&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;            maxTests = int(cmds[<span class="stringliteral">&#39;max_num_tests&#39;</span>])</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;        <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;            maxTests = 10000000</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;        fail_tests = cmds[<span class="stringliteral">&#39;fail_tests&#39;</span>]</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;        <span class="keywordflow">if</span> fail_tests <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;            fail_tests = [t.strip() <span class="keywordflow">for</span> t <span class="keywordflow">in</span> fail_tests.split(<span class="stringliteral">&quot;,&quot;</span>)]</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;        <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;            fail_tests = []</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;        <span class="keywordflow">for</span> i,t <span class="keywordflow">in</span> enumerate(fail_tests):</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;            <span class="keywordflow">for</span> t2 <span class="keywordflow">in</span> tests:</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;                <span class="keywordflow">if</span> t2.split(<span class="stringliteral">&quot;/&quot;</span>)[-1] == t:</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;                    fail_tests[i] = t2</div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;        fail_returncodes = cmds[<span class="stringliteral">&#39;fail_returncodes&#39;</span>]</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;        <span class="keywordflow">if</span> fail_returncodes <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;            fail_returncodes = [int(t.strip()) <span class="keywordflow">for</span> t <span class="keywordflow">in</span> fail_returncodes.split(<span class="stringliteral">&quot;,&quot;</span>)]</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;        <span class="keywordflow">if</span> fail_tests <span class="keywordflow">is</span> <span class="keywordtype">None</span>:</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;            expected_returncodes = {test:0 <span class="keywordflow">for</span> test <span class="keywordflow">in</span> tests}</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;        <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;            <span class="keywordflow">if</span> fail_returncodes <span class="keywordflow">is</span> <span class="keywordtype">None</span>:</div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;                expected_returncodes = {test:(<span class="keywordtype">None</span> <span class="keywordflow">if</span> test <span class="keywordflow">in</span> fail_tests <span class="keywordflow">else</span> 0) <span class="keywordflow">for</span> test <span class="keywordflow">in</span> tests}</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;            <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;                fail_returncodes = {test:rtncode <span class="keywordflow">for</span> test,rtncode <span class="keywordflow">in</span> zip(fail_tests,fail_returncodes)}</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;                expected_returncodes = {test:(fail_returncodes[test] <span class="keywordflow">if</span> test <span class="keywordflow">in</span> fail_returncodes <span class="keywordflow">else</span> 0) <span class="keywordflow">for</span> test <span class="keywordflow">in</span> tests}</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;</div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;        <span class="comment"># Allocate cluster</span></div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;        self.<a class="code" href="classOpenMPI_1_1OpenMPI.html#a9ffab4795264fde34d136269026204db">allocated</a> = <span class="keyword">False</span></div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;        <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;allocate_cmd&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> cmds[<span class="stringliteral">&#39;deallocate_cmd&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;            self.<a class="code" href="classOpenMPI_1_1OpenMPI.html#a9ffab4795264fde34d136269026204db">allocated</a> = <span class="keyword">True</span></div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;            allocate_cmdargs = shlex.split(cmds[<span class="stringliteral">&#39;allocate_cmd&#39;</span>])</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;            _status,_stdout,_stderr,_time = testDef.execmd.execute(cmds, allocate_cmdargs, testDef)</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;            <span class="keywordflow">if</span> 0 != _status:</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = _status</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;                log[<span class="stringliteral">&#39;stderr&#39;</span>] = _stderr</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;                os.chdir(cwd)</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;                <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;        <span class="keywordflow">for</span> test <span class="keywordflow">in</span> tests:</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;            <span class="comment"># Skip tests that are in &quot;skip_tests&quot; ini input</span></div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;            <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;skip_tests&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> test.split(<span class="stringliteral">&#39;/&#39;</span>)[-1] <span class="keywordflow">in</span> [st.strip() <span class="keywordflow">for</span> st <span class="keywordflow">in</span> cmds[<span class="stringliteral">&#39;skip_tests&#39;</span>].split()]:</div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;                numTests += 1</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;                numSkip += 1</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;                <span class="keywordflow">if</span> numTests == maxTests:</div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;                    <span class="keywordflow">break</span></div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;                <span class="keywordflow">continue</span></div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;            testLog = {<span class="stringliteral">&#39;test&#39;</span>:test}</div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;            cmdargs.append(test)</div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;            testLog[<span class="stringliteral">&#39;cmd&#39;</span>] = <span class="stringliteral">&quot; &quot;</span>.join(cmdargs)</div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;            harass_exec_ids = testDef.harasser.start(testDef)</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;            harass_check = testDef.harasser.check(harass_exec_ids, testDef)</div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;            <span class="keywordflow">if</span> harass_check <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;                testLog[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&#39;Not all harasser scripts started. These failed to start: &#39;</span> \</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;                                + <span class="stringliteral">&#39;,&#39;</span>.join([h_info[1][<span class="stringliteral">&#39;start_script&#39;</span>] <span class="keywordflow">for</span> h_info <span class="keywordflow">in</span> harass_check[0]])</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;                testLog[<span class="stringliteral">&#39;time&#39;</span>] = sum([r_info[3] <span class="keywordflow">for</span> r_info <span class="keywordflow">in</span> harass_check[1]])</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;                testLog[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;                finalStatus = 1</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;                finalError = testLog[<span class="stringliteral">&#39;stderr&#39;</span>]</div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;                numFail = numFail + 1</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;                testDef.harasser.stop(harass_exec_ids, testDef)</div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;                <span class="keywordflow">continue</span></div>
 <div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;</div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;            <span class="keywordflow">if</span> ((expected_returncodes[test] <span class="keywordflow">is</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> 0 == status) <span class="keywordflow">or</span> (expected_returncodes[test] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> expected_returncodes[test] != status)) <span class="keywordflow">and</span> skipStatus != status <span class="keywordflow">and</span> 0 == finalStatus:</div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;                <span class="keywordflow">if</span> expected_returncodes[test] == 0:</div>
-<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;                    finalStatus = status</div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;                <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;                    finalStatus = 1</div>
-<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;                finalError = stderr</div>
-<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;            <span class="keywordflow">if</span> (expected_returncodes[test] <span class="keywordflow">is</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> 0 != status) <span class="keywordflow">or</span> (expected_returncodes[test] == status):</div>
-<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;                numPass = numPass + 1</div>
-<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;            <span class="keywordflow">elif</span> skipStatus == status:</div>
-<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;                numSkip = numSkip + 1</div>
-<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;            <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;                numFail = numFail + 1</div>
-<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;            <span class="keywordflow">if</span> expected_returncodes[test] == 0:</div>
-<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;                testLog[<span class="stringliteral">&#39;status&#39;</span>] = status</div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;            status,stdout,stderr,time = testDef.execmd.execute(cmds, cmdargs, testDef)</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;</div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;            testDef.harasser.stop(harass_exec_ids, testDef)</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;            <span class="keywordflow">if</span> ((expected_returncodes[test] <span class="keywordflow">is</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> 0 == status) <span class="keywordflow">or</span> (expected_returncodes[test] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> expected_returncodes[test] != status)) <span class="keywordflow">and</span> skipStatus != status <span class="keywordflow">and</span> 0 == finalStatus:</div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;                <span class="keywordflow">if</span> expected_returncodes[test] == 0:</div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;                    finalStatus = status</div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;                <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;                    finalStatus = 1</div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;                finalError = stderr</div>
+<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;            <span class="keywordflow">if</span> (expected_returncodes[test] <span class="keywordflow">is</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> 0 != status) <span class="keywordflow">or</span> (expected_returncodes[test] == status):</div>
+<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;                numPass = numPass + 1</div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;            <span class="keywordflow">elif</span> skipStatus == status:</div>
+<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;                numSkip = numSkip + 1</div>
 <div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;            <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;                <span class="keywordflow">if</span> status == expected_returncodes[test]:</div>
-<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;                    testLog[<span class="stringliteral">&#39;status&#39;</span>] = 0</div>
-<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;                <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;                    testLog[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
-<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;            testLog[<span class="stringliteral">&#39;stdout&#39;</span>] = stdout</div>
-<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;            testLog[<span class="stringliteral">&#39;stderr&#39;</span>] = stderr</div>
-<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;            testLog[<span class="stringliteral">&#39;time&#39;</span>] = time</div>
-<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;            log[<span class="stringliteral">&#39;testresults&#39;</span>].append(testLog)</div>
-<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;            cmdargs = cmdargs[:-1]</div>
-<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;            numTests = numTests + 1</div>
-<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;            <span class="keywordflow">if</span> numTests == maxTests:</div>
-<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;                <span class="keywordflow">break</span></div>
-<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;</div>
-<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;        <span class="comment"># Deallocate cluster</span></div>
-<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;        <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;allocate_cmd&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> cmds[<span class="stringliteral">&#39;deallocate_cmd&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> self.<a class="code" href="classOpenMPI_1_1OpenMPI.html#a9ffab4795264fde34d136269026204db">allocated</a>:</div>
-<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;            deallocate_cmdargs = shlex.split(cmds[<span class="stringliteral">&#39;deallocate_cmd&#39;</span>])</div>
-<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;            _status,_stdout,_stderr,_time = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)</div>
-<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;            <span class="keywordflow">if</span> 0 != _status:</div>
-<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = _status</div>
-<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;                log[<span class="stringliteral">&#39;stderr&#39;</span>] = _stderr</div>
-<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;                os.chdir(cwd)</div>
-<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;                <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;            self.<a class="code" href="classOpenMPI_1_1OpenMPI.html#a9ffab4795264fde34d136269026204db">allocated</a> = <span class="keyword">False</span></div>
-<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;</div>
-<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;        log[<span class="stringliteral">&#39;status&#39;</span>] = finalStatus</div>
-<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;        log[<span class="stringliteral">&#39;stderr&#39;</span>] = finalError</div>
-<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;        log[<span class="stringliteral">&#39;numTests&#39;</span>] = numTests</div>
-<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;        log[<span class="stringliteral">&#39;numPass&#39;</span>] = numPass</div>
-<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;        log[<span class="stringliteral">&#39;numSkip&#39;</span>] = numSkip</div>
-<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;        log[<span class="stringliteral">&#39;numFail&#39;</span>] = numFail</div>
-<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;        <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;            log[<span class="stringliteral">&#39;np&#39;</span>] = cmds[<span class="stringliteral">&#39;np&#39;</span>]</div>
-<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;        <span class="keywordflow">except</span> KeyError:</div>
-<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;            log[<span class="stringliteral">&#39;np&#39;</span>] = <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;</div>
-<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;        <span class="comment"># if we added middleware to the paths, remove it</span></div>
-<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160;        <span class="keywordflow">if</span> midpath:</div>
-<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;            os.environ[<span class="stringliteral">&#39;PATH&#39;</span>] = oldbinpath</div>
-<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;            os.environ[<span class="stringliteral">&#39;LD_LIBRARY_PATH&#39;</span>] = oldldlibpath</div>
-<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;</div>
-<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;        os.chdir(cwd)</div>
-<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;        <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;                numFail = numFail + 1</div>
+<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;            <span class="keywordflow">if</span> expected_returncodes[test] == 0:</div>
+<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;                testLog[<span class="stringliteral">&#39;status&#39;</span>] = status</div>
+<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;            <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;                <span class="keywordflow">if</span> status == expected_returncodes[test]:</div>
+<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;                    testLog[<span class="stringliteral">&#39;status&#39;</span>] = 0</div>
+<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;                <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;                    testLog[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
+<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;            testLog[<span class="stringliteral">&#39;stdout&#39;</span>] = stdout</div>
+<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;            testLog[<span class="stringliteral">&#39;stderr&#39;</span>] = stderr</div>
+<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;            testLog[<span class="stringliteral">&#39;time&#39;</span>] = time</div>
+<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;            log[<span class="stringliteral">&#39;testresults&#39;</span>].append(testLog)</div>
+<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;            cmdargs = cmdargs[:-1]</div>
+<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;            numTests = numTests + 1</div>
+<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;            <span class="keywordflow">if</span> numTests == maxTests:</div>
+<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;                <span class="keywordflow">break</span></div>
+<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;</div>
+<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;        <span class="comment"># Deallocate cluster</span></div>
+<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;        <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;allocate_cmd&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> cmds[<span class="stringliteral">&#39;deallocate_cmd&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> self.<a class="code" href="classOpenMPI_1_1OpenMPI.html#a9ffab4795264fde34d136269026204db">allocated</a>:</div>
+<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;            deallocate_cmdargs = shlex.split(cmds[<span class="stringliteral">&#39;deallocate_cmd&#39;</span>])</div>
+<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;            _status,_stdout,_stderr,_time = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)</div>
+<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;            <span class="keywordflow">if</span> 0 != _status:</div>
+<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = _status</div>
+<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;                log[<span class="stringliteral">&#39;stderr&#39;</span>] = _stderr</div>
+<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;                os.chdir(cwd)</div>
+<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;                <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;            self.<a class="code" href="classOpenMPI_1_1OpenMPI.html#a9ffab4795264fde34d136269026204db">allocated</a> = <span class="keyword">False</span></div>
+<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;</div>
+<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;        log[<span class="stringliteral">&#39;status&#39;</span>] = finalStatus</div>
+<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;        log[<span class="stringliteral">&#39;stderr&#39;</span>] = finalError</div>
+<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;        log[<span class="stringliteral">&#39;numTests&#39;</span>] = numTests</div>
+<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;        log[<span class="stringliteral">&#39;numPass&#39;</span>] = numPass</div>
+<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;        log[<span class="stringliteral">&#39;numSkip&#39;</span>] = numSkip</div>
+<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;        log[<span class="stringliteral">&#39;numFail&#39;</span>] = numFail</div>
+<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;        <span class="keywordflow">try</span>:</div>
+<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;            log[<span class="stringliteral">&#39;np&#39;</span>] = cmds[<span class="stringliteral">&#39;np&#39;</span>]</div>
+<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160;        <span class="keywordflow">except</span> KeyError:</div>
+<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;            log[<span class="stringliteral">&#39;np&#39;</span>] = <span class="keywordtype">None</span></div>
+<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;</div>
+<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;        <span class="comment"># if we added middleware to the paths, remove it</span></div>
+<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;        <span class="keywordflow">if</span> midpath:</div>
+<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;            os.environ[<span class="stringliteral">&#39;PATH&#39;</span>] = oldbinpath</div>
+<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;            os.environ[<span class="stringliteral">&#39;LD_LIBRARY_PATH&#39;</span>] = oldldlibpath</div>
+<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;</div>
+<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;        os.chdir(cwd)</div>
+<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;        <span class="keywordflow">return</span></div>
 <div class="ttc" id="classOpenMPI_1_1OpenMPI_html_a4a263774614f0b83a63a26639b46b2f5"><div class="ttname"><a href="classOpenMPI_1_1OpenMPI.html#a4a263774614f0b83a63a26639b46b2f5">OpenMPI.OpenMPI.options</a></div><div class="ttdeci">options</div><div class="ttdef"><b>Definition:</b> <a href="OpenMPI_8py_source.html#l00048">OpenMPI.py:48</a></div></div>
 <div class="ttc" id="classLauncherMTTTool_1_1LauncherMTTTool_html"><div class="ttname"><a href="classLauncherMTTTool_1_1LauncherMTTTool.html">LauncherMTTTool.LauncherMTTTool</a></div><div class="ttdef"><b>Definition:</b> <a href="LauncherMTTTool_8py_source.html#l00019">LauncherMTTTool.py:19</a></div></div>
 <div class="ttc" id="classOpenMPI_1_1OpenMPI_html_a9ffab4795264fde34d136269026204db"><div class="ttname"><a href="classOpenMPI_1_1OpenMPI.html#a9ffab4795264fde34d136269026204db">OpenMPI.OpenMPI.allocated</a></div><div class="ttdeci">allocated</div><div class="ttdef"><b>Definition:</b> <a href="OpenMPI_8py_source.html#l00069">OpenMPI.py:69</a></div></div>
