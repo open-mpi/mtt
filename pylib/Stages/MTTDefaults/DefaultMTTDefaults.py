@@ -72,10 +72,26 @@ class DefaultMTTDefaults(MTTDefaultsMTTStage):
     def execute(self, log, keyvals, testDef):
         testDef.logger.verbose_print("Set MTT Defaults")
         cmds = {}
+
+        # use scratchdir internally
         try:
             if keyvals['scratch']:
                 keyvals['scratchdir'] = keyvals['scratch']
                 del keyvals['scratch']
+        except KeyError:
+            pass
+
+        # use the options set in the ini file, MTTDefaults section if
+        # the user has not set the same option on the command line
+        try: 
+            for option in testDef.config.items('MTTDefaults'):
+                # scratch in the ini file is scratchdir internally
+                if option[0] == 'scratch':
+                    opt = 'scratchdir'
+                else:
+                    opt = option[0]
+                if testDef.options[opt] == None:
+                    testDef.options[opt] = option[1]
         except KeyError:
             pass
 
@@ -91,6 +107,7 @@ class DefaultMTTDefaults(MTTDefaultsMTTStage):
 
         # the parseOptions function will record status for us
         testDef.parseOptions(log, self.options, keyvals, cmds)
+
         # we need to record the results into our options so
         # subsequent sections can capture them
         keys = cmds.keys()
