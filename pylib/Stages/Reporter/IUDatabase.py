@@ -59,6 +59,7 @@ class IUDatabase(ReporterMTTStage):
         self.options['debug_server'] = (False, "Ask the server to return its debug output as well")
         self.options['email'] = (None, "Email to which errors are to be sent")
         self.options['debug_screen'] = (False, "Print debug output to screen")
+        self.cmds = {}
 
     def activate(self):
         # get the automatic procedure from IPlugin
@@ -81,51 +82,50 @@ class IUDatabase(ReporterMTTStage):
 
     def execute(self, log, keyvals, testDef):
         # parse the provided keyvals against our options
-        cmds = {}
-        testDef.parseOptions(log, self.options, keyvals, cmds)
+        testDef.parseOptions(log, self.options, keyvals, self.cmds)
 
         # quick sanity check
         sanity = 0
-        if cmds['username'] is not None:
+        if self.cmds['username'] is not None:
             sanity += 1
-        if cmds['password'] is not None or cmds['pwfile'] is not None:
+        if self.cmds['password'] is not None or self.cmds['pwfile'] is not None:
             sanity += 1
-        if cmds['realm'] is not None:
+        if self.cmds['realm'] is not None:
             sanity += 1
         if 0 < sanity and sanity != 3:
             log['status'] = 1
             log['stderr'] = "MTTDatabase Reporter section",log['section'] + ": if password, username, or realm is specified, they all must be specified."
             return
         try:
-            if cmds['pwfile'] is not None:
-                if os.path.exists(cmds['pwfile']):
-                    f = open(cmds['pwfile'], 'r')
+            if self.cmds['pwfile'] is not None:
+                if os.path.exists(self.cmds['pwfile']):
+                    f = open(self.cmds['pwfile'], 'r')
                     password = f.readline().strip()
                     f.close()
                 else:
                     log['status'] = 1;
-                    log['stderr'] = "Password file " + cmds['pwfile'] + " does not exist"
+                    log['stderr'] = "Password file " + self.cmds['pwfile'] + " does not exist"
                     return
-            elif cmds['password'] is not None:
-                password = cmds['password']
+            elif self.cmds['password'] is not None:
+                password = self.cmds['password']
         except KeyError:
             try:
-                if cmds['password'] is not None:
-                    password = cmds['password']
+                if self.cmds['password'] is not None:
+                    password = self.cmds['password']
             except KeyError:
                 pass
         #
         # Setup the JSON data structure
         #
         s = requests.Session()
-        url = cmds['url'] + "/submit"
+        url = self.cmds['url'] + "/submit"
         if 0 < sanity:
-            www_auth = HTTPBasicAuth(cmds['username'], password)
+            www_auth = HTTPBasicAuth(self.cmds['username'], password)
         else:
             www_auth = None
 
         # Get a client serial number
-        client_serial = self._get_client_serial(s, cmds['url'], www_auth)
+        client_serial = self._get_client_serial(s, self.cmds['url'], www_auth)
         if client_serial < 0:
             print("Error: Unable to get a client serial (rtn=%d)" % (client_serial))
 
@@ -138,7 +138,7 @@ class IUDatabase(ReporterMTTStage):
         metadata = {}
         metadata['client_serial'] = client_serial
         metadata['hostname'] = "\n".join(profile['profile']['nodeName'])
-        metadata['http_username'] = cmds['username']
+        metadata['http_username'] = self.cmds['username']
         metadata['local_username'] = pwd.getpwuid(os.getuid()).pw_name
         metadata['mtt_client_version'] = '4.0a1'
         metadata['platform_name'] = self._extract_param(testDef.logger, 'MTTDefaults', 'platform')
@@ -165,7 +165,7 @@ class IUDatabase(ReporterMTTStage):
         #
         try:
             pp = pprint.PrettyPrinter(indent=4)
-            if cmds['debug_screen']:
+            if self.cmds['debug_screen']:
                 print("<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>")
                 for lg in fullLog:
                     print("----------------- Section (%s) " % (lg['section']))
@@ -192,7 +192,7 @@ class IUDatabase(ReporterMTTStage):
 
     def _submit_test_run(self, logger, lg, metadata, s, url, httpauth=None):
         try:
-            if cmds['debug_screen']:
+            if self.cmds['debug_screen']:
                 print("----------------- Test Run (%s) " % (lg['section']))
                 pp = pprint.PrettyPrinter(indent=4)
                 pp.pprint(lg)
@@ -421,7 +421,7 @@ class IUDatabase(ReporterMTTStage):
 
     def _submit_test_build(self, logger, lg, metadata, s, url, httpauth=None):
         try:
-            if cmds['debug_screen']:
+            if self.cmds['debug_screen']:
                 print("----------------- Test Build (%s) " % (lg['section']))
                 pp = pprint.PrettyPrinter(indent=4)
                 pp.pprint(lg)
@@ -579,7 +579,7 @@ class IUDatabase(ReporterMTTStage):
     def _submit_install(self, logger, lg, metadata, s, url, httpauth=None):
 
         try:
-            if cmds['debug_screen']:
+            if self.cmds['debug_screen']:
                 print("----------------- MPI Install (%s) " % (lg['section']))
                 pp = pprint.PrettyPrinter(indent=4)
                 pp.pprint(lg)
@@ -658,8 +658,8 @@ class IUDatabase(ReporterMTTStage):
                     data['mpi_version'] = entry['mpi_info']['version']
                     break
             else:
-                data['mpi_name'] = None
-                data['mpi_version'] = None
+                data['mpi_name'] = 'Undef'
+                data['mpi_version'] = 'Undef'
 
         try:
             data['configure_arguments'] = logger.getLog(lg['middleware'])['configure_options']
@@ -779,7 +779,7 @@ class IUDatabase(ReporterMTTStage):
         headers['content-type'] = 'application/json'
 
         try:
-            if cmds['debug_screen']:
+            if self.cmds['debug_screen']:
                 print("<<<<<<<---------------- Payload (Start) -------------------------->>>>>>")
                 print(json.dumps(payload, sort_keys=True, indent=4, separators=(',',': ')))
                 print("<<<<<<<---------------- Payload (End  ) -------------------------->>>>>>")
@@ -793,7 +793,7 @@ class IUDatabase(ReporterMTTStage):
                    verify=False)
 
         try:
-            if cmds['debug_screen']:
+            if self.cmds['debug_screen']:
                 print("<<<<<<<---------------- Response -------------------------->>>>>>")
                 print("Result: %d: %s" % (r.status_code, r.headers['content-type']))
                 print(r.headers)
