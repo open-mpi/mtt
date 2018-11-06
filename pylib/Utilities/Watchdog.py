@@ -31,10 +31,11 @@ class Watchdog(BaseMTTUtility):
 
         BaseMTTUtility.__init__(self)
         self.options = {}
-        timeout = self.convert_to_timeout(timeout)
+        defaultTimeout = self.convert_to_timeout(timeout)
         self.options['timeout'] = (timeout, "Time in seconds before generating exception")
-        self.timer = None
-        self.timeout = timeout
+        self.timer = []
+        self.handler = []
+        self.defaultTimeout = defaultTimeout
         self.testDef = testDef
         self.activated = False
 
@@ -48,24 +49,41 @@ class Watchdog(BaseMTTUtility):
         return
 
     # Start the watchdog timer
-    def start(self, handler=None):
+    def start(self, handler=None, timerId=None, timeout=None):
         if handler is None:
-            handler = self.defaultHandler
-        if not self.timer or not self.timer.is_alive():
-            self.timer = Timer(int(self.timeout.total_seconds()),
-                               handler)
-            self.timer.start()
+            if timerId is not None and timerId >= 0 and timerId < len(self.timer):
+                handler = self.handler[timerId]
+            else:
+                handler = self.defaultHandler
+        if timerId is None:
+            if timeout is None:
+                timeout = defaultTimeout
+            else:
+                timeout = self.convert_to_timeout(timeout)
+            self.timer.append(Timer(int(timeout.total_seconds()),
+                              handler))
+            self.handler.append(handler)
+            self.timer[-1].start()
+            return len(self.timer) - 1
+        else:
+            if timerId >= 0 and timerId < len(self.timer) and \
+                  (self.timer[timerId] is None or not self.timer[timerId].is_alive()):
+                self.timer[timerId] = Timer(int(self.timeout.total_seconds()), handler)
+                self.handler[timerId] = handler
+                self.timer[-1].start()
+            return timerId
 
     # Stop the watchdog timer
-    def stop(self):
-        if self.timer:
-            self.timer.cancel()
-            self.timer = None
+    def stop(self, timerId):
+        if timerId >= 0 and timerId < len(self.timer) and self.timer[timerId]:
+            self.timer[timerId].cancel()
+            self.timer[timerId] = None
 
     # Reset the watchdog timer
-    def reset(self):
-        self.stop()
-        self.start()
+    def reset(self, timerId):
+        if timerId >= 0 and timerId < len(self.timer):
+            self.stop(timerId)
+            self.start(timerId=timerId)
 
     def activate(self):
         if not self.activated:
@@ -76,7 +94,8 @@ class Watchdog(BaseMTTUtility):
     def deactivate(self):
         if self.activated:
             IPlugin.deactivate(self)
-            self.stop()
+            for i,_ in enumerate(self.timer):
+                self.stop(i)
             self.activated = False
 
     # This function is called when timer runs out of time!

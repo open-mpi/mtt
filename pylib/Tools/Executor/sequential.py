@@ -71,7 +71,6 @@ class SequentialEx(ExecutorMTTTool):
     def durationTimeoutHandler(self):
         self.one_last_loop = True
 
-
     def execute_sections(self, testDef):
         for step in testDef.loader.stageOrder:
             for title in testDef.config.sections():
@@ -329,7 +328,7 @@ class SequentialEx(ExecutorMTTTool):
                     testDef.logger.verbose_print("=======================================")
                     stageLog['status'] = 0
                     stageLog['stderr'] = ["Exception was raised: %s %s" % (type(e), str(e))]
-                    self.status = 0
+                    self.status = 1
                     self.only_reporter = True
                     continue
 
@@ -361,10 +360,13 @@ class SequentialEx(ExecutorMTTTool):
         testDef.logger.verbose_print("ExecuteSequential")
         self.status = 0
         self.only_reporter = False
-        self.looping = testDef.options['loopforever']
+        self.looping = False
         self.one_last_loop = False
-        self.loopforever = testDef.options['loopforever']
+        self.loopforever = False
         self.loop_count = 0
+
+        testDef.watchdog.__init__(testDef=testDef)
+        testDef.watchdog.activate()
 
         # Holding a semaphore while in transition between plugins
         # so async threads don't interrupt in the wrong context
@@ -372,10 +374,19 @@ class SequentialEx(ExecutorMTTTool):
 
         # If --duration switch is used, activate watchdog timer
         if testDef.options['duration']:
-            testDef.watchdog.__init__(timeout=testDef.options['duration'],
-                                      testDef=testDef)
-            testDef.watchdog.activate()
-            testDef.watchdog.start(handler=self.durationTimeoutHandler)
+            testDef.watchdog.start(timeout=testDef.options['duration'])
+
+        # If --loopforever switch is used, loop forever
+        if testDef.options['loopforever']:
+            self.looping = True
+            self.loopforever = True
+
+        # If --loop switch is used, loop until loop timeout is done
+        elif testDef.options['loop']:
+            testDef.watchdog.start(handler=self.durationTimeoutHandler,
+                                   timeout=testDef.options['loop'])
+            testDef.looping = True
+ 
 
         # Start harasser
         if testDef.options["harass_trigger_scripts"] is not None:

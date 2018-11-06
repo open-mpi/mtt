@@ -78,16 +78,18 @@ class Copytree(BaseMTTUtility):
         try:
             # Cleanup the target directory if it exists
             if os.path.exists(dst):
-                shutil.rmtree(dst)
-            os.mkdir(dst)
+                shutil.rmtree(dst, ignore_errors=True)
+            if not os.path.exists(dst):
+                os.mkdir(dst)
             for srcpath in cmds['src'].split(','):
                 srcpath = srcpath.strip()
                 reload(distutils.dir_util)
                 if cmds['preserve_directory'] != "0":
                     subdst = os.path.join(dst,os.path.basename(srcpath))
-                    if os.path.exists(subdst):
-                        shutil.rmtree(subdst)
-                    os.mkdir(subdst)
+                    while os.path.exists(subdst):
+                        shutil.rmtree(subdst, ignore_errors=True)
+                    if not os.path.exists(dst):
+                        os.mkdir(subdst)
                     distutils.dir_util.copy_tree(srcpath, subdst, preserve_symlinks=int(cmds['preserve_symlinks']))
                 else:
                     distutils.dir_util.copy_tree(srcpath, dst, preserve_symlinks=int(cmds['preserve_symlinks']))

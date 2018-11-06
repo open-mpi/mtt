@@ -120,9 +120,12 @@ execGroup.add_argument("--stop-on-fail", dest="stop_on_fail",
 execGroup.add_argument("--duration",
                      dest="duration", default=None,
                      help="Add a maximum duration for test before interrupting.")
+execGroup.add_argument("--loop",
+                     dest="loop", default=None,
+                     help="Causes MTT to loop until provided number of seconds finishes")
 execGroup.add_argument("--loopforever", dest="loopforever",
                      action="store_true", default=False,
-                     help="Causes MTT to continue to loop forever running same set of tests. Use this in conjunction with --duration switch to loop for a specific amount of time.")
+                     help="Causes MTT to continue to loop forever running same set of tests")
 execGroup.add_argument("--harass_trigger",
                      dest="harass_trigger_scripts", default=None,
                      help="Paths to scripts that are run to harass the system while the test is running.")
