@@ -615,7 +615,8 @@ class TestDef(object):
             try:
                 self.options['scratchdir'] = self.config.get('MTTDefaults', 'scratch')
             except:
-                self.options['scratchdir'] = './mttscratch'
+                self.options['scratchdir'] = os.path.abspath('./mttscratch')
+        self.options['scratchdir'] = os.path.abspath(self.options['scratchdir'])
         try:
             if not self.options['executor']:
                 self.options['executor'] = self.config.get('MTTDefaults', 'executor')
