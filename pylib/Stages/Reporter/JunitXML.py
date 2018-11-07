@@ -59,9 +59,6 @@ class JunitXML(ReporterMTTStage):
         if cmds['filename'] is not None:
             self.fh = open(cmds['filename'] if os.path.isabs(cmds['filename']) \
                            else os.path.join(testDef.options['scratchdir'],cmds['filename']), 'w')
-        if testDef.options['description'] is not None:
-            print(testDef.options['description'], file=self.fh)
-            print(file=self.fh)
        
         # Use the Junit classname field to store the list of inifiles
         try:
