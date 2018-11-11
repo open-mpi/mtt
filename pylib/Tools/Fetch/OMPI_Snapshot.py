@@ -228,8 +228,9 @@ class OMPI_Snapshot(FetchMTTTool):
                     print(snapshot_req.text.strip(), file=f)
                 except:
                     log['status'] = 1
-                    log['stderr'] = "Failed to update version file"
-                    testDef.logger.verbose_print("Failed to update version file")
+                    log['stderr'] = "FAILED to update version file"
+                    testDef.logger.verbose_print("FAILED TO UPDATE VERSION FILE - EXITING")
+                    os.chdir(cwd)
                     return
         except KeyError:
             pass
