@@ -319,15 +319,16 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;                    print(snapshot_req.text.strip(), file=f)</div>
 <div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;                <span class="keywordflow">except</span>:</div>
 <div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;                    log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;                    log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;Failed to update version file&quot;</span></div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;                    testDef.logger.verbose_print(<span class="stringliteral">&quot;Failed to update version file&quot;</span>)</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;                    <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;        <span class="keywordflow">except</span> KeyError:</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;            <span class="keywordflow">pass</span></div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;        <span class="comment"># change back to the original directory</span></div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;        os.chdir(cwd)</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;        <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;                    log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;FAILED to update version file&quot;</span></div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;                    testDef.logger.verbose_print(<span class="stringliteral">&quot;FAILED TO UPDATE VERSION FILE - EXITING&quot;</span>)</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;                    os.chdir(cwd)</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;                    <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;        <span class="keywordflow">except</span> KeyError:</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;            <span class="keywordflow">pass</span></div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;        <span class="comment"># change back to the original directory</span></div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;        os.chdir(cwd)</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;        <span class="keywordflow">return</span></div>
 <div class="ttc" id="classOMPI__Snapshot_1_1OMPI__Snapshot_html_a7adf04e52684ba6a4a9f0c2d9001bc4a"><div class="ttname"><a href="classOMPI__Snapshot_1_1OMPI__Snapshot.html#a7adf04e52684ba6a4a9f0c2d9001bc4a">OMPI_Snapshot.OMPI_Snapshot.activate</a></div><div class="ttdeci">def activate</div><div class="ttdef"><b>Definition:</b> <a href="OMPI__Snapshot_8py_source.html#l00048">OMPI_Snapshot.py:48</a></div></div>
 <div class="ttc" id="classOMPI__Snapshot_1_1OMPI__Snapshot_html_ab7795ea126dd1e33d4aa35e700fd0c14"><div class="ttname"><a href="classOMPI__Snapshot_1_1OMPI__Snapshot.html#ab7795ea126dd1e33d4aa35e700fd0c14">OMPI_Snapshot.OMPI_Snapshot.__init__</a></div><div class="ttdeci">def __init__</div><div class="ttdef"><b>Definition:</b> <a href="OMPI__Snapshot_8py_source.html#l00035">OMPI_Snapshot.py:35</a></div></div>
 <div class="ttc" id="classOMPI__Snapshot_1_1OMPI__Snapshot_html_a6434d87ad221c54daecf11d8ad5604f8"><div class="ttname"><a href="classOMPI__Snapshot_1_1OMPI__Snapshot.html#a6434d87ad221c54daecf11d8ad5604f8">OMPI_Snapshot.OMPI_Snapshot.done</a></div><div class="ttdeci">done</div><div class="ttdef"><b>Definition:</b> <a href="OMPI__Snapshot_8py_source.html#l00041">OMPI_Snapshot.py:41</a></div></div>
