@@ -51,6 +51,7 @@ class Shell(BuildMTTTool):
         self.options['allocate_cmd'] = (None, "Command to use for allocating nodes from the resource manager")
         self.options['deallocate_cmd'] = (None, "Command to use for deallocating nodes from the resource manager")
         self.options['asis_target'] = (None, "Specifies name of asis_target being built. This is used with \"ASIS\" keyword to determine whether to do anything.")
+        self.options['shell_mode'] = (False, "Use shlex or shell-mode for parsing?")
 
         self.allocated = False
         self.testDef = None
@@ -352,7 +353,10 @@ class Shell(BuildMTTTool):
         if False == self.allocate(log, cmds, testDef):
             return
 
-        cfgargs = shlex.split(cmds['command'])
+        if cmds['shell_mode'] is False:
+            cfgargs = shlex.split(cmds['command'])
+        else:
+            cfgargs = ["sh", "-c", cmds['command']]
 
         if 'TestRun' in log['section'].split(":")[0]:
             harass_exec_ids = testDef.harasser.start(testDef)
