@@ -20,6 +20,7 @@ import logging
 import imp
 from yapsy.PluginManager import PluginManager
 import argparse
+import shlex
 
 # First check for bozo error - we need to be given
 # at least a cmd line option, so no params at all
@@ -103,9 +104,6 @@ execGroup.add_argument("-s", "--sections", dest="section",
                      help="Execute the specified SECTION (or comma-delimited list of SECTIONs)", metavar="SECTION")
 execGroup.add_argument("--skip-sections", dest="skipsections",
                      help="Skip the specified SECTION (or comma-delimited list of SECTIONs)", metavar="SECTION")
-execGroup.add_argument("--no-reporter", dest="reporter",
-                      action="store_true", default=False,
-                      help="Do not invoke any MTT Reporter modules")
 execGroup.add_argument("-l", "--log", dest="logfile", default=None,
                      help="Log all output to FILE (defaults to stdout)", metavar="FILE")
 execGroup.add_argument("--group-results", dest="submit_group_results", default=True,
@@ -158,7 +156,7 @@ args = parser.parse_args()
 # any set on the command line.  Environment will override the commandline.
 mttArgs = []
 if 'MTT_ARGS' in os.environ and os.environ.get('MTT_ARGS') != None:
-    mttArgs = os.environ['MTT_ARGS'].split()
+    mttArgs = shlex.split(os.environ['MTT_ARGS'])
     args = parser.parse_args(sys.argv[1:] + mttArgs)
 
 # check to see if MTT_HOME has been set - we require it

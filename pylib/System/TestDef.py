@@ -517,6 +517,34 @@ class TestDef(object):
                     self.fill_log_interpolation("%s.%d" % (basestr, i), v)
         else:
             self.fill_log_interpolation(basestr, str(sublog))
+ 
+    def expandWildCards(self, sections):
+        expsec = []
+        cpsections = list(sections)
+        for sec in cpsections:
+            if '*' in sec:
+                modsec = sec.split('*')
+                startswith = modsec[0]
+                endswith = modsec[-1]
+                findsec = modsec[1:-1]
+                allsections = self.config.sections()
+                for s in allsections:
+                    if not s.startswith(startswith):
+                        continue
+                    if not s.endswith(endswith):
+                        continue
+                    found = True
+                    s_tmp = s
+                    for f in findsec:
+                        if not f in s_tmp:
+                            found = False
+                            break
+                        s_tmp = f.join(s_tmp.split(f)[1:])
+                    if not found:
+                        continue
+                    expsec.append(s)
+                sections.remove(sec)
+        return sections + expsec
 
     def configTest(self):
 
@@ -582,6 +610,24 @@ class TestDef(object):
                 print("ERROR: %s"%l)
             sys.exit(1)
 
+        # find all the sections that match the wild card and expand them
+        # this is simple wild carding, ie *text, text*, *text* and * 
+        # should all work
+        if sections is not None:
+            sections = self.expandWildCards(sections)
+
+        #if sections is not None:
+        #    expsec = []
+        #    cpsections = list(sections)
+        #    for sec in cpsections:
+        #        if '*' in sec:
+        #            modsec = sec.replace('*','')
+        #            for s in self.config.sections():
+        #                if modsec in s:
+        #                    expsec.append(s)
+        #            sections.remove(sec)
+        #    sections = sections + expsec
+
         for section in self.config.sections():
             if section.startswith("SKIP") or section.startswith("skip"):
                 # users often want to temporarily ignore a section
@@ -604,6 +650,7 @@ class TestDef(object):
                     takeus = False
             if takeus:
                 self.actives.append(section)
+
         if sections is not None and 0 != len(sections) and not skip:
             print("ERROR: sections were specified for execution and not found:",sections)
             sys.exit(1)
