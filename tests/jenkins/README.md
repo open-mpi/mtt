@@ -23,21 +23,13 @@ Assumptions in these instructions:
 3. Type this into terminal, replacing sample build arguments with the desired values:
 ```
 docker build \
---build-arg proxy_server=sample.proxy.server.com \
---build-arg proxy_port=123 \
---build-arg slave_node_name=sampleslavenode \
---build-arg slave_node_num_computes=4 \
---build-arg slave_node_ip_addr=10.20.30.40 \
---build-arg slave_node_num_executors=2 \
---build-arg slave_node_ssh_username=root \
---build-arg slave_node_exec_dir=\\/home\\/test\\/jenkins \
+--build-arg http_server=sample.proxy.server.com \
+--build-arg http_port=123 \
+--build-arg https_server=sample.proxy.server.com \
+--build-arg https_port=124 \
 --build-arg master_num_executors=2 \
---build-arg compute_node_names="node1 node2 node3 node4" \
---build-arg installplugins=yes \
 -t mttconsole .
 ```
-
-* If you have problems building with the plugins, sometime their downloading times out, you can **remove** the `--build-arg installplugins=yes` or **set it to** `no`
 
 ##### Running the console
 
