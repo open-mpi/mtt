@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version='1.1' encoding='UTF-8'?>
 <project>
   <actions/>
   <description>Default Check Profile BAT Test</description>
@@ -12,20 +12,11 @@
         <artifactNumToKeep>-1</artifactNumToKeep>
       </strategy>
     </jenkins.model.BuildDiscarderProperty>
-    <org.jenkins.plugins.lockableresources.RequiredResourcesProperty plugin="lockable-resources@1.10">
+    <org.jenkins.plugins.lockableresources.RequiredResourcesProperty plugin="lockable-resources@2.3">
       <resourceNames>COMPUTE_NODE_NAMES_VAR</resourceNames>
       <resourceNamesVar>COMPUTE_HOSTS</resourceNamesVar>
       <resourceNumber>SLAVE_NODE_NUM_COMPUTES_VAR</resourceNumber>
     </org.jenkins.plugins.lockableresources.RequiredResourcesProperty>
-    <com.sonyericsson.jenkins.plugins.externalresource.dispatcher.SelectionCriteria plugin="externalresource-dispatcher@1.1.0">
-      <selectionEnabled>false</selectionEnabled>
-      <resourceSelectionList>
-        <com.sonyericsson.jenkins.plugins.externalresource.dispatcher.selection.StringResourceSelection>
-          <name>computehosts.node</name>
-          <value>13</value>
-        </com.sonyericsson.jenkins.plugins.externalresource.dispatcher.selection.StringResourceSelection>
-      </resourceSelectionList>
-    </com.sonyericsson.jenkins.plugins.externalresource.dispatcher.SelectionCriteria>
   </properties>
   <scm class="hudson.scm.NullSCM"/>
   <assignedNode>SLAVE_NODE_NAME_VAR</assignedNode>
@@ -40,7 +31,7 @@
     <hudson.tasks.Shell>
       <command>#!/bin/bash -ex
 
-export KERNEL_VERSION="Change this to match your system's kernel version (uname -r)"
+export KERNEL_VERSION=&quot;Change this to match your system&apos;s kernel version (uname -r)&quot;
 export MTT_HOME=/opt/mtt
 
 ${MTT_HOME}/pyclient/pymtt.py --verbose /opt/mtt/tests/bat/default_check_profile.ini
@@ -52,7 +43,7 @@ exit $STATUS
     </hudson.tasks.Shell>
   </builders>
   <publishers>
-    <hudson.tasks.junit.JUnitResultArchiver plugin="junit@1.19">
+    <hudson.tasks.junit.JUnitResultArchiver plugin="junit@1.26.1">
       <testResults>mttscratch/default_check_profile.xml</testResults>
       <keepLongStdio>false</keepLongStdio>
       <healthScaleFactor>1.0</healthScaleFactor>
@@ -60,16 +51,11 @@ exit $STATUS
     </hudson.tasks.junit.JUnitResultArchiver>
   </publishers>
   <buildWrappers>
-    <hudson.plugins.build__timeout.BuildTimeoutWrapper plugin="build-timeout@1.18">
+    <hudson.plugins.build__timeout.BuildTimeoutWrapper plugin="build-timeout@1.19">
       <strategy class="hudson.plugins.build_timeout.impl.AbsoluteTimeOutStrategy">
         <timeoutMinutes>5</timeoutMinutes>
       </strategy>
       <operationList/>
     </hudson.plugins.build__timeout.BuildTimeoutWrapper>
-    <EnvInjectPasswordWrapper plugin="envinject@1.93.1">
-      <injectGlobalPasswords>false</injectGlobalPasswords>
-      <maskPasswordParameters>true</maskPasswordParameters>
-      <passwordEntries/>
-    </EnvInjectPasswordWrapper>
   </buildWrappers>
 </project>
