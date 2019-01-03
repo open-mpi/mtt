@@ -1,4 +1,4 @@
-ace-editor:1.0.1
+ace-editor:
 analysis-core:
 ant:
 antisamy-markup-formatter:
@@ -68,6 +68,7 @@ jackson2-api:
 javadoc:
 jdk-tool:
 jenkins-design-language:
+jenkins-multijob-plugin:
 jira:
 jquery:
 jquery-detached:
@@ -123,6 +124,7 @@ timestamper:
 token-macro:
 trilead-api:
 variant:
+warnings-ng:
 warnings:
 windows-slaves:
 workflow-aggregator:
