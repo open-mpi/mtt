@@ -15,7 +15,6 @@ ENV JAVA_OPTS    "-Dhttp.proxyHost=${http_server} -Dhttp.proxyPort=${http_port} 
   -Dhttps.proxyHost=${https_server} -Dhttps.proxyPort=${https_port} \
   -Djenkins.install.runSetupWizard=false"
 ENV JENKINS_OPTS "-sessionTimeout=120"
-ENV TIMEZONE     "America/Los_Angeles"
 ENV JENKINS_HOME /var/jenkins_home
 ENV ftp_proxy    http://$http_server:$http_port/
 ENV FTP_PROXY    http://$http_server:$http_port/
@@ -29,9 +28,8 @@ USER root
 RUN apt-get update && apt-get install -y vim tree
 
 # Set timezone
-RUN echo $TIMEZONE > /etc/timezone &&\
-    dpkg-reconfigure --frontend noninteractive tzdata &&\
-    date
+ENV TZ=America/Los_Angeles
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 USER jenkins
 
