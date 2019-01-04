@@ -1,5 +1,6 @@
 ace-editor:
 analysis-core:
+analysis-model-api:
 ant:
 antisamy-markup-formatter:
 apache-httpcomponents-client-4-api:
@@ -49,6 +50,7 @@ docker-slaves:
 docker-workflow:
 durable-task:
 email-ext:
+envinject:
 envinject-api:
 external-monitor-job:
 favorite:
