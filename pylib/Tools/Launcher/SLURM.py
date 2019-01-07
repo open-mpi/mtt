@@ -330,7 +330,7 @@ class SLURM(LauncherMTTTool):
         # get the "skip" exit status
         skipStatus = int(cmds['skipped'])
         # assemble the command
-        cmdargs = [cmds['command']].strip()
+        cmdargs = [cmds['command'].strip()]
 
         # Add support for using job_name with mpiexec
         if (cmds['command'] == 'mpiexec' or cmds['command'] == 'mpiexec.hydra' or cmds['command'] == 'mpirun') and cmds['job_name'] is not None:
