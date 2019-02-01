@@ -122,6 +122,7 @@ ssh-agent:
 ssh-credentials:
 ssh-slaves:
 structs:
+test-results-analyzer:
 timestamper:
 token-macro:
 trilead-api:
