@@ -107,6 +107,7 @@ pipeline-stage-step:
 pipeline-stage-tags-metadata:
 pipeline-stage-view:
 plain-credentials:
+postbuild-task:
 publish-over:
 publish-over-ssh:
 pubsub-light:
