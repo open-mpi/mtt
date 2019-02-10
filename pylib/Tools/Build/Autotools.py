@@ -185,6 +185,7 @@ class Autotools(BuildMTTTool):
             if cmds['build_in_place']:
                 prefix = None
                 log['location'] = location
+                pfx = location
                 inPlace = True
             else:
                 # create the prefix path where this build result will be placed
@@ -205,22 +206,13 @@ class Autotools(BuildMTTTool):
         # check to see if we are to leave things "as-is"
         try:
             if cmds['asis']:
-                if not inPlace:
-                    # see if the build already exists - if
-                    # it does, then we are done
-                    if os.path.exists(pfx) and os.path.isdir(pfx):
-                        testDef.logger.verbose_print("As-Is location " + pfx + " exists and is a directory")
-                        # nothing further to do
-                        log['status'] = 0
-                        return
-                else:
-                    # check if configure exists
-                    cfg = os.path.join(location, "configure")
-                    if os.path.exists(cfg):
-                        # good enough
-                        testDef.logger.verbose_print("As-Is location " + location + " has configure present")
-                        log['status'] = 0
-                        return
+                # see if the build already exists - if
+                # it does, then we are done
+                if os.path.exists(os.path.join(pfx, 'build_complete')):
+                    testDef.logger.verbose_print("As-Is location " + pfx + " exists and has 'build_complete file")
+                    # nothing further to do
+                    log['status'] = 0
+                    return
         except KeyError:
             pass
         # check to see if this is a dryrun
@@ -463,6 +455,16 @@ class Autotools(BuildMTTTool):
             os.environ['LD_LIBRARY_PATH'] = oldldlibpath
             os.environ['CPATH'] = oldcpath
             os.environ['LIBRARY_PATH'] = oldlibpath
+
+        # Add confirmation that build is complete
+        try:
+            confirmation = os.path.join(pfx, 'build_complete')
+            fo = open(confirmation, 'w')
+            fo.write("Build was successful")
+            print("BUILD SUCCESSFUL FILE CREATED AT: " + confirmation)
+            fo.close()
+        except:
+            pass
 
         # return home
         os.chdir(cwd)
