@@ -12,6 +12,7 @@ from __future__ import print_function
 import os
 from LauncherMTTTool import *
 import shlex
+import subprocess
 
 ## @addtogroup Tools
 # @{
@@ -329,7 +330,7 @@ class SLURM(LauncherMTTTool):
         # get the "skip" exit status
         skipStatus = int(cmds['skipped'])
         # assemble the command
-        cmdargs = [cmds['command']]
+        cmdargs = [cmds['command'].strip()]
 
         # Add support for using job_name with mpiexec
         if (cmds['command'] == 'mpiexec' or cmds['command'] == 'mpiexec.hydra' or cmds['command'] == 'mpirun') and cmds['job_name'] is not None:
@@ -437,6 +438,16 @@ class SLURM(LauncherMTTTool):
                 log['stderr'] = _stderr
                 os.chdir(cwd)
                 return
+
+        # Add support for srun in --no-shell allocation
+        if self.allocated and (cmds['command'] == 'srun') and ('--job-name' in cmds['allocate_cmd']) and ('--no-shell' in cmds['allocate-cmd']):
+            parse_allocate_cmd = cmds['allocate_cmd'].split()
+            for word in parse_allocate_cmd:
+                word = word.strip()
+                if '--job-name' in word:
+                    jobname = word[11:]
+            jobid = int(subprocess.check_output(['squeue', '--noheader', '--format', '%i', '--name', jobname]))
+            cmdargs.append('--jovid=%d' % (jobid))
 
         # Execute all tests
         for test in tests:
