@@ -6,7 +6,5 @@ var searchData=
   ['harassermtttool',['HarasserMTTTool',['../namespaceHarasserMTTTool.html',1,'']]],
   ['harassermtttool_2epy',['HarasserMTTTool.py',['../HarasserMTTTool_8py.html',1,'']]],
   ['hostfile',['Hostfile',['../namespaceHostfile.html',1,'']]],
-  ['hostfile_2epy',['Hostfile.py',['../Hostfile_8py.html',1,'']]],
-  ['hwtest',['hwtest',['../namespacehwtest.html',1,'']]],
-  ['hwtest_2eini',['hwtest.ini',['../hwtest_8ini.html',1,'']]]
+  ['hostfile_2epy',['Hostfile.py',['../Hostfile_8py.html',1,'']]]
 ];
