@@ -120,7 +120,11 @@ class SequentialEx(ExecutorMTTTool):
 
                     # Refresh test options if not running combinatorial plugin
                     if testDef.options['executor'] != "combinatorial":
-                        testDef.configTest()
+                        # Check for updated environment variables
+                        testDef.fill_env_hidden_section()
+                        # Check for updated log variables
+                        testDef.fill_log_hidden_section()
+                        # Print section options
                         testDef.logger.verbose_print("OPTIONS FOR SECTION: %s" % disp_title)
                         strs_to_print = testDef.logger.get_tuplelist_contents(testDef.config.items(title))
                         if strs_to_print:
