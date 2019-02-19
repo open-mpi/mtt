@@ -440,14 +440,14 @@ class SLURM(LauncherMTTTool):
                 return
 
         # Add support for srun in --no-shell allocation
-        if self.allocated and (cmds['command'] == 'srun') and ('--job-name' in cmds['allocate_cmd']) and ('--no-shell' in cmds['allocate-cmd']):
+        if self.allocated and (cmds['command'] == 'srun') and ('--job-name' in cmds['allocate_cmd']) and ('--no-shell' in cmds['allocate_cmd']):
             parse_allocate_cmd = cmds['allocate_cmd'].split()
             for word in parse_allocate_cmd:
                 word = word.strip()
                 if '--job-name' in word:
                     jobname = word[11:]
             jobid = int(subprocess.check_output(['squeue', '--noheader', '--format', '%i', '--name', jobname]))
-            cmdargs.append('--jovid=%d' % (jobid))
+            cmdargs.append('--jobid=%d' % (jobid))
 
         # Execute all tests
         for test in tests:
