@@ -1,4 +1,12 @@
-name: condaEnv
+---
+# Use this file to set up a python virtual
+# environment to run MTT in. The name of the 
+# environment is defined in the first line of 
+# the yaml code, MTTEnv. Usage is:
+# conda env create -f /path/to/mtt/condaEnv.yml
+#
+
+name: MTTEnv
 channels:
   - conda-forge
   - defaults
@@ -21,4 +29,4 @@ dependencies:
     - configparser==3.5.0
     - django-enumfields==0.10.0
     - future==0.16.0
-
+...
