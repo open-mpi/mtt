@@ -35,14 +35,14 @@ This is the MPI Testing Tool (MTT) software package for the common files.
 %package pyclient
 Summary: MTT PyClient
 Group: Development/Libraries
-Requires: mtt-common, python, python-virtualenv 
+Requires: mtt-common, python 
 %description pyclient
 This is the MPI Testing Tool (MTT) software package for the python client.
 
 %package server 
 Summary: MTT Server 
 Group: Development/Libraries
-Requires: mtt-common, httpd, php, postgresql >= 9.0, python, python-virtualenv, python-cherrypy 
+Requires: mtt-common, httpd, php, postgresql >= 9.0, python 
 %description server 
 This is the MPI Testing Tool (MTT) software package for the server. 
 
