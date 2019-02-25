@@ -22,6 +22,7 @@ dependencies:
   - wheel=0.31.1
   - pip:
     - doxypy==0.4.1
+    - doxypypy
     - junit-xml==1.8
     - python-hostlist==1.18
     - stevedore==1.29.0
