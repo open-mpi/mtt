@@ -73,6 +73,7 @@ script:
   - $TRAVIS_BUILD_DIR/pyclient/pymtt.py --verbose $TRAVIS_BUILD_DIR/tests/bat/default_check_profile.ini
 
 before_deploy:
+  python: 2.7
   - cd docs && doxygen Doxyfile && cd ..
 
 deploy:
