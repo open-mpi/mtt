@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['cnc',['CNC',['../group__CNC.html',1,'']]]
+  ['cnc',['CNC',['../group___c_n_c.html',1,'']]]
 ];

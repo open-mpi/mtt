@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['ipmitool',['IPMITool',['../namespaceIPMITool.html',1,'']]],
-  ['iudatabase',['IUDatabase',['../namespaceIUDatabase.html',1,'']]]
+  ['ipmitool',['IPMITool',['../namespace_i_p_m_i_tool.html',1,'']]],
+  ['iudatabase',['IUDatabase',['../namespace_i_u_database.html',1,'']]]
 ];

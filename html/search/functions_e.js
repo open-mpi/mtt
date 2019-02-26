@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['unloadmodules',['unloadModules',['../classModuleCmd_1_1ModuleCmd.html#a93a6a59db499c50ffb9ffe8e043a4733',1,'ModuleCmd::ModuleCmd']]]
+  ['verbose_5fprint',['verbose_print',['../class_logger_1_1_logger.html#a8c05e25fb36679fae21ab8910eb6d117',1,'Logger::Logger']]]
 ];

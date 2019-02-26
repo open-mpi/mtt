@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['junitxml',['JunitXML',['../namespaceJunitXML.html',1,'']]]
+  ['junitxml',['JunitXML',['../namespace_junit_x_m_l.html',1,'']]]
 ];

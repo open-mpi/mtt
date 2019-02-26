@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['git',['Git',['../namespaceGit.html',1,'']]]
+  ['git',['Git',['../namespace_git.html',1,'']]]
 ];
