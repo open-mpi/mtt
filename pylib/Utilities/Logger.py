@@ -128,6 +128,7 @@ class Logger(BaseMTTUtility):
         if self.printout:
             to_print="DONE EXECUTING [%s] end_time=%s, elapsed=%s" % (stagename, stage_end, stage_end-self.stage_start[stagename])
             self.verbose_print(to_print)
+            self.verbose_print("STATUS OF [%s] IS %d" % (stagename, log['status']))
             self.verbose_print("")
         log['time'] = (stage_end-self.stage_start[stagename]).total_seconds()
         log['time_start'] = self.stage_start[stagename]
