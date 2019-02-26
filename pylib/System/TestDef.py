@@ -546,6 +546,50 @@ class TestDef(object):
                 sections.remove(sec)
         return sections + expsec
 
+    def fill_env_hidden_section(self):
+        """fill ENV section with environment variables
+        """
+        try:
+            self.config.add_section('ENV')
+        except configparser.DuplicateSectionError:
+            pass
+        for k,v in os.environ.items():
+            self.config.set('ENV', k, v.replace("$","$$"))
+
+    def fill_log_hidden_section(self):
+        """Add LOG section filled with log results of stages
+        """
+        try:
+            self.config.add_section('LOG')
+        except configparser.DuplicateSectionError:
+            pass
+        thefulllog = self.logger.getLog(None)
+        for e in thefulllog:
+            self.fill_log_interpolation(e['section'].replace(":","_"), e)
+
+    def check_for_nondefined_env_variables(self):
+        # Check for ENV input
+        required_env = []
+        all_file_contents = []
+        for testFile in self.log['inifiles']:
+            file_contents = open(testFile, "r").read()
+            file_contents = "\n".join(["%s %d: %s" % (testFile.split("/")[-1],i,l) for i,l in enumerate(file_contents.split("\n")) if not l.lstrip().startswith("#")])
+            all_file_contents.append(file_contents)
+            if "${ENV:" in file_contents:
+                required_env.extend([s.split("}")[0] for s in file_contents.split("${ENV:")[1:]])
+        env_not_found = set([e for e in required_env if e not in os.environ.keys()])
+        lines_with_env_not_found = []
+        for file_contents in all_file_contents:
+            lines_with_env_not_found.extend(["%s: %s"%(",".join([e for e in env_not_found if "${ENV:%s}"%e in l]),l) \
+                                             for l in file_contents.split("\n") \
+                                             if sum(["${ENV:%s}"%e in l for e in env_not_found])])
+        if lines_with_env_not_found:
+            print("ERROR: Not all required environment variables are defined.")
+            print("ERROR: Still need:")
+            for l in lines_with_env_not_found:
+                print("ERROR: %s"%l)
+            sys.exit(1)
+
     def configTest(self):
 
         # setup the configuration parser
@@ -555,15 +599,7 @@ class TestDef(object):
         self.config.optionxform = str
 
         # fill ENV section with environemt variables
-        self.config.add_section('ENV')
-        for k,v in os.environ.items():
-            self.config.set('ENV', k, v.replace("$","$$"))
-
-        # Add LOG section filled with log results of stages
-        self.config.add_section('LOG')
-        thefulllog = self.logger.getLog(None)
-        for e in thefulllog:
-            self.fill_log_interpolation(e['section'].replace(":","_"), e)
+        self.fill_env_hidden_section()
 
         # log the list of files - note that the argument parser
         # puts the input files in a list, with the first member
@@ -589,26 +625,7 @@ class TestDef(object):
             self.config.read(self.log['inifiles'])
 
         # Check for ENV input
-        required_env = []
-        all_file_contents = []
-        for testFile in self.log['inifiles']:
-            file_contents = open(testFile, "r").read()
-            file_contents = "\n".join(["%s %d: %s" % (testFile.split("/")[-1],i,l) for i,l in enumerate(file_contents.split("\n")) if not l.lstrip().startswith("#")])
-            all_file_contents.append(file_contents)
-            if "${ENV:" in file_contents:
-                required_env.extend([s.split("}")[0] for s in file_contents.split("${ENV:")[1:]])
-        env_not_found = set([e for e in required_env if e not in os.environ.keys()])
-        lines_with_env_not_found = []
-        for file_contents in all_file_contents:
-            lines_with_env_not_found.extend(["%s: %s"%(",".join([e for e in env_not_found if "${ENV:%s}"%e in l]),l) \
-                                             for l in file_contents.split("\n") \
-                                             if sum(["${ENV:%s}"%e in l for e in env_not_found])])
-        if lines_with_env_not_found:
-            print("ERROR: Not all required environment variables are defined.")
-            print("ERROR: Still need:")
-            for l in lines_with_env_not_found:
-                print("ERROR: %s"%l)
-            sys.exit(1)
+        self.check_for_nondefined_env_variables()
 
         # find all the sections that match the wild card and expand them
         # this is simple wild carding, ie *text, text*, *text* and * 
@@ -654,6 +671,7 @@ class TestDef(object):
         if sections is not None and 0 != len(sections) and not skip:
             print("ERROR: sections were specified for execution and not found:",sections)
             sys.exit(1)
+
         # set Defaults -command line args supercede .ini args
         try:
             if not self.options['scratchdir']:

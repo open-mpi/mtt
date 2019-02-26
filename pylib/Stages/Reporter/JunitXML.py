@@ -60,15 +60,9 @@ class JunitXML(ReporterMTTStage):
             self.fh = open(cmds['filename'] if os.path.isabs(cmds['filename']) \
                            else os.path.join(testDef.options['scratchdir'],cmds['filename']), 'w')
        
-        # Use the Junit classname field to store the list of inifiles
-        try:
-            classname = testDef.log['inifiles']
-        except KeyError:
-            classname = None
         # get the entire log of results
         fullLog = testDef.logger.getLog(None)
         testCases = []
-        # TODO: ain't nobody got time for that.  8-).
         time = 0
         for lg in fullLog:
             if 'stdout' in lg and lg['stdout'] is not None:
@@ -83,6 +77,10 @@ class JunitXML(ReporterMTTStage):
                 time = lg['time']
             else:
                 time = 0
+            # Use the hostname of the system we are running on as root of the classname
+            # Use the filename without the extension as the next layer of the classname
+            hostname = os.uname()[1]
+            classname = hostname + "." + cmds['filename'].split('.')[0]
             tc = TestCase(lg['section'], classname, time, stdout, stderr)
             try:
                 if 0 != lg['status']:
