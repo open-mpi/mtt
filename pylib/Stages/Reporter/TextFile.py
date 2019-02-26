@@ -35,7 +35,6 @@ class TextFile(ReporterMTTStage):
         self.options['detail_header'] = (None, "Header to be put at top of detail report")
         self.options['detail_footer'] = (None, "Footer to be placed at bottome of detail report")
         self.options['textwrap'] = ("80", "Max line length before wrapping")
-        self.fh = sys.stdout
 
     def activate(self):
         # get the automatic procedure from IPlugin
@@ -63,6 +62,7 @@ class TextFile(ReporterMTTStage):
                 print("\t"*(tabs),"   ",l, file=self.fh)
 
     def execute(self, log, keyvals, testDef):
+        self.fh = sys.stdout
         testDef.logger.verbose_print("TextFile Reporter")
         num_secs_pass = 0
         # pickup the options
