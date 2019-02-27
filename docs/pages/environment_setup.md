@@ -2,16 +2,34 @@
 
 MTT can be cloned from [https://github.com/open-mpi/mtt.](https://github.com/open-mpi/mtt)
 
-The path to your MTT directory needs to be added to the the environment. Add 'export MTT_HOME=/path/to/mtt' to your .bashrc or .bash_profile and activate the file using 'source .bashrc' or 'source .bash_profile' at the command line. 
+The path to your MTT directory needs to be added to the the environment. Add   
+export MTT_HOME=/path/to/mtt  
+ to your .bashrc or .bash_profile and activate the file using 'source .bashrc' or 'source .bash_profile' at the command line. 
+
+When you are finished with this guide head on over to the [Plugins](./plugins_docs.md) and [INI](./ini_docs.md) guides to get familiar with them.
 
 ## Set Up a Python Virtual Environment
+When you first try to run the MTT program you may get the error:  
+  
+File "pyclient/pymtt.py", line XX, in <module>  
+from SOMETHING import SOMETHING  
+ImportError: No module named SOMETHING    
+
+Where SOMETHING represents some missing python package. This indicates that you need to set up a Python virtual environment to run MTT in.
 
 Python virtual environments create an isolated environment for python based applications. Using a virtual environment for MTT means you can install all necessary dependencies without worrying about affecting other applications. This document covers two ways to set up python virtual environments. The Conda package and environment manager is the easiest to use. It is included with all versions of Anaconda and Miniconda. If you do not have access to Conda then you will need to install the virtualenv and virtualenvwrapper packages.
+
+The virtual environment only has to be set up once and then it can be called anytime the user needs it. If installing on a system with front ends and compute nodes the virtual environment should be set up on the front end only.
 
 ### Environment Setup With Conda
 
 #### Set Up ~/.condarc
-Before creating a conda environment, a user will need to set up a .condarc file that will tell conda where to put conda environments. Set up your .condarc to use a location to store conda environments by issuing the following commands.
+Before creating a conda environment, a user will need to set up a .condarc file that will tell conda where to put conda environments.   
+Default environment directories are:  
+$HOME/anaconda2/envs  
+$HOME/.conda/envs
+
+To set up your .condarc to use a different location to store conda environments issue the following commands.
 
 	$ conda config --add envs_dirs /path/to/your/envs
 
@@ -42,9 +60,11 @@ $ conda info
                 UID:GID : 502:20  
              netrc file : None  
            offline mode : False   
-</pre></font>
+</font></pre>
 
  Check the 'envs directories:' it should be set to the directory given to the 'conda config --add' command. Redo if necessary (remove bad values by using 'conda config --remove envs_dirs /path/to/remove or by editing ~/.condarc)
+
+**NOTE:**  Conda version 4.5.12 is putting the newly created environment into the current working directory so you may need to launch the conda env create command from the directory you desire it to end up in. 
 
 #### Create Your Conda Environment
 Use the condaEnv.yml file in the mtt directory as follows:
@@ -54,8 +74,15 @@ Use the condaEnv.yml file in the mtt directory as follows:
 The default name for the environment is MTTEnv. You can change it if you wish by editing the condaEnv.yml file 'name:' section.
 
 #### Enter or Exit the Conda Environment
-When the conda environment is active <MTTEnv> will be the first part of your terminal descriptor. To activate a environment use 'source activate MTTEnv' or 'conda activate MTTEnv'. To exit an environmnt use 'source deactivate' or 'conda deactivate'.
+When the conda environment is active \<MTTEnv\> will be the first part of your terminal descriptor. To activate a environment use 'source activate MTTEnv' or 'conda activate MTTEnv'. To exit an environmnt use 'source deactivate' or 'conda deactivate'.
 
+Some other usefull conda commands are:  
+'conda list' to see a list of all the packages in the current environment.  
+'conda env remove \<name\>' to remove an environment.  
+'conda install \<package name\>' to individually install packages to the current environment.  
+'conda remove --name \<Environment name\> \<Package name\>' to remove a package from an environment.
+
+More information is available at [docs.conda](https://docs.conda.io/en/latest/help-support.html). 
 ### Environment Setup With Virtualenvwrapper
 
 Install virtualenv and virtualenvwrapper as follows:
@@ -91,10 +118,11 @@ To exit the virtual environment type:
 
 	$ deactivate
 
+More information is available at [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/).
 #### Problems you may encounter.
 
-* If python.h is missing you need to install python-dev and/or python3-dev.
-* If pg_config is not found you may need to install libpq-dev.
+* If python.h is missing you need to pip install python-dev and/or python3-dev.
+* If pg_config is not found you may need to pip install libpq-dev.
 * Psycopg errors mean python-psycopg2 and/or python3-psycopg2 need to be installed.
 * Other packages that could be missing are:
   * automake
