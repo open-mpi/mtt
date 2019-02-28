@@ -1,6 +1,0 @@
-<map id="Logger.Logger.verbose_print" name="Logger.Logger.verbose_print">
-<area shape="rect" id="node2" href="$class_logger_1_1_logger.html#a3779c396f867ec4bd7ec73864990e8de" title="Logger.Logger.print\l_cmdline_args" alt="" coords="227,5,360,46"/>
-<area shape="rect" id="node3" href="$class_logger_1_1_logger.html#a10165baedbbebdc49c449237e518edb8" title="Logger.Logger.stage\l_start_print" alt="" coords="223,70,363,111"/>
-<area shape="rect" id="node4" href="$class_logger_1_1_logger.html#a2f203cbc01e4de98b5eab3e5c9d9709f" title="Logger.Logger.stage\l_end_print" alt="" coords="223,135,363,177"/>
-<area shape="rect" id="node5" href="$class_logger_1_1_logger.html#a119a7a5e59e77d9cced01057bdd8d493" title="Logger.Logger.logResults" alt="" coords="208,201,379,228"/>
-</map>
