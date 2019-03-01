@@ -21,7 +21,7 @@ Python virtual environments create an isolated environment for python based appl
 
 The virtual environment only has to be set up once and then it can be called anytime the user needs it. If installing on a system with front ends and compute nodes the virtual environment should be set up on the front end only.
 
-### Environment Setup With Conda
+## Environment Setup With Conda
 
 #### Set Up ~/.condarc
 Before creating a conda environment, a user will need to set up a .condarc file that will tell conda where to put conda environments.   
@@ -83,7 +83,8 @@ Some other usefull conda commands are:
 'conda remove --name \<Environment name\> \<Package name\>' to remove a package from an environment.
 
 More information is available at [docs.conda](https://docs.conda.io/en/latest/help-support.html). 
-### Environment Setup With Virtualenvwrapper
+
+## Environment Setup With Virtualenvwrapper
 
 Install virtualenv and virtualenvwrapper as follows:
 
