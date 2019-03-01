@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2016-2018 Intel, Inc.  All rights reserved.
+# Copyright (c) 2016-2019 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -66,7 +66,7 @@ class workerThread(threading.Thread):
                             msg = "Operation timed out on node " + task['target']
                             self.status.append((-1, ' '.join(task['cmd']), msg))
                         else:
-                            self.status.append((status, ' '.join(task['cmd']), stderr))
+                            self.status.append((status, stdout, stderr))
                         self.lock.release()
                         continue
                 except:
@@ -97,7 +97,7 @@ class workerThread(threading.Thread):
                             self.testDef.logger.verbose_print("IPMITool: " + ' '.join(task['cmd']))
                             st,stdout,stderr,_ = self.testDef.execmd.execute(None, task['cmd'], self.testDef)
                             self.lock.acquire()
-                            self.status.append((st, ' '.join(task['cmd']), stderr))
+                            self.status.append((st, stdout, stderr))
                             try:
                                 if task['target'] is not None:
                                     # add the reset command to the queue
@@ -265,7 +265,7 @@ class IPMITool(CNCMTTTool):
         for n in range(0, len(controllers)):
             # construct the cmd
             cmd = {}
-            ipmicmd = cmds['command']
+            ipmicmd = cmds['command'].split()
             ipmicmd.insert(0, "chassis")
             ipmicmd.insert(0, "ipmitool")
             if cmds['sudo']:
@@ -323,16 +323,20 @@ class IPMITool(CNCMTTTool):
             t.join()
         # set our default log
         log['status'] = 0
-        log['stdout'] = None
+        # use an empty string so we can easily collect all of the stdouts
+        log['stdout'] = ""
         log['stderr'] = None
         # determine our final status - if any of the steps failed, then
         # set the status to the first one that did
         for st in self.status:
+            # Collect all of the stdouts
+            newlog = log['stdout'] + " " + ''.join(st[1])
+            log['stdout'] = newlog
             if 0 != st[0]:
                 log['status'] = st[0]
-                log['stdout'] = st[1]
                 log['stderr'] = st[2]
         # reset modules if necessary
         if mods is not None:
             testDef.modcmd.unloadModules(mods, testDef)
+
         return
