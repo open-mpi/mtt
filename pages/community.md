@@ -12,9 +12,8 @@ subscribe with and post from *exactly* the same e-mail address!).  Please subscr
 
 **Developer-level** bug reports, questions, and comments should generally
 be sent to the developer's mailing list (mtt-devel@open-mpi.org).
-Please do not post the same question to both lists.  As with the
-user's list, only subscribers are allowed to post to the [developer's
-list](https://lists.open-mpi.org/mailman/listinfo/mtt-devel).  Visit the following web page to subscribe:
+Please do not post the same question to both lists.  Go to the [developer's list](https://lists.open-mpi.org/mailman/listinfo/mtt-devel) to subscribe. As with the
+user's list, only subscribers are allowed to post to the developer's list.
 
 When submitting bug reports to either list, be sure to include as much
 extra information as possible.
