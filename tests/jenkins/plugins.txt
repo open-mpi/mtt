@@ -5,27 +5,27 @@ ant:
 antisamy-markup-formatter:
 apache-httpcomponents-client-4-api:
 authentication-tokens:
-blueocean:
-blueocean-autofavorite:
-blueocean-bitbucket-pipeline:
-blueocean-commons:
-blueocean-config:
-blueocean-core-js:
-blueocean-dashboard:
-blueocean-display-url:
-blueocean-events:
-blueocean-github-pipeline:
-blueocean-git-pipeline:
-blueocean-i18n:
-blueocean-jira:
-blueocean-jwt:
-blueocean-personalization:
-blueocean-pipeline-api-impl:
-blueocean-pipeline-editor:
-blueocean-pipeline-scm-api:
-blueocean-rest:
-blueocean-rest-impl:
-blueocean-web:
+# blueocean:
+# blueocean-autofavorite:
+# blueocean-bitbucket-pipeline:
+# blueocean-commons:
+# blueocean-config:
+# blueocean-core-js:
+# blueocean-dashboard:
+# blueocean-display-url:
+# blueocean-events:
+# blueocean-github-pipeline:
+# blueocean-git-pipeline:
+# blueocean-i18n:
+# blueocean-jira:
+# blueocean-jwt:
+# blueocean-personalization:
+# blueocean-pipeline-api-impl:
+# blueocean-pipeline-editor:
+# blueocean-pipeline-scm-api:
+# blueocean-rest:
+# blueocean-rest-impl:
+# blueocean-web:
 bouncycastle-api:
 branch-api:
 build-name-setter:
@@ -113,7 +113,7 @@ publish-over-ssh:
 pubsub-light:
 pyenv-pipeline:
 resource-disposer:
-role-strategy:
+role-strategy:2.9.0
 run-condition:
 scm-api:
 script-security:
