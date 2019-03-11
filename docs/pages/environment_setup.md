@@ -11,9 +11,9 @@ When you are finished with this guide head on over to the [Plugins](./plugins_do
 ## Set Up a Python Virtual Environment
 When you first try to run the MTT program you may get the error:  
   
-File "pyclient/pymtt.py", line XX, in <module>  
-from SOMETHING import SOMETHING  
-ImportError: No module named SOMETHING    
+File "pyclient/pymtt.py", line XX, in <module>    
+from SOMETHING import SOMETHING   
+ImportError: No module named SOMETHING      
 
 Where SOMETHING represents some missing python package. This indicates that you need to set up a Python virtual environment to run MTT in.
 
@@ -92,18 +92,20 @@ Install virtualenv and virtualenvwrapper as follows:
 	$ pip install virtualenvwrapper
 
 #### Edit ~/.bashrc or ~/.bash_profile
-Before creating a python virtual environment with virtualenvwrapper confirm the path to virtualenvwrapper using the command:
+Before creating a python virtual environment with virtualenvwrapper confirm the path to virtualenvwrapper.sh. By default it should be in either:  
+/usr/local/bin   OR  
+$HOME/.local/bin
 
-	$ which virtualenv
+Add the following lines to your ~/.bashrc file or equivalent. 
 
-Add the following lines to your ~/.bashrc file or equivalent. Use the path to virtualenv for your path to virtualenvwrapper.sh.
-
-	source /usr/xxx/bin/virtualenvwrapper.sh
+	source /path/to/virtualenvwrapper.sh
 	export WORKON_HOME=$HOME/virtualenvs
 
 Refresh your bash shell.
 
 	$ source ~/.bashrc  (or .bash_profile)
+
+The script should run creating several files needed by virtualenv.
 
 #### Create Your Virtual Environment 
 Use the pyenv.txt file in the mtt directory as follows:
