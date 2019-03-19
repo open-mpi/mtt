@@ -46,6 +46,9 @@ COPY --chown=jenkins:jenkins users $JENKINS_HOME/users
 COPY --chown=jenkins:jenkins config.xml $JENKINS_HOME/config.xml
 RUN perl -pi -e "s/MASTER_NUM_EXECUTORS_VAR/$master_num_executors/g" $JENKINS_HOME/config.xml
 
+# jobConfigHistory.xml configuration step
+COPY --chown=jenkins:jenkins jobConfigHistory.xml $JENKINS_HOME/jobConfigHistory.xml
+
 # Jenkins workspace for sharing between containers
 VOLUME $JENKINS_HOME
 
