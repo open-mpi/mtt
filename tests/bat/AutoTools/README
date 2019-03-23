@@ -1,0 +1,5 @@
+# After creating Makefile.am, src/Makefile.am, and configure.ac the following commands were run to complete the setup
+aclocal
+autoconf
+touch AUTHORS NEWS README ChangeLog
+automake --add-missing

@@ -39,6 +39,9 @@ import shlex
 # @param test_list                 List of tests to run, default is all
 # @param allocate_cmd              Command to use for allocating nodes from the resource manager
 # @param deallocate_cmd            Command to use for deallocating nodes from the resource manager
+# @param modules_unload  Modules to unload
+# @param modules         Modules to load
+# @param modules_swap    Modules to swap
 # @}
 class OpenMPI(LauncherMTTTool):
 
@@ -65,6 +68,9 @@ class OpenMPI(LauncherMTTTool):
         self.options['test_list'] = (None, "List of tests to run, default is all")
         self.options['allocate_cmd'] = (None, "Command to use for allocating nodes from the resource manager")
         self.options['deallocate_cmd'] = (None, "Command to use for deallocating nodes from the resource manager")
+        self.options['modules'] = (None, "Modules to load")
+        self.options['modules_unload'] = (None, "Modules to unload")
+        self.options['modules_swap'] = (None, "Modules to swap")
 
         self.allocated = False
         self.testDef = None
@@ -101,6 +107,12 @@ class OpenMPI(LauncherMTTTool):
         midpath = False
 
         testDef.logger.verbose_print("OpenMPI Launcher")
+
+        # parse any provided options - these will override the defaults
+        cmds = {}
+        testDef.parseOptions(log, self.options, keyvals, cmds)
+        self.cmds = cmds
+
         # check the log for the title so we can
         # see if this is setting our default behavior
         try:
@@ -143,23 +155,13 @@ class OpenMPI(LauncherMTTTool):
                     log['stderr'] = "Location of built tests was not provided"
                     return
                 # check for modules used during the build of these tests
-                try:
-                    if bldlog['parameters'] is not None:
-                        for md in bldlog['parameters']:
-                            if "modules" == md[0]:
-                                try:
-                                    if keyvals['modules'] is not None:
-                                        # append these modules to those
-                                        mods = md[1].split(',')
-                                        newmods = modules.split(',')
-                                        for md in newmods:
-                                            mods.append(md)
-                                        keyvals['modules'] = ','.join(mods)
-                                except KeyError:
-                                    keyvals['modules'] = md[1]
-                                break
-                except KeyError:
-                    pass
+                status,stdout,stderr = testDef.modcmd.checkForModules(log['section'], bldlog, cmds, testDef)
+                if 0 != status:
+                    log['status'] = status
+                    log['stdout'] = stdout
+                    log['stderr'] = stderr
+                    return
+
                 # get the log of any middleware so we can get its location
                 try:
                     midlog = testDef.logger.getLog(bldlog['middleware'])
@@ -196,33 +198,27 @@ class OpenMPI(LauncherMTTTool):
                             # if it was already installed, then no location would be provided
                             pass
                         # check for modules required by the middleware
-                        try:
-                            if midlog['parameters'] is not None:
-                                for md in midlog['parameters']:
-                                    if "modules" == md[0]:
-                                        try:
-                                            if keyvals['modules'] is not None:
-                                                # append these modules to those
-                                                mods = md[1].split(',')
-                                                newmods = modules.split(',')
-                                                for md in newmods:
-                                                    mods.append(md)
-                                                keyvals['modules'] = ','.join(mods)
-                                        except KeyError:
-                                            keyvals['modules'] = md[1]
-                                        break
-                        except KeyError:
-                            pass
+                        status,stdout,stderr = testDef.modcmd.checkForModules(log['section'], midlog, cmds, testDef)
+                        if 0 != status:
+                            log['status'] = status
+                            log['stdout'] = stdout
+                            log['stderr'] = stderr
+                            return
                 except KeyError:
                     pass
         except KeyError:
             log['status'] = 1
             log['stderr'] = "Parent test build stage was not provided"
             return
-        # parse any provided options - these will override the defaults
-        cmds = {}
-        testDef.parseOptions(log, self.options, keyvals, cmds)
-        self.cmds = cmds
+
+        # Apply any requested environment module settings
+        status,stdout,stderr = testDef.modcmd.applyModules(log['section'], cmds, testDef)
+        if 0 != status:
+            log['status'] = status
+            log['stdout'] = stdout
+            log['stderr'] = stderr
+            return
+
         # now ready to execute the test - we are pointed at the middleware
         # and have obtained the list of any modules associated with it. We need
         # to change to the test location and begin executing, first saving
@@ -440,6 +436,14 @@ class OpenMPI(LauncherMTTTool):
             log['np'] = cmds['np']
         except KeyError:
             log['np'] = None
+
+        # Revert any requested environment module settings
+        status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
+        if 0 != status:
+            log['status'] = status
+            log['stdout'] = stdout
+            log['stderr'] = stderr
+            return
 
         # if we added middleware to the paths, remove it
         if midpath:

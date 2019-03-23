@@ -144,6 +144,9 @@ class workerThread(threading.Thread):
 # @param numthreads    Number of worker threads to use
 # @param dryrun        Dryrun - print out commands but do not execute
 # @param sudo          Use sudo to exeute privilaged comands
+# @param modules_unload  Modules to unload
+# @param modules         Modules to load
+# @param modules_swap    Modules to swap
 # @}
 class IPMITool(CNCMTTTool):
     def __init__(self):
@@ -159,6 +162,9 @@ class IPMITool(CNCMTTTool):
         self.options['numthreads'] = (30, "Number of worker threads to use")
         self.options['dryrun'] = (False, "Dryrun - print out commands but do not execute")
         self.options['sudo'] = (False, "Use sudo to execute privileged commands")
+        self.options['modules_unload'] = (None, "Modules to unload")
+        self.options['modules'] = (None, "Modules to load")
+        self.options['modules_swap'] = (None, "Modules to swap")
         self.lock = threading.Lock()
         self.threads = []
         self.threadID = 0
@@ -184,32 +190,20 @@ class IPMITool(CNCMTTTool):
 
     def execute(self, log, keyvals, testDef):
         testDef.logger.verbose_print("IPMITool execute")
-        # check for a modules directive
-        mods = None
-        try:
-            if keyvals['modules'] is not None:
-                if testDef.modcmd is None:
-                    # cannot execute this request
-                    log['stderr'] = "No module support available"
-                    log['status'] = 1
-                    return
-                # create a list of the requested modules
-                mods = keyvals['modules'].split(',')
-                # have them loaded
-                status,stdout,stderr = testDef.modcmd.loadModules(mods, testDef)
-                if 0 != status:
-                    log['status'] = status
-                    log['stdout'] = stdout
-                    log['stderr'] = stderr
-                    return
-                modloaded = True
-        except KeyError:
-            pass
 
         # parse what we were given against our defined options
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
         testDef.logger.verbose_print("IPMITool: " + ' '.join(cmds))
+
+        # Apply any requested environment module settings
+        status,stdout,stderr = testDef.modcmd.applyModules(log['section'], cmds, testDef)
+        if 0 != status:
+            log['status'] = status
+            log['stdout'] = stdout
+            log['stderr'] = stderr
+            return
+
         # must have given us at least one controller address
         try:
             if cmds['controller'] is None:
@@ -335,8 +329,13 @@ class IPMITool(CNCMTTTool):
             if 0 != st[0]:
                 log['status'] = st[0]
                 log['stderr'] = st[2]
-        # reset modules if necessary
-        if mods is not None:
-            testDef.modcmd.unloadModules(mods, testDef)
+
+        # Revert any requested environment module settings
+        status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
+        if 0 != status:
+            log['status'] = status
+            log['stdout'] = stdout
+            log['stderr'] = stderr
+            return
 
         return

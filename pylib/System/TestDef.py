@@ -62,6 +62,10 @@ class TestDef(object):
         # note that it hasn't yet been defined
         self.logger = None
         self.modcmd = None
+        # set aside per stage environment module requests
+        self.module_unload = {}
+        self.module_load = {}
+        self.module_swap = {}
         self.execmd = None
         self.harasser = None
         self.config = None
