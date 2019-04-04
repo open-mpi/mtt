@@ -7,5 +7,6 @@ var searchData=
   ['stage_5fend_5fprint',['stage_end_print',['../class_logger_1_1_logger.html#a2f203cbc01e4de98b5eab3e5c9d9709f',1,'Logger::Logger']]],
   ['stage_5fstart_5fprint',['stage_start_print',['../class_logger_1_1_logger.html#a10165baedbbebdc49c449237e518edb8',1,'Logger::Logger']]],
   ['start',['start',['../class_harasser_1_1_harasser.html#aed32fb178974a05a4f4be00957599c67',1,'Harasser.Harasser.start()'],['../class_watchdog_1_1_watchdog.html#a0ddb7a85fbdad4cff3af0fe3628098f7',1,'Watchdog.Watchdog.start()']]],
-  ['stop',['stop',['../class_harasser_1_1_harasser.html#aad6ad8458a1afbb7ca4859f6d8b9d803',1,'Harasser.Harasser.stop()'],['../class_watchdog_1_1_watchdog.html#af56d743f19894122322a238de2bb36c7',1,'Watchdog.Watchdog.stop()']]]
+  ['stop',['stop',['../class_harasser_1_1_harasser.html#aad6ad8458a1afbb7ca4859f6d8b9d803',1,'Harasser.Harasser.stop()'],['../class_watchdog_1_1_watchdog.html#af56d743f19894122322a238de2bb36c7',1,'Watchdog.Watchdog.stop()']]],
+  ['swapmodules',['swapModules',['../class_module_cmd_1_1_module_cmd.html#a085423450e86693c636116c09660cf1b',1,'ModuleCmd::ModuleCmd']]]
 ];

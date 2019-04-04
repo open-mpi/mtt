@@ -99,7 +99,9 @@ AlreadyInstalled</h1>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">exec</td><td>Executable that should be in path </td></tr>
-    <tr><td class="paramname">module</td><td>Modules (or lmod modules) to be loaded for accessing this package</td></tr>
+    <tr><td class="paramname">modules_unload</td><td>Modules to unload </td></tr>
+    <tr><td class="paramname">modules</td><td>Modules to load </td></tr>
+    <tr><td class="paramname">modules_swap</td><td>Modules to swap</td></tr>
   </table>
   </dd>
 </dl>
@@ -108,14 +110,16 @@ Git</h1>
 <p>Plugin for getting software via <a class="el" href="namespace_git.html">Git</a> </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">module</td><td>Modules (or lmod modules) to be loaded for accessing this package </td></tr>
     <tr><td class="paramname">url</td><td>URL to access the repository </td></tr>
     <tr><td class="paramname">username</td><td>Username required for accessing the repository </td></tr>
     <tr><td class="paramname">password</td><td>Password required for that user to access the repository </td></tr>
     <tr><td class="paramname">pwfile</td><td>File where password can be found </td></tr>
     <tr><td class="paramname">branch</td><td>Branch (if not master) to be downloaded </td></tr>
     <tr><td class="paramname">pr</td><td>Pull request to be downloaded </td></tr>
-    <tr><td class="paramname">subdir</td><td>Subdirectory of interest in repository</td></tr>
+    <tr><td class="paramname">subdir</td><td>Subdirectory of interest in repository </td></tr>
+    <tr><td class="paramname">modules_unload</td><td>Modules to unload </td></tr>
+    <tr><td class="paramname">modules</td><td>Modules to load </td></tr>
+    <tr><td class="paramname">modules_swap</td><td>Modules to swap</td></tr>
   </table>
   </dd>
 </dl>

@@ -19,14 +19,16 @@ No-\/op plugin for using existing middleware installation
 \begin{DoxyParams}{Parameters}
 {\em exec} & Executable that should be in path \\
 \hline
-{\em module} & Modules (or lmod modules) to be loaded for accessing this package\\
+{\em modules\-\_\-unload} & Modules to unload \\
+\hline
+{\em modules} & Modules to load \\
+\hline
+{\em modules\-\_\-swap} & Modules to swap\\
 \hline
 \end{DoxyParams}
 \hypertarget{group___fetch_Git}{}\subsection{Git}\label{group___fetch_Git}
 Plugin for getting software via \hyperlink{namespace_git}{Git} 
 \begin{DoxyParams}{Parameters}
-{\em module} & Modules (or lmod modules) to be loaded for accessing this package \\
-\hline
 {\em url} & U\-R\-L to access the repository \\
 \hline
 {\em username} & Username required for accessing the repository \\
@@ -39,7 +41,13 @@ Plugin for getting software via \hyperlink{namespace_git}{Git}
 \hline
 {\em pr} & Pull request to be downloaded \\
 \hline
-{\em subdir} & Subdirectory of interest in repository\\
+{\em subdir} & Subdirectory of interest in repository \\
+\hline
+{\em modules\-\_\-unload} & Modules to unload \\
+\hline
+{\em modules} & Modules to load \\
+\hline
+{\em modules\-\_\-swap} & Modules to swap\\
 \hline
 \end{DoxyParams}
 \hypertarget{group___fetch_OMPI_Snapshot}{}\subsection{O\-M\-P\-I\-\_\-\-Snapshot}\label{group___fetch_OMPI_Snapshot}
