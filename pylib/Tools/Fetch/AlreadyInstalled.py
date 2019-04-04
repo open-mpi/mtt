@@ -19,7 +19,9 @@ from distutils.spawn import find_executable
 # @section AlreadyInstalled
 # No-op plugin for using existing middleware installation
 # @param exec      Executable that should be in path
-# @param module    Modules (or lmod modules) to be loaded for accessing this package
+# @param modules_unload  Modules to unload
+# @param modules         Modules to load
+# @param modules_swap    Modules to swap
 # @}
 class AlreadyInstalled(FetchMTTTool):
 
@@ -28,7 +30,9 @@ class AlreadyInstalled(FetchMTTTool):
         FetchMTTTool.__init__(self)
         self.options = {}
         self.options['exec'] = (None, "Executable that should be in path")
-        self.options['module'] = (None, "Modules (or lmod modules) to be loaded for accessing this package")
+        self.options['modules'] = (None, "Modules to load")
+        self.options['modules_unload'] = (None, "Modules to unload")
+        self.options['modules_swap'] = (None, "Modules to swap")
         return
 
     def activate(self):
@@ -53,44 +57,32 @@ class AlreadyInstalled(FetchMTTTool):
     def execute(self, log, keyvals, testDef):
         # if we were given an executable to check for,
         # see if we can find it
-        usedModule = False
-        try:
-            if keyvals['exec'] is not None:
-                # if we were given a module to load, then
-                # do so prior to checking for the executable
-                try:
-                    if keyvals['module'] is not None:
-                        status,stdout,stderr = testDef.modcmd.loadModules(keyvals['modules'], testDef)
-                        if 0 != status:
-                            log['status'] = status
-                            log['stderr'] = stderr
-                            return
-                        usedModule = True
-                except KeyError:
-                    pass
-                # now look for the executable in our path
-                if not find_executable(keyvals['exec']):
-                    log['status'] = 1
-                    log['stderr'] = "Executable {0} not found".format(keyvals['exec'])
-                else:
-                    log['status'] = 0
-                if usedModule:
-                    # unload the modules before returning
-                    status,stdout,stderr = testDef.modcmd.unloadModules(keyvals['modules'], testDef)
-                    if 0 != status:
-                        log['status'] = status
-                        log['stderr'] = stderr
-                        return
-                    usedModule = False
-                return
-        except KeyError:
-            pass
-        if usedModule:
-            # unload the modules before returning
-            status,stdout,stderr = testDef.modcmd.unloadModules(keyvals['modules'], testDef)
-            if 0 != status:
-                log['status'] = status
-                log['stderr'] = stderr
-                return
-        log['status'] = 0
+
+        # parse any provided options - these will override the defaults
+        cmds = {}
+        testDef.parseOptions(log, self.options, keyvals, cmds)
+  
+        # Apply any requested environment module settings
+        status,stdout,stderr = testDef.modcmd.applyModules(log['section'], cmds, testDef)
+        if 0 != status:
+            log['status'] = status
+            log['stdout'] = stdout
+            log['stderr'] = stderr
+            return
+
+        # now look for the executable in our path
+        if not find_executable(keyvals['exec']):
+            log['status'] = 1
+            log['stderr'] = "Executable " + cmds['exec'] + " not found"
+        else:
+            log['status'] = 0
+
+        # Revert any requested environment module settings
+        status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
+        if 0 != status:
+            log['status'] = status
+            log['stdout'] = stdout
+            log['stderr'] = stderr
+            return
+
         return

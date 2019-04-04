@@ -21,7 +21,6 @@ from distutils.spawn import find_executable
 # @addtogroup Fetch
 # @section Git
 # Plugin for getting software via Git
-# @param module      Modules (or lmod modules) to be loaded for accessing this package
 # @param url         URL to access the repository
 # @param username    Username required for accessing the repository
 # @param password    Password required for that user to access the repository
@@ -29,6 +28,9 @@ from distutils.spawn import find_executable
 # @param branch      Branch (if not master) to be downloaded
 # @param pr          Pull request to be downloaded
 # @param subdir      Subdirectory of interest in repository
+# @param modules_unload  Modules to unload
+# @param modules         Modules to load
+# @param modules_swap    Modules to swap
 # @}
 class Git(FetchMTTTool):
 
@@ -40,7 +42,6 @@ class Git(FetchMTTTool):
         # don't do them multiple times
         self.done = {}
         self.options = {}
-        self.options['module'] = (None, "Modules (or lmod modules) to be loaded for accessing this package")
         self.options['url'] = (None, "URL to access the repository")
         self.options['username'] = (None, "Username required for accessing the repository")
         self.options['password'] = (None, "Password required for that user to access the repository")
@@ -48,6 +49,9 @@ class Git(FetchMTTTool):
         self.options['branch'] = (None, "Branch (if not master) to be downloaded")
         self.options['pr'] = (None, "Pull request to be downloaded")
         self.options['subdir'] = (None, "Subdirectory of interest in repository")
+        self.options['modules'] = (None, "Modules to load")
+        self.options['modules_unload'] = (None, "Modules to unload")
+        self.options['modules_swap'] = (None, "Modules to swap")
         return
 
     def activate(self):
@@ -144,30 +148,19 @@ class Git(FetchMTTTool):
                 return
         except KeyError:
             pass
-        # check to see if they specified a module to use
-        # where git can be found
-        usedModule = False
-        try:
-            if cmds['modules'] is not None:
-                status,stdout,stderr = testDef.modcmd.loadModules(cmds['modules'], testDef)
-                if 0 != status:
-                    log['status'] = status
-                    log['stderr'] = stderr
-                    return
-                usedModule = True
-        except KeyError:
-            pass
+
+        # Apply any requested environment module settings
+        status,stdout,stderr = testDef.modcmd.applyModules(log['section'], cmds, testDef)
+        if 0 != status:
+            log['status'] = status
+            log['stdout'] = stdout
+            log['stderr'] = stderr
+            return
+
         # now look for the executable in our path
         if not find_executable("git"):
             log['status'] = 1
             log['stderr'] = "Executable git not found"
-            if usedModule:
-                # unload the modules before returning
-                status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules'], testDef)
-                if 0 != status:
-                    log['status'] = status
-                    log['stderr'] = stderr
-                    return
             return
         # see if they asked for a specific branch
         branch = None
@@ -190,13 +183,6 @@ class Git(FetchMTTTool):
                 log['status'] = rep[1]
                 if 0 != rep[1]:
                     log['stderr'] = "Prior attempt to clone or update repo {0} failed".format(repo)
-                if usedModule:
-                    # unload the modules before returning
-                    status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules'], testDef)
-                    if 0 != status:
-                        log['status'] = status
-                        log['stderr'] = stderr
-                        return
                 return
         # record our current location
         cwd = os.getcwd()
@@ -218,13 +204,6 @@ class Git(FetchMTTTool):
                 log['stderr'] = "Cannot update or clone repository {0} as a file of that name already exists".format(repo)
                 # track that we serviced this one
                 self.done.append((repo, 1))
-                if usedModule:
-                    # unload the modules before returning
-                    status,stdout,stderr = testDef.modcmd.unloadModules(keyvals['modules'], testDef)
-                    if 0 != status:
-                        log['status'] = status
-                        log['stderr'] = stderr
-                        return
                 return
             # move to that location
             os.chdir(repo)
@@ -263,13 +242,15 @@ class Git(FetchMTTTool):
             pass
         # track that we serviced this one
         self.done[repo] = (status, log['location'])
-        if usedModule:
-            # unload the modules before returning
-            status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules'], testDef)
-            if 0 != status:
-                log['status'] = status
-                log['stderr'] = stderr
-                return
+
+        # Revert any requested environment module settings
+        status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
+        if 0 != status:
+            log['status'] = status
+            log['stdout'] = stdout
+            log['stderr'] = stderr
+            return
+
         # change back to the original directory
         os.chdir(cwd)
 

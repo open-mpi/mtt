@@ -30,8 +30,10 @@ from BuildMTTTool import *
 # @param merge_stdout_stderr       Merge stdout and stderr into one output stream
 # @param stdout_save_lines         Number of lines of stdout to save
 # @param stderr_save_lines         Number of lines of stderr to save
-# @param modules                   Modules to load
 # @param modules_unload            Modules to unload
+# @param modules                   Modules to load
+# @param modules_swap    Modules to swap
+
 # @}
 class Autotools(BuildMTTTool):
     def __init__(self):
@@ -47,8 +49,9 @@ class Autotools(BuildMTTTool):
         self.options['merge_stdout_stderr'] = (False, "Merge stdout and stderr into one output stream")
         self.options['stdout_save_lines'] = (-1, "Number of lines of stdout to save")
         self.options['stderr_save_lines'] = (-1, "Number of lines of stderr to save")
-        self.options['modules'] = (None, "Modules to load")
         self.options['modules_unload'] = (None, "Modules to unload")
+        self.options['modules'] = (None, "Modules to load")
+        self.options['modules_swap'] = (None, "Modules to swap")
         self.exclude = set(string.punctuation)
         return
 
@@ -108,32 +111,86 @@ class Autotools(BuildMTTTool):
             log['stderr'] = "Location of package to build was not specified in parent stage"
             return
         inPlace = False
-        # check to see if they specified a module to use
-        # where the autotools can be found
-        usedModuleUnload = False
+
+        # check if we need to point to middleware
+        # do this before we load environment modules so we can append to the list if needed
+        midpath = False
         try:
-            if cmds['modules_unload'] is not None:
-                status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules_unload'], testDef)
-                if 0 != status:
-                    log['status'] = status
-                    log['stderr'] = stderr
-                    return
-                usedModuleUnload = True
+            if cmds['middleware'] is not None:
+                # pass it down
+                log['middleware'] = cmds['middleware']
+                # get the log entry of its location
+                midlog = testDef.logger.getLog(cmds['middleware'])
+                if midlog is not None:
+                    # get the location of the middleware
+                    try:
+                        if midlog['location'] is not None:
+                            # prepend that location to our paths
+                            try:
+                                oldbinpath = os.environ['PATH']
+                                pieces = oldbinpath.split(':')
+                            except KeyError:
+                                oldbinpath = ""
+                                pieces = []
+                            bindir = os.path.join(midlog['location'], "bin")
+                            pieces.insert(0, bindir)
+                            newpath = ":".join(pieces)
+                            os.environ['PATH'] = newpath
+                            # prepend the loadable lib path
+                            try:
+                                oldldlibpath = os.environ['LD_LIBRARY_PATH']
+                                pieces = oldldlibpath.split(':')
+                            except KeyError:
+                                oldldlibpath = ""
+                                pieces = []
+                            bindir = os.path.join(midlog['location'], "lib")
+                            pieces.insert(0, bindir)
+                            newpath = ":".join(pieces)
+                            os.environ['LD_LIBRARY_PATH'] = newpath
+                            # prepend the include path
+                            try:
+                                oldcpath = os.environ['CPATH']
+                                pieces = oldcpath.split(':')
+                            except KeyError:
+                                oldcpath = ""
+                                pieces = []
+                            bindir = os.path.join(midlog['location'], "include")
+                            pieces.insert(0, bindir)
+                            newpath = ":".join(pieces)
+                            os.environ['CPATH'] = newpath
+                            # prepend the lib path
+                            try:
+                                oldlibpath = os.environ['LIBRARY_PATH']
+                                pieces = oldlibpath.split(':')
+                            except KeyError:
+                                oldlibpath = ""
+                                pieces = []
+                            bindir = os.path.join(midlog['location'], "lib")
+                            pieces.insert(0, bindir)
+                            newpath = ":".join(pieces)
+                            os.environ['LIBRARY_PATH'] = newpath
+
+                            # mark that this was done
+                            midpath = True
+                    except KeyError:
+                        pass
+                    # check for modules required by the middleware
+                    status,stdout,stderr = testDef.modcmd.checkForModules(log['section'], midlog, cmds, testDef)
+                    if 0 != status:
+                        log['status'] = status
+                        log['stdout'] = stdout
+                        log['stderr'] = stderr
+                        return
         except KeyError:
-            # not required to provide a module to unload
             pass
-        usedModule = False
-        try:
-            if cmds['modules'] is not None:
-                status,stdout,stderr = testDef.modcmd.loadModules(cmds['modules'], testDef)
-                if 0 != status:
-                    log['status'] = status
-                    log['stderr'] = stderr
-                    return
-                usedModule = True
-        except KeyError:
-            # not required to provide a module
-            pass
+
+        # Apply any requested environment module settings
+        status,stdout,stderr = testDef.modcmd.applyModules(log['section'], cmds, testDef)
+        if 0 != status:
+            log['status'] = status
+            log['stdout'] = stdout
+            log['stderr'] = stderr
+            return
 
         # sense and record the compiler being used
         plugin = None
@@ -221,88 +278,6 @@ class Autotools(BuildMTTTool):
             log['status'] = 0
             return
 
-        # check if we need to point to middleware
-        midpath = False
-        try:
-            if cmds['middleware'] is not None:
-                # pass it down
-                log['middleware'] = cmds['middleware']
-                # get the log entry of its location
-                midlog = testDef.logger.getLog(cmds['middleware'])
-                if midlog is not None:
-                    # get the location of the middleware
-                    try:
-                        if midlog['location'] is not None:
-                            # prepend that location to our paths
-                            try:
-                                oldbinpath = os.environ['PATH']
-                                pieces = oldbinpath.split(':')
-                            except KeyError:
-                                oldbinpath = ""
-                                pieces = []
-                            bindir = os.path.join(midlog['location'], "bin")
-                            pieces.insert(0, bindir)
-                            newpath = ":".join(pieces)
-                            os.environ['PATH'] = newpath
-                            # prepend the loadable lib path
-                            try:
-                                oldldlibpath = os.environ['LD_LIBRARY_PATH']
-                                pieces = oldldlibpath.split(':')
-                            except KeyError:
-                                oldldlibpath = ""
-                                pieces = []
-                            bindir = os.path.join(midlog['location'], "lib")
-                            pieces.insert(0, bindir)
-                            newpath = ":".join(pieces)
-                            os.environ['LD_LIBRARY_PATH'] = newpath
-                            # prepend the include path 
-                            try:
-                                oldcpath = os.environ['CPATH']
-                                pieces = oldcpath.split(':')
-                            except KeyError:
-                                oldcpath = ""
-                                pieces = []
-                            bindir = os.path.join(midlog['location'], "include")
-                            pieces.insert(0, bindir)
-                            newpath = ":".join(pieces)
-                            os.environ['CPATH'] = newpath
-                            # prepend the lib path 
-                            try:
-                                oldlibpath = os.environ['LIBRARY_PATH']
-                                pieces = oldlibpath.split(':')
-                            except KeyError:
-                                oldlibpath = ""
-                                pieces = []
-                            bindir = os.path.join(midlog['location'], "lib")
-                            pieces.insert(0, bindir)
-                            newpath = ":".join(pieces)
-                            os.environ['LIBRARY_PATH'] = newpath
-
-                            # mark that this was done
-                            midpath = True
-                    except KeyError:
-                        pass
-                    # check for modules required by the middleware
-                    try:
-                        if midlog['parameters'] is not None:
-                            for md in midlog['parameters']:
-                                if "modules" == md[0]:
-                                    try:
-                                        if cmds['modules'] is not None:
-                                            # append these modules to those
-                                            mods = md[1].split(',')
-                                            newmods = modules.split(',')
-                                            for md in newmods:
-                                                mods.append(md)
-                                            cmds['modules'] = ','.join(mods)
-                                    except KeyError:
-                                        cmds['modules'] = md[1]
-                                    break
-                    except KeyError:
-                        pass
-        except KeyError:
-            pass
-
         # save the current directory so we can return to it
         cwd = os.getcwd()
         # now move to the package location
@@ -319,21 +294,16 @@ class Autotools(BuildMTTTool):
                     log['status'] = status
                     log['stdout'] = stdout
                     log['stderr'] = stderr
-                    if usedModule:
-                        # unload the modules before returning
-                        status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules'], testDef)
-                        if 0 != status:
-                            log['status'] = status
-                            log['stderr'] = stderr
-                            os.chdir(cwd)
-                            return
-                    if usedModuleUnload:
-                        status,stdout,stderr = testDef.modcmd.loadModules(cmds['modules_unload'], testDef)
-                        if 0 != status:
-                            log['status'] = status
-                            log['stderr'] = stderr
-                            os.chdir(cwd)
-                            return
+
+                    # Revert any requested environment module settings
+                    status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
+                    if 0 != status:
+                        log['status'] = status
+                        log['stdout'] = stdout
+                        log['stderr'] = stderr
+                        # return to original location
+                        os.chdir(cwd)
+                        return
                     # return to original location
                     os.chdir(cwd)
                     return
@@ -364,12 +334,17 @@ class Autotools(BuildMTTTool):
             log['status'] = status
             log['stdout'] = stdout
             log['stderr'] = stderr
-            if usedModule:
-                # unload the modules before returning
-                status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules'], testDef)
-                if 0 != status:
-                    log['status'] = status
-                    log['stderr'] = stderr
+
+            # Revert any requested environment module settings
+            status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
+            if 0 != status:
+                log['status'] = status
+                log['stdout'] = stdout
+                log['stderr'] = stderr
+                # return to original location
+                os.chdir(cwd)
+                return
+
             # return to original location
             os.chdir(cwd)
             return
@@ -398,12 +373,17 @@ class Autotools(BuildMTTTool):
             log['status'] = status
             log['stdout'] = stdout
             log['stderr'] = stderr
-            if usedModule:
-                # unload the modules before returning
-                status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules'], testDef)
-                if 0 != status:
-                    log['status'] = status
-                    log['stderr'] = stderr
+
+            # Revert any requested environment module settings
+            status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
+            if 0 != status:
+                log['status'] = status
+                log['stdout'] = stdout
+                log['stderr'] = stderr
+                # return to original location
+                os.chdir(cwd)
+                return
+
             # return to original location
             os.chdir(cwd)
             return
@@ -419,12 +399,17 @@ class Autotools(BuildMTTTool):
             log['status'] = status
             log['stdout'] = stdout
             log['stderr'] = stderr
-            if usedModule:
-                # unload the modules before returning
-                status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules'], testDef)
-                if 0 != status:
-                    log['status'] = status
-                    log['stderr'] = stderr
+
+            # Revert any requested environment module settings
+            status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
+            if 0 != status:
+                log['status'] = status
+                log['stdout'] = stdout
+                log['stderr'] = stderr
+                # return to original location
+                os.chdir(cwd)
+                return
+
             # return to original location
             os.chdir(cwd)
             return
@@ -442,12 +427,14 @@ class Autotools(BuildMTTTool):
         log['status'] = status
         log['stdout'] = stdout
         log['stderr'] = stderr
-        if usedModule:
-            # unload the modules before returning
-            status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules'], testDef)
-            if 0 != status:
-                log['status'] = status
-                log['stderr'] = stderr
+
+        # Revert any requested environment module settings
+        status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
+        if 0 != status:
+            log['status'] = status
+            log['stdout'] = stdout
+            log['stderr'] = stderr
+            return
 
         # if we added middleware to the paths, remove it
         if midpath:

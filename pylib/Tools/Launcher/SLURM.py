@@ -35,8 +35,9 @@ import subprocess
 # @param skip_tests                Names of tests to be skipped
 # @param max_num_tests             Maximum number of tests to run
 # @param job_name                  User-defined name for job
-# @param modules                   Modules to load
 # @param modules_unload            Modules to unload
+# @param modules                   Modules to load
+# @param modules_swap              Modules to swap
 # @param test_list                 List of tests to run, default is all
 # @param allocate_cmd              Command to use for allocating nodes from the resource manager
 # @param deallocate_cmd            Command to use for deallocating nodes from the resource manager
@@ -63,8 +64,9 @@ class SLURM(LauncherMTTTool):
         self.options['skip_tests'] = (None, "Names of tests to be skipped")
         self.options['max_num_tests'] = (None, "Maximum number of tests to run")
         self.options['job_name'] = (None, "User-defined name for job")
-        self.options['modules'] = (None, "Modules to load")
         self.options['modules_unload'] = (None, "Modules to unload")
+        self.options['modules'] = (None, "Modules to load")
+        self.options['modules_swap'] = (None, "Modules to swap")
         self.options['test_list'] = (None, "List of tests to run, default is all")
         self.options['allocate_cmd'] = (None, "Command to use for allocating nodes from the resource manager")
         self.options['deallocate_cmd'] = (None, "Command to use for deallocating nodes from the resource manager")
@@ -105,6 +107,12 @@ class SLURM(LauncherMTTTool):
         midpath = False
 
         testDef.logger.verbose_print("SLURM Launcher")
+
+        # parse any provided options - these will override the defaults
+        cmds = {}
+        testDef.parseOptions(log, self.options, keyvals, cmds)
+        self.cmds = cmds
+
         # check the log for the title so we can
         # see if this is setting our default behavior
         try:
@@ -147,38 +155,14 @@ class SLURM(LauncherMTTTool):
                     log['status'] = 1
                     log['stderr'] = "Location of built tests was not provided"
                     return
-                try:
-                    if bldlog['parameters'] is not None:
-                        # check for modules unloaded during the build of these tests
-                        for md in bldlog['parameters']:
-                            if "modules_unload" == md[0]:
-                                try:
-                                    if keyvals['modules_unload'] is not None:
-                                        # append these modules to those
-                                        mods = md[1].split(',')
-                                        newmods = keyvals['modules_unload'].split(',')
-                                        for mdx in newmods:
-                                            mods.append(mdx)
-                                        keyvals['modules_unload'] = ','.join(mods)
-                                except KeyError:
-                                    keyvals['modules_unload'] = md[1]
-                                break
-                        # check for modules used during the build of these tests
-                        for md in bldlog['parameters']:
-                            if "modules" == md[0]:
-                                try:
-                                    if keyvals['modules'] is not None:
-                                        # append these modules to those
-                                        mods = md[1].split(',')
-                                        newmods = keyvals['modules'].split(',')
-                                        for mdx in newmods:
-                                            mods.append(mdx)
-                                        keyvals['modules'] = ','.join(mods)
-                                except KeyError:
-                                    keyvals['modules'] = md[1]
-                                break
-                except KeyError:
-                    pass
+                # Check for modules used during the build
+                status,stdout,stderr = testDef.modcmd.checkForModules(log['section'], bldlog, cmds, testDef)
+                if 0 != status:
+                    log['status'] = status
+                    log['stdout'] = stdout
+                    log['stderr'] = stderr
+                    return
+
                 # get the log of any middleware so we can get its location
                 try:
                     midlog = testDef.logger.getLog(bldlog['middleware'])
@@ -214,48 +198,28 @@ class SLURM(LauncherMTTTool):
                         except KeyError:
                             # if it was already installed, then no location would be provided
                             pass
-                        try:
-                            if midlog['parameters'] is not None:
-                                # check for modules unloaded by the middleware
-                                for md in midlog['parameters']:
-                                    if "modules_unload" == md[0]:
-                                        try:
-                                            if keyvals['modules_unload'] is not None:
-                                                # append these modules to those
-                                                mods = md[1].split(',')
-                                                newmods = keyvals['modules_unload'].split(',')
-                                                for mdx in newmods:
-                                                    mods.append(mdx)
-                                                keyvals['modules_unload'] = ','.join(mods)
-                                        except KeyError:
-                                            keyvals['modules_unload'] = md[1]
-                                        break
-                                # check for modules required by the middleware
-                                for md in midlog['parameters']:
-                                    if "modules" == md[0]:
-                                        try:
-                                            if keyvals['modules'] is not None:
-                                                # append these modules to those
-                                                mods = md[1].split(',')
-                                                newmods = keyvals['modules'].split(',')
-                                                for mdx in newmods:
-                                                    mods.append(mdx)
-                                                keyvals['modules'] = ','.join(mods)
-                                        except KeyError:
-                                            keyvals['modules'] = md[1]
-                                        break
-                        except KeyError:
-                            pass
+                        # check for modules required by the middleware
+                        status,stdout,stderr = testDef.modcmd.checkForModules(log['section'], midlog, cmds, testDef)
+                        if 0 != status:
+                            log['status'] = status
+                            log['stdout'] = stdout
+                            log['stderr'] = stderr
+                            return
                 except KeyError:
                     pass
         except KeyError:
             log['status'] = 1
             log['stderr'] = "Parent test build stage was not provided"
             return
-        # parse any provided options - these will override the defaults
-        cmds = {}
-        testDef.parseOptions(log, self.options, keyvals, cmds)
-        self.cmds = cmds
+
+        # Apply any requested environment module settings
+        status,stdout,stderr = testDef.modcmd.applyModules(log['section'], cmds, testDef)
+        if 0 != status:
+            log['status'] = status
+            log['stdout'] = stdout
+            log['stderr'] = stderr
+            return
+
         # now ready to execute the test - we are pointed at the middleware
         # and have obtained the list of any modules associated with it. We need
         # to change to the test location and begin executing, first saving
@@ -375,35 +339,6 @@ class SLURM(LauncherMTTTool):
             maxTests = int(cmds['max_num_tests'])
         else:
             maxTests = 10000000
-
-        # unload modules that were removed during the middleware or test build
-        usedModuleUnload = False
-        try:
-            if cmds['modules_unload'] is not None:
-                status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules_unload'], testDef)
-                if 0 != status:
-                    log['status'] = status
-                    log['stderr'] = stderr
-                    os.chdir(cwd)
-                    return
-                usedModuleUnload = True
-        except KeyError:
-            # not required to provide a module to unload
-            pass
-        # Load modules that were required during the middleware or test build
-        usedModule = False
-        try:
-            if cmds['modules'] is not None:
-                status,stdout,stderr = testDef.modcmd.loadModules(cmds['modules'], testDef)
-                if 0 != status:
-                    log['status'] = status
-                    log['stderr'] = stderr
-                    os.chdir(cwd)
-                    return
-                usedModule = True
-        except KeyError:
-            # not required to provide a module
-            pass
 
         fail_tests = cmds['fail_tests']
         if fail_tests is not None:
@@ -592,21 +527,14 @@ class SLURM(LauncherMTTTool):
             except KeyError:
                 log['np'] = None
 
-        if usedModule:
-            # unload the modules before returning
-            status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules'], testDef)
-            if 0 != status:
-                log['status'] = status
-                log['stderr'] = stderr
-                os.chdir(cwd)
-                return
-        if usedModuleUnload:
-            status,stdout,stderr = testDef.modcmd.loadModules(cmds['modules_unload'], testDef)
-            if 0 != status:
-                log['status'] = status
-                log['stderr'] = stderr
-                os.chdir(cwd)
-                return
+        # Revert any requested environment module settings
+        status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
+        if 0 != status:
+            log['status'] = status
+            log['stdout'] = stdout
+            log['stderr'] = stderr
+            return
+
         # if we added middleware to the paths, remove it
         if midpath:
             os.environ['PATH'] = oldbinpath

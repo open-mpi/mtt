@@ -25,8 +25,9 @@ from BuildMTTTool import *
 # @param merge_stdout_stderr       Merge stdout and stderr into one output stream
 # @param stdout_save_lines         Number of lines of stdout to save
 # @param stderr_save_lines         Number of lines of stderr to save
-# @param modules                   Modules to load
 # @param modules_unload            Modules to unload
+# @param modules                   Modules to load
+# @param modules_swap              Modules to swap
 # @param fail_test                 Specifies whether this test is expected to fail (value=None means test is expected to succeed)
 # @param fail_returncode           Specifies the expected failure returncode of this test
 # @param allocate_cmd              Command to use for allocating nodes from the resource manager
@@ -44,8 +45,9 @@ class Shell(BuildMTTTool):
         self.options['merge_stdout_stderr'] = (False, "Merge stdout and stderr into one output stream")
         self.options['stdout_save_lines'] = (-1, "Number of lines of stdout to save")
         self.options['stderr_save_lines'] = (-1, "Number of lines of stderr to save")
-        self.options['modules'] = (None, "Modules to load")
         self.options['modules_unload'] = (None, "Modules to unload")
+        self.options['modules'] = (None, "Modules to load")
+        self.options['modules_swap'] = (None, "Modules to swap")
         self.options['fail_test'] = (None, "Specifies whether this test is expected to fail (value=None means test is expected to succeed)")
         self.options['fail_returncode'] = (None, "Specifies the expected failure returncode of this test")
         self.options['allocate_cmd'] = (None, "Command to use for allocating nodes from the resource manager")
@@ -262,52 +264,22 @@ class Shell(BuildMTTTool):
                     except KeyError:
                         pass
                     # check for modules required by the middleware
-                    try:
-                        if midlog['parameters'] is not None:
-                            for md in midlog['parameters']:
-                                if "modules" == md[0]:
-                                    try:
-                                        if cmds['modules'] is not None:
-                                            # append these modules to those
-                                            mods = md[1].split(',')
-                                            newmods = modules.split(',')
-                                            for md in newmods:
-                                                mods.append(md)
-                                            cmds['modules'] = ','.join(mods)
-                                    except KeyError:
-                                        cmds['modules'] = md[1]
-                                    break
-                    except KeyError:
-                        pass
+                    status,stdout,stderr = testDef.modcmd.checkForModules(log['section'], midlog, cmds, testDef)
+                    if 0 != status:
+                        log['status'] = status
+                        log['stdout'] = stdout
+                        log['stderr'] = stderr
+                        return
         except KeyError:
             pass
 
-        # check to see if they specified a module to use
-        # where the compiler can be found
-        usedModuleUnload = False
-        try:
-            if cmds['modules_unload'] is not None:
-                status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules_unload'], testDef)
-                if 0 != status:
-                    log['status'] = status
-                    log['stderr'] = stderr
-                    return
-                usedModuleUnload = True
-        except KeyError:
-            # not required to provide a module to unload
-            pass
-        usedModule = False
-        try:
-            if cmds['modules'] is not None:
-                status,stdout,stderr = testDef.modcmd.loadModules(cmds['modules'], testDef)
-                if 0 != status:
-                    log['status'] = status
-                    log['stderr'] = stderr
-                    return
-                usedModule = True
-        except KeyError:
-            # not required to provide a module
-            pass
+        # Apply any requested environment module settings
+        status,stdout,stderr = testDef.modcmd.applyModules(log['section'], cmds, testDef)
+        if 0 != status:
+            log['status'] = status
+            log['stdout'] = stdout
+            log['stderr'] = stderr
+            return
 
         # sense and record the compiler being used
         plugin = None
@@ -399,21 +371,15 @@ class Shell(BuildMTTTool):
             log['stderr'] = stderr
         # record this location for any follow-on steps
         log['location'] = location
-        if usedModule:
-            # unload the modules before returning
-            status,stdout,stderr = testDef.modcmd.unloadModules(cmds['modules'], testDef)
-            if 0 != status:
-                log['status'] = status
-                log['stderr'] = stderr
-                os.chdir(cwd)
-                return
-        if usedModuleUnload:
-            status,stdout,stderr = testDef.modcmd.loadModules(cmds['modules_unload'], testDef)
-            if 0 != status:
-                log['status'] = status
-                log['stderr'] = stderr
-                os.chdir(cwd)
-                return
+
+        # Revert any requested environment module settings
+        status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
+        if 0 != status:
+            log['status'] = status
+            log['stdout'] = stdout
+            log['stderr'] = stderr
+            return
+
         # if we added middleware to the paths, remove it
         if midpath:
             os.environ['PATH'] = oldbinpath
