@@ -14,6 +14,7 @@ import re
 import string
 import sys
 import shlex
+import shutil
 from BuildMTTTool import *
 
 ## @addtogroup Tools
@@ -110,6 +111,7 @@ class Autotools(BuildMTTTool):
             log['status'] = 1
             log['stderr'] = "Location of package to build was not specified in parent stage"
             return
+
         inPlace = False
 
         # check if we need to point to middleware
@@ -278,6 +280,10 @@ class Autotools(BuildMTTTool):
             log['status'] = 0
             return
 
+        # Clean up middlware build directory before building
+        if os.path.exists(pfx):
+            shutil.rmtree(pfx)
+
         # save the current directory so we can return to it
         cwd = os.getcwd()
         # now move to the package location
@@ -329,6 +335,7 @@ class Autotools(BuildMTTTool):
                     cfgargs.append(arg.strip())
         except KeyError:
             pass
+
         status, stdout, stderr, _ = testDef.execmd.execute(cmds, cfgargs, testDef)
         if 0 != status:
             log['status'] = status
