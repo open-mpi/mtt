@@ -280,10 +280,6 @@ class Autotools(BuildMTTTool):
             log['status'] = 0
             return
 
-        # Clean up middlware build directory before building
-        if os.path.exists(pfx):
-            shutil.rmtree(pfx)
-
         # save the current directory so we can return to it
         cwd = os.getcwd()
         # now move to the package location
