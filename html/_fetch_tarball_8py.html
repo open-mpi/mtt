@@ -4,7 +4,7 @@
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.6"/>
-<title>pymtt: Fetch</title>
+<title>pymtt: /home/travis/build/open-mpi/mtt/pylib/Tools/Fetch/FetchTarball.py File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -40,7 +40,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
       <li><a href="modules.html"><span>Modules</span></a></li>
       <li><a href="namespaces.html"><span>Packages</span></a></li>
       <li><a href="annotated.html"><span>Classes</span></a></li>
-      <li><a href="files.html"><span>Files</span></a></li>
+      <li class="current"><a href="files.html"><span>Files</span></a></li>
       <li>
         <div id="MSearchBox" class="MSearchBoxInactive">
         <span class="left">
@@ -59,7 +59,11 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
       </li>
     </ul>
   </div>
-</div><!-- top -->
+  <div id="navrow2" class="tabs2">
+    <ul class="tablist">
+      <li><a href="files.html"><span>File&#160;List</span></a></li>
+    </ul>
+  </div>
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -74,76 +78,32 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="dir_f861ba142e6ef972a4b75537ef85895b.html">pylib</a></li><li class="navelem"><a class="el" href="dir_1e9eb7be8592392157e8f77234b6021c.html">Tools</a></li><li class="navelem"><a class="el" href="dir_d6ab6af64694d4188771952fc9866043.html">Fetch</a></li>  </ul>
+</div>
+</div><!-- top -->
 <div class="header">
+  <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
+<a href="#namespaces">Namespaces</a>  </div>
   <div class="headertitle">
-<div class="title">Fetch<div class="ingroups"><a class="el" href="group___tools.html">Tools</a></div></div>  </div>
+<div class="title">FetchTarball.py File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
-<p>Tools for fetching tests.  
-<a href="#details">More...</a></p>
-<div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
-  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for Fetch:</div>
-<div id="dynsection-0-summary" class="dynsummary" style="display:block;">
-</div>
-<div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<center><table><tr><td><img src="group___fetch.png" border="0" alt="" usemap="#group______fetch"/>
-<map name="group______fetch" id="group______fetch">
-<area shape="rect" id="node1" href="group___tools.html" title="Plugins required by Stages. " alt="" coords="6,5,61,32"/></map>
-</td></tr></table></center>
-</div>
-<p>Tools for fetching tests. </p>
-<h1><a class="anchor" id="AlreadyInstalled"></a>
-AlreadyInstalled</h1>
-<p>No-op plugin for using existing middleware installation </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">exec</td><td>Executable that should be in path </td></tr>
-    <tr><td class="paramname">modules_unload</td><td>Modules to unload </td></tr>
-    <tr><td class="paramname">modules</td><td>Modules to load </td></tr>
-    <tr><td class="paramname">modules_swap</td><td>Modules to swap</td></tr>
-  </table>
-  </dd>
-</dl>
-<h1><a class="anchor" id="FetchTarball"></a>
-FetchTarball</h1>
-<p>Plugin for fetching and unpacking tarballs from the Web </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">url</td><td>URL for the tarball </td></tr>
-    <tr><td class="paramname">cmd</td><td>Command line to use to fetch the tarball (e.g., "curl -o")</td></tr>
-  </table>
-  </dd>
-</dl>
-<h1><a class="anchor" id="Git"></a>
-Git</h1>
-<p>Plugin for getting software via <a class="el" href="namespace_git.html">Git</a> </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">url</td><td>URL to access the repository </td></tr>
-    <tr><td class="paramname">username</td><td>Username required for accessing the repository </td></tr>
-    <tr><td class="paramname">password</td><td>Password required for that user to access the repository </td></tr>
-    <tr><td class="paramname">pwfile</td><td>File where password can be found </td></tr>
-    <tr><td class="paramname">branch</td><td>Branch (if not master) to be downloaded </td></tr>
-    <tr><td class="paramname">pr</td><td>Pull request to be downloaded </td></tr>
-    <tr><td class="paramname">subdir</td><td>Subdirectory of interest in repository </td></tr>
-    <tr><td class="paramname">modules_unload</td><td>Modules to unload </td></tr>
-    <tr><td class="paramname">modules</td><td>Modules to load </td></tr>
-    <tr><td class="paramname">modules_swap</td><td>Modules to swap</td></tr>
-  </table>
-  </dd>
-</dl>
-<h1><a class="anchor" id="OMPI_Snapshot"></a>
-OMPI_Snapshot</h1>
-<p>Plugin for getting software via OMPI Nightly tarballs </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">url</td><td>URL to access the OMPI nightly tarball (e.g. <a href="https://www.open-mpi.org/nightly/v2.x">https://www.open-mpi.org/nightly/v2.x</a>) </td></tr>
-    <tr><td class="paramname">version_file</td><td>optional file containing name of most recent tarball version tested </td></tr>
-    <tr><td class="paramname">mpi_name</td><td>optional name for the OMPI snapshot tarball </td></tr>
-  </table>
-  </dd>
-</dl>
+<p><a href="_fetch_tarball_8py_source.html">Go to the source code of this file.</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_fetch_tarball_1_1_fetch_tarball.html">FetchTarball.FetchTarball</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
+Namespaces</h2></td></tr>
+<tr class="memitem:namespace_fetch_tarball"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespace_fetch_tarball.html">FetchTarball</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
