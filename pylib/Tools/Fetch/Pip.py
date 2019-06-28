@@ -27,6 +27,8 @@ import subprocess
 # @section Pip
 # Plugin for fetching and locally installing pkgs from the Web
 # @param pkg        Package to be installed
+# @param sudo       Superuser authority required
+# @param userloc    Install locally for the user instead of in system locations
 # @}
 class Pip(FetchMTTTool):
 
@@ -40,6 +42,7 @@ class Pip(FetchMTTTool):
         self.options = {}
         self.options['pkg'] = (None, "Package to be installed")
         self.options['sudo'] = (False, "Superuser authority required")
+        self.options['userloc'] = (True, "Install locally for the user instead of in system locations")
         return
 
     def activate(self):
@@ -117,6 +120,8 @@ class Pip(FetchMTTTool):
             icmd.append("sudo")
         icmd.append("pip")
         icmd.append("install")
+        if cmds['userloc']:
+            icmd.append("--user")
         icmd.append(pkg)
         testDef.logger.verbose_print("installing package " + pkg)
         status, stdout, stderr, _ = testDef.execmd.execute(None, icmd, testDef)
@@ -136,6 +141,9 @@ class Pip(FetchMTTTool):
             for t in stdout:
                 if t.startswith("Location"):
                     log['location'] = t[10:]
+                    # Add the location to PYTHONPATH
+                    pypath = os.environ['PYTHONPATH'] + ":" + log['location']
+                    os.environ('PYTHONPATH') = pypath
                     break
 
         # track that we serviced this one
