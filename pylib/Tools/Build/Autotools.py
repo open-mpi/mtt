@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2015-2018 Intel, Inc.  All rights reserved.
+# Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -33,7 +33,8 @@ from BuildMTTTool import *
 # @param stderr_save_lines         Number of lines of stderr to save
 # @param modules_unload            Modules to unload
 # @param modules                   Modules to load
-# @param modules_swap    Modules to swap
+# @param modules_swap              Modules to swap
+# @param dependencies              List of dependencies specified as the build stage name
 
 # @}
 class Autotools(BuildMTTTool):
@@ -53,6 +54,7 @@ class Autotools(BuildMTTTool):
         self.options['modules_unload'] = (None, "Modules to unload")
         self.options['modules'] = (None, "Modules to load")
         self.options['modules_swap'] = (None, "Modules to swap")
+        self.options['dependencies'] = (None, "List of dependencies specified as the build stage name - e.g., MiddlwareBuild_package to be added to configure using --with-package=location")
         self.exclude = set(string.punctuation)
         return
 
@@ -234,12 +236,6 @@ class Autotools(BuildMTTTool):
         else:
             testDef.logger.verbose_print("mpi_info already in log so skipping MPIVersion")
 
-        # Add configure options to log for IUDatabase plugin
-        try:
-            log['configure_options'] = cmds['configure_options']
-        except KeyError:
-            log['configure_options'] = ''
-
         try:
             if cmds['build_in_place']:
                 prefix = None
@@ -317,6 +313,51 @@ class Autotools(BuildMTTTool):
         except KeyError:
             # autogen phase is not required
             pass
+
+        # start building configure options
+        if cmds['configure_options'] is not None:
+            if type(cmds['configure_options']) is list:
+                cfgopts = cmds['configure_options']
+            else:
+                cfgopts = [cmds['configure_options']]
+        else:
+            cfgopts = []
+        # see if any dependencies were given
+        try:
+            deps = cmds['dependencies']
+            # might be comma-delimited or space delimited
+            dps = re.split("\s|,", deps)
+            # loop over the entries
+            for d in dps:
+                # get the location where the output of this stage was stored by
+                # first recovering the log for it
+                try:
+                    lg = testDef.logger.getLog(d)
+                    try:
+                        loc = lg['location']
+                    except:
+                        # we cannot do what the user requested
+                        log['status'] = 1
+                        log['stderr'] = "Location of dependency " + d + " could not be found"
+                        return
+                except:
+                    # we don't have a record of this dependency
+                    log['status'] = 1
+                    log['stderr'] = "Log for dependency " + d + " could not be found"
+                    return
+                # split the dependency string to get the package name
+                try:
+                    pkg = d.split(":")
+                except:
+                    log['status'] = 1
+                    log['stderr'] = "Dependency " + d + " is missing package name"
+                    return
+                # add the location and dependency option
+                opt = "--with-{0}".format(pkg[1]) + "={0}".format(loc)
+                cfgopts.append(opt)
+        except:
+            pass
+
         # we always have to run configure, but we first
         # need to build a target prefix directory option based
         # on the scratch directory and section name
@@ -332,6 +373,11 @@ class Autotools(BuildMTTTool):
         except KeyError:
             pass
 
+        # add in any dependency options
+        for d in cfgopts:
+            cfgargs.append(d)
+
+        # execute the configure cmd
         status, stdout, stderr, _ = testDef.execmd.execute(cmds, cfgargs, testDef)
         if 0 != status:
             log['status'] = status

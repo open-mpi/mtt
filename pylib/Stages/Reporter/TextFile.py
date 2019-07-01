@@ -1,6 +1,6 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
-# Copyright (c) 2015-2018 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -102,6 +102,11 @@ class TextFile(ReporterMTTStage):
                         self._print_stderr_block("stdout", lg['stdout'], tabs=1)
                 else:
                     num_secs_pass += 1
+                try:
+                    if lg['location'] is not None:
+                        print("\tLocation:",lg['location'], file=self.fh)
+                except KeyError:
+                    pass
             except KeyError:
                 pass
             try:
