@@ -35,6 +35,7 @@ from BuildMTTTool import *
 # @param modules                   Modules to load
 # @param modules_swap              Modules to swap
 # @param dependencies              List of dependencies specified as the build stage name
+# @param make_envars               Environmental variables to set prior to executing make
 
 # @}
 class Autotools(BuildMTTTool):
@@ -55,6 +56,7 @@ class Autotools(BuildMTTTool):
         self.options['modules'] = (None, "Modules to load")
         self.options['modules_swap'] = (None, "Modules to swap")
         self.options['dependencies'] = (None, "List of dependencies specified as the build stage name - e.g., MiddlwareBuild_package to be added to configure using --with-package=location")
+        self.options['make_envars'] = (None, "Environmental variables to set prior to executing make")
         self.exclude = set(string.punctuation)
         return
 
@@ -314,93 +316,90 @@ class Autotools(BuildMTTTool):
             # autogen phase is not required
             pass
 
-        # start building configure options
-        if cmds['configure_options'] is not None:
-            if type(cmds['configure_options']) is list:
-                cfgopts = cmds['configure_options']
-            else:
-                cfgopts = [cmds['configure_options']]
-        else:
+        # Check if there is a configure script present and executable
+        if os.path.isfile("./configure") and os.access("./configure", os.X_OK):
+            # start building configure options
             cfgopts = []
-        # see if any dependencies were given
-        try:
-            deps = cmds['dependencies']
-            # might be comma-delimited or space delimited
-            dps = re.split("\s|,", deps)
-            # loop over the entries
-            for d in dps:
-                # get the location where the output of this stage was stored by
-                # first recovering the log for it
-                try:
-                    lg = testDef.logger.getLog(d)
+            # see if any dependencies were given
+            try:
+                deps = cmds['dependencies']
+                # might be comma-delimited or space delimited
+                dps = re.split("\s|,", deps)
+                # loop over the entries
+                for d in dps:
+                    # get the location where the output of this stage was stored by
+                    # first recovering the log for it
                     try:
-                        loc = lg['location']
+                        lg = testDef.logger.getLog(d)
+                        try:
+                            loc = lg['location']
+                        except:
+                            # we cannot do what the user requested
+                            log['status'] = 1
+                            log['stderr'] = "Location of dependency " + d + " could not be found"
+                            return
                     except:
-                        # we cannot do what the user requested
+                        # we don't have a record of this dependency
                         log['status'] = 1
-                        log['stderr'] = "Location of dependency " + d + " could not be found"
+                        log['stderr'] = "Log for dependency " + d + " could not be found"
                         return
-                except:
-                    # we don't have a record of this dependency
-                    log['status'] = 1
-                    log['stderr'] = "Log for dependency " + d + " could not be found"
-                    return
-                # split the dependency string to get the package name
-                try:
-                    pkg = d.split(":")
-                except:
-                    log['status'] = 1
-                    log['stderr'] = "Dependency " + d + " is missing package name"
-                    return
-                # add the location and dependency option
-                opt = "--with-{0}".format(pkg[1]) + "={0}".format(loc)
-                cfgopts.append(opt)
-        except:
-            pass
+                    # split the dependency string to get the package name
+                    try:
+                        pkg = d.split(":")
+                    except:
+                        log['status'] = 1
+                        log['stderr'] = "Dependency " + d + " is missing package name"
+                        return
+                    # add the location and dependency option
+                    opt = "--with-{0}".format(pkg[1]) + "={0}".format(loc)
+                    cfgopts.append(opt)
+            except:
+                pass
 
-        # we always have to run configure, but we first
-        # need to build a target prefix directory option based
-        # on the scratch directory and section name
-        cfgargs = ["./configure"]
-        if prefix is not None:
-            cfgargs.append(prefix)
-        # if they gave us any configure args, add them
-        try:
-            if cmds['configure_options'] is not None:
-                args = shlex.split(cmds['configure_options'])
-                for arg in args:
-                    cfgargs.append(arg.strip())
-        except KeyError:
-            pass
+            # we always have to run configure, but we first
+            # need to build a target prefix directory option based
+            # on the scratch directory and section name
+            cfgargs = ["./configure"]
+            if prefix is not None:
+                cfgargs.append(prefix)
+            # if they gave us any configure args, add them
+            try:
+                if cmds['configure_options'] is not None:
+                    args = shlex.split(cmds['configure_options'])
+                    for arg in args:
+                        cfgargs.append(arg.strip())
+            except KeyError:
+                pass
 
-        # add in any dependency options
-        for d in cfgopts:
-            cfgargs.append(d)
+            # add in any dependency options
+            for d in cfgopts:
+                cfgargs.append(d)
 
-        # execute the configure cmd
-        status, stdout, stderr, _ = testDef.execmd.execute(cmds, cfgargs, testDef)
-        if 0 != status:
-            log['status'] = status
-            log['stdout'] = stdout
-            log['stderr'] = stderr
-
-            # Revert any requested environment module settings
-            status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
+            # execute the configure cmd
+            status, stdout, stderr, _ = testDef.execmd.execute(cmds, cfgargs, testDef)
             if 0 != status:
                 log['status'] = status
                 log['stdout'] = stdout
                 log['stderr'] = stderr
+
+                # Revert any requested environment module settings
+                status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
+                if 0 != status:
+                    log['status'] = status
+                    log['stdout'] = stdout
+                    log['stderr'] = stderr
+                    # return to original location
+                    os.chdir(cwd)
+                    return
+
                 # return to original location
                 os.chdir(cwd)
                 return
+            else:
+                # this is a multistep operation, and so we need to
+                # retain the output from each step in the log
+                log['configure'] = (stdout, stderr)
 
-            # return to original location
-            os.chdir(cwd)
-            return
-        else:
-            # this is a multistep operation, and so we need to
-            # retain the output from each step in the log
-            log['configure'] = (stdout, stderr)
         # next we do the build stage, using the custom build cmd
         # if one is provided, or else defaulting to the testDef
         # default
@@ -415,6 +414,17 @@ class Autotools(BuildMTTTool):
             args = testDef.options.default_make_options.split()
             for arg in args:
                 bldargs.append(arg.strip())
+        # see if we are to set any envars
+        loadedenv = []
+        try:
+            if cmds['make_envars'] is not None:
+                args = cmds['make_envars'].split()
+                for arg in args:
+                    en = arg.split("=")
+                    os.environ[en[0]] = en[1]
+                    loadedenv.append(en[0])
+        except:
+            pass
         # step thru the process, starting with "clean"
         bldargs.append("clean")
         status, stdout, stderr, _ = testDef.execmd.execute(cmds, bldargs, testDef)
@@ -431,10 +441,16 @@ class Autotools(BuildMTTTool):
                 log['stderr'] = stderr
                 # return to original location
                 os.chdir(cwd)
+                # unload any envars we added
+                for en in loadedenv:
+                    del os.environ[en]
                 return
 
             # return to original location
             os.chdir(cwd)
+            # unload any envars we added
+            for en in loadedenv:
+                del os.environ[en]
             return
         else:
             # this is a multistep operation, and so we need to
@@ -457,10 +473,16 @@ class Autotools(BuildMTTTool):
                 log['stderr'] = stderr
                 # return to original location
                 os.chdir(cwd)
+                # unload any envars we added
+                for en in loadedenv:
+                    del os.environ[en]
                 return
 
             # return to original location
             os.chdir(cwd)
+            # unload any envars we added
+            for en in loadedenv:
+                del os.environ[en]
             return
         else:
             # this is a multistep operation, and so we need to
@@ -483,6 +505,9 @@ class Autotools(BuildMTTTool):
             log['status'] = status
             log['stdout'] = stdout
             log['stderr'] = stderr
+            # unload any envars we added
+            for en in loadedenv:
+                del os.environ[en]
             return
 
         # if we added middleware to the paths, remove it
@@ -504,5 +529,8 @@ class Autotools(BuildMTTTool):
 
         # return home
         os.chdir(cwd)
+        # unload any envars we added
+        for en in loadedenv:
+            del os.environ[en]
 
         return
