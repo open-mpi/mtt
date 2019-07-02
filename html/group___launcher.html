@@ -151,6 +151,59 @@ OpenMPI</h1>
   </table>
   </dd>
 </dl>
+<h1><a class="anchor" id="PMIxUnit"></a>
+PMIxUnit</h1>
+<p>Plugin for using the Open MPI mpirun launch tool </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">np</td><td>Number of processes to run </td></tr>
+    <tr><td class="paramname">servers</td><td>Number of servers to emulate </td></tr>
+    <tr><td class="paramname">timeout</td><td>Maximum execution time - terminate a test if it exceeds this time </td></tr>
+    <tr><td class="paramname">early_fail</td><td>Force client process with rank 0 to fail before PMIX_Init </td></tr>
+    <tr><td class="paramname">gds</td><td>Set GDS module </td></tr>
+    <tr><td class="paramname">test_dir</td><td>Names of directories to be scanned for tests </td></tr>
+    <tr><td class="paramname">fail_tests</td><td>Names of tests that are expected to fail </td></tr>
+    <tr><td class="paramname">fail_returncodes</td><td>Expected return codes of tests expected to fail </td></tr>
+    <tr><td class="paramname">fail_timeout</td><td>Maximum execution time for tests expected to fail </td></tr>
+    <tr><td class="paramname">skip_tests</td><td>Names of tests to be skipped </td></tr>
+    <tr><td class="paramname">max_num_tests</td><td>Maximum number of tests to run </td></tr>
+    <tr><td class="paramname">test_list</td><td>List of tests to run, default is all </td></tr>
+    <tr><td class="paramname">modules_unload</td><td>Modules to unload </td></tr>
+    <tr><td class="paramname">modules</td><td>Modules to load </td></tr>
+    <tr><td class="paramname">modules_swap</td><td>Modules to swap</td></tr>
+  </table>
+  </dd>
+</dl>
+<h1><a class="anchor" id="PRRTE"></a>
+PRRTE</h1>
+<p>Plugin for using the <a class="el" href="namespace_p_r_r_t_e.html">PRRTE</a> prun launch tool </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">hostfile</td><td>The hostfile for <a class="el" href="namespace_p_r_r_t_e.html">PRRTE</a> to use </td></tr>
+    <tr><td class="paramname">command</td><td>Command for executing the application </td></tr>
+    <tr><td class="paramname">np</td><td>Number of processes to run </td></tr>
+    <tr><td class="paramname">ppn</td><td>Number of processes per node to run </td></tr>
+    <tr><td class="paramname">timeout</td><td>Maximum execution time - terminate a test if it exceeds this time </td></tr>
+    <tr><td class="paramname">options</td><td>Comma-delimited sets of command line options that shall be used on each test </td></tr>
+    <tr><td class="paramname">skipped</td><td>Exit status of a test that declares it was skipped </td></tr>
+    <tr><td class="paramname">merge_stdout_stderr</td><td>Merge stdout and stderr into one output stream </td></tr>
+    <tr><td class="paramname">stdout_save_lines</td><td>Number of lines of stdout to save </td></tr>
+    <tr><td class="paramname">stderr_save_lines</td><td>Number of lines of stderr to save </td></tr>
+    <tr><td class="paramname">test_dir</td><td>Names of directories to be scanned for tests </td></tr>
+    <tr><td class="paramname">fail_tests</td><td>Names of tests that are expected to fail </td></tr>
+    <tr><td class="paramname">fail_returncodes</td><td>Expected return codes of tests expected to fail </td></tr>
+    <tr><td class="paramname">fail_timeout</td><td>Maximum execution time for tests expected to fail </td></tr>
+    <tr><td class="paramname">skip_tests</td><td>Names of tests to be skipped </td></tr>
+    <tr><td class="paramname">max_num_tests</td><td>Maximum number of tests to run </td></tr>
+    <tr><td class="paramname">test_list</td><td>List of tests to run, default is all </td></tr>
+    <tr><td class="paramname">allocate_cmd</td><td>Command to use for allocating nodes from the resource manager </td></tr>
+    <tr><td class="paramname">deallocate_cmd</td><td>Command to use for deallocating nodes from the resource manager </td></tr>
+    <tr><td class="paramname">modules_unload</td><td>Modules to unload </td></tr>
+    <tr><td class="paramname">modules</td><td>Modules to load </td></tr>
+    <tr><td class="paramname">modules_swap</td><td>Modules to swap</td></tr>
+  </table>
+  </dd>
+</dl>
 <h1><a class="anchor" id="SLURM"></a>
 SLURM</h1>
 <p>Plugin for using <a class="el" href="namespace_s_l_u_r_m.html">SLURM</a> to launch tests </p>

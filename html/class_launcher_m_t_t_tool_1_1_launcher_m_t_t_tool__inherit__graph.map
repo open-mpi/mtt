@@ -1,5 +1,7 @@
 <map id="LauncherMTTTool.LauncherMTTTool" name="LauncherMTTTool.LauncherMTTTool">
 <area shape="rect" id="node3" href="$class_a_l_p_s_1_1_a_l_p_s.html" title="ALPS.ALPS" alt="" coords="5,171,99,197"/>
 <area shape="rect" id="node4" href="$class_open_m_p_i_1_1_open_m_p_i.html" title="OpenMPI.OpenMPI" alt="" coords="124,171,259,197"/>
-<area shape="rect" id="node5" href="$class_s_l_u_r_m_1_1_s_l_u_r_m.html" title="SLURM.SLURM" alt="" coords="284,171,404,197"/>
+<area shape="rect" id="node5" href="$class_p_m_ix_unit_1_1_p_m_ix_unit.html" title="PMIxUnit.PMIxUnit" alt="" coords="284,171,419,197"/>
+<area shape="rect" id="node6" href="$class_p_r_r_t_e_1_1_p_r_r_t_e.html" title="PRRTE.PRRTE" alt="" coords="443,171,561,197"/>
+<area shape="rect" id="node7" href="$class_s_l_u_r_m_1_1_s_l_u_r_m.html" title="SLURM.SLURM" alt="" coords="587,171,707,197"/>
 </map>

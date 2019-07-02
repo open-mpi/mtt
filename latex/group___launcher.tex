@@ -106,6 +106,88 @@ Plugin for using the Open M\-P\-I mpirun launch tool
 {\em modules\-\_\-swap} & Modules to swap\\
 \hline
 \end{DoxyParams}
+\hypertarget{group___launcher_PMIxUnit}{}\subsection{P\-M\-Ix\-Unit}\label{group___launcher_PMIxUnit}
+Plugin for using the Open M\-P\-I mpirun launch tool 
+\begin{DoxyParams}{Parameters}
+{\em np} & Number of processes to run \\
+\hline
+{\em servers} & Number of servers to emulate \\
+\hline
+{\em timeout} & Maximum execution time -\/ terminate a test if it exceeds this time \\
+\hline
+{\em early\-\_\-fail} & Force client process with rank 0 to fail before P\-M\-I\-X\-\_\-\-Init \\
+\hline
+{\em gds} & Set G\-D\-S module \\
+\hline
+{\em test\-\_\-dir} & Names of directories to be scanned for tests \\
+\hline
+{\em fail\-\_\-tests} & Names of tests that are expected to fail \\
+\hline
+{\em fail\-\_\-returncodes} & Expected return codes of tests expected to fail \\
+\hline
+{\em fail\-\_\-timeout} & Maximum execution time for tests expected to fail \\
+\hline
+{\em skip\-\_\-tests} & Names of tests to be skipped \\
+\hline
+{\em max\-\_\-num\-\_\-tests} & Maximum number of tests to run \\
+\hline
+{\em test\-\_\-list} & List of tests to run, default is all \\
+\hline
+{\em modules\-\_\-unload} & Modules to unload \\
+\hline
+{\em modules} & Modules to load \\
+\hline
+{\em modules\-\_\-swap} & Modules to swap\\
+\hline
+\end{DoxyParams}
+\hypertarget{group___launcher_PRRTE}{}\subsection{P\-R\-R\-T\-E}\label{group___launcher_PRRTE}
+Plugin for using the \hyperlink{namespace_p_r_r_t_e}{P\-R\-R\-T\-E} prun launch tool 
+\begin{DoxyParams}{Parameters}
+{\em hostfile} & The hostfile for \hyperlink{namespace_p_r_r_t_e}{P\-R\-R\-T\-E} to use \\
+\hline
+{\em command} & Command for executing the application \\
+\hline
+{\em np} & Number of processes to run \\
+\hline
+{\em ppn} & Number of processes per node to run \\
+\hline
+{\em timeout} & Maximum execution time -\/ terminate a test if it exceeds this time \\
+\hline
+{\em options} & Comma-\/delimited sets of command line options that shall be used on each test \\
+\hline
+{\em skipped} & Exit status of a test that declares it was skipped \\
+\hline
+{\em merge\-\_\-stdout\-\_\-stderr} & Merge stdout and stderr into one output stream \\
+\hline
+{\em stdout\-\_\-save\-\_\-lines} & Number of lines of stdout to save \\
+\hline
+{\em stderr\-\_\-save\-\_\-lines} & Number of lines of stderr to save \\
+\hline
+{\em test\-\_\-dir} & Names of directories to be scanned for tests \\
+\hline
+{\em fail\-\_\-tests} & Names of tests that are expected to fail \\
+\hline
+{\em fail\-\_\-returncodes} & Expected return codes of tests expected to fail \\
+\hline
+{\em fail\-\_\-timeout} & Maximum execution time for tests expected to fail \\
+\hline
+{\em skip\-\_\-tests} & Names of tests to be skipped \\
+\hline
+{\em max\-\_\-num\-\_\-tests} & Maximum number of tests to run \\
+\hline
+{\em test\-\_\-list} & List of tests to run, default is all \\
+\hline
+{\em allocate\-\_\-cmd} & Command to use for allocating nodes from the resource manager \\
+\hline
+{\em deallocate\-\_\-cmd} & Command to use for deallocating nodes from the resource manager \\
+\hline
+{\em modules\-\_\-unload} & Modules to unload \\
+\hline
+{\em modules} & Modules to load \\
+\hline
+{\em modules\-\_\-swap} & Modules to swap\\
+\hline
+\end{DoxyParams}
 \hypertarget{group___launcher_SLURM}{}\subsection{S\-L\-U\-R\-M}\label{group___launcher_SLURM}
 Plugin for using \hyperlink{namespace_s_l_u_r_m}{S\-L\-U\-R\-M} to launch tests 
 \begin{DoxyParams}{Parameters}
