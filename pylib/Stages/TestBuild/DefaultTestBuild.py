@@ -1,6 +1,6 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
-# Copyright (c) 2015-2018 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -25,6 +25,7 @@ from TestBuildMTTStage import *
 # @param autogen_cmd               Command to be executed to setup the configure script, usually called autogen.sh or autogen.pl
 # @param configure_options         Options to be passed to configure. Note that the prefix will be automatically set and need not be provided here
 # @param make_options              Options to be passed to the make command
+# @param make_envars               Environmental variables to set prior to executing make
 # @}
 class DefaultTestBuild(TestBuildMTTStage):
 
@@ -40,6 +41,7 @@ class DefaultTestBuild(TestBuildMTTStage):
         self.options['autogen_cmd'] = (None, "Command to be executed to setup the configure script, usually called autogen.sh or autogen.pl")
         self.options['configure_options'] = (None, "Options to be passed to configure. Note that the prefix will be automatically set and need not be provided here")
         self.options['make_options'] = (None, "Options to be passed to the make command")
+        self.options['make_envars'] = (None, "Environmental variables to set prior to executing make")
 
     def activate(self):
         # get the automatic procedure from IPlugin

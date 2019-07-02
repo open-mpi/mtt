@@ -143,7 +143,7 @@ class Pip(FetchMTTTool):
                     log['location'] = t[10:]
                     # Add the location to PYTHONPATH
                     pypath = os.environ['PYTHONPATH'] + ":" + log['location']
-                    os.environ('PYTHONPATH') = pypath
+                    os.environ['PYTHONPATH'] = pypath
                     break
 
         # track that we serviced this one

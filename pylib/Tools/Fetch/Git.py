@@ -237,7 +237,19 @@ class Git(FetchMTTTool):
         testDef.logger.verbose_print(cmdlog)
         try:
             if cmds['subdir'] is not None:
-                log['location'] = os.path.join(log['location'], cmds['subdir'])
+                # check that this subdirectory actually exists
+                ckdir = os.path.join(log['location'], cmds['subdir'])
+                if not os.path.exists(ckdir):
+                    log['status'] = 1
+                    log['stderr'] = "Subdirectory " + cmds['subdir'] + " was not found"
+                    status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
+                    return
+                if not os.path.isdir(ckdir):
+                    log['status'] = 1
+                    log['stderr'] = "Subdirectory " + cmds['subdir'] + " is not a directory"
+                    status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
+                    return
+                log['location'] = ckdir
         except KeyError:
             pass
         # track that we serviced this one
