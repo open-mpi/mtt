@@ -20,6 +20,8 @@ import shlex
 # @addtogroup TestRun
 # @section PMIxUnit
 # Plugin for running PMIx Unit tests
+# @param command         Command to run the test
+# @param middleware      Location of middleware installation
 # @param gds             Set GDS module
 # @param modules_unload  Modules to unload
 # @param modules         Modules to load
@@ -31,6 +33,8 @@ class PMIxUnit(TestRunMTTStage):
         # initialise parent class
         TestRunMTTStage.__init__(self)
         self.options = {}
+        self.options['command'] = (None, "Command to run the test")
+        self.options['middleware'] = (None, "Location of middleware installation")
         self.options['gds'] = (None, "Set GDS module")
         self.options['modules'] = (None, "Modules to load")
         self.options['modules_unload'] = (None, "Modules to unload")
@@ -64,6 +68,7 @@ class PMIxUnit(TestRunMTTStage):
         self.testDef = testDef
 
         midpath = False
+        pypath = False
 
         testDef.logger.verbose_print("PMIxUnit Test Runner")
 
@@ -108,77 +113,103 @@ class PMIxUnit(TestRunMTTStage):
             log['status'] = 1
             log['stderr'] = "Section not specified"
             return
+
         # must be executing a test of some kind - the install stage
         # must be specified so we can find the tests to be run
         try:
             parent = keyvals['parent']
-            if parent is not None:
-                # get the log entry as it contains the location
-                # of the built tests
-                bldlog = testDef.logger.getLog(parent)
-                try:
-                    location = bldlog['location']
-                except KeyError:
-                    # if it wasn't recorded, then there is nothing
-                    # we can do
-                    log['status'] = 1
-                    log['stderr'] = "Location of built tests was not provided"
-                    return
-                # check for modules used during the build of these tests
-                status,stdout,stderr = testDef.modcmd.checkForModules(log['section'], bldlog, cmds, testDef)
-                if 0 != status:
-                    log['status'] = status
-                    log['stdout'] = stdout
-                    log['stderr'] = stderr
-                    return
-
-                # get the log of any middleware so we can get its location
-                try:
-                    midlog = testDef.logger.getLog(bldlog['middleware'])
-                    if midlog is not None:
-                        # get the location of the middleware
-                        try:
-                            if midlog['location'] is not None:
-                                # prepend that location to our paths
-                                try:
-                                    oldbinpath = os.environ['PATH']
-                                    pieces = oldbinpath.split(':')
-                                except KeyError:
-                                    oldbinpath = ""
-                                    pieces = []
-                                bindir = os.path.join(midlog['location'], "bin")
-                                pieces.insert(0, bindir)
-                                newpath = ":".join(pieces)
-                                os.environ['PATH'] = newpath
-                                # prepend the loadable lib path
-                                try:
-                                    oldldlibpath = os.environ['LD_LIBRARY_PATH']
-                                    pieces = oldldlibpath.split(':')
-                                except KeyError:
-                                    oldldlibpath = ""
-                                    pieces = []
-                                bindir = os.path.join(midlog['location'], "lib")
-                                pieces.insert(0, bindir)
-                                newpath = ":".join(pieces)
-                                os.environ['LD_LIBRARY_PATH'] = newpath
-
-                                # mark that this was done
-                                midpath = True
-                        except KeyError:
-                            # if it was already installed, then no location would be provided
-                            pass
-                        # check for modules required by the middleware
-                        status,stdout,stderr = testDef.modcmd.checkForModules(log['section'], midlog, cmds, testDef)
-                        if 0 != status:
-                            log['status'] = status
-                            log['stdout'] = stdout
-                            log['stderr'] = stderr
-                            return
-                except KeyError:
-                    pass
         except KeyError:
             log['status'] = 1
-            log['stderr'] = "Parent test build stage was not provided"
+            log['stderr'] = "Parent test install stage was not provided"
+            return
+
+        # get the log entry as it contains the location
+        # of the built tests
+        bldlog = testDef.logger.getLog(parent)
+        if bldlog is None:
+            log['status'] = 1
+            log['stderr'] = "Log for parent stage " + parent + " was not found"
+            return
+        try:
+            location = bldlog['location']
+        except KeyError:
+            # if it wasn't recorded, then there is nothing
+            # we can do
+            log['status'] = 1
+            log['stderr'] = "Location of built tests was not provided"
+            return
+        # check for modules used during the build of these tests
+        status,stdout,stderr = testDef.modcmd.checkForModules(log['section'], bldlog, cmds, testDef)
+        if 0 != status:
+            log['status'] = status
+            log['stdout'] = stdout
+            log['stderr'] = stderr
+            return
+
+        # if they explicitly told us the middleware to use, use it
+        if cmds['middleware'] is not None:
+            midlog = testDef.logger.getLog(cmds['middleware'])
+            if midlog is None:
+                log['status'] = 1
+                log['stderr'] = "Log for middleware " + cmds['middleware'] + " not found"
+                return
+        else:
+            # get the log of any middleware so we can get its location
+            try:
+                midlog = testDef.logger.getLog(bldlog['middleware'])
+                if midlog is None:
+                    log['status'] = 1
+                    log['stderr'] = "Log for middleware " + bldlog['middleware'] + " not found"
+                    return
+            except KeyError:
+                pass
+
+        # get the location of the middleware
+        try:
+            if midlog['location'] is not None:
+                # prepend that location to our paths
+                try:
+                    oldbinpath = os.environ['PATH']
+                    pieces = oldbinpath.split(':')
+                except KeyError:
+                    oldbinpath = ""
+                    pieces = []
+                bindir = os.path.join(midlog['location'], "bin")
+                pieces.insert(0, bindir)
+                newpath = ":".join(pieces)
+                os.environ['PATH'] = newpath
+                # prepend the loadable lib path
+                try:
+                    oldldlibpath = os.environ['LD_LIBRARY_PATH']
+                    pieces = oldldlibpath.split(':')
+                except KeyError:
+                    oldldlibpath = ""
+                    pieces = []
+                bindir = os.path.join(midlog['location'], "lib")
+                pieces.insert(0, bindir)
+                newpath = ":".join(pieces)
+                os.environ['LD_LIBRARY_PATH'] = newpath
+                # see if there is a Python subdirectory
+                listing = os.listdir(bindir)
+                for d in listing:
+                    entry = os.path.join(bindir, d)
+                    if os.path.isdir(entry) and "python" in d:
+                        oldpypath = os.environ['PYTHONPATH']
+                        newpath = ":".join([oldpypath, os.path.join(entry, "site-packages")])
+                        os.environ['PYTHONPATH'] = newpath
+                        pypath = True
+                        break
+                # mark that this was done
+                midpath = True
+        except KeyError:
+            # if it was already installed, then no location would be provided
+            pass
+        # check for modules required by the middleware
+        status,stdout,stderr = testDef.modcmd.checkForModules(log['section'], midlog, cmds, testDef)
+        if 0 != status:
+            log['status'] = status
+            log['stdout'] = stdout
+            log['stderr'] = stderr
             return
 
         # Apply any requested environment module settings
@@ -206,7 +237,10 @@ class PMIxUnit(TestRunMTTStage):
 
         for test in tests:
             testLog = {'test':test}
-            cmdargs = ["./pmix_test"]
+            if cmds['command'] is not None:
+                cmdargs = [cmds['command']]
+            else:
+                cmdargs = []
             # we cannot just split the test cmd line by spaces as there are spaces
             # in some of the options. So we have to do this the hard way by hand
             ln = len(test)
@@ -269,6 +303,9 @@ class PMIxUnit(TestRunMTTStage):
         if midpath:
             os.environ['PATH'] = oldbinpath
             os.environ['LD_LIBRARY_PATH'] = oldldlibpath
+
+        if pypath:
+            os.environ['PYTHONPATH'] = oldpypath
 
         os.chdir(cwd)
         return
