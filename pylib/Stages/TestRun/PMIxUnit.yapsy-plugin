@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015-2018 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -15,4 +15,4 @@ Module = PMIxUnit
 Author = Ralph Castain
 Version = 0.1
 Website = http://pmix.org
-Description = Plugin for using the PMIx unit test "pmix_test" launch tool
+Description = Plugin for running the PMIx unit tests
