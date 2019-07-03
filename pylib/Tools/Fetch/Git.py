@@ -145,6 +145,19 @@ class Git(FetchMTTTool):
             if self.done[repo] is not None:
                 log['status'] = self.done[repo][0]
                 log['location'] = self.done[repo][1]
+                # if they gave us a subdir, then we have to append it on
+                if cmds['subdir'] is not None:
+                    # check that this subdirectory actually exists
+                    ckdir = os.path.join(log['location'], cmds['subdir'])
+                    if not os.path.exists(ckdir):
+                        log['status'] = 1
+                        log['stderr'] = "Subdirectory " + cmds['subdir'] + " was not found"
+                        return
+                    if not os.path.isdir(ckdir):
+                        log['status'] = 1
+                        log['stderr'] = "Subdirectory " + cmds['subdir'] + " is not a directory"
+                        return
+                    log['location'] = ckdir
                 return
         except KeyError:
             pass
@@ -235,25 +248,24 @@ class Git(FetchMTTTool):
         # the target, then modify the location accordingly
         cmdlog = 'Fetch CMD: ' + ' '.join(cmds)
         testDef.logger.verbose_print(cmdlog)
-        try:
-            if cmds['subdir'] is not None:
-                # check that this subdirectory actually exists
-                ckdir = os.path.join(log['location'], cmds['subdir'])
-                if not os.path.exists(ckdir):
-                    log['status'] = 1
-                    log['stderr'] = "Subdirectory " + cmds['subdir'] + " was not found"
-                    status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
-                    return
-                if not os.path.isdir(ckdir):
-                    log['status'] = 1
-                    log['stderr'] = "Subdirectory " + cmds['subdir'] + " is not a directory"
-                    status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
-                    return
-                log['location'] = ckdir
-        except KeyError:
-            pass
-        # track that we serviced this one
-        self.done[repo] = (status, log['location'])
+        if cmds['subdir'] is not None:
+            # check that this subdirectory actually exists
+            ckdir = os.path.join(log['location'], cmds['subdir'])
+            if not os.path.exists(ckdir):
+                log['status'] = 1
+                log['stderr'] = "Subdirectory " + cmds['subdir'] + " was not found"
+                status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
+                return
+            if not os.path.isdir(ckdir):
+                log['status'] = 1
+                log['stderr'] = "Subdirectory " + cmds['subdir'] + " is not a directory"
+                status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
+                return
+            log['location'] = ckdir
+        # track that we serviced this one - save the absolute location so
+        # any subsequent requests with a different subdir can be pointed to
+        # the correct location
+        self.done[repo] = (status, os.getcwd())
 
         # Revert any requested environment module settings
         status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
