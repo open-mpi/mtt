@@ -98,7 +98,7 @@ class CheckProfile(ProfileMTTStage):
                         # ignore the execution time, if collected
                         return
 
-                    pcentAvail = 100 - int(stdout[0].split('%')[0])
+                    pcentAvail = 100 - int(results['stdout'][0].split('%')[0])
                     myLog[key+' '+disk] = [str(pcentAvail) + "% available"]
 
                     testDef.logger.verbose_print("checking: " + disk \
