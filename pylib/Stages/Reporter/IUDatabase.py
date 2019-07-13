@@ -1,6 +1,6 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
-# Copyright (c) 2015-2018 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # Copyright (c) 2017      IBM Corporation.  All rights reserved.
 # $COPYRIGHT$
 #
@@ -226,6 +226,31 @@ class IUDatabase(ReporterMTTStage):
         # and all of the tests that follow are from that test_build
         common_data['test_build_id'] = test_info['test_build_id']
 
+        try:
+            common_data['numTests'] = lg['numTests']
+        except:
+            pass
+
+        try:
+            common_data['numPass'] = lg['numPass']
+        except:
+            pass
+
+        try:
+            common_data['numSkip'] = lg['numSkip']
+        except:
+            pass
+
+        try:
+            common_data['numFail'] = lg['numFail']
+        except:
+            pass
+
+        try:
+            common_data['numTimed'] = lg['numTimed']
+        except:
+            pass
+
         for trun in (lg['testresults'] if 'testresults' in lg else [lg]):
             data = {}
 
@@ -264,13 +289,27 @@ class IUDatabase(ReporterMTTStage):
                 status = trun['status']
             except KeyError:
                 status = -1
-            if status == 0:
+
+            # the status code is the actual returned exit code
+            # from the application - it does not necessarily indicate
+            # whether or not the test "succeeded"
+            data['exit_value'] = status
+
+            # the test log contains a result flag that indicates if
+            # the test "succeeded" or not. Note that a test that
+            # was supposed to fail and did fail (returning the
+            # expected status) will be flagged as a "success"
+            try:
+                data['test_result'] = trun['result']
+            except KeyError:
+                # if the test result wasn't provided, then this
+                # is an error and the data must be rejected
+                return None
+
+            if data['test_result'] == testDef.MTT_TEST_PASSED:
                 data['result_message'] = "Success"
-                data['test_result'] = 1
-                data['exit_value'] = 0
-            elif status == 1:
+            elif data['test_result'] == testDef.MTT_TEST_FAILED:
                 data['result_message'] = "Failed"
-                data['test_result'] = 0
                 if 'stderr' in lg:
                     # the log should be a list, but it is possible
                     # that it got joined into a single string
@@ -284,12 +323,13 @@ class IUDatabase(ReporterMTTStage):
                         try:
                             data['exit_value'] = int(lgerr.split("[Errno ")[1].split("]")[0])
                         except:
-                            data['exit_value'] = -1
+                            data['exit_value'] = status
                     else:
-                        data['exit_value'] = -1
-            else:
-                data['result_message'] = "Failed"
-                data['test_result'] = -1
+                        data['exit_value'] = status
+            elif data['test_result'] == testDef.MTT_TEST_SKIPPED:
+                data['result_message'] = "Skipped"
+            elif data['test_result'] == testDef.MTT_TEST_TIMED_OUT:
+                data['result_message'] = "Timed Out"
                 if 'stderr' in lg:
                     if type(lg['stderr']) is list:
                         lgerr = '\n'.join(lg['stderr'])
@@ -299,14 +339,17 @@ class IUDatabase(ReporterMTTStage):
                         try:
                             data['exit_value'] = int(lgerr.split("[Errno ")[1].split("]")[0])
                         except:
-                            data['exit_value'] = -1
+                            data['exit_value'] = status
                     else:
-                        data['exit_value'] = -1
+                        data['exit_value'] = status
                 else:
-                    data['exit_value'] = -1
+                    data['exit_value'] = status
 
             # Optional
-            # data['duration'] = None
+            try:
+                data['duration'] = trun['elapsed_secs']
+            except:
+                pass
 
             # data['exit_signal'] = None
 
