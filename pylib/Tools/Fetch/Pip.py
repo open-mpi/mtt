@@ -103,12 +103,12 @@ class Pip(FetchMTTTool):
         qcmd.append("pip")
         qcmd.append("show")
         qcmd.append(pkg)
-        status, stdout, stderr, _ = testDef.execmd.execute(None, qcmd, testDef)
-        if 0 == status:
+        results = testDef.execmd.execute(None, qcmd, testDef)
+        if 0 == results['status']:
             log['status'] = 0
             log['stdout'] = "PKG " + pkg + " already exists on system"
             # Find the location
-            for t in stdout:
+            for t in results['stdout']:
                 if t.startswith("Location"):
                     log['location'] = t[10:]
                     break
@@ -124,21 +124,21 @@ class Pip(FetchMTTTool):
             icmd.append("--user")
         icmd.append(pkg)
         testDef.logger.verbose_print("installing package " + pkg)
-        status, stdout, stderr, _ = testDef.execmd.execute(None, icmd, testDef)
-        if 0 != status:
+        results = testDef.execmd.execute(None, icmd, testDef)
+        if 0 != results['status']:
             log['status'] = 1
             log['stderr'] = "install of " + pkg + " FAILED"
             return
 
         # record the result
-        log['status'] = status
-        log['stdout'] = stdout
-        log['stderr'] = stderr
+        log['status'] = results['status']
+        log['stdout'] = results['stdout']
+        log['stderr'] = results['stderr']
         # Find where it went
-        status, stdout, stderr, _ = testDef.execmd.execute(None, qcmd, testDef)
-        if 0 == status:
+        results = testDef.execmd.execute(None, qcmd, testDef)
+        if 0 == results['status']:
             # Find the location
-            for t in stdout:
+            for t in results['stdout']:
                 if t.startswith("Location"):
                     log['location'] = t[10:]
                     # Add the location to PYTHONPATH
@@ -147,5 +147,5 @@ class Pip(FetchMTTTool):
                     break
 
         # track that we serviced this one
-        self.done[pkg] = status
+        self.done[pkg] = results['status']
         return

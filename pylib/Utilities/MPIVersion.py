@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2016-2018 Intel, Inc.  All rights reserved.
+# Copyright (c) 2016-2019 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -105,19 +105,19 @@ int main(int argc, char **argv) {
     return 0;
 }""")
             fh.close()
-        status, _, _, _ = testDef.execmd.execute(None, shlex.split('mpicc -o mpi_get_version mpi_get_version.c'), testDef)
-        if 0 != status:
-            status, _, _, _ = testDef.execmd.execute(None, shlex.split('cc -o mpi_get_version mpi_get_version.c'), testDef)
-            if 0 != status:
+        results = testDef.execmd.execute(None, shlex.split('mpicc -o mpi_get_version mpi_get_version.c'), testDef)
+        if 0 != results['status']:
+            results = testDef.execmd.execute(None, shlex.split('cc -o mpi_get_version mpi_get_version.c'), testDef)
+            if 0 != results['status']:
                 os.chdir("..")
                 return None
 
-        status, stdout, _, _ = testDef.execmd.execute(None, shlex.split('sh -c "mpiexec ./mpi_get_version |uniq -c"'), testDef)
-        if 0 != status:
-            status, stdout, _, _ = testDef.execmd.execute(None, shlex.split('sh -c "aprun ./mpi_get_version |uniq -c"'), testDef)
-            if 0 != status:
-                status, stdout, _, _ = testDef.execmd.execute(None, shlex.split('sh -c "./mpi_get_version |uniq -c"'), testDef)
-                if 0 != status:
+        results = testDef.execmd.execute(None, shlex.split('sh -c "mpiexec ./mpi_get_version |uniq -c"'), testDef)
+        if 0 != results['status']:
+            results = testDef.execmd.execute(None, shlex.split('sh -c "aprun ./mpi_get_version |uniq -c"'), testDef)
+            if 0 != results['status']:
+                results = testDef.execmd.execute(None, shlex.split('sh -c "./mpi_get_version |uniq -c"'), testDef)
+                if 0 != results['status']:
                     os.chdir("..")
                     return None
 

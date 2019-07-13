@@ -1,6 +1,6 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
-# Copyright (c) 2015-2018 Intel, Inc.  All rights reserved.
+# Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -76,13 +76,13 @@ class WWulf3(ProvisionMTTStage):
         self.allocated = False
         if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None:
             allocate_cmdargs = shlex.split(cmds['allocate_cmd'])
-            status,stdout,stderr,time = testDef.execmd.execute(cmds, allocate_cmdargs, testDef)
-            if 0 != status:
-                log['status'] = status
+            results = testDef.execmd.execute(cmds, allocate_cmdargs, testDef)
+            if 0 != results['status']:
+                log['status'] = results['status']
                 if log['stderr']:
-                    log['stderr'].extend(stderr)
+                    log['stderr'].extend(results['stderr'])
                 else:
-                    log['stderr'] = stderr
+                    log['stderr'] = results['stderr']
                 return False
             self.allocated = True
         return True
@@ -90,13 +90,13 @@ class WWulf3(ProvisionMTTStage):
     def deallocate(self, log, cmds, testDef):
         if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None and self.allocated == True:
             deallocate_cmdargs = shlex.split(cmds['deallocate_cmd'])
-            status,stdout,stderr,time = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)
-            if 0 != status:
-                log['status'] = status
+            results = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)
+            if 0 != results['status']:
+                log['status'] = results['status']
                 if log['stderr']:
-                    log['stderr'].extend(stderr)
+                    log['stderr'].extend(results['stderr'])
                 else:
-                    log['stderr'] = stderr
+                    log['stderr'] = results['stderr']
                 return False
             self.allocated = False
         return True
@@ -159,16 +159,16 @@ class WWulf3(ProvisionMTTStage):
         wwcmd = ["wwsh", "node", "list"]
         if cmds['sudo']:
             wwcmd.insert(0, "sudo")
-        status,stdout,stderr,_ = testDef.execmd.execute(cmds, wwcmd, testDef)
-        if 0 != status or stdout is None:
-            log['status'] = status
+        results = testDef.execmd.execute(cmds, wwcmd, testDef)
+        if 0 != results['status'] or results['stdout'] is None:
+            log['status'] = results['status']
             log['stderr'] = "Node list was not obtained"
             return
         # skip first two lines as they are headers
-        del stdout[0:2]
+        del results['stdout'][0:2]
         # parse each line to collect out the individual nodes
         nodes = []
-        for line in stdout:
+        for line in results['stdout']:
             # node name is at the front, ended by a space
             nodes.append(line[0:line.find(' ')])
         # now check that each target is in the list of nodes - no
@@ -200,10 +200,10 @@ class WWulf3(ProvisionMTTStage):
             if cmds['bootstrap']:
                wwcmd.append("--bootstrap=" + cmds['bootstrap'])
             # update the provisioning database to the new image
-            status,stdout,stderr,_ = testDef.execmd.execute(cmds, wwcmd, testDef)
-            if 0 != status:
-                log['status'] = status
-                log['stderr'] = stderr
+            results = testDef.execmd.execute(cmds, wwcmd, testDef)
+            if 0 != results['status']:
+                log['status'] = results['status']
+                log['stderr'] = results['stderr']
                 self.deallocate(log, cmds, testDef)
                 return
         # assemble command to power cycle each node. Note that

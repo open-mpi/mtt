@@ -116,6 +116,7 @@ class FetchTarball(FetchMTTTool):
 
         # change to the scratch directory
         os.chdir(dst)
+        results = {}
         # see if this software has already been fetched
         if os.path.exists(tarball):
             # was it expanded?
@@ -123,24 +124,24 @@ class FetchTarball(FetchMTTTool):
                 # if they want us to leave it as-is, then we are done
                 try:
                     if cmds['asis']:
-                        status = 0
-                        stdout = None
-                        stderr = None
+                        results['status'] = 0
+                        results['stdout'] = None
+                        results['stderr'] = None
                 # If not as-is clear directory and download the tarball
                 except KeyError:
                     shutil.rmtree(package)
                     # untar the tarball
                     testDef.logger.verbose_print("untarring tarball " + tarball)
-                    status, stdout, stderr, _ = testDef.execmd.execute(None, ["tar", "-xf", tarball], testDef)
-                    if 0 != status:
+                    results = testDef.execmd.execute(None, ["tar", "-xf", tarball], testDef)
+                    if 0 != results['status']:
                         log['status'] = 1
                         log['stderr'] = "untar of tarball " + tarball + "FAILED"
                         return
             else:
                 # untar the tarball
                 testDef.logger.verbose_print("untarring tarball " + tarball)
-                status, stdout, stderr, _ = testDef.execmd.execute(None, ["tar", "-xf", tarball], testDef)
-                if 0 != status:
+                results = testDef.execmd.execute(None, ["tar", "-xf", tarball], testDef)
+                if 0 != results['status']:
                     log['status'] = 1
                     log['stderr'] = "untar of tarball " + tarball + "FAILED"
                     return
@@ -151,30 +152,30 @@ class FetchTarball(FetchMTTTool):
             for p in fetchcmd:
                 excmd.append(p)
             excmd.append(url)
-            status, stdout, stderr, _ = testDef.execmd.execute(None, excmd, testDef)
-            if 0 != status:
+            results = testDef.execmd.execute(None, excmd, testDef)
+            if 0 != results['status']:
                 log['status'] = 1
                 log['stderr'] = "download for tarball " + tarball + " url: " + url + "FAILED"
                 return
             # untar the tarball
             testDef.logger.verbose_print("untarring tarball " + tarball)
-            status, stdout, stderr, _ = testDef.execmd.execute(None, ["tar", "-zxf", tarball], testDef)
-            if 0 != status:
+            results = testDef.execmd.execute(None, ["tar", "-zxf", tarball], testDef)
+            if 0 != results['status']:
                 log['status'] = 1
                 log['stderr'] = "untar of tarball " + tarball_name + "FAILED"
                 return
         # move into the resulting directory
         os.chdir(package)
         # record the result
-        log['status'] = status
-        log['stdout'] = stdout
-        log['stderr'] = stderr
+        log['status'] = results['status']
+        log['stdout'] = results['stdout']
+        log['stderr'] = results['stderr']
         testDef.logger.verbose_print("setting location to " + package)
 
         # log our absolute location so others can find it
         log['location'] = os.getcwd()
         # track that we serviced this one
-        self.done[tarball] = (status, log['location'])
+        self.done[tarball] = (results['status'], log['location'])
 
         # change back to the original directory
         os.chdir(cwd)

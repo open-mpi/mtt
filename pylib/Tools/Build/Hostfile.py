@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2015-2018 Intel, Inc.  All rights reserved.
+# Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -155,13 +155,13 @@ class Hostfile(BuildMTTTool):
         ################################
         # Execute Plugin
         ################################
-        status, stdout, stderr, time = testDef.execmd.execute(cmds, shlex.split(cmds['nodestatus_cmd']), testDef)
-        if status != 0:
+        results = testDef.execmd.execute(cmds, shlex.split(cmds['nodestatus_cmd']), testDef)
+        if results['status'] != 0:
             log['status'] = 1
             log['stderr'] = "Command %s failed: %s" % (cmds['nodestatus_cmd'], " ".join(stderr))
             os.chdir(cwd)
             return
-        stdout_split = [l.split() for l in stdout]
+        stdout_split = [l.split() for l in results['stdout']]
         try:
             nodename_column = int(cmds['nodename_column'])
         except ValueError:
@@ -178,7 +178,7 @@ class Hostfile(BuildMTTTool):
             node_status = {l[nodename_column]: l[nodestatus_column] for l in stdout_split}
         except IndexError:
             log['status'] = 1
-            log['stderr'] = "" 
+            log['stderr'] = ""
             if nodename_column < 0 or nodename_column >= len(stdout_split[0]):
                 log['stderr'] += "nodename_column is out of bounds: %s  " % str(nodename_column)
             if nodestatus_column < 0 or nodestatus_column >= len(stdout_split[0]):

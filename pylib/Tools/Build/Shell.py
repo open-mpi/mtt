@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2015-2018 Intel, Inc.  All rights reserved.
+# Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -89,27 +89,27 @@ class Shell(BuildMTTTool):
         if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None:
             self.allocated = True
             allocate_cmdargs = shlex.split(cmds['allocate_cmd'])
-            status,stdout,stderr,time = testDef.execmd.execute(cmds, allocate_cmdargs, testDef)
-            if 0 != status:
+            results = testDef.execmd.execute(cmds, allocate_cmdargs, testDef)
+            if 0 != results['status']:
                 self.allocated = False
-                log['status'] = status
+                log['status'] = results['status']
                 if log['stderr']:
-                    log['stderr'].extend(stderr)
+                    log['stderr'].extend(results['stderr'])
                 else:
-                    log['stderr'] = stderr
+                    log['stderr'] = results['stderr']
                 return False
         return True
 
     def deallocate(self, log, cmds, testDef):
         if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None and self.allocated == True:
             deallocate_cmdargs = shlex.split(cmds['deallocate_cmd'])
-            status,stdout,stderr,time = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)
-            if 0 != status:
-                log['status'] = status
+            results = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)
+            if 0 != results['status']:
+                log['status'] = results['status']
                 if log['stderr']:
-                    log['stderr'].extend(stderr)
+                    log['stderr'].extend(results['stderr'])
                 else:
-                    log['stderr'] = stderr
+                    log['stderr'] = results['stderr']
                 return False
             self.allocated = False
         return True
@@ -236,7 +236,7 @@ class Shell(BuildMTTTool):
                             pieces.insert(0, bindir)
                             newpath = ":".join(pieces)
                             os.environ['LD_LIBRARY_PATH'] = newpath
-                            # prepend the include path 
+                            # prepend the include path
                             try:
                                 oldcpath = os.environ['CPATH']
                                 pieces = oldcpath.split(':')
@@ -247,7 +247,7 @@ class Shell(BuildMTTTool):
                             pieces.insert(0, bindir)
                             newpath = ":".join(pieces)
                             os.environ['CPATH'] = newpath
-                            # prepend the lib path 
+                            # prepend the lib path
                             try:
                                 oldlibpath = os.environ['LIBRARY_PATH']
                                 pieces = oldlibpath.split(':')
@@ -342,7 +342,7 @@ class Shell(BuildMTTTool):
                 self.deallocate(log, cmds, testDef)
                 return
 
-        status, stdout, stderr, time = testDef.execmd.execute(cmds, cfgargs, testDef)
+        results = testDef.execmd.execute(cmds, cfgargs, testDef)
 
         if 'TestRun' in log['section'].split(":")[0]:
             testDef.harasser.stop(harass_exec_ids, testDef)
@@ -351,24 +351,30 @@ class Shell(BuildMTTTool):
         if False == self.deallocate(log, cmds, testDef):
             return
 
-        if (cmds['fail_test'] is None and 0 != status) \
-                or (cmds['fail_test'] is not None and cmds['fail_returncode'] is None and 0 == status) \
-                or (cmds['fail_test'] is not None and cmds['fail_returncode'] is not None and int(cmds['fail_returncode']) != status):
+        if (cmds['fail_test'] is None and 0 != results['status']) \
+                or (cmds['fail_test'] is not None and cmds['fail_returncode'] is None and 0 == results['status']) \
+                or (cmds['fail_test'] is not None and cmds['fail_returncode'] is not None and int(cmds['fail_returncode']) != results['status']):
             # return to original location
             os.chdir(cwd)
             if log['status'] == 0:
                 log['status'] = 1
             else:
-                log['status'] = status
-            log['stdout'] = stdout
-            log['stderr'] = stderr
-            log['time'] = time
+                log['status'] = results['status']
+            log['stdout'] = results['stdout']
+            log['stderr'] = results['stderr']
+            try:
+                log['time'] = results['elapsed_secs']
+            except:
+                pass
             return
         log['status'] = 0
-        log['stdout'] = stdout
-        log['time'] = time
+        log['stdout'] = results['stdout']
+        try:
+            log['time'] = results['elapsed_secs']
+        except:
+            pass
         if cmds['fail_test'] == True:
-            log['stderr'] = stderr
+            log['stderr'] = results['stderr']
         # record this location for any follow-on steps
         log['location'] = location
 

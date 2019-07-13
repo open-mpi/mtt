@@ -1,6 +1,6 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
-# Copyright (c) 2015-2018 Intel, Inc.  All rights reserved.
+# Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -211,6 +211,7 @@ class Git(FetchMTTTool):
         # change to the scratch directory
         os.chdir(dst)
         # see if this software has already been cloned
+        results = {}
         if os.path.exists(repo):
             if not os.path.isdir(repo):
                 log['status'] = 1
@@ -223,24 +224,24 @@ class Git(FetchMTTTool):
             # if they want us to leave it as-is, then we are done
             try:
                 if cmds['asis']:
-                    status = 0
-                    stdout = None
-                    stderr = None
+                    results['status'] = 0
+                    results['stdout'] = None
+                    results['stderr'] = None
             except KeyError:
                 # since it already exists, let's just update it
-                status, stdout, stderr, _ = testDef.execmd.execute(cmds, ["git", "pull"], testDef)
+                results = testDef.execmd.execute(cmds, ["git", "pull"], testDef)
         else:
             # clone it
             if branch is not None:
-                status, stdout, stderr, _ = testDef.execmd.execute(cmds, ["git", "clone", "-b", branch, url], testDef)
+                results = testDef.execmd.execute(cmds, ["git", "clone", "-b", branch, url], testDef)
             else:
-                status, stdout, stderr, _ = testDef.execmd.execute(cmds, ["git", "clone", url], testDef)
+                results = testDef.execmd.execute(cmds, ["git", "clone", url], testDef)
             # move into it
             os.chdir(repo)
         # record the result
-        log['status'] = status
-        log['stdout'] = stdout
-        log['stderr'] = stderr
+        log['status'] = results['status']
+        log['stdout'] = results['stdout']
+        log['stderr'] = results['stderr']
 
         # log our absolute location so others can find it
         log['location'] = os.getcwd()

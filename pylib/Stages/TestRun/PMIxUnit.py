@@ -269,19 +269,22 @@ class PMIxUnit(TestRunMTTStage):
                 cmdargs.append(s)
             testLog['cmd'] = " ".join(cmdargs)
 
-            status,stdout,stderr,time = testDef.execmd.execute(cmds, cmdargs, testDef)
+            results = testDef.execmd.execute(cmds, cmdargs, testDef)
 
-            if 0 == status:
+            if 0 == results['status']:
                 numPass = numPass + 1
             else:
                 numFail = numFail + 1
                 if 0 == finalStatus:
                     finalStatus = status
                     finalError = stderr
-            testLog['status'] = status
-            testLog['stdout'] = stdout
-            testLog['stderr'] = stderr
-            testLog['time'] = time
+            testLog['status'] = results['status']
+            testLog['stdout'] = results['stdout']
+            testLog['stderr'] = results['stderr']
+            try:
+                testLog['time'] = results['elapsed_secs']
+            except:
+                pass
             log['testresults'].append(testLog)
             numTests = numTests + 1
 

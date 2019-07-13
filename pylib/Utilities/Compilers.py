@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2016-2018 Intel, Inc.  All rights reserved.
+# Copyright (c) 2016-2019 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -181,14 +181,14 @@ class Compilers(BaseMTTUtility):
 
         # Attempt to compile it
         mycmdargs = [compiler, "-c", "spastic.c"]
-        status, stdout, stderr, _ = testDef.execmd.execute(None, mycmdargs, testDef)
+        results = testDef.execmd.execute(None, mycmdargs, testDef)
 
         # cleanup the test
         os.remove("spastic.c")
         if os.path.exists("spastic.o"):
             os.remove("spastic.o")
 
-        if 0 == status:
+        if 0 == results['status']:
             return True
         return False
 
@@ -215,6 +215,6 @@ class Compilers(BaseMTTUtility):
     def check_version(self, compiler, version, testDef):
         # try the universal version option
         mycmdargs = [compiler, version]
-        status, stdout, stderr, _ = testDef.execmd.execute(None, mycmdargs, testDef)
-        return status, stdout
+        results = testDef.execmd.execute(None, mycmdargs, testDef)
+        return results['status'], results['stdout']
 

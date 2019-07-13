@@ -1,6 +1,6 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
-# Copyright (c) 2015-2018 Intel, Inc.  All rights reserved.
+# Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -85,10 +85,9 @@ class SLURM(LauncherMTTTool):
 
     def deactivate(self):
         IPlugin.deactivate(self)
-        if self.allocated and self.testDef and self.cmds:
+        if self.testDef and self.cmds:
             deallocate_cmdargs = shlex.split(self.cmds['deallocate_cmd'])
-            _status,_stdout,_stderr,_time = self.testDef.execmd.execute(self.cmds, deallocate_cmdargs, self.testDef)
-            self.allocated = False
+            self.deallocateCluster(None, self.cmds, self.testDef)
 
 
     def print_name(self):
@@ -101,11 +100,7 @@ class SLURM(LauncherMTTTool):
         return
 
     def execute(self, log, keyvals, testDef):
-
         self.testDef = testDef
-
-        midpath = False
-
         testDef.logger.verbose_print("SLURM Launcher")
 
         # parse any provided options - these will override the defaults
@@ -115,191 +110,35 @@ class SLURM(LauncherMTTTool):
 
         # check the log for the title so we can
         # see if this is setting our default behavior
-        try:
-            if log['section'] is not None:
-                if "Default" in log['section']:
-                    # this section contains default settings
-                    # for this launcher
-                    myopts = {}
-                    testDef.parseOptions(log, self.options, keyvals, myopts)
-                    # transfer the findings into our local storage
-                    keys = list(self.options.keys())
-                    optkeys = list(myopts.keys())
-                    for optkey in optkeys:
-                        for key in keys:
-                            if key == optkey:
-                                self.options[key] = (myopts[optkey],self.options[key][1])
-
-                    # we captured the default settings, so we can
-                    # now return with success
-                    log['status'] = 0
-                    return
-        except KeyError:
-            # error - the section should have been there
-            log['status'] = 1
-            log['stderr'] = "Section not specified"
-            return
-        # must be executing a test of some kind - the install stage
-        # must be specified so we can find the tests to be run
-        try:
-            parent = keyvals['parent']
-            if parent is not None:
-                # get the log entry as it contains the location
-                # of the built tests
-                bldlog = testDef.logger.getLog(parent)
-                try:
-                    location = bldlog['location']
-                except KeyError:
-                    # if it wasn't recorded, then there is nothing
-                    # we can do
-                    log['status'] = 1
-                    log['stderr'] = "Location of built tests was not provided"
-                    return
-                # Check for modules used during the build
-                status,stdout,stderr = testDef.modcmd.checkForModules(log['section'], bldlog, cmds, testDef)
-                if 0 != status:
-                    log['status'] = status
-                    log['stdout'] = stdout
-                    log['stderr'] = stderr
-                    return
-
-                # get the log of any middleware so we can get its location
-                try:
-                    midlog = testDef.logger.getLog(bldlog['middleware'])
-                    if midlog is not None:
-                        # get the location of the middleware
-                        try:
-                            if midlog['location'] is not None:
-                                # prepend that location to our paths
-                                try:
-                                    oldbinpath = os.environ['PATH']
-                                    pieces = oldbinpath.split(':')
-                                except KeyError:
-                                    oldbinpath = ""
-                                    pieces = []
-                                bindir = os.path.join(midlog['location'], "bin")
-                                pieces.insert(0, bindir)
-                                newpath = ":".join(pieces)
-                                os.environ['PATH'] = newpath
-                                # prepend the loadable lib path
-                                try:
-                                    oldldlibpath = os.environ['LD_LIBRARY_PATH']
-                                    pieces = oldldlibpath.split(':')
-                                except KeyError:
-                                    oldldlibpath = ""
-                                    pieces = []
-                                bindir = os.path.join(midlog['location'], "lib")
-                                pieces.insert(0, bindir)
-                                newpath = ":".join(pieces)
-                                os.environ['LD_LIBRARY_PATH'] = newpath
-
-                                # mark that this was done
-                                midpath = True
-                        except KeyError:
-                            # if it was already installed, then no location would be provided
-                            pass
-                        # check for modules required by the middleware
-                        status,stdout,stderr = testDef.modcmd.checkForModules(log['section'], midlog, cmds, testDef)
-                        if 0 != status:
-                            log['status'] = status
-                            log['stdout'] = stdout
-                            log['stderr'] = stderr
-                            return
-                except KeyError:
-                    pass
-        except KeyError:
-            log['status'] = 1
-            log['stderr'] = "Parent test build stage was not provided"
+        status = self.updateDefaults(log, self.options, keyvals)
+        if status != 0:
+            # indicates there is nothing more for us to do - status
+            # et al is already in the log
             return
 
-        # Apply any requested environment module settings
-        status,stdout,stderr = testDef.modcmd.applyModules(log['section'], cmds, testDef)
-        if 0 != status:
-            log['status'] = status
-            log['stdout'] = stdout
-            log['stderr'] = stderr
+        # now let's setup the PATH and LD_LIBRARY_PATH as reqd
+        status = self.setupPaths(log, keyvals, cmds, testDef)
+        if status != 0:
+            # something went wrong - error is in the log
             return
 
-        # now ready to execute the test - we are pointed at the middleware
-        # and have obtained the list of any modules associated with it. We need
-        # to change to the test location and begin executing, first saving
-        # our current location so we can return when done
-        cwd = os.getcwd()
-        os.chdir(location)
-        # did they give us a list of specific directories where the desired
-        # tests to be executed reside?
+        # collect the tests to be considered
         tests = []
-        if cmds['test_list'] is None:
-            try:
-                if cmds['test_dir'] is not None:
-                    # pick up the executables from the specified directories
-                    dirs = cmds['test_dir'].split()
-                    for dr in dirs:
-                        dr = dr.strip()
-                        # remove any commas and quotes
-                        dr = dr.replace('\"','')
-                        dr = dr.replace(',','')
-                        for dirName, subdirList, fileList in os.walk(dr):
-                            for fname in fileList:
-                                # see if this is an executable
-                                filename = os.path.abspath(os.path.join(dirName,fname))
-                                if os.path.isfile(filename) and os.access(filename, os.X_OK):
-                                    # add this file to our list of tests to execute
-                                    tests.append(filename)
-                else:
-                    # get the list of executables from this directory and any
-                    # subdirectories beneath it
-                    for dirName, subdirList, fileList in os.walk("."):
-                        for fname in fileList:
-                            # see if this is an executable
-                            filename = os.path.abspath(os.path.join(dirName,fname))
-                            if os.path.isfile(filename) and os.access(filename, os.X_OK):
-                                # add this file to our list of tests to execute
-                                tests.append(filename)
-            except KeyError:
-                # get the list of executables from this directory and any
-                # subdirectories beneath it
-                for dirName, subdirList, fileList in os.walk("."):
-                    for fname in fileList:
-                        # see if this is an executable
-                        filename = os.path.abspath(os.path.join(dirName,fname))
-                        if os.path.isfile(filename) and os.access(filename, os.X_OK):
-                            # add this file to our list of tests to execute
-                            tests.append(filename)
-        # If list of tests is provided, use list rather than grabbing all tests
-        else:
-            if cmds['test_dir'] is not None:
-                dirs = cmds['test_dir'].split()
-            else:
-                dirs = ['.']
-            for dr in dirs:
-                dr = dr.strip()
-                dr = dr.replace('\"','')
-                dr = dr.replace(',','')
-                for dirName, subdirList, fileList in os.walk(dr):
-                    for fname_cmd in cmds['test_list'].split("\n"):
-                        fname = fname_cmd.strip().split(" ")[0]
-                        fname_args = " ".join(fname_cmd.strip().split(" ")[1:])
-                        if fname not in fileList:
-                            continue
-                        filename = os.path.abspath(os.path.join(dirName,fname))
-                        if os.path.isfile(filename) and os.access(filename, os.X_OK):
-                            tests.append((filename+" "+fname_args).strip())
+        self.collectTests(log, cmds, tests)
         # check that we found something
         if not tests:
             log['status'] = 1
             log['stderr'] = "No tests found"
-            os.chdir(cwd)
+            self.resetPaths(log, testDef)
             return
-        # get the "skip" exit status
-        skipStatus = int(cmds['skipped'])
+
         # assemble the command
         cmdargs = [cmds['command'].strip()]
 
         # Add support for using job_name with mpiexec
         if (cmds['command'] == 'mpiexec' or cmds['command'] == 'mpiexec.hydra' or cmds['command'] == 'mpirun') and cmds['job_name'] is not None:
             if cmds['options'] is None or (cmds['options'] is not None and '-bootstrap slurm' not in cmds['options']):
-                # Check if this is a negative test using fail_tests=ini_check 
+                # Check if this is a negative test using fail_tests=ini_check
                 if cmds['fail_tests'] is not None and 'ini_check' in cmds['fail_tests']:
                     log['status'] = 0
                     # log the results directly since this will be marked as a pass
@@ -307,7 +146,7 @@ class SLURM(LauncherMTTTool):
                 else:
                     log['status'] = 1
                 log['stderr'] = "%s used, but \"-bootstrap slurm\" not in options" % cmds['command']
-                os.chdir(cwd)
+                self.resetPaths(log, testDef)
                 return
             cmdargs.append("-bootstrap-exec-args")
             cmdargs.append("--job-name=%s"%cmds['job_name'])
@@ -327,54 +166,15 @@ class SLURM(LauncherMTTTool):
         if cmds['hostfile'] is not None:
             cmdargs.append("-hostfile")
             cmdargs.append(cmds['hostfile'])
-        # cycle thru the list of tests and execute each of them
-        log['testresults'] = []
-        finalStatus = 0
-        finalError = ""
-        numTests = 0
-        numPass = 0
-        numSkip = 0
-        numFail = 0
-        if cmds['max_num_tests'] is not None:
-            maxTests = int(cmds['max_num_tests'])
-        else:
-            maxTests = 10000000
-
-        fail_tests = cmds['fail_tests']
-        if fail_tests is not None:
-            fail_tests = [t.strip() for t in fail_tests.split("\n")]
-        else:
-            fail_tests = []
-        for i,t in enumerate(fail_tests):
-            for t2 in tests:
-                if (t2.split(" ")[0].split("/")[-1]+" "+" ".join(t2.split(" ")[1:])).strip() == t.strip():
-                    fail_tests[i] = t2
-        fail_returncodes = cmds['fail_returncodes']
-        if fail_returncodes is not None:
-            fail_returncodes = [int(t.strip()) for t in fail_returncodes.split("\n")]
-
-        if fail_tests is None:
-            expected_returncodes = {test:0 for test in tests}
-        else:
-            if fail_returncodes is None:
-                expected_returncodes = {test:(None if test in fail_tests else 0) for test in tests}
-            else:
-                fail_returncodes = {test:rtncode for test,rtncode in zip(fail_tests,fail_returncodes)}
-                expected_returncodes = {test:(fail_returncodes[test] if test in fail_returncodes else 0) for test in tests}
 
         # Allocate cluster
-        self.allocated = False
-        if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None:
-            self.allocated = True
-            allocate_cmdargs = shlex.split(cmds['allocate_cmd'])
-            _status,_stdout,_stderr,_time = testDef.execmd.execute(cmds, allocate_cmdargs, testDef)
-            if 0 != _status:
-                log['status'] = _status
-                log['stderr'] = _stderr
-                os.chdir(cwd)
-                return
+        status = self.allocateCluster(log, cmds, testDef)
+        if 0 != status:
+            self.resetPaths(log, testDef)
+            return
 
         # Add support for srun in --no-shell allocation
+        # can only be done after we get the allocation
         if self.allocated and (cmds['command'] == 'srun') and \
             ('--job-name' in cmds['allocate_cmd']) and \
             ('--no-shell' in cmds['allocate_cmd']) and \
@@ -387,89 +187,21 @@ class SLURM(LauncherMTTTool):
             jobid = int(subprocess.check_output(['squeue', '--noheader', '--format', '%i', '--name', jobname]))
             cmdargs.append('--jobid=%d' % (jobid))
 
-        # Execute all tests
-        for test in tests:
-            # Skip tests that are in "skip_tests" ini input
-            if cmds['skip_tests'] is not None and (test.split(" ")[0].split('/')[-1]+" "+" ".join(test.split(" ")[1:])).strip() in [st.strip() for st in cmds['skip_tests'].split()]:
-                numTests += 1
-                numSkip += 1
-                if numTests == maxTests:
-                    break
-                continue
-            testLog = {'test':test}
-            cmdargs.extend(shlex.split(test))
-            testLog['cmd'] = " ".join(["\"%s\"" % cmdarg if " " in cmdarg else cmdarg for cmdarg in cmdargs])
-
-            harass_exec_ids = testDef.harasser.start(testDef)
-
-            harass_check = testDef.harasser.check(harass_exec_ids, testDef)
-            if harass_check is not None:
-                testLog['stderr'] = 'Not all harasser scripts started. These failed to start: ' \
-                                + ','.join([h_info[1]['start_script'] for h_info in harass_check[0]])
-                testLog['time'] = sum([r_info[3] for r_info in harass_check[1]])
-                testLog['status'] = 1
-                finalStatus = 1
-                finalError = testLog['stderr']
-                numFail = numFail + 1
-                testDef.harasser.stop(harass_exec_ids, testDef)
-                continue
-
-            status,stdout,stderr,time = testDef.execmd.execute(cmds, cmdargs, testDef)
-
-            testDef.harasser.stop(harass_exec_ids, testDef)
-
-            if ((expected_returncodes[test] is None and 0 == status) or (expected_returncodes[test] is not None and expected_returncodes[test] != status)) and skipStatus != status and 0 == finalStatus:
-                if expected_returncodes[test] == 0:
-                    finalStatus = status
-                else:
-                    finalStatus = 1
-                finalError = stderr
-            if (expected_returncodes[test] is None and 0 != status) or (expected_returncodes[test] == status):
-                numPass = numPass + 1
-            elif skipStatus == status:
-                numSkip = numSkip + 1
-            else:
-                numFail = numFail + 1
-            if expected_returncodes[test] == 0:
-                testLog['status'] = status
-            else:
-                if status == expected_returncodes[test]:
-                    testLog['status'] = 0
-                else:
-                    testLog['status'] = 1
-            testLog['stdout'] = stdout
-            testLog['stderr'] = stderr
-            testLog['time'] = time
-            log['testresults'].append(testLog)
-            cmdargs = cmdargs[:-1]
-            numTests = numTests + 1
-            if numTests == maxTests:
-                break
+        # execute the tests
+        self.runTests(log, cmdargs, cmds, testDef)
 
         # Deallocate cluster
-        if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None and self.allocated:
-            deallocate_cmdargs = shlex.split(cmds['deallocate_cmd'])
-            _status,_stdout,_stderr,_time = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)
-            if 0 != _status:
-                log['status'] = _status
-                log['stderr'] = _stderr
-                os.chdir(cwd)
-                return
-            self.allocated = False
+        self.deallocateCluster(log, cmds, testDef)
 
-        log['status'] = finalStatus
-        log['stderr'] = finalError
-        log['numTests'] = numTests
-        log['numPass'] = numPass
-        log['numSkip'] = numSkip
-        log['numFail'] = numFail
+        # reset our paths and return us to our cwd
+        self.resetPaths(log, testDef)
 
         # handle case where srun is used instead of mpirun for number of processes (np)
         if cmds['command'] == 'srun':
             num_tasks = None
             num_nodes = None
             num_tasks_per_node = None
-            
+
             if '-n ' in cmds['options']:
                 num_tasks = str(cmds['options'].split('-n ')[1].split(' ')[0])
             if '--ntasks=' in cmds['options']:
@@ -527,18 +259,4 @@ class SLURM(LauncherMTTTool):
             except KeyError:
                 log['np'] = None
 
-        # Revert any requested environment module settings
-        status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
-        if 0 != status:
-            log['status'] = status
-            log['stdout'] = stdout
-            log['stderr'] = stderr
-            return
-
-        # if we added middleware to the paths, remove it
-        if midpath:
-            os.environ['PATH'] = oldbinpath
-            os.environ['LD_LIBRARY_PATH'] = oldldlibpath
-
-        os.chdir(cwd)
         return

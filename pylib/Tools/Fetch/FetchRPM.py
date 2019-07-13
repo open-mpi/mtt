@@ -107,8 +107,8 @@ class FetchRPM(FetchMTTTool):
         for t in tmp:
             qcmd.append(t)
         qcmd.append(rpm)
-        status, stdout, stderr, _ = testDef.execmd.execute(None, qcmd, testDef)
-        if 0 == status:
+        results = testDef.execmd.execute(None, qcmd, testDef)
+        if 0 == results['status']:
             log['status'] = 0
             log['stdout'] = "RPM " + rpm + " already exists on system"
             return
@@ -122,17 +122,17 @@ class FetchRPM(FetchMTTTool):
             icmd.append(t)
         icmd.append(rpm)
         testDef.logger.verbose_print("installing package " + rpm)
-        status, stdout, stderr, _ = testDef.execmd.execute(None, icmd, testDef)
-        if 0 != status:
+        results = testDef.execmd.execute(None, icmd, testDef)
+        if 0 != results['status']:
             log['status'] = 1
             log['stderr'] = "install of " + rpm + " FAILED"
             return
 
         # record the result
-        log['status'] = status
-        log['stdout'] = stdout
-        log['stderr'] = stderr
+        log['status'] = results['status']
+        log['stdout'] = results['stdout']
+        log['stderr'] = results['stderr']
 
         # track that we serviced this one
-        self.done[rpm] = status
+        self.done[rpm] = results['status']
         return
