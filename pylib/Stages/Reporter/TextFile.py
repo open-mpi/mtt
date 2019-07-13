@@ -138,14 +138,44 @@ class TextFile(ReporterMTTStage):
                 pass
             try:
                 if lg['numTests'] is not None:
-                    print("\tTests:",lg['numTests'],"Pass:",lg['numPass'],"Skip:",lg['numSkip'],"Fail:",lg['numFail'], file=self.fh)
+                    try:
+                        npass = str(lg['numPass'])
+                    except:
+                        npass = "N/A"
+                    try:
+                        nskip = str(lg['numSkip'])
+                    except:
+                        nskip = "N/A"
+                    try:
+                        nfail = str(lg['numFail'])
+                    except:
+                        nfail = "N/A"
+                    try:
+                        ntime = str(lg['numTimed'])
+                    except:
+                        ntime = "N/A"
+
+                    print("\tTests:",lg['numTests'],"Pass:",npass,"Skip:",nskip,"Fail:",nfail,"TimedOut:",ntime, file=self.fh)
             except KeyError:
                 pass
             try:
                 if lg['testresults'] is not None:
                     for test in lg['testresults']:
                         tname = os.path.basename(test['test'])
-                        print("\t\t",tname,"  Status:",test['status'], file=self.fh)
+                        try:
+                            if test['result'] == testDef.MTT_TEST_PASSED:
+                                st = "PASSED"
+                            elif test['result'] == testDef.MTT_TEST_FAILED:
+                                st = "FAILED"
+                            elif test['result'] == testDef.MTT_TEST_TIMED_OUT:
+                                st = "TIMED OUT"
+                            elif test['result'] == testDef.MTT_TEST_SKIPPED:
+                                st = "SKIPPED"
+                            else:
+                                st = "UNKNOWN"
+                        except:
+                            st = "NOT GIVEN"
+                        print("\t\t",tname,"  Status:",test['status'], "Category:",st, file=self.fh)
                         if 0 != test['status']:
                             if "stderr" in test:
                                 self._print_stderr_block("stderr", test['stderr'], tabs=3)

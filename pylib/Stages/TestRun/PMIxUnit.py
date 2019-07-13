@@ -273,8 +273,10 @@ class PMIxUnit(TestRunMTTStage):
 
             if 0 == results['status']:
                 numPass = numPass + 1
+                testLog['result'] = testDef.MTT_TEST_PASSED
             else:
                 numFail = numFail + 1
+                testLog['result'] = testDef.MTT_TEST_FAILED
                 if 0 == finalStatus:
                     finalStatus = status
                     finalError = stderr

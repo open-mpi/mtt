@@ -28,18 +28,6 @@ from pathlib import Path
 
 is_py2 = sys.version[0] == '2'
 
-# define a few global "constant" names that can be used
-# across plugins - the following categories must match
-# their equivalent values in the server. See
-# https://github.com/open-mpi/mtt-legacy/blob/master/lib/MTT/Values.pm#L43-L57
-# for the list
-
-MTT_TEST_FAILED             =   0
-MTT_TEST_PASSED             =   1
-MTT_TEST_SKIPPED            =   2
-MTT_TEST_TIMED_OUT          =   3
-MTT_TEST_TIMED_OUT_OR_FAIL  =   4
-
 
 # The Test Definition class is mostly a storage construct
 # to make it easier when passing values across stages and
@@ -89,6 +77,17 @@ class TestDef(object):
         self.log = {}
         self.watchdog = None
         self.plugin_trans_sem = Semaphore()
+        # define a few global "constant" names that can be used
+        # across plugins - the following categories must match
+        # their equivalent values in the server. See
+        # https://github.com/open-mpi/mtt-legacy/blob/master/lib/MTT/Values.pm#L43-L57
+        # for the list
+        self.MTT_TEST_FAILED             =   0
+        self.MTT_TEST_PASSED             =   1
+        self.MTT_TEST_SKIPPED            =   2
+        self.MTT_TEST_TIMED_OUT          =   3
+        self.MTT_TEST_TIMED_OUT_OR_FAIL  =   4
+
 
     def setOptions(self, args):
         self.options = vars(args)

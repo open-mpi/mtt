@@ -360,7 +360,7 @@ class LauncherMTTTool(IPlugin):
                 testLog['time'] = 0
                 testLog['status'] = self.skipStatus
                 # clearly mark this as a skipped test
-                testLog['result'] = MTT_TEST_SKIPPED
+                testLog['result'] = testDef.MTT_TEST_SKIPPED
                 log['testresults'].append(testLog)
                 continue
 
@@ -372,7 +372,7 @@ class LauncherMTTTool(IPlugin):
                                 + ','.join([h_info[1]['start_script'] for h_info in harass_check[0]])
                 testLog['time'] = sum([r_info[3] for r_info in harass_check[1]])
                 testLog['status'] = 1
-                testLog['result'] = MTT_TEST_FAILED
+                testLog['result'] = testDef.MTT_TEST_FAILED
                 self.finalStatus = 1
                 self.finalError = testLog['stderr']
                 self.numFail += 1
@@ -391,7 +391,7 @@ class LauncherMTTTool(IPlugin):
             try:
                 if results['timeout']:
                     # the test timed out, so flag it as having exited that way
-                    testLog['result'] = MTT_TEST_TIMED_OUT
+                    testLog['result'] = testDef.MTT_TEST_TIMED_OUT
                     self.finalStatus = results['status']
                     self.finalError = results['stderr']
                     self.numTimed += 1
@@ -400,12 +400,12 @@ class LauncherMTTTool(IPlugin):
                 # we should see it return the expected code or else we declare it
                 # as having failed
                 if results['status'] != expected_returncodes[test]:
-                    testLog['result'] = MTT_TEST_FAILED
+                    testLog['result'] = testDef.MTT_TEST_FAILED
                     self.finalStatus = results['status']
                     self.finalError = results['stderr']
                     self.numFail += 1
                 else:
-                    testLog['result'] = MTT_TEST_PASSED
+                    testLog['result'] = testDef.MTT_TEST_PASSED
                     self.numPass += 1
 
             log['testresults'].append(testLog)
