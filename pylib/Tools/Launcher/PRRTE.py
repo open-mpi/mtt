@@ -146,6 +146,10 @@ class PRRTE(LauncherMTTTool):
         if cmds['timeout'] is not None:
             cmdargs.append("--timeout")
             cmdargs.append(cmds['timeout'])
+            # remove this directive to ensure the cmd executor
+            # does not also set a timeout - avoids a race
+            # condition
+            del cmds['timeout']
         if cmds['options'] is not None:
             optArgs = cmds['options'].split(',')
             for arg in optArgs:

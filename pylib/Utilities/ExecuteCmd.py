@@ -100,9 +100,9 @@ class ExecuteCmd(BaseMTTUtility):
 
         # register the signal handler for timeout detection
         timeoutset = False
-        if options is not None and 'fail_timeout' in options:
+        if options is not None and 'timeout' in options:
             signal.signal(signal.SIGALRM, handler)
-            signal.alarm(options['fail_timeout'])
+            signal.alarm(options['timeout'])
             timeoutset = True
 
         # define storage to catch the output
