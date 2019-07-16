@@ -159,7 +159,7 @@ class PRRTE(LauncherMTTTool):
         # start the PRRTE DVM
         process = Popen(['prte'], stdout=PIPE, stderr=PIPE)
         # wait a little for the prte daemon to start
-        time.sleep(int(self.options['waittime']))
+        time.sleep(int(cmds['waittime']))
 
         # execute the tests
         self.runTests(log, cmdargs, cmds, testDef)
