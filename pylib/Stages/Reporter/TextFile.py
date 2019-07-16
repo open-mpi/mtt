@@ -111,10 +111,10 @@ class TextFile(ReporterMTTStage):
                 pass
             try:
                 if lg['compiler'] is not None:
-                    print("Compiler:", file=self.fh)
+                    print("\tCompiler:", file=self.fh)
                     comp = lg['compiler']
-                    print("\t",comp['family'], file=self.fh)
-                    print("\t",comp['version'], file=self.fh)
+                    print("\t\t",comp['family'], file=self.fh)
+                    print("\t\t",comp['version'], file=self.fh)
             except KeyError:
                 pass
             try:
@@ -155,7 +155,7 @@ class TextFile(ReporterMTTStage):
                     except:
                         ntime = "N/A"
 
-                    print("\tTests:",lg['numTests'],"Pass:",npass,"Skip:",nskip,"Fail:",nfail,"TimedOut:",ntime, file=self.fh)
+                    print("\n\tTests:",lg['numTests'],"Pass:",npass,"Skip:",nskip,"Fail:",nfail,"TimedOut:",ntime,"\n", file=self.fh)
             except KeyError:
                 pass
             try:

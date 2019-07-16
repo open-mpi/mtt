@@ -11,7 +11,7 @@
 #
 
 from __future__ import print_function
-import os
+import os, time
 from LauncherMTTTool import *
 import shlex
 from subprocess import Popen, PIPE
@@ -43,6 +43,8 @@ from subprocess import Popen, PIPE
 # @param modules_unload  Modules to unload
 # @param modules         Modules to load
 # @param modules_swap    Modules to swap
+# @param dependencies              List of dependencies specified as the build stage name
+# @param waittime                  Number of seconds to wait for PRRTE DVM to start before executing tests
 # @}
 class PRRTE(LauncherMTTTool):
 
@@ -61,17 +63,19 @@ class PRRTE(LauncherMTTTool):
         self.options['stdout_save_lines'] = (-1, "Number of lines of stdout to save")
         self.options['stderr_save_lines'] = (-1, "Number of lines of stderr to save")
         self.options['test_dir'] = (None, "Names of directories to be scanned for tests")
-        self.options['fail_tests'] = (None, "Names of tests that are expected to fail")
-        self.options['fail_returncodes'] = (None, "Expected returncodes of tests expected to fail")
+        self.options['fail_tests'] = (None, "Comma-delimited names of tests that are expected to fail")
+        self.options['fail_returncodes'] = (None, "Comma-delimited expected returncodes of tests expected to fail")
         self.options['fail_timeout'] = (None, "Maximum execution time for tests expected to fail")
-        self.options['skip_tests'] = (None, "Names of tests to be skipped")
+        self.options['skip_tests'] = (None, "Comma-delimited names of tests to be skipped")
         self.options['max_num_tests'] = (None, "Maximum number of tests to run")
-        self.options['test_list'] = (None, "List of tests to run, default is all")
+        self.options['test_list'] = (None, "Comma-delimited list of tests to run, default is all")
         self.options['allocate_cmd'] = (None, "Command to use for allocating nodes from the resource manager")
         self.options['deallocate_cmd'] = (None, "Command to use for deallocating nodes from the resource manager")
         self.options['modules'] = (None, "Modules to load")
         self.options['modules_unload'] = (None, "Modules to unload")
         self.options['modules_swap'] = (None, "Modules to swap")
+        self.options['dependencies'] = (None, "List of dependencies specified as the build stage name - e.g., MiddlwareBuild_package to be added to configure using --with-package=location")
+        self.options['waittime'] = (5, "Number of seconds to wait for PRRTE DVM to start before executing tests")
 
         self.allocated = False
         self.testDef = None
@@ -87,7 +91,7 @@ class PRRTE(LauncherMTTTool):
 
     def deactivate(self):
         IPlugin.deactivate(self)
-        if self.testDef and self.cmds:
+        if self.testDef and self.cmds and self.cmds['deallocate_cmd'] is not None:
             deallocate_cmdargs = shlex.split(self.cmds['deallocate_cmd'])
             self.deallocateCluster(None, self.cmds, self.testDef)
 
@@ -110,7 +114,7 @@ class PRRTE(LauncherMTTTool):
         self.cmds = cmds
 
         # update our defaults, if requested
-        status = self.updateDefaults(log, self.options, keyvals)
+        status = self.updateDefaults(log, self.options, keyvals, testDef)
         if status != 0:
             # indicates there is nothing more for us to do - status
             # et al is already in the log
@@ -123,12 +127,10 @@ class PRRTE(LauncherMTTTool):
             return
 
         # collect the tests to be considered
-        tests = []
-        self.collectTests(log, cmds, tests)
+        status = self.collectTests(log, cmds)
         # check that we found something
-        if not tests:
-            log['status'] = 1
-            log['stderr'] = "No tests found"
+        if status != 0:
+            # something went wrong - error is in the log
             self.resetPaths(log, testDef)
             return
 
@@ -143,13 +145,6 @@ class PRRTE(LauncherMTTTool):
         if cmds['hostfile'] is not None:
             cmdargs.append("-hostfile")
             cmdargs.append(cmds['hostfile'])
-        if cmds['timeout'] is not None:
-            cmdargs.append("--timeout")
-            cmdargs.append(cmds['timeout'])
-            # remove this directive to ensure the cmd executor
-            # does not also set a timeout - avoids a race
-            # condition
-            del cmds['timeout']
         if cmds['options'] is not None:
             optArgs = cmds['options'].split(',')
             for arg in optArgs:
@@ -163,6 +158,8 @@ class PRRTE(LauncherMTTTool):
 
         # start the PRRTE DVM
         process = Popen(['prte'], stdout=PIPE, stderr=PIPE)
+        # wait a little for the prte daemon to start
+        time.sleep(int(self.options['waittime']))
 
         # execute the tests
         self.runTests(log, cmdargs, cmds, testDef)

@@ -19,11 +19,6 @@ import signal
 from BaseMTTUtility import *
 
 
-# define a signal handler to catch timeout
-# of a command
-def handler(signum, frame):
-    raise TimeoutError()
-
 ## @addtogroup Utilities
 # @{
 # @section ExecuteCmd
@@ -98,13 +93,6 @@ class ExecuteCmd(BaseMTTUtility):
             testDef.logger.verbose_print("ExecuteCmd error: no cmdargs")
             return (1, [], ["MTT ExecuteCmd error: no cmdargs"], 0)
 
-        # register the signal handler for timeout detection
-        timeoutset = False
-        if options is not None and 'timeout' in options:
-            signal.signal(signal.SIGALRM, handler)
-            signal.alarm(options['timeout'])
-            timeoutset = True
-
         # define storage to catch the output
         stdout = []
         stderr = []
@@ -113,19 +101,21 @@ class ExecuteCmd(BaseMTTUtility):
         # if it times out, assuming timeout was set
         results = {}
         p = None
+        if time_exec:
+            starttime = datetime.datetime.now()
+
+        # it is possible that the command doesn't exist or
+        # isn't in our path, so protect us
         try:
-            if time_exec:
-                starttime = datetime.datetime.now()
-
-            # it is possible that the command doesn't exist or
-            # isn't in our path, so protect us
+            # open a subprocess with stdout and stderr
+            # as distinct pipes so we can capture their
+            # output as the process runs
+            p = subprocess.Popen(mycmdargs,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             try:
-                # open a subprocess with stdout and stderr
-                # as distinct pipes so we can capture their
-                # output as the process runs
-                p = subprocess.Popen(mycmdargs,
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
+                if options is not None and 'timeout' in options:
+                    t = int(options['timeout'])
+                    p.wait(timeout=t)
                 # loop until the pipes close
                 while True:
                     reads = [p.stdout.fileno(), p.stderr.fileno()]
@@ -156,40 +146,38 @@ class ExecuteCmd(BaseMTTUtility):
 
                     if stdout_done and stderr_done:
                         break
-
+            except subprocess.TimeoutExpired:
+                testDef.logger.verbose_print("ExecuteCmd Timed Out%s" % (": elapsed=%s"%elapsed_datetime if time_exec else ""), \
+                                             timestamp=endtime if time_exec else None)
+                stderr.append("**** TIMED OUT ****")
+                results['timedout'] = True
+                results['status'] = 1
+                results['stdout'] = stdout[-1 * stdoutlines:]
+                results['stderr'] = stderr[-1 * stderrlines:]
                 if time_exec:
                     endtime = datetime.datetime.now()
                     elapsed_datetime = endtime - starttime
                     results['elapsed_secs'] = elapsed_datetime.total_seconds()
-
-                testDef.logger.verbose_print("ExecuteCmd done%s" % (": elapsed=%s"%elapsed_datetime if time_exec else ""), \
-                                             timestamp=endtime if time_exec else None)
-
-                p.wait()
-                results['status'] = p.returncode
-                results['stdout'] = stdout[-1 * stdoutlines:]
-                results['stderr'] = stderr[-1 * stderrlines:]
-            except OSError as e:
-                if p:
-                    p.wait()
-                if timeoutset:
-                    signal.alarm(0)  # cancel the timeout and restore the handler
-                results['status'] = 1
-                results['stdout'] = []
-                results['stderr'] = [str(e)]
                 return results
-        except TimeoutError as exc:
-            stderr.append("**** TIMED OUT ****")
-            results['timedout'] = True
-            results['status'] = 1
-            results['stdout'] = stdout[-1 * stdoutlines:]
-            results['stderr'] = stderr[-1 * stderrlines:]
+
             if time_exec:
                 endtime = datetime.datetime.now()
                 elapsed_datetime = endtime - starttime
                 results['elapsed_secs'] = elapsed_datetime.total_seconds()
 
-        if timeoutset:
-            signal.alarm(0)  # cancel the timeout and restore the handler
+            testDef.logger.verbose_print("ExecuteCmd done%s" % (": elapsed=%s"%elapsed_datetime if time_exec else ""), \
+                                         timestamp=endtime if time_exec else None)
+
+            p.wait()
+            results['status'] = p.returncode
+            results['stdout'] = stdout[-1 * stdoutlines:]
+            results['stderr'] = stderr[-1 * stderrlines:]
+        except OSError as e:
+            if p:
+                p.wait()
+            results['status'] = 1
+            results['stdout'] = []
+            results['stderr'] = [str(e)]
+            return results
 
         return results

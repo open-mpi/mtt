@@ -11,6 +11,8 @@
 from __future__ import print_function
 from yapsy.IPlugin import IPlugin
 
+import os
+
 ## @addtogroup Tools
 # @{
 # @addtogroup Launcher
@@ -20,8 +22,8 @@ class LauncherMTTTool(IPlugin):
     def __init__(self):
         self.tests = []
         self.skip_tests = []
-        self.oldbinpath = ""
-        self.oldldlibpath = ""
+        self.oldbinpath = None
+        self.oldldlibpath = None
         self.skipStatus = 77
         self.expected_returncodes = {}
         self.finalStatus = 0
@@ -30,6 +32,7 @@ class LauncherMTTTool(IPlugin):
         self.numPass = 0
         self.numSkip = 0
         self.numFail = 0
+        self.numTimed = 0
         self.maxTests = 10000000
         # initialise parent class
         IPlugin.__init__(self)
@@ -37,7 +40,7 @@ class LauncherMTTTool(IPlugin):
     def print_name(self):
         print("Launcher")
 
-    def updateDefaults(self, log, options, keyvals):
+    def updateDefaults(self, log, options, keyvals, testDef):
         # check the log for the title so we can
         # see if this is setting our default behavior
         try:
@@ -139,6 +142,42 @@ class LauncherMTTTool(IPlugin):
             log['status'] = 1
             log['stderr'] = "Parent test build stage was not provided"
             return 1
+
+        # see if any dependencies were given
+        try:
+            deps = cmds['dependencies']
+            # might be comma-delimited or space delimited
+            dps = deps.split()
+            # loop over the entries
+            for d in dps:
+                # get the location where the output of this stage was stored by
+                # first recovering the log for it
+                try:
+                    lg = testDef.logger.getLog(d)
+                    try:
+                        loc = lg['location']
+                    except:
+                        # we cannot do what the user requested
+                        log['status'] = 1
+                        log['stderr'] = "Location of dependency " + d + " could not be found"
+                        return
+                except:
+                    # we don't have a record of this dependency
+                    log['status'] = 1
+                    log['stderr'] = "Log for dependency " + d + " could not be found"
+                    return
+                # update the PATH
+                if self.oldbinpath is None:
+                    self.oldbinpath = os.environ['PATH']
+                bindir = os.path.join(loc, "bin")
+                os.environ['PATH'] = bindir + ':' + os.environ['PATH']
+                # update LD_LIBRARY_PATH
+                libdir = os.path.join(loc, "lib")
+                os.environ['LD_LIBRARY_PATH'] = libdir + ':' + os.environ['LD_LIBRARY_PATH']
+                libdir = os.path.join(loc, "lib64")
+                os.environ['LD_LIBRARY_PATH'] = libdir + ':' + os.environ['LD_LIBRARY_PATH']
+        except:
+            pass
 
         # Apply any requested environment module settings
         status,stdout,stderr = testDef.modcmd.applyModules(log['section'], cmds, testDef)
@@ -263,7 +302,7 @@ class LauncherMTTTool(IPlugin):
         # bother removing those we don't match as those won't be executed
         # anyway and thus are irrelevant
         for i,t in enumerate(fail_tests):
-            for t2 in tests:
+            for t2 in self.tests:
                 if t2.split("/")[-1] == t:
                     fail_tests[i] = t2
 
@@ -282,10 +321,9 @@ class LauncherMTTTool(IPlugin):
         if len(fail_tests) != len(fail_returncodes):
             log['status'] = 1
             if len(fail_tests) > len(fail_returncodes):
-                log['stderr'] = "Not enough return codes were supplied to satisfy the number of tests expected to fail: " + len(fail_returncodes) + ":" + len(fail_tests)
+                log['stderr'] = "Not enough return codes were supplied to satisfy the number of tests expected to fail: " + str(len(fail_returncodes)) + ":" + str(len(fail_tests))
             else:
-                log['stderr'] = "Too many return codes were supplied to satisfy the number of tests expected to fail: " + len(fail_returncodes) + ":" + len(fail_tests)
-            os.chdir(cwd)
+                log['stderr'] = "Too many return codes were supplied to satisfy the number of tests expected to fail: " + str(len(fail_returncodes)) + ":" + str(len(fail_tests))
             return 1
 
         # construct a dict of usecases for tests expected to fail
@@ -299,7 +337,7 @@ class LauncherMTTTool(IPlugin):
         # new dictionary that uses the test name as its key. Default to an
         # expected return code of 0 for any test not in the fail_tests list
         # cycle across the list of tests
-        for t in tests:
+        for t in self.tests:
             if t in fail_usecases:
                 self.expected_returncodes[t] = fail_usecases[t]
             else:
@@ -322,7 +360,7 @@ class LauncherMTTTool(IPlugin):
         # bother removing those we don't match as those won't be executed
         # anyway and thus are irrelevant
         for i,t in enumerate(self.skip_tests):
-            for t2 in tests:
+            for t2 in self.tests:
                 if t2.split("/")[-1] == t:
                     self.skip_tests[i] = t2
         # all done
@@ -362,6 +400,7 @@ class LauncherMTTTool(IPlugin):
                 # clearly mark this as a skipped test
                 testLog['result'] = testDef.MTT_TEST_SKIPPED
                 log['testresults'].append(testLog)
+                cmdargs = cmdargs[:-1]
                 continue
 
             harass_exec_ids = testDef.harasser.start(testDef)
@@ -373,10 +412,16 @@ class LauncherMTTTool(IPlugin):
                 testLog['time'] = sum([r_info[3] for r_info in harass_check[1]])
                 testLog['status'] = 1
                 testLog['result'] = testDef.MTT_TEST_FAILED
-                self.finalStatus = 1
-                self.finalError = testLog['stderr']
+                if 0 == self.finalStatus:
+                    self.finalStatus = 1
+                    self.finalError = testLog['stderr']
                 self.numFail += 1
+                self.numTests += 1
                 testDef.harasser.stop(harass_exec_ids, testDef)
+                log['testresults'].append(testLog)
+                cmdargs = cmdargs[:-1]
+                if self.numTests == self.maxTests:
+                    break
                 continue
 
             results = testDef.execmd.execute(cmds, cmdargs, testDef)
@@ -386,23 +431,38 @@ class LauncherMTTTool(IPlugin):
             testLog['status'] = results['status']
             testLog['stdout'] = results['stdout']
             testLog['stderr'] = results['stderr']
-            testLog['time'] = results['time']
+            try:
+                testLog['time'] = results['time']
+            except:
+                pass
 
             try:
-                if results['timeout']:
+                if results['timedout']:
                     # the test timed out, so flag it as having exited that way
                     testLog['result'] = testDef.MTT_TEST_TIMED_OUT
-                    self.finalStatus = results['status']
-                    self.finalError = results['stderr']
+                    if 0 == self.finalStatus:
+                        self.finalStatus = results['status']
+                        self.finalError = results['stderr']
                     self.numTimed += 1
             except:
-                # check the return status - if the test was expected to fail, then
-                # we should see it return the expected code or else we declare it
-                # as having failed
-                if results['status'] != expected_returncodes[test]:
+                # check the return status - if the test checked its conditions
+                # and decided to be skipped, then log it as such
+                if results['status'] == self.skipStatus:
+                    self.numSkip += 1
+                    testLog['stdout'] = ""
+                    testLog['stderr'] = ""
+                    testLog['time'] = 0
+                    testLog['status'] = self.skipStatus
+                    # clearly mark this as a skipped test
+                    testLog['result'] = testDef.MTT_TEST_SKIPPED
+                elif results['status'] != self.expected_returncodes[test]:
+                    # if the test was expected to fail, then
+                    # we should see it return the expected code or else we declare it
+                    # as having failed
                     testLog['result'] = testDef.MTT_TEST_FAILED
-                    self.finalStatus = results['status']
-                    self.finalError = results['stderr']
+                    if 0 == self.finalStatus:
+                        self.finalStatus = results['status']
+                        self.finalError = results['stderr']
                     self.numFail += 1
                 else:
                     testLog['result'] = testDef.MTT_TEST_PASSED
@@ -428,7 +488,7 @@ class LauncherMTTTool(IPlugin):
         return
 
     def deallocateCluster(self, log, cmds, testDef):
-        if cmds['allocate_cmd'] is not None and cmds['deallocate_cmd'] is not None and self.allocated:
+        if cmds['deallocate_cmd'] is not None and self.allocated:
             deallocate_cmdargs = shlex.split(cmds['deallocate_cmd'])
             results = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)
             if 0 != results['status'] and log is not None:

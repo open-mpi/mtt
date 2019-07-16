@@ -42,6 +42,7 @@ import shlex
 # @param modules_unload  Modules to unload
 # @param modules         Modules to load
 # @param modules_swap    Modules to swap
+# @param dependencies              List of dependencies specified as the build stage name
 # @}
 class OpenMPI(LauncherMTTTool):
 
@@ -71,6 +72,7 @@ class OpenMPI(LauncherMTTTool):
         self.options['modules'] = (None, "Modules to load")
         self.options['modules_unload'] = (None, "Modules to unload")
         self.options['modules_swap'] = (None, "Modules to swap")
+        self.options['dependencies'] = (None, "List of dependencies specified as the build stage name - e.g., MiddlwareBuild_package to be added to configure using --with-package=location")
 
         self.allocated = False
         self.testDef = None
@@ -86,7 +88,7 @@ class OpenMPI(LauncherMTTTool):
 
     def deactivate(self):
         IPlugin.deactivate(self)
-        if self.testDef and self.cmds:
+        if self.testDef and self.cmds and self.cmds['deallocate_cmd'] is not None:
             deallocate_cmdargs = shlex.split(self.cmds['deallocate_cmd'])
             self.deallocateCluster(None, self.cmds, self.testDef)
 
@@ -109,7 +111,7 @@ class OpenMPI(LauncherMTTTool):
         self.cmds = cmds
 
         # update our defaults, if requested
-        status = self.updateDefaults(log, self.options, keyvals)
+        status = self.updateDefaults(log, self.options, keyvals, testDef)
         if status != 0:
             # indicates there is nothing more for us to do - status
             # et al is already in the log
@@ -122,12 +124,10 @@ class OpenMPI(LauncherMTTTool):
             return
 
         # collect the tests to be considered
-        tests = []
-        self.collectTests(log, cmds, tests)
+        status = self.collectTests(log, cmds)
         # check that we found something
-        if not tests:
-            log['status'] = 1
-            log['stderr'] = "No tests found"
+        if status != 0:
+            # something went wrong - error is in the log
             self.resetPaths(log, testDef)
             return
 
@@ -142,13 +142,6 @@ class OpenMPI(LauncherMTTTool):
         if cmds['hostfile'] is not None:
             cmdargs.append("-hostfile")
             cmdargs.append(cmds['hostfile'])
-        if cmds['timeout'] is not None:
-            cmdargs.append("--timeout")
-            cmdargs.append(cmds['timeout'])
-            # remove this directive to ensure the cmd executor
-            # does not also set a timeout - avoids a race
-            # condition
-            del cmds['timeout']
         if cmds['options'] is not None:
             optArgs = cmds['options'].split(',')
             for arg in optArgs:

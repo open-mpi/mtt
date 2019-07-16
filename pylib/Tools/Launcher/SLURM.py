@@ -41,6 +41,7 @@ import subprocess
 # @param test_list                 List of tests to run, default is all
 # @param allocate_cmd              Command to use for allocating nodes from the resource manager
 # @param deallocate_cmd            Command to use for deallocating nodes from the resource manager
+# @param dependencies              List of dependencies specified as the build stage name
 # @}
 class SLURM(LauncherMTTTool):
 
@@ -70,6 +71,7 @@ class SLURM(LauncherMTTTool):
         self.options['test_list'] = (None, "List of tests to run, default is all")
         self.options['allocate_cmd'] = (None, "Command to use for allocating nodes from the resource manager")
         self.options['deallocate_cmd'] = (None, "Command to use for deallocating nodes from the resource manager")
+        self.options['dependencies'] = (None, "List of dependencies specified as the build stage name - e.g., MiddlwareBuild_package to be added to configure using --with-package=location")
 
         self.allocated = False
         self.testDef = None
@@ -85,7 +87,7 @@ class SLURM(LauncherMTTTool):
 
     def deactivate(self):
         IPlugin.deactivate(self)
-        if self.testDef and self.cmds:
+        if self.testDef and self.cmds and self.cmds['deallocate_cmd'] is not None:
             deallocate_cmdargs = shlex.split(self.cmds['deallocate_cmd'])
             self.deallocateCluster(None, self.cmds, self.testDef)
 
@@ -110,7 +112,7 @@ class SLURM(LauncherMTTTool):
 
         # check the log for the title so we can
         # see if this is setting our default behavior
-        status = self.updateDefaults(log, self.options, keyvals)
+        status = self.updateDefaults(log, self.options, keyvals, testDef)
         if status != 0:
             # indicates there is nothing more for us to do - status
             # et al is already in the log
@@ -123,12 +125,10 @@ class SLURM(LauncherMTTTool):
             return
 
         # collect the tests to be considered
-        tests = []
-        self.collectTests(log, cmds, tests)
+        status = self.collectTests(log, cmds)
         # check that we found something
-        if not tests:
-            log['status'] = 1
-            log['stderr'] = "No tests found"
+        if status != 0:
+            # something went wrong - error is in the log
             self.resetPaths(log, testDef)
             return
 
