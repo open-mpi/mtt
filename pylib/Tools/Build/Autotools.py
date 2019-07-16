@@ -100,6 +100,8 @@ class Autotools(BuildMTTTool):
                     log['status'] = 1
                     log['stderr'] = "Parent",cmds['parent'],"log not found"
                     return
+                # record the parent in our log
+                log['parent'] = cmds['parent']
             else:
                 log['status'] = 1
                 log['stderr'] = "Parent log not recorded"
