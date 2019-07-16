@@ -120,6 +120,56 @@ class PRRTE(LauncherMTTTool):
             # et al is already in the log
             return
 
+        # get the full log
+        lg = testDef.logger.getLog(None)
+        # scan the log and see if "mpi_info" has been set to
+        # something meaningful
+        version = None
+        for lg2 in lg:
+            try:
+                if lg2['mpi_info']['version'] is not "Unknown":
+                    version = lg2['mpi_info']['version']
+                del lg2['mpi_info']
+            except:
+                pass
+
+        # search our dependencies to set the 'mpi_info' name field
+        ext = "prrte-unknown"
+        if cmds['dependencies'] is not None:
+            # split out the dependencies
+            deps = cmds['dependencies'].split()
+            # one should be PRRTE and the other is the middleware
+            # we are using for the tests
+            for d in deps:
+                if d.lower().endswith("prrte"):
+                    # get the log of this stage
+                    lg = testDef.logger.getLog(d)
+                    # the parent is the Get operation
+                    lg2 = testDef.logger.getLog(lg['parent'])
+                    try:
+                        ext = "prrte-master-PR" + lg2['pr']
+                    except:
+                        try:
+                            ext = "prrte-" + lg2['branch']
+                        except:
+                            ext = "prrte-master-HEAD"
+                elif version is None:
+                    # get the log of this stage
+                    lg = testDef.logger.getLog(d)
+                    # the parent is the Get operation
+                    lg2 = testDef.logger.getLog(lg['parent'])
+                    # take the name of the section as our middleware name
+                    mdname = lg2['section'].split(':')[-1]
+                    try:
+                        version = mdname + "-master-PR" + lg2['pr']
+                    except:
+                        try:
+                            version = mdname + "-" + lg2['branch']
+                        except:
+                            version = mdname + "-master-HEAD"
+
+        log['mpi_info'] = {'name' : ext, 'version' : version}
+
         # now let's setup the PATH and LD_LIBRARY_PATH as reqd
         status = self.setupPaths(log, keyvals, cmds, testDef)
         if status != 0:
