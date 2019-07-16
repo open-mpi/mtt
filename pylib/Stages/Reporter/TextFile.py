@@ -95,6 +95,20 @@ class TextFile(ReporterMTTStage):
                             print("\t\t",p,"=",opts[p], file=self.fh)
                 except KeyError:
                     pass
+                try:
+                    if lg['mpi_info'] is not None:
+                        print("\tInfo:", file=self.fh)
+                        try:
+                            print("\t\tName:", lg['mpi_info']['name'], file=self.fh)
+                        except KeyError:
+                            pass
+                        try:
+                            print("\t\tVersion:", lg['mpi_info']['version'], file=self.fh)
+                        except KeyError:
+                            pass
+                except KeyError:
+                    pass
+
                 if 0 != lg['status']:
                     if "stderr" in lg:
                         self._print_stderr_block("stderr", lg['stderr'], tabs=1)

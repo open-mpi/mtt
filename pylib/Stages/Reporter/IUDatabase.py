@@ -180,7 +180,7 @@ class IUDatabase(ReporterMTTStage):
         for lg in fullLog:
             # Find sections prefixed with 'TestRun'
             if re.match("TestRun", lg['section']):
-                rtn = self._submit_test_run(testDef.logger, lg, metadata, s, url, www_auth)
+                rtn = self._submit_test_run(testDef.logger, lg, metadata, s, url, testDef, www_auth)
 
         log['status'] = 0
         return
@@ -190,7 +190,7 @@ class IUDatabase(ReporterMTTStage):
         z.update(y)
         return z
 
-    def _submit_test_run(self, logger, lg, metadata, s, url, httpauth=None):
+    def _submit_test_run(self, logger, lg, metadata, s, url, testDef, httpauth=None):
         try:
             if self.cmds['debug_screen']:
                 print("----------------- Test Run (%s) " % (lg['section']))
