@@ -11,7 +11,7 @@
 from __future__ import print_function
 from future import standard_library
 standard_library.install_aliases()
-import os
+import os, shutil
 from urllib.parse import urlparse
 from FetchMTTTool import *
 from distutils.spawn import find_executable
@@ -189,14 +189,56 @@ class Git(FetchMTTTool):
                 pr = cmds['pr']
         except KeyError:
             pass
+        # cannot have both
+        if branch is not None and pr is not None:
+            log['status'] = 1
+            log['stderr'] = "Cannot specify both a branch and a PR"
+            return
+
         # see if we have already serviced this one
-        for rep in self.done:
-            if rep[0] == repo:
+        try:
+            rep = self.done[repo]
+            if branch is not None:
+                try:
+                    if branch == rep['branch']:
+                        # log the status from that attempt
+                        log['status'] = rep['status']
+                        try:
+                            log['location'] = rep['location']
+                        except:
+                            pass
+                        if 0 != rep['status']:
+                            log['stderr'] = "Prior attempt to clone or update repo {0} failed".format(repo)
+                        return
+                except:
+                    pass
+            elif pr is not None:
+                try:
+                    if pr == rep['pr']:
+                        # log the status from that attempt
+                        log['status'] = rep['status']
+                        try:
+                            log['location'] = rep['location']
+                        except:
+                            pass
+                        if 0 != rep['status']:
+                            log['stderr'] = "Prior attempt to clone or update repo {0} failed".format(repo)
+                        return
+                except:
+                    pass
+            else:
                 # log the status from that attempt
-                log['status'] = rep[1]
-                if 0 != rep[1]:
+                log['status'] = rep['status']
+                try:
+                    log['location'] = rep['location']
+                except:
+                    pass
+                if 0 != rep['status']:
                     log['stderr'] = "Prior attempt to clone or update repo {0} failed".format(repo)
                 return
+        except:
+            pass
+
         # record our current location
         cwd = os.getcwd()
 
@@ -217,23 +259,126 @@ class Git(FetchMTTTool):
                 log['status'] = 1
                 log['stderr'] = "Cannot update or clone repository {0} as a file of that name already exists".format(repo)
                 # track that we serviced this one
-                self.done.append((repo, 1))
+                rp = {}
+                rp['status'] = 1
+                self.done[repo] = rp
+                os.chdir(cwd)
                 return
-            # move to that location
-            os.chdir(repo)
-            # if they want us to leave it as-is, then we are done
-            try:
-                if cmds['asis']:
-                    results['status'] = 0
-                    results['stdout'] = None
-                    results['stderr'] = None
-            except KeyError:
-                # since it already exists, let's just update it
-                results = testDef.execmd.execute(cmds, ["git", "pull"], testDef)
+            # if they specified a pull request, then just blow it away
+            # and reinstall
+            if pr is not None:
+                shutil.rmtree(repo)
+                results = testDef.execmd.execute(cmds, ["git", "clone", url], testDef)
+                if 0 != results['status']:
+                    log['status'] = results['status']
+                    log['stderr'] = "Cannot clone repository {0}".format(repo)
+                    # track that we serviced this one
+                    rp = {}
+                    rp['status'] = results['status']
+                    rp['pr'] = pr
+                    self.done[repo] = rp
+                    os.chdir(cwd)
+                    return
+                os.chdir(repo)
+                ptgt = "pull/"+ pr + "/head:pull_" + pr
+                results = testDef.execmd.execute(cmds, ["git", "fetch", "origin", ptgt], testDef)
+                if 0 != results['status']:
+                    log['status'] = results['status']
+                    log['stderr'] = "Cannot fetch PR {0}".format(repo)
+                    # track that we serviced this one
+                    rp = {}
+                    rp['status'] = results['status']
+                    rp['pr'] = pr
+                    self.done[repo] = rp
+                    os.chdir(cwd)
+                    return
+                results = testDef.execmd.execute(cmds, ["git", "checkout", "pull_" + pr], testDef)
+                if 0 != results['status']:
+                    log['status'] = results['status']
+                    log['stderr'] = "Cannot checkout PR branch {0}".format(repo)
+                    # track that we serviced this one
+                    rp = {}
+                    rp['status'] = results['status']
+                    rp['pr'] = pr
+                    self.done[repo] = rp
+                    os.chdir(cwd)
+                    return
+            else:
+                # move to that location
+                os.chdir(repo)
+                # if they specified a branch, see if we are on it
+                if branch is not None:
+                    results = testDef.execmd.execute(cmds, ["git", "branch"], testDef)
+                    if isinstance(results['stdout'], list):
+                        t = results['stdout'][0]
+                    else:
+                        t = results['stdout']
+                    if branch not in t:
+                        # we need to whack the current installation and reinstall it
+                        os.chdir(dst)
+                        shutil.rmtree(repo)
+                        results = testDef.execmd.execute(cmds, ["git", "clone", "-b", branch, "--single-branch", url], testDef)
+                        if 0 != results['status']:
+                            log['status'] = results['status']
+                            log['stderr'] = "Cannot clone repository branch {0}".format(repo)
+                            # track that we serviced this one
+                            rp = {}
+                            rp['status'] = results['status']
+                            rp['branch'] = branch
+                            self.done[repo] = rp
+                            os.chdir(cwd)
+                            return
+                        os.chdir(repo)
+                    else:
+                        # if they want us to leave it as-is, then we are done
+                        try:
+                            if cmds['asis']:
+                                results['status'] = 0
+                                results['stdout'] = None
+                                results['stderr'] = None
+                        except KeyError:
+                            # since it already exists, let's just update it
+                            results = testDef.execmd.execute(cmds, ["git", "pull"], testDef)
+                else:
+                    # if they want us to leave it as-is, then we are done
+                    try:
+                        if cmds['asis']:
+                            results['status'] = 0
+                            results['stdout'] = None
+                            results['stderr'] = None
+                    except KeyError:
+                        # since it already exists, let's just update it
+                        results = testDef.execmd.execute(cmds, ["git", "pull"], testDef)
         else:
             # clone it
             if branch is not None:
-                results = testDef.execmd.execute(cmds, ["git", "clone", "-b", branch, url], testDef)
+                results = testDef.execmd.execute(cmds, ["git", "clone", "-b", branch, "--single-branch", url], testDef)
+            elif pr is not None:
+                results = testDef.execmd.execute(cmds, ["git", "clone", url], testDef)
+                if 0 != results['status']:
+                    log['status'] = results['status']
+                    log['stderr'] = "Cannot clone repository {0}".format(repo)
+                    # track that we serviced this one
+                    rp = {}
+                    rp['status'] = results['status']
+                    rp['pr'] = pr
+                    self.done[repo] = rp
+                    os.chdir(cwd)
+                    return
+                os.chdir(repo)
+                ptgt = "pull/"+ pr + "/head:pull_" + pr
+                results = testDef.execmd.execute(cmds, ["git", "fetch", "origin", ptgt], testDef)
+                if 0 != results['status']:
+                    log['status'] = results['status']
+                    log['stderr'] = "Cannot fetch PR {0}".format(repo)
+                    # track that we serviced this one
+                    rp = {}
+                    rp['status'] = results['status']
+                    rp['pr'] = pr
+                    self.done[repo] = rp
+                    os.chdir(cwd)
+                    return
+                results = testDef.execmd.execute(cmds, ["git", "checkout", "pull_" + pr], testDef)
             else:
                 results = testDef.execmd.execute(cmds, ["git", "clone", url], testDef)
             # move into it
@@ -256,17 +401,26 @@ class Git(FetchMTTTool):
                 log['status'] = 1
                 log['stderr'] = "Subdirectory " + cmds['subdir'] + " was not found"
                 status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
+                os.chdir(cwd)
                 return
             if not os.path.isdir(ckdir):
                 log['status'] = 1
                 log['stderr'] = "Subdirectory " + cmds['subdir'] + " is not a directory"
                 status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
+                os.chdir(cwd)
                 return
             log['location'] = ckdir
         # track that we serviced this one - save the absolute location so
         # any subsequent requests with a different subdir can be pointed to
         # the correct location
-        self.done[repo] = (status, os.getcwd())
+        rp = {}
+        rp['status'] = results['status']
+        rp['location'] = os.getcwd()
+        if pr is not None:
+            rp['pr'] = pr
+        elif branch is not None:
+            rp['branch'] = branch
+        self.done[repo] = rp
 
         # Revert any requested environment module settings
         status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
@@ -274,7 +428,6 @@ class Git(FetchMTTTool):
             log['status'] = status
             log['stdout'] = stdout
             log['stderr'] = stderr
-            return
 
         # change back to the original directory
         os.chdir(cwd)
