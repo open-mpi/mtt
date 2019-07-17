@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2015-2018 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -27,6 +27,7 @@ from threading import Semaphore
 from pathlib import Path
 
 is_py2 = sys.version[0] == '2'
+
 
 # The Test Definition class is mostly a storage construct
 # to make it easier when passing values across stages and
@@ -76,6 +77,17 @@ class TestDef(object):
         self.log = {}
         self.watchdog = None
         self.plugin_trans_sem = Semaphore()
+        # define a few global "constant" names that can be used
+        # across plugins - the following categories must match
+        # their equivalent values in the server. See
+        # https://github.com/open-mpi/mtt-legacy/blob/master/lib/MTT/Values.pm#L43-L57
+        # for the list
+        self.MTT_TEST_FAILED             =   0
+        self.MTT_TEST_PASSED             =   1
+        self.MTT_TEST_SKIPPED            =   2
+        self.MTT_TEST_TIMED_OUT          =   3
+        self.MTT_TEST_TIMED_OUT_OR_FAIL  =   4
+
 
     def setOptions(self, args):
         self.options = vars(args)
@@ -521,7 +533,7 @@ class TestDef(object):
                     self.fill_log_interpolation("%s.%d" % (basestr, i), v)
         else:
             self.fill_log_interpolation(basestr, str(sublog))
- 
+
     def expandWildCards(self, sections):
         expsec = []
         cpsections = list(sections)
@@ -632,7 +644,7 @@ class TestDef(object):
         self.check_for_nondefined_env_variables()
 
         # find all the sections that match the wild card and expand them
-        # this is simple wild carding, ie *text, text*, *text* and * 
+        # this is simple wild carding, ie *text, text*, *text* and *
         # should all work
         if sections is not None:
             sections = self.expandWildCards(sections)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
-# Copyright (c) 2015-2018 Intel, Inc.  All rights reserved.
+# Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # Copyright (c) 2017-2018 Los Alamos National Security, LLC. All rights
 #                         reserved.
 # $COPYRIGHT$
@@ -162,6 +162,7 @@ class OMPI_Snapshot(FetchMTTTool):
         # change to the scratch directory
         os.chdir(dst)
         # see if this software has already been cloned
+        results = {}
         if os.path.exists(tarball_base_name):
             if not os.path.isdir(tarball_base_name):
                 log['status'] = 1
@@ -172,47 +173,47 @@ class OMPI_Snapshot(FetchMTTTool):
             # if they want us to leave it as-is, then we are done
             try:
                 if cmds['asis']:
-                    status = 0
-                    stdout = None
-                    stderr = None
+                    results['status'] = 0
+                    results['stdout'] = None
+                    results['stderr'] = None
             # If not as-is clear directory and download the tarball
             except KeyError:
                 shutil.rmtree(tarball_base_name)
                 # download the tarball - TODO probably need to do a try on these
                 testDef.logger.verbose_print("downloading tarball " + tarball_name + "url: " + download_url)
-                status, stdout, stderr, _ = testDef.execmd.execute(None, ["curl", "-o", tarball_name, download_url], testDef)
-                if 0 != status:
+                results = testDef.execmd.execute(None, ["curl", "-o", tarball_name, download_url], testDef)
+                if 0 != results['status']:
                     log['status'] = 1
                     log['stderr'] = "download for tarball " + tarball_name + "url: " + download_url + "FAILED"
                     return
                 # untar the tarball
                 testDef.logger.verbose_print("untarring tarball " + tarball_name)
-                status, stdout, stderr, _ = testDef.execmd.execute(None, ["tar", "-zxf", tarball_name], testDef)
-                if 0 != status:
+                results = testDef.execmd.execute(None, ["tar", "-zxf", tarball_name], testDef)
+                if 0 != results['status']:
                     log['status'] = 1
                     log['stderr'] = "untar of tarball " + tarball_name + "FAILED"
                     return
         else:
             # download the tarball - TODO probably need to do a try on these
             testDef.logger.verbose_print("downloading tarball " + tarball_name + "url: " + download_url)
-            status, stdout, stderr, _ = testDef.execmd.execute(None, ["curl", "-o", tarball_name, download_url], testDef)
-            if 0 != status:
+            results = testDef.execmd.execute(None, ["curl", "-o", tarball_name, download_url], testDef)
+            if 0 != results['status']:
                 log['status'] = 1
                 log['stderr'] = "download for tarball " + tarball_name + "url: " + download_url + "FAILED"
                 return
             # untar the tarball
             testDef.logger.verbose_print("untarring tarball " + tarball_name)
-            status, stdout, stderr, _ = testDef.execmd.execute(None, ["tar", "-zxf", tarball_name], testDef)
-            if 0 != status:
+            results = testDef.execmd.execute(None, ["tar", "-zxf", tarball_name], testDef)
+            if 0 != results['status']:
                 log['status'] = 1
                 log['stderr'] = "untar of tarball " + tarball_name + "FAILED"
                 return
         # move into the resulting directory
         os.chdir(tarball_base_name)
         # record the result
-        log['status'] = status
-        log['stdout'] = stdout
-        log['stderr'] = stderr
+        log['status'] = results['status']
+        log['stdout'] = results['stdout']
+        log['stderr'] = results['stderr']
         log['mpi_info'] = {'name' : cmds['mpi_name'], 'version' : snapshot_req.text.strip()}
         testDef.logger.verbose_print("setting mpi_info to " + str(log.get('mpi_info')))
 

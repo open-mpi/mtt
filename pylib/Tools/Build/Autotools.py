@@ -100,6 +100,8 @@ class Autotools(BuildMTTTool):
                     log['status'] = 1
                     log['stderr'] = "Parent",cmds['parent'],"log not found"
                     return
+                # record the parent in our log
+                log['parent'] = cmds['parent']
             else:
                 log['status'] = 1
                 log['stderr'] = "Parent log not recorded"
@@ -289,11 +291,11 @@ class Autotools(BuildMTTTool):
                 args = cmds['autogen_cmd'].split()
                 for arg in args:
                     agargs.append(arg.strip())
-                status, stdout, stderr, _ = testDef.execmd.execute(cmds, agargs, testDef)
-                if 0 != status:
-                    log['status'] = status
-                    log['stdout'] = stdout
-                    log['stderr'] = stderr
+                results = testDef.execmd.execute(cmds, agargs, testDef)
+                if 0 != results['status']:
+                    log['status'] = results['status']
+                    log['stdout'] = results['stdout']
+                    log['stderr'] = results['stderr']
 
                     # Revert any requested environment module settings
                     status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
@@ -376,11 +378,11 @@ class Autotools(BuildMTTTool):
                 cfgargs.append(d)
 
             # execute the configure cmd
-            status, stdout, stderr, _ = testDef.execmd.execute(cmds, cfgargs, testDef)
-            if 0 != status:
-                log['status'] = status
-                log['stdout'] = stdout
-                log['stderr'] = stderr
+            results = testDef.execmd.execute(cmds, cfgargs, testDef)
+            if 0 != results['status']:
+                log['status'] = results['status']
+                log['stdout'] = results['stdout']
+                log['stderr'] = results['stderr']
 
                 # Revert any requested environment module settings
                 status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
@@ -427,11 +429,11 @@ class Autotools(BuildMTTTool):
             pass
         # step thru the process, starting with "clean"
         bldargs.append("clean")
-        status, stdout, stderr, _ = testDef.execmd.execute(cmds, bldargs, testDef)
-        if 0 != status:
-            log['status'] = status
-            log['stdout'] = stdout
-            log['stderr'] = stderr
+        results = testDef.execmd.execute(cmds, bldargs, testDef)
+        if 0 != results['status']:
+            log['status'] = results['status']
+            log['stdout'] = results['stdout']
+            log['stderr'] = results['stderr']
 
             # Revert any requested environment module settings
             status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
@@ -459,11 +461,11 @@ class Autotools(BuildMTTTool):
         # now execute "make all"
         bldargs = bldargs[0:-1]
         bldargs.append("all")
-        status, stdout, stderr, _ = testDef.execmd.execute(cmds, bldargs, testDef)
-        if 0 != status:
-            log['status'] = status
-            log['stdout'] = stdout
-            log['stderr'] = stderr
+        results = testDef.execmd.execute(cmds, bldargs, testDef)
+        if 0 != results['status']:
+            log['status'] = results['status']
+            log['stdout'] = results['stdout']
+            log['stderr'] = results['stderr']
 
             # Revert any requested environment module settings
             status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
@@ -492,12 +494,12 @@ class Autotools(BuildMTTTool):
         if prefix is not None:
             bldargs = bldargs[0:-1]
             bldargs.append("install")
-            status, stdout, stderr, _ = testDef.execmd.execute(cmds, bldargs, testDef)
+            results = testDef.execmd.execute(cmds, bldargs, testDef)
         # this is the end of the operation, so the status is our
         # overall status
-        log['status'] = status
-        log['stdout'] = stdout
-        log['stderr'] = stderr
+        log['status'] = results['status']
+        log['stdout'] = results['stdout']
+        log['stderr'] = results['stderr']
 
         # Revert any requested environment module settings
         status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)

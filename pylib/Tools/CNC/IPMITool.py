@@ -56,17 +56,17 @@ class workerThread(threading.Thread):
                         ntries = 0
                         while True:
                             ++ntries
-                            status,stdout,stderr,_ = self.testDef.execmd.execute(None, task['cmd'], self.testDef)
-                            if 0 == status or ntries == task['maxtries']:
+                            results = self.testDef.execmd.execute(None, task['cmd'], self.testDef)
+                            if 0 == results['status'] or ntries == task['maxtries']:
                                 self.testDef.logger.verbose_print("IPMITool: node " + task['target'] + " is back")
                                 break
                         # record the result
                         self.lock.acquire()
-                        if 0 != status and ntries >= task['maxtries']:
+                        if 0 != results['status'] and ntries >= task['maxtries']:
                             msg = "Operation timed out on node " + task['target']
                             self.status.append((-1, ' '.join(task['cmd']), msg))
                         else:
-                            self.status.append((status, stdout, stderr))
+                            self.status.append((results['status'], results['stdout'], results['stderr']))
                         self.lock.release()
                         continue
                 except:
@@ -95,9 +95,9 @@ class workerThread(threading.Thread):
                                 continue
                             # send it off to ipmitool to execute
                             self.testDef.logger.verbose_print("IPMITool: " + ' '.join(task['cmd']))
-                            st,stdout,stderr,_ = self.testDef.execmd.execute(None, task['cmd'], self.testDef)
+                            results = self.testDef.execmd.execute(None, task['cmd'], self.testDef)
                             self.lock.acquire()
-                            self.status.append((st, stdout, stderr))
+                            self.status.append((results['status'], results['stdout'], results['stderr']))
                             try:
                                 if task['target'] is not None:
                                     # add the reset command to the queue

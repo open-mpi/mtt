@@ -1,6 +1,6 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
-# Copyright (c) 2015-2018 Intel, Inc.  All rights reserved.
+# Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -88,17 +88,17 @@ class CheckProfile(ProfileMTTStage):
                     pcentNeeded = int(pcent.split('%')[0])
 
                     cmd = self.diskSpaceCmd[2].replace("DISK", disk)
-                    status, stdout, stderr, time = testDef.execmd.execute(cmds,
+                    results = testDef.execmd.execute(cmds,
                         [self.diskSpaceCmd[0], self.diskSpaceCmd[1], cmd], testDef)
 
-                    if 0 != status:
-                        log['status'] = status
-                        log['stdout'] = stdout
-                        log['stderr'] = stderr
+                    if 0 != results['status']:
+                        log['status'] = results['status']
+                        log['stdout'] = results['stdout']
+                        log['stderr'] = results['stderr']
                         # ignore the execution time, if collected
                         return
 
-                    pcentAvail = 100 - int(stdout[0].split('%')[0])
+                    pcentAvail = 100 - int(results['stdout'][0].split('%')[0])
                     myLog[key+' '+disk] = [str(pcentAvail) + "% available"]
 
                     testDef.logger.verbose_print("checking: " + disk \
@@ -125,18 +125,18 @@ class CheckProfile(ProfileMTTStage):
                     if kind == 'used':
                         cmd = self.memoryUsedCmd[2]
 
-                    status, stdout, stderr, time = testDef.execmd.execute(cmds,
+                    results = testDef.execmd.execute(cmds,
                         [self.diskSpaceCmd[0], self.diskSpaceCmd[1], cmd], testDef)
 
-                    if 0 != status:
-                        log['status'] = status
-                        log['stdout'] = stdout
-                        log['stderr'] = stderr
+                    if 0 != results['status']:
+                        log['status'] = results['status']
+                        log['stdout'] = results['stdout']
+                        log['stderr'] = results['stderr']
                         # ignore the execution time, if collected
                         return
 
-                    gigsAvail = float(stdout[0].split('G')[0])
-                    myLog['memory '+kind] = stdout
+                    gigsAvail = float(results['stdout'][0].split('G')[0])
+                    myLog['memory '+kind] = results['stdout']
 
                     testDef.logger.verbose_print("checking: " + kind \
                         + " memory: " + str(gigsAvail) + "G is " + op \

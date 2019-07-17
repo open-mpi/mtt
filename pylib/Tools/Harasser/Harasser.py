@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (c) 2015-2018 Intel, Inc.  All rights reserved.
+# Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -85,7 +85,7 @@ class Harasser(HarasserMTTTool):
     def parallel_execute(self, cmds, cmdargs, testDef):
         """This function is passed into multiprocessing as a target
         """
-        status,stdout,stderr,time = testDef.execmd.execute(cmds, cmdargs, testDef)
+        results = testDef.execmd.execute(cmds, cmdargs, testDef)
 
     def start(self, testDef):
         """Harassment is started on the system
@@ -120,7 +120,7 @@ class Harasser(HarasserMTTTool):
                             target=self.parallel_execute, \
                             args=({k:v[0] for k,v in self.options.items()},cmdargs,testDef))
             process.start()
-            
+
             self.running_harassers[self.execution_counter] = (process, ops, datetime.datetime.now())
             exec_ids.append(self.execution_counter)
             self.execution_counter += 1
@@ -150,10 +150,10 @@ class Harasser(HarasserMTTTool):
         return_info = []
         for process,ops,starttime in process_info:
             cmdargs = ops['stop_script'].split()
-            status,stdout,stderr,time = testDef.execmd.execute({k:v[0] for k,v in self.options.items()}, cmdargs, testDef)
-            return_info.append((status,stdout,stderr,datetime.datetime.now()-starttime))
+            results = testDef.execmd.execute({k:v[0] for k,v in self.options.items()}, cmdargs, testDef)
+            return_info.append((results['status'],results['stdout'],results['stderr'],datetime.datetime.now()-starttime))
 
-        for (process,ops,starttime),(status,stdout,stderr,time) in zip(process_info,return_info):
+        for (process,ops,starttime),(results['status'],results['stdout'],results['stderr'],results['elapsed_secs']) in zip(process_info,return_info):
             if status == 0:
                 if self.options['join_timeout'][0] is None:
                     process.join()

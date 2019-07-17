@@ -1,6 +1,6 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
-# Copyright (c) 2015-2018 Intel, Inc.  All rights reserved.
+# Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -68,14 +68,14 @@ class DefaultProfile(ProfileMTTStage):
         opts = self.options.keys()
         for key in keys:
             if cmds[key] and key in opts:
-                status, stdout, stderr, time = testDef.execmd.execute(cmds, self.options[key][2], testDef)
-                if 0 != status:
-                    log['status'] = status
-                    log['stdout'] = stdout
-                    log['stderr'] = stderr
+                results = testDef.execmd.execute(cmds, self.options[key][2], testDef)
+                if 0 != results['status']:
+                    log['status'] = results['status']
+                    log['stdout'] = results['stdout']
+                    log['stderr'] = results['stderr']
                     # ignore the execution time, if collected
                     return
-                myLog[key] = stdout
+                myLog[key] = results['stdout']
         # add our log to the system log
         log['profile'] = myLog
         log['status'] = 0
