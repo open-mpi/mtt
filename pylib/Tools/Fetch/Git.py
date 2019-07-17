@@ -198,44 +198,37 @@ class Git(FetchMTTTool):
         # see if we have already serviced this one
         try:
             rep = self.done[repo]
+            if 0 != rep['status']:
+                log['status'] = rep['status']
+                log['stderr'] = "Prior attempt to clone or update repo {0} failed".format(repo)
+                return
+            # log the status
+            log['status'] = rep['status']
+            # set the location
+            try:
+                try:
+                    sbd = rep['subdir']
+                    log['location'] = rep['location'][:-(len(sbd))]
+                except:
+                    log['location'] = rep['location']
+                if cmds['subdir'] is not None:
+                    log['location'] = os.path.join(log['location'], cmds['subdir'])
+            except:
+                pass
             if branch is not None:
                 try:
                     if branch == rep['branch']:
-                        # log the status from that attempt
-                        log['status'] = rep['status']
-                        try:
-                            log['location'] = rep['location']
-                        except:
-                            pass
-                        if 0 != rep['status']:
-                            log['stderr'] = "Prior attempt to clone or update repo {0} failed".format(repo)
                         return
                 except:
                     pass
             elif pr is not None:
                 try:
                     if pr == rep['pr']:
-                        # log the status from that attempt
-                        log['status'] = rep['status']
-                        try:
-                            log['location'] = rep['location']
-                        except:
-                            pass
-                        if 0 != rep['status']:
-                            log['stderr'] = "Prior attempt to clone or update repo {0} failed".format(repo)
                         return
                 except:
                     pass
             else:
-                # log the status from that attempt
-                log['status'] = rep['status']
-                try:
-                    log['location'] = rep['location']
-                except:
-                    pass
-                if 0 != rep['status']:
-                    log['stderr'] = "Prior attempt to clone or update repo {0} failed".format(repo)
-                return
+                 return
         except:
             pass
 
@@ -261,6 +254,8 @@ class Git(FetchMTTTool):
                 # track that we serviced this one
                 rp = {}
                 rp['status'] = 1
+                if cmds['subdir'] is not None:
+                    rp['subdir'] = cmds['subdir']
                 self.done[repo] = rp
                 os.chdir(cwd)
                 return
@@ -276,6 +271,8 @@ class Git(FetchMTTTool):
                     rp = {}
                     rp['status'] = results['status']
                     rp['pr'] = pr
+                    if cmds['subdir'] is not None:
+                        rp['subdir'] = cmds['subdir']
                     self.done[repo] = rp
                     os.chdir(cwd)
                     return
@@ -289,6 +286,8 @@ class Git(FetchMTTTool):
                     rp = {}
                     rp['status'] = results['status']
                     rp['pr'] = pr
+                    if cmds['subdir'] is not None:
+                        rp['subdir'] = cmds['subdir']
                     self.done[repo] = rp
                     os.chdir(cwd)
                     return
@@ -300,6 +299,8 @@ class Git(FetchMTTTool):
                     rp = {}
                     rp['status'] = results['status']
                     rp['pr'] = pr
+                    if cmds['subdir'] is not None:
+                        rp['subdir'] = cmds['subdir']
                     self.done[repo] = rp
                     os.chdir(cwd)
                     return
@@ -325,6 +326,8 @@ class Git(FetchMTTTool):
                             rp = {}
                             rp['status'] = results['status']
                             rp['branch'] = branch
+                            if cmds['subdir'] is not None:
+                                rp['subdir'] = cmds['subdir']
                             self.done[repo] = rp
                             os.chdir(cwd)
                             return
@@ -362,6 +365,8 @@ class Git(FetchMTTTool):
                     rp = {}
                     rp['status'] = results['status']
                     rp['pr'] = pr
+                    if cmds['subdir'] is not None:
+                        rp['subdir'] = cmds['subdir']
                     self.done[repo] = rp
                     os.chdir(cwd)
                     return
@@ -375,6 +380,8 @@ class Git(FetchMTTTool):
                     rp = {}
                     rp['status'] = results['status']
                     rp['pr'] = pr
+                    if cmds['subdir'] is not None:
+                        rp['subdir'] = cmds['subdir']
                     self.done[repo] = rp
                     os.chdir(cwd)
                     return
@@ -415,11 +422,13 @@ class Git(FetchMTTTool):
         # the correct location
         rp = {}
         rp['status'] = results['status']
-        rp['location'] = os.getcwd()
+        rp['location'] = log['location']
         if pr is not None:
             rp['pr'] = pr
         elif branch is not None:
             rp['branch'] = branch
+        if cmds['subdir'] is not None:
+            rp['subdir'] = cmds['subdir']
         self.done[repo] = rp
 
         # Revert any requested environment module settings
