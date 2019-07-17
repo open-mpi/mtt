@@ -90,7 +90,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="contents">
 <a href="_harasser_8py.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno"><a class="line" href="namespace_harasser.html">    1</a></span>&#160;<span class="comment">#!/usr/bin/env python</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment"># Copyright (c) 2015-2018 Intel, Inc.  All rights reserved.</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment"># Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment"># $COPYRIGHT$</span></div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">#</span></div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment"># Additional copyrights may follow</span></div>
@@ -175,7 +175,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="comment">##This function is passed into multiprocessing as a target</span></div>
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <span class="comment">#</span></div>
 <div class="line"><a name="l00087"></a><span class="lineno"><a class="line" href="class_harasser_1_1_harasser.html#a02afcd1243832ad692db3ecbf8b83950">   87</a></span>&#160;    <span class="keyword">def </span><a class="code" href="class_harasser_1_1_harasser.html#a02afcd1243832ad692db3ecbf8b83950">parallel_execute</a>(self, cmds, cmdargs, testDef):</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        status,stdout,stderr,time = testDef.execmd.execute(cmds, cmdargs, testDef)</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        results = testDef.execmd.execute(cmds, cmdargs, testDef)</div>
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;</div>
 <div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <span class="comment">##Harassment is started on the system</span></div>
 <div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="comment">#</span></div>
@@ -240,10 +240,10 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;        return_info = []</div>
 <div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;        <span class="keywordflow">for</span> process,ops,starttime <span class="keywordflow">in</span> process_info:</div>
 <div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;            cmdargs = ops[<span class="stringliteral">&#39;stop_script&#39;</span>].split()</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;            status,stdout,stderr,time = testDef.execmd.execute({k:v[0] <span class="keywordflow">for</span> k,v <span class="keywordflow">in</span> self.options.items()}, cmdargs, testDef)</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;            return_info.append((status,stdout,stderr,datetime.datetime.now()-starttime))</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;            results = testDef.execmd.execute({k:v[0] <span class="keywordflow">for</span> k,v <span class="keywordflow">in</span> self.options.items()}, cmdargs, testDef)</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;            return_info.append((results[<span class="stringliteral">&#39;status&#39;</span>],results[<span class="stringliteral">&#39;stdout&#39;</span>],results[<span class="stringliteral">&#39;stderr&#39;</span>],datetime.datetime.now()-starttime))</div>
 <div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        <span class="keywordflow">for</span> (process,ops,starttime),(status,stdout,stderr,time) <span class="keywordflow">in</span> zip(process_info,return_info):</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        <span class="keywordflow">for</span> (process,ops,starttime),(results[<span class="stringliteral">&#39;status&#39;</span>],results[<span class="stringliteral">&#39;stdout&#39;</span>],results[<span class="stringliteral">&#39;stderr&#39;</span>],results[<span class="stringliteral">&#39;elapsed_secs&#39;</span>]) <span class="keywordflow">in</span> zip(process_info,return_info):</div>
 <div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;            <span class="keywordflow">if</span> status == 0:</div>
 <div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;                <span class="keywordflow">if</span> self.<a class="code" href="class_harasser_1_1_harasser.html#ab9ed73d71cdaae7d9b5cc81548823527">options</a>[<span class="stringliteral">&#39;join_timeout&#39;</span>][0] <span class="keywordflow">is</span> <span class="keywordtype">None</span>:</div>
 <div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;                    process.join()</div>

@@ -90,7 +90,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="contents">
 <a href="_shell_8py.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno"><a class="line" href="namespace_shell.html">    1</a></span>&#160;<span class="comment">#!/usr/bin/env python</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment"># Copyright (c) 2015-2018 Intel, Inc.  All rights reserved.</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment"># Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment"># $COPYRIGHT$</span></div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">#</span></div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment"># Additional copyrights may follow</span></div>
@@ -179,27 +179,27 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;allocate_cmd&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> cmds[<span class="stringliteral">&#39;deallocate_cmd&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
 <div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            self.<a class="code" href="class_shell_1_1_shell.html#a7d3526fa682799bd7be51fa09c2c9017">allocated</a> = <span class="keyword">True</span></div>
 <div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            allocate_cmdargs = shlex.split(cmds[<span class="stringliteral">&#39;allocate_cmd&#39;</span>])</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            status,stdout,stderr,time = testDef.execmd.execute(cmds, allocate_cmdargs, testDef)</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;            <span class="keywordflow">if</span> 0 != status:</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            results = testDef.execmd.execute(cmds, allocate_cmdargs, testDef)</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;            <span class="keywordflow">if</span> 0 != results[<span class="stringliteral">&#39;status&#39;</span>]:</div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;                self.<a class="code" href="class_shell_1_1_shell.html#a7d3526fa682799bd7be51fa09c2c9017">allocated</a> = <span class="keyword">False</span></div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = status</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = results[<span class="stringliteral">&#39;status&#39;</span>]</div>
 <div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;                <span class="keywordflow">if</span> log[<span class="stringliteral">&#39;stderr&#39;</span>]:</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;                    log[<span class="stringliteral">&#39;stderr&#39;</span>].extend(stderr)</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;                    log[<span class="stringliteral">&#39;stderr&#39;</span>].extend(results[<span class="stringliteral">&#39;stderr&#39;</span>])</div>
 <div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;                <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;                    log[<span class="stringliteral">&#39;stderr&#39;</span>] = stderr</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;                    log[<span class="stringliteral">&#39;stderr&#39;</span>] = results[<span class="stringliteral">&#39;stderr&#39;</span>]</div>
 <div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">False</span></div>
 <div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">True</span></div>
 <div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;</div>
 <div class="line"><a name="l00103"></a><span class="lineno"><a class="line" href="class_shell_1_1_shell.html#ad0d25de668c93990107294a472b80737">  103</a></span>&#160;    <span class="keyword">def </span><a class="code" href="class_shell_1_1_shell.html#ad0d25de668c93990107294a472b80737">deallocate</a>(self, log, cmds, testDef):</div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;allocate_cmd&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> cmds[<span class="stringliteral">&#39;deallocate_cmd&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> self.<a class="code" href="class_shell_1_1_shell.html#a7d3526fa682799bd7be51fa09c2c9017">allocated</a> == <span class="keyword">True</span>:</div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;            deallocate_cmdargs = shlex.split(cmds[<span class="stringliteral">&#39;deallocate_cmd&#39;</span>])</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;            status,stdout,stderr,time = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            <span class="keywordflow">if</span> 0 != status:</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = status</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;            results = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            <span class="keywordflow">if</span> 0 != results[<span class="stringliteral">&#39;status&#39;</span>]:</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = results[<span class="stringliteral">&#39;status&#39;</span>]</div>
 <div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;                <span class="keywordflow">if</span> log[<span class="stringliteral">&#39;stderr&#39;</span>]:</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;                    log[<span class="stringliteral">&#39;stderr&#39;</span>].extend(stderr)</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;                    log[<span class="stringliteral">&#39;stderr&#39;</span>].extend(results[<span class="stringliteral">&#39;stderr&#39;</span>])</div>
 <div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;                <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;                    log[<span class="stringliteral">&#39;stderr&#39;</span>] = stderr</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;                    log[<span class="stringliteral">&#39;stderr&#39;</span>] = results[<span class="stringliteral">&#39;stderr&#39;</span>]</div>
 <div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;                <span class="keywordflow">return</span> <span class="keyword">False</span></div>
 <div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;            self.<a class="code" href="class_shell_1_1_shell.html#a7d3526fa682799bd7be51fa09c2c9017">allocated</a> = <span class="keyword">False</span></div>
 <div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        <span class="keywordflow">return</span> <span class="keyword">True</span></div>
@@ -432,7 +432,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;                self.<a class="code" href="class_shell_1_1_shell.html#ad0d25de668c93990107294a472b80737">deallocate</a>(log, cmds, testDef)</div>
 <div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;                <span class="keywordflow">return</span></div>
 <div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;</div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;        status, stdout, stderr, time = testDef.execmd.execute(cmds, cfgargs, testDef)</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;        results = testDef.execmd.execute(cmds, cfgargs, testDef)</div>
 <div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;</div>
 <div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;        <span class="keywordflow">if</span> <span class="stringliteral">&#39;TestRun&#39;</span> <span class="keywordflow">in</span> log[<span class="stringliteral">&#39;section&#39;</span>].split(<span class="stringliteral">&quot;:&quot;</span>)[0]:</div>
 <div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;            testDef.harasser.stop(harass_exec_ids, testDef)</div>
@@ -441,45 +441,51 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;        <span class="keywordflow">if</span> <span class="keyword">False</span> == self.<a class="code" href="class_shell_1_1_shell.html#ad0d25de668c93990107294a472b80737">deallocate</a>(log, cmds, testDef):</div>
 <div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;            <span class="keywordflow">return</span></div>
 <div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;        <span class="keywordflow">if</span> (cmds[<span class="stringliteral">&#39;fail_test&#39;</span>] <span class="keywordflow">is</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> 0 != status) \</div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;                <span class="keywordflow">or</span> (cmds[<span class="stringliteral">&#39;fail_test&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> cmds[<span class="stringliteral">&#39;fail_returncode&#39;</span>] <span class="keywordflow">is</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> 0 == status) \</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;                <span class="keywordflow">or</span> (cmds[<span class="stringliteral">&#39;fail_test&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> cmds[<span class="stringliteral">&#39;fail_returncode&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> int(cmds[<span class="stringliteral">&#39;fail_returncode&#39;</span>]) != status):</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;        <span class="keywordflow">if</span> (cmds[<span class="stringliteral">&#39;fail_test&#39;</span>] <span class="keywordflow">is</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> 0 != results[<span class="stringliteral">&#39;status&#39;</span>]) \</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;                <span class="keywordflow">or</span> (cmds[<span class="stringliteral">&#39;fail_test&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> cmds[<span class="stringliteral">&#39;fail_returncode&#39;</span>] <span class="keywordflow">is</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> 0 == results[<span class="stringliteral">&#39;status&#39;</span>]) \</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;                <span class="keywordflow">or</span> (cmds[<span class="stringliteral">&#39;fail_test&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> cmds[<span class="stringliteral">&#39;fail_returncode&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> int(cmds[<span class="stringliteral">&#39;fail_returncode&#39;</span>]) != results[<span class="stringliteral">&#39;status&#39;</span>]):</div>
 <div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;            <span class="comment"># return to original location</span></div>
 <div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;            os.chdir(cwd)</div>
 <div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;            <span class="keywordflow">if</span> log[<span class="stringliteral">&#39;status&#39;</span>] == 0:</div>
 <div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
 <div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;            <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = status</div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;            log[<span class="stringliteral">&#39;stdout&#39;</span>] = stdout</div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;            log[<span class="stringliteral">&#39;stderr&#39;</span>] = stderr</div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;            log[<span class="stringliteral">&#39;time&#39;</span>] = time</div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;            <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;        log[<span class="stringliteral">&#39;status&#39;</span>] = 0</div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;        log[<span class="stringliteral">&#39;stdout&#39;</span>] = stdout</div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;        log[<span class="stringliteral">&#39;time&#39;</span>] = time</div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;        <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;fail_test&#39;</span>] == <span class="keyword">True</span>:</div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;            log[<span class="stringliteral">&#39;stderr&#39;</span>] = stderr</div>
-<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;        <span class="comment"># record this location for any follow-on steps</span></div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;        log[<span class="stringliteral">&#39;location&#39;</span>] = location</div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;</div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;        <span class="comment"># Revert any requested environment module settings</span></div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;        status,stdout,stderr = testDef.modcmd.revertModules(log[<span class="stringliteral">&#39;section&#39;</span>], testDef)</div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;        <span class="keywordflow">if</span> 0 != status:</div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;            log[<span class="stringliteral">&#39;status&#39;</span>] = status</div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;            log[<span class="stringliteral">&#39;stdout&#39;</span>] = stdout</div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;            log[<span class="stringliteral">&#39;stderr&#39;</span>] = stderr</div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;            <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;</div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;        <span class="comment"># if we added middleware to the paths, remove it</span></div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;        <span class="keywordflow">if</span> midpath:</div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;            os.environ[<span class="stringliteral">&#39;PATH&#39;</span>] = oldbinpath</div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;            os.environ[<span class="stringliteral">&#39;LD_LIBRARY_PATH&#39;</span>] = oldldlibpath</div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;            os.environ[<span class="stringliteral">&#39;CPATH&#39;</span>] = oldcpath</div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;            os.environ[<span class="stringliteral">&#39;LIBRARY_PATH&#39;</span>] = oldlibpath</div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;</div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;        <span class="comment"># return to original location</span></div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;        os.chdir(cwd)</div>
-<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;        <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = results[<span class="stringliteral">&#39;status&#39;</span>]</div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;            log[<span class="stringliteral">&#39;stdout&#39;</span>] = results[<span class="stringliteral">&#39;stdout&#39;</span>]</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;            log[<span class="stringliteral">&#39;stderr&#39;</span>] = results[<span class="stringliteral">&#39;stderr&#39;</span>]</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;            <span class="keywordflow">try</span>:</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;                log[<span class="stringliteral">&#39;time&#39;</span>] = results[<span class="stringliteral">&#39;elapsed_secs&#39;</span>]</div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;            <span class="keywordflow">except</span>:</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;                <span class="keywordflow">pass</span></div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;            <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;        log[<span class="stringliteral">&#39;status&#39;</span>] = 0</div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;        log[<span class="stringliteral">&#39;stdout&#39;</span>] = results[<span class="stringliteral">&#39;stdout&#39;</span>]</div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;        <span class="keywordflow">try</span>:</div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;            log[<span class="stringliteral">&#39;time&#39;</span>] = results[<span class="stringliteral">&#39;elapsed_secs&#39;</span>]</div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;        <span class="keywordflow">except</span>:</div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;            <span class="keywordflow">pass</span></div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;        <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;fail_test&#39;</span>] == <span class="keyword">True</span>:</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;            log[<span class="stringliteral">&#39;stderr&#39;</span>] = results[<span class="stringliteral">&#39;stderr&#39;</span>]</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;        <span class="comment"># record this location for any follow-on steps</span></div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;        log[<span class="stringliteral">&#39;location&#39;</span>] = location</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;        <span class="comment"># Revert any requested environment module settings</span></div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;        status,stdout,stderr = testDef.modcmd.revertModules(log[<span class="stringliteral">&#39;section&#39;</span>], testDef)</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;        <span class="keywordflow">if</span> 0 != status:</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;            log[<span class="stringliteral">&#39;status&#39;</span>] = status</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;            log[<span class="stringliteral">&#39;stdout&#39;</span>] = stdout</div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;            log[<span class="stringliteral">&#39;stderr&#39;</span>] = stderr</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;            <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;        <span class="comment"># if we added middleware to the paths, remove it</span></div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;        <span class="keywordflow">if</span> midpath:</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;            os.environ[<span class="stringliteral">&#39;PATH&#39;</span>] = oldbinpath</div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;            os.environ[<span class="stringliteral">&#39;LD_LIBRARY_PATH&#39;</span>] = oldldlibpath</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;            os.environ[<span class="stringliteral">&#39;CPATH&#39;</span>] = oldcpath</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;            os.environ[<span class="stringliteral">&#39;LIBRARY_PATH&#39;</span>] = oldlibpath</div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;</div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;        <span class="comment"># return to original location</span></div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;        os.chdir(cwd)</div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;        <span class="keywordflow">return</span></div>
 <div class="ttc" id="class_shell_1_1_shell_html_aaea88fad0ba8f7bf1da2fc113021add9"><div class="ttname"><a href="class_shell_1_1_shell.html#aaea88fad0ba8f7bf1da2fc113021add9">Shell.Shell.allocate</a></div><div class="ttdeci">def allocate</div><div class="ttdef"><b>Definition:</b> <a href="_shell_8py_source.html#l00087">Shell.py:87</a></div></div>
 <div class="ttc" id="class_shell_1_1_shell_html_a36cee8fc1bc0b3444cc672f5b66c0708"><div class="ttname"><a href="class_shell_1_1_shell.html#a36cee8fc1bc0b3444cc672f5b66c0708">Shell.Shell.__init__</a></div><div class="ttdeci">def __init__</div><div class="ttdef"><b>Definition:</b> <a href="_shell_8py_source.html#l00038">Shell.py:38</a></div></div>
 <div class="ttc" id="class_shell_1_1_shell_html"><div class="ttname"><a href="class_shell_1_1_shell.html">Shell.Shell</a></div><div class="ttdef"><b>Definition:</b> <a href="_shell_8py_source.html#l00037">Shell.py:37</a></div></div>

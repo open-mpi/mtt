@@ -197,8 +197,8 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;        <span class="keywordflow">for</span> t <span class="keywordflow">in</span> tmp:</div>
 <div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;            qcmd.append(t)</div>
 <div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;        qcmd.append(rpm)</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        status, stdout, stderr, _ = testDef.execmd.execute(<span class="keywordtype">None</span>, qcmd, testDef)</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        <span class="keywordflow">if</span> 0 == status:</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        results = testDef.execmd.execute(<span class="keywordtype">None</span>, qcmd, testDef)</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        <span class="keywordflow">if</span> 0 == results[<span class="stringliteral">&#39;status&#39;</span>]:</div>
 <div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;            log[<span class="stringliteral">&#39;status&#39;</span>] = 0</div>
 <div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            log[<span class="stringliteral">&#39;stdout&#39;</span>] = <span class="stringliteral">&quot;RPM &quot;</span> + rpm + <span class="stringliteral">&quot; already exists on system&quot;</span></div>
 <div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;            <span class="keywordflow">return</span></div>
@@ -212,19 +212,19 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            icmd.append(t)</div>
 <div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;        icmd.append(rpm)</div>
 <div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;        testDef.logger.verbose_print(<span class="stringliteral">&quot;installing package &quot;</span> + rpm)</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        status, stdout, stderr, _ = testDef.execmd.execute(<span class="keywordtype">None</span>, icmd, testDef)</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        <span class="keywordflow">if</span> 0 != status:</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;        results = testDef.execmd.execute(<span class="keywordtype">None</span>, icmd, testDef)</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        <span class="keywordflow">if</span> 0 != results[<span class="stringliteral">&#39;status&#39;</span>]:</div>
 <div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;            log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
 <div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;            log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;install of &quot;</span> + rpm + <span class="stringliteral">&quot; FAILED&quot;</span></div>
 <div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;            <span class="keywordflow">return</span></div>
 <div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;</div>
 <div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;        <span class="comment"># record the result</span></div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;        log[<span class="stringliteral">&#39;status&#39;</span>] = status</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;        log[<span class="stringliteral">&#39;stdout&#39;</span>] = stdout</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;        log[<span class="stringliteral">&#39;stderr&#39;</span>] = stderr</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;        log[<span class="stringliteral">&#39;status&#39;</span>] = results[<span class="stringliteral">&#39;status&#39;</span>]</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;        log[<span class="stringliteral">&#39;stdout&#39;</span>] = results[<span class="stringliteral">&#39;stdout&#39;</span>]</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;        log[<span class="stringliteral">&#39;stderr&#39;</span>] = results[<span class="stringliteral">&#39;stderr&#39;</span>]</div>
 <div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;</div>
 <div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;        <span class="comment"># track that we serviced this one</span></div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;        self.<a class="code" href="class_fetch_r_p_m_1_1_fetch_r_p_m.html#a3748f8f056ba42647c310c4214b54e1f">done</a>[rpm] = status</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;        self.<a class="code" href="class_fetch_r_p_m_1_1_fetch_r_p_m.html#a3748f8f056ba42647c310c4214b54e1f">done</a>[rpm] = results[<span class="stringliteral">&#39;status&#39;</span>]</div>
 <div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;        <span class="keywordflow">return</span></div>
 <div class="ttc" id="class_fetch_r_p_m_1_1_fetch_r_p_m_html_a3748f8f056ba42647c310c4214b54e1f"><div class="ttname"><a href="class_fetch_r_p_m_1_1_fetch_r_p_m.html#a3748f8f056ba42647c310c4214b54e1f">FetchRPM.FetchRPM.done</a></div><div class="ttdeci">done</div><div class="ttdef"><b>Definition:</b> <a href="_fetch_r_p_m_8py_source.html#l00042">FetchRPM.py:42</a></div></div>
 <div class="ttc" id="class_fetch_r_p_m_1_1_fetch_r_p_m_html_aa39b706480033877a1d419f7c290be4b"><div class="ttname"><a href="class_fetch_r_p_m_1_1_fetch_r_p_m.html#aa39b706480033877a1d419f7c290be4b">FetchRPM.FetchRPM.print_options</a></div><div class="ttdeci">def print_options</div><div class="ttdef"><b>Definition:</b> <a href="_fetch_r_p_m_8py_source.html#l00063">FetchRPM.py:63</a></div></div>

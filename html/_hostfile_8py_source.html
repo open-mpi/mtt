@@ -90,7 +90,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="contents">
 <a href="_hostfile_8py.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno"><a class="line" href="namespace_hostfile.html">    1</a></span>&#160;<span class="comment">#!/usr/bin/env python</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment"># Copyright (c) 2015-2018 Intel, Inc.  All rights reserved.</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment"># Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment"># $COPYRIGHT$</span></div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">#</span></div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment"># Additional copyrights may follow</span></div>
@@ -245,13 +245,13 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;        <span class="comment">################################</span></div>
 <div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        <span class="comment"># Execute Plugin</span></div>
 <div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;        <span class="comment">################################</span></div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;        status, stdout, stderr, time = testDef.execmd.execute(cmds, shlex.split(cmds[<span class="stringliteral">&#39;nodestatus_cmd&#39;</span>]), testDef)</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;        <span class="keywordflow">if</span> status != 0:</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;        results = testDef.execmd.execute(cmds, shlex.split(cmds[<span class="stringliteral">&#39;nodestatus_cmd&#39;</span>]), testDef)</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;        <span class="keywordflow">if</span> results[<span class="stringliteral">&#39;status&#39;</span>] != 0:</div>
 <div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;            log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
 <div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;            log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;Command %s failed: %s&quot;</span> % (cmds[<span class="stringliteral">&#39;nodestatus_cmd&#39;</span>], <span class="stringliteral">&quot; &quot;</span>.join(stderr))</div>
 <div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;            os.chdir(cwd)</div>
 <div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;            <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;        stdout_split = [l.split() <span class="keywordflow">for</span> l <span class="keywordflow">in</span> stdout]</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;        stdout_split = [l.split() <span class="keywordflow">for</span> l <span class="keywordflow">in</span> results[<span class="stringliteral">&#39;stdout&#39;</span>]]</div>
 <div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;        <span class="keywordflow">try</span>:</div>
 <div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;            nodename_column = int(cmds[<span class="stringliteral">&#39;nodename_column&#39;</span>])</div>
 <div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;        <span class="keywordflow">except</span> ValueError:</div>

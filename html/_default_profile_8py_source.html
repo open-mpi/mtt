@@ -90,7 +90,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="contents">
 <a href="_default_profile_8py.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno"><a class="line" href="namespace_default_profile.html">    1</a></span>&#160;<span class="comment"># -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">#</span></div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment"># Copyright (c) 2015-2018 Intel, Inc.  All rights reserved.</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment"># Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment"># $COPYRIGHT$</span></div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="comment">#</span></div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="comment"># Additional copyrights may follow</span></div>
@@ -158,14 +158,14 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        opts = self.options.keys()</div>
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <span class="keywordflow">for</span> key <span class="keywordflow">in</span> keys:</div>
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;            <span class="keywordflow">if</span> cmds[key] <span class="keywordflow">and</span> key <span class="keywordflow">in</span> opts:</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;                status, stdout, stderr, time = testDef.execmd.execute(cmds, self.<a class="code" href="class_default_profile_1_1_default_profile.html#ad8d29967f62501f4638fe09ee7686d08">options</a>[key][2], testDef)</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;                <span class="keywordflow">if</span> 0 != status:</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;                    log[<span class="stringliteral">&#39;status&#39;</span>] = status</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;                    log[<span class="stringliteral">&#39;stdout&#39;</span>] = stdout</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;                    log[<span class="stringliteral">&#39;stderr&#39;</span>] = stderr</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;                results = testDef.execmd.execute(cmds, self.<a class="code" href="class_default_profile_1_1_default_profile.html#ad8d29967f62501f4638fe09ee7686d08">options</a>[key][2], testDef)</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;                <span class="keywordflow">if</span> 0 != results[<span class="stringliteral">&#39;status&#39;</span>]:</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;                    log[<span class="stringliteral">&#39;status&#39;</span>] = results[<span class="stringliteral">&#39;status&#39;</span>]</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;                    log[<span class="stringliteral">&#39;stdout&#39;</span>] = results[<span class="stringliteral">&#39;stdout&#39;</span>]</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;                    log[<span class="stringliteral">&#39;stderr&#39;</span>] = results[<span class="stringliteral">&#39;stderr&#39;</span>]</div>
 <div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;                    <span class="comment"># ignore the execution time, if collected</span></div>
 <div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;                    <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;                myLog[key] = stdout</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;                myLog[key] = results[<span class="stringliteral">&#39;stdout&#39;</span>]</div>
 <div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="comment"># add our log to the system log</span></div>
 <div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        log[<span class="stringliteral">&#39;profile&#39;</span>] = myLog</div>
 <div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        log[<span class="stringliteral">&#39;status&#39;</span>] = 0</div>
