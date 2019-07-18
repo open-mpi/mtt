@@ -29,6 +29,7 @@ import subprocess
 # @param pkg        Package to be installed
 # @param sudo       Superuser authority required
 # @param userloc    Install locally for the user instead of in system locations
+# @param pip        Command to use for pip (e.g., "pip3")
 # @}
 class Pip(FetchMTTTool):
 
@@ -43,6 +44,7 @@ class Pip(FetchMTTTool):
         self.options['pkg'] = (None, "Package to be installed")
         self.options['sudo'] = (False, "Superuser authority required")
         self.options['userloc'] = (True, "Install locally for the user instead of in system locations")
+        self.options['cmd'] = ("pip", "Command to use for pip  (e.g., \"pip3\")")
         return
 
     def activate(self):
@@ -100,7 +102,7 @@ class Pip(FetchMTTTool):
         qcmd = []
         if cmds['sudo']:
             qcmd.append("sudo")
-        qcmd.append("pip")
+        qcmd.append(cmds['cmd'])
         qcmd.append("show")
         qcmd.append(pkg)
         results = testDef.execmd.execute(None, qcmd, testDef)
@@ -118,7 +120,7 @@ class Pip(FetchMTTTool):
         icmd = []
         if cmds['sudo']:
             icmd.append("sudo")
-        icmd.append("pip")
+        icmd.append(cmds['cmd'])
         icmd.append("install")
         if cmds['userloc']:
             icmd.append("--user")
