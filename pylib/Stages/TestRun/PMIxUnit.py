@@ -227,6 +227,8 @@ class PMIxUnit(TestRunMTTStage):
         cwd = os.getcwd()
         os.chdir(location)
 
+        testDef.logger.verbose_print("PMIxUnit: looking for tests in " + location)
+
         # cycle thru the list of tests and execute each of them
         log['testresults'] = []
         finalStatus = 0
