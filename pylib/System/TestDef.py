@@ -535,7 +535,20 @@ class TestDef(object):
                 for i,v in enumerate(sublog):
                     self.fill_log_interpolation("%s.%d" % (basestr, i), v)
         else:
-            self.fill_log_interpolation(basestr, str(sublog))
+            # sublog is likely a byte array that might included non-ascii
+            # characters, so protect us in case of an exception
+            try:
+                self.fill_log_interpolation(basestr, str(sublog))
+            except:
+                try:
+                    mystring = sublog.encode('utf-8')
+                    self.fill_log_interpolation(basestr, str(mystring))
+                except:
+                    # replace illegal characters with an asterisk
+                    for i,b in enumerate(sublog):
+                       if not isascii(b):
+                          sublog[i] = '*'
+                    self.fill_log_interpolation(basestr, str(sublog))
 
     def expandWildCards(self, sections):
         expsec = []
