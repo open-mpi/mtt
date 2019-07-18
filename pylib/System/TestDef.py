@@ -111,7 +111,10 @@ class TestDef(object):
                 else:
                     return 0, True
             elif is_py2 and type(inval) is unicode:
-                return 0, int(inval)
+                if inval.lower() in ['true', '1', 't', 'y', 'yes']:
+                    return 0, True
+                else:
+                    return 0, False
             else:
                 # unknown conversion required
                 print("Unknown conversion required for " + inval)
