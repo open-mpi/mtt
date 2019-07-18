@@ -159,10 +159,10 @@ class FetchTarball(FetchMTTTool):
                 return
             # untar the tarball
             testDef.logger.verbose_print("untarring tarball " + tarball)
-            results = testDef.execmd.execute(None, ["tar", "-zxf", tarball], testDef)
+            results = testDef.execmd.execute(None, ["tar", "-xf", tarball], testDef)
             if 0 != results['status']:
                 log['status'] = 1
-                log['stderr'] = "untar of tarball " + tarball_name + "FAILED"
+                log['stderr'] = "untar of tarball " + tarball + "FAILED"
                 return
         # move into the resulting directory
         os.chdir(package)

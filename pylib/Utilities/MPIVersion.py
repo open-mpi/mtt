@@ -123,4 +123,4 @@ int main(int argc, char **argv) {
 
         os.chdir("..")
 
-        return "\n".join(stdout)
+        return "\n".join(results['stdout'])
