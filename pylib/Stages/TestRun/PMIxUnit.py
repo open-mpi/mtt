@@ -185,20 +185,35 @@ class PMIxUnit(TestRunMTTStage):
                 except KeyError:
                     oldldlibpath = ""
                     pieces = []
-                bindir = os.path.join(midlog['location'], "lib")
-                pieces.insert(0, bindir)
+                libdir = os.path.join(midlog['location'], "lib")
+                if not os.path.exists(libdir) or not os.path.isdir(libdir):
+                    libdir = os.path.join(midlog['location'], "lib64")
+                pieces.insert(0, libdir)
                 newpath = ":".join(pieces)
                 os.environ['LD_LIBRARY_PATH'] = newpath
                 # see if there is a Python subdirectory
-                listing = os.listdir(bindir)
+                listing = os.listdir(libdir)
                 for d in listing:
-                    entry = os.path.join(bindir, d)
+                    entry = os.path.join(libdir, d)
                     if os.path.isdir(entry) and "python" in d:
                         oldpypath = os.environ['PYTHONPATH']
                         newpath = ":".join([oldpypath, os.path.join(entry, "site-packages")])
                         os.environ['PYTHONPATH'] = newpath
                         pypath = True
                         break
+                if not pypath and "lib64" not in libdir:
+                    # try the lib64 location if we aren't already there
+                    libdir = os.path.join(midlog['location'], "lib64")
+                    if os.path.exists(libdir) and os.path.isdir(libdir):
+                        listing = os.listdir(libdir)
+                        for d in listing:
+                            entry = os.path.join(libdir, d)
+                            if os.path.isdir(entry) and "python" in d:
+                                oldpypath = os.environ['PYTHONPATH']
+                                newpath = ":".join([oldpypath, os.path.join(entry, "site-packages")])
+                                os.environ['PYTHONPATH'] = newpath
+                                pypath = True
+                                break
                 # mark that this was done
                 midpath = True
         except KeyError:
