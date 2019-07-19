@@ -233,14 +233,17 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;            <span class="keywordflow">for</span> t <span class="keywordflow">in</span> results[<span class="stringliteral">&#39;stdout&#39;</span>]:</div>
 <div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;                <span class="keywordflow">if</span> t.startswith(<span class="stringliteral">&quot;Location&quot;</span>):</div>
 <div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;                    log[<span class="stringliteral">&#39;location&#39;</span>] = t[10:]</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;                    <span class="comment"># Add the location to PYTHONPATH</span></div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;                    pypath = os.environ[<span class="stringliteral">&#39;PYTHONPATH&#39;</span>] + <span class="stringliteral">&quot;:&quot;</span> + log[<span class="stringliteral">&#39;location&#39;</span>]</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;                    os.environ[<span class="stringliteral">&#39;PYTHONPATH&#39;</span>] = pypath</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;                    <span class="keywordflow">break</span></div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;        <span class="comment"># track that we serviced this one</span></div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;        self.<a class="code" href="class_pip_1_1_pip.html#adaa42730d39533e28bf8f74c8de40110">done</a>[pkg] = results[<span class="stringliteral">&#39;status&#39;</span>]</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;        <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;                    <span class="keywordflow">try</span>:</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;                        <span class="comment"># Prepend the location to PYTHONPATH if it exists in environ</span></div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;                        pypath = <span class="stringliteral">&quot;:&quot;</span>.join([log[<span class="stringliteral">&#39;location&#39;</span>], os.environ[<span class="stringliteral">&#39;PYTHONPATH&#39;</span>]])</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;                    <span class="keywordflow">except</span>:</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;                        pypath = log[<span class="stringliteral">&#39;location&#39;</span>]</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;                    os.environ[<span class="stringliteral">&#39;PYTHONPATH&#39;</span>] = pypath</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;                    <span class="keywordflow">break</span></div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;        <span class="comment"># track that we serviced this one</span></div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;        self.<a class="code" href="class_pip_1_1_pip.html#adaa42730d39533e28bf8f74c8de40110">done</a>[pkg] = results[<span class="stringliteral">&#39;status&#39;</span>]</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        <span class="keywordflow">return</span></div>
 <div class="ttc" id="class_pip_1_1_pip_html_a93368e06caeaf789c372d4e7ce95407a"><div class="ttname"><a href="class_pip_1_1_pip.html#a93368e06caeaf789c372d4e7ce95407a">Pip.Pip.execute</a></div><div class="ttdeci">def execute</div><div class="ttdef"><b>Definition:</b> <a href="_pip_8py_source.html#l00069">Pip.py:69</a></div></div>
 <div class="ttc" id="class_pip_1_1_pip_html"><div class="ttname"><a href="class_pip_1_1_pip.html">Pip.Pip</a></div><div class="ttdef"><b>Definition:</b> <a href="_pip_8py_source.html#l00034">Pip.py:34</a></div></div>
 <div class="ttc" id="class_pip_1_1_pip_html_a93e210f1c90ab70fd8b94e898499172e"><div class="ttname"><a href="class_pip_1_1_pip.html#a93e210f1c90ab70fd8b94e898499172e">Pip.Pip.activated</a></div><div class="ttdeci">activated</div><div class="ttdef"><b>Definition:</b> <a href="_pip_8py_source.html#l00039">Pip.py:39</a></div></div>

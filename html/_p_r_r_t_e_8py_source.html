@@ -296,26 +296,35 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;            self.<a class="code" href="class_launcher_m_t_t_tool_1_1_launcher_m_t_t_tool.html#a95b352e21a72a37e29645ab632a8fe5e">resetPaths</a>(log, testDef)</div>
 <div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;            <span class="keywordflow">return</span></div>
 <div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;        <span class="comment"># start the PRRTE DVM</span></div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;        process = Popen([<span class="stringliteral">&#39;prte&#39;</span>], stdout=PIPE, stderr=PIPE)</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;        <span class="comment"># wait a little for the prte daemon to start</span></div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;        time.sleep(int(cmds[<span class="stringliteral">&#39;waittime&#39;</span>]))</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;        <span class="comment"># execute the tests</span></div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;        self.<a class="code" href="class_launcher_m_t_t_tool_1_1_launcher_m_t_t_tool.html#aed1deaa222bb1908e29562f51aadf65f">runTests</a>(log, cmdargs, cmds, testDef)</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;</div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;        <span class="comment"># stop the PRRTE DVM</span></div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;        results = testDef.execmd.execute(cmds, [<span class="stringliteral">&quot;prun&quot;</span>, <span class="stringliteral">&quot;--terminate&quot;</span>], testDef)</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;        <span class="comment"># define a unique rendezvous file for prun to use</span></div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;        <span class="comment"># to reach the DVM - protects against case where</span></div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;        <span class="comment"># multiple DVMs are in simultaneous operation</span></div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;        pth = <span class="stringliteral">&quot;prte.rnd.&quot;</span> + str(testDef.signature)</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;        os.environ[<span class="stringliteral">&#39;PMIX_LAUNCHER_RENDEZVOUS_FILE&#39;</span>] = os.path.join(os.getcwd(), pth)</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;        <span class="comment"># start the PRRTE DVM</span></div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;        process = Popen([<span class="stringliteral">&#39;prte&#39;</span>], stdout=PIPE, stderr=PIPE)</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;        <span class="comment"># wait a little for the prte daemon to start</span></div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;        time.sleep(int(cmds[<span class="stringliteral">&#39;waittime&#39;</span>]))</div>
 <div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;        <span class="comment"># Deallocate cluster</span></div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;        status = self.<a class="code" href="class_launcher_m_t_t_tool_1_1_launcher_m_t_t_tool.html#ae446b720803ee6ba3ab9febc001573dd">deallocateCluster</a>(log, cmds, testDef)</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;        <span class="keywordflow">if</span> 0 != status:</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;            self.<a class="code" href="class_launcher_m_t_t_tool_1_1_launcher_m_t_t_tool.html#a95b352e21a72a37e29645ab632a8fe5e">resetPaths</a>(log, testDef)</div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;            <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;        <span class="comment"># execute the tests</span></div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;        self.<a class="code" href="class_launcher_m_t_t_tool_1_1_launcher_m_t_t_tool.html#aed1deaa222bb1908e29562f51aadf65f">runTests</a>(log, cmdargs, cmds, testDef)</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;        <span class="comment"># stop the PRRTE DVM</span></div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;        results = testDef.execmd.execute(cmds, [<span class="stringliteral">&quot;prun&quot;</span>, <span class="stringliteral">&quot;--terminate&quot;</span>], testDef)</div>
 <div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;        <span class="comment"># reset our paths and return us to our cwd</span></div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;        self.<a class="code" href="class_launcher_m_t_t_tool_1_1_launcher_m_t_t_tool.html#a95b352e21a72a37e29645ab632a8fe5e">resetPaths</a>(log, testDef)</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;        <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;        <span class="comment"># cleanup the environ</span></div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;        del os.environ[<span class="stringliteral">&#39;PMIX_LAUNCHER_RENDEZVOUS_FILE&#39;</span>]</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;        <span class="comment"># Deallocate cluster</span></div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;        status = self.<a class="code" href="class_launcher_m_t_t_tool_1_1_launcher_m_t_t_tool.html#ae446b720803ee6ba3ab9febc001573dd">deallocateCluster</a>(log, cmds, testDef)</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;        <span class="keywordflow">if</span> 0 != status:</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;            self.<a class="code" href="class_launcher_m_t_t_tool_1_1_launcher_m_t_t_tool.html#a95b352e21a72a37e29645ab632a8fe5e">resetPaths</a>(log, testDef)</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;            <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;        <span class="comment"># reset our paths and return us to our cwd</span></div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;        self.<a class="code" href="class_launcher_m_t_t_tool_1_1_launcher_m_t_t_tool.html#a95b352e21a72a37e29645ab632a8fe5e">resetPaths</a>(log, testDef)</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;        <span class="keywordflow">return</span></div>
 <div class="ttc" id="class_p_r_r_t_e_1_1_p_r_r_t_e_html_aaf98bda8f91b9654255df6dd8ca90309"><div class="ttname"><a href="class_p_r_r_t_e_1_1_p_r_r_t_e.html#aaf98bda8f91b9654255df6dd8ca90309">PRRTE.PRRTE.execute</a></div><div class="ttdeci">def execute</div><div class="ttdef"><b>Definition:</b> <a href="_p_r_r_t_e_8py_source.html#l00107">PRRTE.py:107</a></div></div>
 <div class="ttc" id="class_p_r_r_t_e_1_1_p_r_r_t_e_html_aebd413e4294d6b247a3436557273f1c3"><div class="ttname"><a href="class_p_r_r_t_e_1_1_p_r_r_t_e.html#aebd413e4294d6b247a3436557273f1c3">PRRTE.PRRTE.print_options</a></div><div class="ttdeci">def print_options</div><div class="ttdef"><b>Definition:</b> <a href="_p_r_r_t_e_8py_source.html#l00101">PRRTE.py:101</a></div></div>
 <div class="ttc" id="class_p_r_r_t_e_1_1_p_r_r_t_e_html_aab163ee5630ff741ddebce1f1a19dca6"><div class="ttname"><a href="class_p_r_r_t_e_1_1_p_r_r_t_e.html#aab163ee5630ff741ddebce1f1a19dca6">PRRTE.PRRTE.__init__</a></div><div class="ttdeci">def __init__</div><div class="ttdef"><b>Definition:</b> <a href="_p_r_r_t_e_8py_source.html#l00051">PRRTE.py:51</a></div></div>
