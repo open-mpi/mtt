@@ -206,6 +206,12 @@ class PRRTE(LauncherMTTTool):
             self.resetPaths(log, testDef)
             return
 
+        # define a unique rendezvous file for prun to use
+        # to reach the DVM - protects against case where
+        # multiple DVMs are in simultaneous operation
+        pth = "prte.rnd." + str(testDef.signature)
+        os.environ['PMIX_LAUNCHER_RENDEZVOUS_FILE'] = os.path.join(os.getcwd(), pth)
+
         # start the PRRTE DVM
         process = Popen(['prte'], stdout=PIPE, stderr=PIPE)
         # wait a little for the prte daemon to start
@@ -216,6 +222,9 @@ class PRRTE(LauncherMTTTool):
 
         # stop the PRRTE DVM
         results = testDef.execmd.execute(cmds, ["prun", "--terminate"], testDef)
+
+        # cleanup the environ
+        del os.environ['PMIX_LAUNCHER_RENDEZVOUS_FILE']
 
         # Deallocate cluster
         status = self.deallocateCluster(log, cmds, testDef)
