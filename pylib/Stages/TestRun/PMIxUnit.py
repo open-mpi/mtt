@@ -196,8 +196,12 @@ class PMIxUnit(TestRunMTTStage):
                 for d in listing:
                     entry = os.path.join(libdir, d)
                     if os.path.isdir(entry) and "python" in d:
-                        oldpypath = os.environ['PYTHONPATH']
-                        newpath = ":".join([oldpypath, os.path.join(entry, "site-packages")])
+                        try:
+                            oldpypath = os.environ['PYTHONPATH']
+                            newpath = ":".join([oldpypath, os.path.join(entry, "site-packages")])
+                        else:
+                            oldpypath = None
+                            newpath = os.path.join(entry, "site-packages")
                         os.environ['PYTHONPATH'] = newpath
                         pypath = True
                         break
@@ -209,8 +213,12 @@ class PMIxUnit(TestRunMTTStage):
                         for d in listing:
                             entry = os.path.join(libdir, d)
                             if os.path.isdir(entry) and "python" in d:
-                                oldpypath = os.environ['PYTHONPATH']
-                                newpath = ":".join([oldpypath, os.path.join(entry, "site-packages")])
+                                try:
+                                    oldpypath = os.environ['PYTHONPATH']
+                                    newpath = ":".join([oldpypath, os.path.join(entry, "site-packages")])
+                                else:
+                                    oldpypath = None
+                                    newpath = os.path.join(entry, "site-packages")
                                 os.environ['PYTHONPATH'] = newpath
                                 pypath = True
                                 break
@@ -327,7 +335,10 @@ class PMIxUnit(TestRunMTTStage):
             os.environ['LD_LIBRARY_PATH'] = oldldlibpath
 
         if pypath:
-            os.environ['PYTHONPATH'] = oldpypath
+            if oldpypath is not None:
+                os.environ['PYTHONPATH'] = oldpypath
+            else:
+                del os.environ['PYTHONPATH']
 
         os.chdir(cwd)
         return

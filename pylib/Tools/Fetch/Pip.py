@@ -143,8 +143,11 @@ class Pip(FetchMTTTool):
             for t in results['stdout']:
                 if t.startswith("Location"):
                     log['location'] = t[10:]
-                    # Add the location to PYTHONPATH
-                    pypath = os.environ['PYTHONPATH'] + ":" + log['location']
+                    try:
+                        # Prepend the location to PYTHONPATH if it exists in environ
+                        pypath = ":".join([log['location'], os.environ['PYTHONPATH']])
+                    except:
+                        pypath = log['location']
                     os.environ['PYTHONPATH'] = pypath
                     break
 

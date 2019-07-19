@@ -77,6 +77,9 @@ class TestDef(object):
         self.log = {}
         self.watchdog = None
         self.plugin_trans_sem = Semaphore()
+        # provide a signature to differentiate this MTT execution
+        # from any other that might be executed in parallel with it
+        self.signature = 0
         # define a few global "constant" names that can be used
         # across plugins - the following categories must match
         # their equivalent values in the server. See
@@ -92,6 +95,7 @@ class TestDef(object):
     def setOptions(self, args):
         self.options = vars(args)
         self.args = args
+        self.signature = os.getpid()
 
     # private function to convert values
     def __convert_value(self, opt, inval):
