@@ -199,7 +199,7 @@ class PMIxUnit(TestRunMTTStage):
                         try:
                             oldpypath = os.environ['PYTHONPATH']
                             newpath = ":".join([oldpypath, os.path.join(entry, "site-packages")])
-                        else:
+                        except:
                             oldpypath = None
                             newpath = os.path.join(entry, "site-packages")
                         os.environ['PYTHONPATH'] = newpath
@@ -216,7 +216,7 @@ class PMIxUnit(TestRunMTTStage):
                                 try:
                                     oldpypath = os.environ['PYTHONPATH']
                                     newpath = ":".join([oldpypath, os.path.join(entry, "site-packages")])
-                                else:
+                                except:
                                     oldpypath = None
                                     newpath = os.path.join(entry, "site-packages")
                                 os.environ['PYTHONPATH'] = newpath
