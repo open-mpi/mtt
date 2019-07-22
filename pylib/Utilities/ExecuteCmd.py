@@ -213,6 +213,7 @@ class ExecuteCmd(BaseMTTUtility):
 
                     if stdout_done and stderr_done:
                         break
+            p.wait()
             if p.returncode == -15 or p.returncode == -9:
                 testDef.logger.verbose_print("ExecuteCmd Timed Out%s" % (": elapsed=%s"%elapsed_datetime if time_exec else ""), \
                                              timestamp=endtime if time_exec else None)
@@ -235,7 +236,6 @@ class ExecuteCmd(BaseMTTUtility):
             testDef.logger.verbose_print("ExecuteCmd done%s" % (": elapsed=%s"%elapsed_datetime if time_exec else ""), \
                                          timestamp=endtime if time_exec else None)
 
-            p.wait()
             results['status'] = p.returncode
             results['stdout'] = stdout[-1 * stdoutlines:]
             results['stderr'] = stderr[-1 * stderrlines:]

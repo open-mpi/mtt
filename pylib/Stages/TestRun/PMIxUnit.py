@@ -261,6 +261,7 @@ class PMIxUnit(TestRunMTTStage):
         numTests = 0
         numPass = 0
         numFail = 0
+        numTimed = 0
 
         for test in tests:
             testLog = {'test':test}
@@ -298,15 +299,20 @@ class PMIxUnit(TestRunMTTStage):
 
             results = testDef.execmd.execute(cmds, cmdargs, testDef)
 
-            if 0 == results['status']:
-                numPass = numPass + 1
-                testLog['result'] = testDef.MTT_TEST_PASSED
-            else:
-                numFail = numFail + 1
-                testLog['result'] = testDef.MTT_TEST_FAILED
-                if 0 == finalStatus:
-                    finalStatus = status
-                    finalError = stderr
+            try:
+                if results['timedout']:
+                    numTimed += 1
+                    testLog['result'] = testDef.MTT_TEST_TIMED_OUT
+            except:
+                if 0 == results['status']:
+                    numPass = numPass + 1
+                    testLog['result'] = testDef.MTT_TEST_PASSED
+                else:
+                    numFail = numFail + 1
+                    testLog['result'] = testDef.MTT_TEST_FAILED
+                    if 0 == finalStatus:
+                        finalStatus = status
+                        finalError = stderr
             testLog['status'] = results['status']
             testLog['stdout'] = results['stdout']
             testLog['stderr'] = results['stderr']
@@ -322,6 +328,7 @@ class PMIxUnit(TestRunMTTStage):
         log['numTests'] = numTests
         log['numPass'] = numPass
         log['numFail'] = numFail
+        log['numTimed'] = numTimed
 
         # Revert any requested environment module settings
         status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
