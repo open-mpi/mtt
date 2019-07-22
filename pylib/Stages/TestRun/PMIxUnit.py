@@ -26,6 +26,7 @@ import shlex
 # @param modules_unload  Modules to unload
 # @param modules         Modules to load
 # @param modules_swap    Modules to swap
+# @param timeout         Time limit for application execution
 # @}
 class PMIxUnit(TestRunMTTStage):
 
@@ -39,6 +40,7 @@ class PMIxUnit(TestRunMTTStage):
         self.options['modules'] = (None, "Modules to load")
         self.options['modules_unload'] = (None, "Modules to unload")
         self.options['modules_swap'] = (None, "Modules to swap")
+        self.options['timeout'] = (None, "Time limit for application execution")
 
         self.testDef = None
         self.cmds = None
