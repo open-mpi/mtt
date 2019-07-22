@@ -16,7 +16,73 @@ import subprocess
 import time
 import datetime
 import signal
+import os, threading, errno
+from contextlib import contextmanager
 from BaseMTTUtility import *
+
+
+class TimeoutThread(object):
+    def __init__(self, seconds):
+        self.seconds = seconds
+        self.cond = threading.Condition()
+        self.cancelled = False
+        self.thread = threading.Thread(target=self._wait)
+
+    def run(self):
+        # start the timer
+        self.thread.start()
+
+    def _wait(self):
+        with self.cond:
+            self.cond.wait(self.seconds)
+
+            if not self.cancelled:
+                self.timed_out()
+
+    def cancel(self):
+        # cancel the timeout, if it hasn't already fired
+        with self.cond:
+            self.cancelled = True
+            self.cond.notify()
+        self.thread.join()
+
+    def timed_out(self):
+        # raise exception to signal timeout
+        raise NotImplementedError
+
+class KillProcessThread(TimeoutThread):
+    def __init__(self, seconds, pid):
+        super(KillProcessThread, self).__init__(seconds)
+        self.pid = pid
+
+    def timed_out(self):
+        # be polite and provide a SIGTERM to let them
+        # exit cleanly
+        try:
+            os.kill(self.pid, signal.SIGTERM)
+        except OSError as e:
+            # if it is already gone, then ignore the
+            # error - just a race condition
+            if e.errno not in (errno.EPERM, errno. ESRCH):
+                raise e
+        # wait a little bit
+        time.sleep(1)
+        # hammer it with a cannonball
+        try:
+            os.kill(self.pid, signal.SIGKILL)
+        except OSError as e:
+            # If the process is already gone, ignore the error.
+            if e.errno not in (errno.EPERM, errno. ESRCH):
+                raise e
+
+@contextmanager
+def processTimeout(seconds, pid):
+    timeout = KillProcessThread(seconds, pid)
+    timeout.run()
+    try:
+        yield
+    finally:
+        timeout.cancel()
 
 
 ## @addtogroup Utilities
@@ -112,10 +178,11 @@ class ExecuteCmd(BaseMTTUtility):
             # output as the process runs
             p = subprocess.Popen(mycmdargs,
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            try:
-                if options is not None and 'timeout' in options:
-                    t = int(options['timeout'])
-                    p.wait(timeout=t)
+            if options is not None and 'timeout' in options and options['timeout'] is not None:
+                t = int(options['timeout'])
+            else:
+                t = 100000000
+            with processTimeout(t, p.pid):
                 # loop until the pipes close
                 while True:
                     reads = [p.stdout.fileno(), p.stderr.fileno()]
@@ -146,12 +213,13 @@ class ExecuteCmd(BaseMTTUtility):
 
                     if stdout_done and stderr_done:
                         break
-            except subprocess.TimeoutExpired:
+            p.wait()
+            if p.returncode == -15 or p.returncode == -9:
                 testDef.logger.verbose_print("ExecuteCmd Timed Out%s" % (": elapsed=%s"%elapsed_datetime if time_exec else ""), \
                                              timestamp=endtime if time_exec else None)
                 stderr.append("**** TIMED OUT ****")
                 results['timedout'] = True
-                results['status'] = 1
+                results['status'] = p.returncode
                 results['stdout'] = stdout[-1 * stdoutlines:]
                 results['stderr'] = stderr[-1 * stderrlines:]
                 if time_exec:
@@ -168,7 +236,6 @@ class ExecuteCmd(BaseMTTUtility):
             testDef.logger.verbose_print("ExecuteCmd done%s" % (": elapsed=%s"%elapsed_datetime if time_exec else ""), \
                                          timestamp=endtime if time_exec else None)
 
-            p.wait()
             results['status'] = p.returncode
             results['stdout'] = stdout[-1 * stdoutlines:]
             results['stderr'] = stderr[-1 * stderrlines:]
