@@ -242,4 +242,5 @@ class PRRTE(LauncherMTTTool):
 
         # reset our paths and return us to our cwd
         self.resetPaths(log, testDef)
+
         return

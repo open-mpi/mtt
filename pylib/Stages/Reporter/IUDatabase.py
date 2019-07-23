@@ -275,7 +275,7 @@ class IUDatabase(ReporterMTTStage):
                 else:
                     data['np'] = 1
             except KeyError:
-                data['np'] = None
+                data['np'] = 1
 
             if 'testresults' in lg:
                 data['command'] = trun['cmd']
