@@ -467,7 +467,13 @@ class LauncherMTTTool(IPlugin):
                 else:
                     testLog['result'] = testDef.MTT_TEST_PASSED
                     self.numPass += 1
-
+            try:
+                testLog['np'] = cmds['np']
+            except KeyError:
+                try:
+                    testLog['np'] = cmds['ppn']
+                except:
+                    testLog['np'] = -1
             log['testresults'].append(testLog)
             cmdargs = cmdargs[:-1]
             self.numTests = self.numTests + 1
@@ -481,10 +487,6 @@ class LauncherMTTTool(IPlugin):
         log['numSkip'] = self.numSkip
         log['numFail'] = self.numFail
         log['numTimed'] = self.numTimed
-        try:
-            log['np'] = cmds['np']
-        except KeyError:
-            log['np'] = None
         return
 
     def deallocateCluster(self, log, cmds, testDef):
