@@ -140,27 +140,6 @@ class Git(FetchMTTTool):
         # the path component of the parser output contains
         # the name of the repo
         repo = os.path.basename(urlparse(url).path)
-        # check to see if we have already processed this repo
-        try:
-            if self.done[repo] is not None:
-                log['status'] = self.done[repo][0]
-                log['location'] = self.done[repo][1]
-                # if they gave us a subdir, then we have to append it on
-                if cmds['subdir'] is not None:
-                    # check that this subdirectory actually exists
-                    ckdir = os.path.join(log['location'], cmds['subdir'])
-                    if not os.path.exists(ckdir):
-                        log['status'] = 1
-                        log['stderr'] = "Subdirectory " + cmds['subdir'] + " was not found"
-                        return
-                    if not os.path.isdir(ckdir):
-                        log['status'] = 1
-                        log['stderr'] = "Subdirectory " + cmds['subdir'] + " is not a directory"
-                        return
-                    log['location'] = ckdir
-                return
-        except KeyError:
-            pass
 
         # Apply any requested environment module settings
         status,stdout,stderr = testDef.modcmd.applyModules(log['section'], cmds, testDef)
@@ -204,6 +183,7 @@ class Git(FetchMTTTool):
                 return
             # log the status
             log['status'] = rep['status']
+            log['hash'] = rep['hash']
             # set the location
             try:
                 try:
@@ -212,7 +192,17 @@ class Git(FetchMTTTool):
                 except:
                     log['location'] = rep['location']
                 if cmds['subdir'] is not None:
-                    log['location'] = os.path.join(log['location'], cmds['subdir'])
+                    # check that this subdirectory actually exists
+                    ckdir = os.path.join(log['location'], cmds['subdir'])
+                    if not os.path.exists(ckdir):
+                        log['status'] = 1
+                        log['stderr'] = "Subdirectory " + cmds['subdir'] + " was not found"
+                        return
+                    if not os.path.isdir(ckdir):
+                        log['status'] = 1
+                        log['stderr'] = "Subdirectory " + cmds['subdir'] + " is not a directory"
+                        return
+                    log['location'] = ckdir
             except:
                 pass
             if branch is not None:
@@ -394,6 +384,10 @@ class Git(FetchMTTTool):
         log['status'] = results['status']
         log['stdout'] = results['stdout']
         log['stderr'] = results['stderr']
+        # get the current hash and record it
+        hashresult = testDef.execmd.execute(cmds, ["git", "log", "-1", "--oneline"], testDef)
+        # the hash is the first field before the space
+        log['hash'] = hashresult['stdout'][0].split()[0]
 
         # log our absolute location so others can find it
         log['location'] = os.getcwd()
@@ -429,6 +423,7 @@ class Git(FetchMTTTool):
             rp['branch'] = branch
         if cmds['subdir'] is not None:
             rp['subdir'] = cmds['subdir']
+        rp['hash'] = log['hash']
         self.done[repo] = rp
 
         # Revert any requested environment module settings
