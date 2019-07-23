@@ -152,7 +152,11 @@ class PRRTE(LauncherMTTTool):
                         try:
                             ext = "prrte-" + lg2['branch']
                         except:
-                            ext = "prrte-master-HEAD"
+                            ext = "prrte-master"
+                    try:
+                        ext = ext + "-" + lg2['hash']
+                    except:
+                        pass
                 elif version is None:
                     # get the log of this stage
                     lg = testDef.logger.getLog(d)
@@ -166,7 +170,11 @@ class PRRTE(LauncherMTTTool):
                         try:
                             version = mdname + "-" + lg2['branch']
                         except:
-                            version = mdname + "-master-HEAD"
+                            version = mdname + "-master"
+                    try:
+                        version = version + "-" + lg2['hash']
+                    except:
+                        pass
 
         log['mpi_info'] = {'name' : ext, 'version' : version}
 

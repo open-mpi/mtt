@@ -27,6 +27,7 @@ import shlex
 # @param modules         Modules to load
 # @param modules_swap    Modules to swap
 # @param timeout         Time limit for application execution
+# @param dependencies    Middleware dependencies
 # @}
 class PMIxUnit(TestRunMTTStage):
 
@@ -41,7 +42,7 @@ class PMIxUnit(TestRunMTTStage):
         self.options['modules_unload'] = (None, "Modules to unload")
         self.options['modules_swap'] = (None, "Modules to swap")
         self.options['timeout'] = (None, "Time limit for application execution")
-
+        self.options['dependencies'] = (None, "Middleware dependencies")
         self.testDef = None
         self.cmds = None
         return
@@ -229,6 +230,53 @@ class PMIxUnit(TestRunMTTStage):
         except KeyError:
             # if it was already installed, then no location would be provided
             pass
+
+        # search our dependencies to set the 'mpi_info' name field
+        ext = "prrte-unknown"
+        version = None
+        if cmds['dependencies'] is not None:
+            # split out the dependencies
+            deps = cmds['dependencies'].split()
+            # one should be PRRTE and the other is the middleware
+            # we are using for the tests
+            for d in deps:
+                if d.lower().endswith("prrte"):
+                    # get the log of this stage
+                    lg = testDef.logger.getLog(d)
+                    # the parent is the Get operation
+                    lg2 = testDef.logger.getLog(lg['parent'])
+                    try:
+                        ext = "prrte-master-PR" + lg2['pr']
+                    except:
+                        try:
+                            ext = "prrte-" + lg2['branch']
+                        except:
+                            ext = "prrte-master"
+                    try:
+                        ext = ext + "-" + lg2['hash']
+                    except:
+                        pass
+                elif version is None:
+                    # get the log of this stage
+                    lg = testDef.logger.getLog(d)
+                    # the parent is the Get operation
+                    lg2 = testDef.logger.getLog(lg['parent'])
+                    # take the name of the section as our middleware name
+                    mdname = lg2['section'].split(':')[-1]
+                    try:
+                        version = mdname + "-master-PR" + lg2['pr']
+                    except:
+                        try:
+                            version = mdname + "-" + lg2['branch']
+                        except:
+                            version = mdname + "-master"
+                    try:
+                        version = version + "-" + lg2['hash']
+                    except:
+                        pass
+
+        log['mpi_info'] = {'name' : ext, 'version' : version}
+
         # check for modules required by the middleware
         status,stdout,stderr = testDef.modcmd.checkForModules(log['section'], midlog, cmds, testDef)
         if 0 != status:
@@ -274,9 +322,15 @@ class PMIxUnit(TestRunMTTStage):
             ln = len(test)
             s = ""
             n = 0
+            takenext = False
             while n < ln:
                 if test[n] == ' ':
                     cmdargs.append(s)
+                    if takenext:
+                        testLog['np'] = int(s)
+                        takenext = False
+                    elif s.startswith("-n"):
+                        takenext = True
                     s = ""
                     n += 1
                     continue

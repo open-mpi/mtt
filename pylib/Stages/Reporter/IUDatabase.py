@@ -271,7 +271,7 @@ class IUDatabase(ReporterMTTStage):
 
             try:
                 if 'testresults' in lg:
-                    data['np'] = lg['np']
+                    data['np'] = trun['np']
                 else:
                     data['np'] = 1
             except KeyError:
