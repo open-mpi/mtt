@@ -34,6 +34,7 @@ class LauncherMTTTool(IPlugin):
         self.numFail = 0
         self.numTimed = 0
         self.maxTests = 10000000
+        self.midpath = False
         # initialise parent class
         IPlugin.__init__(self)
 
