@@ -14,6 +14,8 @@ Commands:
     restart
         Restarts the MTT Server.
 """
+
+from __future__ import print_function
 import os
 import shutil
 import sys
@@ -71,24 +73,24 @@ def _start():
         call(['env/bin/python', _script_name])
         return
     elif -1 == pid:
-        print "PIDFile '%s' has been corrupted." % _src_dir + '/' +_pidfile
+        print("PIDFile '%s' has been corrupted." % _src_dir + '/' +_pidfile)
         return
 
-    print 'Server appears to be already running.'
+    print('Server appears to be already running.')
     return
 
 def _restart():
     """If not stopped, restart the REST server, else start it."""
-    print 'Restarting REST server...'
+    print('Restarting REST server...')
     pid = _getPID()
 
     if -2 == pid:
         # PIDFile not found, thus, server is not running.
-        print 'REST server does not currently appear to be running.'
+        print('REST server does not currently appear to be running.')
         _start()
         return
     elif -1 == pid:
-        print "PIDFile '%s' has been corrupted." % _src_dir + '/' +_pidfile
+        print("PIDFile '%s' has been corrupted." % _src_dir + '/' +_pidfile)
         return
 
     call(['kill', '-1', str(pid)])
@@ -96,22 +98,22 @@ def _restart():
 
 def _stop():
     """If running, stop the REST server."""
-    print 'Stopping REST server...'
+    print(Stopping REST server...')
     pid = _getPID()
 
     if -2 == pid:
         # PIDFile not found, thus, server is not running.
-        print 'REST server does not currently appear to be running.'
+        print('REST server does not currently appear to be running.')
         return
     elif -1 == pid:
-        print "PIDFile '%s' has been corrupted." % _src_dir + '/' +_pidfile
+        print("PIDFile '%s' has been corrupted." % _src_dir + '/' +_pidfile)
         return
 
     call(['kill', str(pid)])
 
 def _status():
     """Determine status of the MTT Server"""
-    print "Not implemented"
+    print("Not implemented")
 
 switch = {
     'start': _start,
@@ -126,4 +128,4 @@ if __name__ == '__main__':
     try:
         switch[sys.argv[1]]()
     except (IndexError, KeyError):
-        print __doc__
+        print(__doc__)

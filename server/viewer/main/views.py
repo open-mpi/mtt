@@ -3,6 +3,7 @@ from django.http import HttpResponse
 from django.template import RequestContext
 from django.views.decorators.csrf import csrf_protect
 
+from __future__ import print_function unicode_literals
 import requests
 from requests.auth import HTTPBasicAuth
 import json
@@ -55,10 +56,10 @@ def get_mtt_data(phase, fields, search={}):
                verify=False)
 
     if r.status_code != 200:
-        print "ERROR: html status code is not successful"
+        print("ERROR: html status code is not successful")
         return None
     if 'query_data' not in r.json():
-        print "ERROR: RESTful return json not in correct format."
+        print("ERROR: RESTful return json not in correct format.")
         return None
     return r.json()['query_data']
 
