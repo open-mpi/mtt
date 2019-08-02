@@ -2,6 +2,7 @@
 Postgresql v3 database interface
 """
 
+from __future__ import print_function
 import os
 import pprint
 import psycopg2
@@ -147,7 +148,7 @@ class DatabaseV3():
     def _query(self, table_name, filters=[], row_id=None, fields=None):
         for item in filters:
             if len(item.split(" ")) != 3:
-                print >> sys.stderr, "Error: _query() has wrong format input for filters"
+                print("Error: _query() has wrong format input for filters", file=sys.stderr)
                 return None
         table_names = [table_name] + list(self._find_all_table_names(table_name, fields))
         table_names = [tn for tn in table_names if tn != "compiler"]
@@ -157,7 +158,7 @@ class DatabaseV3():
         if fields is not None:
             for f in fields:
                 if f not in field_names:
-                    print >> sys.stderr, "Error: _query() has wrong format input for fields"
+                    print("Error: _query() has wrong format input for fields", file=sys.stderr)
                     return None
             field_names = fields
         self._logger.debug("%s _query_all() %s" % (self._name, str(table_name))) #+ ", ".join([FIELD_NAME_MAPPING[f] if f in FIELD_NAME_MAPPING else f for f in field_names])
@@ -172,7 +173,7 @@ class DatabaseV3():
                   + " FROM compiler) as compiler_"+self.__find_last_occurence(table_names[:i],["mpi_install","test_build","test_run"])) \
                  if tn == "compiler" \
                  else tn for i,tn in enumerate(table_names)])
-        print select_stmt
+        print(select_stmt)
 #        select_stmt = "SELECT *" + " FROM " + " NATURAL JOIN ".join(["(SELECT " + ", ".join([", ".join([f + " as " + m for m in FIELD_NAME_MAPPING_JOIN[f]]) if f in FIELD_NAME_MAPPING_JOIN else f for f in self._fields(tn)]) + " FROM " + tn + ") as _" + tn + "_" for tn in table_names])
         if filters or row_id is not None:
             select_stmt += " WHERE "

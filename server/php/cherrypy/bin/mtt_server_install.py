@@ -5,6 +5,7 @@ Install and configure the environment for the REST server.
 Usage: ./bin/mtt_server_install.py
 """
 
+from __future__ import print_function
 import os
 import shutil
 import sys
@@ -25,15 +26,16 @@ final_htaccess = ".htaccess"
 tmpl_conf  = "bin/mtt_server.cfg.tmpl"
 final_conf = "bin/mtt_server.cfg"
 
+divider = "=" * 70
 
 ###################################################
 #
 # Check if we have already installed
 #
 if os.path.exists(env_dir):
-    print "=" * 70
-    print 'Warning: Server appears to be already installed.'
-    print "=" * 70
+    print("=" * 70)
+    print('Warning: Server appears to be already installed.')
+    print("=" * 70)
 
     response = raw_input('(R)emove and re-install or (A)bort? ')
     if response != 'R' and response != 'r':
@@ -45,9 +47,9 @@ if os.path.exists(env_dir):
 #
 # Create directory structure
 #
-print "=" * 70
-print "Status: Creating Directory Structure"
-print "=" * 70
+print(divider)
+print("Status: Creating Directory Structure")
+print(divider)
 
 #
 # Create the log directory
@@ -61,9 +63,9 @@ if not os.path.exists(log_dir):
 # Setup the webserver configuration files
 #
 if os.path.exists(final_conf) is True:
-    print "=" * 70
-    print 'Warning: Server configuration file present.'
-    print "=" * 70
+    print(divider)
+    print('Warning: Server configuration file present.')
+    print(divider)
 
     response = raw_input('(R)eplace or (K)eep? ')
     if response == 'R' or response == 'r':
@@ -75,9 +77,9 @@ call(['chmod', 'og+rX', final_conf])
 
 
 if os.path.exists(final_htaccess) is True:
-    print "=" * 70
-    print 'Warning: Server .htaccess file present.'
-    print "=" * 70
+    print(divider)
+    print('Warning: Server .htaccess file present.')
+    print(divider)
 
     response = raw_input('(R)eplace or (K)eep? ')
     if response == 'R' or response == 'r':
@@ -93,10 +95,10 @@ call(['chmod', 'og+rX', final_htaccess])
 #
 # Setup virtualenv
 #
-print "=" * 70
-print "Status: Setup the virtual environment"
-print "        This may take a while..."
-print "=" * 70
+print(divider)
+print("Status: Setup the virtual environment")
+print("        This may take a while...")
+print(divider)
 
 #
 # Setup virtual environment
@@ -114,7 +116,7 @@ for dir,_,_ in os.walk(env_dir):
         site_packages_dir = dir
         break
 else:
-    print >> sys.stderr, "Cherrypy error: site-packages directory doesn't exist in virtualenv"
+    print("Cherrypy error: site-packages directory doesn't exist in virtualenv", file=sys.stderr)
     sys.exit(1)
 
 call(['cp', '-rs', cwd + '/' + source_dir + '/' + package_name,
@@ -125,17 +127,17 @@ call([env_dir + '/bin/python', source_dir + '/mtt_server_install_stage_two.py'])
 
 
 ###################################################
-print "=" * 70
-print "Status: Setup Complete"
-print "=" * 70
+print(divider)
+print("Status: Setup Complete")
+print(divider)
 
-print "==>"
-print "==> NOTICE: Please edit the file: " + final_conf
-print "==>"
+print("==>")
+print("==> NOTICE: Please edit the file: " + final_conf)
+print("==>")
 
-print "==>"
-print "==> NOTICE: Please edit the file: " + final_htaccess
-print "==>"
+print("==>")
+print("==> NOTICE: Please edit the file: " + final_htaccess)
+print("==>")
 
 
 sys.exit(0)
