@@ -451,65 +451,65 @@ INSERT INTO test_build
 --
 -- BIOS Table
 --
-DROP TABLE IF EXISTS bios CASCADE;
-CREATE TABLE bios (
-    bios_id     serial,
-    -- file with the bios switches; not an MTT .ini file.
-    bios_nodelist    text    NOT NULL DEFAULT '',
-    bios_params text    NOT NULL DEFAULT '',
-    bios_values text    NOT NULL DEFAULT '',
+-- DROP TABLE IF EXISTS bios CASCADE;
+-- CREATE TABLE bios (
+--    bios_id     serial,
+--    -- file with the bios switches; not an MTT .ini file.
+--    bios_nodelist    text    NOT NULL DEFAULT '',
+--    bios_params text    NOT NULL DEFAULT '',
+--    bios_values text    NOT NULL DEFAULT '',
 
-    PRIMARY KEY (bios_id)
+--    PRIMARY KEY (bios_id)
 
-);
+-- );
 -- An invalid row in case we need it
-INSERT INTO bios VALUES ('0', '');
+-- INSERT INTO bios VALUES ('0', '');
 
 --
 -- Firmware Table
 --
-DROP TABLE IF EXISTS firmware CASCADE;
-CREATE TABLE firmware (
-    firmware_id     serial,
+-- DROP TABLE IF EXISTS firmware CASCADE;
+-- CREATE TABLE firmware (
+--    firmware_id     serial,
 
-    flashupdt_cfg       text    NOT NULL DEFAULT '',
-    firmware_nodelist   text    NOT NULL DEFAULT '',
+--    flashupdt_cfg       text    NOT NULL DEFAULT '',
+--    firmware_nodelist   text    NOT NULL DEFAULT '',
 
-    PRIMARY KEY (firmware_id)
-);
+--    PRIMARY KEY (firmware_id)
+-- );
 -- An invalid row in case we need it
-INSERT INTO firmware VALUES ('0', '');
+-- INSERT INTO firmware VALUES ('0', '');
 
 --
 -- Provision Table
 --
 -- TODO: Is this table too specific to ipmi and warewulf? How to abstract?
 --
-DROP TABLE IF EXISTS provision CASCADE;
-CREATE TABLE provision (
-    provision_id    serial,
-    targets         text    NOT NULL DEFAULT '',
-    image           varchar(64),
-    controllers     text    NOT NULL DEFAULT '',
-    bootstrap       varchar(64),
+-- DROP TABLE IF EXISTS provision CASCADE;
+-- CREATE TABLE provision (
+--    provision_id    serial,
+--    targets         text    NOT NULL DEFAULT '',
+--    image           varchar(64),
+--    controllers     text    NOT NULL DEFAULT '',
+--    bootstrap       varchar(64),
 
-    PRIMARY KEY (provision_id)
-);
-INSERT INTO provision VALUES ('0', '', '', '', '');
+--    PRIMARY KEY (provision_id)
+-- );
+-- INSERT INTO provision VALUES ('0', '', '', '', '');
 
 -- TODO: Create a Harasser table
-DROP TABLE IF EXISTS harasser CASCADE;
-CREATE TABLE harasser (
-    harasser_id     serial,
+-- DROP TABLE IF EXISTS harasser CASCADE;
+-- CREATE TABLE harasser (
+--    harasser_id     serial,
 
-    harasser_seed   integer,
-    inject_script   text    NOT NULL DEFAULT '',
-    cleanup_script  text    NOT NULL DEFAULT '',
-    check_script    text    NOT NULL DEFAULT '',
+--    harasser_seed   integer,
+--    inject_script   text    NOT NULL DEFAULT '',
+--    cleanup_script  text    NOT NULL DEFAULT '',
+--    check_script    text    NOT NULL DEFAULT '',
 
-    PRIMARY KEY (harasser_id)
-);
-INSERT INTO harasser VALUES ('0', '0', '', '', '');
+--    PRIMARY KEY (harasser_id)
+-- );
+-- INSERT INTO harasser VALUES ('0', '0', '', '', '');
 
 --
 -- Latency/Bandwidth Table
@@ -546,15 +546,15 @@ CREATE TABLE performance (
 --
 -- Cluster Checker Table
 --
-DROP TABLE IF EXISTS cluster_checker CASCADE;
-CREATE TABLE cluster_checker (
-    clck_id             serial,
-    clck_results_file   text NOT NULL DEFAULT '',
+-- DROP TABLE IF EXISTS cluster_checker CASCADE;
+-- CREATE TABLE cluster_checker (
+--    clck_id             serial,
+--    clck_results_file   text NOT NULL DEFAULT '',
 
-    PRIMARY KEY (clck_id)
-);
+--    PRIMARY KEY (clck_id)
+-- );
 -- An invalid row in case we need it
-INSERT INTO cluster_checker VALUES ('0', 'undef');
+-- INSERT INTO cluster_checker VALUES ('0', 'undef');
 
 --
 -- Interconnect Normalization table
@@ -632,12 +632,12 @@ CREATE TABLE test_run (
     test_build_id               integer NOT NULL DEFAULT '-38',
     test_name_id                integer NOT NULL DEFAULT '-38',
     performance_id              integer DEFAULT '-38',
-    clck_id                     integer DEFAULT '-38',
+--    clck_id                     integer DEFAULT '-38',
     test_run_command_id         integer NOT NULL DEFAULT '-38',
-    bios_id                     integer DEFAULT '0',
-    firmware_id                 integer DEFAULT '0',
-    provision_id                integer DEFAULT '0',
-    harasser_id                 integer DEFAULT '0',
+--    bios_id                     integer DEFAULT '0',
+--    firmware_id                 integer DEFAULT '0',
+--    provision_id                integer DEFAULT '0',
+--    harasser_id                 integer DEFAULT '0',
 
     np                  smallint NOT NULL DEFAULT '-38',
     full_command        text NOT NULL DEFAULT 'bogus',
@@ -657,7 +657,7 @@ CREATE TABLE test_run (
     -- PARTITION/FK PROBLEM: FOREIGN KEY (test_build_id) REFERENCES test_build(test_build_id),
     FOREIGN KEY (test_name_id) REFERENCES test_names(test_name_id),
     FOREIGN KEY (performance_id) REFERENCES performance(performance_id),
-    FOREIGN KEY (clck_id) REFERENCES cluster_checker(clck_id),
+--    FOREIGN KEY (clck_id) REFERENCES cluster_checker(clck_id),
     FOREIGN KEY (test_run_command_id) REFERENCES test_run_command(test_run_command_id),
     FOREIGN KEY (description_id) REFERENCES description(description_id),
     FOREIGN KEY (environment_id) REFERENCES environment(environment_id),
