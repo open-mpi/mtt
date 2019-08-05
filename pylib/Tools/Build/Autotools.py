@@ -296,6 +296,7 @@ class Autotools(BuildMTTTool):
                     log['status'] = results['status']
                     log['stdout'] = results['stdout']
                     log['stderr'] = results['stderr']
+                    log['result'] = testDef.MTT_TEST_FAILED
 
                     # Revert any requested environment module settings
                     status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
@@ -339,11 +340,13 @@ class Autotools(BuildMTTTool):
                             # we cannot do what the user requested
                             log['status'] = 1
                             log['stderr'] = "Location of dependency " + d + " could not be found"
+                            log['result'] = testDef.MTT_TEST_FAILED
                             return
                     except:
                         # we don't have a record of this dependency
                         log['status'] = 1
                         log['stderr'] = "Log for dependency " + d + " could not be found"
+                        log['result'] = testDef.MTT_TEST_FAILED
                         return
                     # split the dependency string to get the package name
                     try:
@@ -351,6 +354,7 @@ class Autotools(BuildMTTTool):
                     except:
                         log['status'] = 1
                         log['stderr'] = "Dependency " + d + " is missing package name"
+                        log['result'] = testDef.MTT_TEST_FAILED
                         return
                     # add the location and dependency option
                     opt = "--with-{0}".format(pkg[1]) + "={0}".format(loc)
@@ -383,6 +387,7 @@ class Autotools(BuildMTTTool):
                 log['status'] = results['status']
                 log['stdout'] = results['stdout']
                 log['stderr'] = results['stderr']
+                log['result'] = testDef.MTT_TEST_FAILED
 
                 # Revert any requested environment module settings
                 status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
@@ -434,6 +439,7 @@ class Autotools(BuildMTTTool):
             log['status'] = results['status']
             log['stdout'] = results['stdout']
             log['stderr'] = results['stderr']
+            log['result'] = testDef.MTT_TEST_FAILED
 
             # Revert any requested environment module settings
             status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
@@ -466,6 +472,7 @@ class Autotools(BuildMTTTool):
             log['status'] = results['status']
             log['stdout'] = results['stdout']
             log['stderr'] = results['stderr']
+            log['result'] = testDef.MTT_TEST_FAILED
 
             # Revert any requested environment module settings
             status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
@@ -500,6 +507,10 @@ class Autotools(BuildMTTTool):
         log['status'] = results['status']
         log['stdout'] = results['stdout']
         log['stderr'] = results['stderr']
+        if 0 != results['status']:
+            log['result'] = testDef.MTT_TEST_FAILED
+        else:
+            log['result'] = testDef.MTT_TEST_PASSED
 
         # Revert any requested environment module settings
         status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
