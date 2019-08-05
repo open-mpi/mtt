@@ -183,6 +183,7 @@ class Shell(BuildMTTTool):
         if testDef.options['dryrun']:
             # just log success and return
             log['status'] = 0
+            log['result'] = testDef.MTT_TEST_PASSED
             return
 
         # Check to see if this needs to be ran if ASIS is specified
@@ -276,6 +277,7 @@ class Shell(BuildMTTTool):
                         log['status'] = status
                         log['stdout'] = stdout
                         log['stderr'] = stderr
+                        log['result'] = testDef.MTT_TEST_FAILED
                         return
         except KeyError:
             pass
@@ -286,6 +288,7 @@ class Shell(BuildMTTTool):
             log['status'] = status
             log['stdout'] = stdout
             log['stderr'] = stderr
+            log['result'] = testDef.MTT_TEST_FAILED
             return
 
         # sense and record the compiler being used
@@ -355,8 +358,7 @@ class Shell(BuildMTTTool):
             testDef.harasser.stop(harass_exec_ids, testDef)
 
         # Deallocate cluster
-        if False == self.deallocate(log, cmds, testDef):
-            return
+        self.deallocate(log, cmds, testDef)
 
         if (cmds['fail_test'] is None and 0 != results['status']) \
                 or (cmds['fail_test'] is not None and cmds['fail_returncode'] is None and 0 == results['status']) \
@@ -369,7 +371,7 @@ class Shell(BuildMTTTool):
                 log['status'] = results['status']
             log['stdout'] = results['stdout']
             log['stderr'] = results['stderr']
-            log['result'] = testDef.MTT_TEST_PASSED
+            log['result'] = testDef.MTT_TEST_FAILED
             try:
                 log['time'] = results['elapsed_secs']
             except:
@@ -393,7 +395,7 @@ class Shell(BuildMTTTool):
             log['status'] = status
             log['stdout'] = stdout
             log['stderr'] = stderr
-            return
+            # the tests still passed, so leave it logged that way
 
         # if we added middleware to the paths, remove it
         if midpath:

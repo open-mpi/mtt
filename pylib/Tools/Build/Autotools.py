@@ -346,7 +346,7 @@ class Autotools(BuildMTTTool):
                         # we don't have a record of this dependency
                         log['status'] = 1
                         log['stderr'] = "Log for dependency " + d + " could not be found"
-                            log['result'] = testDef.MTT_TEST_FAILED
+                        log['result'] = testDef.MTT_TEST_FAILED
                         return
                     # split the dependency string to get the package name
                     try:
