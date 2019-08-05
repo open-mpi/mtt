@@ -275,7 +275,6 @@ class LauncherMTTTool(IPlugin):
         if not self.tests:
             log['status'] = 1
             log['stderr'] = "No tests found"
-            os.chdir(cwd)
             return 1
 
         # get the "skip" exit status

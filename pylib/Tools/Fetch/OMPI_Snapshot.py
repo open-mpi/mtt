@@ -220,7 +220,7 @@ class OMPI_Snapshot(FetchMTTTool):
         # log our absolute location so others can find it
         log['location'] = os.getcwd()
         # track that we serviced this one
-        self.done[tarball_base_name] = (status, log['location'])
+        self.done[tarball_base_name] = (log['status'], log['location'])
         # update version file if we're using one
         try:
             if cmds['version_file'] is not None:
