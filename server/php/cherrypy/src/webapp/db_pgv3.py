@@ -2,6 +2,7 @@
 Postgresql v3 database interface
 """
 
+from __future__ import unicode_literals
 import os
 import pprint
 import psycopg2
