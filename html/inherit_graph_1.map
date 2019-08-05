@@ -1,3 +1,6 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node2" href="$class_i_p_m_i_tool_1_1worker_thread.html" title="IPMITool.workerThread" alt="" coords="118,5,277,32"/>
+<area shape="rect" id="node2" href="$class_execute_cmd_1_1_timeout_thread.html" title="ExecuteCmd.TimeoutThread" alt="" coords="112,5,301,32"/>
+<area shape="rect" id="node4" href="$class_load_classes_1_1_load_classes.html" title="LoadClasses.LoadClasses" alt="" coords="117,56,296,83"/>
+<area shape="rect" id="node5" href="$class_test_def_1_1_test_def.html" title="TestDef.TestDef" alt="" coords="147,107,267,133"/>
+<area shape="rect" id="node3" href="$class_execute_cmd_1_1_kill_process_thread.html" title="ExecuteCmd.KillProcessThread" alt="" coords="349,5,557,32"/>
 </map>
