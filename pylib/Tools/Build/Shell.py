@@ -146,10 +146,12 @@ class Shell(BuildMTTTool):
                 if parentlog is None:
                     log['status'] = 1
                     log['stderr'] = "Parent",cmds['parent'],"log not found"
+                    log['result'] = testDef.MTT_TEST_FAILED
                     return
         except KeyError:
             log['status'] = 1
             log['stderr'] = "Parent not specified"
+            log['result'] = testDef.MTT_TEST_FAILED
             return
         try:
             parentloc = os.path.join(os.getcwd(), testDef.options['scratchdir'])
@@ -157,6 +159,7 @@ class Shell(BuildMTTTool):
         except KeyError:
             log['status'] = 1
             log['stderr'] = "No scratch directory in log"
+            log['result'] = testDef.MTT_TEST_FAILED
             return
         if parentlog is not None:
             try:
@@ -165,6 +168,7 @@ class Shell(BuildMTTTool):
             except KeyError:
                 log['status'] = 1
                 log['stderr'] = "Location of package to build was not specified in parent stage"
+                log['result'] = testDef.MTT_TEST_FAILED
                 return
         else:
             try:
@@ -173,6 +177,7 @@ class Shell(BuildMTTTool):
             except KeyError:
                 log['status'] = 1
                 log['stderr'] = "No section in log"
+                log['result'] = testDef.MTT_TEST_FAILED
                 return
         # check to see if this is a dryrun
         if testDef.options['dryrun']:
@@ -188,6 +193,7 @@ class Shell(BuildMTTTool):
                         testDef.logger.verbose_print("asis_target " + os.path.join(parentloc,cmds['asis_target']) + " exists. Skipping...")
                         log['location'] = location
                         log['status'] = 0
+                        log['result'] = testDef.MTT_TEST_PASSED
                         return
                     else:
                         testDef.logger.verbose_print("asis_target " + os.path.join(parentloc,cmds['asis_target']) + " does not exist. Continuing...")
@@ -196,6 +202,7 @@ class Shell(BuildMTTTool):
                         testDef.logger.verbose_print("directory " + location + " exists. Skipping...")
                         log['location'] = location
                         log['status'] = 0
+                        log['result'] = testDef.MTT_TEST_PASSED
                         return
                     else:
                         testDef.logger.verbose_print("directory " + location + " does not exist. Continuing...")
@@ -362,6 +369,7 @@ class Shell(BuildMTTTool):
                 log['status'] = results['status']
             log['stdout'] = results['stdout']
             log['stderr'] = results['stderr']
+            log['result'] = testDef.MTT_TEST_PASSED
             try:
                 log['time'] = results['elapsed_secs']
             except:
@@ -377,6 +385,7 @@ class Shell(BuildMTTTool):
             log['stderr'] = results['stderr']
         # record this location for any follow-on steps
         log['location'] = location
+        log['result'] = testDef.MTT_TEST_PASSED
 
         # Revert any requested environment module settings
         status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
