@@ -155,21 +155,26 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        cmds = {}</div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        testDef.parseOptions(log, self.<a class="code" href="class_default_profile_1_1_default_profile.html#ad8d29967f62501f4638fe09ee7686d08">options</a>, keyvals, cmds)</div>
 <div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        keys = list(cmds.keys())</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        opts = self.options.keys()</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <span class="keywordflow">for</span> key <span class="keywordflow">in</span> keys:</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;            <span class="keywordflow">if</span> cmds[key] <span class="keywordflow">and</span> key <span class="keywordflow">in</span> opts:</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;                results = testDef.execmd.execute(cmds, self.<a class="code" href="class_default_profile_1_1_default_profile.html#ad8d29967f62501f4638fe09ee7686d08">options</a>[key][2], testDef)</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;                <span class="keywordflow">if</span> 0 != results[<span class="stringliteral">&#39;status&#39;</span>]:</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;                    log[<span class="stringliteral">&#39;status&#39;</span>] = results[<span class="stringliteral">&#39;status&#39;</span>]</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;                    log[<span class="stringliteral">&#39;stdout&#39;</span>] = results[<span class="stringliteral">&#39;stdout&#39;</span>]</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;                    log[<span class="stringliteral">&#39;stderr&#39;</span>] = results[<span class="stringliteral">&#39;stderr&#39;</span>]</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;                    <span class="comment"># ignore the execution time, if collected</span></div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;                    <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;                myLog[key] = results[<span class="stringliteral">&#39;stdout&#39;</span>]</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="comment"># add our log to the system log</span></div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        log[<span class="stringliteral">&#39;profile&#39;</span>] = myLog</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        log[<span class="stringliteral">&#39;status&#39;</span>] = 0</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <span class="comment"># pass in a timeout option as not every system will support</span></div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <span class="comment"># every option</span></div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        myopts = {<span class="stringliteral">&#39;timeout&#39;</span>: 2}</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="keywordflow">for</span> key <span class="keywordflow">in</span> keys:</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;            <span class="keywordflow">if</span> key <span class="keywordflow">in</span> self.<a class="code" href="class_default_profile_1_1_default_profile.html#ad8d29967f62501f4638fe09ee7686d08">options</a> <span class="keywordflow">and</span> cmds[key]:</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;                results = testDef.execmd.execute(myopts, self.<a class="code" href="class_default_profile_1_1_default_profile.html#ad8d29967f62501f4638fe09ee7686d08">options</a>[key][2], testDef)</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;                <span class="keywordflow">if</span> <span class="stringliteral">&#39;timedout&#39;</span> <span class="keywordflow">in</span> results:</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;                    <span class="comment"># we just ignore it</span></div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;                    <span class="keywordflow">continue</span></div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;                <span class="keywordflow">if</span> 0 != results[<span class="stringliteral">&#39;status&#39;</span>]:</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;                    log[<span class="stringliteral">&#39;status&#39;</span>] = results[<span class="stringliteral">&#39;status&#39;</span>]</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;                    log[<span class="stringliteral">&#39;stdout&#39;</span>] = results[<span class="stringliteral">&#39;stdout&#39;</span>]</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;                    log[<span class="stringliteral">&#39;stderr&#39;</span>] = results[<span class="stringliteral">&#39;stderr&#39;</span>]</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;                    <span class="comment"># ignore the execution time, if collected</span></div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;                    <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;                myLog[key] = results[<span class="stringliteral">&#39;stdout&#39;</span>]</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        <span class="comment"># add our log to the system log</span></div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        log[<span class="stringliteral">&#39;profile&#39;</span>] = myLog</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        log[<span class="stringliteral">&#39;status&#39;</span>] = 0</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        <span class="keywordflow">return</span></div>
 <div class="ttc" id="class_default_profile_1_1_default_profile_html_a03edede0b46fe544777421da40d7d628"><div class="ttname"><a href="class_default_profile_1_1_default_profile.html#a03edede0b46fe544777421da40d7d628">DefaultProfile.DefaultProfile.activate</a></div><div class="ttdeci">def activate</div><div class="ttdef"><b>Definition:</b> <a href="_default_profile_8py_source.html#l00041">DefaultProfile.py:41</a></div></div>
 <div class="ttc" id="class_default_profile_1_1_default_profile_html_a7949e8f2a3632585e38d952b43afd205"><div class="ttname"><a href="class_default_profile_1_1_default_profile.html#a7949e8f2a3632585e38d952b43afd205">DefaultProfile.DefaultProfile.__init__</a></div><div class="ttdeci">def __init__</div><div class="ttdef"><b>Definition:</b> <a href="_default_profile_8py_source.html#l00029">DefaultProfile.py:29</a></div></div>
 <div class="ttc" id="class_profile_m_t_t_stage_1_1_profile_m_t_t_stage_html"><div class="ttname"><a href="class_profile_m_t_t_stage_1_1_profile_m_t_t_stage.html">ProfileMTTStage.ProfileMTTStage</a></div><div class="ttdef"><b>Definition:</b> <a href="_profile_m_t_t_stage_8py_source.html#l00019">ProfileMTTStage.py:19</a></div></div>
