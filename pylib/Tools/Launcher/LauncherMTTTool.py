@@ -12,6 +12,7 @@ from __future__ import print_function
 from yapsy.IPlugin import IPlugin
 
 import os
+import shlex
 
 ## @addtogroup Tools
 # @{
