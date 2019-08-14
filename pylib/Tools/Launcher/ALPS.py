@@ -27,8 +27,7 @@ import shlex
 # @param stdout_save_lines         Number of lines of stdout to save
 # @param stderr_save_lines         Number of lines of stderr to save
 # @param test_dir                  Names of directories to be scanned for tests
-# @param fail_tests                Names of tests that are expected to fail
-# @param fail_returncodes          Expected returncodes of tests expected to fail
+# @param fail_tests                Names of tests that are expected to fail. Can use space or comma between entries. Include the expected return code using the following format: test_name:#
 # @param fail_timeout              Maximum execution time for tests expected to fail
 # @param skip_tests                Names of tests to be skipped
 # @param max_num_tests             Maximum number of tests to run
@@ -55,8 +54,7 @@ class ALPS(LauncherMTTTool):
         self.options['stdout_save_lines'] = (-1, "Number of lines of stdout to save")
         self.options['stderr_save_lines'] = (-1, "Number of lines of stderr to save")
         self.options['test_dir'] = (None, "Names of directories to be scanned for tests")
-        self.options['fail_tests'] = (None, "Names of tests that are expected to fail")
-        self.options['fail_returncodes'] = (None, "Expected return code of tests expected to fail")
+        self.options['fail_tests'] = (None, "Names of tests that are expected to fail. Can use space or comma between entries. Include the expected return code using the following format: test_name:#")
         self.options['fail_timeout'] = (None, "Maximum execution time for tests expected to fail")
         self.options['skip_tests'] = (None, "Names of tests to be skipped")
         self.options['max_num_tests'] = (None, "Maximum number of tests to run")

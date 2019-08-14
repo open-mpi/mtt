@@ -40,6 +40,7 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 # @param keep_debug_files   Retain reporter debug output after execution
 # @param debug_server       Ask the server to return its debug output as well
 # @param email              Email to which errors are to be sent
+# @param dryrun             Print debug without actually submitting to database server
 # @}
 class IUDatabase(ReporterMTTStage):
 
@@ -59,6 +60,7 @@ class IUDatabase(ReporterMTTStage):
         self.options['debug_server'] = (False, "Ask the server to return its debug output as well")
         self.options['email'] = (None, "Email to which errors are to be sent")
         self.options['debug_screen'] = (False, "Print debug output to screen")
+        self.options['dryrun'] = (False, "Print debug without actually submitting to database server")
         self.cmds = {}
 
     def activate(self):
@@ -83,6 +85,8 @@ class IUDatabase(ReporterMTTStage):
     def execute(self, log, keyvals, testDef):
         # parse the provided keyvals against our options
         testDef.parseOptions(log, self.options, keyvals, self.cmds)
+        if self.cmds['dryrun']:
+            self.cmds['debug_screen'] = True
 
         # quick sanity check
         sanity = 0
@@ -119,15 +123,16 @@ class IUDatabase(ReporterMTTStage):
         #
         s = requests.Session()
         url = self.cmds['url'] + "/submit"
-        if 0 < sanity:
+        if 0 < sanity and not self.cmds['dryrun']:
             www_auth = HTTPBasicAuth(self.cmds['username'], password)
         else:
             www_auth = None
 
         # Get a client serial number
-        client_serial = self._get_client_serial(s, self.cmds['url'], www_auth)
-        if client_serial < 0:
-            print("Error: Unable to get a client serial (rtn=%d)" % (client_serial))
+        if not self.cmds['dryrun']:
+            client_serial = self._get_client_serial(s, self.cmds['url'], www_auth)
+            if client_serial < 0:
+                print("Error: Unable to get a client serial (rtn=%d)" % (client_serial))
 
         headers = {}
         headers['content-type'] = 'application/json'
@@ -136,7 +141,8 @@ class IUDatabase(ReporterMTTStage):
 
         profile = testDef.logger.getLog('Profile:Installed')
         metadata = {}
-        metadata['client_serial'] = client_serial
+        if not self.cmds['dryrun']:
+            metadata['client_serial'] = client_serial
         metadata['hostname'] = "\n".join(profile['profile']['nodeName'])
         metadata['http_username'] = self.cmds['username']
         metadata['local_username'] = pwd.getpwuid(os.getuid()).pw_name
@@ -826,6 +832,8 @@ class IUDatabase(ReporterMTTStage):
                 print("<<<<<<<---------------- Payload (Start) -------------------------->>>>>>")
                 print(json.dumps(payload, sort_keys=True, indent=4, separators=(',',': ')))
                 print("<<<<<<<---------------- Payload (End  ) -------------------------->>>>>>")
+                if self.cmds['dryrun']:
+                    return None
         except:
             pass
 

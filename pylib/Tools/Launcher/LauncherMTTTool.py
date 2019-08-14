@@ -13,6 +13,7 @@ from yapsy.IPlugin import IPlugin
 
 import os
 import shlex
+import re
 
 ## @addtogroup Tools
 # @{
@@ -284,55 +285,40 @@ class LauncherMTTTool(IPlugin):
         if cmds['max_num_tests'] is not None:
             self.maxTests = int(cmds['max_num_tests'])
 
+        # construct a dict of usecases for tests expected to fail
+        fail_usecases = {}
         # create a list of the tests that are expected to fail - i.e.,
         # these are tests that should fail, and therefore "succeed" if
         # they fail with the designated exit status. Failing with a
         # different exit status than expected represents a true failure
-        # and must be reported as such
-        fail_tests = cmds['fail_tests']
-        if fail_tests is not None:
-            # it is supposed to be a comma-delimited list of test names
-            # so we split on comma and then strip any remaining whitespace
-            fail_tests = [t.strip() for t in fail_tests.split(",")]
-        else:
-            fail_tests = []
-        # the list of tests expected to fail is given by test name, but
-        # the list of tests we are to execute has been setup in absolute
-        # path form. Thus, scan the two lists and replace the fail_tests
-        # entries with their absolute path equivalents. Note that we don't
-        # bother removing those we don't match as those won't be executed
-        # anyway and thus are irrelevant
-        for i,t in enumerate(fail_tests):
-            for t2 in self.tests:
-                if t2.split("/")[-1] == t:
-                    fail_tests[i] = t2
-
-        # find the list of expected return codes for tests that are
-        # intended to fail
-        fail_returncodes = cmds['fail_returncodes']
-        if fail_returncodes is not None:
-            # it is supposed to be a comma-delimited list of integers
-            # so we split on comma and then strip any remaining whitespace
-            fail_returncodes = [int(t.strip()) for t in fail_returncodes.split(",")]
-        else:
-            fail_returncodes = []
-
-        # there must be a one-to-one correspondence of fail_returncodes
-        # and fail_tests
-        if len(fail_tests) != len(fail_returncodes):
-            log['status'] = 1
-            if len(fail_tests) > len(fail_returncodes):
-                log['stderr'] = "Not enough return codes were supplied to satisfy the number of tests expected to fail: " + str(len(fail_returncodes)) + ":" + str(len(fail_tests))
-            else:
-                log['stderr'] = "Too many return codes were supplied to satisfy the number of tests expected to fail: " + str(len(fail_returncodes)) + ":" + str(len(fail_tests))
-            return 1
-
-        # construct a dict of usecases for tests expected to fail
-        fail_usecases = {}
-        n = 0
-        for t in fail_tests:
-            fail_usecases[t] = fail_returncodes[n]
-            n += 1
+        # and must be reported as such. If no expected status is given,
+        # then just record any failure as a success for that test
+        myfailtests = cmds['fail_tests']
+        if myfailtests is not None:
+            # be flexible and accept values delimited by , or space or tab
+            # and strip any lingering whitespace
+            ft = [t.strip() for t in re.split(",| |\t", myfailtests)]
+            # any colon in the entry is followed by the expected return
+            # code - this allows someone to specify a code/test a little
+            # easier
+            for t in ft:
+                if ':' in t:
+                    t2 = t.split(':')
+                    fail_usecases[t2[0]] = int(t2[1])
+                else:
+                    fail_usecases[t] = None
+            # the list of tests expected to fail is given by test name, but
+            # the list of tests we are to execute has been setup in absolute
+            # path form. Thus, scan the two lists and replace the fail_tests
+            # entries with their absolute path equivalents. Note that we don't
+            # bother removing those we don't match as those won't be executed
+            # anyway and thus are irrelevant
+            for t in fail_usecases:
+                for t2 in self.tests:
+                    if t2.split("/")[-1] == t:
+                        rc = fail_usecases[t]
+                        del fail_usecases[t]
+                        fail_usecases[t2] = rc
 
         # record the expected return code for each test - we store this in a
         # new dictionary that uses the test name as its key. Default to an
@@ -349,9 +335,9 @@ class LauncherMTTTool(IPlugin):
         # of all tests here
         skip_tests = cmds['skip_tests']
         if skip_tests is not None:
-            # it is supposed to be a comma-delimited list of test names
-            # so we split on comma and then strip any remaining whitespace
-            self.skip_tests = [t.strip() for t in skip_tests.split(",")]
+            # be flexible and accept values delimited by , or space or tab
+            # and strip any lingering whitespace
+            self.skip_tests = [t.strip() for t in re.split(",| |\t", skip_tests)]
         else:
             self.skip_tests = []
         # the list of tests to skip is given by test name, but
@@ -456,6 +442,16 @@ class LauncherMTTTool(IPlugin):
                     testLog['status'] = self.skipStatus
                     # clearly mark this as a skipped test
                     testLog['result'] = testDef.MTT_TEST_SKIPPED
+                elif None == self.expected_returncodes[test]:
+                    if 0 != results['status']:
+                        testLog['result'] = testDef.MTT_TEST_PASSED
+                        self.numPass += 1
+                    else:
+                        testLog['result'] = testDef.MTT_TEST_FAILED
+                        if 0 == self.finalStatus:
+                            self.finalStatus = 1
+                            self.finalError = results['stderr']
+                        self.numFail += 1
                 elif results['status'] != self.expected_returncodes[test]:
                     # if the test was expected to fail, then
                     # we should see it return the expected code or else we declare it
