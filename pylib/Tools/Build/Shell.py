@@ -146,10 +146,12 @@ class Shell(BuildMTTTool):
                 if parentlog is None:
                     log['status'] = 1
                     log['stderr'] = "Parent",cmds['parent'],"log not found"
+                    log['result'] = testDef.MTT_TEST_FAILED
                     return
         except KeyError:
             log['status'] = 1
             log['stderr'] = "Parent not specified"
+            log['result'] = testDef.MTT_TEST_FAILED
             return
         try:
             parentloc = os.path.join(os.getcwd(), testDef.options['scratchdir'])
@@ -157,6 +159,7 @@ class Shell(BuildMTTTool):
         except KeyError:
             log['status'] = 1
             log['stderr'] = "No scratch directory in log"
+            log['result'] = testDef.MTT_TEST_FAILED
             return
         if parentlog is not None:
             try:
@@ -165,6 +168,7 @@ class Shell(BuildMTTTool):
             except KeyError:
                 log['status'] = 1
                 log['stderr'] = "Location of package to build was not specified in parent stage"
+                log['result'] = testDef.MTT_TEST_FAILED
                 return
         else:
             try:
@@ -173,11 +177,13 @@ class Shell(BuildMTTTool):
             except KeyError:
                 log['status'] = 1
                 log['stderr'] = "No section in log"
+                log['result'] = testDef.MTT_TEST_FAILED
                 return
         # check to see if this is a dryrun
         if testDef.options['dryrun']:
             # just log success and return
             log['status'] = 0
+            log['result'] = testDef.MTT_TEST_PASSED
             return
 
         # Check to see if this needs to be ran if ASIS is specified
@@ -188,6 +194,7 @@ class Shell(BuildMTTTool):
                         testDef.logger.verbose_print("asis_target " + os.path.join(parentloc,cmds['asis_target']) + " exists. Skipping...")
                         log['location'] = location
                         log['status'] = 0
+                        log['result'] = testDef.MTT_TEST_PASSED
                         return
                     else:
                         testDef.logger.verbose_print("asis_target " + os.path.join(parentloc,cmds['asis_target']) + " does not exist. Continuing...")
@@ -196,6 +203,7 @@ class Shell(BuildMTTTool):
                         testDef.logger.verbose_print("directory " + location + " exists. Skipping...")
                         log['location'] = location
                         log['status'] = 0
+                        log['result'] = testDef.MTT_TEST_PASSED
                         return
                     else:
                         testDef.logger.verbose_print("directory " + location + " does not exist. Continuing...")
@@ -269,6 +277,7 @@ class Shell(BuildMTTTool):
                         log['status'] = status
                         log['stdout'] = stdout
                         log['stderr'] = stderr
+                        log['result'] = testDef.MTT_TEST_FAILED
                         return
         except KeyError:
             pass
@@ -279,6 +288,7 @@ class Shell(BuildMTTTool):
             log['status'] = status
             log['stdout'] = stdout
             log['stderr'] = stderr
+            log['result'] = testDef.MTT_TEST_FAILED
             return
 
         # sense and record the compiler being used
@@ -348,8 +358,7 @@ class Shell(BuildMTTTool):
             testDef.harasser.stop(harass_exec_ids, testDef)
 
         # Deallocate cluster
-        if False == self.deallocate(log, cmds, testDef):
-            return
+        self.deallocate(log, cmds, testDef)
 
         if (cmds['fail_test'] is None and 0 != results['status']) \
                 or (cmds['fail_test'] is not None and cmds['fail_returncode'] is None and 0 == results['status']) \
@@ -362,6 +371,7 @@ class Shell(BuildMTTTool):
                 log['status'] = results['status']
             log['stdout'] = results['stdout']
             log['stderr'] = results['stderr']
+            log['result'] = testDef.MTT_TEST_FAILED
             try:
                 log['time'] = results['elapsed_secs']
             except:
@@ -377,6 +387,7 @@ class Shell(BuildMTTTool):
             log['stderr'] = results['stderr']
         # record this location for any follow-on steps
         log['location'] = location
+        log['result'] = testDef.MTT_TEST_PASSED
 
         # Revert any requested environment module settings
         status,stdout,stderr = testDef.modcmd.revertModules(log['section'], testDef)
@@ -384,7 +395,7 @@ class Shell(BuildMTTTool):
             log['status'] = status
             log['stdout'] = stdout
             log['stderr'] = stderr
-            return
+            # the tests still passed, so leave it logged that way
 
         # if we added middleware to the paths, remove it
         if midpath:

@@ -92,9 +92,16 @@ class Pip(FetchMTTTool):
         # look for the executable in our path - this is
         # a standard system executable so we don't use
         # environmental modules here
-        if not find_executable("pip"):
+        pip = None
+        pipcmd = cmds['cmd'].split()
+        for p in pipcmd:
+            # check for existence
+            if find_executable(p):
+                pip = p
+                break
+        if pip == None:
             log['status'] = 1
-            log['stderr'] = "Executable pip not found"
+            log['stderr'] = "No executable found in " + pipcmd
             return
 
         # see if the pkg has already been installed on the system
@@ -102,7 +109,7 @@ class Pip(FetchMTTTool):
         qcmd = []
         if cmds['sudo']:
             qcmd.append("sudo")
-        qcmd.append(cmds['cmd'])
+        qcmd.append(pip)
         qcmd.append("show")
         qcmd.append(pkg)
         results = testDef.execmd.execute(None, qcmd, testDef)
@@ -120,7 +127,7 @@ class Pip(FetchMTTTool):
         icmd = []
         if cmds['sudo']:
             icmd.append("sudo")
-        icmd.append(cmds['cmd'])
+        icmd.append(pip)
         icmd.append("install")
         if cmds['userloc']:
             icmd.append("--user")

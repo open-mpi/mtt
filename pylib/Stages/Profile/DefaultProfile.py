@@ -65,10 +65,15 @@ class DefaultProfile(ProfileMTTStage):
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
         keys = list(cmds.keys())
-        opts = self.options.keys()
+        # pass in a timeout option as not every system will support
+        # every option
+        myopts = {'timeout': 2}
         for key in keys:
-            if cmds[key] and key in opts:
-                results = testDef.execmd.execute(cmds, self.options[key][2], testDef)
+            if key in self.options and cmds[key]:
+                results = testDef.execmd.execute(myopts, self.options[key][2], testDef)
+                if 'timedout' in results:
+                    # we just ignore it
+                    continue
                 if 0 != results['status']:
                     log['status'] = results['status']
                     log['stdout'] = results['stdout']
