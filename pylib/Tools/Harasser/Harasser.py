@@ -154,12 +154,12 @@ class Harasser(HarasserMTTTool):
             return_info.append((results['status'],results['stdout'],results['stderr'],datetime.datetime.now()-starttime))
 
         for (process,ops,starttime),(results['status'],results['stdout'],results['stderr'],results['elapsed_secs']) in zip(process_info,return_info):
-            if status == 0:
+            if results['status'] == 0:
                 if self.options['join_timeout'][0] is None:
                     process.join()
                 else:
                     process.join(int(self.options['join_timeout'][0]))
-            elif status == 1:
+            elif results['status'] == 1:
                 process.terminate()
 
             self.execution_counter -= 1
