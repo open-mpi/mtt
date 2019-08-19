@@ -149,8 +149,8 @@ class LauncherMTTTool(IPlugin):
         # see if any dependencies were given
         try:
             deps = cmds['dependencies']
-            # might be comma-delimited or space delimited
-            dps = deps.split()
+            # might be comma-delimited,tab or space delimited
+            dps = re.split(",| |\t", deps)
             # loop over the entries
             for d in dps:
                 # get the location where the output of this stage was stored by
@@ -221,12 +221,12 @@ class LauncherMTTTool(IPlugin):
             try:
                 if cmds['test_dir'] is not None:
                     # pick up the executables from the specified directories
-                    dirs = cmds['test_dir'].split()
+                    # accept values delimited by , or space or tab
+                    dirs = re.split(",| |\t", cmds['test_dir'])
                     for dr in dirs:
                         dr = dr.strip()
                         # remove any commas and quotes
                         dr = dr.replace('\"','')
-                        dr = dr.replace(',','')
                         for dirName, subdirList, fileList in os.walk(dr):
                             for fname in fileList:
                                 # see if this is an executable
@@ -254,18 +254,18 @@ class LauncherMTTTool(IPlugin):
                         if os.path.isfile(filename) and os.access(filename, os.X_OK):
                             # add this file to our list of tests to execute
                             self.tests.append(filename)
-        # If list of tests is provided, use list rather than grabbing all tests
+        # If list of individual tests is provided, use list rather than grabbing all tests
         else:
             if cmds['test_dir'] is not None:
-                dirs = cmds['test_dir'].split()
+                dirs = re.split(",| |\t", cmds['test_dir'])
             else:
                 dirs = ['.']
             for dr in dirs:
                 dr = dr.strip()
                 dr = dr.replace('\"','')
-                dr = dr.replace(',','')
+                individual_tests = re.split(",| |\t", cmds['test_list'])
                 for dirName, subdirList, fileList in os.walk(dr):
-                    for fname_cmd in cmds['test_list'].split("\n"):
+                    for fname_cmd in individual_tests:
                         fname = fname_cmd.strip().split(" ")[0]
                         fname_args = " ".join(fname_cmd.strip().split(" ")[1:])
                         if fname not in fileList:
