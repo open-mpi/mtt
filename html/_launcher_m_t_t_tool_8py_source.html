@@ -239,8 +239,8 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;        <span class="comment"># see if any dependencies were given</span></div>
 <div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;        <span class="keywordflow">try</span>:</div>
 <div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;            deps = cmds[<span class="stringliteral">&#39;dependencies&#39;</span>]</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;            <span class="comment"># might be comma-delimited or space delimited</span></div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;            dps = deps.split()</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;            <span class="comment"># might be comma-delimited,tab or space delimited</span></div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;            dps = re.split(<span class="stringliteral">&quot;,| |\t&quot;</span>, deps)</div>
 <div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;            <span class="comment"># loop over the entries</span></div>
 <div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;            <span class="keywordflow">for</span> d <span class="keywordflow">in</span> dps:</div>
 <div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;                <span class="comment"># get the location where the output of this stage was stored by</span></div>
@@ -311,12 +311,12 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;            <span class="keywordflow">try</span>:</div>
 <div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;                <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;test_dir&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
 <div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;                    <span class="comment"># pick up the executables from the specified directories</span></div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;                    dirs = cmds[<span class="stringliteral">&#39;test_dir&#39;</span>].split()</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;                    <span class="keywordflow">for</span> dr <span class="keywordflow">in</span> dirs:</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;                        dr = dr.strip()</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;                        <span class="comment"># remove any commas and quotes</span></div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;                        dr = dr.replace(<span class="stringliteral">&#39;\&quot;&#39;</span>,<span class="stringliteral">&#39;&#39;</span>)</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;                        dr = dr.replace(<span class="stringliteral">&#39;,&#39;</span>,<span class="stringliteral">&#39;&#39;</span>)</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;                    <span class="comment"># accept values delimited by , or space or tab</span></div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;                    dirs = re.split(<span class="stringliteral">&quot;,| |\t&quot;</span>, cmds[<span class="stringliteral">&#39;test_dir&#39;</span>])</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;                    <span class="keywordflow">for</span> dr <span class="keywordflow">in</span> dirs:</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;                        dr = dr.strip()</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;                        <span class="comment"># remove any commas and quotes</span></div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;                        dr = dr.replace(<span class="stringliteral">&#39;\&quot;&#39;</span>,<span class="stringliteral">&#39;&#39;</span>)</div>
 <div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;                        <span class="keywordflow">for</span> dirName, subdirList, fileList <span class="keywordflow">in</span> os.walk(dr):</div>
 <div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;                            <span class="keywordflow">for</span> fname <span class="keywordflow">in</span> fileList:</div>
 <div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;                                <span class="comment"># see if this is an executable</span></div>
@@ -344,18 +344,18 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;                        <span class="keywordflow">if</span> os.path.isfile(filename) <span class="keywordflow">and</span> os.access(filename, os.X_OK):</div>
 <div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;                            <span class="comment"># add this file to our list of tests to execute</span></div>
 <div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;                            self.tests.append(filename)</div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;        <span class="comment"># If list of tests is provided, use list rather than grabbing all tests</span></div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;        <span class="comment"># If list of individual tests is provided, use list rather than grabbing all tests</span></div>
 <div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;        <span class="keywordflow">else</span>:</div>
 <div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;            <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;test_dir&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;                dirs = cmds[<span class="stringliteral">&#39;test_dir&#39;</span>].split()</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;                dirs = re.split(<span class="stringliteral">&quot;,| |\t&quot;</span>, cmds[<span class="stringliteral">&#39;test_dir&#39;</span>])</div>
 <div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;            <span class="keywordflow">else</span>:</div>
 <div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;                dirs = [<span class="stringliteral">&#39;.&#39;</span>]</div>
 <div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;            <span class="keywordflow">for</span> dr <span class="keywordflow">in</span> dirs:</div>
 <div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;                dr = dr.strip()</div>
 <div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;                dr = dr.replace(<span class="stringliteral">&#39;\&quot;&#39;</span>,<span class="stringliteral">&#39;&#39;</span>)</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;                dr = dr.replace(<span class="stringliteral">&#39;,&#39;</span>,<span class="stringliteral">&#39;&#39;</span>)</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;                individual_tests = re.split(<span class="stringliteral">&quot;,| |\t&quot;</span>, cmds[<span class="stringliteral">&#39;test_list&#39;</span>])</div>
 <div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;                <span class="keywordflow">for</span> dirName, subdirList, fileList <span class="keywordflow">in</span> os.walk(dr):</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;                    <span class="keywordflow">for</span> fname_cmd <span class="keywordflow">in</span> cmds[<span class="stringliteral">&#39;test_list&#39;</span>].split(<span class="stringliteral">&quot;\n&quot;</span>):</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;                    <span class="keywordflow">for</span> fname_cmd <span class="keywordflow">in</span> individual_tests:</div>
 <div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;                        fname = fname_cmd.strip().split(<span class="stringliteral">&quot; &quot;</span>)[0]</div>
 <div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;                        fname_args = <span class="stringliteral">&quot; &quot;</span>.join(fname_cmd.strip().split(<span class="stringliteral">&quot; &quot;</span>)[1:])</div>
 <div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;                        <span class="keywordflow">if</span> fname <span class="keywordflow">not</span> <span class="keywordflow">in</span> fileList:</div>
