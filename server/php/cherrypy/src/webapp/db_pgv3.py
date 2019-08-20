@@ -476,7 +476,7 @@ class DatabaseV3():
         
     ##########################################################
     def _find_value(self, metadata, data, field, aliases=None):
-        for (key, value) in metadata.iteritems():
+        for (key, value) in metadata.items():
             if key == field:
                 return value
             if aliases is not None:
@@ -484,7 +484,7 @@ class DatabaseV3():
                     if key == alias:
                         return value
 
-        for (key, value) in data.iteritems():
+        for (key, value) in data.items():
             if key == field:
                 return value
             if aliases is not None:

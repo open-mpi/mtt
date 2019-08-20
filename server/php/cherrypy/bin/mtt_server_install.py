@@ -6,6 +6,7 @@ Usage: ./bin/mtt_server_install.py
 """
 
 from __future__ import print_function
+from builtins import input
 import os
 import shutil
 import sys
@@ -37,7 +38,7 @@ if os.path.exists(env_dir):
     print('Warning: Server appears to be already installed.')
     print("=" * 70)
 
-    response = raw_input('(R)emove and re-install or (A)bort? ')
+    response = input('(R)emove and re-install or (A)bort? ')
     if response != 'R' and response != 'r':
         sys.exit('Aborted')
     shutil.rmtree(env_dir)
@@ -67,7 +68,7 @@ if os.path.exists(final_conf) is True:
     print('Warning: Server configuration file present.')
     print(divider)
 
-    response = raw_input('(R)eplace or (K)eep? ')
+    response = input('(R)eplace or (K)eep? ')
     if response == 'R' or response == 'r':
         call(['rm', final_conf])
         call(['cp', tmpl_conf, final_conf])
@@ -81,7 +82,7 @@ if os.path.exists(final_htaccess) is True:
     print('Warning: Server .htaccess file present.')
     print(divider)
 
-    response = raw_input('(R)eplace or (K)eep? ')
+    response = input('(R)eplace or (K)eep? ')
     if response == 'R' or response == 'r':
         call(['rm', final_htaccess])
         call(['cp', tmpl_htaccess, final_htaccess])
@@ -102,13 +103,12 @@ print(divider)
 
 #
 # Setup virtual environment
-#
+# The python version installed will be the system default.
+# Any python version > 2.7 will work.
 call(['virtualenv', '-p', 'python', env_dir])
 call([env_dir + '/bin/pip', 'install', '-r', source_dir + '/mtt_server_requirements.txt'])
 
 # Link Server to virtual environment
-# FIXME: This assumes python2.7. Need to find a way with virtualenv/pip to
-# enforce this.
 cwd = os.getcwd()
 
 for dir,_,_ in os.walk(env_dir):

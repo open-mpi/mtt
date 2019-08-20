@@ -3,41 +3,29 @@ How to setup the MTT server
 
 1) Setup the MTT Database
 ----------------------------------------------------
-- Install PostgreSQL
-  http://www.postgresql.org/
-
-Note: We test with 8.4.13, but any later version should work fine.
-
-- Follow instructions in sql/INSTALL
+See the MTT Wiki "Database"
 
 
 2) Setup the MTT Reporter
 ----------------------------------------------------
-- Apache Setup
-  Apache must be setup to support PHP.
-
-- Optionally you might want to increase the file size limits for uploads
-shell$ $EDITOR /etc/php.ini:
-; Maximum allowed size for uploaded files.
-upload_max_filesize = 20M
-
-shell$ $EDITOR /etc/httpd/conf/httpd.conf:
-# Limit Upload to 20Mb
-LimitRequestBody 20971520 
-
-- Follow instructions in php/INSTALL
+See the MTT Wiki "HTTPServer"
 
 
 3) Setup the cron scripts
 ----------------------------------------------------
-- Follow the instructions in php/cron/INSTALL
+See the MTT Wiki "ServerMaintenance"
 
 
-4) Test your setup
+4.) Setup the Cherrypy Server
+----------------------------------------------------
+See the MTT Wiki "MTT Cherrypy Server"
+
+
+5) Test your setup
 ----------------------------------------------------
 - Run a simple MTT client in debug mode and watch for errors
 
 
-5) All done!
+6) All done!
 ----------------------------------------------------
 - Enjoy!
