@@ -36,6 +36,7 @@ from BuildMTTTool import *
 # @param modules_swap              Modules to swap
 # @param dependencies              List of dependencies specified as the build stage name
 # @param make_envars               Environmental variables to set prior to executing make
+# @param subdir                    Subdirectory that is to be built
 
 # @}
 class Autotools(BuildMTTTool):
@@ -57,6 +58,7 @@ class Autotools(BuildMTTTool):
         self.options['modules_swap'] = (None, "Modules to swap")
         self.options['dependencies'] = (None, "List of dependencies specified as the build stage name - e.g., MiddlwareBuild_package to be added to configure using --with-package=location")
         self.options['make_envars'] = (None, "Environmental variables to set prior to executing make")
+        self.options['subdir'] = (None, "Subdirectory that is to be built")
         self.exclude = set(string.punctuation)
         return
 
@@ -117,6 +119,11 @@ class Autotools(BuildMTTTool):
             log['status'] = 1
             log['stderr'] = "Location of package to build was not specified in parent stage"
             return
+
+        # see if we need to adjust the location to build what is in
+        # a specific subdirectory of this location
+        if cmds['subdir'] is not None:
+            location = os.path.join(location, cmds['subdir'])
 
         inPlace = False
 
