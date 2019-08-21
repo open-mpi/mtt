@@ -90,6 +90,16 @@ class FetchTarball(FetchMTTTool):
         except KeyError:
             pass
 
+        # if this is a path to a local file, then we use
+        # the "cp" command instead of "wget"
+        checkurl = url[:4]
+        if checkurl.lower() == "file":
+            cmds['cmd'] = "cp"
+            url = urlparse(url).path
+            file = True
+        else:
+            file = False
+
         # look for the executable in our path - this is
         # a standard system executable so we don't use
         # environmental modules here
@@ -146,12 +156,21 @@ class FetchTarball(FetchMTTTool):
                     log['stderr'] = "untar of tarball " + tarball + "FAILED"
                     return
         else:
-            # download the tarball - TODO probably need to do a try on these
-            testDef.logger.verbose_print("downloading tarball " + tarball + "using url: " + url)
-            excmd = []
-            for p in fetchcmd:
-                excmd.append(p)
-            excmd.append(url)
+            if file:
+                testDef.logger.verbose_print("copying tarball " + tarball + " using path: " + url)
+                excmd = []
+                for p in fetchcmd:
+                    excmd.append(p)
+                excmd.append(url)
+                # give it the destination
+                excmd.append(dst)
+            else:
+                # download the tarball - TODO probably need to do a try on these
+                testDef.logger.verbose_print("downloading tarball " + tarball + " using url: " + url)
+                excmd = []
+                for p in fetchcmd:
+                    excmd.append(p)
+                excmd.append(url)
             results = testDef.execmd.execute(None, excmd, testDef)
             if 0 != results['status']:
                 log['status'] = 1
