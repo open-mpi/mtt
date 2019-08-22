@@ -27,6 +27,7 @@ import shutil
 # Plugin for fetching and unpacking tarballs from the Web
 # @param url    URL for the tarball
 # @param cmd    Command line to use to fetch the tarball (e.g., "curl -o")
+# @param subdir      Subdirectory of interest in package
 # @}
 class FetchTarball(FetchMTTTool):
 
@@ -40,6 +41,7 @@ class FetchTarball(FetchMTTTool):
         self.options = {}
         self.options['url'] = (None, "URL to tarball")
         self.options['cmd'] = ("wget", "Command to use to fetch the tarball")
+        self.options['subdir'] = (None, "Subdirectory of interest in package")
         return
 
     def activate(self):
@@ -86,6 +88,21 @@ class FetchTarball(FetchMTTTool):
             if self.done[tarball] is not None:
                 log['status'] = self.done[repo][0]
                 log['location'] = self.done[repo][1]
+                # if they specified a subdirectory of interest,
+                # check to see if it exists
+                if cmds['subdir'] is not None:
+                    # check that this subdirectory actually exists
+                    ckdir = os.path.join(log['location'], cmds['subdir'])
+                    if not os.path.exists(ckdir):
+                        log['status'] = 1
+                        log['stderr'] = "Subdirectory " + cmds['subdir'] + " was not found"
+                        return
+                    if not os.path.isdir(ckdir):
+                        log['status'] = 1
+                        log['stderr'] = "Subdirectory " + cmds['subdir'] + " is not a directory"
+                        return
+                    # adjust the location so later stages can find it
+                    log['location'] = ckdir
                 return
         except KeyError:
             pass
@@ -189,13 +206,29 @@ class FetchTarball(FetchMTTTool):
         log['status'] = results['status']
         log['stdout'] = results['stdout']
         log['stderr'] = results['stderr']
-        testDef.logger.verbose_print("setting location to " + package)
 
         # log our absolute location so others can find it
         log['location'] = os.getcwd()
         # track that we serviced this one
         self.done[tarball] = (results['status'], log['location'])
 
+        # if they specified a subdirectory of interest,
+        # check to see if it exists
+        if cmds['subdir'] is not None:
+            # check that this subdirectory actually exists
+            ckdir = os.path.join(log['location'], cmds['subdir'])
+            if not os.path.exists(ckdir):
+                log['status'] = 1
+                log['stderr'] = "Subdirectory " + cmds['subdir'] + " was not found"
+                return
+            if not os.path.isdir(ckdir):
+                log['status'] = 1
+                log['stderr'] = "Subdirectory " + cmds['subdir'] + " is not a directory"
+                return
+            # adjust our location so later stages can find it
+            log['location'] = ckdir
+
+        testDef.logger.verbose_print("setting location to " + log['location'])
         # change back to the original directory
         os.chdir(cwd)
 
