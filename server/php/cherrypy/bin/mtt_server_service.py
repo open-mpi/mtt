@@ -65,7 +65,7 @@ def _getPID():
 
 def _start():
     """If not already running, start the REST server."""
-    print 'Starting REST server...'
+    print('Starting REST server...')
     pid = _getPID()
 
     if -2 == pid:
@@ -98,7 +98,7 @@ def _restart():
 
 def _stop():
     """If running, stop the REST server."""
-    print(Stopping REST server...')
+    print('Stopping REST server...')
     pid = _getPID()
 
     if -2 == pid:
