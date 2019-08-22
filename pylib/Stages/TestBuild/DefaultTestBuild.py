@@ -26,6 +26,7 @@ from TestBuildMTTStage import *
 # @param configure_options         Options to be passed to configure. Note that the prefix will be automatically set and need not be provided here
 # @param make_options              Options to be passed to the make command
 # @param make_envars               Environmental variables to set prior to executing make
+# @param subdir                    Subdirectory of location that is to be built
 # @}
 class DefaultTestBuild(TestBuildMTTStage):
 
@@ -42,6 +43,7 @@ class DefaultTestBuild(TestBuildMTTStage):
         self.options['configure_options'] = (None, "Options to be passed to configure. Note that the prefix will be automatically set and need not be provided here")
         self.options['make_options'] = (None, "Options to be passed to the make command")
         self.options['make_envars'] = (None, "Environmental variables to set prior to executing make")
+        self.options['subdir'] = (None, "Subdirectory of location that is to be built")
 
     def activate(self):
         # get the automatic procedure from IPlugin
