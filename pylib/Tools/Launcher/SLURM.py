@@ -169,6 +169,7 @@ class SLURM(LauncherMTTTool):
         status = self.allocateCluster(log, cmds, testDef)
         if 0 != status:
             self.resetPaths(log, testDef)
+            # something went wrong - error is in the log
             return
 
         # Add support for srun in --no-shell allocation
@@ -185,21 +186,11 @@ class SLURM(LauncherMTTTool):
             jobid = int(subprocess.check_output(['squeue', '--noheader', '--format', '%i', '--name', jobname]))
             cmdargs.append('--jobid=%d' % (jobid))
 
-        # execute the tests
-        self.runTests(log, cmdargs, cmds, testDef)
-
-        # Deallocate cluster
-        self.deallocateCluster(log, cmds, testDef)
-
-        # reset our paths and return us to our cwd
-        self.resetPaths(log, testDef)
-
         # handle case where srun is used instead of mpirun for number of processes (np)
         if cmds['command'] == 'srun':
             num_tasks = None
             num_nodes = None
             num_tasks_per_node = None
-
             if '-n ' in cmds['options']:
                 num_tasks = str(cmds['options'].split('-n ')[1].split(' ')[0])
             if '--ntasks=' in cmds['options']:
@@ -214,16 +205,17 @@ class SLURM(LauncherMTTTool):
                 num_nodes = str(len(cmds['options'].split('--nodelist=')[1].split(' ')[0].split(',')))
             if '--ntasks-per-node=' in cmds['options']:
                 num_tasks_per_node = str(cmds['options'].split('--ntasks-per-node=')[1].split(' ')[0])
-
             if num_tasks is not None:
-                log['np'] = num_tasks
+                cmds['np'] = num_tasks
+                
             elif num_nodes is not None and num_tasks_per_node is not None:
                 try:
-                    log['np'] = str(int(num_tasks_per_node)*int(num_nodes))
+                    cmds['np'] = str(int(num_tasks_per_node)*int(num_nodes))
                 except:
-                    log['np'] = None
+                    cmds['np'] = None
             else:
-                log['np'] = None
+                cmds['np'] = None
+
         elif cmds['command'] == 'mpiexec' or cmds['command'] == 'mpiexec.hydra' or cmds['command'] == 'mpirun':
             num_tasks = None
             num_nodes = None
@@ -241,20 +233,24 @@ class SLURM(LauncherMTTTool):
                 num_tasks_per_node = str(cmds['options'].split('-grr ')[1].split(' ')[0])
             if '-perhost ' in cmds['options']:
                 num_tasks_per_node = str(cmds['options'].split('-perhost ')[1].split(' ')[0])
-
             if num_tasks is not None:
-                log['np'] = num_tasks
+                cmds['np'] = num_tasks
             elif num_nodes is not None and num_tasks_per_node is not None:
                 try:
-                    log['np'] = str(int(num_tasks_per_node)*int(num_nodes))
+                    cmds['np'] = str(int(num_tasks_per_node)*int(num_nodes))
                 except:
-                    log['np'] = None
+                    cmds['np'] = None
             else:
-                log['np'] = None
-        else:
-            try:
-                log['np'] = cmds['np']
-            except KeyError:
-                log['np'] = None
+                cmds['np'] = None
+
+        # execute the tests
+        self.runTests(log, cmdargs, cmds, testDef)
+
+        # Deallocate cluster
+        self.deallocateCluster(log, cmds, testDef)
+
+        # reset our paths and return us to our cwd
+        self.resetPaths(log, testDef)
+
 
         return
