@@ -465,12 +465,15 @@ class LauncherMTTTool(IPlugin):
                     testLog['result'] = testDef.MTT_TEST_PASSED
                     self.numPass += 1
             try:
-                testLog['np'] = cmds['np']
+                testLog['np'] = log['np']
             except KeyError:
                 try:
-                    testLog['np'] = cmds['ppn']
-                except:
-                    testLog['np'] = -1
+                    testLog['np'] = cmds['np']
+                except KeyError:
+                    try:
+                        testLog['np'] = cmds['ppn']
+                    except:
+                        testLog['np'] = -1
             log['testresults'].append(testLog)
             cmdargs = cmdargs[:-1]
             self.numTests = self.numTests + 1
