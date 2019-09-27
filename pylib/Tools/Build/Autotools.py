@@ -131,12 +131,34 @@ class Autotools(BuildMTTTool):
         # do this before we load environment modules so we can append to the list if needed
         midpath = False
         try:
+            savebinpath = os.environ['PATH']
+        except KeyError:
+            savebinpath = None
+        try:
+            savelibpath = os.environ['LIBRARY_PATH']
+        except KeyError:
+            savelibpath = None
+        try:
+            savecpath = os.environ['CPATH']
+        except KeyError:
+            savecpath = None
+        try:
+            saveldlibpath = os.environ['LD_LIBRARY_PATH']
+        except KeyError:
+            saveldlibpath = None
+        try:
             if cmds['middleware'] is not None:
                 # pass it down
                 log['middleware'] = cmds['middleware']
-                # get the log entry of its location
-                midlog = testDef.logger.getLog(cmds['middleware'])
-                if midlog is not None:
+                # there may be more than one middleware noted here
+                # so break it apart just in case
+                # might be comma-delimited or space delimited
+                mware = re.split("\s|,", cmds['middleware'])
+                for m in mware:
+                    # get the log entry of its location
+                    midlog = testDef.logger.getLog(m)
+                    if midlog is None:
+                        continue
                     # get the location of the middleware
                     try:
                         if midlog['location'] is not None:
@@ -145,7 +167,6 @@ class Autotools(BuildMTTTool):
                                 oldbinpath = os.environ['PATH']
                                 pieces = oldbinpath.split(':')
                             except KeyError:
-                                oldbinpath = ""
                                 pieces = []
                             bindir = os.path.join(midlog['location'], "bin")
                             pieces.insert(0, bindir)
@@ -156,7 +177,6 @@ class Autotools(BuildMTTTool):
                                 oldldlibpath = os.environ['LD_LIBRARY_PATH']
                                 pieces = oldldlibpath.split(':')
                             except KeyError:
-                                oldldlibpath = ""
                                 pieces = []
                             bindir = os.path.join(midlog['location'], "lib")
                             pieces.insert(0, bindir)
@@ -167,7 +187,6 @@ class Autotools(BuildMTTTool):
                                 oldcpath = os.environ['CPATH']
                                 pieces = oldcpath.split(':')
                             except KeyError:
-                                oldcpath = ""
                                 pieces = []
                             bindir = os.path.join(midlog['location'], "include")
                             pieces.insert(0, bindir)
@@ -178,7 +197,6 @@ class Autotools(BuildMTTTool):
                                 oldlibpath = os.environ['LIBRARY_PATH']
                                 pieces = oldlibpath.split(':')
                             except KeyError:
-                                oldlibpath = ""
                                 pieces = []
                             bindir = os.path.join(midlog['location'], "lib")
                             pieces.insert(0, bindir)
@@ -290,7 +308,12 @@ class Autotools(BuildMTTTool):
         # save the current directory so we can return to it
         cwd = os.getcwd()
         # now move to the package location
-        os.chdir(location)
+        try:
+            os.chdir(location)
+        except:
+            log['status'] = 1
+            return
+
         # see if they want us to execute autogen
         try:
             if cmds['autogen_cmd'] is not None:
@@ -532,10 +555,34 @@ class Autotools(BuildMTTTool):
 
         # if we added middleware to the paths, remove it
         if midpath:
-            os.environ['PATH'] = oldbinpath
-            os.environ['LD_LIBRARY_PATH'] = oldldlibpath
-            os.environ['CPATH'] = oldcpath
-            os.environ['LIBRARY_PATH'] = oldlibpath
+            if savebinpath is None:
+                try:
+                    del os.environ['PATH']
+                except:
+                    pass
+            else:
+                os.environ['PATH'] = savebinpath
+            if saveldlibpath is None:
+                try:
+                    del os.environ['LD_LIBRARY_PATH']
+                except:
+                    pass
+            else:
+                os.environ['LD_LIBRARY_PATH'] = saveldlibpath
+            if savecpath is None:
+                try:
+                    del os.environ['CPATH']
+                except:
+                    pass
+            else:
+                os.environ['CPATH'] = savecpath
+            if savelibpath is None:
+                try:
+                    del os.environ['LIBRARY_PATH']
+                except:
+                    pass
+            else:
+                os.environ['LIBRARY_PATH'] = savelibpath
 
         # Add confirmation that build is complete
         try:

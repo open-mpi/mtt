@@ -28,6 +28,8 @@ import shlex
 # @param modules_swap    Modules to swap
 # @param timeout         Time limit for application execution
 # @param dependencies    Middleware dependencies
+# @param subdir          Subdirectory where tests are located
+# @param parent          Stage that built the tests
 # @}
 class PMIxUnit(TestRunMTTStage):
 
@@ -43,6 +45,8 @@ class PMIxUnit(TestRunMTTStage):
         self.options['modules_swap'] = (None, "Modules to swap")
         self.options['timeout'] = (None, "Time limit for application execution")
         self.options['dependencies'] = (None, "Middleware dependencies")
+        self.options['subdir'] = (None, "Subdirectory where tests are located")
+        self.options['parent'] = (None, "Stage that built the tests")
         self.testDef = None
         self.cmds = None
         return
@@ -86,11 +90,6 @@ class PMIxUnit(TestRunMTTStage):
             else:
                 mykeyvals[k] = keyvals[k]
 
-        # parse any provided options - these will override the defaults
-        cmds = {}
-        testDef.parseOptions(log, self.options, mykeyvals, cmds)
-        self.cmds = cmds
-
         # check the log for the title so we can
         # see if this is setting our default behavior
         try:
@@ -117,10 +116,15 @@ class PMIxUnit(TestRunMTTStage):
             log['stderr'] = "Section not specified"
             return
 
+        # parse any provided options - these will override the defaults
+        cmds = {}
+        testDef.parseOptions(log, self.options, mykeyvals, cmds)
+        self.cmds = cmds
+
         # must be executing a test of some kind - the install stage
         # must be specified so we can find the tests to be run
         try:
-            parent = keyvals['parent']
+            parent = cmds['parent']
         except KeyError:
             log['status'] = 1
             log['stderr'] = "Parent test install stage was not provided"
@@ -227,7 +231,7 @@ class PMIxUnit(TestRunMTTStage):
                                 break
                 # mark that this was done
                 midpath = True
-        except KeyError:
+        except:
             # if it was already installed, then no location would be provided
             pass
 
@@ -298,8 +302,12 @@ class PMIxUnit(TestRunMTTStage):
         # to change to the test location and begin executing, first saving
         # our current location so we can return when done
         cwd = os.getcwd()
+        try:
+            if cmds['subdir'] is not None:
+                location = os.path.join(location, cmds['subdir'])
+        except:
+            pass
         os.chdir(location)
-
         testDef.logger.verbose_print("PMIxUnit: looking for tests in " + location)
 
         # cycle thru the list of tests and execute each of them
