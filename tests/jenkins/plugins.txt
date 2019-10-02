@@ -54,6 +54,7 @@ envinject:
 envinject-api:
 external-monitor-job:
 favorite:
+forensics-api:
 git:
 git-client:
 github:
@@ -74,6 +75,7 @@ jenkins-multijob-plugin:
 jira:
 jobConfigHistory:
 jquery:
+jquery-ui:
 jquery-detached:
 jsch:
 junit:
@@ -114,7 +116,7 @@ publish-over-ssh:
 pubsub-light:
 pyenv-pipeline:
 resource-disposer:
-role-strategy:2.9.0
+role-strategy:
 run-condition:
 scm-api:
 script-security:
