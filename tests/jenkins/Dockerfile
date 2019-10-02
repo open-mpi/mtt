@@ -1,4 +1,4 @@
-FROM jenkins/jenkins
+FROM jenkins/jenkins:lts
 LABEL maintainer.primary="richard.t.barella@intel.com" \
       maintainer.secondary="william.c.weide@intel.com"
 
@@ -13,6 +13,7 @@ ARG master_num_executors
 
 ENV JENKINS_OPTS="-sessionTimeout=120" \
     JENKINS_HOME=/var/jenkins_home \
+    JENKINS_SLAVE_AGENT_PORT=-1 \
     JAVA_OPTS="-Dhttp.proxyHost=${http_server} -Dhttp.proxyPort=${http_port} \
       -Dhttps.proxyHost=${https_server} -Dhttps.proxyPort=${https_port} \
       -Djenkins.install.runSetupWizard=false"
