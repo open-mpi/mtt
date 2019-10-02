@@ -11,18 +11,19 @@ ARG https_server
 ARG https_port
 ARG master_num_executors
 
-ENV JAVA_OPTS    "-Dhttp.proxyHost=${http_server} -Dhttp.proxyPort=${http_port} \
-  -Dhttps.proxyHost=${https_server} -Dhttps.proxyPort=${https_port} \
-  -Djenkins.install.runSetupWizard=false"
-ENV JENKINS_OPTS "-sessionTimeout=120"
-ENV JENKINS_HOME /var/jenkins_home
-ENV ftp_proxy    http://$http_server:$http_port/
-ENV FTP_PROXY    http://$http_server:$http_port/
-ENV http_proxy   http://$http_server:$http_port/
-ENV HTTP_PROXY   http://$http_server:$http_port/
-ENV https_proxy  http://$https_server:$https_port/
-ENV HTTPS_PROXY  http://$https_server:$https_port/
-ENV no_proxy     localhost
+ENV JENKINS_OPTS="-sessionTimeout=120" \
+    JENKINS_HOME=/var/jenkins_home \
+    JAVA_OPTS="-Dhttp.proxyHost=${http_server} -Dhttp.proxyPort=${http_port} \
+      -Dhttps.proxyHost=${https_server} -Dhttps.proxyPort=${https_port} \
+      -Djenkins.install.runSetupWizard=false"
+
+ENV ftp_proxy=http://$http_server:$http_port/ \
+    FTP_PROXY=http://$http_server:$http_port/ \
+    http_proxy=http://$http_server:$http_port/ \
+    HTTP_PROXY=http://$http_server:$http_port/ \
+    https_proxy=http://$https_server:$https_port/ \
+    HTTPS_PROXY=http://$https_server:$https_port/ \
+    no_proxy=localhost
 
 USER root
 RUN apt-get update && apt-get install -y vim tree
