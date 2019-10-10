@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 #
 # Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
+# Copyright (c) 2019      Triad National Security, LLC. All rights
+#                         reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -362,7 +364,7 @@ class LauncherMTTTool(IPlugin):
             if 0 != results['status']:
                 log['status'] = results['status']
                 log['stderr'] = results['stderr']
-                os.chdir(cwd)
+                os.chdir(self.cwd)
                 return 1
         return 0
 
