@@ -300,10 +300,10 @@ class IPMITool(CNCMTTTool):
         self.threads = []
         # release the queue
         self.lock.release()
-        if len(targets) < self.options['numthreads']:
+        if len(targets) < cmds['numthreads']:
             rng = len(targets)
         else:
-            rng = self.options['numthreads']
+            rng = cmds['numthreads']
         for n in range(0, rng):
             thread = workerThread(self.threadID, ipmiQueue, self.status, self.lock, testDef)
             thread.start()
