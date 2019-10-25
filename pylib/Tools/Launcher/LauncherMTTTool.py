@@ -43,7 +43,7 @@ class LauncherMTTTool(IPlugin):
         IPlugin.__init__(self)
 
     def print_name(self):
-        print("Launcher")
+        testDef.logger.print("Launcher")
 
     def updateDefaults(self, log, options, keyvals, testDef):
         # check the log for the title so we can

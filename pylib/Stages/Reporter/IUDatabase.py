@@ -79,11 +79,12 @@ class IUDatabase(ReporterMTTStage):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print(prefix + line)
+            testDef.logger.print(prefix + line)
         return
 
     def execute(self, log, keyvals, testDef):
         # parse the provided keyvals against our options
+        self.testDef = testDef
         testDef.parseOptions(log, self.options, keyvals, self.cmds)
         if self.cmds['dryrun']:
             self.cmds['debug_screen'] = True
@@ -132,7 +133,7 @@ class IUDatabase(ReporterMTTStage):
         if not self.cmds['dryrun']:
             client_serial = self._get_client_serial(s, self.cmds['url'], www_auth)
             if client_serial < 0:
-                print("Error: Unable to get a client serial (rtn=%d)" % (client_serial))
+                self.testDef.logger.print("Error: Unable to get a client serial (rtn=%d)" % (client_serial))
 
         headers = {}
         headers['content-type'] = 'application/json'
@@ -172,11 +173,11 @@ class IUDatabase(ReporterMTTStage):
         try:
             pp = pprint.PrettyPrinter(indent=4)
             if self.cmds['debug_screen']:
-                print("<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                self.testDef.logger.print("<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>")
                 for lg in fullLog:
-                    print("----------------- Section (%s) " % (lg['section']))
+                    self.testDef.logger.print("----------------- Section (%s) " % (lg['section']))
                     pp.pprint(lg)
-                print("<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>")
+                self.testDef.logger.print("<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>")
         except:
             pass;
 
@@ -199,7 +200,7 @@ class IUDatabase(ReporterMTTStage):
     def _submit_test_run(self, logger, lg, metadata, s, url, testDef, httpauth=None):
         try:
             if self.cmds['debug_screen']:
-                print("----------------- Test Run (%s) " % (lg['section']))
+                self.testDef.logger.print("----------------- Test Run (%s) " % (lg['section']))
                 pp = pprint.PrettyPrinter(indent=4)
                 pp.pprint(lg)
         except:
@@ -471,7 +472,7 @@ class IUDatabase(ReporterMTTStage):
     def _submit_test_build(self, logger, lg, metadata, s, url, httpauth=None):
         try:
             if self.cmds['debug_screen']:
-                print("----------------- Test Build (%s) " % (lg['section']))
+                self.testDef.logger.print("----------------- Test Build (%s) " % (lg['section']))
                 pp = pprint.PrettyPrinter(indent=4)
                 pp.pprint(lg)
         except:
@@ -629,7 +630,7 @@ class IUDatabase(ReporterMTTStage):
 
         try:
             if self.cmds['debug_screen']:
-                print("----------------- MPI Install (%s) " % (lg['section']))
+                self.testDef.logger.print("----------------- MPI Install (%s) " % (lg['section']))
                 pp = pprint.PrettyPrinter(indent=4)
                 pp.pprint(lg)
         except:
@@ -650,7 +651,7 @@ class IUDatabase(ReporterMTTStage):
 
         profile = logger.getLog('Profile:Installed')['profile']
         if profile is None:
-            print("Error: Failed to get 'profile'")
+            self.testDef.logger.print("Error: Failed to get 'profile'")
             return None
 
         #
@@ -829,9 +830,9 @@ class IUDatabase(ReporterMTTStage):
 
         try:
             if self.cmds['debug_screen']:
-                print("<<<<<<<---------------- Payload (Start) -------------------------->>>>>>")
-                print(json.dumps(payload, sort_keys=True, indent=4, separators=(',',': ')))
-                print("<<<<<<<---------------- Payload (End  ) -------------------------->>>>>>")
+                self.testDef.logger.print("<<<<<<<---------------- Payload (Start) -------------------------->>>>>>")
+                self.testDef.logger.print(json.dumps(payload, sort_keys=True, indent=4, separators=(',',': ')))
+                self.testDef.logger.print("<<<<<<<---------------- Payload (End  ) -------------------------->>>>>>")
                 if self.cmds['dryrun']:
                     return None
         except:
@@ -845,13 +846,13 @@ class IUDatabase(ReporterMTTStage):
 
         try:
             if self.cmds['debug_screen']:
-                print("<<<<<<<---------------- Response -------------------------->>>>>>")
-                print("Result: %d: %s" % (r.status_code, r.headers['content-type']))
-                print(r.headers)
-                print(r.reason)
-                print("<<<<<<<---------------- Raw Output (Start) ---------------->>>>>>")
-                print(r.text)
-                print("<<<<<<<---------------- Raw Output (End  ) ---------------->>>>>>")
+                self.testDef.logger.print("<<<<<<<---------------- Response -------------------------->>>>>>")
+                self.testDef.logger.print("Result: %d: %s" % (r.status_code, r.headers['content-type']))
+                self.testDef.logger.print(r.headers)
+                self.testDef.logger.print(r.reason)
+                self.testDef.logger.print("<<<<<<<---------------- Raw Output (Start) ---------------->>>>>>")
+                self.testDef.logger.print(r.text)
+                self.testDef.logger.print("<<<<<<<---------------- Raw Output (End  ) ---------------->>>>>>")
         except:
             pass
 
@@ -863,13 +864,13 @@ class IUDatabase(ReporterMTTStage):
     def _extract_param(self, logger, section, parameter):
         found = logger.getLog(section)
         if found is None:
-            print("_extract_param: Section (%s) Not Found! [param=%s]" % (section, parameter))
+            self.testDef.logger.print("_extract_param: Section (%s) Not Found! [param=%s]" % (section, parameter))
             return None
 
         try:
             params = found['parameters']
         except KeyError:
-            print("_extract_param: Section (%s) did not contain a parameters entry! [param=%s]" % (section, parameter))
+            self.testDef.logger.print("_extract_param: Section (%s) did not contain a parameters entry! [param=%s]" % (section, parameter))
             return None
         for p in params:
             if p[0] == parameter:

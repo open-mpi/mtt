@@ -61,7 +61,7 @@ class OMPI_Snapshot(FetchMTTTool):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print(prefix + line)
+            testDef.logger.print(prefix + line)
         return
 
     def execute(self, log, keyvals, testDef):
@@ -226,7 +226,7 @@ class OMPI_Snapshot(FetchMTTTool):
             if cmds['version_file'] is not None:
                 try:
                     f = open(cmds['version_file'], 'w')
-                    print(snapshot_req.text.strip(), file=f)
+                    testDef.logger.print(snapshot_req.text.strip(), file=f)
                 except:
                     log['status'] = 1
                     log['stderr'] = "FAILED to update version file"

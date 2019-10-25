@@ -29,7 +29,7 @@ class Compilers(BaseMTTUtility):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print(prefix + line)
+            testDef.logger.print(prefix + line)
         return
 
     def execute(self, log, testDef):
@@ -176,12 +176,12 @@ class Compilers(BaseMTTUtility):
         # write out a little test program
         fh = open("spastic.c", 'w')
         for ln in c_code:
-            print(ln, file=fh)
+            testDef.logger.print(ln, file=fh)
         fh.close()
 
         # Attempt to compile it
         mycmdargs = [compiler, "-c", "spastic.c"]
-        results = testDef.execmd.execute(None, mycmdargs, testDef)
+        results = testDef.execmd.execute(None, mycmdargs, testDef, quiet=True)
 
         # cleanup the test
         os.remove("spastic.c")
@@ -215,6 +215,6 @@ class Compilers(BaseMTTUtility):
     def check_version(self, compiler, version, testDef):
         # try the universal version option
         mycmdargs = [compiler, version]
-        results = testDef.execmd.execute(None, mycmdargs, testDef)
+        results = testDef.execmd.execute(None, mycmdargs, testDef, quiet=True)
         return results['status'], results['stdout']
 

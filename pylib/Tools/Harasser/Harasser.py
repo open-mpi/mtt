@@ -74,7 +74,7 @@ class Harasser(HarasserMTTTool):
         """
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print(prefix + line)
+            testDef.logger.print(prefix + line)
         return
 
     def get_running_harassers(self):

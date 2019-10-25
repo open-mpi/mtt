@@ -121,7 +121,7 @@ class TestDef(object):
                     return 0, False
             else:
                 # unknown conversion required
-                print("Unknown conversion required for " + inval)
+                self.logger.print("Unknown conversion required for " + inval)
                 return 1, None
         elif type(opt) is int:
             if type(inval) is int:
@@ -130,7 +130,7 @@ class TestDef(object):
                 return 0, int(inval)
             else:
                 # unknown conversion required
-                print("Unknown conversion required for " + inval)
+                self.logger.print("Unknown conversion required for " + inval)
                 return 1, None
         elif type(opt) is float:
             if type(inval) is float:
@@ -139,7 +139,7 @@ class TestDef(object):
                 return 0, float(inval)
             else:
                 # unknown conversion required
-                print("Unknown conversion required for " + inval)
+                self.logger.print("Unknown conversion required for " + inval)
                 return 1, None
         else:
             return 1, None
@@ -247,7 +247,7 @@ class TestDef(object):
 
     def loadPlugins(self, basedir, topdir):
         if self.loaded:
-            print("Cannot load plugins multiple times")
+            self.logger.print("Cannot load plugins multiple times")
             sys.exit(1)
         self.loaded = True
 
@@ -255,7 +255,7 @@ class TestDef(object):
         try:
             m = imp.load_source("LoadClasses", os.path.join(basedir, "LoadClasses.py"));
         except ImportError:
-            print("ERROR: unable to load LoadClasses that must contain the class loader object")
+            self.logger.print("ERROR: unable to load LoadClasses that must contain the class loader object")
             sys.exit(1)
         cls = getattr(m, "LoadClasses")
         a = cls()
@@ -279,13 +279,13 @@ class TestDef(object):
         # Load plugins from each of the specified plugin dirs
         for dirPath in plugindirs:
             if not Path(dirPath).exists():
-                print("Attempted to load plugins from non-existent path:", dirPath)
+                self.logger.print("Attempted to load plugins from non-existent path: %s" % dirPath)
                 continue
             try:
                 self.loader.load(dirPath)
             except Exception as e:
-                print("Exception caught while loading plugins:")
-                print(e)
+                self.logger.print("Exception caught while loading plugins:")
+                self.logger.print(e)
                 sys.exit(1)
 
         # Build plugin managers,
@@ -346,9 +346,9 @@ class TestDef(object):
                 if self.execmd is not None and self.modcmd is not None and self.watchdog is not None:
                     break
         if self.execmd is None:
-            print("ExecuteCmd plugin was not found")
-            print("This is a basic capability required")
-            print("for MTT operations - cannot continue")
+            self.logger.print("ExecuteCmd plugin was not found")
+            self.logger.print("This is a basic capability required")
+            self.logger.print("for MTT operations - cannot continue")
             sys.exit(1)
         # Configure harasser plugin
         for pluginInfo in self.tools.getPluginsOfCategory("Harasser"):
@@ -356,9 +356,9 @@ class TestDef(object):
                 self.harasser = pluginInfo.plugin_object
                 break
         if self.harasser is None:
-            print("Harasser plugin was not found")
-            print("This is required for all TestRun plugins")
-            print("cannot continue")
+            self.logger.print("Harasser plugin was not found")
+            self.logger.print("This is required for all TestRun plugins")
+            self.logger.print("cannot continue")
             sys.exit(1)
         # similarly, capture the highest priority defaults stage here
         pri = -1
@@ -372,10 +372,10 @@ class TestDef(object):
     def printInfo(self):
         # Print the available MTT sections out, if requested
         if self.options['listsections']:
-            print("Supported MTT stages:")
+            self.logger.print("Supported MTT stages:")
             # print them in the default order of execution
             for stage in self.loader.stageOrder:
-                print("    " + stage)
+                self.logger.print("    " + stage)
             sys.exit(0)
 
         # Print the detected plugins for a given stage
@@ -385,15 +385,15 @@ class TestDef(object):
                 sections = self.loader.stageOrder
             else:
                 sections = self.options['listplugins'].split(',')
-            print()
+            self.logger.print()
             for section in sections:
-                print(section + ":")
+                self.logger.print(section + ":")
                 try:
                     for pluginInfo in self.stages.getPluginsOfCategory(section):
-                        print("    " + pluginInfo.plugin_object.print_name())
+                        self.logger.print("    " + pluginInfo.plugin_object.print_name())
                 except KeyError:
-                    print("    Invalid stage name " + section)
-                print()
+                    self.logger.print("    Invalid stage name " + section)
+                self.logger.print()
             sys.exit(1)
 
         # Print the options for a given plugin
@@ -403,43 +403,43 @@ class TestDef(object):
                 sections = self.loader.stageOrder
             else:
                 sections = self.options['liststageoptions'].split(',')
-            print()
+            self.logger.print()
             for section in sections:
-                print(section + ":")
+                self.logger.print(section + ":")
                 try:
                     for pluginInfo in self.stages.getPluginsOfCategory(section):
-                        print("    " + pluginInfo.plugin_object.print_name() + ":")
+                        self.logger.print("    " + pluginInfo.plugin_object.print_name() + ":")
                         pluginInfo.plugin_object.print_options(self, "        ")
                 except KeyError:
-                    print("    Invalid stage name " + section)
-                print()
+                    self.logger.print("    Invalid stage name " + section)
+                self.logger.print()
             sys.exit(1)
 
         # Print the available MTT tools out, if requested
         if self.options['listtools']:
-            print("Available MTT tools:")
+            self.logger.print("Available MTT tools:")
             availTools = list(self.loader.tools.keys())
             for tool in availTools:
-                print("    " + tool)
+                self.logger.print("    " + tool)
             sys.exit(0)
 
         # Print the detected tool plugins for a given tool type
         if self.options['listtoolmodules']:
             # if the list is '*', print the plugins for every type
             if self.options['listtoolmodules'] == "*":
-                print()
+                self.logger.print()
                 availTools = list(self.loader.tools.keys())
             else:
                 availTools = self.options['listtoolmodules'].split(',')
-            print()
+            self.logger.print()
             for tool in availTools:
-                print(tool + ":")
+                self.logger.print(tool + ":")
                 try:
                     for pluginInfo in self.tools.getPluginsOfCategory(tool):
-                        print("    " + pluginInfo.plugin_object.print_name())
+                        self.logger.print("    " + pluginInfo.plugin_object.print_name())
                 except KeyError:
-                    print("    Invalid tool type name",tool)
-                print()
+                    self.logger.print("    Invalid tool type name %s" % tool)
+                self.logger.print()
             sys.exit(1)
 
         # Print the options for a given plugin
@@ -449,43 +449,43 @@ class TestDef(object):
                 availTools = list(self.loader.tools.keys())
             else:
                 availTools = self.options['listtooloptions'].split(',')
-            print()
+            self.logger.print()
             for tool in availTools:
-                print(tool + ":")
+                self.logger.print(tool + ":")
                 try:
                     for pluginInfo in self.tools.getPluginsOfCategory(tool):
-                        print("    " + pluginInfo.plugin_object.print_name() + ":")
+                        self.logger.print("    " + pluginInfo.plugin_object.print_name() + ":")
                         pluginInfo.plugin_object.print_options(self, "        ")
                 except KeyError:
-                    print("    Invalid tool type name " + tool)
-                print()
+                    self.logger.print("    Invalid tool type name " + tool)
+                self.logger.print()
             sys.exit(1)
 
         # Print the available MTT utilities out, if requested
         if self.options['listutils']:
-            print("Available MTT utilities:")
+            self.logger.print("Available MTT utilities:")
             availUtils = list(self.loader.utilities.keys())
             for util in availUtils:
-                print("    " + util)
+                self.logger.print("    " + util)
             sys.exit(0)
 
         # Print the detected utility plugins for a given tool type
         if self.options['listutilmodules']:
             # if the list is '*', print the plugins for every type
             if self.options['listutilmodules'] == "*":
-                print()
+                self.logger.print()
                 availUtils = list(self.loader.utilities.keys())
             else:
                 availUtils = self.options['listutilitymodules'].split(',')
-            print()
+            self.logger.print()
             for util in availUtils:
-                print(util + ":")
+                self.logger.print(util + ":")
                 try:
                     for pluginInfo in self.utilities.getPluginsOfCategory(util):
-                        print("    " + pluginInfo.plugin_object.print_name())
+                        self.logger.print("    " + pluginInfo.plugin_object.print_name())
                 except KeyError:
-                    print("    Invalid utility type name")
-                print()
+                    self.logger.print("    Invalid utility type name")
+                self.logger.print()
             sys.exit(1)
 
         # Print the options for a given plugin
@@ -495,24 +495,24 @@ class TestDef(object):
                 availUtils = list(self.loader.utilities.keys())
             else:
                 availUtils = self.options['listutiloptions'].split(',')
-            print()
+            self.logger.print()
             for util in availUtils:
-                print(util + ":")
+                self.logger.print(util + ":")
                 try:
                     for pluginInfo in self.utilities.getPluginsOfCategory(util):
-                        print("    " + pluginInfo.plugin_object.print_name() + ":")
+                        self.logger.print("    " + pluginInfo.plugin_object.print_name() + ":")
                         pluginInfo.plugin_object.print_options(self, "        ")
                 except KeyError:
-                    print("    Invalid utility type name " + util)
-                print()
+                    self.logger.print("    Invalid utility type name " + util)
+                self.logger.print()
             sys.exit(1)
 
 
         # if they asked for the version info, print it and exit
         if self.options['version']:
             for pluginInfo in self.tools.getPluginsOfCategory("Version"):
-                print("MTT Base:   " + pluginInfo.plugin_object.getVersion())
-                print("MTT Client: " + pluginInfo.plugin_object.getClientVersion())
+                self.logger.print("MTT Base:   " + pluginInfo.plugin_object.getVersion())
+                self.logger.print("MTT Client: " + pluginInfo.plugin_object.getClientVersion())
             sys.exit(0)
 
     def openLogger(self):
@@ -620,10 +620,10 @@ class TestDef(object):
                                              for l in file_contents.split("\n") \
                                              if sum(["${ENV:%s}"%e in l for e in env_not_found])])
         if lines_with_env_not_found:
-            print("ERROR: Not all required environment variables are defined.")
-            print("ERROR: Still need:")
+            self.logger.print("ERROR: Not all required environment variables are defined.")
+            self.logger.print("ERROR: Still need:")
             for l in lines_with_env_not_found:
-                print("ERROR: %s"%l)
+                self.logger.print("ERROR: %s"%l)
             sys.exit(1)
 
     def configTest(self):
@@ -656,7 +656,7 @@ class TestDef(object):
         # cycle thru the input files
         for testFile in self.log['inifiles']:
             if not os.path.isfile(testFile):
-                print("Test description file",testFile,"not found!")
+                self.logger.print("Test description file %s not found!" % testFile)
                 sys.exit(1)
             self.config.read(self.log['inifiles'])
 
@@ -705,7 +705,7 @@ class TestDef(object):
                 self.actives.append(section)
 
         if sections is not None and 0 != len(sections) and not skip:
-            print("ERROR: sections were specified for execution and not found:",sections)
+            self.logger.print("ERROR: sections were specified for execution and not found: %s" % sections)
             sys.exit(1)
 
         # set Defaults -command line args supercede .ini args
@@ -754,13 +754,13 @@ class TestDef(object):
         self.logger.print_cmdline_args(self)
 
         if not self.loaded:
-            print("Plugins have not been loaded - cannot execute test")
+            self.logger.print("Plugins have not been loaded - cannot execute test")
             sys.exit(1)
         if self.config is None:
-            print("No test definition file was parsed - cannot execute test")
+            self.logger.print("No test definition file was parsed - cannot execute test")
             sys.exit(1)
         if not self.tools.getPluginByName(executor, "Executor"):
-            print("Specified executor %s not found" % executor)
+            self.logger.print("Specified executor %s not found" % executor)
             sys.exit(1)
         # activate the specified plugin
         self.tools.activatePluginByName(executor, "Executor")
@@ -891,5 +891,5 @@ class TestDef(object):
             except:
                 return None
         else:
-            print("Unrecognized category:",category)
+            self.logger.print("Unrecognized category: %s" % category)
             return None

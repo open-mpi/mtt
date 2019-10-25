@@ -22,5 +22,5 @@ class HarasserMTTTool(IPlugin):
         IPlugin.__init__(self)
 
     def print_name(self):
-        print("Harasser")
+        testDef.logger.print("Harasser")
 

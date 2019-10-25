@@ -63,7 +63,7 @@ class CheckProfile(ProfileMTTStage):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print(prefix + line)
+            self.testDef.logger.print(prefix + line)
         return
 
     def execute(self, log, keyvals, testDef):

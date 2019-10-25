@@ -81,7 +81,7 @@ class Autotools(BuildMTTTool):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print(prefix + line)
+            testDef.logger.print(prefix + line)
         return
 
     def execute(self, log, keyvals, testDef):
@@ -589,7 +589,7 @@ class Autotools(BuildMTTTool):
             confirmation = os.path.join(pfx, 'build_complete')
             fo = open(confirmation, 'w')
             fo.write("Build was successful")
-            print("BUILD SUCCESSFUL FILE CREATED AT: " + confirmation)
+            testDef.logger.print("BUILD SUCCESSFUL FILE CREATED AT: " + confirmation)
             fo.close()
         except:
             pass

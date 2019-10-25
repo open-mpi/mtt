@@ -43,7 +43,7 @@ class LoadClasses(object):
                 # Python 2 requires string cast
                 m = imp.load_source(modname, str(filename))
             except ImportError:
-                print("ERROR: unable to load " + modname + " from file " + str(filename))
+                testDef.logger.print("ERROR: unable to load " + modname + " from file " + str(filename))
                 exit(1)
             # add the class to the corresponding category
             try:

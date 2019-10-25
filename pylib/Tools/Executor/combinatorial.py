@@ -59,7 +59,7 @@ class CombinatorialEx(ExecutorMTTTool):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print(prefix + line)
+            testDef.logger.print(prefix + line)
         return
 
 
@@ -174,11 +174,11 @@ class CombinatorialEx(ExecutorMTTTool):
         self.createIniLog(testDef)
         try:
             if not self.runLog:
-                print("Error, empty run log, combinatorial executor failed")
+                testDef.logger.print("Error, empty run log, combinatorial executor failed")
                 sys.exit(1)
             for nextFile in self.runLog:
                 if not os.path.isfile(self.runLog[nextFile]):
-                    print("Test .ini file not found!: " + nextFile)
+                    testDef.logger.print("Test .ini file not found!: " + nextFile)
                     sys.exit(1)
                 testDef.configNewTest(self.runLog[nextFile])
                 sequential_status = testDef.executeTest()

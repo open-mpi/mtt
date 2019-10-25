@@ -48,7 +48,7 @@ class JunitXML(ReporterMTTStage):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print(prefix + line)
+            testDef.logger.print(prefix + line)
         return
 
     def execute(self, log, keyvals, testDef):
@@ -96,7 +96,7 @@ class JunitXML(ReporterMTTStage):
         # TODO:  Pull in the resource manager jobid.
         jobid = "job1"
         ts = TestSuite(jobid, testCases)
-        print(TestSuite.to_xml_string([ts]), file=self.fh)
+        testDef.logger.print(TestSuite.to_xml_string([ts]), file=self.fh)
 
         if cmds['filename'] is not None:
             self.fh.close()

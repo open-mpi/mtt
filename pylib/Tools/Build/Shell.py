@@ -81,7 +81,7 @@ class Shell(BuildMTTTool):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print(prefix + line)
+            testDef.logger.print(prefix + line)
         return
 
     def allocate(self, log, cmds, testDef):
@@ -115,7 +115,6 @@ class Shell(BuildMTTTool):
         return True
 
     def execute(self, log, keyvals, testDef):
-
         self.testDef = testDef
 
         testDef.logger.verbose_print("Shell Execute")

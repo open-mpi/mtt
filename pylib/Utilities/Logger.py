@@ -13,6 +13,8 @@ from builtins import str
 import sys
 import datetime
 from BaseMTTUtility import *
+import json
+import os
 
 ## @addtogroup Utilities
 # @{
@@ -30,6 +32,9 @@ class Logger(BaseMTTUtility):
         self.cmdtimestamp = False
         self.timestampeverything = False
         self.stage_start = {}
+        self.elk = None
+        self.current_section = None
+        self.execmds_stash = []
 
     def reset(self):
         self.results = []
@@ -41,7 +46,7 @@ class Logger(BaseMTTUtility):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print(prefix + line)
+            self.print(prefix + line)
         return
 
     def open(self, testDef):
@@ -90,6 +95,11 @@ class Logger(BaseMTTUtility):
                 self.cmdtimestamp = True
         except KeyError:
             pass
+        try:
+            if testDef.options['elk'] is not None:
+                self.elk = testDef.options['elk']
+        except KeyError:
+            pass
         return
 
     def get_dict_contents(self, dic):
@@ -103,7 +113,7 @@ class Logger(BaseMTTUtility):
 
     def print_cmdline_args(self, testDef):
         if not (testDef and testDef.options):
-            print("Error: print_cmdline_args was called too soon. Continuing...")
+            self.verbose_print("Error: print_cmdline_args was called too soon. Continuing...")
             return
         header_to_print = "CMDLINE_ARGS"
         strs_to_print = self.get_dict_contents(testDef.options)
@@ -113,6 +123,22 @@ class Logger(BaseMTTUtility):
         for s in strs_to_print:
             self.verbose_print(s)
         self.verbose_print("")
+        if self.elk is not None:
+            print('ENV_AND_OPTS', json.dumps({'execid': self.elk,
+                                              'environment': dict(os.environ),
+                                              'options': testDef.options}))
+
+    def log_execmd_elk(self, cmdargs, status, stdout, stderr, timedout, starttime, endtime, elapsed_secs, slurm_job_ids):
+        if self.elk is not None:
+            self.execmds_stash.append({'cmdargs': cmdargs,
+                                       'status': status,
+                                       'stdout': stdout,
+                                       'stderr': stderr,
+                                       'timedout': timedout,
+                                       'starttime': starttime,
+                                       'endtime': endtime,
+                                       'elapsed': elapsed_secs,
+                                       'slurm_job_ids': slurm_job_ids})
 
     def stage_start_print(self, stagename):
         self.stage_start[stagename] = datetime.datetime.now()
@@ -122,6 +148,7 @@ class Logger(BaseMTTUtility):
             self.verbose_print("="*len(to_print))
             self.verbose_print(to_print)
             self.verbose_print("="*len(to_print))
+        self.current_section = stagename
 
     def stage_end_print(self, stagename, log):
         stage_end = datetime.datetime.now()
@@ -133,8 +160,43 @@ class Logger(BaseMTTUtility):
         log['time'] = (stage_end-self.stage_start[stagename]).total_seconds()
         log['time_start'] = self.stage_start[stagename]
         log['time_end'] = stage_end
+        if self.elk is not None:
+            elklog = {}
+            elklog['execid'] = self.elk
+            elklog['location'] = log['location'] if 'location' in log else None
+            elklog['section'] = log['section'] if 'section' in log else None
+            elklog['status'] = log['status'] if 'status' in log else None
+            elklog['stdout'] = log['stdout'] if 'stdout' in log else None
+            elklog['elapsed'] = log['time'] if 'time' in log else None
+            elklog['starttime'] = str(log['time_start']) if 'time_start' in log else None
+            elklog['endtime'] = str(log['time_end']) if 'time_end' in log else None
+            elklog['params'] = {k:v for k,v in log['parameters']} if 'parameters' in log else None
+            elklog['commands'] = self.execmds_stash
+            self.execmds_stash = []
+            elklog['other'] = {}
+            if 'compiler' in log:
+                elklog['other']['compiler'] = log['compiler']['compiler']
+                elklog['other']['compiler_status'] = log['compiler']['status']
+                elklog['other']['compiler_version'] = log['compiler']['version']
+            for k in log:
+                if k != 'options' and k != 'parameters' \
+                and k != 'time_start' and k != 'time_end' and k != 'time' \
+                and k not in elklog and k not in elklog['other']:
+                    elklog['other'][k] = str(log[k])
+            print('SECTION', json.dumps(elklog))
+        self.current_section = None
+
+
+    def print(self, x, file=None):
+        if self.elk is not None:
+            return
+        if file is None:
+            file = self.fh
+        print(x, file=file)
 
     def verbose_print(self, string, timestamp=None):
+        if self.elk is not None:
+            return
         if self.printout:
             try:
                 print(("%s%s" % ("%s "%(datetime.datetime.now() if timestamp is None else timestamp) \
@@ -164,14 +226,14 @@ class Logger(BaseMTTUtility):
         for result in self.results:
             try:
                 if result['status'] is not None:
-                    print("Section " + result['section'] + ": Status " + str(result['status']), file=self.fh)
+                    self.print("Section " + result['section'] + ": Status " + str(result['status']), file=self.fh)
                     if 0 != result['status']:
                         try:
-                            print("    " + result['stderr'], file=self.fh)
+                            self.print("    " + result['stderr'], file=self.fh)
                         except KeyError:
                             pass
             except KeyError:
-                print("Section " + result['section'] + " did not return a status", file=self.fh)
+                self.print("Section " + result['section'] + " did not return a status", file=self.fh)
         return
 
     def getLog(self, key):

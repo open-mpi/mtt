@@ -103,7 +103,7 @@ class ExecuteCmd(BaseMTTUtility):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print(prefix + line)
+            testDef.logger.print(prefix + line)
         return
 
     def _bool_option(self, options, name):
@@ -172,7 +172,7 @@ class ExecuteCmd(BaseMTTUtility):
         return slurm_jobids
 
 
-    def execute(self, options, cmdargs, testDef):
+    def execute(self, options, cmdargs, testDef, quiet=False):
         # if this is a dryrun, just declare success
         if 'dryrun' in testDef.options and testDef.options['dryrun']:
             return (0, [], [], 0)
@@ -234,6 +234,8 @@ class ExecuteCmd(BaseMTTUtility):
         # if it times out, assuming timeout was set
         results = {}
         p = None
+        starttime = None
+        endtime = None
         if time_exec:
             starttime = datetime.datetime.now()
 
@@ -322,6 +324,16 @@ class ExecuteCmd(BaseMTTUtility):
             results['stdout'] = []
             results['stderr'] = [str(e)]
             results['slurm_job_ids'] = []
-            return results
+
+        if not quiet:
+            testDef.logger.log_execmd_elk(cmdargs,
+                                          results['status'] if 'status' in results else None,
+                                          results['stdout'] if 'stdout' in results else None,
+                                          results['stderr'] if 'stderr' in results else None,
+                                          results['timedout'] if 'timedout' in results else None,
+                                          starttime,
+                                          endtime,
+                                          results['elapsed_secs'] if 'elapsed_secs' in results else None,
+                                          results['slurm_job_ids'] if 'slurm_job_ids' in results else None)
 
         return results

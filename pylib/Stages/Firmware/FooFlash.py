@@ -39,7 +39,7 @@ class FooFlash(FirmwareMTTStage):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print(prefix + line)
+            testDef.logger.print(prefix + line)
 
     def execute(self, log, keyvals, testDef):
         # execute whatever commands are provided, recording

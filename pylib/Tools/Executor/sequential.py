@@ -65,7 +65,7 @@ class SequentialEx(ExecutorMTTTool):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print(prefix + line)
+            testDef.logger.print(prefix + line)
         return
 
     def durationTimeoutHandler(self):
@@ -303,9 +303,9 @@ class SequentialEx(ExecutorMTTTool):
                     testDef.logger.stage_end_print(disp_title, stageLog)
 
                     if testDef.options['stop_on_fail'] is not False and stageLog['status'] != 0:
-                        print("Section " + stageLog['section'] + ": Status " + str(stageLog['status']))
+                        testDef.logger.print("Section " + stageLog['section'] + ": Status " + str(stageLog['status']))
                         try:
-                            print("Section " + stageLog['section'] + ": Stderr " + str(stageLog['stderr']))
+                            testDef.logger.print("Section " + stageLog['section'] + ": Stderr " + str(stageLog['stderr']))
                         except KeyError:
                             pass
                         sys.exit(1)
@@ -326,10 +326,10 @@ class SequentialEx(ExecutorMTTTool):
                             continue
                         p.plugin_object.deactivate()
                     testDef.logger.logResults(disp_title, stageLog)
-                    testDef.logger.verbose_print("=======================================")
-                    testDef.logger.verbose_print("KeyboardInterrupt exception was raised: %s %s" \
+                    print("=======================================")
+                    print("KeyboardInterrupt exception was raised: %s %s" \
                                 % (type(e), str(e)))
-                    testDef.logger.verbose_print("=======================================")
+                    print("=======================================")
                     stageLog['status'] = 0
                     stageLog['stderr'] = ["Exception was raised: %s %s" % (type(e), str(e))]
                     self.status = 1
@@ -344,14 +344,14 @@ class SequentialEx(ExecutorMTTTool):
                         if not p._getIsActivated():
                             continue
                         p.plugin_object.deactivate()
-                    testDef.logger.verbose_print("=======================================")
-                    testDef.logger.verbose_print("Exception was raised: %s %s" \
+                    print("=======================================")
+                    print("Exception was raised: %s %s" \
                                 % (type(e), str(e)))
-                    testDef.logger.verbose_print("=======================================")
+                    print("=======================================")
                     type_, value_, traceback_ = sys.exc_info()
                     ex = traceback.format_exception(type_, value_, traceback_)
-                    testDef.logger.verbose_print("\n".join(ex))
-                    testDef.logger.verbose_print("=======================================")
+                    print("\n".join(ex))
+                    print("=======================================")
                     stageLog['status'] = 1
                     stageLog['stderr'] = ["Exception was raised: %s %s" % (type(e), str(e))]
                     testDef.logger.logResults(disp_title, stageLog)

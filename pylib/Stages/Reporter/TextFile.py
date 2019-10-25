@@ -52,16 +52,17 @@ class TextFile(ReporterMTTStage):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print(prefix + line)
+            testDef.logger.print(prefix + line)
         return
 
     def _print_stderr_block(self, name, lines, tabs=1):
         if lines:
-            print("\t"*tabs,"ERROR ({name})".format(name=name), file=self.fh)
+            self.testDef.logger.print("\t"*tabs + " ERROR ({name})".format(name=name), file=self.fh)
             for l in lines:
-                print("\t"*(tabs),"   ",l, file=self.fh)
+                self.testDef.logger.print("\t"*(tabs) + "     " + l, file=self.fh)
 
     def execute(self, log, keyvals, testDef):
+        self.testDef = testDef
         self.fh = sys.stdout
         testDef.logger.verbose_print("TextFile Reporter")
         num_secs_pass = 0
@@ -72,38 +73,38 @@ class TextFile(ReporterMTTStage):
             self.fh = open(cmds['filename'] if os.path.isabs(cmds['filename']) \
                            else os.path.join(testDef.options['scratchdir'],cmds['filename']), 'w')
         if testDef.options['description'] is not None:
-            print(testDef.options['description'], file=self.fh)
-            print(file=self.fh)
+            testDef.logger.print(testDef.options['description'], file=self.fh)
+            testDef.logger.print('', file=self.fh)
         # get the entire log of results
         fullLog = testDef.logger.getLog(None)
         for lg in fullLog:
             try:
-                print("Section:",lg['section'],"Status:",lg['status'], file=self.fh)
+                testDef.logger.print("Section: %s Status: %s" % (lg['section'], lg['status']), file=self.fh)
                 try:
                     if lg['parameters'] is not None:
-                        print("\tInput parameters:", file=self.fh)
+                        testDef.logger.print("\tInput parameters:", file=self.fh)
                         for p in lg['parameters']:
-                            print("\t\t",p[0],"=",p[1], file=self.fh)
+                            testDef.logger.print("\t\t %s = %s" % (p[0],p[1]), file=self.fh)
                 except KeyError:
                     pass
                 try:
                     if lg['options'] is not None:
-                        print("\tFinal options:", file=self.fh)
+                        testDef.logger.print("\tFinal options:", file=self.fh)
                         opts = lg['options']
                         keys = list(opts.keys())
                         for p in keys:
-                            print("\t\t",p,"=",opts[p], file=self.fh)
+                            testDef.logger.print("\t\t %s = %s" % (p,opts[p]), file=self.fh)
                 except KeyError:
                     pass
                 try:
                     if lg['mpi_info'] is not None:
-                        print("\tInfo:", file=self.fh)
+                        testDef.logger.print("\tInfo:", file=self.fh)
                         try:
-                            print("\t\tName:", lg['mpi_info']['name'], file=self.fh)
+                            testDef.logger.print("\t\tName: %s" % lg['mpi_info']['name'], file=self.fh)
                         except KeyError:
                             pass
                         try:
-                            print("\t\tVersion:", lg['mpi_info']['version'], file=self.fh)
+                            testDef.logger.print("\t\tVersion: %s" % lg['mpi_info']['version'], file=self.fh)
                         except KeyError:
                             pass
                 except KeyError:
@@ -118,17 +119,17 @@ class TextFile(ReporterMTTStage):
                     num_secs_pass += 1
                 try:
                     if lg['location'] is not None:
-                        print("\tLocation:",lg['location'], file=self.fh)
+                        testDef.logger.print("\tLocation: %s" % lg['location'], file=self.fh)
                 except KeyError:
                     pass
             except KeyError:
                 pass
             try:
                 if lg['compiler'] is not None:
-                    print("\tCompiler:", file=self.fh)
+                    testDef.logger.print("\tCompiler:", file=self.fh)
                     comp = lg['compiler']
-                    print("\t\t",comp['family'], file=self.fh)
-                    print("\t\t",comp['version'], file=self.fh)
+                    testDef.logger.print("\t\t %s" % comp['family'], file=self.fh)
+                    testDef.logger.print("\t\t %s" % comp['version'], file=self.fh)
             except KeyError:
                 pass
             try:
@@ -143,11 +144,11 @@ class TextFile(ReporterMTTStage):
                     # add some padding
                     max1 = max1 + 4
                     # now provide the output
-                    print("\tProfile:", file=self.fh)
+                    testDef.logger.print("\tProfile:", file=self.fh)
                     sp = " "
                     for key in keys:
                         line = key + (max1-len(key))*sp + '\n'.join(prf[key])
-                        print("\t\t",line, file=self.fh)
+                        testDef.logger.print("\t\t %s" % line, file=self.fh)
             except KeyError:
                 pass
             try:
@@ -169,7 +170,7 @@ class TextFile(ReporterMTTStage):
                     except:
                         ntime = "N/A"
 
-                    print("\n\tTests:",lg['numTests'],"Pass:",npass,"Skip:",nskip,"Fail:",nfail,"TimedOut:",ntime,"\n", file=self.fh)
+                    testDef.logger.print("\n\tTests: %s Pass: %s Skip: %s Fail: %s TimedOut: %s\n" % (lg['numTests'],npass,nskip,nfail,ntime), file=self.fh)
             except KeyError:
                 pass
             try:
@@ -189,7 +190,7 @@ class TextFile(ReporterMTTStage):
                                 st = "UNKNOWN"
                         except:
                             st = "NOT GIVEN"
-                        print("\t\t",tname,"  Status:",test['status'], "Category:",st, file=self.fh)
+                            testDef.logger.print("\t\t %s  Status: %s Category: %s" % (tname, test['status'], st), file=self.fh)
                         if 0 != test['status']:
                             if "stderr" in test:
                                 self._print_stderr_block("stderr", test['stderr'], tabs=3)
@@ -197,9 +198,9 @@ class TextFile(ReporterMTTStage):
                                 self._print_stderr_block("stdout", test['stdout'], tabs=3)
             except KeyError:
                 pass
-            print(file=self.fh)
-        print("Num sections pass:",num_secs_pass,"/",len(fullLog),"sections", file=self.fh)
-        print("Percentage sections pass:",100*float(num_secs_pass)/float(len(fullLog)), file=self.fh)
+            testDef.logger.print('', file=self.fh)
+        testDef.logger.print("Num sections pass: %s / %s sections" % (num_secs_pass,len(fullLog)), file=self.fh)
+        testDef.logger.print("Percentage sections pass: %s" % (100*float(num_secs_pass)/float(len(fullLog))), file=self.fh)
         if cmds['filename'] is not None:
             self.fh.close()
         log['status'] = 0

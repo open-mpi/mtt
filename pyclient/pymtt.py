@@ -144,6 +144,9 @@ debugGroup.add_argument("--verbose",
 debugGroup.add_argument("--extraverbose",
                       action="store_true", dest="extraverbose", default=False,
                       help="Output timestamps with every verbose message")
+debugGroup.add_argument("--elk",
+                        dest="elk", default=None,
+                        help="Output json, which is more easily parsible by ELK. Pass in execution id or other identifying string")
 debugGroup.add_argument("--dryrun",
                       action="store_true", dest="dryrun", default=False,
                       help="Show commands, but do not execute them")
