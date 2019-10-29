@@ -19,6 +19,7 @@ import signal
 import os, threading, errno
 from contextlib import contextmanager
 from BaseMTTUtility import *
+import random
 
 
 class TimeoutThread(object):
@@ -126,6 +127,51 @@ class ExecuteCmd(BaseMTTUtility):
             return 0
         return int(val)
 
+    def check_for_slurm_jobids(self, unique_identifier, prev_stdout, prev_stderr):
+        '''Checks stdout, stderr, and also squeue for any hints of a slurm job
+        that was run during the command that was executed
+        '''
+        slurm_jobids = []
+
+        for l in prev_stdout:
+            if l.startswith('Submitted batch job '):
+                jobid = l.split(' ')[-1]
+                if jobid.isdigit():
+                    slurm_jobids.append(int(jobid))
+
+        for l in prev_stderr:
+            if l.startswith('salloc: Granted job allocation '):
+                jobid = l.split(' ')[-1]
+                if jobid.isdigit():
+                    slurm_jobids.append(int(jobid))
+
+        try:
+            stdout = []
+            p = subprocess.Popen(['squeue', '-o', '%i', '-h', '-t', 'all', '-n', unique_identifier],
+                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            with processTimeout(100000000, p.pid):
+                while True:
+                    reads = [p.stdout.fileno()]
+                    ret = select.select(reads, [], [])
+                    stdout_done = True
+                    for fd in ret[0]:
+                        if fd == p.stdout.fileno():
+                            read = p.stdout.readline()
+                            if read:
+                                read = read.decode('utf-8').rstrip()
+                                stdout.append(read)
+                                stdout_done = False
+                    if stdout_done:
+                        break
+            for l in stdout:
+                if l.isdigit:
+                    slurm_jobids.append(int(l))
+        except:
+            pass
+
+        return slurm_jobids
+
+
     def execute(self, options, cmdargs, testDef):
         # if this is a dryrun, just declare success
         if 'dryrun' in testDef.options and testDef.options['dryrun']:
@@ -147,12 +193,33 @@ class ExecuteCmd(BaseMTTUtility):
         elapsed_secs = -1
         elapsed_datetime = None
 
+        # unique identifier for capturing slurm jobids.
+        # This identifier is used in check_for_slurm_jobids() function
+        # along with squeue to capture any slurm job ids that contain the identifier
+        unique_identifier = str(random.randint(0,999999999999))
+        os.environ['SLURM_JOB_NAME'] = unique_identifier
+
         # setup the command arguments
         mycmdargs = []
         # if any cmd arg has quotes around it, remove
         # them here
-        for arg in cmdargs:
-            mycmdargs.append(arg.replace('\"',''))
+        skip_i = set()
+        for i,arg in enumerate(cmdargs):
+            if i in skip_i:
+                continue
+            arg = arg.replace('\"','')
+            # Look for any job names in cmdargs, and attach unique identifier
+            if arg.startswith('--job-name='):
+                unique_identifier = arg[len('--job-name='):] + unique_identifier
+                arg = '--job-name=' + unique_identifier
+                mycmdargs.append(arg)
+            elif cmdargs[0] == 'srun' and arg == '-J':
+                skip_i.add(i + 1)
+                unique_identifier = cmdargs[i + 1] + unique_identifier
+                mycmdargs.append(arg)
+                mycmdargs.append(unique_identifier)
+            else:
+                mycmdargs.append(arg)
         testDef.logger.verbose_print("ExecuteCmd start: " + ' '.join(mycmdargs), timestamp=datetime.datetime.now() if time_exec else None)
 
         if not mycmdargs:
@@ -185,8 +252,7 @@ class ExecuteCmd(BaseMTTUtility):
             with processTimeout(t, p.pid):
                 # loop until the pipes close
                 while True:
-                    reads = [p.stdout.fileno(), p.stderr.fileno()]
-                    ret = select.select(reads, [], [])
+                    ret = select.select([p.stdout.fileno()], [], [])
 
                     stdout_done = True
                     stderr_done = True
@@ -215,13 +281,18 @@ class ExecuteCmd(BaseMTTUtility):
                         break
             p.wait()
             if p.returncode == -15 or p.returncode == -9:
-                testDef.logger.verbose_print("ExecuteCmd Timed Out%s" % (": elapsed=%s"%elapsed_datetime if time_exec else ""), \
+                # check if slurm was run, and record job ids
+                slurm_jobids = self.check_for_slurm_jobids(unique_identifier, stdout, stderr)
+                # print execmd timed out info, including any slurm job ids
+                testDef.logger.verbose_print("ExecuteCmd Timed Out%s%s" % (" : elapsed=%s"%elapsed_datetime if time_exec else "", \
+                                                                           " : slurm_jobids=%s" % ','.join([str(j) for j in slurm_jobids]) if slurm_jobids else ""), \
                                              timestamp=endtime if time_exec else None)
                 stderr.append("**** TIMED OUT ****")
                 results['timedout'] = True
                 results['status'] = p.returncode
                 results['stdout'] = stdout[-1 * stdoutlines:]
                 results['stderr'] = stderr[-1 * stderrlines:]
+                results['slurm_job_ids'] = slurm_jobids
                 if time_exec:
                     endtime = datetime.datetime.now()
                     elapsed_datetime = endtime - starttime
@@ -233,18 +304,24 @@ class ExecuteCmd(BaseMTTUtility):
                 elapsed_datetime = endtime - starttime
                 results['elapsed_secs'] = elapsed_datetime.total_seconds()
 
-            testDef.logger.verbose_print("ExecuteCmd done%s" % (": elapsed=%s"%elapsed_datetime if time_exec else ""), \
+            # check if slurm was run, and record job ids
+            slurm_jobids = self.check_for_slurm_jobids(unique_identifier, stdout, stderr)
+            # print execmd info, including any slurm job ids
+            testDef.logger.verbose_print("ExecuteCmd done%s%s" % (" : elapsed=%s" % elapsed_datetime if time_exec else "", \
+                                                                  " : slurm_jobids=%s" % ','.join([str(j) for j in slurm_jobids]) if slurm_jobids else ""), \
                                          timestamp=endtime if time_exec else None)
 
             results['status'] = p.returncode
             results['stdout'] = stdout[-1 * stdoutlines:]
             results['stderr'] = stderr[-1 * stderrlines:]
+            results['slurm_job_ids'] = slurm_jobids
         except OSError as e:
             if p:
                 p.wait()
             results['status'] = 1
             results['stdout'] = []
             results['stderr'] = [str(e)]
+            results['slurm_job_ids'] = []
             return results
 
         return results
