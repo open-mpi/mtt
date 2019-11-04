@@ -213,7 +213,7 @@ class ExecuteCmd(BaseMTTUtility):
                 unique_identifier = arg[len('--job-name='):] + unique_identifier
                 arg = '--job-name=' + unique_identifier
                 mycmdargs.append(arg)
-            elif cmdargs[0] == 'srun' and arg == '-J':
+            elif cmdargs[0] == 'srun' and (arg == '-J' or arg == '--job-name'):
                 skip_i.add(i + 1)
                 unique_identifier = cmdargs[i + 1] + unique_identifier
                 mycmdargs.append(arg)
