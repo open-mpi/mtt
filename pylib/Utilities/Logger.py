@@ -42,6 +42,7 @@ class Logger(BaseMTTUtility):
         lines = testDef.printOptions(self.options)
         for line in lines:
             print(prefix + line)
+            sys.stdout.flush()
         return
 
     def open(self, testDef):
@@ -104,6 +105,7 @@ class Logger(BaseMTTUtility):
     def print_cmdline_args(self, testDef):
         if not (testDef and testDef.options):
             print("Error: print_cmdline_args was called too soon. Continuing...")
+            sys.stdout.flush()
             return
         header_to_print = "CMDLINE_ARGS"
         strs_to_print = self.get_dict_contents(testDef.options)
@@ -139,9 +141,11 @@ class Logger(BaseMTTUtility):
             try:
                 print(("%s%s" % ("%s "%(datetime.datetime.now() if timestamp is None else timestamp) \
                             if (self.timestampeverything or timestamp) else "", string)), file=self.fh)
+                sys.stdout.flush()
             except UnicodeEncodeError as e:
                 print("Error: Could not verbose print due to a UnicodeEncodeError")
                 print(e)
+                sys.stdout.flush()
             return
 
     def timestamp(self):
@@ -165,13 +169,16 @@ class Logger(BaseMTTUtility):
             try:
                 if result['status'] is not None:
                     print("Section " + result['section'] + ": Status " + str(result['status']), file=self.fh)
+                    sys.stdout.flush()
                     if 0 != result['status']:
                         try:
                             print("    " + result['stderr'], file=self.fh)
+                            sys.stdout.flush()
                         except KeyError:
                             pass
             except KeyError:
                 print("Section " + result['section'] + " did not return a status", file=self.fh)
+                sys.stdout.flush()
         return
 
     def getLog(self, key):
