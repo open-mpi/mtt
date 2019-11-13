@@ -172,7 +172,7 @@ class ExecuteCmd(BaseMTTUtility):
         return slurm_jobids
 
 
-    def execute(self, options, cmdargs, testDef):
+    def execute(self, options, cmdargs, testDef, quiet=False):
         # if this is a dryrun, just declare success
         if 'dryrun' in testDef.options and testDef.options['dryrun']:
             return (0, [], [], 0)
@@ -224,6 +224,14 @@ class ExecuteCmd(BaseMTTUtility):
 
         if not mycmdargs:
             testDef.logger.verbose_print("ExecuteCmd error: no cmdargs")
+            if not quiet:
+                testDef.logger.log_execmd_elk(cmdargs,
+                                              1, None,
+                                              'ExecuteCmd error: no cmdargs',
+                                              None,
+                                              datetime.datetime.now(),
+                                              datetime.datetime.now(),
+                                              0, None)
             return (1, [], ["MTT ExecuteCmd error: no cmdargs"], 0)
 
         # define storage to catch the output
@@ -234,8 +242,8 @@ class ExecuteCmd(BaseMTTUtility):
         # if it times out, assuming timeout was set
         results = {}
         p = None
-        if time_exec:
-            starttime = datetime.datetime.now()
+
+        starttime = datetime.datetime.now()
 
         # it is possible that the command doesn't exist or
         # isn't in our path, so protect us
@@ -280,6 +288,9 @@ class ExecuteCmd(BaseMTTUtility):
                     if stdout_done and stderr_done:
                         break
             p.wait()
+
+            endtime = datetime.datetime.now()
+
             if p.returncode == -15 or p.returncode == -9:
                 # check if slurm was run, and record job ids
                 slurm_jobids = self.check_for_slurm_jobids(unique_identifier, stdout, stderr)
@@ -297,10 +308,20 @@ class ExecuteCmd(BaseMTTUtility):
                     endtime = datetime.datetime.now()
                     elapsed_datetime = endtime - starttime
                     results['elapsed_secs'] = elapsed_datetime.total_seconds()
+
+                if not quiet:
+                    testDef.logger.log_execmd_elk(cmdargs,
+                                                  results['status'] if 'status' in results else None,
+                                                  results['stdout'] if 'stdout' in results else None,
+                                                  results['stderr'] if 'stderr' in results else None,
+                                                  results['timedout'] if 'timedout' in results else None,
+                                                  starttime,
+                                                  endtime,
+                                                  (endtime - starttime).total_seconds,
+                                                  results['slurm_job_ids'] if 'slurm_job_ids' in results else None)
                 return results
 
             if time_exec:
-                endtime = datetime.datetime.now()
                 elapsed_datetime = endtime - starttime
                 results['elapsed_secs'] = elapsed_datetime.total_seconds()
 
@@ -318,10 +339,21 @@ class ExecuteCmd(BaseMTTUtility):
         except OSError as e:
             if p:
                 p.wait()
+            endtime = datetime.datetime.now()
             results['status'] = 1
             results['stdout'] = []
             results['stderr'] = [str(e)]
             results['slurm_job_ids'] = []
-            return results
+
+        if not quiet:
+            testDef.logger.log_execmd_elk(cmdargs,
+                                          results['status'] if 'status' in results else None,
+                                          results['stdout'] if 'stdout' in results else None,
+                                          results['stderr'] if 'stderr' in results else None,
+                                          results['timedout'] if 'timedout' in results else None,
+                                          starttime,
+                                          endtime,
+                                          (endtime - starttime).total_seconds(),
+                                          results['slurm_job_ids'] if 'slurm_job_ids' in results else None)
 
         return results

@@ -13,6 +13,8 @@ from builtins import str
 import sys
 import datetime
 from BaseMTTUtility import *
+import json
+import os
 
 ## @addtogroup Utilities
 # @{
@@ -30,6 +32,11 @@ class Logger(BaseMTTUtility):
         self.cmdtimestamp = False
         self.timestampeverything = False
         self.stage_start = {}
+        self.elk_id = None
+        self.elk_head = None
+        self.elk_log = None
+        self.current_section = None
+        self.execmds_stash = []
 
     def reset(self):
         self.results = []
@@ -91,6 +98,9 @@ class Logger(BaseMTTUtility):
                 self.cmdtimestamp = True
         except KeyError:
             pass
+        if 'MTT_ELK_ID' in os.environ and 'MTT_ELK_HEAD' in os.environ:
+            self.elk_id = os.environ['MTT_ELK_ID']
+            self.elk_head = os.environ['MTT_ELK_HEAD']
         return
 
     def get_dict_contents(self, dic):
@@ -101,6 +111,44 @@ class Logger(BaseMTTUtility):
             return []
         max_keylen = max([len(key) for key,_ in tuplelist])
         return ["%s = %s" % (k.rjust(max_keylen), o) for k,o in tuplelist]
+
+    def log_to_elk(self, result, logtype):
+        if self.elk_head is None or self.elk_id is None:
+            self.verbose_print('Error: entered log_to_elk() function without elk_id and elk_head specified')
+            return
+        if 'MTT_ELK_MAXSIZE' in os.environ:
+            try:
+                maxsize = int(os.environ['MTT_ELK_MAXSIZE'])
+            except:
+                maxsize = None
+            if maxsize is not None and 'stdout' in result and len(result['stdout']) > maxsize:
+                if maxsize > 0:
+                    result['stdout'] = ['<truncated>'] + result['stdout'][-maxsize:]
+                else:
+                    result['stdout'] = ['<truncated>']
+            if maxsize is not None and 'stderr' in result:
+                if maxsize > 0:
+                    result['stderr'] = ['<truncated>'] + result['stderr'][-maxsize:]
+                else:
+                    result['stderr'] = ['<truncated>']
+        if 'MTT_ELK_NOSTDOUT' in os.environ and 'stdout' in result:
+            result['stdout'] = '<ignored>'
+        if 'MTT_ELK_NOSTDERR' in os.environ and 'stderr' in result:
+            result['stderr'] = '<ignored>'
+        result = {k:(str(v) if isinstance(v, datetime.datetime)
+                            or isinstance(v, datetime.date) else v)
+                  for k,v in result.items()}
+        result['execid'] = self.elk_id
+        result['logtype'] = logtype
+        if logtype == 'mtt-sec':
+            result['commands'] = self.execmds_stash
+            self.execmds_stash = []
+        self.verbose_print('Logging to elk_head={}/{}.elog: {}'.format(self.elk_head, self.elk_id, result))
+        if self.elk_log is None:
+            os.makedirs(self.elk_head, exist_ok=True)
+            self.elk_log = open(os.path.join(self.elk_head, '{}.elog'.format(self.elk_id)), 'a+')
+        self.elk_log.write(json.dumps(result) + '\n')
+        return
 
     def print_cmdline_args(self, testDef):
         if not (testDef and testDef.options):
@@ -115,6 +163,35 @@ class Logger(BaseMTTUtility):
         for s in strs_to_print:
             self.verbose_print(s)
         self.verbose_print("")
+        if self.elk_id is not None:
+            self.log_to_elk({'environment': dict(os.environ), 'options': testDef.options}, 'mtt-env')
+
+    def log_execmd_elk(self, cmdargs, status, stdout, stderr, timedout, starttime, endtime, elapsed_secs, slurm_job_ids):
+        if self.elk_id is not None:
+            if 'MTT_ELK_MAXSIZE' in os.environ:
+                try:
+                    maxsize = int(os.environ['MTT_ELK_MAXSIZE'])
+                except:
+                    maxsize = None
+                if maxsize is not None and len(stdout) > maxsize:
+                    if maxsize > 0:
+                        stdout = ['<truncated>'] + stdout[-maxsize:]
+                    else:
+                        stdout = ['<truncated>']
+                if maxsize is not None and len(stderr) > maxsize:
+                    if maxsize > 0:
+                        stderr = ['<truncated>'] + stderr[-maxsize:]
+                    else:
+                        stderr = ['<truncated>']
+            self.execmds_stash.append({'cmdargs': cmdargs,
+                                       'status': status,
+                                       'stdout': stdout if 'MTT_ELK_NOSTDOUT' not in os.environ else '<ignored>',
+                                       'stderr': stderr if 'MTT_ELK_NOSTDERR' not in os.environ else '<ignored>',
+                                       'timedout': timedout,
+                                       'starttime': str(starttime),
+                                       'endtime': str(endtime),
+                                       'elapsed': elapsed_secs,
+                                       'slurm_job_ids': slurm_job_ids})
 
     def stage_start_print(self, stagename):
         self.stage_start[stagename] = datetime.datetime.now()
@@ -124,6 +201,7 @@ class Logger(BaseMTTUtility):
             self.verbose_print("="*len(to_print))
             self.verbose_print(to_print)
             self.verbose_print("="*len(to_print))
+        self.current_section = stagename
 
     def stage_end_print(self, stagename, log):
         stage_end = datetime.datetime.now()
@@ -135,6 +213,7 @@ class Logger(BaseMTTUtility):
         log['time'] = (stage_end-self.stage_start[stagename]).total_seconds()
         log['time_start'] = self.stage_start[stagename]
         log['time_end'] = stage_end
+        self.current_section = None
 
     def verbose_print(self, string, timestamp=None):
         if self.printout:
@@ -160,6 +239,8 @@ class Logger(BaseMTTUtility):
     def logResults(self, title, result):
         self.verbose_print("LOGGING results for " + title)
         self.results.append(result)
+        if self.elk_id is not None:
+            self.log_to_elk(result, 'mtt-sec')
         return
 
     def outputLog(self):
