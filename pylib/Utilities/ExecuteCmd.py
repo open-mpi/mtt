@@ -260,7 +260,7 @@ class ExecuteCmd(BaseMTTUtility):
             with processTimeout(t, p.pid):
                 # loop until the pipes close
                 while True:
-                    ret = select.select([p.stdout.fileno()], [], [])
+                    ret = select.select([p.stdout.fileno(), p.stderr.fileno()], [], [])
 
                     stdout_done = True
                     stderr_done = True
