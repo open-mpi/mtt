@@ -1,3 +1,5 @@
 <map id="Logger.Logger.logResults" name="Logger.Logger.logResults">
-<area shape="rect" id="node2" href="$class_logger_1_1_logger.html#a8c05e25fb36679fae21ab8910eb6d117" title="Logger.Logger.verbose\l_print" alt="" coords="224,5,379,46"/>
+<area shape="rect" id="node2" href="$class_logger_1_1_logger.html#a8c05e25fb36679fae21ab8910eb6d117" title="Logger.Logger.verbose\l_print" alt="" coords="440,5,595,46"/>
+<area shape="rect" id="node3" href="$class_logger_1_1_logger.html#a53feff6c78d09121c2e4c182ff23fade" title="Logger.Logger.log_to_elk" alt="" coords="225,63,391,89"/>
+<area shape="rect" id="node4" href="$class_logger_1_1_logger.html#a009dfacca4ae352cc05a7e8307d8ecb5" title="Logger.Logger.open" alt="" coords="449,71,585,97"/>
 </map>

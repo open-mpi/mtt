@@ -6,5 +6,6 @@ var searchData=
   ['cmdtimestamp',['cmdtimestamp',['../class_logger_1_1_logger.html#a6424ebff90f965d7c6e4e8d7303bc3e2',1,'Logger::Logger']]],
   ['cond',['cond',['../class_execute_cmd_1_1_timeout_thread.html#ac654287e1bf651a90f45dd968e9d3c76',1,'ExecuteCmd::TimeoutThread']]],
   ['config',['config',['../class_test_def_1_1_test_def.html#a85a2e1fffeda060f750494dd4082594d',1,'TestDef::TestDef']]],
+  ['current_5fsection',['current_section',['../class_logger_1_1_logger.html#a6cfd93e86a2b313df761184fa0661e0a',1,'Logger::Logger']]],
   ['cwd',['cwd',['../class_launcher_m_t_t_tool_1_1_launcher_m_t_t_tool.html#a7bcf1056b03f3777ef4ed39f7e063f36',1,'LauncherMTTTool::LauncherMTTTool']]]
 ];

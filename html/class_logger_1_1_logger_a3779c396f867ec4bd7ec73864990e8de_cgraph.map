@@ -1,5 +1,7 @@
 <map id="Logger.Logger.print_cmdline_args" name="Logger.Logger.print_cmdline_args">
-<area shape="rect" id="node2" href="$class_logger_1_1_logger.html#a10141d585df905bec94bedf85a8eb976" title="Logger.Logger.get_dict\l_contents" alt="" coords="187,5,341,46"/>
-<area shape="rect" id="node4" href="$class_logger_1_1_logger.html#a8c05e25fb36679fae21ab8910eb6d117" title="Logger.Logger.verbose\l_print" alt="" coords="187,70,341,111"/>
-<area shape="rect" id="node3" href="$class_logger_1_1_logger.html#a51264c10e6b8e89921d3e9f1f803a350" title="Logger.Logger.get_tuplelist\l_contents" alt="" coords="389,5,568,46"/>
+<area shape="rect" id="node2" href="$class_logger_1_1_logger.html#a10141d585df905bec94bedf85a8eb976" title="Logger.Logger.get_dict\l_contents" alt="" coords="193,7,348,49"/>
+<area shape="rect" id="node4" href="$class_logger_1_1_logger.html#a8c05e25fb36679fae21ab8910eb6d117" title="Logger.Logger.verbose\l_print" alt="" coords="415,70,569,111"/>
+<area shape="rect" id="node5" href="$class_logger_1_1_logger.html#a53feff6c78d09121c2e4c182ff23fade" title="Logger.Logger.log_to_elk" alt="" coords="187,127,354,153"/>
+<area shape="rect" id="node3" href="$class_logger_1_1_logger.html#a51264c10e6b8e89921d3e9f1f803a350" title="Logger.Logger.get_tuplelist\l_contents" alt="" coords="403,5,581,46"/>
+<area shape="rect" id="node6" href="$class_logger_1_1_logger.html#a009dfacca4ae352cc05a7e8307d8ecb5" title="Logger.Logger.open" alt="" coords="424,136,560,163"/>
 </map>
