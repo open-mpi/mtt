@@ -15,6 +15,8 @@ import datetime
 from BaseMTTUtility import *
 import json
 import os
+import pwd
+import grp
 
 ## @addtogroup Utilities
 # @{
@@ -145,7 +147,19 @@ class Logger(BaseMTTUtility):
             self.execmds_stash = []
         self.verbose_print('Logging to elk_head={}/{}.elog: {}'.format(self.elk_head, self.elk_id, result))
         if self.elk_log is None:
-            os.makedirs(self.elk_head, exist_ok=True)
+            allpath = '/'
+            for d in os.path.normpath(self.elk_head).split(os.path.sep):
+                allpath = os.path.join(allpath, d)
+                if not os.path.exists(allpath):
+                    os.mkdir(allpath)
+                    uid = None
+                    gid = None
+                    if 'MTT_ELK_CHOWN' in os.environ and ':' in os.environ['MTT_ELK_CHOWN']:
+                        user = os.environ['MTT_ELK_CHOWN'].split(':')[0]
+                        group = os.environ['MTT_ELK_CHOWN'].split(':')[1]
+                        uid = pwd.getpwnam(user).pw_uid
+                        gid = grp.getgrnam(group).gr_gid
+                        os.chown(path, uid, gid)
             self.elk_log = open(os.path.join(self.elk_head, '{}.elog'.format(self.elk_id)), 'a+')
         self.elk_log.write(json.dumps(result) + '\n')
         return
