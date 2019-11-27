@@ -159,7 +159,7 @@ class Logger(BaseMTTUtility):
                         group = os.environ['MTT_ELK_CHOWN'].split(':')[1]
                         uid = pwd.getpwnam(user).pw_uid
                         gid = grp.getgrnam(group).gr_gid
-                        os.chown(path, uid, gid)
+                        os.chown(allpath, uid, gid)
             self.elk_log = open(os.path.join(self.elk_head, '{}.elog'.format(self.elk_id)), 'a+')
         self.elk_log.write(json.dumps(result) + '\n')
         return
