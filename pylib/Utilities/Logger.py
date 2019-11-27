@@ -115,6 +115,7 @@ class Logger(BaseMTTUtility):
         return ["%s = %s" % (k.rjust(max_keylen), o) for k,o in tuplelist]
 
     def log_to_elk(self, result, logtype):
+        result = result.copy()
         if self.elk_head is None or self.elk_id is None:
             self.verbose_print('Error: entered log_to_elk() function without elk_id and elk_head specified')
             return
@@ -134,9 +135,9 @@ class Logger(BaseMTTUtility):
                 else:
                     result['stderr'] = ['<truncated>']
         if 'MTT_ELK_NOSTDOUT' in os.environ and 'stdout' in result:
-            result['stdout'] = '<ignored>'
+            result['stdout'] = ['<ignored>']
         if 'MTT_ELK_NOSTDERR' in os.environ and 'stderr' in result:
-            result['stderr'] = '<ignored>'
+            result['stderr'] = ['<ignored>']
         result = {k:(str(v) if isinstance(v, datetime.datetime)
                             or isinstance(v, datetime.date) else v)
                   for k,v in result.items()}
@@ -199,8 +200,8 @@ class Logger(BaseMTTUtility):
                         stderr = ['<truncated>']
             self.execmds_stash.append({'cmdargs': cmdargs,
                                        'status': status,
-                                       'stdout': stdout if 'MTT_ELK_NOSTDOUT' not in os.environ else '<ignored>',
-                                       'stderr': stderr if 'MTT_ELK_NOSTDERR' not in os.environ else '<ignored>',
+                                       'stdout': stdout if 'MTT_ELK_NOSTDOUT' not in os.environ else ['<ignored>'],
+                                       'stderr': stderr if 'MTT_ELK_NOSTDERR' not in os.environ else ['<ignored>'],
                                        'timedout': timedout,
                                        'starttime': str(starttime),
                                        'endtime': str(endtime),
