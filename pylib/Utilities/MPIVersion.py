@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
     char version[3000];
     int resultlen;
     MPI_Get_library_version(version, &resultlen);
-    printf("%s\\n", version);
+    printf("%s", version);
     return 0;
 }""")
             fh.close()
@@ -112,11 +112,11 @@ int main(int argc, char **argv) {
                 os.chdir("..")
                 return None
 
-        results = testDef.execmd.execute(None, shlex.split('sh -c "mpiexec ./mpi_get_version |uniq -c"'), testDef)
+        results = testDef.execmd.execute(None, shlex.split('sh -c "mpiexec ./mpi_get_version |sort |uniq -c"'), testDef)
         if 0 != results['status']:
-            results = testDef.execmd.execute(None, shlex.split('sh -c "aprun ./mpi_get_version |uniq -c"'), testDef)
+            results = testDef.execmd.execute(None, shlex.split('sh -c "aprun ./mpi_get_version |sort |uniq -c"'), testDef)
             if 0 != results['status']:
-                results = testDef.execmd.execute(None, shlex.split('sh -c "./mpi_get_version |uniq -c"'), testDef)
+                results = testDef.execmd.execute(None, shlex.split('sh -c "./mpi_get_version |sort |uniq -c"'), testDef)
                 if 0 != results['status']:
                     os.chdir("..")
                     return None
