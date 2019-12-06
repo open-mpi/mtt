@@ -35,6 +35,8 @@ class Logger(BaseMTTUtility):
         self.timestampeverything = False
         self.stage_start = {}
         self.elk_id = None
+        self.elk_caseid = None
+        self.elk_cycleid = None
         self.elk_head = None
         self.elk_log = None
         self.current_section = None
@@ -100,6 +102,10 @@ class Logger(BaseMTTUtility):
                 self.cmdtimestamp = True
         except KeyError:
             pass
+        if 'MTT_ELK_TESTCASE' in os.environ:
+            self.elk_caseid = os.environ['MTT_ELK_TESTCASE']
+        if 'MTT_ELK_TESTCYCLE' in os.environ:
+            self.elk_cycleid = os.environ['MTT_ELK_TESTCYCLE']
         if 'MTT_ELK_ID' in os.environ and 'MTT_ELK_HEAD' in os.environ:
             self.elk_id = os.environ['MTT_ELK_ID']
             self.elk_head = os.environ['MTT_ELK_HEAD']
@@ -119,34 +125,37 @@ class Logger(BaseMTTUtility):
         if self.elk_head is None or self.elk_id is None:
             self.verbose_print('Error: entered log_to_elk() function without elk_id and elk_head specified')
             return
-        if 'MTT_ELK_MAXSIZE' in os.environ:
-            try:
-                maxsize = int(os.environ['MTT_ELK_MAXSIZE'])
-            except:
-                maxsize = None
-            if maxsize is not None and 'stdout' in result and len(result['stdout']) > maxsize:
-                if maxsize > 0:
-                    result['stdout'] = ['<truncated>'] + result['stdout'][-maxsize:]
-                else:
-                    result['stdout'] = ['<truncated>']
-            if maxsize is not None and 'stderr' in result:
-                if maxsize > 0:
-                    result['stderr'] = ['<truncated>'] + result['stderr'][-maxsize:]
-                else:
-                    result['stderr'] = ['<truncated>']
-        if 'MTT_ELK_NOSTDOUT' in os.environ and 'stdout' in result:
-            result['stdout'] = ['<ignored>']
-        if 'MTT_ELK_NOSTDERR' in os.environ and 'stderr' in result:
-            result['stderr'] = ['<ignored>']
+
         result = {k:(str(v) if isinstance(v, datetime.datetime)
                             or isinstance(v, datetime.date) else v)
                   for k,v in result.items()}
         result['execid'] = self.elk_id
+        result['cycleid'] = self.elk_cycleid
+        result['caseid'] = self.elk_caseid
         result['logtype'] = logtype
+
+        # drop the stderr and stdout, will use the copies that are part of the commands issues
+        if 'stderr' in result:
+            del result['stderr']
+        if 'stdout' in result:
+            del result['stdout']
+
+        # convert ini_files, lists of lists into a comma separated string
+        if 'ini_files' in result['options']:
+            result['options']['ini_files'] = ','.join(t[0] for t in result['options']['ini_files'])
+
         if logtype == 'mtt-sec':
-            result['commands'] = self.execmds_stash
+            # convert comamands, list of dicts into a dictionary
+            result['commands'] = {"command{}".format(i):c for i,c in enumerate(self.execmds_stash)}
             self.execmds_stash = []
-        self.verbose_print('Logging to elk_head={}/{}.elog: {}'.format(self.elk_head, self.elk_id, result))
+            # convert parameters, list of lists into a dictionary
+            result['parameters'] = { p[0]:p[1] for p in result['parameters'] }
+
+            if 'profile' in result:
+                # convert profile, list of lists into a dictionary
+                result['profile'] = { k:' '.join(v) for k,v in result['profile'].items() }
+
+        #self.verbose_print('Logging to elk_head={}/{}.elog: {}'.format(self.elk_head, self.elk_id, result))
         if self.elk_log is None:
             allpath = '/'
             for d in os.path.normpath(self.elk_head).split(os.path.sep):
@@ -161,7 +170,7 @@ class Logger(BaseMTTUtility):
                         uid = pwd.getpwnam(user).pw_uid
                         gid = grp.getgrnam(group).gr_gid
                         os.chown(allpath, uid, gid)
-            self.elk_log = open(os.path.join(self.elk_head, '{}.elog'.format(self.elk_id)), 'a+')
+            self.elk_log = open(os.path.join(self.elk_head, '{}-{}.elog'.format(self.elk_caseid, self.elk_id)), 'a+')
         self.elk_log.write(json.dumps(result) + '\n')
         return
 
@@ -198,7 +207,7 @@ class Logger(BaseMTTUtility):
                         stderr = ['<truncated>'] + stderr[-maxsize:]
                     else:
                         stderr = ['<truncated>']
-            self.execmds_stash.append({'cmdargs': cmdargs,
+            self.execmds_stash.append({'cmdargs': ' '.join(cmdargs),
                                        'status': status,
                                        'stdout': stdout if 'MTT_ELK_NOSTDOUT' not in os.environ else ['<ignored>'],
                                        'stderr': stderr if 'MTT_ELK_NOSTDERR' not in os.environ else ['<ignored>'],
@@ -206,7 +215,8 @@ class Logger(BaseMTTUtility):
                                        'starttime': str(starttime),
                                        'endtime': str(endtime),
                                        'elapsed': elapsed_secs,
-                                       'slurm_job_ids': slurm_job_ids})
+                                       'slurm_job_ids': ','.join(slurm_job_ids)
+                                      })
 
     def stage_start_print(self, stagename):
         self.stage_start[stagename] = datetime.datetime.now()
