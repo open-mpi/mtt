@@ -93,7 +93,7 @@ class Shell(BuildMTTTool):
             if 0 != results['status']:
                 self.allocated = False
                 log['status'] = results['status']
-                if log['stderr']:
+                if 'stderr' in log:
                     log['stderr'].extend(results['stderr'])
                 else:
                     log['stderr'] = results['stderr']
@@ -106,7 +106,7 @@ class Shell(BuildMTTTool):
             results = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)
             if 0 != results['status']:
                 log['status'] = results['status']
-                if log['stderr']:
+                if 'stderr' in log:
                     log['stderr'].extend(results['stderr'])
                 else:
                     log['stderr'] = results['stderr']

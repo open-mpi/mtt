@@ -169,7 +169,7 @@ class ExecuteCmd(BaseMTTUtility):
         except:
             pass
 
-        return slurm_jobids
+        return list(set(slurm_jobids))
 
 
     def execute(self, options, cmdargs, testDef, quiet=False):
@@ -196,8 +196,11 @@ class ExecuteCmd(BaseMTTUtility):
         # unique identifier for capturing slurm jobids.
         # This identifier is used in check_for_slurm_jobids() function
         # along with squeue to capture any slurm job ids that contain the identifier
-        unique_identifier = str(random.randint(0,999999999999))
-        os.environ['SLURM_JOB_NAME'] = unique_identifier
+        if cmdargs[0] == 'srun':
+            unique_identifier = str(random.randint(0,999999999999))
+            os.environ['SLURM_JOB_NAME'] = unique_identifier
+        else:
+            unique_identifier = None
 
         # setup the command arguments
         mycmdargs = []
@@ -209,7 +212,7 @@ class ExecuteCmd(BaseMTTUtility):
                 continue
             arg = arg.replace('\"','')
             # Look for any job names in cmdargs, and attach unique identifier
-            if arg.startswith('--job-name='):
+            if cmdargs[0] == 'srun' and arg.startswith('--job-name='):
                 unique_identifier = arg[len('--job-name='):] + unique_identifier
                 arg = '--job-name=' + unique_identifier
                 mycmdargs.append(arg)
