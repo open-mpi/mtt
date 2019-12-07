@@ -1,6 +1,8 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
 # Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
+# Copyright (c) 2019      Triad National Security, LLC. All rights
+#                         reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -140,6 +142,9 @@ class Git(FetchMTTTool):
         # the path component of the parser output contains
         # the name of the repo
         repo = os.path.basename(urlparse(url).path)
+        # check for edge case of path ending in .git
+        if repo.endswith(".git"):
+            repo = repo[0:len(repo)-4]
 
         # Apply any requested environment module settings
         status,stdout,stderr = testDef.modcmd.applyModules(log['section'], cmds, testDef)
