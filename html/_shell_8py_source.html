@@ -183,7 +183,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;            <span class="keywordflow">if</span> 0 != results[<span class="stringliteral">&#39;status&#39;</span>]:</div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;                self.<a class="code" href="class_shell_1_1_shell.html#a7d3526fa682799bd7be51fa09c2c9017">allocated</a> = <span class="keyword">False</span></div>
 <div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = results[<span class="stringliteral">&#39;status&#39;</span>]</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;                <span class="keywordflow">if</span> log[<span class="stringliteral">&#39;stderr&#39;</span>]:</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;                <span class="keywordflow">if</span> <span class="stringliteral">&#39;stderr&#39;</span> <span class="keywordflow">in</span> log:</div>
 <div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;                    log[<span class="stringliteral">&#39;stderr&#39;</span>].extend(results[<span class="stringliteral">&#39;stderr&#39;</span>])</div>
 <div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;                <span class="keywordflow">else</span>:</div>
 <div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;                    log[<span class="stringliteral">&#39;stderr&#39;</span>] = results[<span class="stringliteral">&#39;stderr&#39;</span>]</div>
@@ -196,7 +196,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;            results = testDef.execmd.execute(cmds, deallocate_cmdargs, testDef)</div>
 <div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            <span class="keywordflow">if</span> 0 != results[<span class="stringliteral">&#39;status&#39;</span>]:</div>
 <div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = results[<span class="stringliteral">&#39;status&#39;</span>]</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;                <span class="keywordflow">if</span> log[<span class="stringliteral">&#39;stderr&#39;</span>]:</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;                <span class="keywordflow">if</span> <span class="stringliteral">&#39;stderr&#39;</span> <span class="keywordflow">in</span> log:</div>
 <div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;                    log[<span class="stringliteral">&#39;stderr&#39;</span>].extend(results[<span class="stringliteral">&#39;stderr&#39;</span>])</div>
 <div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;                <span class="keywordflow">else</span>:</div>
 <div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;                    log[<span class="stringliteral">&#39;stderr&#39;</span>] = results[<span class="stringliteral">&#39;stderr&#39;</span>]</div>

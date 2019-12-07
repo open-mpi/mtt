@@ -1,5 +1,7 @@
 var searchData=
 [
+  ['elk_5fcaseid',['elk_caseid',['../class_logger_1_1_logger.html#a95ee2cbd3bddd0934dc3f0a839015502',1,'Logger::Logger']]],
+  ['elk_5fcycleid',['elk_cycleid',['../class_logger_1_1_logger.html#ab3eee82ef97d6390690a520c92ea6368',1,'Logger::Logger']]],
   ['elk_5fhead',['elk_head',['../class_logger_1_1_logger.html#a6bfefa570074a540e3ec42c8a43a2583',1,'Logger::Logger']]],
   ['elk_5fid',['elk_id',['../class_logger_1_1_logger.html#a14cdba9de890b4ddcd44f89919584663',1,'Logger::Logger']]],
   ['elk_5flog',['elk_log',['../class_logger_1_1_logger.html#a0de302776caf63f84bb88e198dcd8b37',1,'Logger::Logger']]],
