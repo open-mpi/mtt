@@ -191,7 +191,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<span class="stringliteral">    char version[3000];</span></div>
 <div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<span class="stringliteral">    int resultlen;</span></div>
 <div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;<span class="stringliteral">    MPI_Get_library_version(version, &amp;resultlen);</span></div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;<span class="stringliteral">    printf(&quot;%s\\n&quot;, version);</span></div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;<span class="stringliteral">    printf(&quot;%s&quot;, version);</span></div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;<span class="stringliteral">    return 0;</span></div>
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;<span class="stringliteral">}&quot;&quot;&quot;</span>)</div>
 <div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            fh.close()</div>
@@ -202,11 +202,11 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;                os.chdir(<span class="stringliteral">&quot;..&quot;</span>)</div>
 <div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;                <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
 <div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        results = testDef.execmd.execute(<span class="keywordtype">None</span>, shlex.split(<span class="stringliteral">&#39;sh -c &quot;mpiexec ./mpi_get_version |uniq -c&quot;&#39;</span>), testDef)</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        results = testDef.execmd.execute(<span class="keywordtype">None</span>, shlex.split(<span class="stringliteral">&#39;sh -c &quot;mpiexec ./mpi_get_version |sort |uniq -c&quot;&#39;</span>), testDef)</div>
 <div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        <span class="keywordflow">if</span> 0 != results[<span class="stringliteral">&#39;status&#39;</span>]:</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;            results = testDef.execmd.execute(<span class="keywordtype">None</span>, shlex.split(<span class="stringliteral">&#39;sh -c &quot;aprun ./mpi_get_version |uniq -c&quot;&#39;</span>), testDef)</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;            results = testDef.execmd.execute(<span class="keywordtype">None</span>, shlex.split(<span class="stringliteral">&#39;sh -c &quot;aprun ./mpi_get_version |sort |uniq -c&quot;&#39;</span>), testDef)</div>
 <div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;            <span class="keywordflow">if</span> 0 != results[<span class="stringliteral">&#39;status&#39;</span>]:</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;                results = testDef.execmd.execute(<span class="keywordtype">None</span>, shlex.split(<span class="stringliteral">&#39;sh -c &quot;./mpi_get_version |uniq -c&quot;&#39;</span>), testDef)</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;                results = testDef.execmd.execute(<span class="keywordtype">None</span>, shlex.split(<span class="stringliteral">&#39;sh -c &quot;./mpi_get_version |sort |uniq -c&quot;&#39;</span>), testDef)</div>
 <div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;                <span class="keywordflow">if</span> 0 != results[<span class="stringliteral">&#39;status&#39;</span>]:</div>
 <div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;                    os.chdir(<span class="stringliteral">&quot;..&quot;</span>)</div>
 <div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;                    <span class="keywordflow">return</span> <span class="keywordtype">None</span></div>
