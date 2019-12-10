@@ -141,7 +141,7 @@ class Logger(BaseMTTUtility):
             del result['stdout']
 
         # convert ini_files, lists of lists into a comma separated string
-        if 'ini_files' in result['options']:
+        if 'options' in result and 'ini_files' in result['options']:
             result['options']['ini_files'] = ','.join(t[0] for t in result['options']['ini_files'])
 
         if logtype == 'mtt-sec':
@@ -215,7 +215,7 @@ class Logger(BaseMTTUtility):
                                        'starttime': str(starttime),
                                        'endtime': str(endtime),
                                        'elapsed': elapsed_secs,
-                                       'slurm_job_ids': ','.join(slurm_job_ids)
+                                       'slurm_job_ids': ','.join([str(j) for j in slurm_job_ids])
                                       })
 
     def stage_start_print(self, stagename):
