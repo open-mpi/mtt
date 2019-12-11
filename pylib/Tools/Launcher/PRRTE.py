@@ -3,6 +3,8 @@
 # Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # Copyright (c) 2017      Los Alamos National Security, LLC. All rights
 #                         reserved.
+# Copyright (c) 2021      Triad National Security, LLC. All rights
+#                         reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -44,6 +46,7 @@ from subprocess import Popen, PIPE
 # @param modules_swap    Modules to swap
 # @param dependencies              List of dependencies specified as the build stage name
 # @param waittime                  Number of seconds to wait for PRRTE DVM to start before executing tests
+# @param checkpoint_file           Optional checkpoint file
 # @}
 class PRRTE(LauncherMTTTool):
 
@@ -74,6 +77,8 @@ class PRRTE(LauncherMTTTool):
         self.options['modules_swap'] = (None, "Modules to swap")
         self.options['dependencies'] = (None, "List of dependencies specified as the build stage name - e.g., MiddlwareBuild_package to be added to configure using --with-package=location")
         self.options['waittime'] = (5, "Number of seconds to wait for PRRTE DVM to start before executing tests")
+        self.options['checkpoint_file'] = (None, "Checkpoint file")
+        self.checkpoint_file=''
 
         self.allocated = False
         self.testDef = None
@@ -206,6 +211,9 @@ class PRRTE(LauncherMTTTool):
             for arg in optArgs:
                 cmdargs.append(arg.strip())
 
+        if cmds['checkpoint_file'] is not None:
+            self.checkpoint_file = cmds['checkpoint_file']
+
         # Allocate cluster
         status = self.allocateCluster(log, cmds, testDef)
         if 0 != status:
@@ -241,4 +249,9 @@ class PRRTE(LauncherMTTTool):
         # reset our paths and return us to our cwd
         self.resetPaths(log, testDef)
 
+        return
+
+    def savelog(self,testDef):
+        if self.checkpoint_file is not None:
+            testDef.logger.checkpointLog(self.checkpoint_file)
         return

@@ -3,7 +3,7 @@ from builtins import str
 #!/usr/bin/env python
 #
 # Copyright (c) 2015-2018 Intel, Inc. All rights reserved.
-# Copyright (c) 2019      Triad National Security, LLC. All rights
+# Copyright (c) 2010-2021 Triad National Security, LLC. All rights
 #                         reserved.
 # $COPYRIGHT$
 #
@@ -16,6 +16,8 @@ import sys
 import os
 import datetime
 from BaseMTTUtility import *
+import json
+import pickle
 
 ## @addtogroup Utilities
 # @{
@@ -205,3 +207,21 @@ class Logger(BaseMTTUtility):
                 pass
         # if we get here, then the key wasn't found
         return None
+
+
+    def checkpointLog(self, cpfile):
+        self.verbose_print("CHECKPOINTING LOG TO " + cpfile)
+        with open(cpfile + '.pkl', "wb") as f:
+            pickle.dump(self.results, f)
+        self.verbose_print("CHECKPOINTED LOG TO " + cpfile)
+
+    def restartLog(self, cpfile):
+        try:
+            self.verbose_print("READING LOG FROM " + cpfile)
+            fh = open(cpfile + '.pkl', 'rb')
+            self.results = pickle.load(fh)
+            fh.close()
+            self.outputLog()
+        except IOError:
+            print("Section " + result['section'] + " failed to open checkpoint file for reading", file=self.fh)
+            sys.stdout.flush()

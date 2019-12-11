@@ -1,6 +1,8 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
 # Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
+# Copyright (c) 2021      Triad National Security, LLC. All rights
+#                         reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -84,4 +86,7 @@ class DefaultProfile(ProfileMTTStage):
         # add our log to the system log
         log['profile'] = myLog
         log['status'] = 0
+        return
+
+    def savelog(self, testDef):
         return
