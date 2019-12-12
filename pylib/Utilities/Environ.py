@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright (c) 2015-2018 Intel, Inc. All rights reserved.
 # $COPYRIGHT$
@@ -8,7 +8,7 @@
 # $HEADER$
 #
 
-from __future__ import print_function
+
 import shutil
 import os
 from BaseMTTUtility import *
@@ -36,7 +36,7 @@ class Environ(BaseMTTUtility):
         testDef.logger.verbose_print("Environ Execute")
 
         # Set any provided key values
-        kvkeys = keyvals.keys()
+        kvkeys = list(keyvals.keys())
         for kvkey in kvkeys:
             os.environ[kvkey] = keyvals[kvkey]
         log['status'] = 0

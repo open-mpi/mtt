@@ -8,7 +8,7 @@
 # $HEADER$
 #
 
-from __future__ import print_function
+
 import os
 from ProfileMTTStage import *
 from ast import literal_eval
@@ -77,7 +77,7 @@ class CheckProfile(ProfileMTTStage):
         testDef.parseOptions(log, self.options, keyvals, cmds)
 
         keys = list(cmds.keys())
-        opts = self.options.keys()
+        opts = list(self.options.keys())
 
         for key in keys:
             # diskSpace

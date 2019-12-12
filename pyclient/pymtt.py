@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright (c) 2015-2018 Intel, Inc. All rights reserved.
 # Copyright (c) 2018 Cisco Systems, Inc. All rights reserved.
@@ -9,9 +9,7 @@
 # $HEADER$
 #
 
-from __future__ import print_function
-from future import standard_library
-standard_library.install_aliases()
+
 import os
 import sys
 import configparser

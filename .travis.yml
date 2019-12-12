@@ -37,7 +37,6 @@ python:
     - '3.5'
     - '3.4'
     - '3.3'
-    - '2.7'
 git:
   depth: 1000
 before_install:
@@ -81,7 +80,7 @@ deploy:
   skip_cleanup: true
   on:
     branch: master
-    python: 2.7
+    python: 3.6
 
 after_success:
 env:

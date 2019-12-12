@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright (c) 2016-2019 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
@@ -8,7 +8,7 @@
 # $HEADER$
 #
 
-from __future__ import print_function
+
 import os
 from BaseMTTUtility import *
 

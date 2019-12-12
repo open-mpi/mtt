@@ -10,7 +10,7 @@
 # $HEADER$
 #
 
-from __future__ import print_function
+
 import os
 from TestRunMTTStage import *
 import shlex
@@ -81,7 +81,7 @@ class PMIxUnit(TestRunMTTStage):
 
         # look for all keyvals starting with "test" as these
         # delineate the tests we are to run
-        keys = keyvals.keys()
+        keys = list(keyvals.keys())
         tests = []
         mykeyvals = {}
         for k in keys:

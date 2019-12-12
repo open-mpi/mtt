@@ -9,7 +9,7 @@
 # $HEADER$
 #
 
-from __future__ import print_function
+
 import os
 import pwd
 import requests
@@ -379,7 +379,7 @@ class IUDatabase(ReporterMTTStage):
             for lgentry in logger.getLog(None):
                 if 'environ' in lgentry:
                     environment.update(lgentry['environ'])
-            data['environment'] = "\n".join([str(k) + "=" + str(v) for k,v in environment.items()])
+            data['environment'] = "\n".join([str(k) + "=" + str(v) for k,v in list(environment.items())])
 
 
             # BIOS table
@@ -585,7 +585,7 @@ class IUDatabase(ReporterMTTStage):
         for lgentry in logger.getLog(None):
             if 'environ' in lgentry:
                 environment.update(lgentry['environ'])
-        data['environment'] = "\n".join([str(k) + "=" + str(v) for k,v in environment.items()])
+        data['environment'] = "\n".join([str(k) + "=" + str(v) for k,v in list(environment.items())])
 
         try:
             if options['merge_stdout_stderr']:
@@ -784,7 +784,7 @@ class IUDatabase(ReporterMTTStage):
         for lgentry in logger.getLog(None):
             if 'environ' in lgentry:
                 environment.update(lgentry['environ'])
-        data['environment'] = "\n".join([str(k) + "=" + str(v) for k,v in environment.items()])
+        data['environment'] = "\n".join([str(k) + "=" + str(v) for k,v in list(environment.items())])
 
         try:
             if options is not None and options['merge_stdout_stderr']:

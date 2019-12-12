@@ -1,4 +1,4 @@
-from __future__ import print_function
+
 from builtins import str
 #!/usr/bin/env python
 #
@@ -107,7 +107,7 @@ class Watchdog(BaseMTTUtility):
     def convert_to_timeout(self, timeout):
         if isinstance(timeout, int):
             return datetime.timedelta(0, timeout)
-        if isinstance(timeout, basestring):
+        if isinstance(timeout, str):
             timeparts = timeout.split(":")
             secs = 0
             days = 0
