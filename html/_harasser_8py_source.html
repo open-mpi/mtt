@@ -88,7 +88,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="title">Harasser.py</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a href="_harasser_8py.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno"><a class="line" href="namespace_harasser.html">    1</a></span>&#160;<span class="comment">#!/usr/bin/env python</span></div>
+<a href="_harasser_8py.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno"><a class="line" href="namespace_harasser.html">    1</a></span>&#160;<span class="comment">#!/usr/bin/env python3</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="comment">#</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="comment"># Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="comment"># $COPYRIGHT$</span></div>
@@ -98,7 +98,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment"># $HEADER$</span></div>
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment">#</span></div>
 <div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">from</span> __future__ <span class="keyword">import</span> print_function</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;</div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">import</span> os</div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">import</span> re</div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keyword">from</span> HarasserMTTTool <span class="keyword">import</span> *</div>
@@ -152,7 +152,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;            self.<a class="code" href="class_harasser_1_1_harasser.html#af1ed57b62f3b8cf35af5bb750c18afe4">activated</a> = <span class="keyword">False</span></div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;            <span class="keywordflow">if</span> self.<a class="code" href="class_harasser_1_1_harasser.html#a96c7c91ef5d33784056c567ba49a2c8a">execution_counter</a> &gt; 0:</div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;                self.testDef.logger.verbose_print(<span class="stringliteral">&quot;Harasser plugin stopped while harassers were running. Cleaning up harassers...&quot;</span>)</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;                self.<a class="code" href="class_harasser_1_1_harasser.html#aad6ad8458a1afbb7ca4859f6d8b9d803">stop</a>(self.running_harassers.keys(), self.<a class="code" href="class_harasser_1_1_harasser.html#adddf34aabbc91934437e1a30134224c3">testDef</a>)</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;                self.<a class="code" href="class_harasser_1_1_harasser.html#aad6ad8458a1afbb7ca4859f6d8b9d803">stop</a>(list(self.running_harassers.keys()), self.<a class="code" href="class_harasser_1_1_harasser.html#adddf34aabbc91934437e1a30134224c3">testDef</a>)</div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;                self.testDef.logger.verbose_print(<span class="stringliteral">&quot;Harassers were cleaned up.&quot;</span>)</div>
 <div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="keywordflow">return</span></div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;</div>
@@ -202,13 +202,13 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;                   (trigger_script <span class="keywordflow">if</span> k == <span class="stringliteral">&#39;trigger_scripts&#39;</span> <span class="keywordflow">else</span> (\</div>
 <div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;                    stop_script <span class="keywordflow">if</span> k == <span class="stringliteral">&#39;stop_scripts&#39;</span> \</div>
 <div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;                    <span class="keywordflow">else</span> v[0])) \</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;                   <span class="keywordflow">for</span> k,v <span class="keywordflow">in</span> self.options.items()}</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;                   <span class="keywordflow">for</span> k,v <span class="keywordflow">in</span> list(self.options.items())}</div>
 <div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;</div>
 <div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;            cmdargs = trigger_script.split()</div>
 <div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;</div>
 <div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;            process = multiprocessing.Process(name=<span class="stringliteral">&#39;p&#39;</span>+str(self.<a class="code" href="class_harasser_1_1_harasser.html#a96c7c91ef5d33784056c567ba49a2c8a">execution_counter</a>), \</div>
 <div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;                            target=self.<a class="code" href="class_harasser_1_1_harasser.html#a02afcd1243832ad692db3ecbf8b83950">parallel_execute</a>, \</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;                            args=({k:v[0] <span class="keywordflow">for</span> k,v <span class="keywordflow">in</span> self.options.items()},cmdargs,testDef))</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;                            args=({k:v[0] <span class="keywordflow">for</span> k,v <span class="keywordflow">in</span> list(self.options.items())},cmdargs,testDef))</div>
 <div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            process.start()</div>
 <div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;</div>
 <div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            self.<a class="code" href="class_harasser_1_1_harasser.html#ad9d37d39c99222e899af613a573ecd15">running_harassers</a>[self.<a class="code" href="class_harasser_1_1_harasser.html#a96c7c91ef5d33784056c567ba49a2c8a">execution_counter</a>] = (process, ops, datetime.datetime.now())</div>
@@ -240,7 +240,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;        return_info = []</div>
 <div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;        <span class="keywordflow">for</span> process,ops,starttime <span class="keywordflow">in</span> process_info:</div>
 <div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;            cmdargs = ops[<span class="stringliteral">&#39;stop_script&#39;</span>].split()</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;            results = testDef.execmd.execute({k:v[0] <span class="keywordflow">for</span> k,v <span class="keywordflow">in</span> self.options.items()}, cmdargs, testDef)</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;            results = testDef.execmd.execute({k:v[0] <span class="keywordflow">for</span> k,v <span class="keywordflow">in</span> list(self.options.items())}, cmdargs, testDef)</div>
 <div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;            return_info.append((results[<span class="stringliteral">&#39;status&#39;</span>],results[<span class="stringliteral">&#39;stdout&#39;</span>],results[<span class="stringliteral">&#39;stderr&#39;</span>],datetime.datetime.now()-starttime))</div>
 <div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;</div>
 <div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        <span class="keywordflow">for</span> (process,ops,starttime),(results[<span class="stringliteral">&#39;status&#39;</span>],results[<span class="stringliteral">&#39;stdout&#39;</span>],results[<span class="stringliteral">&#39;stderr&#39;</span>],results[<span class="stringliteral">&#39;elapsed_secs&#39;</span>]) <span class="keywordflow">in</span> zip(process_info,return_info):</div>

@@ -99,7 +99,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment"># $HEADER$</span></div>
 <div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="comment">#</span></div>
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">from</span> __future__ <span class="keyword">import</span> print_function</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;</div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">import</span> os</div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keyword">import</span> pwd</div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">import</span> requests</div>
@@ -469,7 +469,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;            <span class="keywordflow">for</span> lgentry <span class="keywordflow">in</span> logger.getLog(<span class="keywordtype">None</span>):</div>
 <div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;                <span class="keywordflow">if</span> <span class="stringliteral">&#39;environ&#39;</span> <span class="keywordflow">in</span> lgentry:</div>
 <div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;                    environment.update(lgentry[<span class="stringliteral">&#39;environ&#39;</span>])</div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;            data[<span class="stringliteral">&#39;environment&#39;</span>] = <span class="stringliteral">&quot;\n&quot;</span>.join([str(k) + <span class="stringliteral">&quot;=&quot;</span> + str(v) <span class="keywordflow">for</span> k,v <span class="keywordflow">in</span> environment.items()])</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;            data[<span class="stringliteral">&#39;environment&#39;</span>] = <span class="stringliteral">&quot;\n&quot;</span>.join([str(k) + <span class="stringliteral">&quot;=&quot;</span> + str(v) <span class="keywordflow">for</span> k,v <span class="keywordflow">in</span> list(environment.items())])</div>
 <div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;</div>
 <div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;</div>
 <div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;            <span class="comment"># BIOS table</span></div>
@@ -675,7 +675,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00585"></a><span class="lineno">  585</span>&#160;        <span class="keywordflow">for</span> lgentry <span class="keywordflow">in</span> logger.getLog(<span class="keywordtype">None</span>):</div>
 <div class="line"><a name="l00586"></a><span class="lineno">  586</span>&#160;            <span class="keywordflow">if</span> <span class="stringliteral">&#39;environ&#39;</span> <span class="keywordflow">in</span> lgentry:</div>
 <div class="line"><a name="l00587"></a><span class="lineno">  587</span>&#160;                environment.update(lgentry[<span class="stringliteral">&#39;environ&#39;</span>])</div>
-<div class="line"><a name="l00588"></a><span class="lineno">  588</span>&#160;        data[<span class="stringliteral">&#39;environment&#39;</span>] = <span class="stringliteral">&quot;\n&quot;</span>.join([str(k) + <span class="stringliteral">&quot;=&quot;</span> + str(v) <span class="keywordflow">for</span> k,v <span class="keywordflow">in</span> environment.items()])</div>
+<div class="line"><a name="l00588"></a><span class="lineno">  588</span>&#160;        data[<span class="stringliteral">&#39;environment&#39;</span>] = <span class="stringliteral">&quot;\n&quot;</span>.join([str(k) + <span class="stringliteral">&quot;=&quot;</span> + str(v) <span class="keywordflow">for</span> k,v <span class="keywordflow">in</span> list(environment.items())])</div>
 <div class="line"><a name="l00589"></a><span class="lineno">  589</span>&#160;</div>
 <div class="line"><a name="l00590"></a><span class="lineno">  590</span>&#160;        <span class="keywordflow">try</span>:</div>
 <div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160;            <span class="keywordflow">if</span> options[<span class="stringliteral">&#39;merge_stdout_stderr&#39;</span>]:</div>
@@ -874,7 +874,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00784"></a><span class="lineno">  784</span>&#160;        <span class="keywordflow">for</span> lgentry <span class="keywordflow">in</span> logger.getLog(<span class="keywordtype">None</span>):</div>
 <div class="line"><a name="l00785"></a><span class="lineno">  785</span>&#160;            <span class="keywordflow">if</span> <span class="stringliteral">&#39;environ&#39;</span> <span class="keywordflow">in</span> lgentry:</div>
 <div class="line"><a name="l00786"></a><span class="lineno">  786</span>&#160;                environment.update(lgentry[<span class="stringliteral">&#39;environ&#39;</span>])</div>
-<div class="line"><a name="l00787"></a><span class="lineno">  787</span>&#160;        data[<span class="stringliteral">&#39;environment&#39;</span>] = <span class="stringliteral">&quot;\n&quot;</span>.join([str(k) + <span class="stringliteral">&quot;=&quot;</span> + str(v) <span class="keywordflow">for</span> k,v <span class="keywordflow">in</span> environment.items()])</div>
+<div class="line"><a name="l00787"></a><span class="lineno">  787</span>&#160;        data[<span class="stringliteral">&#39;environment&#39;</span>] = <span class="stringliteral">&quot;\n&quot;</span>.join([str(k) + <span class="stringliteral">&quot;=&quot;</span> + str(v) <span class="keywordflow">for</span> k,v <span class="keywordflow">in</span> list(environment.items())])</div>
 <div class="line"><a name="l00788"></a><span class="lineno">  788</span>&#160;</div>
 <div class="line"><a name="l00789"></a><span class="lineno">  789</span>&#160;        <span class="keywordflow">try</span>:</div>
 <div class="line"><a name="l00790"></a><span class="lineno">  790</span>&#160;            <span class="keywordflow">if</span> options <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> options[<span class="stringliteral">&#39;merge_stdout_stderr&#39;</span>]:</div>

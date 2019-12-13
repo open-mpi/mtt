@@ -100,240 +100,238 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="comment"># $HEADER$</span></div>
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="comment">#</span></div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">from</span> __future__ <span class="keyword">import</span> print_function</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keyword">from</span> future <span class="keyword">import</span> standard_library</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;standard_library.install_aliases()</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keyword">import</span> os</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="keyword">from</span> urllib.parse <span class="keyword">import</span> urlparse</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="keyword">from</span> FetchMTTTool <span class="keyword">import</span> *</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="keyword">from</span> distutils.spawn <span class="keyword">import</span> find_executable</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="keyword">import</span> sys</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="keyword">import</span> shutil</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="comment">## @addtogroup Tools</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="comment"># @{</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="comment"># @addtogroup Fetch</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="comment"># @section FetchTarball</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="comment"># Plugin for fetching and unpacking tarballs from the Web</span></div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="comment"># @param url    URL for the tarball</span></div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="comment"># @param cmd    Command line to use to fetch the tarball (e.g., &quot;curl -o&quot;)</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="comment"># @param subdir      Subdirectory of interest in package</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="comment"># @}</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="class_fetch_tarball_1_1_fetch_tarball.html">   32</a></span>&#160;<span class="keyword">class </span><a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html">FetchTarball</a>(<a class="code" href="class_fetch_m_t_t_tool_1_1_fetch_m_t_t_tool.html">FetchMTTTool</a>):</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;</div>
-<div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="class_fetch_tarball_1_1_fetch_tarball.html#a0fb0f6decddbd019212beb941b1d8b33">   34</a></span>&#160;    <span class="keyword">def </span><a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#a0fb0f6decddbd019212beb941b1d8b33">__init__</a>(self):</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        <span class="comment"># initialise parent class</span></div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        FetchMTTTool.__init__(self)</div>
-<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="class_fetch_tarball_1_1_fetch_tarball.html#a4e6818fd64191913c3f302485c2c4e96">   37</a></span>&#160;        self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#a4e6818fd64191913c3f302485c2c4e96">activated</a> = <span class="keyword">False</span></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        <span class="comment"># track the repos we have processed so we</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <span class="comment"># don&#39;t do them multiple times</span></div>
-<div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="class_fetch_tarball_1_1_fetch_tarball.html#ae733fd553804854c3beef59df1739732">   40</a></span>&#160;        self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae733fd553804854c3beef59df1739732">done</a> = {}</div>
-<div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="class_fetch_tarball_1_1_fetch_tarball.html#ae5c7611a1ef415c3e38c75ea803ef2e3">   41</a></span>&#160;        self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae5c7611a1ef415c3e38c75ea803ef2e3">options</a> = {}</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae5c7611a1ef415c3e38c75ea803ef2e3">options</a>[<span class="stringliteral">&#39;url&#39;</span>] = (<span class="keywordtype">None</span>, <span class="stringliteral">&quot;URL to tarball&quot;</span>)</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae5c7611a1ef415c3e38c75ea803ef2e3">options</a>[<span class="stringliteral">&#39;cmd&#39;</span>] = (<span class="stringliteral">&quot;wget&quot;</span>, <span class="stringliteral">&quot;Command to use to fetch the tarball&quot;</span>)</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae5c7611a1ef415c3e38c75ea803ef2e3">options</a>[<span class="stringliteral">&#39;subdir&#39;</span>] = (<span class="keywordtype">None</span>, <span class="stringliteral">&quot;Subdirectory of interest in package&quot;</span>)</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;</div>
-<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="class_fetch_tarball_1_1_fetch_tarball.html#a9a88f8be0e5f6c54247c3a85da711f38">   47</a></span>&#160;    <span class="keyword">def </span><a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#a9a88f8be0e5f6c54247c3a85da711f38">activate</a>(self):</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <span class="keywordflow">if</span> <span class="keywordflow">not</span> self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#a4e6818fd64191913c3f302485c2c4e96">activated</a>:</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;            <span class="comment"># use the automatic procedure from IPlugin</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;            IPlugin.activate(self)</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;</div>
-<div class="line"><a name="l00053"></a><span class="lineno"><a class="line" href="class_fetch_tarball_1_1_fetch_tarball.html#aba185f1c1adad0aea744fc418093ffcf">   53</a></span>&#160;    <span class="keyword">def </span><a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#aba185f1c1adad0aea744fc418093ffcf">deactivate</a>(self):</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        IPlugin.deactivate(self)</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;</div>
-<div class="line"><a name="l00057"></a><span class="lineno"><a class="line" href="class_fetch_tarball_1_1_fetch_tarball.html#afcac4e7b528550c345ffca891b0f32fa">   57</a></span>&#160;    <span class="keyword">def </span><a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#afcac4e7b528550c345ffca891b0f32fa">print_name</a>(self):</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        <span class="keywordflow">return</span> <span class="stringliteral">&quot;FetchTarball&quot;</span></div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;</div>
-<div class="line"><a name="l00060"></a><span class="lineno"><a class="line" href="class_fetch_tarball_1_1_fetch_tarball.html#a750d4f069ce00c62d8e44d1e5dd47d08">   60</a></span>&#160;    <span class="keyword">def </span><a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#a750d4f069ce00c62d8e44d1e5dd47d08">print_options</a>(self, testDef, prefix):</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        lines = testDef.printOptions(self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae5c7611a1ef415c3e38c75ea803ef2e3">options</a>)</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        <span class="keywordflow">for</span> line <span class="keywordflow">in</span> lines:</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;            print(prefix + line)</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;</div>
-<div class="line"><a name="l00066"></a><span class="lineno"><a class="line" href="class_fetch_tarball_1_1_fetch_tarball.html#ad99192c36d2f7200799fa8a2a37c6a5a">   66</a></span>&#160;    <span class="keyword">def </span><a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ad99192c36d2f7200799fa8a2a37c6a5a">execute</a>(self, log, keyvals, testDef):</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        testDef.logger.verbose_print(<span class="stringliteral">&quot;FetchTarball Execute&quot;</span>)</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <span class="comment"># parse any provided options - these will override the defaults</span></div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        cmds = {}</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        testDef.parseOptions(log, self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae5c7611a1ef415c3e38c75ea803ef2e3">options</a>, keyvals, cmds)</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="comment"># check that they gave us a URL</span></div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;            <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;url&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;                url = cmds[<span class="stringliteral">&#39;url&#39;</span>]</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="keywordflow">except</span> KeyError:</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;            log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;No URL was provided&quot;</span></div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;            <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        testDef.logger.verbose_print(<span class="stringliteral">&quot;Download url &quot;</span> + url)</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <span class="comment"># the path component of the parser output contains</span></div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <span class="comment"># the name of the tarball</span></div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        tarball = os.path.basename(urlparse(url).path)</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        <span class="comment"># the name of the package being installed is the</span></div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        <span class="comment"># tarball name minus the .tar.xxx extension</span></div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        package = tarball.split(<span class="stringliteral">&quot;.tar&quot;</span>,1)[0]</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        <span class="comment"># check to see if we have already processed this tarball</span></div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;            <span class="keywordflow">if</span> self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae733fd553804854c3beef59df1739732">done</a>[tarball] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae733fd553804854c3beef59df1739732">done</a>[repo][0]</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;                log[<span class="stringliteral">&#39;location&#39;</span>] = self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae733fd553804854c3beef59df1739732">done</a>[repo][1]</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;                <span class="comment"># if they specified a subdirectory of interest,</span></div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;                <span class="comment"># check to see if it exists</span></div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;                <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;subdir&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;                    <span class="comment"># check that this subdirectory actually exists</span></div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;                    ckdir = os.path.join(log[<span class="stringliteral">&#39;location&#39;</span>], cmds[<span class="stringliteral">&#39;subdir&#39;</span>])</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;                    <span class="keywordflow">if</span> <span class="keywordflow">not</span> os.path.exists(ckdir):</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;                        log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;                        log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;Subdirectory &quot;</span> + cmds[<span class="stringliteral">&#39;subdir&#39;</span>] + <span class="stringliteral">&quot; was not found&quot;</span></div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;                        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;                    <span class="keywordflow">if</span> <span class="keywordflow">not</span> os.path.isdir(ckdir):</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;                        log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;                        log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;Subdirectory &quot;</span> + cmds[<span class="stringliteral">&#39;subdir&#39;</span>] + <span class="stringliteral">&quot; is not a directory&quot;</span></div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;                        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;                    <span class="comment"># adjust the location so later stages can find it</span></div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;                    log[<span class="stringliteral">&#39;location&#39;</span>] = ckdir</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;                <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;        <span class="keywordflow">except</span> KeyError:</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;            <span class="keywordflow">pass</span></div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        <span class="comment"># if this is a path to a local file, then we use</span></div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        <span class="comment"># the &quot;cp&quot; command instead of &quot;wget&quot;</span></div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        checkurl = url[:4]</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        <span class="keywordflow">if</span> checkurl.lower() == <span class="stringliteral">&quot;file&quot;</span>:</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;            cmds[<span class="stringliteral">&#39;cmd&#39;</span>] = <span class="stringliteral">&quot;cp&quot;</span></div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;            url = urlparse(url).path</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            file = <span class="keyword">True</span></div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;        <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;            file = <span class="keyword">False</span></div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        <span class="comment"># look for the executable in our path - this is</span></div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;        <span class="comment"># a standard system executable so we don&#39;t use</span></div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        <span class="comment"># environmental modules here</span></div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;        fetchcmd = cmds[<span class="stringliteral">&#39;cmd&#39;</span>].split()</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;        <span class="keywordflow">if</span> <span class="keywordflow">not</span> find_executable(fetchcmd[0]):</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;            log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;Executable &quot;</span> + fetchcmd[0] + <span class="stringliteral">&quot; not found&quot;</span></div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;            <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;        <span class="keywordflow">if</span> <span class="keywordflow">not</span> find_executable(<span class="stringliteral">&quot;tar&quot;</span>):</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;            log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;            log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;Executable tar not found&quot;</span></div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;            <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;        <span class="comment"># record our current location</span></div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;        cwd = os.getcwd()</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;        <span class="comment"># ensure the scratchdir exists</span></div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;        dst = os.path.join(testDef.options[<span class="stringliteral">&#39;scratchdir&#39;</span>], log[<span class="stringliteral">&#39;section&#39;</span>].replace(<span class="stringliteral">&quot;:&quot;</span>,<span class="stringliteral">&quot;_&quot;</span>))</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;        <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;            <span class="keywordflow">if</span> <span class="keywordflow">not</span> os.path.exists(dst): os.mkdir(dst)</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;        <span class="keywordflow">except</span>:</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;            log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;            log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;Unable to create &quot;</span> + dst</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;            <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;        <span class="comment"># change to the scratch directory</span></div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;        os.chdir(dst)</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;        results = {}</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;        <span class="comment"># see if this software has already been fetched</span></div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;        <span class="keywordflow">if</span> os.path.exists(tarball):</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;            <span class="comment"># was it expanded?</span></div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;            <span class="keywordflow">if</span> os.path.exists(package):</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;                <span class="comment"># if they want us to leave it as-is, then we are done</span></div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;                <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;                    <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;asis&#39;</span>]:</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;                        results[<span class="stringliteral">&#39;status&#39;</span>] = 0</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;                        results[<span class="stringliteral">&#39;stdout&#39;</span>] = <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;                        results[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;                <span class="comment"># If not as-is clear directory and download the tarball</span></div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;                <span class="keywordflow">except</span> KeyError:</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;                    shutil.rmtree(package)</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;                    <span class="comment"># untar the tarball</span></div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;                    testDef.logger.verbose_print(<span class="stringliteral">&quot;untarring tarball &quot;</span> + tarball)</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;                    results = testDef.execmd.execute(<span class="keywordtype">None</span>, [<span class="stringliteral">&quot;tar&quot;</span>, <span class="stringliteral">&quot;-xf&quot;</span>, tarball], testDef)</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;                    <span class="keywordflow">if</span> 0 != results[<span class="stringliteral">&#39;status&#39;</span>]:</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;                        log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;                        log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;untar of tarball &quot;</span> + tarball + <span class="stringliteral">&quot;FAILED&quot;</span></div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;                        <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;            <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;                <span class="comment"># untar the tarball</span></div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;                testDef.logger.verbose_print(<span class="stringliteral">&quot;untarring tarball &quot;</span> + tarball)</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;                results = testDef.execmd.execute(<span class="keywordtype">None</span>, [<span class="stringliteral">&quot;tar&quot;</span>, <span class="stringliteral">&quot;-xf&quot;</span>, tarball], testDef)</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;                <span class="keywordflow">if</span> 0 != results[<span class="stringliteral">&#39;status&#39;</span>]:</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;                    log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;                    log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;untar of tarball &quot;</span> + tarball + <span class="stringliteral">&quot;FAILED&quot;</span></div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;                    <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;        <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;            <span class="keywordflow">if</span> file:</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;                testDef.logger.verbose_print(<span class="stringliteral">&quot;copying tarball &quot;</span> + tarball + <span class="stringliteral">&quot; using path: &quot;</span> + url)</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;                excmd = []</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;                <span class="keywordflow">for</span> p <span class="keywordflow">in</span> fetchcmd:</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;                    excmd.append(p)</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;                excmd.append(url)</div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;                <span class="comment"># give it the destination</span></div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;                excmd.append(dst)</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;            <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;                <span class="comment"># download the tarball - TODO probably need to do a try on these</span></div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;                testDef.logger.verbose_print(<span class="stringliteral">&quot;downloading tarball &quot;</span> + tarball + <span class="stringliteral">&quot; using url: &quot;</span> + url)</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;                excmd = []</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;                <span class="keywordflow">for</span> p <span class="keywordflow">in</span> fetchcmd:</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;                    excmd.append(p)</div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;                excmd.append(url)</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;            results = testDef.execmd.execute(<span class="keywordtype">None</span>, excmd, testDef)</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;            <span class="keywordflow">if</span> 0 != results[<span class="stringliteral">&#39;status&#39;</span>]:</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;                log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;download for tarball &quot;</span> + tarball + <span class="stringliteral">&quot; url: &quot;</span> + url + <span class="stringliteral">&quot;FAILED&quot;</span></div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;                <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;            <span class="comment"># untar the tarball</span></div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;            testDef.logger.verbose_print(<span class="stringliteral">&quot;untarring tarball &quot;</span> + tarball)</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;            results = testDef.execmd.execute(<span class="keywordtype">None</span>, [<span class="stringliteral">&quot;tar&quot;</span>, <span class="stringliteral">&quot;-xf&quot;</span>, tarball], testDef)</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;            <span class="keywordflow">if</span> 0 != results[<span class="stringliteral">&#39;status&#39;</span>]:</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;                log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;untar of tarball &quot;</span> + tarball + <span class="stringliteral">&quot;FAILED&quot;</span></div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;                <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;        <span class="comment"># move into the resulting directory</span></div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;        os.chdir(package)</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;        <span class="comment"># record the result</span></div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;        log[<span class="stringliteral">&#39;status&#39;</span>] = results[<span class="stringliteral">&#39;status&#39;</span>]</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;        log[<span class="stringliteral">&#39;stdout&#39;</span>] = results[<span class="stringliteral">&#39;stdout&#39;</span>]</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;        log[<span class="stringliteral">&#39;stderr&#39;</span>] = results[<span class="stringliteral">&#39;stderr&#39;</span>]</div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;        <span class="comment"># log our absolute location so others can find it</span></div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;        log[<span class="stringliteral">&#39;location&#39;</span>] = os.getcwd()</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;        <span class="comment"># track that we serviced this one</span></div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;        self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae733fd553804854c3beef59df1739732">done</a>[tarball] = (results[<span class="stringliteral">&#39;status&#39;</span>], log[<span class="stringliteral">&#39;location&#39;</span>])</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;</div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;        <span class="comment"># if they specified a subdirectory of interest,</span></div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;        <span class="comment"># check to see if it exists</span></div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;        <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;subdir&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;            <span class="comment"># check that this subdirectory actually exists</span></div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;            ckdir = os.path.join(log[<span class="stringliteral">&#39;location&#39;</span>], cmds[<span class="stringliteral">&#39;subdir&#39;</span>])</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;            <span class="keywordflow">if</span> <span class="keywordflow">not</span> os.path.exists(ckdir):</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;                log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;Subdirectory &quot;</span> + cmds[<span class="stringliteral">&#39;subdir&#39;</span>] + <span class="stringliteral">&quot; was not found&quot;</span></div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;                <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;            <span class="keywordflow">if</span> <span class="keywordflow">not</span> os.path.isdir(ckdir):</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;                log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;Subdirectory &quot;</span> + cmds[<span class="stringliteral">&#39;subdir&#39;</span>] + <span class="stringliteral">&quot; is not a directory&quot;</span></div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;                <span class="keywordflow">return</span></div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;            <span class="comment"># adjust our location so later stages can find it</span></div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;            log[<span class="stringliteral">&#39;location&#39;</span>] = ckdir</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;        testDef.logger.verbose_print(<span class="stringliteral">&quot;setting location to &quot;</span> + log[<span class="stringliteral">&#39;location&#39;</span>])</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;        <span class="comment"># change back to the original directory</span></div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;        os.chdir(cwd)</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;        <span class="keywordflow">return</span></div>
-<div class="ttc" id="class_fetch_tarball_1_1_fetch_tarball_html_aba185f1c1adad0aea744fc418093ffcf"><div class="ttname"><a href="class_fetch_tarball_1_1_fetch_tarball.html#aba185f1c1adad0aea744fc418093ffcf">FetchTarball.FetchTarball.deactivate</a></div><div class="ttdeci">def deactivate</div><div class="ttdef"><b>Definition:</b> <a href="_fetch_tarball_8py_source.html#l00053">FetchTarball.py:53</a></div></div>
-<div class="ttc" id="class_fetch_tarball_1_1_fetch_tarball_html_a9a88f8be0e5f6c54247c3a85da711f38"><div class="ttname"><a href="class_fetch_tarball_1_1_fetch_tarball.html#a9a88f8be0e5f6c54247c3a85da711f38">FetchTarball.FetchTarball.activate</a></div><div class="ttdeci">def activate</div><div class="ttdef"><b>Definition:</b> <a href="_fetch_tarball_8py_source.html#l00047">FetchTarball.py:47</a></div></div>
-<div class="ttc" id="class_fetch_tarball_1_1_fetch_tarball_html"><div class="ttname"><a href="class_fetch_tarball_1_1_fetch_tarball.html">FetchTarball.FetchTarball</a></div><div class="ttdef"><b>Definition:</b> <a href="_fetch_tarball_8py_source.html#l00032">FetchTarball.py:32</a></div></div>
-<div class="ttc" id="class_fetch_tarball_1_1_fetch_tarball_html_ae733fd553804854c3beef59df1739732"><div class="ttname"><a href="class_fetch_tarball_1_1_fetch_tarball.html#ae733fd553804854c3beef59df1739732">FetchTarball.FetchTarball.done</a></div><div class="ttdeci">done</div><div class="ttdef"><b>Definition:</b> <a href="_fetch_tarball_8py_source.html#l00040">FetchTarball.py:40</a></div></div>
-<div class="ttc" id="class_fetch_tarball_1_1_fetch_tarball_html_ad99192c36d2f7200799fa8a2a37c6a5a"><div class="ttname"><a href="class_fetch_tarball_1_1_fetch_tarball.html#ad99192c36d2f7200799fa8a2a37c6a5a">FetchTarball.FetchTarball.execute</a></div><div class="ttdeci">def execute</div><div class="ttdef"><b>Definition:</b> <a href="_fetch_tarball_8py_source.html#l00066">FetchTarball.py:66</a></div></div>
-<div class="ttc" id="class_fetch_tarball_1_1_fetch_tarball_html_ae5c7611a1ef415c3e38c75ea803ef2e3"><div class="ttname"><a href="class_fetch_tarball_1_1_fetch_tarball.html#ae5c7611a1ef415c3e38c75ea803ef2e3">FetchTarball.FetchTarball.options</a></div><div class="ttdeci">options</div><div class="ttdef"><b>Definition:</b> <a href="_fetch_tarball_8py_source.html#l00041">FetchTarball.py:41</a></div></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keyword">import</span> os</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">from</span> urllib.parse <span class="keyword">import</span> urlparse</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keyword">from</span> FetchMTTTool <span class="keyword">import</span> *</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="keyword">from</span> distutils.spawn <span class="keyword">import</span> find_executable</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="keyword">import</span> sys</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="keyword">import</span> shutil</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="comment">## @addtogroup Tools</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="comment"># @{</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="comment"># @addtogroup Fetch</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="comment"># @section FetchTarball</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="comment"># Plugin for fetching and unpacking tarballs from the Web</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="comment"># @param url    URL for the tarball</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="comment"># @param cmd    Command line to use to fetch the tarball (e.g., &quot;curl -o&quot;)</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="comment"># @param subdir      Subdirectory of interest in package</span></div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="comment"># @}</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno"><a class="line" href="class_fetch_tarball_1_1_fetch_tarball.html">   30</a></span>&#160;<span class="keyword">class </span><a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html">FetchTarball</a>(<a class="code" href="class_fetch_m_t_t_tool_1_1_fetch_m_t_t_tool.html">FetchMTTTool</a>):</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;</div>
+<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="class_fetch_tarball_1_1_fetch_tarball.html#a0fb0f6decddbd019212beb941b1d8b33">   32</a></span>&#160;    <span class="keyword">def </span><a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#a0fb0f6decddbd019212beb941b1d8b33">__init__</a>(self):</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <span class="comment"># initialise parent class</span></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        FetchMTTTool.__init__(self)</div>
+<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="class_fetch_tarball_1_1_fetch_tarball.html#a4e6818fd64191913c3f302485c2c4e96">   35</a></span>&#160;        self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#a4e6818fd64191913c3f302485c2c4e96">activated</a> = <span class="keyword">False</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        <span class="comment"># track the repos we have processed so we</span></div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        <span class="comment"># don&#39;t do them multiple times</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="class_fetch_tarball_1_1_fetch_tarball.html#ae733fd553804854c3beef59df1739732">   38</a></span>&#160;        self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae733fd553804854c3beef59df1739732">done</a> = {}</div>
+<div class="line"><a name="l00039"></a><span class="lineno"><a class="line" href="class_fetch_tarball_1_1_fetch_tarball.html#ae5c7611a1ef415c3e38c75ea803ef2e3">   39</a></span>&#160;        self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae5c7611a1ef415c3e38c75ea803ef2e3">options</a> = {}</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae5c7611a1ef415c3e38c75ea803ef2e3">options</a>[<span class="stringliteral">&#39;url&#39;</span>] = (<span class="keywordtype">None</span>, <span class="stringliteral">&quot;URL to tarball&quot;</span>)</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae5c7611a1ef415c3e38c75ea803ef2e3">options</a>[<span class="stringliteral">&#39;cmd&#39;</span>] = (<span class="stringliteral">&quot;wget&quot;</span>, <span class="stringliteral">&quot;Command to use to fetch the tarball&quot;</span>)</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae5c7611a1ef415c3e38c75ea803ef2e3">options</a>[<span class="stringliteral">&#39;subdir&#39;</span>] = (<span class="keywordtype">None</span>, <span class="stringliteral">&quot;Subdirectory of interest in package&quot;</span>)</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;</div>
+<div class="line"><a name="l00045"></a><span class="lineno"><a class="line" href="class_fetch_tarball_1_1_fetch_tarball.html#a9a88f8be0e5f6c54247c3a85da711f38">   45</a></span>&#160;    <span class="keyword">def </span><a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#a9a88f8be0e5f6c54247c3a85da711f38">activate</a>(self):</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        <span class="keywordflow">if</span> <span class="keywordflow">not</span> self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#a4e6818fd64191913c3f302485c2c4e96">activated</a>:</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;            <span class="comment"># use the automatic procedure from IPlugin</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;            IPlugin.activate(self)</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;</div>
+<div class="line"><a name="l00051"></a><span class="lineno"><a class="line" href="class_fetch_tarball_1_1_fetch_tarball.html#aba185f1c1adad0aea744fc418093ffcf">   51</a></span>&#160;    <span class="keyword">def </span><a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#aba185f1c1adad0aea744fc418093ffcf">deactivate</a>(self):</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        IPlugin.deactivate(self)</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;</div>
+<div class="line"><a name="l00055"></a><span class="lineno"><a class="line" href="class_fetch_tarball_1_1_fetch_tarball.html#afcac4e7b528550c345ffca891b0f32fa">   55</a></span>&#160;    <span class="keyword">def </span><a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#afcac4e7b528550c345ffca891b0f32fa">print_name</a>(self):</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <span class="keywordflow">return</span> <span class="stringliteral">&quot;FetchTarball&quot;</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;</div>
+<div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="class_fetch_tarball_1_1_fetch_tarball.html#a750d4f069ce00c62d8e44d1e5dd47d08">   58</a></span>&#160;    <span class="keyword">def </span><a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#a750d4f069ce00c62d8e44d1e5dd47d08">print_options</a>(self, testDef, prefix):</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        lines = testDef.printOptions(self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae5c7611a1ef415c3e38c75ea803ef2e3">options</a>)</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <span class="keywordflow">for</span> line <span class="keywordflow">in</span> lines:</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;            print(prefix + line)</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;</div>
+<div class="line"><a name="l00064"></a><span class="lineno"><a class="line" href="class_fetch_tarball_1_1_fetch_tarball.html#ad99192c36d2f7200799fa8a2a37c6a5a">   64</a></span>&#160;    <span class="keyword">def </span><a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ad99192c36d2f7200799fa8a2a37c6a5a">execute</a>(self, log, keyvals, testDef):</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        testDef.logger.verbose_print(<span class="stringliteral">&quot;FetchTarball Execute&quot;</span>)</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        <span class="comment"># parse any provided options - these will override the defaults</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        cmds = {}</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        testDef.parseOptions(log, self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae5c7611a1ef415c3e38c75ea803ef2e3">options</a>, keyvals, cmds)</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <span class="comment"># check that they gave us a URL</span></div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <span class="keywordflow">try</span>:</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;            <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;url&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;                url = cmds[<span class="stringliteral">&#39;url&#39;</span>]</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        <span class="keywordflow">except</span> KeyError:</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;            log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;            log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;No URL was provided&quot;</span></div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;            <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        testDef.logger.verbose_print(<span class="stringliteral">&quot;Download url &quot;</span> + url)</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <span class="comment"># the path component of the parser output contains</span></div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="comment"># the name of the tarball</span></div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        tarball = os.path.basename(urlparse(url).path)</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <span class="comment"># the name of the package being installed is the</span></div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        <span class="comment"># tarball name minus the .tar.xxx extension</span></div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        package = tarball.split(<span class="stringliteral">&quot;.tar&quot;</span>,1)[0]</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        <span class="comment"># check to see if we have already processed this tarball</span></div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        <span class="keywordflow">try</span>:</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;            <span class="keywordflow">if</span> self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae733fd553804854c3beef59df1739732">done</a>[tarball] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae733fd553804854c3beef59df1739732">done</a>[repo][0]</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;                log[<span class="stringliteral">&#39;location&#39;</span>] = self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae733fd553804854c3beef59df1739732">done</a>[repo][1]</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;                <span class="comment"># if they specified a subdirectory of interest,</span></div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;                <span class="comment"># check to see if it exists</span></div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;                <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;subdir&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;                    <span class="comment"># check that this subdirectory actually exists</span></div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;                    ckdir = os.path.join(log[<span class="stringliteral">&#39;location&#39;</span>], cmds[<span class="stringliteral">&#39;subdir&#39;</span>])</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;                    <span class="keywordflow">if</span> <span class="keywordflow">not</span> os.path.exists(ckdir):</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;                        log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;                        log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;Subdirectory &quot;</span> + cmds[<span class="stringliteral">&#39;subdir&#39;</span>] + <span class="stringliteral">&quot; was not found&quot;</span></div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;                        <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;                    <span class="keywordflow">if</span> <span class="keywordflow">not</span> os.path.isdir(ckdir):</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;                        log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;                        log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;Subdirectory &quot;</span> + cmds[<span class="stringliteral">&#39;subdir&#39;</span>] + <span class="stringliteral">&quot; is not a directory&quot;</span></div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;                        <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;                    <span class="comment"># adjust the location so later stages can find it</span></div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;                    log[<span class="stringliteral">&#39;location&#39;</span>] = ckdir</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;                <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;        <span class="keywordflow">except</span> KeyError:</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;            <span class="keywordflow">pass</span></div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        <span class="comment"># if this is a path to a local file, then we use</span></div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;        <span class="comment"># the &quot;cp&quot; command instead of &quot;wget&quot;</span></div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;        checkurl = url[:4]</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        <span class="keywordflow">if</span> checkurl.lower() == <span class="stringliteral">&quot;file&quot;</span>:</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;            cmds[<span class="stringliteral">&#39;cmd&#39;</span>] = <span class="stringliteral">&quot;cp&quot;</span></div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            url = urlparse(url).path</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;            file = <span class="keyword">True</span></div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            file = <span class="keyword">False</span></div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;        <span class="comment"># look for the executable in our path - this is</span></div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        <span class="comment"># a standard system executable so we don&#39;t use</span></div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        <span class="comment"># environmental modules here</span></div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;        fetchcmd = cmds[<span class="stringliteral">&#39;cmd&#39;</span>].split()</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        <span class="keywordflow">if</span> <span class="keywordflow">not</span> find_executable(fetchcmd[0]):</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;            log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;Executable &quot;</span> + fetchcmd[0] + <span class="stringliteral">&quot; not found&quot;</span></div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        <span class="keywordflow">if</span> <span class="keywordflow">not</span> find_executable(<span class="stringliteral">&quot;tar&quot;</span>):</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;            log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;            log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;Executable tar not found&quot;</span></div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;            <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;        <span class="comment"># record our current location</span></div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;        cwd = os.getcwd()</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;        <span class="comment"># ensure the scratchdir exists</span></div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;        dst = os.path.join(testDef.options[<span class="stringliteral">&#39;scratchdir&#39;</span>], log[<span class="stringliteral">&#39;section&#39;</span>].replace(<span class="stringliteral">&quot;:&quot;</span>,<span class="stringliteral">&quot;_&quot;</span>))</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;        <span class="keywordflow">try</span>:</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;            <span class="keywordflow">if</span> <span class="keywordflow">not</span> os.path.exists(dst): os.mkdir(dst)</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;        <span class="keywordflow">except</span>:</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;            log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;            log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;Unable to create &quot;</span> + dst</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;            <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;        <span class="comment"># change to the scratch directory</span></div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;        os.chdir(dst)</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;        results = {}</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;        <span class="comment"># see if this software has already been fetched</span></div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;        <span class="keywordflow">if</span> os.path.exists(tarball):</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;            <span class="comment"># was it expanded?</span></div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;            <span class="keywordflow">if</span> os.path.exists(package):</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;                <span class="comment"># if they want us to leave it as-is, then we are done</span></div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;                <span class="keywordflow">try</span>:</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;                    <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;asis&#39;</span>]:</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;                        results[<span class="stringliteral">&#39;status&#39;</span>] = 0</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;                        results[<span class="stringliteral">&#39;stdout&#39;</span>] = <span class="keywordtype">None</span></div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;                        results[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="keywordtype">None</span></div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;                <span class="comment"># If not as-is clear directory and download the tarball</span></div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;                <span class="keywordflow">except</span> KeyError:</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;                    shutil.rmtree(package)</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;                    <span class="comment"># untar the tarball</span></div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;                    testDef.logger.verbose_print(<span class="stringliteral">&quot;untarring tarball &quot;</span> + tarball)</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;                    results = testDef.execmd.execute(<span class="keywordtype">None</span>, [<span class="stringliteral">&quot;tar&quot;</span>, <span class="stringliteral">&quot;-xf&quot;</span>, tarball], testDef)</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;                    <span class="keywordflow">if</span> 0 != results[<span class="stringliteral">&#39;status&#39;</span>]:</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;                        log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;                        log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;untar of tarball &quot;</span> + tarball + <span class="stringliteral">&quot;FAILED&quot;</span></div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;                        <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;            <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;                <span class="comment"># untar the tarball</span></div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;                testDef.logger.verbose_print(<span class="stringliteral">&quot;untarring tarball &quot;</span> + tarball)</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;                results = testDef.execmd.execute(<span class="keywordtype">None</span>, [<span class="stringliteral">&quot;tar&quot;</span>, <span class="stringliteral">&quot;-xf&quot;</span>, tarball], testDef)</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;                <span class="keywordflow">if</span> 0 != results[<span class="stringliteral">&#39;status&#39;</span>]:</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;                    log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;                    log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;untar of tarball &quot;</span> + tarball + <span class="stringliteral">&quot;FAILED&quot;</span></div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;                    <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;        <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;            <span class="keywordflow">if</span> file:</div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;                testDef.logger.verbose_print(<span class="stringliteral">&quot;copying tarball &quot;</span> + tarball + <span class="stringliteral">&quot; using path: &quot;</span> + url)</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;                excmd = []</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;                <span class="keywordflow">for</span> p <span class="keywordflow">in</span> fetchcmd:</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;                    excmd.append(p)</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;                excmd.append(url)</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;                <span class="comment"># give it the destination</span></div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;                excmd.append(dst)</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;            <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;                <span class="comment"># download the tarball - TODO probably need to do a try on these</span></div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;                testDef.logger.verbose_print(<span class="stringliteral">&quot;downloading tarball &quot;</span> + tarball + <span class="stringliteral">&quot; using url: &quot;</span> + url)</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;                excmd = []</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;                <span class="keywordflow">for</span> p <span class="keywordflow">in</span> fetchcmd:</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;                    excmd.append(p)</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;                excmd.append(url)</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;            results = testDef.execmd.execute(<span class="keywordtype">None</span>, excmd, testDef)</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;            <span class="keywordflow">if</span> 0 != results[<span class="stringliteral">&#39;status&#39;</span>]:</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;                log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;download for tarball &quot;</span> + tarball + <span class="stringliteral">&quot; url: &quot;</span> + url + <span class="stringliteral">&quot;FAILED&quot;</span></div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;                <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;            <span class="comment"># untar the tarball</span></div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;            testDef.logger.verbose_print(<span class="stringliteral">&quot;untarring tarball &quot;</span> + tarball)</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;            results = testDef.execmd.execute(<span class="keywordtype">None</span>, [<span class="stringliteral">&quot;tar&quot;</span>, <span class="stringliteral">&quot;-xf&quot;</span>, tarball], testDef)</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;            <span class="keywordflow">if</span> 0 != results[<span class="stringliteral">&#39;status&#39;</span>]:</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;                log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;untar of tarball &quot;</span> + tarball + <span class="stringliteral">&quot;FAILED&quot;</span></div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;                <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        <span class="comment"># move into the resulting directory</span></div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;        os.chdir(package)</div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;        <span class="comment"># record the result</span></div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;        log[<span class="stringliteral">&#39;status&#39;</span>] = results[<span class="stringliteral">&#39;status&#39;</span>]</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;        log[<span class="stringliteral">&#39;stdout&#39;</span>] = results[<span class="stringliteral">&#39;stdout&#39;</span>]</div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;        log[<span class="stringliteral">&#39;stderr&#39;</span>] = results[<span class="stringliteral">&#39;stderr&#39;</span>]</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;        <span class="comment"># log our absolute location so others can find it</span></div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;        log[<span class="stringliteral">&#39;location&#39;</span>] = os.getcwd()</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;        <span class="comment"># track that we serviced this one</span></div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;        self.<a class="code" href="class_fetch_tarball_1_1_fetch_tarball.html#ae733fd553804854c3beef59df1739732">done</a>[tarball] = (results[<span class="stringliteral">&#39;status&#39;</span>], log[<span class="stringliteral">&#39;location&#39;</span>])</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;        <span class="comment"># if they specified a subdirectory of interest,</span></div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;        <span class="comment"># check to see if it exists</span></div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;        <span class="keywordflow">if</span> cmds[<span class="stringliteral">&#39;subdir&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;            <span class="comment"># check that this subdirectory actually exists</span></div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;            ckdir = os.path.join(log[<span class="stringliteral">&#39;location&#39;</span>], cmds[<span class="stringliteral">&#39;subdir&#39;</span>])</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;            <span class="keywordflow">if</span> <span class="keywordflow">not</span> os.path.exists(ckdir):</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;                log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;Subdirectory &quot;</span> + cmds[<span class="stringliteral">&#39;subdir&#39;</span>] + <span class="stringliteral">&quot; was not found&quot;</span></div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;                <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;            <span class="keywordflow">if</span> <span class="keywordflow">not</span> os.path.isdir(ckdir):</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;                log[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;                log[<span class="stringliteral">&#39;stderr&#39;</span>] = <span class="stringliteral">&quot;Subdirectory &quot;</span> + cmds[<span class="stringliteral">&#39;subdir&#39;</span>] + <span class="stringliteral">&quot; is not a directory&quot;</span></div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;                <span class="keywordflow">return</span></div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;            <span class="comment"># adjust our location so later stages can find it</span></div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;            log[<span class="stringliteral">&#39;location&#39;</span>] = ckdir</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;        testDef.logger.verbose_print(<span class="stringliteral">&quot;setting location to &quot;</span> + log[<span class="stringliteral">&#39;location&#39;</span>])</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;        <span class="comment"># change back to the original directory</span></div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;        os.chdir(cwd)</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;        <span class="keywordflow">return</span></div>
+<div class="ttc" id="class_fetch_tarball_1_1_fetch_tarball_html_aba185f1c1adad0aea744fc418093ffcf"><div class="ttname"><a href="class_fetch_tarball_1_1_fetch_tarball.html#aba185f1c1adad0aea744fc418093ffcf">FetchTarball.FetchTarball.deactivate</a></div><div class="ttdeci">def deactivate</div><div class="ttdef"><b>Definition:</b> <a href="_fetch_tarball_8py_source.html#l00051">FetchTarball.py:51</a></div></div>
+<div class="ttc" id="class_fetch_tarball_1_1_fetch_tarball_html_a9a88f8be0e5f6c54247c3a85da711f38"><div class="ttname"><a href="class_fetch_tarball_1_1_fetch_tarball.html#a9a88f8be0e5f6c54247c3a85da711f38">FetchTarball.FetchTarball.activate</a></div><div class="ttdeci">def activate</div><div class="ttdef"><b>Definition:</b> <a href="_fetch_tarball_8py_source.html#l00045">FetchTarball.py:45</a></div></div>
+<div class="ttc" id="class_fetch_tarball_1_1_fetch_tarball_html"><div class="ttname"><a href="class_fetch_tarball_1_1_fetch_tarball.html">FetchTarball.FetchTarball</a></div><div class="ttdef"><b>Definition:</b> <a href="_fetch_tarball_8py_source.html#l00030">FetchTarball.py:30</a></div></div>
+<div class="ttc" id="class_fetch_tarball_1_1_fetch_tarball_html_ae733fd553804854c3beef59df1739732"><div class="ttname"><a href="class_fetch_tarball_1_1_fetch_tarball.html#ae733fd553804854c3beef59df1739732">FetchTarball.FetchTarball.done</a></div><div class="ttdeci">done</div><div class="ttdef"><b>Definition:</b> <a href="_fetch_tarball_8py_source.html#l00038">FetchTarball.py:38</a></div></div>
+<div class="ttc" id="class_fetch_tarball_1_1_fetch_tarball_html_ad99192c36d2f7200799fa8a2a37c6a5a"><div class="ttname"><a href="class_fetch_tarball_1_1_fetch_tarball.html#ad99192c36d2f7200799fa8a2a37c6a5a">FetchTarball.FetchTarball.execute</a></div><div class="ttdeci">def execute</div><div class="ttdef"><b>Definition:</b> <a href="_fetch_tarball_8py_source.html#l00064">FetchTarball.py:64</a></div></div>
+<div class="ttc" id="class_fetch_tarball_1_1_fetch_tarball_html_ae5c7611a1ef415c3e38c75ea803ef2e3"><div class="ttname"><a href="class_fetch_tarball_1_1_fetch_tarball.html#ae5c7611a1ef415c3e38c75ea803ef2e3">FetchTarball.FetchTarball.options</a></div><div class="ttdeci">options</div><div class="ttdef"><b>Definition:</b> <a href="_fetch_tarball_8py_source.html#l00039">FetchTarball.py:39</a></div></div>
 <div class="ttc" id="class_fetch_m_t_t_tool_1_1_fetch_m_t_t_tool_html"><div class="ttname"><a href="class_fetch_m_t_t_tool_1_1_fetch_m_t_t_tool.html">FetchMTTTool.FetchMTTTool</a></div><div class="ttdef"><b>Definition:</b> <a href="_fetch_m_t_t_tool_8py_source.html#l00019">FetchMTTTool.py:19</a></div></div>
-<div class="ttc" id="class_fetch_tarball_1_1_fetch_tarball_html_a0fb0f6decddbd019212beb941b1d8b33"><div class="ttname"><a href="class_fetch_tarball_1_1_fetch_tarball.html#a0fb0f6decddbd019212beb941b1d8b33">FetchTarball.FetchTarball.__init__</a></div><div class="ttdeci">def __init__</div><div class="ttdef"><b>Definition:</b> <a href="_fetch_tarball_8py_source.html#l00034">FetchTarball.py:34</a></div></div>
-<div class="ttc" id="class_fetch_tarball_1_1_fetch_tarball_html_a750d4f069ce00c62d8e44d1e5dd47d08"><div class="ttname"><a href="class_fetch_tarball_1_1_fetch_tarball.html#a750d4f069ce00c62d8e44d1e5dd47d08">FetchTarball.FetchTarball.print_options</a></div><div class="ttdeci">def print_options</div><div class="ttdef"><b>Definition:</b> <a href="_fetch_tarball_8py_source.html#l00060">FetchTarball.py:60</a></div></div>
-<div class="ttc" id="class_fetch_tarball_1_1_fetch_tarball_html_afcac4e7b528550c345ffca891b0f32fa"><div class="ttname"><a href="class_fetch_tarball_1_1_fetch_tarball.html#afcac4e7b528550c345ffca891b0f32fa">FetchTarball.FetchTarball.print_name</a></div><div class="ttdeci">def print_name</div><div class="ttdef"><b>Definition:</b> <a href="_fetch_tarball_8py_source.html#l00057">FetchTarball.py:57</a></div></div>
-<div class="ttc" id="class_fetch_tarball_1_1_fetch_tarball_html_a4e6818fd64191913c3f302485c2c4e96"><div class="ttname"><a href="class_fetch_tarball_1_1_fetch_tarball.html#a4e6818fd64191913c3f302485c2c4e96">FetchTarball.FetchTarball.activated</a></div><div class="ttdeci">activated</div><div class="ttdef"><b>Definition:</b> <a href="_fetch_tarball_8py_source.html#l00037">FetchTarball.py:37</a></div></div>
+<div class="ttc" id="class_fetch_tarball_1_1_fetch_tarball_html_a0fb0f6decddbd019212beb941b1d8b33"><div class="ttname"><a href="class_fetch_tarball_1_1_fetch_tarball.html#a0fb0f6decddbd019212beb941b1d8b33">FetchTarball.FetchTarball.__init__</a></div><div class="ttdeci">def __init__</div><div class="ttdef"><b>Definition:</b> <a href="_fetch_tarball_8py_source.html#l00032">FetchTarball.py:32</a></div></div>
+<div class="ttc" id="class_fetch_tarball_1_1_fetch_tarball_html_a750d4f069ce00c62d8e44d1e5dd47d08"><div class="ttname"><a href="class_fetch_tarball_1_1_fetch_tarball.html#a750d4f069ce00c62d8e44d1e5dd47d08">FetchTarball.FetchTarball.print_options</a></div><div class="ttdeci">def print_options</div><div class="ttdef"><b>Definition:</b> <a href="_fetch_tarball_8py_source.html#l00058">FetchTarball.py:58</a></div></div>
+<div class="ttc" id="class_fetch_tarball_1_1_fetch_tarball_html_afcac4e7b528550c345ffca891b0f32fa"><div class="ttname"><a href="class_fetch_tarball_1_1_fetch_tarball.html#afcac4e7b528550c345ffca891b0f32fa">FetchTarball.FetchTarball.print_name</a></div><div class="ttdeci">def print_name</div><div class="ttdef"><b>Definition:</b> <a href="_fetch_tarball_8py_source.html#l00055">FetchTarball.py:55</a></div></div>
+<div class="ttc" id="class_fetch_tarball_1_1_fetch_tarball_html_a4e6818fd64191913c3f302485c2c4e96"><div class="ttname"><a href="class_fetch_tarball_1_1_fetch_tarball.html#a4e6818fd64191913c3f302485c2c4e96">FetchTarball.FetchTarball.activated</a></div><div class="ttdeci">activated</div><div class="ttdef"><b>Definition:</b> <a href="_fetch_tarball_8py_source.html#l00035">FetchTarball.py:35</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

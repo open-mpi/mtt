@@ -98,7 +98,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment"># $HEADER$</span></div>
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment">#</span></div>
 <div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">from</span> __future__ <span class="keyword">import</span> print_function</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;</div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">import</span> os</div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">from</span> MTTDefaultsMTTStage <span class="keyword">import</span> *</div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;</div>
@@ -200,7 +200,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;</div>
 <div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        <span class="comment"># we need to record the results into our options so</span></div>
 <div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        <span class="comment"># subsequent sections can capture them</span></div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        keys = cmds.keys()</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        keys = list(cmds.keys())</div>
 <div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        <span class="keywordflow">for</span> key <span class="keywordflow">in</span> keys:</div>
 <div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;            self.<a class="code" href="class_default_m_t_t_defaults_1_1_default_m_t_t_defaults.html#a733e1af4da36392ce6126d79c61aba0b">options</a>[key] = (cmds[key], self.<a class="code" href="class_default_m_t_t_defaults_1_1_default_m_t_t_defaults.html#a733e1af4da36392ce6126d79c61aba0b">options</a>[key][1])</div>
 <div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        <span class="keywordflow">return</span></div>

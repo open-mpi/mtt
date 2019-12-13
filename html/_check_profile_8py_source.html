@@ -98,7 +98,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment"># $HEADER$</span></div>
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="comment">#</span></div>
 <div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">from</span> __future__ <span class="keyword">import</span> print_function</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;</div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">import</span> os</div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">from</span> ProfileMTTStage <span class="keyword">import</span> *</div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keyword">from</span> ast <span class="keyword">import</span> literal_eval</div>
@@ -167,7 +167,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        testDef.parseOptions(log, self.<a class="code" href="class_check_profile_1_1_check_profile.html#a60bdbb946d15fb43c2e465bb8a3fff99">options</a>, keyvals, cmds)</div>
 <div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;</div>
 <div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        keys = list(cmds.keys())</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        opts = self.options.keys()</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        opts = list(self.options.keys())</div>
 <div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;</div>
 <div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        <span class="keywordflow">for</span> key <span class="keywordflow">in</span> keys:</div>
 <div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            <span class="comment"># diskSpace</span></div>
