@@ -164,7 +164,7 @@ class SequentialEx(ExecutorMTTTool):
                                 # couldn't find the parent's log - cannot continue
                                 stageLog['status'] = 1
                                 stageLog['stderr'] = ["Prior dependent step did not record a log"]
-                                testDef.logger.logResults(disp_title, stageLog)
+                                testDef.logger.logResults(disp_title, stageLog, testDef)
                                 testDef.plugin_trans_sem.acquire()
                                 continue
                             try:
@@ -173,14 +173,14 @@ class SequentialEx(ExecutorMTTTool):
                                     # cannot proceed here either
                                     stageLog['status'] = bldlog['status']
                                     stageLog['stderr'] = ["Prior dependent step failed - cannot proceed"]
-                                    testDef.logger.logResults(disp_title, stageLog)
+                                    testDef.logger.logResults(disp_title, stageLog, testDef)
                                     testDef.plugin_trans_sem.acquire()
                                     continue
                             except KeyError:
                                 # if it didn't report a status, we shouldn't rely on it
                                 stageLog['status'] = 1
                                 stageLog['stderr'] = ["Prior dependent step failed to provide a status"]
-                                testDef.logger.logResults(disp_title, stageLog)
+                                testDef.logger.logResults(disp_title, stageLog, testDef)
                                 testDef.plugin_trans_sem.acquire()
                                 continue
                     except KeyError:
@@ -221,7 +221,7 @@ class SequentialEx(ExecutorMTTTool):
                                 if plugin is None:
                                     stageLog['status'] = 1
                                     stageLog['stderr'] = "Specified plugin",module,"does not exist in stage",stage,"or in the available tools and utilities"
-                                    testDef.logger.logResults(disp_title, stageLog)
+                                    testDef.logger.logResults(disp_title, stageLog, testDef)
                                     testDef.plugin_trans_sem.acquire()
                                     continue
                                 else:
@@ -253,7 +253,7 @@ class SequentialEx(ExecutorMTTTool):
                             if plugin is None:
                                 stageLog['status'] = 1
                                 stageLog['stderr'] = "Specified plugin",module,"does not exist in stage",stage,"or in the available tools and utilities"
-                                testDef.logger.logResults(disp_title, stageLog)
+                                testDef.logger.logResults(disp_title, stageLog, testDef)
                                 testDef.plugin_trans_sem.acquire()
                                 continue
                             else:
@@ -271,7 +271,7 @@ class SequentialEx(ExecutorMTTTool):
                             # we really have no way of executing this
                             stageLog['status'] = 1
                             stageLog['stderr'] = "Plugin for stage",stage,"was not specified, and no default is available"
-                            testDef.logger.logResults(disp_title, stageLog)
+                            testDef.logger.logResults(disp_title, stageLog, testDef)
                             testDef.plugin_trans_sem.acquire()
                             continue
 
@@ -291,7 +291,7 @@ class SequentialEx(ExecutorMTTTool):
                         stageLog['stderr'] = stageLog['stderr'].split("\n")
 
                     # Log results for section
-                    testDef.logger.logResults(disp_title, stageLog)
+                    testDef.logger.logResults(disp_title, stageLog, testDef)
 
                     # Print end of section
                     testDef.logger.stage_end_print(disp_title, stageLog)
@@ -319,7 +319,7 @@ class SequentialEx(ExecutorMTTTool):
                         if not p._getIsActivated():
                             continue
                         p.plugin_object.deactivate()
-                    testDef.logger.logResults(disp_title, stageLog)
+                    testDef.logger.logResults(disp_title, stageLog, testDef)
                     testDef.logger.verbose_print("=======================================")
                     testDef.logger.verbose_print("KeyboardInterrupt exception was raised: %s %s" \
                                 % (type(e), str(e)))
@@ -348,7 +348,7 @@ class SequentialEx(ExecutorMTTTool):
                     testDef.logger.verbose_print("=======================================")
                     stageLog['status'] = 1
                     stageLog['stderr'] = ["Exception was raised: %s %s" % (type(e), str(e))]
-                    testDef.logger.logResults(disp_title, stageLog)
+                    testDef.logger.logResults(disp_title, stageLog, testDef)
                     self.status = 1
                     self.only_reporter = True
                     continue
@@ -395,7 +395,7 @@ class SequentialEx(ExecutorMTTTool):
             if stageLog['status'] != 0:
                 self.status = 1
                 self.only_reporter = True
-            testDef.logger.logResults("DefaultHarasser", stageLog)
+            testDef.logger.logResults("DefaultHarasser", stageLog, testDef)
 
         # Keep on looping as long as it's needed
         while self.looping or self.loop_count == 0 or (self.one_last_loop and self.looping):
