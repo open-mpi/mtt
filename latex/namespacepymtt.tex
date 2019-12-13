@@ -18,6 +18,10 @@ string \hyperlink{namespacepymtt_a9ecea46ee6082edb9bbdd8393829e18e}{dest} = \cha
 \item 
 tuple \hyperlink{namespacepymtt_af066a010075617c13a5595243ceb9041}{debug\-Group} = parser.\-add\-\_\-argument\-\_\-group('debug\-Group', 'Debug Options')
 \item 
+tuple \hyperlink{namespacepymtt_aace1bea66474191731e447b6d89fe82b}{elk\-Group} = parser.\-add\-\_\-argument\-\_\-group('elk\-Group','E\-L\-K-\/friendly output options')
+\item 
+list \hyperlink{namespacepymtt_ae5dcbc541ed4eb4b84f0b2a82e858395}{default} = os.\-environ\mbox{[}'M\-T\-T\-\_\-\-E\-L\-K\-\_\-\-T\-E\-S\-T\-C\-A\-S\-E'\mbox{]}
+\item 
 tuple \hyperlink{namespacepymtt_af7633cc372f3357c4f8e6f8dedfe7a8e}{args} = parser.\-parse\-\_\-args()
 \item 
 list \hyperlink{namespacepymtt_a7dea31bd26744bab0b1c30dc11c718aa}{mtt\-Args} = \mbox{[}$\,$\mbox{]}
@@ -50,7 +54,7 @@ tuple \hyperlink{namespacepymtt_a1a2fd13626c1c2d248cedc138e8660ec}{status} = tes
 \subsubsection[{a}]{\setlength{\rightskip}{0pt plus 5cm}tuple pymtt.\-a = {\bf cls}()}}\label{namespacepymtt_a55825c16c4bd231f7ffbd0fe52407e3f}
 
 
-Definition at line 222 of file pymtt.\-py.
+Definition at line 252 of file pymtt.\-py.
 
 \hypertarget{namespacepymtt_a5ee564a034624d925bb8dc823d11c522}{\index{pymtt@{pymtt}!action@{action}}
 \index{action@{action}!pymtt@{pymtt}}
@@ -64,21 +68,21 @@ Definition at line 43 of file pymtt.\-py.
 \subsubsection[{args}]{\setlength{\rightskip}{0pt plus 5cm}tuple pymtt.\-args = parser.\-parse\-\_\-args()}}\label{namespacepymtt_af7633cc372f3357c4f8e6f8dedfe7a8e}
 
 
-Definition at line 151 of file pymtt.\-py.
+Definition at line 181 of file pymtt.\-py.
 
 \hypertarget{namespacepymtt_a57729393cfbd99464570d7fa5ad9fa05}{\index{pymtt@{pymtt}!basedir@{basedir}}
 \index{basedir@{basedir}!pymtt@{pymtt}}
 \subsubsection[{basedir}]{\setlength{\rightskip}{0pt plus 5cm}tuple pymtt.\-basedir = args.\-basediroros.\-path.\-join({\bf mtthome}, \char`\"{}pylib\char`\"{}, \char`\"{}System\char`\"{})}}\label{namespacepymtt_a57729393cfbd99464570d7fa5ad9fa05}
 
 
-Definition at line 198 of file pymtt.\-py.
+Definition at line 228 of file pymtt.\-py.
 
 \hypertarget{namespacepymtt_a17f658b5d141d51664bb3ede8830c4c0}{\index{pymtt@{pymtt}!cls@{cls}}
 \index{cls@{cls}!pymtt@{pymtt}}
 \subsubsection[{cls}]{\setlength{\rightskip}{0pt plus 5cm}tuple pymtt.\-cls = getattr({\bf m}, \char`\"{}Test\-Def\char`\"{})}}\label{namespacepymtt_a17f658b5d141d51664bb3ede8830c4c0}
 
 
-Definition at line 221 of file pymtt.\-py.
+Definition at line 251 of file pymtt.\-py.
 
 \hypertarget{namespacepymtt_af066a010075617c13a5595243ceb9041}{\index{pymtt@{pymtt}!debug\-Group@{debug\-Group}}
 \index{debug\-Group@{debug\-Group}!pymtt@{pymtt}}
@@ -87,12 +91,26 @@ Definition at line 221 of file pymtt.\-py.
 
 Definition at line 135 of file pymtt.\-py.
 
+\hypertarget{namespacepymtt_ae5dcbc541ed4eb4b84f0b2a82e858395}{\index{pymtt@{pymtt}!default@{default}}
+\index{default@{default}!pymtt@{pymtt}}
+\subsubsection[{default}]{\setlength{\rightskip}{0pt plus 5cm}string pymtt.\-default = os.\-environ\mbox{[}'M\-T\-T\-\_\-\-E\-L\-K\-\_\-\-T\-E\-S\-T\-C\-A\-S\-E'\mbox{]}}}\label{namespacepymtt_ae5dcbc541ed4eb4b84f0b2a82e858395}
+
+
+Definition at line 154 of file pymtt.\-py.
+
 \hypertarget{namespacepymtt_a9ecea46ee6082edb9bbdd8393829e18e}{\index{pymtt@{pymtt}!dest@{dest}}
 \index{dest@{dest}!pymtt@{pymtt}}
 \subsubsection[{dest}]{\setlength{\rightskip}{0pt plus 5cm}string pymtt.\-dest = \char`\"{}duration\char`\"{}}}\label{namespacepymtt_a9ecea46ee6082edb9bbdd8393829e18e}
 
 
 Definition at line 117 of file pymtt.\-py.
+
+\hypertarget{namespacepymtt_aace1bea66474191731e447b6d89fe82b}{\index{pymtt@{pymtt}!elk\-Group@{elk\-Group}}
+\index{elk\-Group@{elk\-Group}!pymtt@{pymtt}}
+\subsubsection[{elk\-Group}]{\setlength{\rightskip}{0pt plus 5cm}tuple pymtt.\-elk\-Group = parser.\-add\-\_\-argument\-\_\-group('elk\-Group','E\-L\-K-\/friendly output options')}}\label{namespacepymtt_aace1bea66474191731e447b6d89fe82b}
+
+
+Definition at line 152 of file pymtt.\-py.
 
 \hypertarget{namespacepymtt_a0f52dbd5d46583e466305a708dea64a1}{\index{pymtt@{pymtt}!exec\-Group@{exec\-Group}}
 \index{exec\-Group@{exec\-Group}!pymtt@{pymtt}}
@@ -106,14 +124,14 @@ Definition at line 73 of file pymtt.\-py.
 \subsubsection[{executor}]{\setlength{\rightskip}{0pt plus 5cm}tuple pymtt.\-executor = args.\-executorortest\-Def.\-config.\-get('M\-T\-T\-Defaults', 'executor', {\bf fallback}={\bf fallback})}}\label{namespacepymtt_a283715e769294f7b1362c85498cdf2a3}
 
 
-Definition at line 256 of file pymtt.\-py.
+Definition at line 286 of file pymtt.\-py.
 
 \hypertarget{namespacepymtt_a5d5ee597f85e5c40ec6a923a4398c291}{\index{pymtt@{pymtt}!fallback@{fallback}}
 \index{fallback@{fallback}!pymtt@{pymtt}}
 \subsubsection[{fallback}]{\setlength{\rightskip}{0pt plus 5cm}string pymtt.\-fallback = \char`\"{}sequential\char`\"{}}}\label{namespacepymtt_a5d5ee597f85e5c40ec6a923a4398c291}
 
 
-Definition at line 255 of file pymtt.\-py.
+Definition at line 285 of file pymtt.\-py.
 
 \hypertarget{namespacepymtt_a21e88c39af91deb569da20633d245b09}{\index{pymtt@{pymtt}!help@{help}}
 \index{help@{help}!pymtt@{pymtt}}
@@ -134,21 +152,21 @@ Definition at line 41 of file pymtt.\-py.
 \subsubsection[{m}]{\setlength{\rightskip}{0pt plus 5cm}tuple pymtt.\-m = imp.\-load\-\_\-source(\char`\"{}Test\-Def\char`\"{}, os.\-path.\-join({\bf basedir}, \char`\"{}Test\-Def.\-py\char`\"{}))}}\label{namespacepymtt_ab13a60c31fa69917ce06c1a2631aaf02}
 
 
-Definition at line 217 of file pymtt.\-py.
+Definition at line 247 of file pymtt.\-py.
 
 \hypertarget{namespacepymtt_a7dea31bd26744bab0b1c30dc11c718aa}{\index{pymtt@{pymtt}!mtt\-Args@{mtt\-Args}}
 \index{mtt\-Args@{mtt\-Args}!pymtt@{pymtt}}
 \subsubsection[{mtt\-Args}]{\setlength{\rightskip}{0pt plus 5cm}tuple pymtt.\-mtt\-Args = \mbox{[}$\,$\mbox{]}}}\label{namespacepymtt_a7dea31bd26744bab0b1c30dc11c718aa}
 
 
-Definition at line 155 of file pymtt.\-py.
+Definition at line 185 of file pymtt.\-py.
 
 \hypertarget{namespacepymtt_a109ef76f074b08666398bf6a38219cfc}{\index{pymtt@{pymtt}!mtthome@{mtthome}}
 \index{mtthome@{mtthome}!pymtt@{pymtt}}
 \subsubsection[{mtthome}]{\setlength{\rightskip}{0pt plus 5cm}list pymtt.\-mtthome = os.\-environ\mbox{[}'M\-T\-T\-\_\-\-H\-O\-M\-E'\mbox{]}}}\label{namespacepymtt_a109ef76f074b08666398bf6a38219cfc}
 
 
-Definition at line 162 of file pymtt.\-py.
+Definition at line 192 of file pymtt.\-py.
 
 \hypertarget{namespacepymtt_a95d54fdad48aac280be9d57cf81dee68}{\index{pymtt@{pymtt}!parser@{parser}}
 \index{parser@{parser}!pymtt@{pymtt}}
@@ -173,19 +191,19 @@ Definition at line 30 of file pymtt.\-py.
 \subsubsection[{status}]{\setlength{\rightskip}{0pt plus 5cm}tuple pymtt.\-status = test\-Def.\-execute\-Test({\bf executor}=executor.\-lower())}}\label{namespacepymtt_a1a2fd13626c1c2d248cedc138e8660ec}
 
 
-Definition at line 262 of file pymtt.\-py.
+Definition at line 292 of file pymtt.\-py.
 
 \hypertarget{namespacepymtt_afebe539e6104da8ebd3d06b7a0e77fe7}{\index{pymtt@{pymtt}!test\-Def@{test\-Def}}
 \index{test\-Def@{test\-Def}!pymtt@{pymtt}}
 \subsubsection[{test\-Def}]{\setlength{\rightskip}{0pt plus 5cm}tuple pymtt.\-test\-Def = a.\-\_\-\-\_\-class\-\_\-\-\_\-()}}\label{namespacepymtt_afebe539e6104da8ebd3d06b7a0e77fe7}
 
 
-Definition at line 226 of file pymtt.\-py.
+Definition at line 256 of file pymtt.\-py.
 
 \hypertarget{namespacepymtt_ac673c895b8c93a029d2a1655c04af315}{\index{pymtt@{pymtt}!topdir@{topdir}}
 \index{topdir@{topdir}!pymtt@{pymtt}}
 \subsubsection[{topdir}]{\setlength{\rightskip}{0pt plus 5cm}tuple pymtt.\-topdir = os.\-path.\-join({\bf mtthome}, \char`\"{}pylib\char`\"{})}}\label{namespacepymtt_ac673c895b8c93a029d2a1655c04af315}
 
 
-Definition at line 184 of file pymtt.\-py.
+Definition at line 214 of file pymtt.\-py.
 
