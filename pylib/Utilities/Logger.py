@@ -1,4 +1,4 @@
-from __future__ import print_function
+
 from builtins import str
 #!/usr/bin/env python
 #
@@ -112,7 +112,7 @@ class Logger(BaseMTTUtility):
         return
 
     def get_dict_contents(self, dic):
-        return self.get_tuplelist_contents(dic.items())
+        return self.get_tuplelist_contents(list(dic.items()))
 
     def get_tuplelist_contents(self, tuplelist):
         if not tuplelist:
@@ -128,7 +128,7 @@ class Logger(BaseMTTUtility):
 
         result = {k:(str(v) if isinstance(v, datetime.datetime)
                             or isinstance(v, datetime.date) else v)
-                  for k,v in result.items()}
+                  for k,v in list(result.items())}
         result['execid'] = self.elk_id
         result['cycleid'] = self.elk_cycleid
         result['caseid'] = self.elk_caseid
@@ -153,7 +153,7 @@ class Logger(BaseMTTUtility):
 
             if 'profile' in result:
                 # convert profile, list of lists into a dictionary
-                result['profile'] = { k:' '.join(v) for k,v in result['profile'].items() }
+                result['profile'] = { k:' '.join(v) for k,v in list(result['profile'].items()) }
 
         #self.verbose_print('Logging to elk_head={}/{}.elog: {}'.format(self.elk_head, self.elk_id, result))
         if self.elk_log is None:

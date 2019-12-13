@@ -10,7 +10,7 @@
 # $HEADER$
 #
 
-from __future__ import print_function
+
 import os, time
 from LauncherMTTTool import *
 import shlex

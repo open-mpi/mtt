@@ -9,7 +9,7 @@
 #
 
 
-from __future__ import print_function
+
 from FetchMTTTool import *
 from distutils.spawn import find_executable
 

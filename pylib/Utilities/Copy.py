@@ -1,4 +1,4 @@
-from __future__ import print_function
+
 from builtins import str
 #!/usr/bin/env python
 #
@@ -17,6 +17,7 @@ import os
 from BaseMTTUtility import *
 
 from sys import version_info
+import imp
 if version_info[0] == 3:
   if version_info[1] <= 3:
     from imp import reload
@@ -83,7 +84,7 @@ class Copy(BaseMTTUtility):
             for src in cmds['src'].split(','):
                 src = src.strip()
                 # Clear the cache so that distutils.dir_util doesn't assume the same directory structure from last time things were copied
-                reload(distutils.dir_util)
+                imp.reload(distutils.dir_util)
                 if os.path.isdir(src):
                     # Distutils copy tree copies the contents of the directory into the target dir
                     # Modify that to copy the directory

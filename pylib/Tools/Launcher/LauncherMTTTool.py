@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # Copyright (c) 2019      Triad National Security, LLC. All rights
@@ -10,7 +10,7 @@
 # $HEADER$
 #
 
-from __future__ import print_function
+
 from yapsy.IPlugin import IPlugin
 
 import os

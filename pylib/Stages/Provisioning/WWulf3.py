@@ -8,7 +8,7 @@
 # $HEADER$
 #
 
-from __future__ import print_function
+
 from ProvisionMTTStage import *
 import shlex
 

@@ -9,7 +9,7 @@
 #
 
 
-from __future__ import print_function
+
 from VersionMTTTool import *
 
 # Major and minor version number of the MTT

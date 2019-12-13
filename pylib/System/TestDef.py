@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
@@ -8,9 +8,7 @@
 # $HEADER$
 #
 
-from __future__ import print_function
-from future import standard_library
-standard_library.install_aliases()
+
 from builtins import range
 from builtins import object
 import os
@@ -114,7 +112,7 @@ class TestDef(object):
                     return 0, False
                 else:
                     return 0, True
-            elif is_py2 and type(inval) is unicode:
+            elif is_py2 and type(inval) is str:
                 if inval.lower() in ['true', '1', 't', 'y', 'yes']:
                     return 0, True
                 else:
@@ -216,7 +214,7 @@ class TestDef(object):
         # been overridden - anything set by this input
         # stage will override the default
         if self.defaults is not None:
-            keys = self.defaults.options.keys()
+            keys = list(self.defaults.options.keys())
             for key in keys:
                 if key not in target:
                     target[key] = self.defaults.options[key][0]
@@ -530,7 +528,7 @@ class TestDef(object):
         if isinstance(sublog, str):
             self.config.set("LOG", basestr, sublog.replace("$","$$"))
         elif isinstance(sublog, dict):
-            for k,v in sublog.items():
+            for k,v in list(sublog.items()):
                 self.fill_log_interpolation("%s.%s" % (basestr, k), v)
         elif isinstance(sublog, list):
             if sum([((isinstance(t, list) or isinstance(t, tuple)) and len(t) == 2) for t in sublog]) == len(sublog):
@@ -589,7 +587,7 @@ class TestDef(object):
             self.config.add_section('ENV')
         except configparser.DuplicateSectionError:
             pass
-        for k,v in os.environ.items():
+        for k,v in list(os.environ.items()):
             self.config.set('ENV', k, v.replace("$","$$"))
 
     def fill_log_hidden_section(self):
@@ -613,7 +611,7 @@ class TestDef(object):
             all_file_contents.append(file_contents)
             if "${ENV:" in file_contents:
                 required_env.extend([s.split("}")[0] for s in file_contents.split("${ENV:")[1:]])
-        env_not_found = set([e for e in required_env if e not in os.environ.keys()])
+        env_not_found = set([e for e in required_env if e not in list(os.environ.keys())])
         lines_with_env_not_found = []
         for file_contents in all_file_contents:
             lines_with_env_not_found.extend(["%s: %s"%(",".join([e for e in env_not_found if "${ENV:%s}"%e in l]),l) \

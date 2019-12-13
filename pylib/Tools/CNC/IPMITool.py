@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright (c) 2016-2019 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
@@ -11,7 +11,7 @@
 import os
 import sys
 try:
-    from Queue import *
+    from queue import *
 except:
     from queue import *
 import threading
@@ -185,7 +185,7 @@ class IPMITool(CNCMTTTool):
     def print_options(self, testDef, prefix):
         lines = testDef.printOptions(self.options)
         for line in lines:
-            print(prefix + line)
+            print((prefix + line))
         return
 
     def execute(self, log, keyvals, testDef):

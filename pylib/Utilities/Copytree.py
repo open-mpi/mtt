@@ -1,4 +1,4 @@
-from __future__ import print_function
+
 from builtins import str
 #!/usr/bin/env python
 #
@@ -16,6 +16,7 @@ import os
 from BaseMTTUtility import *
 
 from sys import version_info
+import imp
 if version_info[0] == 3:
   if version_info[1] <= 3:
     from imp import reload
@@ -83,7 +84,7 @@ class Copytree(BaseMTTUtility):
                 os.mkdir(dst)
             for srcpath in cmds['src'].split(','):
                 srcpath = srcpath.strip()
-                reload(distutils.dir_util)
+                imp.reload(distutils.dir_util)
                 if cmds['preserve_directory'] != "0":
                     subdst = os.path.join(dst,os.path.basename(srcpath))
                     while os.path.exists(subdst):

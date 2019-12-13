@@ -8,9 +8,7 @@
 # $HEADER$
 #
 
-from __future__ import print_function
-from future import standard_library
-standard_library.install_aliases()
+
 import os
 import sys
 import traceback
@@ -23,10 +21,6 @@ from yapsy.PluginManager import PluginManager
 
 from ExecutorMTTTool import *
 
-try:
-    basestring
-except:
-    basestring = str
 
 # Theory of Operation
 #
@@ -291,9 +285,9 @@ class SequentialEx(ExecutorMTTTool):
 
 
                     # Make sure stdout and stderr are properly formatted
-                    if 'stdout' in stageLog and isinstance(stageLog['stdout'], basestring):
+                    if 'stdout' in stageLog and isinstance(stageLog['stdout'], str):
                         stageLog['stdout'] = stageLog['stdout'].split("\n")
-                    if 'stderr' in stageLog and isinstance(stageLog['stderr'], basestring):
+                    if 'stderr' in stageLog and isinstance(stageLog['stderr'], str):
                         stageLog['stderr'] = stageLog['stderr'].split("\n")
 
                     # Log results for section
@@ -309,7 +303,7 @@ class SequentialEx(ExecutorMTTTool):
                         except KeyError:
                             pass
                         sys.exit(1)
-         
+
                     # Set flag if any stage failed so that a return code can be passed back up
                     if stageLog['status'] != 0:
                         self.status = 1
@@ -390,7 +384,7 @@ class SequentialEx(ExecutorMTTTool):
             testDef.watchdog.start(handler=self.durationTimeoutHandler,
                                    timeout=testDef.options['loop'])
             testDef.looping = True
- 
+
 
         # Start harasser
         if testDef.options["harass_trigger_scripts"] is not None:

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # $COPYRIGHT$
@@ -8,7 +8,7 @@
 # $HEADER$
 #
 
-from __future__ import print_function
+
 import os
 import re
 from HarasserMTTTool import *
@@ -62,7 +62,7 @@ class Harasser(HarasserMTTTool):
             self.activated = False
             if self.execution_counter > 0:
                 self.testDef.logger.verbose_print("Harasser plugin stopped while harassers were running. Cleaning up harassers...")
-                self.stop(self.running_harassers.keys(), self.testDef)
+                self.stop(list(self.running_harassers.keys()), self.testDef)
                 self.testDef.logger.verbose_print("Harassers were cleaned up.")
         return
 
@@ -112,13 +112,13 @@ class Harasser(HarasserMTTTool):
                    (trigger_script if k == 'trigger_scripts' else (\
                     stop_script if k == 'stop_scripts' \
                     else v[0])) \
-                   for k,v in self.options.items()}
+                   for k,v in list(self.options.items())}
 
             cmdargs = trigger_script.split()
 
             process = multiprocessing.Process(name='p'+str(self.execution_counter), \
                             target=self.parallel_execute, \
-                            args=({k:v[0] for k,v in self.options.items()},cmdargs,testDef))
+                            args=({k:v[0] for k,v in list(self.options.items())},cmdargs,testDef))
             process.start()
 
             self.running_harassers[self.execution_counter] = (process, ops, datetime.datetime.now())
@@ -150,7 +150,7 @@ class Harasser(HarasserMTTTool):
         return_info = []
         for process,ops,starttime in process_info:
             cmdargs = ops['stop_script'].split()
-            results = testDef.execmd.execute({k:v[0] for k,v in self.options.items()}, cmdargs, testDef)
+            results = testDef.execmd.execute({k:v[0] for k,v in list(self.options.items())}, cmdargs, testDef)
             return_info.append((results['status'],results['stdout'],results['stderr'],datetime.datetime.now()-starttime))
 
         for (process,ops,starttime),(results['status'],results['stdout'],results['stderr'],results['elapsed_secs']) in zip(process_info,return_info):

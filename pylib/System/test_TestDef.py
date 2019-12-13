@@ -28,7 +28,7 @@ def test_expandWildCardsAtEnd():
    print("--->to skip:", sections)
    expsections = td.expandWildCards(sections)
    assert 'Reporter:IUDatabase' in expsections
-   print("--->expanded:", expsections) 
+   print("--->expanded:", expsections)
 
 def test_expandWildCardsAtBeginning():
    td = setup()
@@ -39,7 +39,7 @@ def test_expandWildCardsAtBeginning():
    print("--->to skip:", sections)
    expsections = td.expandWildCards(sections)
    assert 'Reporter:IUDatabase' in expsections
-   print("--->expanded:", expsections) 
+   print("--->expanded:", expsections)
 
 def test_expandWildCardsInMiddle():
    td = setup()
@@ -50,7 +50,7 @@ def test_expandWildCardsInMiddle():
    print("--->to skip:", sections)
    expsections = td.expandWildCards(sections)
    assert 'Reporter:IUDatabase' in expsections
-   print("--->expanded:", expsections) 
+   print("--->expanded:", expsections)
 
 def test_expandWildCardsInBigList():
    td = setup()
@@ -63,7 +63,7 @@ def test_expandWildCardsInBigList():
    print("--->to skip:", sections)
    expsections = td.expandWildCards(sections)
    assert 'Reporter:IUDatabase' in expsections
-   print("--->expanded:", expsections) 
+   print("--->expanded:", expsections)
 
 def test_expandWildCardsAtEndMultiple():
    td = setup()
@@ -76,7 +76,7 @@ def test_expandWildCardsAtEndMultiple():
    print("--->to skip:", sections)
    expsections = td.expandWildCards(sections)
    assert 'Reporter:IUDatabase' in expsections and 'Reporter:TextFile' in expsections and 'Reporter:JSONFile' in expsections
-   print("--->expanded:", expsections) 
+   print("--->expanded:", expsections)
 
 def test_expandWildCardsAtBeginningMultiple():
    td = setup()
@@ -89,7 +89,7 @@ def test_expandWildCardsAtBeginningMultiple():
    print("--->to skip:", sections)
    expsections = td.expandWildCards(sections)
    assert 'Reporter:XMLFile' in expsections and 'Reporter:TextFile' in expsections and 'Reporter:JSONFile' in expsections
-   print("--->expanded:", expsections) 
+   print("--->expanded:", expsections)
 
 def test_expandWildCardsInMiddleMultiple():
    td = setup()
@@ -102,7 +102,7 @@ def test_expandWildCardsInMiddleMultiple():
    print("--->to skip:", sections)
    expsections = td.expandWildCards(sections)
    assert 'Reporter:XMLFile' in expsections and 'Reporter:TextFile' in expsections and 'Reporter:JSONFile' in expsections
-   print("--->expanded:", expsections) 
+   print("--->expanded:", expsections)
 
 def test_expandWildCardsMultipleStars():
    td = setup()
@@ -115,7 +115,7 @@ def test_expandWildCardsMultipleStars():
    print("--->to skip:", sections)
    expsections = td.expandWildCards(sections)
    assert 'Reporter:XMLFile' in expsections and 'Reporter:TextFile' in expsections and 'Reporter:JSONFile' in expsections
-   print("--->expanded:", expsections) 
+   print("--->expanded:", expsections)
 
 def test_expandWildCardsStarsAtBeginning():
    td = setup()
@@ -127,8 +127,8 @@ def test_expandWildCardsStarsAtBeginning():
    sections = ['*Reporter:TextFile']
    print("--->to skip:", sections)
    expsections = td.expandWildCards(sections)
-   assert 'Reporter:TextFile' in expsections 
-   print("--->expanded:", expsections) 
+   assert 'Reporter:TextFile' in expsections
+   print("--->expanded:", expsections)
 
 def test_expandWildCardsStarsAtEnd():
    td = setup()
@@ -140,8 +140,8 @@ def test_expandWildCardsStarsAtEnd():
    sections = ['Reporter:TextFile*']
    print("--->to skip:", sections)
    expsections = td.expandWildCards(sections)
-   assert 'Reporter:TextFile' in expsections 
-   print("--->expanded:", expsections) 
+   assert 'Reporter:TextFile' in expsections
+   print("--->expanded:", expsections)
 
 # this fails
 #def test_expandWildCardsMultipleStarsInARow():
@@ -164,7 +164,7 @@ def test_expandWildCardsMultipleStarsInARow():
    print("--->to skip:", sections)
    expsections = td.expandWildCards(sections)
    assert 'Reporter:TextFile' in expsections
-   print("--->expanded:", expsections) 
+   print("--->expanded:", expsections)
 
 def test_expandWildCardsMultipleStarsInARowNoGaps():
    td = setup()
@@ -175,5 +175,5 @@ def test_expandWildCardsMultipleStarsInARowNoGaps():
    print("--->to skip:", sections)
    expsections = td.expandWildCards(sections)
    assert 'Reporter:TextFile' in expsections
-   print("--->expanded:", expsections) 
+   print("--->expanded:", expsections)
 

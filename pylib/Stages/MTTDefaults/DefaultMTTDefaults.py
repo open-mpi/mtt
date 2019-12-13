@@ -8,7 +8,7 @@
 # $HEADER$
 #
 
-from __future__ import print_function
+
 import os
 from MTTDefaultsMTTStage import *
 
@@ -110,7 +110,7 @@ class DefaultMTTDefaults(MTTDefaultsMTTStage):
 
         # we need to record the results into our options so
         # subsequent sections can capture them
-        keys = cmds.keys()
+        keys = list(cmds.keys())
         for key in keys:
             self.options[key] = (cmds[key], self.options[key][1])
         return
