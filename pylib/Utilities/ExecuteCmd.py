@@ -234,7 +234,8 @@ class ExecuteCmd(BaseMTTUtility):
                                               None,
                                               datetime.datetime.now(),
                                               datetime.datetime.now(),
-                                              0, None)
+                                              0, None,
+                                              testDef)
             return (1, [], ["MTT ExecuteCmd error: no cmdargs"], 0)
 
         # define storage to catch the output
@@ -321,7 +322,8 @@ class ExecuteCmd(BaseMTTUtility):
                                                   starttime,
                                                   endtime,
                                                   (endtime - starttime).total_seconds,
-                                                  results['slurm_job_ids'] if 'slurm_job_ids' in results else None)
+                                                  results['slurm_job_ids'] if 'slurm_job_ids' in results else None,
+                                                  testDef)
                 return results
 
             if time_exec:
@@ -357,6 +359,7 @@ class ExecuteCmd(BaseMTTUtility):
                                           starttime,
                                           endtime,
                                           (endtime - starttime).total_seconds(),
-                                          results['slurm_job_ids'] if 'slurm_job_ids' in results else None)
+                                          results['slurm_job_ids'] if 'slurm_job_ids' in results else None,
+                                          testDef)
 
         return results

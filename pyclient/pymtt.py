@@ -148,6 +148,36 @@ debugGroup.add_argument("--dryrun",
 debugGroup.add_argument("--trial",
                       action="store_true", dest="trial", default=False,
                       help="Use when testing your MTT client setup; results that are generated and submitted to the database are marked as \"trials\" and are not included in normal reporting.")
+
+elkGroup = parser.add_argument_group('elkGroup','ELK-friendly output options')
+elkGroup.add_argument("--elk_testcase", dest="elk_testcase",
+                        default=os.environ['MTT_ELK_TESTCASE'] if 'MTT_ELK_TESTCASE' in os.environ else None,
+                        help="Specifies which testcase to log results as when using elk-friendly output. You can also set this through the enviroment variable MTT_ELK_TESTCASE")
+elkGroup.add_argument("--elk_testcycle", dest="elk_testcycle",
+                        default=os.environ['MTT_ELK_TESTCYCLE'] if 'MTT_ELK_TESTCYCLE' in os.environ else None,
+                        help="Specifies which testcycle to log results as when using elk-friendly output. You can also set this through the enviroment variable MTT_ELK_TESTCYCLE")
+elkGroup.add_argument("--elk_id", dest="elk_id",
+                        default=os.environ['MTT_ELK_ID'] if 'MTT_ELK_ID' in os.environ else None,
+                        help="Specifies which execution id to log results as when using elk-friendly output. You can also set this through the enviroment variable MTT_ELK_ID")
+elkGroup.add_argument("--elk_head", dest="elk_head",
+                        default=os.environ['MTT_ELK_HEAD'] if 'MTT_ELK_HEAD' in os.environ else None,
+                        help="Specifies which location to log <caseid>_<elk_id>.elog files for elk-friendly output. You can also set this through the environment variable MTT_ELK_HEAD")
+elkGroup.add_argument("--elk_chown", dest="elk_chown",
+                        default=os.environ['MTT_ELK_CHOWN'] if 'MTT_ELK_CHOWN' in os.environ else None,
+                        help="Specifies what user and group to set for *.elog file permissions. You can also set this through the environment variable MTT_ELK_CHOWN")
+elkGroup.add_argument("--elk_maxsize", dest="elk_maxsize",
+                        default=os.environ['MTT_ELK_MAXSIZE'] if 'MTT_ELK_MAXSIZE' in os.environ else None,
+                        help="Specifies a max number of lines to log for stdout and stderr in elk-friendly output, and otherwise truncate. You can also set this through the environment variable MTT_ELK_MAXSIZE")
+elkGroup.add_argument("--elk_nostdout", dest="elk_nostdout", action="store_true",
+                        default=True if 'MTT_ELK_NOSTDOUT' in os.environ and os.environ['MTT_ELK_NOSTDOUT'].lower() != 'false' else False,
+                        help="Specifies whether to include stdout in elk-friendly output. You can also set this through the environment variable MTT_ELK_NOSTDOUT")
+elkGroup.add_argument("--elk_nostderr", dest="elk_nostderr", action="store_true",
+                        default=True if 'MTT_ELK_NOSTDERR' in os.environ and os.environ['MTT_ELK_NOSTDERR'].lower() != 'false' else False,
+                        help="Specifies whether to include stdout in elk-friendly output. You can also set this through the environment variable MTT_ELK_NOSTDERR")
+elkGroup.add_argument("--elk_debug", dest="elk_debug", action="store_true",
+                        default=True if 'MTT_ELK_DEBUG' in os.environ and os.environ['MTT_ELK_DEBUG'].lower() != 'false' else False,
+                        help="Specifies whether to output everything logged to *.elog files to the screen as extra verbose output. You can also set this through the environment variable MTT_ELK_DEBUG")
+
 args = parser.parse_args()
 
 # get any arguments set in MTT_ARGS environment variable and combine them with
