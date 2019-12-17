@@ -135,13 +135,16 @@ class Logger(BaseMTTUtility):
 
         if logtype == 'mtt-sec':
             # convert comamands, list of dicts into a dictionary
-            result['commands'] = {"command{}".format(i):c for i,c in enumerate(self.execmds_stash)}
-            self.execmds_stash = []
-            # convert parameters, list of lists into a dictionary
-            result['parameters'] = { p[0]:p[1] for p in result['parameters'] }
+            if self.execmds_stash:
+                result['commands'] = {"command{}".format(i):c for i,c in enumerate(self.execmds_stash)}
+                self.execmds_stash = []
 
+            # convert parameters, list of lists into a dictionary
+            if 'parameters' in result:
+                result['parameters'] = { p[0]:p[1] for p in result['parameters'] }
+
+            # convert profile, list of lists into a dictionary
             if 'profile' in result:
-                # convert profile, list of lists into a dictionary
                 result['profile'] = { k:' '.join(v) for k,v in list(result['profile'].items()) }
 
         if testDef.options['elk_debug']:
@@ -226,9 +229,9 @@ class Logger(BaseMTTUtility):
             self.verbose_print(to_print)
             self.verbose_print("STATUS OF [%s] IS %d" % (stagename, log['status']))
             self.verbose_print("")
-        log['time'] = (stage_end-self.stage_start[stagename]).total_seconds()
-        log['time_start'] = self.stage_start[stagename]
-        log['time_end'] = stage_end
+        log['elapsed'] = (stage_end-self.stage_start[stagename]).total_seconds()
+        log['starttime'] = self.stage_start[stagename]
+        log['endtime'] = stage_end
         self.current_section = None
 
     def verbose_print(self, string, timestamp=None):
