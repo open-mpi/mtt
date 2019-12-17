@@ -380,11 +380,11 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;                    <span class="keywordflow">if</span> <span class="stringliteral">&#39;stderr&#39;</span> <span class="keywordflow">in</span> stageLog <span class="keywordflow">and</span> isinstance(stageLog[<span class="stringliteral">&#39;stderr&#39;</span>], str):</div>
 <div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;                        stageLog[<span class="stringliteral">&#39;stderr&#39;</span>] = stageLog[<span class="stringliteral">&#39;stderr&#39;</span>].split(<span class="stringliteral">&quot;\n&quot;</span>)</div>
 <div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;</div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;                    <span class="comment"># Log results for section</span></div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;                    testDef.logger.logResults(disp_title, stageLog, testDef)</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;                    <span class="comment"># Print end of section</span></div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;                    testDef.logger.stage_end_print(disp_title, stageLog)</div>
 <div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;</div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;                    <span class="comment"># Print end of section</span></div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;                    testDef.logger.stage_end_print(disp_title, stageLog)</div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;                    <span class="comment"># Log results for section</span></div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;                    testDef.logger.logResults(disp_title, stageLog, testDef)</div>
 <div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;</div>
 <div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;                    <span class="keywordflow">if</span> testDef.options[<span class="stringliteral">&#39;stop_on_fail&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keyword">False</span> <span class="keywordflow">and</span> stageLog[<span class="stringliteral">&#39;status&#39;</span>] != 0:</div>
 <div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;                        print(<span class="stringliteral">&quot;Section &quot;</span> + stageLog[<span class="stringliteral">&#39;section&#39;</span>] + <span class="stringliteral">&quot;: Status &quot;</span> + str(stageLog[<span class="stringliteral">&#39;status&#39;</span>]))</div>
