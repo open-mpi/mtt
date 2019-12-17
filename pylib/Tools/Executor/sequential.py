@@ -290,11 +290,11 @@ class SequentialEx(ExecutorMTTTool):
                     if 'stderr' in stageLog and isinstance(stageLog['stderr'], str):
                         stageLog['stderr'] = stageLog['stderr'].split("\n")
 
-                    # Log results for section
-                    testDef.logger.logResults(disp_title, stageLog, testDef)
-
                     # Print end of section
                     testDef.logger.stage_end_print(disp_title, stageLog)
+
+                    # Log results for section
+                    testDef.logger.logResults(disp_title, stageLog, testDef)
 
                     if testDef.options['stop_on_fail'] is not False and stageLog['status'] != 0:
                         print("Section " + stageLog['section'] + ": Status " + str(stageLog['status']))
