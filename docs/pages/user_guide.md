@@ -382,3 +382,61 @@ password = database password
 platform = Your_Platform  
 url = https://mtt.open-mpi.org/submit/cpy/api/  
 
+## Capabilities of MTT
+
+### Accessing environment variables from within an INI file
+
+One useful feature of MTT is the ability of accessing outside environment variables from within an INI file. This enables MTT tests to respond to dynamic input fron the environment.
+
+To access environment variables, use this syntax:
+
+```
+${ENV:ENVIRONMENT_VARIABLE}
+```
+
+MTT will directly substitute the value into the location of the INI file you specified.
+
+If an environment variable does not exist, MTT will warn the user and MTT will exit with an error.
+
+### Accessing the MTT log from within an INI file
+
+Another useful feature of MTT is the ability of accessing results and data from previous stages in the execution of later stages.
+
+To access the MTT log, you must use this syntax:
+
+```
+${LOG:Profile_Installed.status}
+```
+
+The above example is accessing the status of the stage `[Profile:Installed]`. Colons (":") are substituted for underscores ("_"), and dots (".") are used as delimiters for accessing different parts of the data.
+
+You can use the LogInterpolationDebug plugin to view all the contents of the MTT log in the same syntax you would use to access the same data.
+
+This is how to include the LogInterpolationDebug plugin within your INI file:
+
+```
+[Reporter:LogInterpolationDebug]
+plugin = LogInterpolationDebug
+```
+
+After including this plugin in your INI file, the output of your test will include something similar to this to help you determine the correct syntax to use to access the MTT log.
+
+```
+=========================================================================
+START EXECUTING [Reporter:TextFile] start_time=2020-01-06 19:17:00.505503
+=========================================================================
+OPTIONS FOR SECTION: Reporter:TextFile
+  plugin = TextFile
+Executing plugin TextFile
+LOG Interpolation Debugging Tool
+${LOG:MTTDefaults} = { ....................... }
+${LOG:MTTDefaults.keys} = [ ....... ]
+${LOG:MTTDefaults.keys.length} = 7
+${LOG:MTTDefaults.keys.size} = 7
+${LOG:MTTDefaults.keys.0} = section
+${LOG:MTTDefaults.keys.1} = parameters
+${LOG:MTTDefaults.keys.2} = status
+${LOG:MTTDefaults.keys.3} = options
+```
+
+In the above output, notice what looks like `{ ... }` and `[ ... ]`. These are simply where the LogInterpolationDebug plugin is hiding JSON strings that contain data that you can also access directly, and the form in which you access the data directly is also displayed in the debug output.

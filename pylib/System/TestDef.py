@@ -23,6 +23,7 @@ import datetime
 from distutils.spawn import find_executable
 from threading import Semaphore
 from pathlib import Path
+import json
 
 is_py2 = sys.version[0] == '2'
 
@@ -528,12 +529,17 @@ class TestDef(object):
         if isinstance(sublog, str):
             self.config.set("LOG", basestr, sublog.replace("$","$$"))
         elif isinstance(sublog, dict):
+            self.fill_log_interpolation(basestr, str(json.dumps(sublog, default=str)))
+            self.fill_log_interpolation("%s.keys" % basestr, list(sublog.keys()))
             for k,v in list(sublog.items()):
                 self.fill_log_interpolation("%s.%s" % (basestr, k), v)
         elif isinstance(sublog, list):
-            if sum([((isinstance(t, list) or isinstance(t, tuple)) and len(t) == 2) for t in sublog]) == len(sublog):
+            if sum([((isinstance(t, list) or isinstance(t, tuple)) and len(t) == 2) for t in sublog]) == len(sublog) and len(sublog) > 0:
                 self.fill_log_interpolation(basestr, {k:v for k,v in sublog})
             else:
+                self.fill_log_interpolation(basestr, str(json.dumps(sublog, default=str)))
+                self.fill_log_interpolation("%s.length" % basestr, str(len(sublog)))
+                self.fill_log_interpolation("%s.size" % basestr, str(len(sublog)))
                 for i,v in enumerate(sublog):
                     self.fill_log_interpolation("%s.%d" % (basestr, i), v)
         else:
