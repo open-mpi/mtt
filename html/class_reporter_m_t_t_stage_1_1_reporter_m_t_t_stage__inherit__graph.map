@@ -1,5 +1,6 @@
 <map id="ReporterMTTStage.ReporterMTTStage" name="ReporterMTTStage.ReporterMTTStage">
-<area shape="rect" id="node3" href="$class_i_u_database_1_1_i_u_database.html" title="IUDatabase.IUDatabase" alt="" coords="5,171,171,197"/>
-<area shape="rect" id="node4" href="$class_junit_x_m_l_1_1_junit_x_m_l.html" title="JunitXML.JunitXML" alt="" coords="196,171,331,197"/>
-<area shape="rect" id="node5" href="$class_text_file_1_1_text_file.html" title="TextFile.TextFile" alt="" coords="356,171,476,197"/>
+<area shape="rect" id="node3" href="$class_i_u_database_1_1_i_u_database.html" title="IUDatabase.IUDatabase" alt="" coords="358,5,525,32"/>
+<area shape="rect" id="node4" href="$class_junit_x_m_l_1_1_junit_x_m_l.html" title="JunitXML.JunitXML" alt="" coords="373,56,509,83"/>
+<area shape="rect" id="node5" href="$class_log_interpolation_debug_1_1_log_interpolation_debug.html" title="LogInterpolationDebug.Log\lInterpolationDebug" alt="" coords="353,107,530,149"/>
+<area shape="rect" id="node6" href="$class_text_file_1_1_text_file.html" title="TextFile.TextFile" alt="" coords="381,173,501,200"/>
 </map>
