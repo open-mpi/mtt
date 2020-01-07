@@ -1,0 +1,18 @@
+#
+# Copyright (c) 2015-2018 Intel, Inc. All rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
+
+[Core]
+Name = LOG Interpolation Debug plugin
+Module = LogInterpolationDebug
+
+[Documentation]
+Author = Richard Barella
+Version = 0.1
+Website = N/A
+Description = Debug tool for ${LOG:....} interpolation syntax
