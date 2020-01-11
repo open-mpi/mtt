@@ -1,0 +1,18 @@
+#
+# Copyright (c) 2015-2018 Intel, Inc. All rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
+
+[Core]
+Name = ElkLogger
+Module = ElkLogger
+
+[Documentation]
+Author = Richard Barella
+Version = 0.1
+Website = N/A
+Description = Log results to *.elog files with JSON entries to be later consumed by Elastic Stack (ELK). Uses pymtt.py options: elk_head, elk_id, elk_testcycle, elk_testcase, elk_debug, elk_chown, elk_maxsize, elk_nostdout, elk_nostderr 

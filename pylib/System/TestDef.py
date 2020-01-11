@@ -61,6 +61,8 @@ class TestDef(object):
         # set aside a spot for a logger object, and
         # note that it hasn't yet been defined
         self.logger = None
+        # set aside a spot for the elkLogger object
+        self.elkLogger = None
         self.modcmd = None
         # set aside per stage environment module requests
         self.module_unload = {}
@@ -524,6 +526,12 @@ class TestDef(object):
         self.logger = self.utilities.getPluginByName("Logger", "Base").plugin_object
         self.logger.open(self)
         return
+
+    def openElkLogger(self):
+        if not self.utilities.activatePluginByName("ElkLogger", "Base"):
+            self.elkLogger = None
+        else:
+            self.elkLogger = self.utilities.getPluginByName("ElkLogger", "Base").plugin_object
 
     def fill_log_interpolation(self, basestr, sublog):
         if isinstance(sublog, str):

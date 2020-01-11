@@ -277,6 +277,9 @@ if args.section and args.skipsections:
 # to stdout
 testDef.openLogger()
 
+# open the elk logger if given, otherwise don't log to *.elog files
+testDef.openElkLogger()
+
 # Read the input test definition file(s)
 testDef.configTest()
 
