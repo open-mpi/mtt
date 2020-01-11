@@ -227,15 +227,15 @@ class ExecuteCmd(BaseMTTUtility):
 
         if not mycmdargs:
             testDef.logger.verbose_print("ExecuteCmd error: no cmdargs")
-            if not quiet:
-                testDef.logger.log_execmd_elk(cmdargs,
-                                              1, None,
-                                              'ExecuteCmd error: no cmdargs',
-                                              None,
-                                              datetime.datetime.now(),
-                                              datetime.datetime.now(),
-                                              0, None,
-                                              testDef)
+            if not quiet and testDef.elkLogger is not None and testDef.options['elk_id'] is not None:
+                testDef.elkLogger.log_execmd_elk(cmdargs,
+                                                 1, None,
+                                                 'ExecuteCmd error: no cmdargs',
+                                                 None,
+                                                 datetime.datetime.now(),
+                                                 datetime.datetime.now(),
+                                                 0, None,
+                                                 testDef)
             return (1, [], ["MTT ExecuteCmd error: no cmdargs"], 0)
 
         # define storage to catch the output
@@ -313,17 +313,17 @@ class ExecuteCmd(BaseMTTUtility):
                     elapsed_datetime = endtime - starttime
                     results['elapsed_secs'] = elapsed_datetime.total_seconds()
 
-                if not quiet:
-                    testDef.logger.log_execmd_elk(cmdargs,
-                                                  results['status'] if 'status' in results else None,
-                                                  results['stdout'] if 'stdout' in results else None,
-                                                  results['stderr'] if 'stderr' in results else None,
-                                                  results['timedout'] if 'timedout' in results else None,
-                                                  starttime,
-                                                  endtime,
-                                                  (endtime - starttime).total_seconds,
-                                                  results['slurm_job_ids'] if 'slurm_job_ids' in results else None,
-                                                  testDef)
+                if not quiet and testDef.elkLogger is not None and testDef.options['elk_id'] is not None:
+                    testDef.elkLogger.log_execmd_elk(cmdargs,
+                                                     results['status'] if 'status' in results else None,
+                                                     results['stdout'] if 'stdout' in results else None,
+                                                     results['stderr'] if 'stderr' in results else None,
+                                                     results['timedout'] if 'timedout' in results else None,
+                                                     starttime,
+                                                     endtime,
+                                                     (endtime - starttime).total_seconds,
+                                                     results['slurm_job_ids'] if 'slurm_job_ids' in results else None,
+                                                     testDef)
                 return results
 
             if time_exec:
@@ -350,16 +350,16 @@ class ExecuteCmd(BaseMTTUtility):
             results['stderr'] = [str(e)]
             results['slurm_job_ids'] = []
 
-        if not quiet:
-            testDef.logger.log_execmd_elk(cmdargs,
-                                          results['status'] if 'status' in results else None,
-                                          results['stdout'] if 'stdout' in results else None,
-                                          results['stderr'] if 'stderr' in results else None,
-                                          results['timedout'] if 'timedout' in results else None,
-                                          starttime,
-                                          endtime,
-                                          (endtime - starttime).total_seconds(),
-                                          results['slurm_job_ids'] if 'slurm_job_ids' in results else None,
-                                          testDef)
+        if not quiet and testDef.elkLogger is not None and testDef.options['elk_id'] is not None:
+            testDef.elkLogger.log_execmd_elk(cmdargs,
+                                             results['status'] if 'status' in results else None,
+                                             results['stdout'] if 'stdout' in results else None,
+                                             results['stderr'] if 'stderr' in results else None,
+                                             results['timedout'] if 'timedout' in results else None,
+                                             starttime,
+                                             endtime,
+                                             (endtime - starttime).total_seconds(),
+                                             results['slurm_job_ids'] if 'slurm_job_ids' in results else None,
+                                             testDef)
 
         return results
