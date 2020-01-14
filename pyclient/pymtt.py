@@ -177,6 +177,9 @@ elkGroup.add_argument("--elk_nostderr", dest="elk_nostderr", action="store_true"
 elkGroup.add_argument("--elk_debug", dest="elk_debug", action="store_true",
                         default=True if 'MTT_ELK_DEBUG' in os.environ and os.environ['MTT_ELK_DEBUG'].lower() != 'false' else False,
                         help="Specifies whether to output everything logged to *.elog files to the screen as extra verbose output. You can also set this through the environment variable MTT_ELK_DEBUG")
+elkGroup.add_argument("--elk_hide_execmd", dest="elk_hide_execmd",
+                      default=True if 'MTT_ELK_HIDE_EXECID' in os.environ and os.environ['MTT_ELK_HIDE_EXECID'].lower() != 'false' else False,
+                      help="Comma delimited list of plugins and/or sections to hide execmd output from. Also set through environment variable MTT_ELK_HIDE_EXECMD. Use \"Default\" to hide execmd output when no plugin is specified.")
 
 args = parser.parse_args()
 
