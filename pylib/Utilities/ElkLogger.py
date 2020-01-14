@@ -2,7 +2,7 @@
 from builtins import str
 #!/usr/bin/env python
 #
-# Copyright (c) 2015-2018 Intel, Inc. All rights reserved.
+# Copyright (c) 2015-2020 Intel, Inc. All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -24,6 +24,15 @@ import grp
 # @section ElkLogger
 # Log results to *.elog files with JSON entries to be later consumed by Elastic Stack (ELK)
 # Uses pymtt.py options: elk_head, elk_id, elk_testcycle, elk_testcase, elk_debug, elk_chown, elk_maxsize, elk_nostdout, elk_nostderr 
+#
+# --elk_testcase specifies which testcase to log results as when using elk-friendly ouput. Also set through environment variable MTT_ELK_TESTCASE
+# --elk_testcycle specifies which testcycle to log results as when using elk-friendly output. Also set through environment variable MTT_ELK_TESTCYCLE
+# --elk_id specifies which execution id to log results as when using elk-friendly output. Also set through environment variable MTT_ELK_ID
+# --elk_head specifies which location to log <caseid>_<elk_id>.elog files for elk_friendly output. Also set through environment variable MTT_ELK_HEAD
+# --elk_chown specifies a max number of lines to log for stdout and stderr in elk-friendly output. Also set through environment variable MTT_ELK_CHOWN
+# --elk_nostdout specifies whether to include stdout in elk-friendly output. Also set through environment variable MTT_ELK_NOSTDOUT
+# --elk_nostderr specifies whether to include stderr in elk-friendly output. Also set through environment variable MTT_ELK_NOSTDERR
+# --elk_debug specifies whether to output everything logged to *.elog files to the screen as extra verbose output. Also set through environment variable MTT_ELK_DEBUG
 # @}
 class ElkLogger(BaseMTTUtility):
     def __init__(self):
