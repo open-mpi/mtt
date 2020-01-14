@@ -15,6 +15,7 @@ import datetime
 from BaseMTTUtility import *
 import json
 import os
+from pathlib import Path
 import pwd
 import grp
 
@@ -80,14 +81,16 @@ class ElkLogger(BaseMTTUtility):
                 result['profile'] = { k:' '.join(v) for k,v in list(result['profile'].items()) }
 
         if testDef.options['elk_debug']:
-            testDef.logger.verbose_print('Logging to elk_head={}/{}.elog: {}'.format(testDef.options['elk_head'], testDef.options['elk_id'], result))
+            testDef.logger.verbose_print('Logging to elk_head={}/{}-{}.elog: {}'.format(testDef.options['elk_head'],
+                                                                                        testDef.options['elk_testcase'],
+                                                                                        testDef.options['elk_id'], result))
 
         if self.elk_log is None:
             allpath = '/'
             for d in os.path.normpath(testDef.options['elk_head']).split(os.path.sep):
                 allpath = os.path.join(allpath, d)
                 if not os.path.exists(allpath):
-                    os.mkdir(allpath)
+                    Path(allpath).mkdir(parents=True, exist_ok=True)
                     uid = None
                     gid = None
                     if testDef.options['elk_chown'] is not None and ':' in testDef.options['elk_chown']:
