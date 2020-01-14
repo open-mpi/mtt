@@ -107,6 +107,10 @@ Copytree</h1>
   </table>
   </dd>
 </dl>
+<h1><a class="anchor" id="ElkLogger"></a>
+ElkLogger</h1>
+<p>Log results to *.elog files with JSON entries to be later consumed by Elastic Stack (ELK) Uses <a class="el" href="pymtt_8py.html">pymtt.py</a> options: elk_head, elk_id, elk_testcycle, elk_testcase, elk_debug, elk_chown, elk_maxsize, elk_nostdout, elk_nostderr</p>
+<p>&ndash;elk_testcase specifies which testcase to log results as when using elk-friendly ouput. Also set through environment variable MTT_ELK_TESTCASE &ndash;elk_testcycle specifies which testcycle to log results as when using elk-friendly output. Also set through environment variable MTT_ELK_TESTCYCLE &ndash;elk_id specifies which execution id to log results as when using elk-friendly output. Also set through environment variable MTT_ELK_ID &ndash;elk_head specifies which location to log &lt;caseid&gt;_&lt;elk_id&gt;.elog files for elk_friendly output. Also set through environment variable MTT_ELK_HEAD &ndash;elk_chown specifies a max number of lines to log for stdout and stderr in elk-friendly output. Also set through environment variable MTT_ELK_CHOWN &ndash;elk_nostdout specifies whether to include stdout in elk-friendly output. Also set through environment variable MTT_ELK_NOSTDOUT &ndash;elk_nostderr specifies whether to include stderr in elk-friendly output. Also set through environment variable MTT_ELK_NOSTDERR &ndash;elk_debug specifies whether to output everything logged to *.elog files to the screen as extra verbose output. Also set through environment variable MTT_ELK_DEBUG</p>
 <h1><a class="anchor" id="Environ"></a>
 Environ</h1>
 <p>Set environment variables</p>
