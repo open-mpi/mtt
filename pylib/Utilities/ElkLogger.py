@@ -33,6 +33,7 @@ import grp
 # --elk_nostdout specifies whether to include stdout in elk-friendly output. Also set through environment variable MTT_ELK_NOSTDOUT
 # --elk_nostderr specifies whether to include stderr in elk-friendly output. Also set through environment variable MTT_ELK_NOSTDERR
 # --elk_debug specifies whether to output everything logged to *.elog files to the screen as extra verbose output. Also set through environment variable MTT_ELK_DEBUG
+# --elk_hide_execmd comma delimited list of plugins and/or sections to hide execmd output from. Also set through environment variable MTT_ELK_HIDE_EXECMD. Use "Default" to hide execmd output when no plugin is specified.
 # @}
 class ElkLogger(BaseMTTUtility):
     def __init__(self):
@@ -78,7 +79,21 @@ class ElkLogger(BaseMTTUtility):
         if logtype == 'mtt-sec':
             # convert comamands, list of dicts into a dictionary
             if self.execmds_stash:
-                result['commands'] = {"command{}".format(i):c for i,c in enumerate(self.execmds_stash)}
+                # generate list of plugins/sections to hide execmd output for
+                if testDef.options['elk_hide_execmd']:
+                    elk_hide_execmd = testDef.options['elk_hide_execmd'].lower().split(',')
+                else:
+                    elk_hide_execmd = []
+                # find out what plugin was used
+                plugin = 'Default'
+                for (p1,p2) in result['parameters']:
+                    if p1 == 'plugin':
+                        plugin = p2
+                        break
+                # log execmd output
+                if result['section'].lower() not in elk_hide_execmd and plugin.lower() not in elk_hide_execmd:
+                    result['commands'] = {"command{}".format(i):c for i,c in enumerate(self.execmds_stash)}
+                # clear execmd stash to prepare for next round of plugin execution
                 self.execmds_stash = []
 
             # convert parameters, list of lists into a dictionary
