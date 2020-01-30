@@ -76,39 +76,6 @@ class ElkLogger(BaseMTTUtility):
         if 'options' in result and 'ini_files' in result['options']:
             result['options']['ini_files'] = ','.join(t[0] for t in result['options']['ini_files'])
 
-        if logtype == 'mtt-sec':
-            # convert comamands, list of dicts into a dictionary
-            if self.execmds_stash:
-                # generate list of plugins/sections to hide execmd output for
-                if testDef.options['elk_hide_execmd']:
-                    elk_hide_execmd = testDef.options['elk_hide_execmd'].lower().split(',')
-                else:
-                    elk_hide_execmd = []
-                # find out what plugin was used
-                plugin = 'Default'
-                for (p1,p2) in result['parameters']:
-                    if p1 == 'plugin':
-                        plugin = p2
-                        break
-                # log execmd output
-                if result['section'].lower() not in elk_hide_execmd and plugin.lower() not in elk_hide_execmd:
-                    result['commands'] = {"command{}".format(i):c for i,c in enumerate(self.execmds_stash)}
-                # clear execmd stash to prepare for next round of plugin execution
-                self.execmds_stash = []
-
-            # convert parameters, list of lists into a dictionary
-            if 'parameters' in result:
-                result['parameters'] = { p[0]:p[1] for p in result['parameters'] }
-
-            # convert profile, list of lists into a dictionary
-            if 'profile' in result:
-                result['profile'] = { k:' '.join(v) for k,v in list(result['profile'].items()) }
-
-        if testDef.options['elk_debug']:
-            testDef.logger.verbose_print('Logging to elk_head={}/{}-{}.elog: {}'.format(testDef.options['elk_head'],
-                                                                                        testDef.options['elk_testcase'],
-                                                                                        testDef.options['elk_id'], result))
-
         if self.elk_log is None:
             allpath = '/'
             for d in os.path.normpath(testDef.options['elk_head']).split(os.path.sep):
@@ -124,10 +91,50 @@ class ElkLogger(BaseMTTUtility):
                         gid = grp.getgrnam(group).gr_gid
                         os.chown(allpath, uid, gid)
             self.elk_log = open(os.path.join(testDef.options['elk_head'], '{}-{}.elog'.format(testDef.options['elk_testcase'], testDef.options['elk_id'])), 'a+')
+
+        if logtype == 'section':
+            # convert parameters, list of lists into a dictionary
+            if 'parameters' in result:
+                result['parameters'] = { p[0]:p[1] for p in result['parameters'] }
+
+            # convert profile, list of lists into a dictionary
+            if 'profile' in result:
+                result['profile'] = { k:' '.join(v) for k,v in list(result['profile'].items()) }
+
+        if testDef.options['elk_debug']:
+            testDef.logger.verbose_print('Logging to elk_head={}/{}-{}.elog: {}'.format(testDef.options['elk_head'],
+                                                                                        testDef.options['elk_testcase'],
+                                                                                        testDef.options['elk_id'], result))
         self.elk_log.write(json.dumps(result) + '\n')
+
+
+        # convert comamands, list of dicts into a dictionary
+        if self.execmds_stash:
+            # generate list of plugins/sections to hide execmd output for
+            if testDef.options['elk_hide_execmd']:
+                elk_hide_execmd = testDef.options['elk_hide_execmd'].lower().split(',')
+            else:
+                elk_hide_execmd = []
+            # find out what plugin was used
+            plugin = 'Default'
+            if 'plugin' in result['parameters']:
+                plugin = result['parameters']['plugin']
+            # log execmd output
+            if result['section'].lower() not in elk_hide_execmd and plugin.lower() not in elk_hide_execmd:
+
+                for execmd_result in self.execmds_stash:
+                    self.elk_log.write(json.dumps({'execid': testDef.options['elk_id'],
+                                                   'cycleid': testDef.options['elk_testcycle'],
+                                                   'caseid': testDef.options['elk_testcase'],
+                                                   'logtype': 'command',
+                                                   'section': result['section'],
+                                                   **execmd_result}) + '\n')
+                self.execmds_stash = []
+
         return
 
     def log_execmd_elk(self, cmdargs, status, stdout, stderr, timedout, starttime, endtime, elapsed_secs, slurm_job_ids, testDef):
+
         if testDef.options['elk_id'] is not None:
             if testDef.options['elk_maxsize'] is not None:
                 try:
@@ -145,7 +152,7 @@ class ElkLogger(BaseMTTUtility):
                     else:
                         stderr = ['<truncated>']
             self.execmds_stash.append({'cmdargs': ' '.join(cmdargs),
-                                       'status': status,
+                                       'cmdstatus': status,
                                        'stdout': stdout if testDef.options['elk_nostdout'] is not None else ['<ignored>'],
                                        'stderr': stderr if testDef.options['elk_nostderr'] is not None else ['<ignored>'],
                                        'timedout': timedout,
@@ -154,3 +161,6 @@ class ElkLogger(BaseMTTUtility):
                                        'elapsed': elapsed_secs,
                                        'slurm_job_ids': ','.join([str(j) for j in slurm_job_ids])
                                       })
+
+
+
