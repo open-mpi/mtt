@@ -118,7 +118,7 @@ class Logger(BaseMTTUtility):
         self.verbose_print("")
         # Log to elog file for injesting into ELK
         if testDef.elkLogger is not None and testDef.options['elk_id'] is not None:
-            testDef.elkLogger.log_to_elk({'environment': dict(os.environ), 'options': testDef.options}, 'mtt-env', testDef)
+            testDef.elkLogger.log_to_elk({'environment': dict(os.environ), 'options': testDef.options}, 'environment', testDef)
 
     def stage_start_print(self, stagename):
         self.stage_start[stagename] = datetime.datetime.now()
@@ -166,7 +166,7 @@ class Logger(BaseMTTUtility):
         self.results.append(result)
         # Log to elog file for injesting into ELK
         if testDef.elkLogger is not None and testDef.options['elk_id'] is not None:
-            testDef.elkLogger.log_to_elk(result, 'mtt-sec', testDef)
+            testDef.elkLogger.log_to_elk(result, 'section', testDef)
         return
 
     def outputLog(self):
