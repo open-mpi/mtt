@@ -72,6 +72,11 @@ class ElkLogger(BaseMTTUtility):
         if 'stdout' in result:
             del result['stdout']
 
+        # change endtime to finishtime to align with veadb field name
+        if 'endtime' in result:
+            result['finishtime'] = result['endtime']
+            del result['endtime']
+
         # convert ini_files, lists of lists into a comma separated string
         if 'options' in result and 'ini_files' in result['options']:
             result['options']['ini_files'] = ','.join(t[0] for t in result['options']['ini_files'])
@@ -123,17 +128,48 @@ class ElkLogger(BaseMTTUtility):
             if result['section'].lower() not in elk_hide_execmd and plugin.lower() not in elk_hide_execmd:
 
                 for execmd_result in self.execmds_stash:
-                    self.elk_log.write(json.dumps({'execid': testDef.options['elk_id'],
+                    self.elk_log.write(json.dumps({'logtype': 'command',
+                                                   'execid': testDef.options['elk_id'],
                                                    'cycleid': testDef.options['elk_testcycle'],
                                                    'caseid': testDef.options['elk_testcase'],
-                                                   'logtype': 'command',
                                                    'section': result['section'],
-                                                   **execmd_result}) + '\n')
+                                                   'cmdargs': execmd_result['cmdargs'],
+                                                   'cmdstatus': execmd_result['cmdstatus'],
+                                                   'timedout': execmd_result['timedout'],
+                                                   'starttime': execmd_result['starttime'],
+                                                   'finishtime': execmd_result['finishtime'],
+                                                   'elapsed': execmd_result['elapsed'],
+                                                   'slurm_job_ids': execmd_result['slurm_job_ids']}) + '\n')
+                    for i, line in enumerate(execmd_result['stderr']):
+                        self.elk_log.write(json.dumps({'logtype': 'stderr',
+                                                       'execid': testDef.options['elk_id'],
+                                                       'cycleid': testDef.options['elk_testcycle'],
+                                                       'caseid': testDef.options['elk_testcase'],
+                                                       'logtype': 'stderr',
+                                                       'section': result['section'],
+                                                       'cmdargs': execmd_result['cmdargs'],
+                                                       'starttime': execmd_result['starttime'],
+                                                       'finishtime': execmd_result['finishtime'],
+                                                       'elapsed': execmd_result['elapsed'],
+                                                       'order': i,
+                                                       'stderr': line}) + '\n')
+                    for i, line in enumerate(execmd_result['stdout']):
+                        self.elk_log.write(json.dumps({'logtype': 'stdout',
+                                                       'execid': testDef.options['elk_id'],
+                                                       'cycleid': testDef.options['elk_testcycle'],
+                                                       'caseid': testDef.options['elk_testcase'],
+                                                       'section': result['section'],
+                                                       'cmdargs': execmd_result['cmdargs'],
+                                                       'starttime': execmd_result['starttime'],
+                                                       'finishtime': execmd_result['finishtime'],
+                                                       'elapsed': execmd_result['elapsed'],
+                                                       'order': i,
+                                                       'stdout': line}) + '\n')
                 self.execmds_stash = []
 
         return
 
-    def log_execmd_elk(self, cmdargs, status, stdout, stderr, timedout, starttime, endtime, elapsed_secs, slurm_job_ids, testDef):
+    def log_execmd_elk(self, cmdargs, status, stdout, stderr, timedout, starttime, finshtime, elapsed_secs, slurm_job_ids, testDef):
 
         if testDef.options['elk_id'] is not None:
             if testDef.options['elk_maxsize'] is not None:
@@ -157,7 +193,7 @@ class ElkLogger(BaseMTTUtility):
                                        'stderr': stderr if testDef.options['elk_nostderr'] is not None else ['<ignored>'],
                                        'timedout': timedout,
                                        'starttime': str(starttime),
-                                       'endtime': str(endtime),
+                                       'finishtime': str(finshtime),
                                        'elapsed': elapsed_secs,
                                        'slurm_job_ids': ','.join([str(j) for j in slurm_job_ids])
                                       })
