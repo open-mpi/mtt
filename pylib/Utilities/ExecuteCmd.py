@@ -229,8 +229,8 @@ class ExecuteCmd(BaseMTTUtility):
             testDef.logger.verbose_print("ExecuteCmd error: no cmdargs")
             if not quiet and testDef.elkLogger is not None and testDef.options['elk_id'] is not None:
                 testDef.elkLogger.log_execmd_elk(cmdargs,
-                                                 1, None,
-                                                 'ExecuteCmd error: no cmdargs',
+                                                 1, 
+                                                 ('stderr', 'ExecuteCmd error: no cmdargs'),
                                                  None,
                                                  datetime.datetime.now(),
                                                  datetime.datetime.now(),
@@ -241,6 +241,7 @@ class ExecuteCmd(BaseMTTUtility):
         # define storage to catch the output
         stdout = []
         stderr = []
+        elkoutput = []
 
         # start the process so that we can catch an exception
         # if it times out, assuming timeout was set
@@ -278,14 +279,17 @@ class ExecuteCmd(BaseMTTUtility):
                                 testDef.logger.verbose_print('stdout: ' + read)
                                 if merge:
                                     stderr.append(read)
+                                    elkoutput.append(("stderr", read))
                                 else:
                                     stdout.append(read)
+                                    elkoutput.append(("stdout", read))
                                 stdout_done = False
                         elif fd == p.stderr.fileno():
                             read = p.stderr.readline()
                             if read:
                                 read = read.decode('utf-8').rstrip()
                                 testDef.logger.verbose_print('stderr: ' + read)
+                                elkoutput.append(("stderr", read))
                                 stderr.append(read)
                                 stderr_done = False
 
@@ -316,8 +320,7 @@ class ExecuteCmd(BaseMTTUtility):
                 if not quiet and testDef.elkLogger is not None and testDef.options['elk_id'] is not None:
                     testDef.elkLogger.log_execmd_elk(cmdargs,
                                                      results['status'] if 'status' in results else None,
-                                                     results['stdout'] if 'stdout' in results else None,
-                                                     results['stderr'] if 'stderr' in results else None,
+                                                     elkoutput,
                                                      results['timedout'] if 'timedout' in results else None,
                                                      starttime,
                                                      endtime,
@@ -353,8 +356,7 @@ class ExecuteCmd(BaseMTTUtility):
         if not quiet and testDef.elkLogger is not None and testDef.options['elk_id'] is not None:
             testDef.elkLogger.log_execmd_elk(cmdargs,
                                              results['status'] if 'status' in results else None,
-                                             results['stdout'] if 'stdout' in results else None,
-                                             results['stderr'] if 'stderr' in results else None,
+                                             elkoutput,
                                              results['timedout'] if 'timedout' in results else None,
                                              starttime,
                                              endtime,
