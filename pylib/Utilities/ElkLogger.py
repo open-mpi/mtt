@@ -128,48 +128,28 @@ class ElkLogger(BaseMTTUtility):
             if result['section'].lower() not in elk_hide_execmd and plugin.lower() not in elk_hide_execmd:
 
                 for execmd_result in self.execmds_stash:
-                    self.elk_log.write(json.dumps({'logtype': 'command',
-                                                   'execid': testDef.options['elk_id'],
-                                                   'cycleid': testDef.options['elk_testcycle'],
-                                                   'caseid': testDef.options['elk_testcase'],
-                                                   'section': result['section'],
-                                                   'cmdargs': execmd_result['cmdargs'],
-                                                   'cmdstatus': execmd_result['cmdstatus'],
-                                                   'timedout': execmd_result['timedout'],
-                                                   'starttime': execmd_result['starttime'],
-                                                   'finishtime': execmd_result['finishtime'],
-                                                   'elapsed': execmd_result['elapsed'],
-                                                   'slurm_job_ids': execmd_result['slurm_job_ids']}) + '\n')
-                    for i, line in enumerate(execmd_result['stderr']):
-                        self.elk_log.write(json.dumps({'logtype': 'stderr',
-                                                       'execid': testDef.options['elk_id'],
-                                                       'cycleid': testDef.options['elk_testcycle'],
-                                                       'caseid': testDef.options['elk_testcase'],
-                                                       'logtype': 'stderr',
-                                                       'section': result['section'],
-                                                       'cmdargs': execmd_result['cmdargs'],
-                                                       'starttime': execmd_result['starttime'],
-                                                       'finishtime': execmd_result['finishtime'],
-                                                       'elapsed': execmd_result['elapsed'],
-                                                       'order': i,
-                                                       'stderr': line}) + '\n')
-                    for i, line in enumerate(execmd_result['stdout']):
-                        self.elk_log.write(json.dumps({'logtype': 'stdout',
-                                                       'execid': testDef.options['elk_id'],
-                                                       'cycleid': testDef.options['elk_testcycle'],
-                                                       'caseid': testDef.options['elk_testcase'],
-                                                       'section': result['section'],
-                                                       'cmdargs': execmd_result['cmdargs'],
-                                                       'starttime': execmd_result['starttime'],
-                                                       'finishtime': execmd_result['finishtime'],
-                                                       'elapsed': execmd_result['elapsed'],
-                                                       'order': i,
-                                                       'stdout': line}) + '\n')
+                    if execmd_result['elkoutput'] is not None:
+                        for i, line in enumerate(execmd_result['elkoutput']):
+                            self.elk_log.write(json.dumps({'logtype': 'command',
+                                                        'execid': testDef.options['elk_id'],
+                                                        'cycleid': testDef.options['elk_testcycle'],
+                                                        'caseid': testDef.options['elk_testcase'],
+                                                        'section': result['section'],
+                                                        'cmdargs': execmd_result['cmdargs'],
+                                                        'cmdstatus': execmd_result['cmdstatus'],
+                                                        'timedout': execmd_result['timedout'],
+                                                        'starttime': execmd_result['starttime'],
+                                                        'finishtime': execmd_result['finishtime'],
+                                                        'elapsed': execmd_result['elapsed'],
+                                                        'slurm_job_ids': execmd_result['slurm_job_ids'],
+                                                        'order': i,
+                                                        'kind': line[0],
+                                                        'value': line[1]}) + '\n')
                 self.execmds_stash = []
 
         return
 
-    def log_execmd_elk(self, cmdargs, status, stdout, stderr, timedout, starttime, finshtime, elapsed_secs, slurm_job_ids, testDef):
+    def log_execmd_elk(self, cmdargs, status, elkoutput, timedout, starttime, finshtime, elapsed_secs, slurm_job_ids, testDef):
 
         if testDef.options['elk_id'] is not None:
             if testDef.options['elk_maxsize'] is not None:
@@ -189,8 +169,7 @@ class ElkLogger(BaseMTTUtility):
                         stderr = ['<truncated>']
             self.execmds_stash.append({'cmdargs': ' '.join(cmdargs),
                                        'cmdstatus': status,
-                                       'stdout': stdout if testDef.options['elk_nostdout'] is not None else ['<ignored>'],
-                                       'stderr': stderr if testDef.options['elk_nostderr'] is not None else ['<ignored>'],
+                                       'elkoutput': elkoutput if testDef.options['elk_nostderr'] is not None else ['<ignored>'],
                                        'timedout': timedout,
                                        'starttime': str(starttime),
                                        'finishtime': str(finshtime),
