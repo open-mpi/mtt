@@ -319,8 +319,8 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;            testDef.logger.verbose_print(<span class="stringliteral">&quot;ExecuteCmd error: no cmdargs&quot;</span>)</div>
 <div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;            <span class="keywordflow">if</span> <span class="keywordflow">not</span> quiet <span class="keywordflow">and</span> testDef.elkLogger <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> testDef.options[<span class="stringliteral">&#39;elk_id&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
 <div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;                testDef.elkLogger.log_execmd_elk(cmdargs,</div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;                                                 1, <span class="keywordtype">None</span>,</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;                                                 <span class="stringliteral">&#39;ExecuteCmd error: no cmdargs&#39;</span>,</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;                                                 1,</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;                                                 (<span class="stringliteral">&#39;stderr&#39;</span>, <span class="stringliteral">&#39;ExecuteCmd error: no cmdargs&#39;</span>),</div>
 <div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;                                                 <span class="keywordtype">None</span>,</div>
 <div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;                                                 datetime.datetime.now(),</div>
 <div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;                                                 datetime.datetime.now(),</div>
@@ -331,128 +331,130 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;        <span class="comment"># define storage to catch the output</span></div>
 <div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;        stdout = []</div>
 <div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;        stderr = []</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;        <span class="comment"># start the process so that we can catch an exception</span></div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;        <span class="comment"># if it times out, assuming timeout was set</span></div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;        results = {}</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;        p = <span class="keywordtype">None</span></div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        starttime = datetime.datetime.now()</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;        <span class="comment"># it is possible that the command doesn&#39;t exist or</span></div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;        <span class="comment"># isn&#39;t in our path, so protect us</span></div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        <span class="keywordflow">try</span>:</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;            <span class="comment"># open a subprocess with stdout and stderr</span></div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;            <span class="comment"># as distinct pipes so we can capture their</span></div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;            <span class="comment"># output as the process runs</span></div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;            p = subprocess.Popen(mycmdargs,</div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;                stdout=subprocess.PIPE, stderr=subprocess.PIPE)</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;            <span class="keywordflow">if</span> options <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> <span class="stringliteral">&#39;timeout&#39;</span> <span class="keywordflow">in</span> options <span class="keywordflow">and</span> options[<span class="stringliteral">&#39;timeout&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;                t = int(options[<span class="stringliteral">&#39;timeout&#39;</span>])</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;            <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;                t = 100000000</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;            with <a class="code" href="namespace_execute_cmd.html#a656974b86a0748fd2511d5646299dbfe">processTimeout</a>(t, p.pid):</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;                <span class="comment"># loop until the pipes close</span></div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;                <span class="keywordflow">while</span> <span class="keyword">True</span>:</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;                    ret = select.select([p.stdout.fileno(), p.stderr.fileno()], [], [])</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;                    stdout_done = <span class="keyword">True</span></div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;                    stderr_done = <span class="keyword">True</span></div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;                    <span class="keywordflow">for</span> fd <span class="keywordflow">in</span> ret[0]:</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;                        <span class="comment"># if the data</span></div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;                        <span class="keywordflow">if</span> fd == p.stdout.fileno():</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;                            read = p.stdout.readline()</div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;                            <span class="keywordflow">if</span> read:</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;                                read = read.decode(<span class="stringliteral">&#39;utf-8&#39;</span>).rstrip()</div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;                                testDef.logger.verbose_print(<span class="stringliteral">&#39;stdout: &#39;</span> + read)</div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;                                <span class="keywordflow">if</span> merge:</div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;                                    stderr.append(read)</div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;                                <span class="keywordflow">else</span>:</div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;                                    stdout.append(read)</div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;                                stdout_done = <span class="keyword">False</span></div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;                        <span class="keywordflow">elif</span> fd == p.stderr.fileno():</div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;                            read = p.stderr.readline()</div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;                            <span class="keywordflow">if</span> read:</div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;                                read = read.decode(<span class="stringliteral">&#39;utf-8&#39;</span>).rstrip()</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;                                testDef.logger.verbose_print(<span class="stringliteral">&#39;stderr: &#39;</span> + read)</div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;                                stderr.append(read)</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;                                stderr_done = <span class="keyword">False</span></div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;</div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;                    <span class="keywordflow">if</span> stdout_done <span class="keywordflow">and</span> stderr_done:</div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;                        <span class="keywordflow">break</span></div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;            p.wait()</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;        elkoutput = []</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;        <span class="comment"># start the process so that we can catch an exception</span></div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;        <span class="comment"># if it times out, assuming timeout was set</span></div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;        results = {}</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;        p = <span class="keywordtype">None</span></div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;        starttime = datetime.datetime.now()</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;        <span class="comment"># it is possible that the command doesn&#39;t exist or</span></div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        <span class="comment"># isn&#39;t in our path, so protect us</span></div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;        <span class="keywordflow">try</span>:</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;            <span class="comment"># open a subprocess with stdout and stderr</span></div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;            <span class="comment"># as distinct pipes so we can capture their</span></div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;            <span class="comment"># output as the process runs</span></div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;            p = subprocess.Popen(mycmdargs,</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;                stdout=subprocess.PIPE, stderr=subprocess.PIPE)</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;            <span class="keywordflow">if</span> options <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> <span class="stringliteral">&#39;timeout&#39;</span> <span class="keywordflow">in</span> options <span class="keywordflow">and</span> options[<span class="stringliteral">&#39;timeout&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;                t = int(options[<span class="stringliteral">&#39;timeout&#39;</span>])</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;            <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;                t = 100000000</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;            with <a class="code" href="namespace_execute_cmd.html#a656974b86a0748fd2511d5646299dbfe">processTimeout</a>(t, p.pid):</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;                <span class="comment"># loop until the pipes close</span></div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;                <span class="keywordflow">while</span> <span class="keyword">True</span>:</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;                    ret = select.select([p.stdout.fileno(), p.stderr.fileno()], [], [])</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;                    stdout_done = <span class="keyword">True</span></div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;                    stderr_done = <span class="keyword">True</span></div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;                    <span class="keywordflow">for</span> fd <span class="keywordflow">in</span> ret[0]:</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;                        <span class="comment"># if the data</span></div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;                        <span class="keywordflow">if</span> fd == p.stdout.fileno():</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;                            read = p.stdout.readline()</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;                            <span class="keywordflow">if</span> read:</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;                                read = read.decode(<span class="stringliteral">&#39;utf-8&#39;</span>).rstrip()</div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;                                testDef.logger.verbose_print(<span class="stringliteral">&#39;stdout: &#39;</span> + read)</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;                                <span class="keywordflow">if</span> merge:</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;                                    stderr.append(read)</div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;                                    elkoutput.append((<span class="stringliteral">&quot;stderr&quot;</span>, read))</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;                                <span class="keywordflow">else</span>:</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;                                    stdout.append(read)</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;                                    elkoutput.append((<span class="stringliteral">&quot;stdout&quot;</span>, read))</div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;                                stdout_done = <span class="keyword">False</span></div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;                        <span class="keywordflow">elif</span> fd == p.stderr.fileno():</div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;                            read = p.stderr.readline()</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;                            <span class="keywordflow">if</span> read:</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;                                read = read.decode(<span class="stringliteral">&#39;utf-8&#39;</span>).rstrip()</div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;                                testDef.logger.verbose_print(<span class="stringliteral">&#39;stderr: &#39;</span> + read)</div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;                                elkoutput.append((<span class="stringliteral">&quot;stderr&quot;</span>, read))</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;                                stderr.append(read)</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;                                stderr_done = <span class="keyword">False</span></div>
 <div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;</div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;            endtime = datetime.datetime.now()</div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;</div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;            <span class="keywordflow">if</span> p.returncode == -15 <span class="keywordflow">or</span> p.returncode == -9:</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;                <span class="comment"># check if slurm was run, and record job ids</span></div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;                slurm_jobids = self.<a class="code" href="class_execute_cmd_1_1_execute_cmd.html#ab9a1071eef85698e5d9c0be270d76fd1">check_for_slurm_jobids</a>(unique_identifier, stdout, stderr)</div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;                <span class="comment"># print execmd timed out info, including any slurm job ids</span></div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;                testDef.logger.verbose_print(<span class="stringliteral">&quot;ExecuteCmd Timed Out%s%s&quot;</span> % (<span class="stringliteral">&quot; : elapsed=%s&quot;</span>%elapsed_datetime <span class="keywordflow">if</span> time_exec <span class="keywordflow">else</span> <span class="stringliteral">&quot;&quot;</span>, \</div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;                                                                           <span class="stringliteral">&quot; : slurm_jobids=%s&quot;</span> % <span class="stringliteral">&#39;,&#39;</span>.join([str(j) <span class="keywordflow">for</span> j <span class="keywordflow">in</span> slurm_jobids]) <span class="keywordflow">if</span> slurm_jobids <span class="keywordflow">else</span> <span class="stringliteral">&quot;&quot;</span>), \</div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;                                             timestamp=endtime <span class="keywordflow">if</span> time_exec <span class="keywordflow">else</span> <span class="keywordtype">None</span>)</div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;                stderr.append(<span class="stringliteral">&quot;**** TIMED OUT ****&quot;</span>)</div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;                results[<span class="stringliteral">&#39;timedout&#39;</span>] = <span class="keyword">True</span></div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;                results[<span class="stringliteral">&#39;status&#39;</span>] = p.returncode</div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;                results[<span class="stringliteral">&#39;stdout&#39;</span>] = stdout[-1 * stdoutlines:]</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;                results[<span class="stringliteral">&#39;stderr&#39;</span>] = stderr[-1 * stderrlines:]</div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;                results[<span class="stringliteral">&#39;slurm_job_ids&#39;</span>] = slurm_jobids</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;                <span class="keywordflow">if</span> time_exec:</div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;                    endtime = datetime.datetime.now()</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;                    elapsed_datetime = endtime - starttime</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;                    results[<span class="stringliteral">&#39;elapsed_secs&#39;</span>] = elapsed_datetime.total_seconds()</div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;                <span class="keywordflow">if</span> <span class="keywordflow">not</span> quiet <span class="keywordflow">and</span> testDef.elkLogger <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> testDef.options[<span class="stringliteral">&#39;elk_id&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;                    testDef.elkLogger.log_execmd_elk(cmdargs,</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;                                                     results[<span class="stringliteral">&#39;status&#39;</span>] <span class="keywordflow">if</span> <span class="stringliteral">&#39;status&#39;</span> <span class="keywordflow">in</span> results <span class="keywordflow">else</span> <span class="keywordtype">None</span>,</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;                                                     results[<span class="stringliteral">&#39;stdout&#39;</span>] <span class="keywordflow">if</span> <span class="stringliteral">&#39;stdout&#39;</span> <span class="keywordflow">in</span> results <span class="keywordflow">else</span> <span class="keywordtype">None</span>,</div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;                                                     results[<span class="stringliteral">&#39;stderr&#39;</span>] <span class="keywordflow">if</span> <span class="stringliteral">&#39;stderr&#39;</span> <span class="keywordflow">in</span> results <span class="keywordflow">else</span> <span class="keywordtype">None</span>,</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;                                                     results[<span class="stringliteral">&#39;timedout&#39;</span>] <span class="keywordflow">if</span> <span class="stringliteral">&#39;timedout&#39;</span> <span class="keywordflow">in</span> results <span class="keywordflow">else</span> <span class="keywordtype">None</span>,</div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;                                                     starttime,</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;                                                     endtime,</div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;                                                     (endtime - starttime).total_seconds,</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;                                                     results[<span class="stringliteral">&#39;slurm_job_ids&#39;</span>] <span class="keywordflow">if</span> <span class="stringliteral">&#39;slurm_job_ids&#39;</span> <span class="keywordflow">in</span> results <span class="keywordflow">else</span> <span class="keywordtype">None</span>,</div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;                                                     testDef)</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;                <span class="keywordflow">return</span> results</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;</div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;            <span class="keywordflow">if</span> time_exec:</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;                elapsed_datetime = endtime - starttime</div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;                results[<span class="stringliteral">&#39;elapsed_secs&#39;</span>] = elapsed_datetime.total_seconds()</div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;</div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;            <span class="comment"># check if slurm was run, and record job ids</span></div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;            slurm_jobids = self.<a class="code" href="class_execute_cmd_1_1_execute_cmd.html#ab9a1071eef85698e5d9c0be270d76fd1">check_for_slurm_jobids</a>(unique_identifier, stdout, stderr)</div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;            <span class="comment"># print execmd info, including any slurm job ids</span></div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;            testDef.logger.verbose_print(<span class="stringliteral">&quot;ExecuteCmd done%s%s&quot;</span> % (<span class="stringliteral">&quot; : elapsed=%s&quot;</span> % elapsed_datetime <span class="keywordflow">if</span> time_exec <span class="keywordflow">else</span> <span class="stringliteral">&quot;&quot;</span>, \</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;                                                                  <span class="stringliteral">&quot; : slurm_jobids=%s&quot;</span> % <span class="stringliteral">&#39;,&#39;</span>.join([str(j) <span class="keywordflow">for</span> j <span class="keywordflow">in</span> slurm_jobids]) <span class="keywordflow">if</span> slurm_jobids <span class="keywordflow">else</span> <span class="stringliteral">&quot;&quot;</span>), \</div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;                                         timestamp=endtime <span class="keywordflow">if</span> time_exec <span class="keywordflow">else</span> <span class="keywordtype">None</span>)</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;</div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;            results[<span class="stringliteral">&#39;status&#39;</span>] = p.returncode</div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;            results[<span class="stringliteral">&#39;stdout&#39;</span>] = stdout[-1 * stdoutlines:]</div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;            results[<span class="stringliteral">&#39;stderr&#39;</span>] = stderr[-1 * stderrlines:]</div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;            results[<span class="stringliteral">&#39;slurm_job_ids&#39;</span>] = slurm_jobids</div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;        <span class="keywordflow">except</span> OSError <span class="keyword">as</span> e:</div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;            <span class="keywordflow">if</span> p:</div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;                p.wait()</div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;            endtime = datetime.datetime.now()</div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;            results[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;            results[<span class="stringliteral">&#39;stdout&#39;</span>] = []</div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;            results[<span class="stringliteral">&#39;stderr&#39;</span>] = [str(e)]</div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;            results[<span class="stringliteral">&#39;slurm_job_ids&#39;</span>] = []</div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;</div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;        <span class="keywordflow">if</span> <span class="keywordflow">not</span> quiet <span class="keywordflow">and</span> testDef.elkLogger <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> testDef.options[<span class="stringliteral">&#39;elk_id&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;            testDef.elkLogger.log_execmd_elk(cmdargs,</div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;                                             results[<span class="stringliteral">&#39;status&#39;</span>] <span class="keywordflow">if</span> <span class="stringliteral">&#39;status&#39;</span> <span class="keywordflow">in</span> results <span class="keywordflow">else</span> <span class="keywordtype">None</span>,</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;                                             results[<span class="stringliteral">&#39;stdout&#39;</span>] <span class="keywordflow">if</span> <span class="stringliteral">&#39;stdout&#39;</span> <span class="keywordflow">in</span> results <span class="keywordflow">else</span> <span class="keywordtype">None</span>,</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;                                             results[<span class="stringliteral">&#39;stderr&#39;</span>] <span class="keywordflow">if</span> <span class="stringliteral">&#39;stderr&#39;</span> <span class="keywordflow">in</span> results <span class="keywordflow">else</span> <span class="keywordtype">None</span>,</div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;                                             results[<span class="stringliteral">&#39;timedout&#39;</span>] <span class="keywordflow">if</span> <span class="stringliteral">&#39;timedout&#39;</span> <span class="keywordflow">in</span> results <span class="keywordflow">else</span> <span class="keywordtype">None</span>,</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;                                             starttime,</div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;                                             endtime,</div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;                                             (endtime - starttime).total_seconds(),</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;                                             results[<span class="stringliteral">&#39;slurm_job_ids&#39;</span>] <span class="keywordflow">if</span> <span class="stringliteral">&#39;slurm_job_ids&#39;</span> <span class="keywordflow">in</span> results <span class="keywordflow">else</span> <span class="keywordtype">None</span>,</div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;                                             testDef)</div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;</div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;        <span class="keywordflow">return</span> results</div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;                    <span class="keywordflow">if</span> stdout_done <span class="keywordflow">and</span> stderr_done:</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;                        <span class="keywordflow">break</span></div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;            p.wait()</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;            endtime = datetime.datetime.now()</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;</div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;            <span class="keywordflow">if</span> p.returncode == -15 <span class="keywordflow">or</span> p.returncode == -9:</div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;                <span class="comment"># check if slurm was run, and record job ids</span></div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;                slurm_jobids = self.<a class="code" href="class_execute_cmd_1_1_execute_cmd.html#ab9a1071eef85698e5d9c0be270d76fd1">check_for_slurm_jobids</a>(unique_identifier, stdout, stderr)</div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;                <span class="comment"># print execmd timed out info, including any slurm job ids</span></div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;                testDef.logger.verbose_print(<span class="stringliteral">&quot;ExecuteCmd Timed Out%s%s&quot;</span> % (<span class="stringliteral">&quot; : elapsed=%s&quot;</span>%elapsed_datetime <span class="keywordflow">if</span> time_exec <span class="keywordflow">else</span> <span class="stringliteral">&quot;&quot;</span>, \</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;                                                                           <span class="stringliteral">&quot; : slurm_jobids=%s&quot;</span> % <span class="stringliteral">&#39;,&#39;</span>.join([str(j) <span class="keywordflow">for</span> j <span class="keywordflow">in</span> slurm_jobids]) <span class="keywordflow">if</span> slurm_jobids <span class="keywordflow">else</span> <span class="stringliteral">&quot;&quot;</span>), \</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;                                             timestamp=endtime <span class="keywordflow">if</span> time_exec <span class="keywordflow">else</span> <span class="keywordtype">None</span>)</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;                stderr.append(<span class="stringliteral">&quot;**** TIMED OUT ****&quot;</span>)</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;                results[<span class="stringliteral">&#39;timedout&#39;</span>] = <span class="keyword">True</span></div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;                results[<span class="stringliteral">&#39;status&#39;</span>] = p.returncode</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;                results[<span class="stringliteral">&#39;stdout&#39;</span>] = stdout[-1 * stdoutlines:]</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;                results[<span class="stringliteral">&#39;stderr&#39;</span>] = stderr[-1 * stderrlines:]</div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;                results[<span class="stringliteral">&#39;slurm_job_ids&#39;</span>] = slurm_jobids</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;                <span class="keywordflow">if</span> time_exec:</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;                    endtime = datetime.datetime.now()</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;                    elapsed_datetime = endtime - starttime</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;                    results[<span class="stringliteral">&#39;elapsed_secs&#39;</span>] = elapsed_datetime.total_seconds()</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;                <span class="keywordflow">if</span> <span class="keywordflow">not</span> quiet <span class="keywordflow">and</span> testDef.elkLogger <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> testDef.options[<span class="stringliteral">&#39;elk_id&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;                    testDef.elkLogger.log_execmd_elk(cmdargs,</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;                                                     results[<span class="stringliteral">&#39;status&#39;</span>] <span class="keywordflow">if</span> <span class="stringliteral">&#39;status&#39;</span> <span class="keywordflow">in</span> results <span class="keywordflow">else</span> <span class="keywordtype">None</span>,</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;                                                     elkoutput,</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;                                                     results[<span class="stringliteral">&#39;timedout&#39;</span>] <span class="keywordflow">if</span> <span class="stringliteral">&#39;timedout&#39;</span> <span class="keywordflow">in</span> results <span class="keywordflow">else</span> <span class="keywordtype">None</span>,</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;                                                     starttime,</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;                                                     endtime,</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;                                                     (endtime - starttime).total_seconds,</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;                                                     results[<span class="stringliteral">&#39;slurm_job_ids&#39;</span>] <span class="keywordflow">if</span> <span class="stringliteral">&#39;slurm_job_ids&#39;</span> <span class="keywordflow">in</span> results <span class="keywordflow">else</span> <span class="keywordtype">None</span>,</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;                                                     testDef)</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;                <span class="keywordflow">return</span> results</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;            <span class="keywordflow">if</span> time_exec:</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;                elapsed_datetime = endtime - starttime</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;                results[<span class="stringliteral">&#39;elapsed_secs&#39;</span>] = elapsed_datetime.total_seconds()</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;</div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;            <span class="comment"># check if slurm was run, and record job ids</span></div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;            slurm_jobids = self.<a class="code" href="class_execute_cmd_1_1_execute_cmd.html#ab9a1071eef85698e5d9c0be270d76fd1">check_for_slurm_jobids</a>(unique_identifier, stdout, stderr)</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;            <span class="comment"># print execmd info, including any slurm job ids</span></div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;            testDef.logger.verbose_print(<span class="stringliteral">&quot;ExecuteCmd done%s%s&quot;</span> % (<span class="stringliteral">&quot; : elapsed=%s&quot;</span> % elapsed_datetime <span class="keywordflow">if</span> time_exec <span class="keywordflow">else</span> <span class="stringliteral">&quot;&quot;</span>, \</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;                                                                  <span class="stringliteral">&quot; : slurm_jobids=%s&quot;</span> % <span class="stringliteral">&#39;,&#39;</span>.join([str(j) <span class="keywordflow">for</span> j <span class="keywordflow">in</span> slurm_jobids]) <span class="keywordflow">if</span> slurm_jobids <span class="keywordflow">else</span> <span class="stringliteral">&quot;&quot;</span>), \</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;                                         timestamp=endtime <span class="keywordflow">if</span> time_exec <span class="keywordflow">else</span> <span class="keywordtype">None</span>)</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;            results[<span class="stringliteral">&#39;status&#39;</span>] = p.returncode</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;            results[<span class="stringliteral">&#39;stdout&#39;</span>] = stdout[-1 * stdoutlines:]</div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;            results[<span class="stringliteral">&#39;stderr&#39;</span>] = stderr[-1 * stderrlines:]</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;            results[<span class="stringliteral">&#39;slurm_job_ids&#39;</span>] = slurm_jobids</div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;        <span class="keywordflow">except</span> OSError <span class="keyword">as</span> e:</div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;            <span class="keywordflow">if</span> p:</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;                p.wait()</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;            endtime = datetime.datetime.now()</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;            results[<span class="stringliteral">&#39;status&#39;</span>] = 1</div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;            results[<span class="stringliteral">&#39;stdout&#39;</span>] = []</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;            results[<span class="stringliteral">&#39;stderr&#39;</span>] = [str(e)]</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;            results[<span class="stringliteral">&#39;slurm_job_ids&#39;</span>] = []</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;        <span class="keywordflow">if</span> <span class="keywordflow">not</span> quiet <span class="keywordflow">and</span> testDef.elkLogger <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span> <span class="keywordflow">and</span> testDef.options[<span class="stringliteral">&#39;elk_id&#39;</span>] <span class="keywordflow">is</span> <span class="keywordflow">not</span> <span class="keywordtype">None</span>:</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;            testDef.elkLogger.log_execmd_elk(cmdargs,</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;                                             results[<span class="stringliteral">&#39;status&#39;</span>] <span class="keywordflow">if</span> <span class="stringliteral">&#39;status&#39;</span> <span class="keywordflow">in</span> results <span class="keywordflow">else</span> <span class="keywordtype">None</span>,</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;                                             elkoutput,</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;                                             results[<span class="stringliteral">&#39;timedout&#39;</span>] <span class="keywordflow">if</span> <span class="stringliteral">&#39;timedout&#39;</span> <span class="keywordflow">in</span> results <span class="keywordflow">else</span> <span class="keywordtype">None</span>,</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;                                             starttime,</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;                                             endtime,</div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;                                             (endtime - starttime).total_seconds(),</div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;                                             results[<span class="stringliteral">&#39;slurm_job_ids&#39;</span>] <span class="keywordflow">if</span> <span class="stringliteral">&#39;slurm_job_ids&#39;</span> <span class="keywordflow">in</span> results <span class="keywordflow">else</span> <span class="keywordtype">None</span>,</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;                                             testDef)</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;</div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;        <span class="keywordflow">return</span> results</div>
 <div class="ttc" id="class_execute_cmd_1_1_kill_process_thread_html_a414bcd0a32109602bf07fb94ed69bef3"><div class="ttname"><a href="class_execute_cmd_1_1_kill_process_thread.html#a414bcd0a32109602bf07fb94ed69bef3">ExecuteCmd.KillProcessThread.__init__</a></div><div class="ttdeci">def __init__</div><div class="ttdef"><b>Definition:</b> <a href="_execute_cmd_8py_source.html#l00055">ExecuteCmd.py:55</a></div></div>
 <div class="ttc" id="class_execute_cmd_1_1_execute_cmd_html_abd51ca569e60d044fe278b613459c709"><div class="ttname"><a href="class_execute_cmd_1_1_execute_cmd.html#abd51ca569e60d044fe278b613459c709">ExecuteCmd.ExecuteCmd.execute</a></div><div class="ttdeci">def execute</div><div class="ttdef"><b>Definition:</b> <a href="_execute_cmd_8py_source.html#l00175">ExecuteCmd.py:175</a></div></div>
 <div class="ttc" id="class_base_m_t_t_utility_1_1_base_m_t_t_utility_html"><div class="ttname"><a href="class_base_m_t_t_utility_1_1_base_m_t_t_utility.html">BaseMTTUtility.BaseMTTUtility</a></div><div class="ttdef"><b>Definition:</b> <a href="_base_m_t_t_utility_8py_source.html#l00014">BaseMTTUtility.py:14</a></div></div>
