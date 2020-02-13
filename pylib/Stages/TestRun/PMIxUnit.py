@@ -282,12 +282,13 @@ class PMIxUnit(TestRunMTTStage):
         log['mpi_info'] = {'name' : ext, 'version' : version}
 
         # check for modules required by the middleware
-        status,stdout,stderr = testDef.modcmd.checkForModules(log['section'], midlog, cmds, testDef)
-        if 0 != status:
-            log['status'] = status
-            log['stdout'] = stdout
-            log['stderr'] = stderr
-            return
+        if cmds['middleware'] is not None:
+            status,stdout,stderr = testDef.modcmd.checkForModules(log['section'], midlog, cmds, testDef)
+            if 0 != status:
+                log['status'] = status
+                log['stdout'] = stdout
+                log['stderr'] = stderr
+                return
 
         # Apply any requested environment module settings
         status,stdout,stderr = testDef.modcmd.applyModules(log['section'], cmds, testDef)
