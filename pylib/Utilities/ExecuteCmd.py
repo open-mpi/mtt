@@ -324,7 +324,7 @@ class ExecuteCmd(BaseMTTUtility):
                                                      results['timedout'] if 'timedout' in results else None,
                                                      starttime,
                                                      endtime,
-                                                     (endtime - starttime).total_seconds,
+                                                     (endtime - starttime).total_seconds(),
                                                      results['slurm_job_ids'] if 'slurm_job_ids' in results else None,
                                                      testDef)
                 return results
