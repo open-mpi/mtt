@@ -1,4 +1,5 @@
-FROM jenkins/jenkins:lts
+#FROM jenkins/jenkins:lts
+FROM jenkins/jenkins:2.190.1
 LABEL maintainer.primary="richard.t.barella@intel.com" \
       maintainer.secondary="william.c.weide@intel.com"
 

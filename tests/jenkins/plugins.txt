@@ -88,6 +88,7 @@ maven-plugin:
 mercurial:
 momentjs:
 multiple-scms:
+Office-365-Connector:
 pam-auth:
 parameterized-trigger:
 pipeline-aggregator-view:
