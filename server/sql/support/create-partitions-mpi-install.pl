@@ -32,8 +32,8 @@ $year  = $ARGV[0];
 $month = $ARGV[1];
 
 if ( $year !~ /^\d{4}$/ ||
-     $year < 2006 || $year > 2020) {
-  print "Invalid year: <$year> Format YYYY, Range 2006 to 2020\n";
+     $year < 2006 || $year > 2050) {
+  print "Invalid year: <$year> Format YYYY, Range 2006 to 2050\n";
   exit -2;
 }
 
