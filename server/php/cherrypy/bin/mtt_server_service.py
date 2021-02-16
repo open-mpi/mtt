@@ -70,7 +70,7 @@ def _start():
 
     if -2 == pid:
         # PIDFile not found, thus, server is not running.
-        call(['env/bin/python', _script_name])
+        call(['python', _script_name])
         return
     elif -1 == pid:
         print("PIDFile '%s' has been corrupted." % _src_dir + '/' +_pidfile)
