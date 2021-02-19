@@ -23,7 +23,9 @@ import re
 # Tools for launching HPC jobs
 # @}
 class LauncherMTTTool(IPlugin):
-    def __init__(self):
+    def __init__(self, additionalCheck=None):
+        # parameter: additionalCheck is a dict, see the SLURM plugin for usage
+        self.additionalCheck = additionalCheck
         self.tests = []
         self.skip_tests = []
         self.oldbinpath = None
@@ -463,6 +465,20 @@ class LauncherMTTTool(IPlugin):
                         self.finalStatus = results['status']
                         self.finalError = results['stderr']
                     self.numFail += 1
+                elif (self.additionalCheck is not None and
+                        results['status'] == self.expected_returncodes[test] and
+                        any(self.additionalCheck['errstr'] in line for line in results['stderr'])):
+                        # this code lets you check for a false positive, the additionalCheck dict contains
+                        # an error string to look for if the status is 0, a return code to set status to and
+                        # a results code to set the test to.
+                        # If the dict is not defined, this check will be skipped.  See the SLURM plugin for
+                        # how this is being used
+                        testLog['result'] = self.additionalCheck['result']
+                        results['status'] = self.additionalCheck['rtncode']
+                        if 0 == self.finalStatus:
+                            self.finalStatus = results['status']
+                            self.finalError = results['stderr']
+                        self.numTimed += 1
                 else:
                     testLog['result'] = testDef.MTT_TEST_PASSED
                     self.numPass += 1
