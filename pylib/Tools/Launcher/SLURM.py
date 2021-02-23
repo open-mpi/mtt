@@ -45,8 +45,18 @@ import subprocess
 class SLURM(LauncherMTTTool):
 
     def __init__(self):
+        # This covers a situation where the job is aborted but the slurm cleanup times out, leaving
+        # the job status as 0, here is the typical output
+        #     stderr: srun: Force Terminated job 6050
+        #     stderr: srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
+        #     stderr: srun: error: Timed out waiting for job step to complete
+        self.falsePass = {}
+        self.falsePass['errstr']  = "Timed out waiting for job step to complete"
+        self.falsePass['rtncode'] = 143
+        self.falsePass['result']  = 0     # testDef.MTT_TEST_FAILED
+
         # initialise parent class
-        LauncherMTTTool.__init__(self)
+        LauncherMTTTool.__init__(self, additionalCheck = self.falsePass)
         self.options = {}
         self.options['hostfile'] = (None, "The hostfile for SLURM to use")
         self.options['command'] = ("srun", "Command for executing the application")
@@ -207,7 +217,6 @@ class SLURM(LauncherMTTTool):
                 num_tasks_per_node = str(cmds['options'].split('--ntasks-per-node=')[1].split(' ')[0])
             if num_tasks is not None:
                 cmds['np'] = num_tasks
-                
             elif num_nodes is not None and num_tasks_per_node is not None:
                 try:
                     cmds['np'] = str(int(num_tasks_per_node)*int(num_nodes))
