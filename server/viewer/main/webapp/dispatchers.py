@@ -108,7 +108,8 @@ class _ServerResourceBase:
         tmp = auth
         try:
             tmp = base64.b64decode(tmp[6:len(tmp)])
-            return tmp.split(':')[0]
+            tmp_c = tmp.decode("utf-8")
+            return tmp_c.split(':')[0]
         except:
             return "(unknown)"
 
