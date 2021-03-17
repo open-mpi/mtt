@@ -3,6 +3,8 @@ from builtins import str
 #!/usr/bin/env python
 #
 # Copyright (c) 2015-2018 Intel, Inc. All rights reserved.
+# Copyright (c) 2019      Triad National Security, LLC. All rights
+#                         reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -179,7 +181,7 @@ class Logger(BaseMTTUtility):
                     sys.stdout.flush()
                     if 0 != result['status']:
                         try:
-                            print("    " + result['stderr'], file=self.fh)
+                            print("    " + str(result['stderr']), file=self.fh)
                             sys.stdout.flush()
                         except KeyError:
                             pass
