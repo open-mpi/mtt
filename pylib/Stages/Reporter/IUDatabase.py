@@ -2,6 +2,8 @@
 #
 # Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # Copyright (c) 2017      IBM Corporation.  All rights reserved.
+# Copyright (c) 2021      Triad National Security, LLC. All rights
+#                         reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -162,6 +164,14 @@ class IUDatabase(ReporterMTTStage):
         #    - Submit Test Build phase
         #  - for each test run result
         #    - Submit Test Run phase
+        # Backup strategy 1 (no test run for some reason):
+        # - Find Testbuild
+        #   - Find 'middleware' MiddlewareBuild (MPI Install)
+        #     - Submit MPI Install phase
+        #   - Submit Test Build phase
+        # Backup stragegy 2 (no test built, probably middleware build failed):
+        #  - Find 'middleware' MiddlewareBuild (MPI Install)
+        #    - Submit MPI Install phase
 
         # get the entire log of results
         fullLog = testDef.logger.getLog(None)
@@ -183,10 +193,31 @@ class IUDatabase(ReporterMTTStage):
         #
         # Process the test run sections
         #
+        found_it = False
         for lg in fullLog:
             # Find sections prefixed with 'TestRun'
             if re.match("TestRun", lg['section']):
+                found_it = True
                 rtn = self._submit_test_run(testDef.logger, lg, metadata, s, url, testDef, www_auth)
+
+        #
+        # Well no TestRun section, so try TestBuild
+        #
+        if found_it == False:
+            for lg in fullLog:
+                # Find sections prefixed with 'TestBuild'
+                if re.match("TestBuild", lg['section']):
+                    found_it = True
+                    rtn = self._submit_test_build(testDef.logger, lg, metadata, s, url, www_auth)
+        #
+        # Well no TestBuild section found, so try MiddlewareBuild
+        #
+        if found_it == False:
+            for lg in fullLog:
+                # Find sections prefixed with 'MiddlewareBuild'
+                if re.match("Middlewarebuild", lg['section']):
+                    found_it = True
+                    rtn = self._submit_install(testDef.logger, lg, metadata, s, url, www_auth)
 
         log['status'] = 0
         return
@@ -477,12 +508,13 @@ class IUDatabase(ReporterMTTStage):
         except:
             pass
 
-        # Find 'parent' Test Get (not needed)
         # Find 'middleware' MiddlewareBuild (MPI Install)
-        install_info = self._submit_install(logger,
-                                   lg,
-                                   metadata,
-                                   s, url, httpauth)
+        fullLog = logger.getLog(None)
+        for lg_b in fullLog:
+            # Find sections prefixed with 'MiddlewareBuild'
+            if re.match("MiddlewareBuild", lg_b['section']):
+                install_info = self._submit_install(logger, lg_b, metadata, s, url, httpauth)
+
         if install_info is None:
             return None
 
