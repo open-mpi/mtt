@@ -41,7 +41,7 @@ import shlex
 # @param deallocate_cmd            Command to use for deallocating nodes from the resource manager
 # @param dependencies              List of dependencies specified as the build stage name
 # @param checkpoint_file           Optional checkpoint file
- @}
+# @}
 class ALPS(LauncherMTTTool):
 
     def __init__(self):
