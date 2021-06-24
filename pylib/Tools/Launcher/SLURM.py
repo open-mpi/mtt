@@ -1,6 +1,8 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
 # Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
+# Copyright (c) 2021      Triad National Security, LLC. All rights
+#                         reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -41,6 +43,7 @@ import subprocess
 # @param allocate_cmd              Command to use for allocating nodes from the resource manager
 # @param deallocate_cmd            Command to use for deallocating nodes from the resource manager
 # @param dependencies              List of dependencies specified as the build stage name
+# @param checkpoint_file           Optional checkpoint file
 # @}
 class SLURM(LauncherMTTTool):
 
@@ -80,6 +83,8 @@ class SLURM(LauncherMTTTool):
         self.options['allocate_cmd'] = (None, "Command to use for allocating nodes from the resource manager")
         self.options['deallocate_cmd'] = (None, "Command to use for deallocating nodes from the resource manager")
         self.options['dependencies'] = (None, "List of dependencies specified as the build stage name - e.g., MiddlwareBuild_package to be added to configure using --with-package=location")
+        self.options['checkpoint_file'] = (None, "Checkpoint file")
+        self.checkpoint_file=''
 
         self.allocated = False
         self.testDef = None
@@ -175,6 +180,9 @@ class SLURM(LauncherMTTTool):
             cmdargs.append("-hostfile")
             cmdargs.append(cmds['hostfile'])
 
+        if cmds['checkpoint_file'] is not None:
+            self.checkpoint_file = cmds['checkpoint_file']
+
         # Allocate cluster
         status = self.allocateCluster(log, cmds, testDef)
         if 0 != status:
@@ -263,3 +271,10 @@ class SLURM(LauncherMTTTool):
 
 
         return
+
+    def savelog(self,testDef):
+        if self.checkpoint_file is not None:
+            testDef.logger.checkpointLog(self.checkpoint_file)
+        return
+
+

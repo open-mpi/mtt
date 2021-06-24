@@ -3,6 +3,8 @@
 # Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # Copyright (c) 2017      Los Alamos National Security, LLC. All rights
 #                         reserved.
+# Copyright (c) 2021      Triad National Security, LLC. All rights
+#                         reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -42,6 +44,7 @@ import shlex
 # @param modules         Modules to load
 # @param modules_swap    Modules to swap
 # @param dependencies              List of dependencies specified as the build stage name
+# @param checkpoint_file           Optional checkoutpoint file
 # @}
 class OpenMPI(LauncherMTTTool):
 
@@ -71,7 +74,9 @@ class OpenMPI(LauncherMTTTool):
         self.options['modules_unload'] = (None, "Modules to unload")
         self.options['modules_swap'] = (None, "Modules to swap")
         self.options['dependencies'] = (None, "List of dependencies specified as the build stage name - e.g., MiddlwareBuild_package to be added to configure using --with-package=location")
+        self.options['checkpoint_file'] = (None, "Log restart file")
 
+        self.checkpoint_file=''
         self.allocated = False
         self.testDef = None
         self.cmds = None
@@ -107,6 +112,9 @@ class OpenMPI(LauncherMTTTool):
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
         self.cmds = cmds
+
+        if cmds['checkpoint_file'] is not None:
+            self.checkpoint_file = cmds['checkpoint_file']
 
         # update our defaults, if requested
         status = self.updateDefaults(log, self.options, keyvals, testDef)
@@ -161,3 +169,13 @@ class OpenMPI(LauncherMTTTool):
         self.resetPaths(log, testDef)
 
         return
+
+    def savelog(self,testDef):
+        if self.checkpoint_file is not None:
+            try: 
+                testDef.logger.checkpointLog(self.checkpoint_file)
+            except General as X: 
+                print("checkpoint failed - CAUGHT " + X.__class__)
+                
+        return
+

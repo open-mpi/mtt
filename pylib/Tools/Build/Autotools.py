@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 #
 # Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
+# Copyright (c) 2021      Triad National Security, LLC. All rights
+#                         reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -37,6 +39,7 @@ from BuildMTTTool import *
 # @param dependencies              List of dependencies specified as the build stage name
 # @param make_envars               Environmental variables to set prior to executing make
 # @param subdir                    Subdirectory that is to be built
+# @param checkpoint_file           Optional checkpoint file
 
 # @}
 class Autotools(BuildMTTTool):
@@ -59,6 +62,8 @@ class Autotools(BuildMTTTool):
         self.options['dependencies'] = (None, "List of dependencies specified as the build stage name - e.g., MiddlwareBuild_package to be added to configure using --with-package=location")
         self.options['make_envars'] = (None, "Environmental variables to set prior to executing make")
         self.options['subdir'] = (None, "Subdirectory that is to be built")
+        self.options['checkpoint_file'] = (None, "Checkpoint file")
+        self.checkpoint_file=''
         self.exclude = set(string.punctuation)
         return
 
@@ -119,6 +124,9 @@ class Autotools(BuildMTTTool):
             log['status'] = 1
             log['stderr'] = "Location of package to build was not specified in parent stage"
             return
+
+        if cmds['checkpoint_file'] is not None:
+            self.checkpoint_file = cmds['checkpoint_file']
 
         # see if we need to adjust the location to build what is in
         # a specific subdirectory of this location
@@ -600,4 +608,9 @@ class Autotools(BuildMTTTool):
         for en in loadedenv:
             del os.environ[en]
 
+        return
+
+    def savelog(self,testDef):
+        if self.checkpoint_file is not None:
+            testDef.logger.checkpointLog(self.checkpoint_file)
         return

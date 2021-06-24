@@ -1,6 +1,8 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
 # Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
+# Copyright (c) 2021      Triad National Security, LLC. All rights
+#                         reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -27,6 +29,7 @@ from TestBuildMTTStage import *
 # @param make_options              Options to be passed to the make command
 # @param make_envars               Environmental variables to set prior to executing make
 # @param subdir                    Subdirectory of location that is to be built
+# @param checkpoint_file           Optional checkpoint file
 # @}
 class DefaultTestBuild(TestBuildMTTStage):
 
@@ -44,6 +47,8 @@ class DefaultTestBuild(TestBuildMTTStage):
         self.options['make_options'] = (None, "Options to be passed to the make command")
         self.options['make_envars'] = (None, "Environmental variables to set prior to executing make")
         self.options['subdir'] = (None, "Subdirectory of location that is to be built")
+        self.options['checkpoint_file'] = (None, "Checkpoint file")
+        self.checkpoint_file = ''
 
     def activate(self):
         # get the automatic procedure from IPlugin
@@ -72,6 +77,10 @@ class DefaultTestBuild(TestBuildMTTStage):
         # add our section header back into the cmds as it will
         # be needed by autotools
         cmds['section'] = keyvals['section']
+
+        if cmds['checkpoint_file'] is not None:
+            self.checkpoint_file = cmds['checkpoint_file']
+
         # if this test requires middleware, the user
         # should have told us so by specifying the
         # corresponding middlewareBuild stage for it.
@@ -150,4 +159,10 @@ class DefaultTestBuild(TestBuildMTTStage):
         if midpath:
             os.environ['PATH'] = oldbinpath
             os.environ['LD_LIBRARY_PATH'] = oldldlibpath
+
+        return
+
+    def savelog(self,testDef):
+        if self.checkpoint_file is not None:
+            testDef.logger.checkpointLog(self.checkpoint_file)
         return

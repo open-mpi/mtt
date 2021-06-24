@@ -1,6 +1,8 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: f; python-indent: 4 -*-
 #
 # Copyright (c) 2015-2018 Intel, Inc. All rights reserved.
+# Copyright (c) 2021      Triad National Security, LLC. All rights
+#                         reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -290,11 +292,20 @@ class SequentialEx(ExecutorMTTTool):
                     if 'stderr' in stageLog and isinstance(stageLog['stderr'], str):
                         stageLog['stderr'] = stageLog['stderr'].split("\n")
 
+                    # Log results for section
+                    testDef.logger.logResults(disp_title, stageLog, testDef)
+
                     # Print end of section
                     testDef.logger.stage_end_print(disp_title, stageLog)
 
-                    # Log results for section
-                    testDef.logger.logResults(disp_title, stageLog, testDef)
+                    # Optional save log
+                    try:
+                        plugin.savelog(testDef)
+                    except:
+                        continue
+
+#                   # Log results for section
+#                   testDef.logger.logResults(disp_title, stageLog, testDef)
 
                     if testDef.options['stop_on_fail'] is not False and stageLog['status'] != 0:
                         print("Section " + stageLog['section'] + ": Status " + str(stageLog['status']))
