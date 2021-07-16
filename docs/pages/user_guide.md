@@ -440,3 +440,59 @@ ${LOG:MTTDefaults.keys.3} = options
 ```
 
 In the above output, notice what looks like `{ ... }` and `[ ... ]`. These are simply where the LogInterpolationDebug plugin is hiding JSON strings that contain data that you can also access directly, and the form in which you access the data directly is also displayed in the debug output.
+
+### Skipping an INI section using "run_if"
+
+Sometimes you may only want part of your INI file to execute. This could be for modifying behavior based on the type of system being ran on, or also for running part of an INI file on one system and another part on a different system.
+
+To accomplish this behavior, MTT supports a special option for stages called "run_if". MTT will execute the shell command specified by "run_if" and if the return code is nonzero then that section is skipped.
+
+For example, these sections will not be executed:
+
+```
+[TestRun:no_execute_1]
+plugin = Shell
+run_if = sh -c 'exit 1'
+command = echo 'hello'
+
+[TestRun:no_execute_2]
+plugin = Shell
+run_if = false
+command = echo 'hello'
+```
+
+Whereas these sections will be executed:
+
+```
+[TestRun:yes_execute_1]
+plugin = Shell
+command = echo 'hello'
+
+[TestRun:yes_execute_2]
+plugin = Shell
+run_if = sh -c 'exit 0'
+command = echo 'hello'
+
+[TestRun:yes_execute_3]
+plugin = Shell
+run_if = true
+command = echo 'hello'
+```
+
+You can use an environment variable with run_if like so:
+
+```
+[TestRun:some_stage]
+plugin = Shell
+run_if = test $$SOME_VARIABLE == "some value"
+command = echo 'hello'
+```
+
+You can also check if a file exists with run_if like so:
+
+```
+[TestRun:some_stage]
+plugin = Shell
+run_if = test -f /tmp/some_file.txt
+command = echo 'hello'
+```

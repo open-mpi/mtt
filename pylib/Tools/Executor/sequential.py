@@ -19,6 +19,7 @@ import importlib
 import logging
 import imp
 import datetime
+import shlex
 from yapsy.PluginManager import PluginManager
 
 from ExecutorMTTTool import *
@@ -209,7 +210,7 @@ class SequentialEx(ExecutorMTTTool):
                                             plugin = pluginInfo.plugin_object
                                             break
                                     if plugin is not None:
-                                        break;
+                                        break
                                 if plugin is None:
                                     # Check the utilities
                                     availUtils = list(testDef.loader.utilities.keys())
@@ -219,7 +220,7 @@ class SequentialEx(ExecutorMTTTool):
                                                 plugin = pluginInfo.plugin_object
                                                 break
                                         if plugin is not None:
-                                            break;
+                                            break
                                 if plugin is None:
                                     stageLog['status'] = 1
                                     stageLog['stderr'] = "Specified plugin",module,"does not exist in stage",stage,"or in the available tools and utilities"
@@ -241,7 +242,7 @@ class SequentialEx(ExecutorMTTTool):
                                         plugin = pluginInfo.plugin_object
                                         break
                                 if plugin is not None:
-                                    break;
+                                    break
                             if plugin is None:
                                 # Check the utilities
                                 availUtils = list(testDef.loader.utilities.keys())
@@ -251,7 +252,7 @@ class SequentialEx(ExecutorMTTTool):
                                             plugin = pluginInfo.plugin_object
                                             break
                                     if plugin is not None:
-                                        break;
+                                        break
                             if plugin is None:
                                 stageLog['status'] = 1
                                 stageLog['stderr'] = "Specified plugin",module,"does not exist in stage",stage,"or in the available tools and utilities"
@@ -276,6 +277,45 @@ class SequentialEx(ExecutorMTTTool):
                             testDef.logger.logResults(disp_title, stageLog, testDef)
                             testDef.plugin_trans_sem.acquire()
                             continue
+
+                    # determine if stage should be executed based on "run_if" option
+                    run_if_result = 0
+                    if 'run_if' in keyvals:
+                        checking_run_if = True
+                        run_if_cmd = keyvals['run_if']
+                        del keyvals['run_if']
+                    else:
+                        checking_run_if = False
+                    try:
+                        parent = keyvals['parent']
+                    except KeyError:
+                        parent = None
+                    if parent:
+                        parent_log = testDef.logger.getLog(parent)
+                        parent_loc = parent_log['location']
+                    if checking_run_if:
+                        testDef.logger.verbose_print("run_if command: %s" % run_if_cmd)
+                        if run_if_cmd:
+                            cmdargs = shlex.split(run_if_cmd)
+                            if parent:
+                                original_loc = os.getcwd()
+                                os.chdir(parent_loc)
+                            run_if_data = testDef.execmd.execute({}, cmdargs, testDef)
+                            if parent:
+                                os.chdir(original_loc)
+                            run_if_result = run_if_data['status']
+                            if run_if_data['stdout']:
+                                testDef.logger.verbose_print("run_if stdout: %s" % run_if_data['stdout'])
+                            if run_if_data['stderr']:
+                                testDef.logger.verbose_print("run_if stderr: %s" % run_if_data['stderr'])
+                            testDef.logger.verbose_print("run_if result: %s - %s section" % \
+                                                        (run_if_result, "running" if run_if_result == 0 else "skipping"))
+                        else:
+                            run_if_result = 1
+                            testDef.logger.verbose_print("run_if option is empty - skipping section")
+                    if run_if_result != 0:
+                        continue
+
 
                     # Make sure that the plugin was activated
                     if not plugin.is_activated:
