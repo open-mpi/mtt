@@ -103,7 +103,7 @@ class Git(FetchMTTTool):
                             password = f.readline().strip()
                             f.close()
                         else:
-                            log['status'] = 1;
+                            log['status'] = 1
                             log['stderr'] = "Password file " + cmds['pwfile'] + " does not exist"
                             return
                 except KeyError:
@@ -117,7 +117,7 @@ class Git(FetchMTTTool):
                         password = f.readline().strip()
                         f.close()
                     else:
-                        log['status'] = 1;
+                        log['status'] = 1
                         log['stderr'] = "Password file " + cmds['pwfile'] + " does not exist"
                         return
             except KeyError:
@@ -126,7 +126,7 @@ class Git(FetchMTTTool):
         # we must have a username
         if password is not None:
             if username is None:
-                log['status'] = 1;
+                log['status'] = 1
                 log['stderr'] = "Password without username"
                 return
             # find the "//"
@@ -336,9 +336,15 @@ class Git(FetchMTTTool):
                             os.chdir(cwd)
                             continue
                         if isinstance(results['stdout'], list):
-                            t = results['stdout'][0]
+                            if results['stdout']:
+                                t = [line for line in results['stdout'] if line.startswith('*')][0]
+                            else:
+                                t = ''
                         else:
-                            t = results['stdout']
+                            if results['stdout'].strip():
+                                t = [line for line in results['stdout'].split('\n') if line.startswith('*')][0]
+                            else:
+                                t = ''
                         if branch not in t:
                             # we need to whack the current installation and reinstall it
                             os.chdir(dst)
@@ -461,7 +467,10 @@ class Git(FetchMTTTool):
             # get the current hash and record it
             hashresult = testDef.execmd.execute(cmds, ["git", "log", "-1", "--oneline"], testDef)
             # the hash is the first field before the space
-            log['hash'] = hashresult['stdout'][0].split()[0]
+            if hashresult['stdout']:
+                log['hash'] = hashresult['stdout'][0].split()[0]
+            else:
+                log['hash'] = None
 
             # log our absolute location so others can find it
             log['location'] = os.getcwd()
