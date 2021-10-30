@@ -406,36 +406,30 @@ class Git(FetchMTTTool):
                             log['stdout'] = results['stdout']
                             os.chdir(cwd)
                             continue
-                        head_commit_hash = None
+                        head_commit_hash, requested_commit_hash = None, None
                         if isinstance(results['stdout'], list):
                             if results['stdout']:
                                 head_commit_hash = results['stdout'][0]
-                            else:
-                                head_commit_hash = ''
                         else:
                             if results['stdout'].strip():
                                 head_commit_hash = results['stdout'].split('\n')[0]
+                        # if getting results['stdout'] didn't work (f.e. because of merge_stdout_stderr)
+                        # then don't even try for the requeted commit
+                        if head_commit_hash != None:
+                            results = testDef.execmd.execute(cmds, ["git", "log", commit, "-n1", "--format=%H"], testDef)
+                            if 0 != results['status']:
+                                log['status'] = results['status']
+                                log['stderr'] = results['stderr']
+                                log['stdout'] = results['stdout']
+                                os.chdir(cwd)
+                                continue
+                            if isinstance(results['stdout'], list):
+                                if results['stdout']:
+                                    requested_commit_hash = results['stdout'][0]
                             else:
-                                head_commit_hash = ''
-                        results = testDef.execmd.execute(cmds, ["git", "log", commit, "-n1", "--format=%H"], testDef)
-                        if 0 != results['status']:
-                            log['status'] = results['status']
-                            log['stderr'] = results['stderr']
-                            log['stdout'] = results['stdout']
-                            os.chdir(cwd)
-                            continue
-                        requested_commit_hash = None
-                        if isinstance(results['stdout'], list):
-                            if results['stdout']:
-                                requested_commit_hash = results['stdout'][0]
-                            else:
-                                requested_commit_hash = ''
-                        else:
-                            if results['stdout'].strip():
-                                requested_commit_hash = results['stdout'].split('\n')[0]
-                            else:
-                                requested_commit_hash = ''
-                        if head_commit_hash != requested_commit_hash:
+                                if results['stdout'].strip():
+                                    requested_commit_hash = results['stdout'].split('\n')[0]
+                        if head_commit_hash == None or head_commit_hash != requested_commit_hash:
                             # we need to whack the current installation and reinstall it
                             os.chdir(dst)
                             shutil.rmtree(repo)
