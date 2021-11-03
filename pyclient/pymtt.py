@@ -146,7 +146,7 @@ debugGroup.add_argument("--dryrun",
                       action="store_true", dest="dryrun", default=False,
                       help="Show commands, but do not execute them")
 debugGroup.add_argument("--trial",
-                      action="store_true", dest="trial", default=False,
+                      action="store_true", dest="trial", default=None,
                       help="Use when testing your MTT client setup; results that are generated and submitted to the database are marked as \"trials\" and are not included in normal reporting.")
 
 elkGroup = parser.add_argument_group('elkGroup','ELK-friendly output options')
