@@ -25,8 +25,9 @@ from distutils.spawn import find_executable
 # @param username    Username required for accessing the repository
 # @param password    Password required for that user to access the repository
 # @param pwfile      File where password can be found
-# @param branch      Branch (if not master) to be downloaded
-# @param pr          Pull request to be downloaded
+# @param branch      Branch (if not master) to be downloaded; mutually exclusive with `commit` and `pr`
+# @param commit      Commit (hash prefix, tag or other commit expression) to be downloaded; mutually exclusive with `branch` and `p`
+# @param pr          Pull request to be downloaded; mutually exclusive with `branch` and `commit`
 # @param subdir      Subdirectory of interest in repository
 # @param modules_unload  Modules to unload
 # @param modules         Modules to load
@@ -47,8 +48,9 @@ class Git(FetchMTTTool):
         self.options['username'] = (None, "Username required for accessing the repository")
         self.options['password'] = (None, "Password required for that user to access the repository")
         self.options['pwfile'] = (None, "File where password can be found")
-        self.options['branch'] = (None, "Branch (if not master) to be downloaded")
-        self.options['pr'] = (None, "Pull request to be downloaded")
+        self.options['branch'] = (None, "Branch (if not master) to be downloaded; mutually exclusive with `commit` and `pr`")
+        self.options['commit'] = (None, "Commit (hash prefix, tag or other commit expression) to be downloaded; mutually exclusive with `branch` and `pr`")
+        self.options['pr'] = (None, "Pull request to be downloaded; mutually exclusive with `branch` and `commit`")
         self.options['subdir'] = (None, "Subdirectory of interest in repository")
         self.options['modules'] = (None, "Modules to load")
         self.options['modules_unload'] = (None, "Modules to unload")
@@ -166,6 +168,13 @@ class Git(FetchMTTTool):
                 branch = cmds['branch']
         except KeyError:
             pass
+        # or if they asked for a specific commit
+        commit = None
+        try:
+            if cmds['commit'] is not None:
+                commit = cmds['commit']
+        except KeyError:
+            pass
         # or if they asked for a specific PR
         pr = None
         try:
@@ -173,10 +182,10 @@ class Git(FetchMTTTool):
                 pr = cmds['pr']
         except KeyError:
             pass
-        # cannot have both
-        if branch is not None and pr is not None:
+        # cannot have more than one
+        if (1 if branch is not None else 0) + (1 if commit is not None else 0) + (1 if pr is not None else 0) > 1:
             log['status'] = 1
-            log['stderr'] = "Cannot specify both a branch and a PR"
+            log['stderr'] = "Cannot specify more than one of a branch, a commit, and a PR"
             return
 
         # see if we have already serviced this one
@@ -213,6 +222,12 @@ class Git(FetchMTTTool):
             if branch is not None:
                 try:
                     if branch == rep['branch']:
+                        return
+                except:
+                    pass
+            elif commit is not None:
+                try:
+                    if commit == rep['commit']:
                         return
                 except:
                     pass
@@ -382,6 +397,91 @@ class Git(FetchMTTTool):
                                     log['stdout'] = results['stdout']
                                     os.chdir(cwd)
                                     continue
+                    # if they specified a commit, see if it gives the same hash we're on
+                    elif commit is not None:
+                        results = testDef.execmd.execute(cmds, ["git", "log", "HEAD", "-n1", "--format=%H"], testDef)
+                        if 0 != results['status']:
+                            log['status'] = results['status']
+                            log['stderr'] = results['stderr']
+                            log['stdout'] = results['stdout']
+                            os.chdir(cwd)
+                            continue
+                        head_commit_hash, requested_commit_hash = None, None
+                        if isinstance(results['stdout'], list):
+                            if results['stdout']:
+                                head_commit_hash = results['stdout'][0]
+                        else:
+                            if results['stdout'].strip():
+                                head_commit_hash = results['stdout'].split('\n')[0]
+                        # if getting results['stdout'] didn't work (f.e. because of merge_stdout_stderr)
+                        # then don't even try for the requeted commit
+                        if head_commit_hash != None:
+                            results = testDef.execmd.execute(cmds, ["git", "log", commit, "-n1", "--format=%H"], testDef)
+                            if 0 != results['status']:
+                                log['status'] = results['status']
+                                log['stderr'] = results['stderr']
+                                log['stdout'] = results['stdout']
+                                os.chdir(cwd)
+                                continue
+                            if isinstance(results['stdout'], list):
+                                if results['stdout']:
+                                    requested_commit_hash = results['stdout'][0]
+                            else:
+                                if results['stdout'].strip():
+                                    requested_commit_hash = results['stdout'].split('\n')[0]
+                        if head_commit_hash == None or head_commit_hash != requested_commit_hash:
+                            # we need to whack the current installation and reinstall it
+                            os.chdir(dst)
+                            shutil.rmtree(repo)
+                            results = testDef.execmd.execute(cmds, ["git", "clone", "--no-checkout", url], testDef)
+                            if 0 != results['status']:
+                                log['status'] = results['status']
+                                log['stderr'] = "Cannot clone repository {0}".format(repo)
+                                # track that we serviced this one
+                                rp = {}
+                                rp['status'] = results['status']
+                                rp['commit'] = commit
+                                if cmds['subdir'] is not None:
+                                    rp['subdir'] = cmds['subdir']
+                                self.done[repo] = rp
+                                os.chdir(cwd)
+                                if log['status'] == 0:
+                                    return
+                                else:
+                                    continue
+                            os.chdir(repo)
+                            results = testDef.execmd.execute(cmds, ["git", "checkout", commit, "--detach"], testDef)
+                            if 0 != results['status']:
+                                log['status'] = results['status']
+                                log['stderr'] = "Cannot checkout commit {0} of repository {1}".format(commit, repo)
+                                # track that we serviced this one
+                                rp = {}
+                                rp['status'] = results['status']
+                                rp['commit'] = head_commit_hash
+                                if cmds['subdir'] is not None:
+                                    rp['subdir'] = cmds['subdir']
+                                self.done[repo] = rp
+                                os.chdir(cwd)
+                                if log['status'] == 0:
+                                    return
+                                else:
+                                    continue
+                        else:
+                            # if they want us to leave it as-is, then we are done
+                            try:
+                                if cmds['asis']:
+                                    results['status'] = 0
+                                    results['stdout'] = None
+                                    results['stderr'] = None
+                            except KeyError:
+                                # since it already exists, let's just update it
+                                results = testDef.execmd.execute(cmds, ["git", "pull"], testDef)
+                                if 0 != results['status']:
+                                    log['status'] = results['status']
+                                    log['stderr'] = results['stderr']
+                                    log['stdout'] = results['stdout']
+                                    os.chdir(cwd)
+                                    continue
                     else:
                         # if they want us to leave it as-is, then we are done
                         try:
@@ -402,6 +502,31 @@ class Git(FetchMTTTool):
                 # clone it
                 if branch is not None:
                     results = testDef.execmd.execute(cmds, ["git", "clone", "-b", branch, "--single-branch", url], testDef)
+                    if 0 != results['status']:
+                        log['status'] = results['status']
+                        log['stderr'] = results['stderr']
+                        log['stdout'] = results['stdout']
+                        os.chdir(cwd)
+                        continue
+                elif commit is not None:
+                    results = testDef.execmd.execute(cmds, ["git", "clone", "--no-checkout", url], testDef)
+                    if 0 != results['status']:
+                        log['status'] = results['status']
+                        log['stderr'] = "Cannot clone repository {0}".format(repo)
+                        # track that we serviced this one
+                        rp = {}
+                        rp['status'] = results['status']
+                        rp['commit'] = commit
+                        if cmds['subdir'] is not None:
+                            rp['subdir'] = cmds['subdir']
+                        self.done[repo] = rp
+                        os.chdir(cwd)
+                        if log['status'] == 0:
+                            return
+                        else:
+                            continue
+                    os.chdir(repo)
+                    results = testDef.execmd.execute(cmds, ["git", "checkout", commit, "--detach"], testDef)
                     if 0 != results['status']:
                         log['status'] = results['status']
                         log['stderr'] = results['stderr']
@@ -502,6 +627,8 @@ class Git(FetchMTTTool):
             rp['location'] = log['location']
             if pr is not None:
                 rp['pr'] = pr
+            elif commit is not None:
+                rp['commit'] = commit
             elif branch is not None:
                 rp['branch'] = branch
             if cmds['subdir'] is not None:
