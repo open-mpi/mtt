@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2015-2019 Intel, Inc.  All rights reserved.
 # Copyright (c) 2017      IBM Corporation.  All rights reserved.
-# Copyright (c) 2021      Triad National Security, LLC. All rights
+# Copyright (c) 2021-2022 Triad National Security, LLC. All rights
 #                         reserved.
 # $COPYRIGHT$
 #
@@ -208,16 +208,16 @@ class IUDatabase(ReporterMTTStage):
                 # Find sections prefixed with 'TestBuild'
                 if re.match("TestBuild", lg['section']):
                     found_it = True
-                    rtn = self._submit_test_build(testDef.logger, lg, metadata, s, url, www_auth)
+                    rtn = self._submit_test_build(testDef.logger, lg, metadata, s, url, testDef, www_auth)
         #
         # Well no TestBuild section found, so try MiddlewareBuild
         #
         if found_it == False:
             for lg in fullLog:
                 # Find sections prefixed with 'MiddlewareBuild'
-                if re.match("Middlewarebuild", lg['section']):
+                if re.match("MiddlewareBuild", lg['section']):
                     found_it = True
-                    rtn = self._submit_install(testDef.logger, lg, metadata, s, url, www_auth)
+                    rtn = self._submit_install(testDef.logger, lg, metadata, s, url, testDef, www_auth)
 
         log['status'] = 0
         return
@@ -240,7 +240,7 @@ class IUDatabase(ReporterMTTStage):
         test_info = self._submit_test_build(logger,
                                       logger.getLog(self._extract_param(logger, lg['section'], 'parent')),
                                       metadata,
-                                      s, url, httpauth)
+                                      s, url, testDef, httpauth)
 
         if test_info is None:
             return None
@@ -499,7 +499,7 @@ class IUDatabase(ReporterMTTStage):
 
         return True
 
-    def _submit_test_build(self, logger, lg, metadata, s, url, httpauth=None):
+    def _submit_test_build(self, logger, lg, metadata, s, url, testDef, httpauth=None):
         try:
             if self.cmds['debug_screen']:
                 print("----------------- Test Build (%s) " % (lg['section']))
@@ -513,7 +513,7 @@ class IUDatabase(ReporterMTTStage):
         for lg_b in fullLog:
             # Find sections prefixed with 'MiddlewareBuild'
             if re.match("MiddlewareBuild", lg_b['section']):
-                install_info = self._submit_install(logger, lg_b, metadata, s, url, httpauth)
+                install_info = self._submit_install(logger, lg_b, metadata, s, url, testDef,  httpauth)
 
         if install_info is None:
             return None
@@ -561,11 +561,11 @@ class IUDatabase(ReporterMTTStage):
             status = -1
         if status == 0:
             data['result_message'] = "Success"
-            data['test_result'] = 1
+            data['test_result'] = testDef.MTT_TEST_PASSED
             data['exit_value'] = 0
         elif status == 1:
             data['result_message'] = "Failed"
-            data['test_result'] = 0
+            data['test_result'] = testDef.MTT_TEST_FAILED
             if 'stderr' in lg:
                 # the log should be a list, but it is possible
                 # that it got joined into a single string
@@ -586,7 +586,7 @@ class IUDatabase(ReporterMTTStage):
                 data['exit_value'] = -1
         else:
             data['result_message'] = "Failed"
-            data['test_result'] = -1
+            data['test_result'] = testDef.MTT_TEST_FAILED
             if 'stderr' in lg:
                 # the log should be a list, but it is possible
                 # that it got joined into a single string
@@ -657,7 +657,7 @@ class IUDatabase(ReporterMTTStage):
         return self._merge_dict( {'test_build_id':data['ids'][0]['test_build_id']},
                                  install_info)
 
-    def _submit_install(self, logger, lg, metadata, s, url, httpauth=None):
+    def _submit_install(self, logger, lg, metadata, s, url, testDef, httpauth=None):
 
         try:
             if self.cmds['debug_screen']:
@@ -756,11 +756,11 @@ class IUDatabase(ReporterMTTStage):
             status = -1
         if status == 0:
             data['result_message'] = "Success"
-            data['test_result'] = 1
+            data['test_result'] = testDef.MTT_TEST_PASSED
             data['exit_value'] = 0
         elif status == 1:
             data['result_message'] = "Failed"
-            data['test_result'] = 0
+            data['test_result'] = testDef.MTT_TEST_FAILED
             if 'stderr' in lg:
                 # the log should be a list, but it is possible
                 # that it got joined into a single string
@@ -781,7 +781,7 @@ class IUDatabase(ReporterMTTStage):
                 data['exit_value'] = -1
         else:
             data['result_message'] = "Failed"
-            data['test_result'] = -1
+            data['test_result'] = testDef.MTT_TEST_FAILED
             if 'stderr' in lg:
                 # the log should be a list, but it is possible
                 # that it got joined into a single string
