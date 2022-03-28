@@ -478,9 +478,11 @@ class IUDatabase(ReporterMTTStage):
 
             try:
                 if type(trun['stderr']) is list:
-                    data['result_stderr'] = '\n'.join(trun['stderr'] if trun['stderr'] is not None else "")
+                    result_stderr_str = '\n'.join(trun['stderr'] if trun['stderr'] is not None else "")
+                    data['result_stderr'] = result_stderr_str.replace("\x00", "\uFFFD")
                 else:
-                    data['result_stderr'] = (trun['stderr'] if trun['stderr'] is not None else "")
+                    result_stderr_str = (trun['stderr'] if trun['stderr'] is not None else "")
+                    data['result_stderr'] = result_stderr_str.replace("\x00", "\uFFFD")
             except KeyError:
                 data['result_stderr'] = None
 
