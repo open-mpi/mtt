@@ -496,7 +496,7 @@ class IUDatabase(ReporterMTTStage):
             data = self._submit_json_data(payload, s, url, httpauth)
             if data is None:
                 return None
-            if data['status'] is not 0:
+            if data['status'] != 0:
                 return None
 
         return True
@@ -652,7 +652,7 @@ class IUDatabase(ReporterMTTStage):
         data = self._submit_json_data(payload, s, url, httpauth)
         if data is None:
             return None
-        if data['status'] is not 0:
+        if data['status'] != 0:
             return None
 
         # Extract ID
@@ -851,7 +851,7 @@ class IUDatabase(ReporterMTTStage):
         data = self._submit_json_data(payload, s, url, httpauth)
         if data is None:
             return None
-        if data['status'] is not 0:
+        if data['status'] != 0:
             return None
 
         # Extract ID
@@ -922,7 +922,7 @@ class IUDatabase(ReporterMTTStage):
         if data is None:
             return -1
 
-        if data['status'] is not 0:
+        if data['status'] != 0:
             return -2
 
         return data['client_serial']
