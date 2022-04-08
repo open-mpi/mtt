@@ -61,6 +61,10 @@ class AlreadyInstalled(FetchMTTTool):
         # parse any provided options - these will override the defaults
         cmds = {}
         testDef.parseOptions(log, self.options, keyvals, cmds)
+
+        if cmds['exec'] is None:
+            log['status'] = 0
+            return
   
         # Apply any requested environment module settings
         status,stdout,stderr = testDef.modcmd.applyModules(log['section'], cmds, testDef)
@@ -71,7 +75,7 @@ class AlreadyInstalled(FetchMTTTool):
             return
 
         # now look for the executable in our path
-        if not find_executable(keyvals['exec']):
+        if not find_executable(cmds['exec']):
             log['status'] = 1
             log['stderr'] = "Executable " + cmds['exec'] + " not found"
         else:
