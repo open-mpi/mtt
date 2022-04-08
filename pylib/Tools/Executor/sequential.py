@@ -292,14 +292,17 @@ class SequentialEx(ExecutorMTTTool):
                         parent = None
                     if parent:
                         parent_log = testDef.logger.getLog(parent)
-                        parent_loc = parent_log['location']
+                        parent_loc = None
+                        if 'location' in parent_log:
+                            parent_loc = parent_log['location']
                     if checking_run_if:
                         testDef.logger.verbose_print("run_if command: %s" % run_if_cmd)
                         if run_if_cmd:
                             cmdargs = shlex.split(run_if_cmd)
                             if parent:
                                 original_loc = os.getcwd()
-                                os.chdir(parent_loc)
+                                if parent_loc is not None:
+                                    os.chdir(parent_loc)
                             run_if_data = testDef.execmd.execute({}, cmdargs, testDef)
                             if parent:
                                 os.chdir(original_loc)
