@@ -95,6 +95,10 @@ class CombinatorialEx(ExecutorMTTTool):
             else:
                 self.iniLog[section] = fileName
         # Combine TestRun and MiddlewareGet files
+        if len(self.runLog) == 0 or len(tempSpecialSection) == 0:
+            print("Error: Missing required 'MiddlewareGet' or 'TestRun' section in config file")
+            sys.exit(1)
+
         tempList = {}
         for section in self.runLog:
             self.parser.read(self.runLog[section])
