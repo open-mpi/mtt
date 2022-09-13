@@ -15,10 +15,17 @@ import sys
 import configparser
 import importlib
 import logging
-import imp
 from yapsy.PluginManager import PluginManager
 import argparse
 import shlex
+
+def load_source(name, path):
+    module_spec = importlib.util.spec_from_file_location(
+        name, path
+    )
+    module = importlib.util.module_from_spec(module_spec)
+    module_spec.loader.exec_module(module)
+    return module
 
 # First check for bozo error - we need to be given
 # at least a cmd line option, so no params at all
@@ -247,8 +254,8 @@ if (args.debug):
 # load the "testdef" Test Definition class so we can
 # begin building this test
 try:
-    m = imp.load_source("TestDef", os.path.join(basedir, "TestDef.py"))
-except ImportError:
+    m = load_source("TestDef", os.path.join(basedir, "TestDef.py"))
+except Exception:
     print("ERROR: unable to load TestDef that must contain the Test Definition object")
     exit(1)
 cls = getattr(m, "TestDef")
