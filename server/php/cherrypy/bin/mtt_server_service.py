@@ -1,4 +1,4 @@
-#!src/env/bin/python
+#!/usr/bin/env python
 """
 Control the MTT REST server.
 

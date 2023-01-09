@@ -60,7 +60,8 @@ if __name__ == '__main__':
     conf = {
         'global': {
             'server.socket_host': socket.gethostbyname(socket.gethostname()),
-            'log.access_file': '../log/access.log',
+            'log.access_file': '',
+            #'log.access_file': '../log/access.log',
             'log.error_file': '../log/cherrypy_error.log',
             'log.screen': False,
             # Autoreload is very useful when debugging or updating frequently

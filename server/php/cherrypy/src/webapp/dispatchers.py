@@ -108,9 +108,11 @@ class _ServerResourceBase:
 
     def _extract_http_username(self, auth):
         tmp = auth
+        self.logger.debug("tmp =  %s" % str(tmp))
         try:
             tmp = base64.b64decode(tmp[6:len(tmp)])
-            return tmp.split(':')[0]
+            tmp_c = tmp.decode("utf-8")
+            return tmp_c.split(':')[0]
         except:
             return "(unknown)"
 
@@ -260,7 +262,7 @@ class Submit(_ServerResourceBase):
     @cherrypy.tools.json_out()
     def GET(self, **kwargs):
         prefix = 'Root [GET /submit/]'
-        self.logger.debug(prefix)
+        self.logger.info(prefix)
 
         rtn = {}
         rtn['status'] = 0
@@ -275,7 +277,7 @@ class Submit(_ServerResourceBase):
     @cherrypy.tools.json_in()
     def POST(self, **kwargs):
         prefix = 'Submit [POST /submit/]'
-        self.logger.debug(prefix)
+        self.logger.info(prefix)
 
         if not hasattr(cherrypy.request, "json"):
             self.logger.error(prefix + " No json data sent")
@@ -294,7 +296,7 @@ class Submit(_ServerResourceBase):
         self.logger.debug( "----------------------- All Data JSON (End  ) ------------------ " )
 
         data['metadata']['http_username'] = self._extract_http_username(cherrypy.request.headers['Authorization'])
-        self.logger.debug(prefix + " Append to metadata 'http_username' = '" + data['metadata']['http_username'] + "'")
+        self.logger.info(prefix + " Append to metadata 'http_username' = '" + data['metadata']['http_username'] + "'")
         
         #
         # Make sure we have all the metadata we need
@@ -310,7 +312,7 @@ class Submit(_ServerResourceBase):
         if phase == self._phase_unknown:
             return self._return_error(prefix, -1, "%s An unknown phase (%s) was specified in the metadata" % (prefix, data["metadata"]["phase"]))
 
-        self.logger.debug( "Phase: %2d = [%s]" % (phase, data["metadata"]['phase']) )
+        self.logger.info( "Phase: %2d = [%s]" % (phase, data["metadata"]['phase']) )
 
         if 'data' not in data.keys():
             self.logger.error(prefix + " No 'data' array in json data")
