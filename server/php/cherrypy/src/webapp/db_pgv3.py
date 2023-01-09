@@ -302,7 +302,15 @@ class DatabaseV3():
 
     def get_cursor(self):
         # Don't forget to: _cursor.close()
-        return self._connection.cursor()
+#       if (self._connection.closed == 1)
+#           self.connect()
+        try:
+            cursor = self._connection.cursor()
+        except Exception as ex:
+            self._logger.debug("get cursor: got exception %s" % str(ex))
+            self.connect()
+            cursor = self._connection.cursor()
+        return cursor
 
     def disconnect(self):
         self._connection.commit()
@@ -609,6 +617,7 @@ class DatabaseV3():
         cursor = self.get_cursor()
 
         values = tuple(insert_stmt_values)
+#       values = values.replace("\x00", "\uFFFD")
         cursor.execute( select_stmt, values )
         rows = cursor.fetchone()
         if rows is not None:
@@ -626,6 +635,7 @@ class DatabaseV3():
 
         insert_stmt_values.insert(0, found_id)
         values = tuple(insert_stmt_values)
+#       values = values.replace("\x00", "\uFFFD")
         cursor.execute( insert_stmt, values )
         # Make sure to commit after every INSERT
         self._connection.commit()
