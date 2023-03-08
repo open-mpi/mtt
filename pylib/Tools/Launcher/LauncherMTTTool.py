@@ -317,7 +317,8 @@ class LauncherMTTTool(IPlugin):
             # entries with their absolute path equivalents. Note that we don't
             # bother removing those we don't match as those won't be executed
             # anyway and thus are irrelevant
-            for t in fail_usecases:
+            fail_usecases_keys = list(fail_usecases.keys())
+            for t in fail_usecases_keys:
                 for t2 in self.tests:
                     if t2.split("/")[-1] == t:
                         rc = fail_usecases[t]
