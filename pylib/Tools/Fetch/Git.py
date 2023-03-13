@@ -148,6 +148,9 @@ class Git(FetchMTTTool):
         if repo.endswith(".git"):
             repo = repo[0:len(repo)-4]
 
+        dst = os.path.join(testDef.options['scratchdir'], log['section'].replace(":","_"))
+        repo = os.path.join(dst, repo)
+
         # Apply any requested environment module settings
         status,stdout,stderr = testDef.modcmd.applyModules(log['section'], cmds, testDef)
         if 0 != status:
@@ -245,7 +248,6 @@ class Git(FetchMTTTool):
         # record our current location
         cwd = os.getcwd()
 
-        dst = os.path.join(testDef.options['scratchdir'], log['section'].replace(":","_"))
         try:
             if not os.path.exists(dst): os.mkdir(dst)
         except:
