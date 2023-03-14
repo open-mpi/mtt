@@ -84,7 +84,7 @@ class Copy(BaseMTTUtility):
             for src in cmds['src'].split(','):
                 src = src.strip()
                 # Clear the cache so that distutils.dir_util doesn't assume the same directory structure from last time things were copied
-                imp.reload(distutils.dir_util)
+                reload(distutils.dir_util)
                 if os.path.isdir(src):
                     # Distutils copy tree copies the contents of the directory into the target dir
                     # Modify that to copy the directory
