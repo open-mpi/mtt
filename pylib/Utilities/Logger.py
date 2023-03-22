@@ -223,5 +223,5 @@ class Logger(BaseMTTUtility):
             fh.close()
             self.outputLog()
         except IOError:
-            print("Section " + result['section'] + " failed to open checkpoint file for reading", file=self.fh)
+            print("Failed to open checkpoint file for reading", file=self.fh)
             sys.stdout.flush()
