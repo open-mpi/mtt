@@ -218,7 +218,13 @@ class LauncherMTTTool(IPlugin):
         os.chdir(self.cwd)
         return
 
+    def resetTests(self):
+        self.tests = []
+        self.skip_tests = []
+        self.expected_returncodes = {}
+
     def collectTests(self, log, cmds):
+        self.resetTests()
         # did they give us a list of specific directories where the desired
         # tests to be executed reside?
         if cmds['test_list'] is None:
