@@ -59,12 +59,14 @@ print "\nCreating reports specified in $ini_file.";
 # Reference:
 #   http://www.zend.com/zend/trick/html-email.php
 
+
+
 $headers  = "From: mtt-results@lists.open-mpi.org\r\n";
 $headers .= "MIME-Version: 1.0\r\n";
 $boundary = uniqid("MTTREPORT");
 $headers .= "Content-Type: multipart/alternative" .
-            "; boundary = $boundary\r\n\r\n";
-$headers .= "This is a MIME encoded message.\r\n\r\n";
+            "; boundary = $boundary\r\n";
+$headers .= "This is a MIME encoded message.\r\n";
 # $headers .= "--$boundary\r\n" .
 #             "Content-Type: text/plain; charset=ISO-8859-1\r\n" .
 #             "Content-Transfer-Encoding: base64\r\n\r\n";
@@ -99,7 +101,7 @@ foreach (array_keys($ini) as $section) {
     # if we can not find it - send the email
     elseif (! contains_null_result_msg($html)) {
         $report = chunk_split(base64_encode($html));
-        mail($email, $section, '', $headers . $report);
+ 	mail($email, $section, $report, $headers);
     }
     # Do not email a blank report
     else {
