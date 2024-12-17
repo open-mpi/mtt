@@ -435,9 +435,9 @@ function INTERNAL_db_iface_compose_sql_summary_all_fast($query) {
     #
     $groupbys = array_unique(
         array_merge(
-	     (array)array_keys($query['select']),
-	     (array)array_keys($query['select_more']),
-	     (array)array_keys($query['performance'])
+	     (array)array_keys((array)$query['select']),
+	     (array)array_keys((array)$query['select_more']),
+	     (array)array_keys((array)$query['performance'])
         )
     );
 
@@ -557,8 +557,8 @@ function INTERNAL_db_iface_compose_sql_summary_fast_sub_table_base($query, $sele
     #
     $sql_cmd .= "WHERE ".$nltt;
     # Filter the array in case there are NULLs
-    $sql_cmd .= join(" AND $nltt", array_filter(array_values2($query['where'])));
-    $sql_cmd .= join(" AND $nltt", array_filter(array_values2($query['where_not'])));
+    $sql_cmd .= join(" AND $nltt", array_filter((array)array_values2($query['where'])));
+    $sql_cmd .= join(" AND $nltt", array_filter((array)array_values2($query['where_not'])));
 
     return $sql_cmd;
 }
@@ -1457,7 +1457,7 @@ function is_result_column($str) {
 # Return the array values that are a depth of 
 # 2 away from the argument passed
 function array_values2($arr) {
-    foreach (array_keys($arr) as $k)
+    foreach (array_keys((array)$arr) as $k)
         $ret[] = $arr[$k];
 
     return $ret;

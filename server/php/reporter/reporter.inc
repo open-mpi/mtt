@@ -914,9 +914,9 @@ function tokenize($string) {
          $next_token !== false;
          $next_token = strtok(' ')) {
 
-        if ($next_token{0} == '"')
+        if ($next_token[0] == '"')
             $next_token =
-                $next_token{strlen($next_token) - 1} == '"' ?
+                $next_token[strlen($next_token) - 1] == '"' ?
                      substr($next_token, 1, -1) :
                      substr($next_token, 1) . ' ' . strtok('"');
         $tokens[] = $next_token;
