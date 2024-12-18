@@ -135,10 +135,10 @@ function display_report() {
         $o = offset($_GET);
 
         # Prepare headers array for *_table functions
-        $headers['params']      = array_keys($query['select']);
-        $headers['details']     = array_keys($query['select_more']);
-        $headers['performance'] = array_keys($query['performance']);
-        $headers['results']     = array_keys($query['aggregates']);
+        $headers['params']      = array_keys((array)$query['select']);
+        $headers['details']     = array_keys((array)$query['select_more']);
+        $headers['performance'] = array_keys((array)$query['performance']);
+        $headers['results']     = array_keys((array)$query['aggregates']);
         $headers['phases']      = $phases;
         $headers['offset']      = $o;
     }
@@ -2000,7 +2000,7 @@ function is_cherry_pick($params) {
 
 # Mutator function to clear out all cherry checkbox values
 function unset_cherries(&$arr) {
-    foreach (array_keys($arr) as $k)
+    foreach (array_keys((array)$arr) as $k)
         if (preg_match("/cherry_\d+/i", $k))
             unset($arr[$k]);
 }

@@ -270,7 +270,7 @@ function get_form_universe2($sql_cmd, $resource) {
         foreach (array_keys($hash[$i]) as $k)
             $arr[$k][] = $hash[$i][$k];
 
-    foreach (array_keys($arr) as $k)
+    foreach (array_keys((array)$arr) as $k)
         # Do not collect timestamp entries from the ttable
         if (! preg_match("/timestamp/", $k))
             $entries[$k][] = array_unique($arr[$k]);
@@ -862,7 +862,10 @@ function selection_popups($defaults, $entries) {
             "\n</div>";
 
         # Widen popup according to the number of menus
-        $num_menus = sizeof($entries[$field]);
+	$num_menus = 0;
+        if (! is_null($entries)) {
+            $num_menus = sizeof((array)$entries[$field]);
+	}
 
         # Yippee, selection popup
         if ($linkto) {
@@ -961,7 +964,7 @@ function form_popup($elements, $params, $specs) {
     $max = 0;
     foreach (array_keys($elements) as $category) {
         foreach (array_keys($elements[$category]) as $field) {
-            $size = sizeof($elements[$category][$field]);
+            $size = sizeof((array)$elements[$category][$field]);
             if ($size > $max)
                 $max = $size;
         }
