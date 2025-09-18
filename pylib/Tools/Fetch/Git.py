@@ -45,6 +45,7 @@ class Git(FetchMTTTool):
         self.done = {}
         self.options = {}
         self.options['url'] = (None, "URL to access the repository")
+        self.options['recursive'] = (False, "Recursively clone repository")
         self.options['username'] = (None, "Username required for accessing the repository")
         self.options['password'] = (None, "Password required for that user to access the repository")
         self.options['pwfile'] = (None, "File where password can be found")
@@ -91,6 +92,15 @@ class Git(FetchMTTTool):
             log['stderr'] = "No repository URL was provided"
             return
         testDef.logger.verbose_print("Working repo " + url)
+        recursive = ""
+        if cmds['recursive']:
+            recursive = "--recurse-submodules"
+            testDef.logger.verbose_print("Will attempt to recursively cloning repository")
+        else:
+            recursive = ""
+            testDef.logger.verbose_print("Will not attempt to recursively cloning repository")
+        testDef.logger.verbose_print("recurisve log: " + recursive)
+
         username = cmds['username']
         password = None
         # see if they gave us a password
@@ -290,7 +300,11 @@ class Git(FetchMTTTool):
                 # and reinstall
                 if pr is not None:
                     shutil.rmtree(repo)
-                    results = testDef.execmd.execute(cmds, ["git", "clone", url], testDef)
+                    cmd_args = ["git", "clone"]
+                    if recursive != "":
+                        cmd_args.append(recursive)
+                    cmd_args.append(url)
+                    results = testDef.execmd.execute(cmds, cmd_args, testDef)
                     if 0 != results['status']:
                         log['status'] = results['status']
                         log['stderr'] = "Cannot clone repository {0}".format(repo)
@@ -366,7 +380,11 @@ class Git(FetchMTTTool):
                             # we need to whack the current installation and reinstall it
                             os.chdir(dst)
                             shutil.rmtree(repo)
-                            results = testDef.execmd.execute(cmds, ["git", "clone", "-b", branch, "--single-branch", url], testDef)
+                            cmd_args = ["git", "clone", "-b", branch, "--single-branch"]
+                            if recursive != "":
+                                cmd_args.append(recursive)
+                            cmd_args.append(url)
+                            results = testDef.execmd.execute(cmds, cmd_args, testDef)
                             if 0 != results['status']:
                                 log['status'] = results['status']
                                 log['stderr'] = "Cannot clone repository branch {0}".format(repo)
@@ -435,7 +453,11 @@ class Git(FetchMTTTool):
                             # we need to whack the current installation and reinstall it
                             os.chdir(dst)
                             shutil.rmtree(repo)
-                            results = testDef.execmd.execute(cmds, ["git", "clone", "--no-checkout", url], testDef)
+                            cmd_args = ["git", "clone", "--no-checkout"]
+                            if recursive != "":
+                                cmd_args.append(recursive)
+                            cmd_args.append(url)
+                            results = testDef.execmd.execute(cmds, cmd_args, testDef)
                             if 0 != results['status']:
                                 log['status'] = results['status']
                                 log['stderr'] = "Cannot clone repository {0}".format(repo)
@@ -503,7 +525,11 @@ class Git(FetchMTTTool):
             else:
                 # clone it
                 if branch is not None:
-                    results = testDef.execmd.execute(cmds, ["git", "clone", "-b", branch, "--single-branch", url], testDef)
+                    cmd_args = ["git", "clone", "-b", branch, "--single-branch"]
+                    if recursive != "":
+                        cmd_args.append(recursive)
+                    cmd_args.append(url)
+                    results = testDef.execmd.execute(cmds, cmd_args, testDef)
                     if 0 != results['status']:
                         log['status'] = results['status']
                         log['stderr'] = results['stderr']
@@ -511,7 +537,11 @@ class Git(FetchMTTTool):
                         os.chdir(cwd)
                         continue
                 elif commit is not None:
-                    results = testDef.execmd.execute(cmds, ["git", "clone", "--no-checkout", url], testDef)
+                    cmd_args = ["git", "clone", "--no-checkout"]
+                    if recursive != "":
+                        cmd_args.append(recursive)
+                    cmd_args.append(url)
+                    results = testDef.execmd.execute(cmds, cmd_args, testDef)
                     if 0 != results['status']:
                         log['status'] = results['status']
                         log['stderr'] = "Cannot clone repository {0}".format(repo)
@@ -536,7 +566,11 @@ class Git(FetchMTTTool):
                         os.chdir(cwd)
                         continue
                 elif pr is not None:
-                    results = testDef.execmd.execute(cmds, ["git", "clone", url], testDef)
+                    cmd_args = ["git", "clone"]
+                    if recursive != "":
+                        cmd_args.append(recursive)
+                    cmd_args.append(url)
+                    results = testDef.execmd.execute(cmds, cmd_args, testDef)
                     if 0 != results['status']:
                         log['status'] = results['status']
                         log['stderr'] = "Cannot clone repository {0}".format(repo)
@@ -578,7 +612,11 @@ class Git(FetchMTTTool):
                         os.chdir(cwd)
                         continue
                 else:
-                    results = testDef.execmd.execute(cmds, ["git", "clone", url], testDef)
+                    cmd_args = ["git", "clone"]
+                    if recursive != "":
+                        cmd_args.append(recursive)
+                    cmd_args.append(url)
+                    results = testDef.execmd.execute(cmds, cmd_args, testDef)
                     if 0 != results['status']:
                         log['status'] = results['status']
                         log['stderr'] = results['stderr']
