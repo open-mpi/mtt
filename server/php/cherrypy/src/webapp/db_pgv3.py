@@ -616,8 +616,8 @@ class DatabaseV3():
 
         cursor = self.get_cursor()
 
-        values = tuple(insert_stmt_values)
-#       values = values.replace("\x00", "\uFFFD")
+        values = tuple(s.replace("\x00", "\uFFFD") if isinstance(s, str) else s
+               for s in insert_stmt_values)
         cursor.execute( select_stmt, values )
         rows = cursor.fetchone()
         if rows is not None:
@@ -634,8 +634,8 @@ class DatabaseV3():
         found_id = self._get_nextval( "%s_%s_seq" % (table, table_id))
 
         insert_stmt_values.insert(0, found_id)
-        values = tuple(insert_stmt_values)
-#       values = values.replace("\x00", "\uFFFD")
+        values = tuple(s.replace("\x00", "\uFFFD") if isinstance(s, str) else s
+               for s in insert_stmt_values)
         cursor.execute( insert_stmt, values )
         # Make sure to commit after every INSERT
         self._connection.commit()
