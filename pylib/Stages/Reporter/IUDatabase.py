@@ -141,11 +141,10 @@ class IUDatabase(ReporterMTTStage):
 
         data = {}
 
-        profile = testDef.logger.getLog('Profile:Installed')
         metadata = {}
         if not self.cmds['dryrun']:
             metadata['client_serial'] = client_serial
-        metadata['hostname'] = "\n".join(profile['profile']['nodeName'])
+        metadata['hostname'] = self._extract_param(testDef.logger, 'Profile:Installed','nodeName')
         metadata['http_username'] = self.cmds['username']
         metadata['local_username'] = pwd.getpwuid(os.getuid()).pw_name
         metadata['mtt_client_version'] = '4.0a1'
