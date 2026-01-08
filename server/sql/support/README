@@ -1,5 +1,7 @@
 How to add new yearly tables to the PostgreSQL database.
 
+Note on the OMPI AWS MTT instance we use an alias to psql named psql-ompi.
+
 1) Verify that the tables have not already been added to the database:
  -------------------
  shell$ psql mtt
