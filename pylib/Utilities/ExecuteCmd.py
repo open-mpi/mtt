@@ -27,6 +27,7 @@ class TimeoutThread(object):
         self.seconds = seconds
         self.cond = threading.Condition()
         self.cancelled = False
+        self.fired = False
         self.thread = threading.Thread(target=self._wait)
 
     def run(self):
@@ -38,6 +39,10 @@ class TimeoutThread(object):
             self.cond.wait(self.seconds)
 
             if not self.cancelled:
+                # record that we expired before anyone cancelled us, so the
+                # caller can tell a timeout from an ordinary failure without
+                # having to guess from the child's exit status
+                self.fired = True
                 self.timed_out()
 
     def cancel(self):
@@ -81,7 +86,7 @@ def processTimeout(seconds, pid):
     timeout = KillProcessThread(seconds, pid)
     timeout.run()
     try:
-        yield
+        yield timeout
     finally:
         timeout.cancel()
 
@@ -262,7 +267,7 @@ class ExecuteCmd(BaseMTTUtility):
                 t = int(options['timeout'])
             else:
                 t = 100000000
-            with processTimeout(t, p.pid):
+            with processTimeout(t, p.pid) as timer:
                 # loop until the pipes close
                 while True:
                     ret = select.select([p.stdout.fileno(), p.stderr.fileno()], [], [])
@@ -299,7 +304,16 @@ class ExecuteCmd(BaseMTTUtility):
 
             endtime = datetime.datetime.now()
 
-            if p.returncode == -15 or p.returncode == -9:
+            # A launcher that installs its own signal handlers exits normally
+            # after being asked to terminate, so the return code alone cannot
+            # distinguish a timeout from a test failure - PRRTE's prterun exits
+            # with status 1. Ask the timer whether it fired instead, and keep the
+            # signal check for launchers that die from the signal itself. The
+            # return code guard covers the race where the child exits just as the
+            # timer expires, which must not turn a passing test into a timeout.
+            timedout = (timer.fired and p.returncode != 0) \
+                       or p.returncode == -15 or p.returncode == -9
+            if timedout:
                 # check if slurm was run, and record job ids
                 slurm_jobids = self.check_for_slurm_jobids(unique_identifier, stdout, stderr)
                 # print execmd timed out info, including any slurm job ids
