@@ -124,7 +124,10 @@ class IUDatabase(ReporterMTTStage):
         # Setup the JSON data structure
         #
         s = requests.Session()
-        url = self.cmds['url'] + "/submit"
+        # Normalize the base url (drop any trailing slash) so endpoint
+        # paths like '/submit' and '/serial' are not prefixed with an
+        # empty path segment.
+        url = self.cmds['url'].rstrip("/") + "/submit"
         if 0 < sanity and not self.cmds['dryrun']:
             www_auth = HTTPBasicAuth(self.cmds['username'], password)
         else:
@@ -909,7 +912,10 @@ class IUDatabase(ReporterMTTStage):
                 return p[1]
 
     def _get_client_serial(self, session, url, httpauth=None):
-        url = url + "/serial"
+        # Strip any trailing slash so a configured url ending in '/' does
+        # not produce '//serial', which routes to Root with no path atom
+        # and trips the server's "Missing parameters: cmd" 404.
+        url = url.rstrip("/") + "/serial"
 
         headers = {}
         headers['content-type'] = 'application/json'

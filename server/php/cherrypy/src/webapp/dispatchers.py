@@ -157,7 +157,16 @@ class Root(_ServerResourceBase):
     #
     @cherrypy.tools.json_out()
     @cherrypy.tools.json_in()
-    def POST(self, cmd, **kwargs):
+    def POST(self, cmd=None, **kwargs):
+        # The command is normally supplied as the trailing path atom
+        # (e.g. POST /serial). Fall back to the JSON body or query/form
+        # parameters so a stray double slash in the client URL or a proxy
+        # that rewrites the path doesn't leave 'cmd' unfilled (which newer
+        # cherrypy rejects with a 404 "Missing parameters: cmd").
+        if cmd is None:
+            body = getattr(cherrypy.request, 'json', None) or {}
+            cmd = body.get('serial') or kwargs.get('cmd')
+
         prefix = 'Root [POST /%s]' % str(cmd)
         self.logger.debug(prefix)
 
