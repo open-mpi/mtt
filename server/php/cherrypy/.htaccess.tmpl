@@ -1,5 +1,5 @@
 RewriteEngine on
-RewriteRule ^api(.*) http://127.0.0.1:9080/$1 [proxy]
+RewriteRule ^api/?(.*) http://127.0.0.1:9080/$1 [proxy]
 ErrorDocument 503 "Sorry, the MTT Server does not seem to be running!"
 
 AuthType Basic
